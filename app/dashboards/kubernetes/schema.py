@@ -86,7 +86,7 @@ class AlertsSnapshot:
     info: int = 0
     items: list[AlertItem] = field(default_factory=list)
     source_status: str = 'Unavailable'
-    message: str = 'AlertManager data is not available yet.'
+    message: str = 'Alertmanager data is not available yet.'
 
 
 @dataclass(slots=True)

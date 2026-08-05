@@ -83,6 +83,12 @@ class Report(db.Model):
         default=list,
     )
 
+    job_execution_id: Mapped[int | None] = mapped_column(
+        db.ForeignKey('job_executions.id', ondelete='SET NULL'),
+        nullable=True,
+        index=True,
+    )
+
     generated_by_id: Mapped[int | None] = mapped_column(
         db.ForeignKey('users.id', ondelete='SET NULL'),
         nullable=True,
@@ -154,6 +160,7 @@ class Report(db.Model):
             'output_format': self.output_format,
             'status': self.status,
             'sections': self.sections_as_list(),
+            'job_execution_id': self.job_execution_id,
             'generated_by_id': self.generated_by_id,
             'generated_by_username_snapshot': self.generated_by_username_snapshot,
             'generated_by_display_name_snapshot': self.generated_by_display_name_snapshot,
@@ -520,6 +527,12 @@ class ReportScheduleRun(db.Model):
         index=True,
     )
 
+    job_execution_id: Mapped[int | None] = mapped_column(
+        db.ForeignKey('job_executions.id', ondelete='SET NULL'),
+        nullable=True,
+        index=True,
+    )
+
     status: Mapped[str] = mapped_column(
         db.String(50),
         nullable=False,
@@ -561,6 +574,7 @@ class ReportScheduleRun(db.Model):
             'id': self.id,
             'schedule_id': self.schedule_id,
             'report_id': self.report_id,
+            'job_execution_id': self.job_execution_id,
             'status': self.status,
             'trigger_source': self.trigger_source,
             'started_at': self.started_at,

@@ -18,13 +18,13 @@
             'Node Fleet Posture',
             'Node Posture',
             'Node Readiness',
-            inventory.readiness_label,
-            inventory.readiness_tone,
+            inventory.fleet_posture_label,
+            inventory.fleet_posture_tone,
             [
-                ('circle-check', 'Ready', inventory.ready_nodes, 'Scheduling available'),
-                ('triangle-alert', 'Not Ready', inventory.not_ready_nodes, 'Needs investigation')
+                ('circle-check', 'Ready', inventory.ready_nodes, 'Committed readiness'),
+                ('activity', 'Active Signals', inventory.active_signal_nodes, 'Operational exceptions')
             ],
-            'Manage Clusters',
+            'Open Cluster Integrations',
             url_for('integrations.kubernetes'),
             'server-cog'
         ) }}

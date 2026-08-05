@@ -6,11 +6,12 @@ from app.analytics.alerts.application import get_alerts_context
 from app.cluster.constants import get_environment_label
 from app.intelligence.recommendation_engine import build_alerts_actionable_recommendations
 from app.models.report import Report
-from app.reports.export.payloads.common import get_report_selected_cluster
+from app.reports.export.payloads.common import get_report_selected_cluster, report_payload_error
 
 def get_report_alerts_anomalies_payload(
     report: Report,
 ) -> dict[str, Any]:
+    cluster = None
     try:
         cluster = get_report_selected_cluster(report)
         context = get_alerts_context(
@@ -182,10 +183,5 @@ def get_report_alerts_anomalies_payload(
                 [],
             ),
         }
-
     except Exception as exc:
-        return {
-            '_error': str(
-                exc,
-            ),
-        }
+        return report_payload_error(exc, cluster=cluster)

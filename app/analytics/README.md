@@ -198,7 +198,7 @@ Storage Analysis uses mixed but explicit scope ownership: Cluster and Namespace 
 - Prometheus status and committed dataset metadata remain bright; dataset freshness exceptions appear as a distinct darker attention strip below them.
 - Pressure Posture and equivalent analytical context panels remain bright and use borders for separation.
 - Normalize all status tones through `table_label.semantic_tone(...)`. New presentation payloads use semantic tones; legacy color aliases are accepted only at the shared label boundary.
-- The Overview hero may use `page_hero.context_bottom_notice(...)` in the bottom action slot when the panel requires a short non-interactive attention message. Do not show a bottom notice and an action together.
+- Analytics heroes use `page_hero.context_card(...)` or `context_card_body(...)` with exactly two metrics and one `Manage Clusters` action. Interpretation and attention messages belong below the hero in shared Analytics content surfaces.
 
 ## Analytics overview Prometheus status flow
 

@@ -126,5 +126,5 @@
 {% endif %}
 {% endif %}
 {% if notification_context is defined or notification_saved|default(false) %}
-    <script>document.body.dispatchEvent(new CustomEvent('kaori:notifications-changed'));</script>
+    <script>document.body.dispatchEvent(new CustomEvent('kaori:notifications-changed', { bubbles: true }));</script>
 {% endif %}

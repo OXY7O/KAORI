@@ -1,5 +1,8 @@
 # Kubernetes Inventory Hero Copy Audit — July 2026
 
+> **Status: Historical domain audit.** The copy-density decisions remain valid, while geometry and typography are owned by `docs/design/components/HERO.md`.
+
+
 ## Scope
 
 Inventory Overview, Nodes, Namespaces, Workloads, Pods, Services, Ingresses,

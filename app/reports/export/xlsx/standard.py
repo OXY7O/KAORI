@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final
 
-INVENTORY_WORKBOOK_STANDARD: Final = 'kaori-inventory-xlsx-v1.0'
+INVENTORY_WORKBOOK_STANDARD: Final = 'kaori-inventory-xlsx-v2.0'
 INVENTORY_WORKBOOK_FAMILY: Final = 'inventory'
 INVENTORY_DATA_SHEET: Final = 'Inventory'
 INVENTORY_METADATA_SHEET: Final = 'Metadata'
@@ -20,6 +20,7 @@ class InventoryColumn:
     missing_value_rule: str = 'Not Available'
     width: float = 18.0
     number_format: str | None = None
+    semantic_type: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,9 +30,7 @@ class InventoryWorkbookProfile:
     description: str
     columns: tuple[InventoryColumn, ...]
     row_source: str = 'inventory_assets'
-    freeze_panes: str = 'D5'
     identity_columns: tuple[str, ...] = ()
-    status_columns: tuple[str, ...] = ()
 
 
 def column(
@@ -44,6 +43,7 @@ def column(
     missing_value_rule: str = 'Not Available',
     width: float = 18.0,
     number_format: str | None = None,
+    semantic_type: str | None = None,
 ) -> InventoryColumn:
     return InventoryColumn(
         key=key,
@@ -54,6 +54,7 @@ def column(
         missing_value_rule=missing_value_rule,
         width=width,
         number_format=number_format,
+        semantic_type=semantic_type,
     )
 
 
@@ -96,9 +97,7 @@ INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
             'Committed Kubernetes inventory totals by asset category. '
             'The workbook contains asset facts only and excludes analytical findings and recommendations.'
         ),
-        freeze_panes='A5',
         identity_columns=('resource_type',),
-        status_columns=('status',),
         columns=(
             column('resource_type', 'Resource Category', 'Committed Kubernetes inventory category.', width=24),
             column(
@@ -110,7 +109,7 @@ INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
                 width=14,
                 number_format='#,##0',
             ),
-            column('status', 'Inventory Status', 'Current committed inventory publication state.', width=17),
+            column('status', 'Inventory Status', 'Current committed inventory publication state.', width=17, semantic_type='inventory_state'),
             column(
                 'cluster_scope',
                 'Cluster Scope',
@@ -136,24 +135,14 @@ INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         report_type='node_inventory',
         title='Nodes Inventory',
         description='Committed Kubernetes node identities, readiness, platform, capacity, addressing, and collection evidence.',
-        freeze_panes='D5',
         identity_columns=('cluster', 'environment', 'node'),
-        status_columns=(
-            'ready',
-            'inventory_status',
-            'scheduling_state',
-            'memory_pressure',
-            'disk_pressure',
-            'pid_pressure',
-            'network_unavailable',
-        ),
         columns=(
             *COMMON_CLUSTER_COLUMNS,
             column('node', 'Node', 'Committed node identity.', width=34),
             column('role', 'Role', 'Committed node role label.', width=16),
-            column('ready', 'Ready', 'Committed Kubernetes Ready condition.', width=12),
-            column('inventory_status', 'Inventory Status', 'Current, Stale, or Unavailable inventory state.', width=17),
-            column('scheduling_state', 'Scheduling State', 'Schedulable or unschedulable state.', width=18),
+            column('ready', 'Ready', 'Committed Kubernetes Ready condition.', width=12, semantic_type='readiness'),
+            column('inventory_status', 'Inventory Status', 'Current, Stale, or Unavailable inventory state.', width=17, semantic_type='inventory_state'),
+            column('scheduling_state', 'Scheduling State', 'Schedulable or unschedulable state.', width=18, semantic_type='scheduling'),
             column('cpu', 'CPU Capacity (cores)', 'Committed node CPU capacity.', data_type='integer', missing_value_rule='Blank', width=18, number_format='0'),
             column('memory', 'Memory Capacity', 'Committed node memory capacity.', width=18),
             column('ephemeral_storage', 'Ephemeral Storage', 'Committed node ephemeral storage capacity.', width=18),
@@ -163,10 +152,10 @@ INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
             column('architecture', 'Architecture', 'Committed node architecture.', width=14),
             column('internal_ip', 'Internal IP', 'Committed node internal IP.', width=16),
             column('external_ip', 'External IP', 'Committed node external IP when present.', width=16),
-            column('memory_pressure', 'Memory Pressure', 'Committed MemoryPressure condition.', width=16),
-            column('disk_pressure', 'Disk Pressure', 'Committed DiskPressure condition.', width=16),
-            column('pid_pressure', 'PID Pressure', 'Committed PIDPressure condition.', width=14),
-            column('network_unavailable', 'Network Unavailable', 'Committed NetworkUnavailable condition.', width=19),
+            column('memory_pressure', 'Memory Pressure', 'Committed MemoryPressure condition.', width=16, semantic_type='negative_condition'),
+            column('disk_pressure', 'Disk Pressure', 'Committed DiskPressure condition.', width=16, semantic_type='negative_condition'),
+            column('pid_pressure', 'PID Pressure', 'Committed PIDPressure condition.', width=14, semantic_type='negative_condition'),
+            column('network_unavailable', 'Network Unavailable', 'Committed NetworkUnavailable condition.', width=19, semantic_type='negative_condition'),
             column('taints', 'Taints', 'Committed node taints.', width=34),
             CREATED_AT_COLUMN,
             COLLECTED_AT_COLUMN,
@@ -176,19 +165,17 @@ INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         report_type='namespace_inventory',
         title='Namespaces Inventory',
         description='Committed namespace identities, lifecycle state, controls, and service-account posture.',
-        freeze_panes='D5',
         identity_columns=('cluster', 'environment', 'namespace'),
-        status_columns=('status', 'default_service_account'),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,
-            column('status', 'Status', 'Committed namespace lifecycle status.', width=14),
+            column('status', 'Status', 'Committed namespace lifecycle status.', width=14, semantic_type='lifecycle'),
             column('uid', 'UID', 'Committed namespace UID.', width=28),
             column('labels', 'Label Count', 'Number of committed namespace labels.', data_type='integer', missing_value_rule='Blank', width=13, number_format='0'),
             column('annotations', 'Annotation Count', 'Number of committed namespace annotations.', data_type='integer', missing_value_rule='Blank', width=16, number_format='0'),
             column('limit_ranges', 'LimitRange Count', 'Number of LimitRange resources.', data_type='integer', missing_value_rule='Blank', width=16, number_format='0'),
             column('network_policies', 'NetworkPolicy Count', 'Number of NetworkPolicy resources.', data_type='integer', missing_value_rule='Blank', width=18, number_format='0'),
             column('service_accounts', 'ServiceAccount Count', 'Number of ServiceAccount resources.', data_type='integer', missing_value_rule='Blank', width=19, number_format='0'),
-            column('default_service_account', 'Default ServiceAccount', 'Whether the default ServiceAccount is present.', width=20),
+            column('default_service_account', 'Default ServiceAccount', 'Whether the default ServiceAccount is present.', width=20, semantic_type='presence'),
             CREATED_AT_COLUMN,
             COLLECTED_AT_COLUMN,
         ),
@@ -197,15 +184,13 @@ INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         report_type='workload_inventory',
         title='Workloads Inventory',
         description='Committed Kubernetes workload identities, readiness, replica state, and update strategy.',
-        freeze_panes='E5',
         identity_columns=('cluster', 'environment', 'namespace', 'name'),
-        status_columns=('ready', 'status'),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,
             column('name', 'Workload', 'Committed workload name.', width=30),
             column('resource_type', 'Type', 'Committed workload kind.', width=18),
-            column('ready', 'Ready', 'Committed workload readiness.', width=12),
-            column('status', 'Status', 'Committed workload runtime status.', width=16),
+            column('ready', 'Ready', 'Committed workload readiness.', width=12, semantic_type='readiness'),
+            column('status', 'Status', 'Committed workload runtime status.', width=16, semantic_type='lifecycle'),
             column('update_strategy', 'Update Strategy', 'Committed update or rollout strategy.', width=20),
             column('desired_replicas', 'Desired Replicas', 'Committed desired replica count.', data_type='integer', missing_value_rule='Blank', width=16, number_format='0'),
             column('available_replicas', 'Available Replicas', 'Committed available replica count.', data_type='integer', missing_value_rule='Blank', width=17, number_format='0'),
@@ -219,16 +204,14 @@ INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         report_type='pod_inventory',
         title='Pods Inventory',
         description='Committed pod identities, ownership, phase, readiness, placement, restarts, and attached evidence.',
-        freeze_panes='E5',
         identity_columns=('cluster', 'environment', 'namespace', 'pod'),
-        status_columns=('status', 'ready'),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,
             column('pod', 'Pod', 'Committed pod identity.', width=34),
             column('resource_type', 'Workload Type', 'Owning workload kind or Standalone.', width=18),
             column('workload', 'Workload', 'Owning workload name.', width=28),
-            column('status', 'Phase', 'Committed pod phase.', width=14),
-            column('ready', 'Ready', 'Committed pod readiness.', width=12),
+            column('status', 'Phase', 'Committed pod phase.', width=14, semantic_type='lifecycle'),
+            column('ready', 'Ready', 'Committed pod readiness.', width=12, semantic_type='readiness'),
             column('restarts', 'Restarts', 'Committed aggregate container restart count.', data_type='integer', missing_value_rule='Blank', width=12, number_format='0'),
             column('node', 'Node', 'Committed node placement.', width=32),
             column('pod_ip', 'Pod IP', 'Committed pod IP.', width=16),
@@ -245,14 +228,12 @@ INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         report_type='service_inventory',
         title='Services Inventory',
         description='Committed Kubernetes Service identities, types, addresses, ports, selectors, and exposure fields.',
-        freeze_panes='E5',
         identity_columns=('cluster', 'environment', 'namespace', 'name'),
-        status_columns=('status',),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,
             column('name', 'Service', 'Committed Service identity.', width=30),
             column('resource_type', 'Type', 'Committed Service type.', width=16),
-            column('status', 'Inventory Status', 'Committed service inventory state.', width=17),
+            column('status', 'Inventory Status', 'Committed service inventory state.', width=17, semantic_type='inventory_state'),
             column('cluster_ip', 'Cluster IP', 'Committed cluster IP.', width=18),
             column('external_ip', 'External IP', 'Committed external IP or hostname.', width=22),
             column('ports', 'Ports', 'Committed service ports.', width=28),
@@ -267,17 +248,15 @@ INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         report_type='ingress_inventory',
         title='Ingresses Inventory',
         description='Committed Kubernetes Ingress identities, class, hosts, addresses, backends, and TLS references.',
-        freeze_panes='E5',
         identity_columns=('cluster', 'environment', 'namespace', 'name'),
-        status_columns=('status', 'tls_enabled'),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,
             column('name', 'Ingress', 'Committed Ingress identity.', width=30),
             column('ingress_class', 'Ingress Class', 'Committed Ingress class.', width=18),
             column('host', 'Host', 'Committed primary host.', width=32),
             column('address', 'Address', 'Committed external address.', width=22),
-            column('tls_enabled', 'TLS Enabled', 'Whether committed TLS configuration exists.', data_type='boolean', width=14),
-            column('status', 'TLS Status', 'TLS Enabled or TLS Disabled.', width=16),
+            column('tls_enabled', 'TLS Enabled', 'Whether committed TLS configuration exists.', data_type='boolean', width=14, semantic_type='tls_enabled'),
+            column('status', 'TLS Status', 'TLS Enabled or TLS Disabled.', width=16, semantic_type='tls_status'),
             column('backend_count', 'Backend Count', 'Number of committed backend paths.', data_type='integer', missing_value_rule='Blank', width=15, number_format='0'),
             column('tls_secret_count', 'TLS Secret Count', 'Number of committed TLS Secret references.', data_type='integer', missing_value_rule='Blank', width=17, number_format='0'),
             CREATED_AT_COLUMN,
@@ -288,9 +267,7 @@ INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         report_type='configuration_inventory',
         title='Configuration Inventory',
         description='Committed ConfigMap and Secret identities and metadata. Secret values are never exported.',
-        freeze_panes='E5',
         identity_columns=('cluster', 'environment', 'namespace', 'name'),
-        status_columns=('immutable',),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,
             column('name', 'Name', 'Committed ConfigMap or Secret identity.', width=32),
@@ -308,14 +285,12 @@ INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
         report_type='storage_inventory',
         title='Storage Inventory',
         description='Committed StorageClass, persistent-volume, and persistent-volume-claim identities and lifecycle fields.',
-        freeze_panes='E5',
         identity_columns=('cluster', 'environment', 'namespace', 'name'),
-        status_columns=('status',),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,
             column('name', 'Name', 'Committed storage resource identity.', width=32),
             column('resource_type', 'Type', 'StorageClass, PersistentVolume, or PersistentVolumeClaim.', width=24),
-            column('status', 'Status', 'Committed storage lifecycle state.', width=14),
+            column('status', 'Status', 'Committed storage lifecycle state.', width=14, semantic_type='lifecycle'),
             column('storage_class', 'Storage Class', 'Committed StorageClass reference.', width=24),
             column('capacity', 'Capacity', 'Committed storage capacity.', width=16),
             column('access_modes', 'Access Modes', 'Committed access modes.', width=22),
@@ -335,9 +310,7 @@ INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
             'Private keys and Secret values are excluded.'
         ),
         row_source='records',
-        freeze_panes='E5',
         identity_columns=('cluster', 'environment', 'namespace', 'secret_name'),
-        status_columns=('status_label', 'usage_label', 'coverage_label', 'parse_state'),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,
             column('secret_name', 'Secret Name', 'Committed Kubernetes TLS Secret name.', width=30),
@@ -351,15 +324,15 @@ INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
             column('not_before', 'Not Before', 'Certificate validity start.', data_type='datetime', width=20, number_format='yyyy-mm-dd hh:mm'),
             column('not_after', 'Not After', 'Certificate expiry timestamp.', data_type='datetime', width=20, number_format='yyyy-mm-dd hh:mm'),
             column('days_remaining', 'Days Remaining', 'Calendar days from data cut-off to notAfter.', data_type='integer', missing_value_rule='Blank', width=16, number_format='0'),
-            column('status_label', 'Validity Status', 'Valid, Renewal Window, Critical Expiry, Expired, Invalid, or Unknown.', width=18),
-            column('usage_label', 'Usage Status', 'In Use, Unused, or Unknown Usage based on committed reference evidence.', width=17),
+            column('status_label', 'Validity Status', 'Valid, Renewal Window, Critical Expiry, Expired, Invalid, or Unknown.', width=18, semantic_type='certificate_status'),
+            column('usage_label', 'Usage Status', 'In Use, Unused, or Unknown Usage based on committed reference evidence.', width=17, semantic_type='usage_status'),
             column('reference_count', 'Reference Count', 'Number of committed consumers.', data_type='integer', missing_value_rule='Blank', width=16, number_format='0'),
             column('references_label', 'Referenced By', 'Committed Ingress/resource identities.', width=40),
-            column('coverage_label', 'Hostname Coverage', 'Committed hostname coverage state.', width=20),
+            column('coverage_label', 'Hostname Coverage', 'Committed hostname coverage state.', width=20, semantic_type='coverage_status'),
             column('declared_host_count', 'Declared Hosts', 'Number of declared hosts.', data_type='integer', missing_value_rule='Blank', width=15, number_format='0'),
             column('covered_host_count', 'Covered Hosts', 'Number of declared hosts covered by SAN evidence.', data_type='integer', missing_value_rule='Blank', width=15, number_format='0'),
             column('uncovered_hosts_label', 'Uncovered Hosts', 'Declared hosts not covered by committed certificate SAN evidence.', width=40),
-            column('parse_state', 'Parse State', 'Committed certificate parse result.', width=15),
+            column('parse_state', 'Parse State', 'Committed certificate parse result.', width=15, semantic_type='parse_status'),
             column('parse_error', 'Parse Error', 'Committed parse error when present.', width=42),
             COLLECTED_AT_COLUMN,
         ),

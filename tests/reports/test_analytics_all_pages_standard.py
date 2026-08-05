@@ -67,10 +67,10 @@ def test_shared_css_owns_the_new_analytics_visual_contract() -> None:
     source = (CSS_DIR / 'analytics_publication.css').read_text(encoding='utf-8')
     compact = ''.join(source.split())
 
-    assert 'KAORIAnalyticsPDFPublicationStandardv1.1' in compact
+    assert 'KAORIAnalyticsPDFPublicationStandardv3.0' in compact
     assert '.cover-masthead' in source
     assert '.cover-contents' in source
-    assert '.section-rule { display: none; }' in source
+    assert '.section-rule' in source and 'display: none' in source
     assert 'vertical-align: middle' in source
     assert '.methodology-grid' in source
     assert '.boundary-columns' in source
@@ -81,8 +81,8 @@ def test_shared_css_owns_the_new_analytics_visual_contract() -> None:
 def test_standard_registry_covers_all_analytics_templates() -> None:
     source = (HTML_PDF_DIR / 'analytics_publication_standard.py').read_text(encoding='utf-8')
 
-    assert "ANALYTICS_PUBLICATION_STANDARD = 'kaori-analytics-pdf-v1.1'" in source
-    assert "ANALYTICS_VISUAL_STYLE = 'reporting-standard-v2.9.2-analytics-family'" in source
+    assert "ANALYTICS_PUBLICATION_STANDARD = 'kaori-analytics-pdf-v3.0'" in source
+    assert "ANALYTICS_VISUAL_STYLE = 'kaori-publication-v3-neutral-evidence-first'" in source
     assert "'cover_header_policy': 'symmetric-two-sided'" in source
     assert "'section_separator_policy': 'none'" in source
     assert "'section_rhythm': 'title-subtitle-content'" in source

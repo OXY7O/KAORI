@@ -70,6 +70,6 @@ class ReportDocument:
     methodology_notes: tuple[str, ...]
     template_label: str
     renderer_label: str = 'WeasyPrint HTML/PDF'
-    template_name: str = 'reports/pdf/report.html'
+    template_name: str = 'reports/pdf/analytics_unavailable.html'
     presentation: dict[str, Any] = field(default_factory=dict)
     metadata: dict[str, Any] = field(default_factory=dict)

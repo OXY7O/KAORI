@@ -27,9 +27,9 @@
                 size='detail'
             ) }}
             {% if dashboard.selected_cluster_id %}
-                {{ table_label.status_indicator_label('Live Signals Enabled', 'normal', size='detail') }}
+                {{ table_label.status_indicator_label('Cluster Signals Available', 'normal', size='detail') }}
             {% else %}
-                {{ table_label.status_indicator_label('Select a Cluster for Live Signals', 'warning', size='detail') }}
+                {{ table_label.status_indicator_label('Select a Cluster for Detailed Signals', 'warning', size='detail') }}
             {% endif %}
             <span class="inline-flex items-center gap-1.5 text-xs text-content-muted">
                 <i data-lucide="clock-3" class="h-3.5 w-3.5" aria-hidden="true"></i>

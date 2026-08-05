@@ -79,7 +79,7 @@ def _rendered_html() -> str:
 def test_alerts_anomalies_presentation_uses_nine_page_contract() -> None:
     presentation = _presentation()
 
-    assert presentation['presentation_version'] == 'v1.1-alerts-anomalies-publication'
+    assert presentation['presentation_version'] == 'v3.0-alerts-anomalies-publication'
     assert presentation['page_count'] == 9
     assert presentation['layout_contract']['correlation_policy'] == 'review-lead-not-causality'
 

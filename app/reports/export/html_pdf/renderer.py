@@ -9,6 +9,7 @@ from app.reports.catalog import FORMAT_PDF, REPORT_FAMILY_ANALYTICS, get_report_
 from app.reports.export.html_pdf.builder import build_report_document
 from app.reports.export.html_pdf.collectors import collect_report_payload
 from app.reports.export.html_pdf.engine import render_document_pdf
+from app.reports.reference import build_report_reference
 
 
 def render_weasyprint_pdf(report: Report, output_path: Path) -> None:
@@ -26,7 +27,7 @@ def render_weasyprint_pdf(report: Report, output_path: Path) -> None:
     )
 
     project_root = Path(current_app.root_path).parent
-    css_path = Path(current_app.root_path) / 'static' / 'reports' / 'pdf' / 'report.css'
+    css_path = Path(current_app.root_path) / 'static' / 'reports' / 'pdf' / 'analytics_publication.css'
 
     render_document_pdf(
         document,
@@ -34,5 +35,5 @@ def render_weasyprint_pdf(report: Report, output_path: Path) -> None:
         template_environment=current_app.jinja_env,
         css_path=css_path,
         base_url=project_root,
-        metadata={'pdf_identifier': f'kaori-report-{report.id}'},
+        metadata={'pdf_identifier': build_report_reference(report)},
     )

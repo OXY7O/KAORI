@@ -153,8 +153,8 @@ def test_forecast_snapshot_uses_one_chart_and_one_resource_outlook() -> None:
 
     assert 'Combined Forecast Projection' in source
     assert 'Resource Outlook' in source
-    assert 'How to Read' in source
-    assert 'What to Do' in source
+    assert 'How To Read' in source
+    assert 'What To Do' in source
     assert 'components/forecast_projection_chart.html' in source
     assert 'forecast_projection_chart.render(' in source
     assert 'Warning 75%' in shared_chart
@@ -210,17 +210,21 @@ def test_overview_recommendations_are_always_visible_and_paginated() -> None:
 
 
 
-def test_overview_hero_attention_uses_the_full_width_bottom_slot() -> None:
+def test_overview_hero_uses_canonical_lazy_context_card_body() -> None:
     source = read('partials/_hero_posture.html')
     loading = read('partials/_hero_posture_loading.html')
     shared_hero = Path('app/templates/components/page_hero.html').read_text(encoding='utf-8')
 
-    assert 'page_hero.context_bottom_notice(posture_short_description, posture_tone)' in source
-    assert source.index('context_bottom_notice') > source.index('context_metric_card_classes')
-    assert 'page_hero.context_posture_note' not in source
-    assert 'macro context_bottom_notice' in shared_hero
-    assert 'min-h-10 w-full' in shared_hero
-    assert 'min-h-10 w-full' in loading
+    for template in (source, loading):
+        assert 'page_hero.context_card_body(' in template
+        assert "'Manage Clusters'" in template
+        assert template.count("('") >= 2
+        assert 'context_posture_header' not in template
+        assert 'context_posture_note' not in template
+        assert 'context_bottom_notice' not in template
+
+    assert 'macro context_card_body' in shared_hero
+    assert 'metrics[:2]' in shared_hero
 
 
 def test_overview_readiness_and_interpretation_surface_hierarchy_is_canonical() -> None:
@@ -240,7 +244,7 @@ def test_overview_readiness_and_interpretation_surface_hierarchy_is_canonical() 
     assert "overview_surface.context_panel_classes('border-t border-outline-subtle px-4 py-4 sm:px-5 xl:col-span-4" in resource
     assert 'overview_surface.interpretation_grid_classes()' in resource
     assert 'overview_surface.interpretation_grid_classes()' in capacity
-    assert 'overview_surface.interpretation_panel_classes' in workload
+    assert 'overview_surface.interpretation_callout' in workload
     assert 'overview_surface.interpretation_grid_classes()' in top_consumers
 
 
@@ -344,7 +348,7 @@ def test_primary_overview_evidence_stays_bright_and_guidance_is_bounded() -> Non
 
     assert "overview_surface.ranked_item_classes('px-3 py-2.5')" in consumers
     assert "surface_classes='bg-surface-card'" in forecast
-    assert 'overview_surface.guidance_card_classes' in forecast
+    assert 'overview_surface.interpretation_callout' in forecast
     assert 'overview_surface.guidance_card_classes' in storage
-    assert 'overview_surface.guidance_card_classes' in alerts
+    assert 'overview_surface.interpretation_callout' in alerts
     assert 'overview_surface.nested_evidence_card_classes' in action_summary

@@ -29,12 +29,12 @@
 ] %}
 {% set storage_active = endpoint == 'reports.storage' %}
 <details class="sidebar-menu space-y-1" {% if reports_active %}open{% endif %}>
-    <summary class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if reports_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2"
+    <summary class="{{ 'sidebar-parent-active' if reports_active else 'sidebar-item-idle' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2"
              title="Reports"
              aria-label="Reports"
              @click="if (!sidebarExpanded) { $event.preventDefault(); toggleSidebar(); $el.parentElement.open = true }">
         <div class="flex min-w-0 items-center gap-2.5">
-            <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg {{ 'bg-white/15 text-white' if reports_active else 'bg-white/5 text-brand-foreground-muted group-hover:bg-white/10 group-hover:text-white' }} transition">
+            <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg {{ 'sidebar-parent-active-icon' if reports_active else 'sidebar-item-idle-icon' }} transition">
                 <i data-lucide="file-bar-chart" class="h-4 w-4"></i>
             </span>
             <span class="sidebar-expanded-only truncate whitespace-nowrap">Reports</span>
@@ -45,7 +45,7 @@
     <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3">
         {% if current_user.has_permission('reports.view') %}
             <a href="{{ url_for('reports.overview') }}"
-               class="{{ 'bg-white/[0.08] text-kaori-accent' if overview_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+               class="{{ 'bg-white/[0.08] text-kaori-accent' if overview_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
                 <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if overview_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
                 <i data-lucide="layout-dashboard" class="h-3.5 w-3.5"></i>
                 <span class="truncate whitespace-nowrap">Overview</span>
@@ -53,7 +53,7 @@
         {% endif %}
         {% if current_user.has_permission('reports.generate') %}
             <a href="{{ url_for('reports.generate_report') }}"
-               class="{{ 'bg-white/[0.08] text-kaori-accent' if generate_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+               class="{{ 'bg-white/[0.08] text-kaori-accent' if generate_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
                 <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if generate_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
                 <i data-lucide="file-plus-2" class="h-3.5 w-3.5"></i>
                 <span class="truncate whitespace-nowrap">Generate</span>
@@ -61,7 +61,7 @@
         {% endif %}
         {% if current_user.has_permission('reports.view') %}
             <a href="{{ url_for('reports.generated_reports') }}"
-               class="{{ 'bg-white/[0.08] text-kaori-accent' if generated_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+               class="{{ 'bg-white/[0.08] text-kaori-accent' if generated_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
                 <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if generated_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
                 <i data-lucide="files" class="h-3.5 w-3.5"></i>
                 <span class="truncate whitespace-nowrap">Generated</span>
@@ -69,7 +69,7 @@
         {% endif %}
         {% if current_user.has_permission('reports.manage_templates') %}
             <a href="{{ url_for('reports.report_templates') }}"
-               class="{{ 'bg-white/[0.08] text-kaori-accent' if templates_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+               class="{{ 'bg-white/[0.08] text-kaori-accent' if templates_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
                 <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if templates_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
                 <i data-lucide="layout-template" class="h-3.5 w-3.5"></i>
                 <span class="truncate whitespace-nowrap">Templates</span>
@@ -77,7 +77,7 @@
         {% endif %}
         {% if current_user.has_permission('reports.manage_storage') %}
             <a href="{{ url_for('reports.storage') }}"
-               class="{{ 'bg-white/[0.08] text-kaori-accent' if storage_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+               class="{{ 'bg-white/[0.08] text-kaori-accent' if storage_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
                 <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if storage_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
                 <i data-lucide="hard-drive" class="h-3.5 w-3.5"></i>
                 <span class="truncate whitespace-nowrap">Storage</span>
@@ -85,7 +85,7 @@
         {% endif %}
         {% if current_user.has_permission('reports.manage_schedules') %}
             <a href="{{ url_for('reports.schedules') }}"
-               class="{{ 'bg-white/[0.08] text-kaori-accent' if schedules_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+               class="{{ 'bg-white/[0.08] text-kaori-accent' if schedules_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
                 <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if schedules_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
                 <i data-lucide="calendar-clock" class="h-3.5 w-3.5"></i>
                 <span class="truncate whitespace-nowrap">Schedules</span>

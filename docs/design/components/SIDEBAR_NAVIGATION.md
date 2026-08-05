@@ -1,6 +1,6 @@
-# KAORI Sidebar Navigation Standard v1.1
+# KAORI Sidebar Navigation Standard v1.2
 
-**Status:** Locked application-shell contract. The source templates, this document, and `scripts/verify_sidebar_navigation_standard.py` must change together.
+**Status:** Locked application-shell and dark-mode contract. The source templates, this document, and `scripts/verify_sidebar_navigation_standard.py` must change together.
 
 This document is the authoritative visual, typography, spacing, hierarchy, and interaction contract for the authenticated KAORI sidebar. Sidebar navigation is an application-shell component and intentionally does **not** inherit the ordinary content typography scale unchanged.
 
@@ -148,7 +148,14 @@ A direct top-level link uses the same geometry and typography as an expandable p
 
 ### Default state
 
-- muted inverse foreground;
+Canonical classes:
+
+```text
+sidebar-item-idle
+sidebar-item-idle-icon
+```
+
+- muted inverse foreground owned by the sidebar token;
 - transparent background;
 - icon surface uses a restrained translucent background;
 - no provider-specific color.
@@ -163,9 +170,17 @@ A direct top-level link uses the same geometry and typography as an expandable p
 
 ### Active state
 
-- filled KAORI Violet;
-- white label and icon;
-- restrained ring and shadow;
+Canonical classes:
+
+```text
+sidebar-parent-active
+sidebar-parent-active-icon
+```
+
+- light mode uses a solid KAORI Violet surface;
+- dark mode uses Violet at 18% opacity with a 3 px inset Violet indicator on the left;
+- label remains white and the dark-mode icon uses Accent Violet;
+- dark mode does not use a large glow or CTA-like elevation;
 - active parent remains visually dominant over its active submenu;
 - active state is determined from the owned endpoint set, not only the exact index route.
 
@@ -274,11 +289,12 @@ The sidebar uses inverse shell colors rather than ordinary content-surface color
 
 - Default text: muted inverse foreground.
 - Hover text: white.
-- Active parent: KAORI Violet with white foreground.
+- Active parent: solid KAORI Violet in light mode; translucent Violet plus a left accent in dark mode.
 - Active child: accent Violet on a restrained translucent surface.
 - Guide lines and inactive dots: low-contrast white.
 - Shadows are reserved for the active parent and the sidebar frame.
 - Navigation items do not use gradients, semantic status colors, or CRUD colors.
+- Dark-mode values are owned by `components/DARK_MODE.md`; menu templates do not add local dark classes.
 
 ## Accessibility
 
@@ -340,12 +356,13 @@ Rules for adding navigation:
 
 ## Enforcement and Change Control
 
-The sidebar is considered locked only when all three layers agree:
+The sidebar is considered locked only when documentation, implementation, dark-mode tokens, and enforcement agree:
 
 ```text
 Documentation  docs/design/components/SIDEBAR_NAVIGATION.md
 Implementation app/templates/components/navigation/sidebar.html
                app/templates/components/navigation/*_menu.html
+Theme contract docs/design/components/DARK_MODE.md
 Quality gate   scripts/verify_sidebar_navigation_standard.py
                tests/contracts/design/test_sidebar_navigation_standard_contract.py
 ```

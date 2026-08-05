@@ -11,6 +11,7 @@ from app.reports.export.html_pdf.analytics_publication_standard import (
     ANALYTICS_PUBLICATION_STANDARD,
     analytics_layout_contract,
 )
+from app.reports.export.html_pdf.chart_labels import resolve_vertical_labels
 from app.reports.export.html_pdf.normalization import sanitize_text
 
 _CAPACITY_PAGE_TITLES = (
@@ -148,13 +149,13 @@ def build_capacity_analysis_presentation(
 
     return {
         'page_count': len(_CAPACITY_PAGE_TITLES),
-        'presentation_version': 'v1.1-capacity-analysis-publication',
+        'presentation_version': 'v3.0-capacity-analysis-publication',
         'publication_family': ANALYTICS_PUBLICATION_FAMILY,
         'publication_standard': ANALYTICS_PUBLICATION_STANDARD,
         'canonical_reference': ANALYTICS_CANONICAL_REFERENCE,
         'layout_contract': analytics_layout_contract(
             page_count=9,
-            table_policy='single-line-technical-registers',
+            table_policy='concise-register-plus-reference',
             missing_evidence_policy='explicit-not-available',
         ),
         'report_id': report_id,
@@ -676,8 +677,8 @@ def _capacity_forecast_chart_svg(
             'Capacity forecast unavailable',
         )
 
-    width, height = 720, 250
-    left, right, top, bottom = 58, 24, 22, 40
+    width, height = 760, 250
+    left, right, top, bottom = 58, 98, 22, 40
     inner_w = width - left - right
     inner_h = height - top - bottom
     split_x = left + inner_w * 0.68
@@ -699,6 +700,8 @@ def _capacity_forecast_chart_svg(
         svg.append(f'<line x1="{left}" y1="{y:.1f}" x2="{left + inner_w}" y2="{y:.1f}" stroke="{color}" stroke-dasharray="5 5"/>')
     svg.append(f'<line x1="{split_x:.1f}" y1="{top}" x2="{split_x:.1f}" y2="{top + inner_h}" stroke="#A78BFA" stroke-dasharray="4 4"/>')
 
+    endpoint_labels: list[tuple[str, float]] = []
+    endpoint_meta: dict[str, tuple[float, str, float]] = {}
     for key in ('memory', 'pods', 'cpu'):
         item = _mapping(forecast_items.get(key))
         history = _history_percent(item)
@@ -728,7 +731,21 @@ def _capacity_forecast_chart_svg(
             )
             end_x, end_y = future_points[-1]
             svg.append(f'<circle cx="{end_x:.1f}" cy="{end_y:.1f}" r="4" fill="{color}"/>')
-            svg.append(f'<text x="{end_x - 4:.1f}" y="{end_y - 8:.1f}" text-anchor="end" style="font:12px Inter,sans-serif;font-weight:700;fill:{color}">{projected:.1f}%</text>')
+            endpoint_labels.append((key, end_y))
+            endpoint_meta[key] = (end_x, color, projected)
+
+    resolved_labels = resolve_vertical_labels(
+        endpoint_labels,
+        min_y=top + 7,
+        max_y=top + inner_h - 5,
+        min_gap=17,
+    )
+    point_y = dict(endpoint_labels)
+    label_x = width - 76
+    for key, label_y in resolved_labels.items():
+        end_x, color, projected = endpoint_meta[key]
+        svg.append(f'<path d="M {end_x+3:.1f} {point_y[key]:.1f} L {label_x-7:.1f} {label_y:.1f}" fill="none" stroke="{color}" stroke-width="1" opacity=".75"/>')
+        svg.append(f'<text x="{label_x:.1f}" y="{label_y+4:.1f}" style="font:11px Inter,sans-serif;font-weight:700;fill:{color}">{key.title()} {projected:.1f}%</text>')
 
     svg.extend(
         [

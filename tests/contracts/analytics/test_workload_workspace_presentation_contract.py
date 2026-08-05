@@ -20,14 +20,16 @@ def test_workload_workspace_uses_local_loading_ownership_and_lazy_mapping() -> N
     assert 'Workload Resource Mapping' in index
 
 
-def test_workload_hero_uses_shared_bottom_notice_and_metrics() -> None:
+def test_workload_hero_uses_canonical_context_card() -> None:
     hero = read('app/templates/analytics/workload/partials/_hero.html')
 
-    assert 'page_hero.context_metric(' in hero
-    assert 'page_hero.context_bottom_notice(' in hero
-    assert 'page_hero.context_posture_note(' not in hero
-    assert 'Governance Findings' in hero
-    assert 'Time Range' in hero
+    assert 'page_hero.context_card(' in hero
+    assert "('shield-alert', 'Findings'" in hero
+    assert "('calendar-range', 'Time Range'" in hero
+    assert "'Manage Clusters'" in hero
+    assert 'context_posture_header' not in hero
+    assert 'context_posture_note' not in hero
+    assert 'context_bottom_notice' not in hero
 
 
 def test_workload_mapping_uses_extended_filters_closed_by_default() -> None:
@@ -81,9 +83,10 @@ def test_workload_summary_is_top_level_scope_owned() -> None:
     assert 'workload_scope_summary = build_workload_scope_summary(workload_scope_rows)' in service
     assert "tenant_filtered = filter_tenant_quota_rows(" in service
     assert "workload_filtered = filter_workload_rows(" in service
-    assert 'Scope Contains' in pagination
-    assert "'Filtered Workloads'" in mapping
-    assert "'Filtered Namespaces'" in tenant
+    assert 'Showing' in pagination
+    assert 'Rows Per Page' in pagination
+    assert "'Mapped Workloads'" in mapping
+    assert "'Namespaces'" in tenant
 
 
 def test_workload_public_contract_removes_retired_aliases() -> None:

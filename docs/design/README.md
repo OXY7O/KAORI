@@ -46,7 +46,7 @@ The Styling Guide selects the correct reusable component. The Design System and 
 - `components/INFO_FLOW.md`
 - `components/RELATED_PAGE_CARD.md`
 - `components/VIEW_MORE_CONTENT.md`
-- `components/SIDEBAR_NAVIGATION.md` — locked application-shell navigation contract and menu-extension checklist.
+- `components/SIDEBAR_NAVIGATION.md`
 - `components/FORM_ACTION_BAR.md`
 - `components/CONNECTION_VALIDATION_HEADER.md`
 - `components/OPERATIONAL_TOGGLE.md`
@@ -69,6 +69,7 @@ The Styling Guide selects the correct reusable component. The Design System and 
 - `patterns/OPERATIONAL_DASHBOARD.md`
 - `patterns/KUBERNETES_INVENTORY_OVERVIEW.md`
 - `patterns/INVENTORY_RESOURCE_PAGE.md`
+- `patterns/KUBERNETES_NODE_INVENTORY.md`
 - `patterns/KUBERNETES_TOPOLOGY.md`
 - `patterns/KUBERNETES_STORAGE_CONFIGURATION_INVENTORY.md`
 - `patterns/KUBERNETES_CONFIGMAP_SECRET_OPERATIONS.md`
@@ -95,6 +96,7 @@ Domain-specific UI rules live under `docs/modules/` or the owning module README.
 - `audits/KUBERNETES_OPERATIONS_DASHBOARD_STYLING_AUDIT_2026_07.md`
 - `audits/KUBERNETES_INVENTORY_OVERVIEW_STYLING_AUDIT_2026_07.md`
 - `audits/KUBERNETES_NODE_INVENTORY_STYLING_AUDIT_2026_07.md`
+- `audits/KUBERNETES_NODE_INVENTORY_ALIGNMENT_AUDIT_2026_08.md`
 - `audits/KUBERNETES_TOPOLOGY_STYLING_AUDIT_2026_07.md`
 - `audits/PROMETHEUS_STYLE_AND_LIFECYCLE_AUDIT_2026_07.md`
 - `audits/PROMETHEUS_ALERTMANAGER_ALIGNMENT_AUDIT_2026_07.md`

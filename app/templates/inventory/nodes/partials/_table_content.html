@@ -4,16 +4,17 @@
 {% import "components/technical_value.html" as technical_value %}
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
 <div class="overflow-x-auto">
-    <table class="{{ table_ui.table_classes('min-w-[68rem]') }}">
+    <table class="{{ table_ui.table_classes('min-w-[70rem]') }}">
+        <caption class="sr-only">Node inventory records for {{ inventory.scope_label }}.</caption>
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
-                <th class="{{ table_ui.header_cell_classes() }} min-w-[16rem]">Node</th>
-                <th class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Cluster</th>
-                <th class="{{ table_ui.header_cell_classes() }}">Readiness</th>
-                <th class="{{ table_ui.header_cell_classes() }}">Role</th>
-                <th class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Capacity</th>
-                <th class="{{ table_ui.header_cell_classes() }} min-w-[11rem]">Network</th>
-                <th class="{{ table_ui.header_cell_classes(true) }}">Details</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[16rem]">Node</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Cluster</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[11rem]">Readiness</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }}">Role</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Capacity</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[11rem]">Network</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes(true) }}">Details</th>
             </tr>
         </thead>
         <tbody class="{{ table_ui.body_classes() }}">
@@ -23,14 +24,19 @@
                         {{ table_ui.title_cell(node.node_name, node.identity_supporting, 'server') }}
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">{{ table_ui.cluster_identity(node.cluster_name, node.cluster_environment) }}</td>
-                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(node.status_display, node.status_tone) }}</td>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        {{ table_label.status_indicator_label(node.status_display, node.status_tone) }}
+                        <p class="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">
+                            {{ node.condition_summary }}{% if node.scheduling_display == 'Scheduling Not Reported' and node.condition_count == 0 %} · Scheduling not reported{% endif %}
+                        </p>
+                    </td>
                     <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(node.role_display) }}</td>
                     <td class="{{ table_ui.cell_classes() }}">
                         <p class="text-sm font-semibold leading-5 text-content-primary">{{ node.capacity_primary }}</p>
                         <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ node.capacity_secondary }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
-                        {{ technical_value.render(node.internal_ip) }}
+                        {{ technical_value.render(node.internal_ip or 'Not Reported') }}
                         <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ node.network_scope }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes(true) }}">

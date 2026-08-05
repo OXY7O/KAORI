@@ -3,10 +3,14 @@
 {% import "components/detail_tip.html" as inventory_tip %}
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/technical_value.html" as technical_value %}
+{% import "components/technical_metadata_collection.html" as metadata_collection %}
 {% set node_status_tone = 'normal' if node.status == 'Ready' else ('critical' if node.status == 'NotReady' else 'unknown') %}
-{% set condition_tone = 'critical' if node.ready_condition == 'Not Ready' else ('warning' if node.has_pressure or node.scheduling_display == 'Cordoned' else ('normal' if node.ready_condition == 'Ready' else 'unknown')) %}
+{% set network_tone = 'normal' if node.network_availability == 'Available' else ('critical' if node.network_availability == 'Unavailable' else 'unknown') %}
+{% set condition_tone = 'critical' if node.ready_condition == 'Not Ready' or node.network_availability == 'Unavailable' else ('warning' if node.has_pressure or node.scheduling_display == 'Cordoned' else ('normal' if node.ready_condition == 'Ready' else 'unknown')) %}
 {% set condition_posture = 'Critical' if condition_tone == 'critical' else ('Warning' if condition_tone == 'warning' else ('Normal' if condition_tone == 'normal' else 'Unknown')) %}
-<div data-kaori-detail-variant="full-workspace-modal" class="{{ detail.expanded_workspace_outer_classes() }}">
+<div data-kaori-detail-variant="full-workspace-modal"
+     data-kaori-detail-density="adaptive-stacks"
+     class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         <header data-resource-detail-header class="{{ detail.expanded_workspace_header_classes() }}">
             <div class="flex min-w-0 items-start gap-3">
@@ -17,7 +21,7 @@
                         {{ table_label.metadata_label(node.cluster_name, 'building-2') }}
                         {{ table_label.metadata_label(node.role_display) }}
                     </div>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Node capacity, runtime, connectivity, scheduling conditions, and labels from the latest committed inventory snapshot.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Node identity, capacity, runtime, connectivity, scheduling, and condition evidence from the latest committed inventory snapshot.</p>
                 </div>
             </div>
             <div class="self-start sm:self-auto">{{ table_label.status_indicator_label(node.status_display, node_status_tone, size='detail') }}</div>
@@ -27,37 +31,37 @@
             {{ detail.summary_metric('Readiness', node.status_display, 'Current node readiness condition.', 'circle-check' if node.status == 'Ready' else 'triangle-alert', node_status_tone) }}
             {{ detail.summary_metric('Scheduling', node.scheduling_display, 'Whether new Pods can be scheduled.', 'calendar-clock', 'warning' if node.scheduling_display == 'Cordoned' else ('normal' if node.scheduling_display == 'Schedulable' else 'unknown')) }}
             {{ detail.summary_metric('Scheduled Pods', node.scheduled_pod_count, 'Pods assigned in the committed snapshot.', 'boxes', 'brand') }}
-            {{ detail.summary_metric('Capacity', (node.cpu or '-') ~ ' CPU · ' ~ node.memory_display, 'Reported CPU and memory capacity.', 'gauge', 'brand') }}
+            {{ detail.summary_metric('Capacity', (node.cpu if node.cpu is not none else '-') ~ ' CPU · ' ~ node.memory_display, 'CPU and memory summary; full storage evidence is listed below.', 'gauge', 'brand') }}
         </div>
 
         <div class="grid items-stretch gap-4 p-5 md:grid-cols-2 2xl:grid-cols-3">
-            {% call detail.detail_card('Node Identity', 'badge-info', node.age, badge_size='detail') %}
+            {% call detail.detail_card('Node Identity', 'badge-info') %}
                 {{ detail.technical_row('System UUID', node.system_uuid) }}
                 {{ detail.detail_row('Cluster', node.cluster_name) }}
                 {{ detail.detail_row('Environment', node.cluster_environment|environment_name(empty='Not Specified')) }}
+                {{ detail.detail_row('Role', node.role_display) }}
                 {{ detail.detail_row('Age', node.age) }}
                 {{ detail.detail_row('Collected', node.collected_at|user_datetime) }}
-                {{ inventory_tip.tip('Age comes from node creation time; Collected is the latest KAORI snapshot.', 'clock-3', true) }}
+                {{ inventory_tip.tip(node.role_description, 'server', true) }}
             {% endcall %}
 
-            {% call detail.detail_card('Node Capacity', 'gauge', (node.cpu or '-') ~ ' CPU', badge_size='detail') %}
-                {{ detail.detail_row('CPU', (node.cpu or '-') ~ ' Cores') }}
+            {% call detail.detail_card('Node Capacity', 'gauge') %}
+                {{ detail.detail_row('CPU', (node.cpu if node.cpu is not none else '-') ~ ' Cores') }}
                 {{ detail.detail_row('Memory', node.memory_display) }}
                 {{ detail.detail_row('Ephemeral Storage', node.ephemeral_storage_display) }}
                 {{ detail.detail_row('Allocatable Ephemeral', node.ephemeral_storage_allocatable_display) }}
-                {{ inventory_tip.tip('Capacity values are reported by Kubernetes in the committed Node snapshot.', 'database', true) }}
+                {{ inventory_tip.tip('Capacity values remain factual Kubernetes evidence. Missing values are shown explicitly and are not converted to zero.', 'database', true) }}
             {% endcall %}
 
-            {% set network_tone = 'normal' if node.network_availability == 'Available' else ('critical' if node.network_availability == 'Unavailable' else 'unknown') %}
             {% call detail.detail_card('Connectivity', 'network', node.network_availability, 'status', network_tone, badge_size='detail') %}
-                {{ detail.technical_row('Internal IP', node.internal_ip or '-') }}
-                {{ detail.technical_row('External IP', node.external_ip or '-') }}
-                {{ detail.technical_row('Hostname', node.hostname_address or '-') }}
-                {{ detail.detail_row('Scheduled Pods', node.scheduled_pod_count) }}
-                {{ inventory_tip.tip('Internal IP is the cluster address; External IP may be empty on private nodes.', 'network', true) }}
+                {{ detail.technical_row('Internal IP', node.internal_ip or 'Not Reported') }}
+                {{ detail.technical_row('External IP', node.external_ip or 'Not Reported') }}
+                {{ detail.technical_row('Hostname', node.hostname_address or 'Not Reported') }}
+                {{ detail.detail_row('Network Scope', node.network_scope) }}
+                {{ inventory_tip.tip('Internal IP is the cluster address; External IP may be absent on private nodes.', 'network', true) }}
             {% endcall %}
 
-            {% call detail.detail_card('Platform & Runtime', 'cpu', node.operating_system_display, class_name='2xl:col-span-1', badge_size='detail') %}
+            {% call detail.detail_card('Platform & Runtime', 'cpu', class_name='2xl:col-span-1') %}
                 {{ detail.detail_row('Operating System', node.operating_system_display) }}
                 {{ detail.detail_row('OS Image', node.os_image) }}
                 {{ detail.technical_row('Architecture', node.architecture, False) }}
@@ -83,34 +87,29 @@
                         </div>
                         {{ table_label.metadata_label(node.taints|length ~ ' ' ~ ('Taint' if node.taints|length == 1 else 'Taints')) }}
                     </div>
-                    <div class="mt-2 flex flex-wrap gap-1.5">
-                        {% if node.taints %}
-                            {% for taint in node.taints %}{{ table_label.metadata_label(taint, 'tag', true, 'detail') }}{% endfor %}
-                        {% else %}
-                            {{ table_label.metadata_label('No Taints') }}
-                        {% endif %}
-                    </div>
+                    {% if node.taints %}
+                        <div class="mt-2 grid min-w-0 gap-2 sm:grid-cols-2">
+                            {% for taint in node.taints %}
+                                <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">{{ technical_value.render(taint, break_all=true, size='body') }}</div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="mt-2 text-xs leading-5 text-content-muted">No taints were reported in the current snapshot.</p>
+                    {% endif %}
                 </div>
             {% endcall %}
 
-            <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 md:col-span-2 2xl:col-span-3">
-                <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
-                    <div class="flex items-center gap-2 text-sm font-semibold text-content-primary">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="tags" class="h-4 w-4"></i></span>
-                        Node Labels
-                    </div>
-                    {{ table_label.metadata_label(node.labels|length ~ ' ' ~ ('Label' if node.labels|length == 1 else 'Labels')) }}
-                </div>
-                {% if node.labels %}
-                    <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                        {% for key, value in node.labels.items() %}
-                            <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5">{{ technical_value.render(key ~ '=' ~ value) }}</div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <p class="text-xs leading-5 text-content-muted">No node labels were collected in the current snapshot.</p>
-                {% endif %}
-            </section>
+            <div class="md:col-span-2 2xl:col-span-3">
+                {{ metadata_collection.render(
+                    'Node Labels',
+                    node.labels,
+                    icon='tags',
+                    empty_title='No Node Labels Collected',
+                    empty_description='Labels will appear when they are present in the committed Node snapshot.',
+                    context='Labels are factual Kubernetes metadata and do not establish policy compliance by themselves.',
+                    compact_pairs=true
+                ) }}
+            </div>
         </div>
 
         <section class="border-t border-outline-subtle bg-surface-elevated p-5" aria-label="Node Operational Context">

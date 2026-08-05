@@ -120,16 +120,19 @@
       {% endcall %}
     </div>
 
-    {% call ui.section('Leading CPU Consumers', 'Top displayed CPU resource identities from the committed evidence.') %}
-    <table class="report-table consumer-table">
-      <thead><tr><th>Ref.</th><th>Resource Identity</th><th>Namespace</th><th>Value</th><th>Status</th></tr></thead>
+    {% call ui.section('Leading CPU Consumers', 'The comparison register stays concise; complete technical identities are maintained by reference.') %}
+    <table class="report-table consumer-summary-table">
+      <thead><tr><th>Ref.</th><th>Namespace</th><th>Value</th><th>Status</th></tr></thead>
       <tbody>
-      {% for item in p.cpu.consumers %}<tr><td class="ref">C{{ loop.index }}</td><td>{{ item.name }}</td><td>{{ item.namespace }}</td><td>{{ item.value }}</td><td class="status warning">Review</td></tr>{% else %}<tr><td colspan="5" class="empty-row">Top CPU consumer evidence was not available.</td></tr>{% endfor %}
+      {% for item in p.cpu.consumers %}<tr><td class="ref">C{{ loop.index }}</td><td>{{ item.namespace }}</td><td class="nowrap">{{ item.value }}</td><td class="status warning">Review</td></tr>{% else %}<tr><td colspan="4" class="empty-row">Top CPU consumer evidence was not available.</td></tr>{% endfor %}
       </tbody>
     </table>
+    <div class="identity-register"><h3>CPU Consumer References</h3><div class="identity-grid single-column">
+      {% for item in p.cpu.consumers %}<div class="identity-item"><span class="reference-code">C{{ loop.index }}</span><div class="identity-copy"><strong class="identity-title">{{ item.name }}</strong><p class="identity-meta"><b>Namespace.</b> {{ item.namespace }} &nbsp; <b>Observed value.</b> {{ item.value }}</p></div></div>{% endfor %}
+    </div></div>
     {% endcall %}
 
-    {% call ui.section('Management Decision', p.cpu.decision) %}{% endcall %}
+    {% call ui.section('Management Decision') %}<p class="narrative-copy">{{ p.cpu.decision }}</p>{% endcall %}
   </div>
   {{ footer(3) }}
 </article>
@@ -155,16 +158,19 @@
       {% endcall %}
     </div>
 
-    {% call ui.section('Leading Memory Consumers', 'Top displayed memory resource identities from the committed evidence.') %}
-    <table class="report-table consumer-table">
-      <thead><tr><th>Ref.</th><th>Resource Identity</th><th>Namespace</th><th>Value</th><th>Status</th></tr></thead>
+    {% call ui.section('Leading Memory Consumers', 'The comparison register stays concise; complete technical identities are maintained by reference.') %}
+    <table class="report-table consumer-summary-table">
+      <thead><tr><th>Ref.</th><th>Namespace</th><th>Value</th><th>Status</th></tr></thead>
       <tbody>
-      {% for item in p.memory.consumers %}<tr><td class="ref">M{{ loop.index }}</td><td>{{ item.name }}</td><td>{{ item.namespace }}</td><td>{{ item.value }}</td><td class="status warning">Review</td></tr>{% else %}<tr><td colspan="5" class="empty-row">Top memory consumer evidence was not available.</td></tr>{% endfor %}
+      {% for item in p.memory.consumers %}<tr><td class="ref">M{{ loop.index }}</td><td>{{ item.namespace }}</td><td class="nowrap">{{ item.value }}</td><td class="status warning">Review</td></tr>{% else %}<tr><td colspan="4" class="empty-row">Top memory consumer evidence was not available.</td></tr>{% endfor %}
       </tbody>
     </table>
+    <div class="identity-register"><h3>Memory Consumer References</h3><div class="identity-grid single-column">
+      {% for item in p.memory.consumers %}<div class="identity-item"><span class="reference-code">M{{ loop.index }}</span><div class="identity-copy"><strong class="identity-title">{{ item.name }}</strong><p class="identity-meta"><b>Namespace.</b> {{ item.namespace }} &nbsp; <b>Observed value.</b> {{ item.value }}</p></div></div>{% endfor %}
+    </div></div>
     {% endcall %}
 
-    {% call ui.section('Management Decision', p.memory.decision) %}{% endcall %}
+    {% call ui.section('Management Decision') %}<p class="narrative-copy">{{ p.memory.decision }}</p>{% endcall %}
   </div>
   {{ footer(4) }}
 </article>
@@ -240,14 +246,17 @@
       {% endcall %}
     </div>
 
-    {% call ui.section('Consumer Reference Register', 'Complete technical identities are retained in the register so chart labels remain readable.') %}
-    <table class="report-table distribution-register">
-      <thead><tr><th>Ref.</th><th>Resource Identity</th><th>Namespace</th><th>Signal</th><th>Value</th></tr></thead>
-      <tbody>{% for row in p.distribution.register %}<tr><td class="ref">{{ row.ref }}</td><td>{{ row.name }}</td><td>{{ row.namespace }}</td><td>{{ row.resource }}</td><td>{{ row.value }}</td></tr>{% else %}<tr><td colspan="5" class="empty-row">Consumer reference evidence was not available.</td></tr>{% endfor %}</tbody>
+    {% call ui.section('Consumer Reference Register', 'Chart labels use stable reference codes; complete identities are listed below the concise comparison register.') %}
+    <table class="report-table distribution-summary-register">
+      <thead><tr><th>Ref.</th><th>Namespace</th><th>Signal</th><th>Value</th></tr></thead>
+      <tbody>{% for row in p.distribution.register %}<tr><td class="ref">{{ row.ref }}</td><td>{{ row.namespace }}</td><td>{{ row.resource }}</td><td class="nowrap">{{ row.value }}</td></tr>{% else %}<tr><td colspan="4" class="empty-row">Consumer reference evidence was not available.</td></tr>{% endfor %}</tbody>
     </table>
+    <div class="identity-register"><h3>Complete Consumer Identities</h3><div class="identity-grid">
+      {% for row in p.distribution.register %}<div class="identity-item"><span class="reference-code">{{ row.ref }}</span><div class="identity-copy"><strong class="identity-title">{{ row.name }}</strong><p class="identity-meta"><b>Namespace.</b> {{ row.namespace }} &nbsp; <b>Signal.</b> {{ row.resource }} &nbsp; <b>Value.</b> {{ row.value }}</p></div></div>{% endfor %}
+    </div></div>
     {% endcall %}
 
-    {% call ui.section('Management Interpretation', p.distribution.interpretation) %}{% endcall %}
+    {% call ui.section('Management Interpretation') %}<p class="narrative-copy">{{ p.distribution.interpretation }}</p>{% endcall %}
   </div>
   {{ footer(6) }}
 </article>

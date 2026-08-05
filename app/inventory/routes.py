@@ -295,9 +295,11 @@ def nodes():
 
     node_roles = get_node_filter_roles(cluster_id=cluster_id)
     node_statuses = get_node_filter_statuses(cluster_id=cluster_id)
-    if role and role not in node_roles:
+    valid_roles = {option['value'] for option in node_roles}
+    valid_statuses = {option['value'] for option in node_statuses}
+    if role and role not in valid_roles:
         role = ''
-    if status and status not in node_statuses:
+    if status and status not in valid_statuses:
         status = ''
 
     inventory = get_node_inventory(

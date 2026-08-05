@@ -5,7 +5,7 @@
      class="contents"
      data-notification-deck-root
      data-snapshot-url="{{ url_for('notifications.panel_snapshot') }}">
-    <button @click="notificationDeckTab = {{ "'notifications'" if unread_count else "'activity'" }}; notificationDeckOpen = true; quickOpen = false; userOpen = false; refreshNotificationDeck()"
+    <button @click="notificationDeckTab = {{ "'notifications'" if unread_count else "'activity'" }}; notificationDeckOpen = true; quickOpen = false; userOpen = false; queueNotificationDeckRefresh()"
             type="button"
             class="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
             aria-label="Open notification deck"

@@ -1,41 +1,56 @@
 from __future__ import annotations
 
-CSV_STANDARD = 'KAORI Reporting CSV v1'
-CSV_ENCODING = 'utf-8-sig'
-CSV_DELIMITER = ','
-CSV_LINE_TERMINATOR = '\n'
+from typing import Final
 
-COMMON_METADATA_HEADERS = (
-    'report_standard',
-    'report_id',
-    'report_name',
-    'report_type',
-    'report_family',
-    'cluster',
-    'namespace',
-    'period',
-    'data_cutoff',
+from app.reports.export.tabular import (
+    COMMON_EXPORT_METADATA_FIELDS,
+    TABULAR_EXPORT_STANDARD,
+    TABULAR_SCHEMA_VERSION,
+    protect_spreadsheet_formula,
 )
 
-ANALYTICS_HEADERS = (
+CSV_STANDARD: Final = 'kaori-reporting-csv-v2.0'
+CSV_SCHEMA_VERSION: Final = TABULAR_SCHEMA_VERSION
+CSV_TABULAR_STANDARD: Final = TABULAR_EXPORT_STANDARD
+CSV_ENCODING: Final = 'utf-8-sig'
+CSV_DELIMITER: Final = ','
+CSV_LINE_TERMINATOR: Final = '\n'
+
+COMMON_METADATA_HEADERS: Final = COMMON_EXPORT_METADATA_FIELDS
+
+ANALYTICS_HEADERS: Final = (
     *COMMON_METADATA_HEADERS,
-    'section_number',
-    'section',
+    'section_order',
+    'section_key',
+    'section_title',
+    'dataset',
     'record_type',
-    'record_number',
+    'record_reference',
+    'record_order',
+    'field_order',
     'field',
     'value',
-    'note',
+    'value_type',
     'status',
     'tone',
+    'note',
 )
 
+INVENTORY_CONTROL_HEADERS: Final = (
+    'record_type',
+    'record_reference',
+    'row_number',
+)
 
-def protect_spreadsheet_formula(value: object) -> str:
-    """Prevent spreadsheet formula execution when CSV is opened by office tools."""
-
-    text = '' if value is None else str(value)
-    stripped = text.lstrip()
-    if stripped.startswith(('=', '+', '-', '@')):
-        return f"'{text}"
-    return text
+__all__ = [
+    'ANALYTICS_HEADERS',
+    'COMMON_METADATA_HEADERS',
+    'CSV_DELIMITER',
+    'CSV_ENCODING',
+    'CSV_LINE_TERMINATOR',
+    'CSV_SCHEMA_VERSION',
+    'CSV_STANDARD',
+    'CSV_TABULAR_STANDARD',
+    'INVENTORY_CONTROL_HEADERS',
+    'protect_spreadsheet_formula',
+]

@@ -42,6 +42,11 @@ def test_every_inventory_workspace_shows_committed_snapshot_freshness() -> None:
     assert 'xl:col-span-4' in shared
     assert 'xl:col-span-8' in shared
     assert 'xl:grid-cols-4' in shared
+    assert 'xl:divide-x' in shared
+    assert 'xl:divide-outline-subtle' in shared
+    assert 'bg-surface-hover' not in shared
+    assert 'coverage_tone' in shared
+    assert 'exceptions_tone' in shared
     assert '>Source:</span>' in shared
     assert 'h-9 w-9' in shared
     assert 'p-5' not in shared
@@ -55,7 +60,11 @@ def test_inventory_freshness_uses_committed_cluster_inventory_snapshots() -> Non
 
     assert 'def get_inventory_freshness_context(' in overview
     assert 'get_inventory_cluster_summary()' in overview
-    assert "'source_label': 'Committed Snapshot'" in overview
+    assert "'source_label': 'Committed Inventory Snapshot'" in overview
+    assert "'coverage_label': coverage_label" in overview
+    assert "'coverage_supporting': coverage_supporting" in overview
+    assert "'exceptions_tone': 'warning' if has_exceptions else 'normal'" in overview
+    assert '1 of 1 snapshots' not in overview  # Built dynamically from committed scope counts.
     assert "'exception_label': exception_label" in overview
     assert '@inventory_bp.context_processor' in routes
     assert 'get_inventory_freshness_context(cluster_id=cluster_id)' in routes

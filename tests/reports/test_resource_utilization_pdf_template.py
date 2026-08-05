@@ -208,17 +208,17 @@ def test_resource_utilization_uses_approved_nine_page_publication() -> None:
 
     assert document.template_name == 'reports/pdf/resource_utilization.html'
     assert document.presentation['page_count'] == 9
-    assert document.presentation['presentation_version'] == 'v1.1-resource-utilization-publication'
+    assert document.presentation['presentation_version'] == 'v3.0-resource-utilization-publication'
     contract = document.presentation['layout_contract']
     assert contract['paper'] == 'A4 Portrait'
     assert contract['page_count'] == 9
     assert contract['fixed_page_canvas'] is True
-    assert contract['table_policy'] == 'single-line-technical-registers'
+    assert contract['table_policy'] == 'concise-register-plus-reference'
     assert contract['cover_header_policy'] == 'symmetric-two-sided'
     assert contract['section_separator_policy'] == 'none'
     assert contract['table_alignment'] == 'left-middle'
     assert contract['methodology_layout'] == 'parallel-registers'
-    assert contract['visual_style'] == 'reporting-standard-v2.9.2-analytics-family'
+    assert contract['visual_style'] == 'kaori-publication-v3-neutral-evidence-first'
     assert rendered_html.count('<article class="page') == 9
 
 

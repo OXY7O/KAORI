@@ -201,7 +201,7 @@ def _build_metadata_sheet(
 
     metadata = [
         ('Workbook Standard', INVENTORY_WORKBOOK_STANDARD, 'All sheets', 'Canonical reusable KAORI Inventory Excel contract.'),
-        ('Report ID', str(context.report_id), 'Workbook', 'Stored KAORI report record identifier.'),
+        ('Report Reference', str(context.report_id), 'Workbook', 'Stable KAORI document reference; the internal database key is not exposed.'),
         ('Report Name', context.report_name, 'Workbook', 'User-visible report request name.'),
         ('Report Type', context.report_type, 'Workbook', profile.title),
         ('Report Family', INVENTORY_WORKBOOK_FAMILY, 'Workbook', 'Inventory is table-first and excludes analytical recommendations.'),

@@ -2,7 +2,7 @@
 
 {% macro render(workspace) -%}
     <a href="{{ workspace.href }}"
-       class="group flex min-h-60 flex-col rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm transition duration-200 hover:border-outline-focus hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card"
+       class="kaori-workspace-card group flex min-h-60 flex-col rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm transition duration-200 hover:border-outline-focus hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card"
        aria-label="Open {{ workspace.title }} Workspace"
        data-workspace-card
        data-search-text="{{ workspace.search_text }}">

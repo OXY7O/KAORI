@@ -8,6 +8,7 @@ from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.report import Report
 from app.reports.catalog import OUTPUT_FORMAT_SPECS, require_selected_cluster
+from app.reports.reference import report_reference_filename
 
 PERIOD_SLUGS = {
     '24h': 'last-24-hours',
@@ -176,6 +177,7 @@ def build_report_object_key(
         report,
     )
     short_uuid = uuid4().hex[:8]
+    report_reference = report_reference_filename(report, generated_at=timestamp_dt)
 
     output_format = str(getattr(report, 'output_format', '') or '').strip().lower()
     try:
@@ -183,8 +185,8 @@ def build_report_object_key(
     except KeyError as exc:
         raise ValueError(f'Unsupported report output format: {output_format!r}.') from exc
     filename = (
-        f'report-{report.id}-{report_type_slug}-{cluster_slug}-'
-        f'{namespace_slug}-{period_slug}-{timestamp}-{short_uuid}{extension}'
+        f'{report_reference}-{cluster_slug}-{namespace_slug}-'
+        f'{period_slug}-{timestamp}-{short_uuid}{extension}'
     )
 
     return '/'.join(

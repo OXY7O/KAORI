@@ -51,14 +51,14 @@ def build_workload_analysis_presentation(
     environment = _text(cluster.get('environment'), 'Unknown')
 
     return {
-        'presentation_version': 'v1.1-workload-analysis-publication',
+        'presentation_version': 'v3.0-workload-analysis-publication',
         'publication_family': ANALYTICS_PUBLICATION_FAMILY,
         'publication_standard': ANALYTICS_PUBLICATION_STANDARD,
         'canonical_reference': ANALYTICS_CANONICAL_REFERENCE,
         'page_count': 9,
         'layout_contract': analytics_layout_contract(
             page_count=9,
-            table_policy='single-line-technical-registers',
+            table_policy='concise-register-plus-reference',
             missing_evidence_policy='explicit-not-available',
         ),
         'report_id': report_id,
@@ -313,6 +313,14 @@ def _mapping_analysis(payload: Mapping[str, Any], rows: list[dict[str, Any]]) ->
             _metric('Owner Mapping', 'Not Available', 'Not Committed', 'warning'),
         ),
         'records': records,
+        'identities': tuple(
+            {
+                'ref': item['ref'],
+                'title': item['workload'],
+                'metadata': f"Namespace: {item['namespace']} · Type: {item['type']}",
+            }
+            for item in records
+        ),
         'coverage': (
             {'label': 'Inventory to Namespace', 'value': 100.0 if available else 0.0, 'display': 'Available' if available else 'Not Available', 'available': available},
             {'label': 'Requests Coverage', 'value': _percent(complete_requests, total) or 0.0, 'display': _percent_display(_percent(complete_requests, total)) if total else 'Not Available', 'available': available},
@@ -391,6 +399,14 @@ def _configuration_analysis(payload: Mapping[str, Any], rows: list[dict[str, Any
             {'label': 'Metrics Complete', 'value': _percent(metrics_complete, total) or 0.0, 'display': _percent_display(_percent(metrics_complete, total)) if total else 'Not Available', 'available': available},
         ),
         'records': records,
+        'identities': tuple(
+            {
+                'ref': item['ref'],
+                'title': item['workload'],
+                'metadata': f"Namespace: {item['namespace']}",
+            }
+            for item in records
+        ),
         'decision': (
             'Prioritize incomplete requests, memory-limit review, BestEffort workloads, and incomplete metrics evidence before right-sizing.'
             if available

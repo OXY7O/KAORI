@@ -11,6 +11,7 @@ from app.reports.export.html_pdf.analytics_publication_standard import (
     ANALYTICS_PUBLICATION_STANDARD,
     analytics_layout_contract,
 )
+from app.reports.export.html_pdf.chart_labels import resolve_vertical_labels
 from app.reports.export.html_pdf.normalization import sanitize_text
 
 _RESOURCE_UTILIZATION_PAGE_TITLES = (
@@ -227,13 +228,13 @@ def build_resource_utilization_presentation(
 
     return {
         'page_count': len(_RESOURCE_UTILIZATION_PAGE_TITLES),
-        'presentation_version': 'v1.1-resource-utilization-publication',
+        'presentation_version': 'v3.0-resource-utilization-publication',
         'publication_family': ANALYTICS_PUBLICATION_FAMILY,
         'publication_standard': ANALYTICS_PUBLICATION_STANDARD,
         'canonical_reference': ANALYTICS_CANONICAL_REFERENCE,
         'layout_contract': analytics_layout_contract(
             page_count=9,
-            table_policy='single-line-technical-registers',
+            table_policy='concise-register-plus-reference',
         ),
         'report_id': report_id,
         'report_name': report_name,
@@ -567,19 +568,33 @@ def _consumer_rows(items: list[Any], *, resource: str) -> list[dict[str, Any]]:
         if not isinstance(item, Mapping):
             continue
         raw_value = max(0.0, _float(item.get('value')))
+        normalized_value = raw_value if resource == 'CPU' else _memory_value_gib(raw_value)
         result.append(
             {
                 'name': sanitize_text(item.get('pod') or item.get('name'), fallback='Unknown Resource'),
                 'namespace': sanitize_text(item.get('namespace'), fallback='-'),
                 'resource': resource,
-                'raw_value': raw_value,
-                'value': f'{raw_value:.2f} cores' if resource == 'CPU' else f'{raw_value:.2f} GiB',
+                'raw_value': normalized_value,
+                'value': f'{normalized_value:.2f} cores' if resource == 'CPU' else f'{normalized_value:.2f} GiB',
                 'bar_percent': 0.0,
                 'share_percent': 0.0,
             }
         )
     return result
 
+
+
+def _memory_value_gib(value: float) -> float:
+    """Normalize consumer memory to GiB without double-converting GiB input.
+
+    Prometheus top-consumer payloads historically exposed raw bytes while some
+    fixtures and materialized payloads already expose GiB. Values above one
+    MiB are treated as bytes; smaller values are preserved as GiB.
+    """
+
+    if value > 1024**2:
+        return value / 1024**3
+    return value
 
 def _normalize_consumer_bars(items: list[dict[str, Any]]) -> None:
     max_value = max((item['raw_value'] for item in items), default=0.0)
@@ -725,8 +740,8 @@ def _combined_trend_chart_svg(resources: Mapping[str, Mapping[str, Any]]) -> str
     if not available:
         return _empty_chart_svg('Committed historical trend evidence is not available.', 'Resource trend outlook')
 
-    width, height = 760, 280
-    left, right, top, bottom = 58, 20, 20, 45
+    width, height = 800, 280
+    left, right, top, bottom = 58, 92, 20, 45
     inner_w = width - left - right
     inner_h = height - top - bottom
     has_projection = any(item.get('projection') for item in available)
@@ -741,7 +756,8 @@ def _combined_trend_chart_svg(resources: Mapping[str, Mapping[str, Any]]) -> str
         for tick in (0, 25, 50, 70, 85)
     )
     lines: list[str] = []
-    labels: list[str] = []
+    endpoint_labels: list[tuple[str, float]] = []
+    endpoint_meta: dict[str, tuple[float, str, float]] = {}
     for key in ('memory', 'pods', 'cpu'):
         item = resources.get(key) or {}
         history = _downsample(list(item.get('history') or []))
@@ -772,10 +788,29 @@ def _combined_trend_chart_svg(resources: Mapping[str, Mapping[str, Any]]) -> str
             )
             end_x, end_y = projection_points[-1]
             end_value = _float(item.get('projected'), default=projection[-1])
-        labels.append(
-            f'<text x="{end_x - 4:.1f}" y="{end_y - 8:.1f}" text-anchor="end" '
-            f'style="font:13px Inter,sans-serif;font-weight:700;fill:{color}">{_percent(end_value)}</text>'
+        endpoint_labels.append((key, end_y))
+        endpoint_meta[key] = (end_x, color, end_value)
+
+    resolved_labels = resolve_vertical_labels(
+        endpoint_labels,
+        min_y=top + 7,
+        max_y=top + inner_h - 5,
+        min_gap=17,
+    )
+    point_y = dict(endpoint_labels)
+    label_parts: list[str] = []
+    label_x = width - 70
+    for key, label_y in resolved_labels.items():
+        end_x, color, end_value = endpoint_meta[key]
+        label_parts.append(
+            f'<path d="M {end_x+3:.1f} {point_y[key]:.1f} L {label_x-7:.1f} {label_y:.1f}" '
+            f'fill="none" stroke="{color}" stroke-width="1" opacity=".75"/>'
         )
+        label_parts.append(
+            f'<text x="{label_x:.1f}" y="{label_y+4:.1f}" '
+            f'style="font:12px Inter,sans-serif;font-weight:700;fill:{color}">{key.title()} {_percent(end_value)}</text>'
+        )
+    label_svg = ''.join(label_parts)
 
     split = (
         f'<line x1="{split_x:.1f}" y1="{top}" x2="{split_x:.1f}" '
@@ -790,7 +825,7 @@ def _combined_trend_chart_svg(resources: Mapping[str, Mapping[str, Any]]) -> str
  y2="{y(70):.1f}" stroke="#D97706" stroke-width="1.2" stroke-dasharray="6 5"/>
 <line x1="{left}" y1="{y(85):.1f}" x2="{left + inner_w}"
  y2="{y(85):.1f}" stroke="#DC2626" stroke-width="1.2" stroke-dasharray="6 5"/>{split}
-{''.join(lines)}{''.join(labels)}
+{''.join(lines)}{label_svg}
 <text x="{left}" y="266" class="axis">Historical Start</text>
 <text x="{split_x:.1f}" y="266" text-anchor="middle" class="axis">Cut-off</text>
 <text x="{left + inner_w}" y="266" text-anchor="end" class="axis">{'Horizon' if has_projection else 'Latest'}</text>

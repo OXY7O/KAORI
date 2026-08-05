@@ -16,8 +16,7 @@ from app.models.report import Report, ReportSchedule, ReportScheduleRun
 from app.models.user import User
 from app.reports.catalog import ReportContractError, validate_report_contract
 from app.reports.export.constants import DEFAULT_REPORT_DOMAIN, DEFAULT_REPORT_SOURCE_KIND
-from app.reports.delivery import deliver_generated_report, get_delivery_channel_catalog
-from app.reports.export.service import generate_report_artifact
+from app.reports.delivery import get_delivery_channel_catalog
 from app.reports.generate.service import (
     OUTPUT_FORMAT_OPTIONS,
     PERIOD_OPTIONS,
@@ -28,11 +27,9 @@ from app.reports.generate.service import (
     validate_form_state,
 )
 from app.reports.catalog import get_report_type_label
-from app.reports.storage.health import build_local_storage_health
-from app.reports.storage.service import (
-    get_configured_storage_backend_name,
-    get_report_storage_backend_status,
-)
+from app.reports.storage.health import build_local_storage_health, build_s3_storage_health
+from app.reports.storage.service import get_configured_storage_backend_name
+from app.reports.jobs.service import enqueue_report_generation
 
 CADENCE_OPTIONS: list[dict[str, str]] = [
     {
@@ -369,43 +366,28 @@ def execute_schedule(
     report = _create_report_from_schedule(schedule)
     db.session.add(report)
     db.session.flush()
-
     run.report_id = report.id
     schedule.last_run_at = run.started_at
     schedule.last_report_id = report.id
+    schedule.next_run_at = calculate_next_run_at(schedule, base=run.started_at)
     db.session.commit()
 
-    success, message = generate_report_artifact(report.id)
-    delivery_result: dict[str, Any] | None = None
-    if success:
-        refreshed_report = db.session.get(Report, report.id)
-        if refreshed_report is not None:
-            delivery_result = deliver_generated_report(
-                refreshed_report,
-                schedule.notification_channels_as_list(),
-            )
-
-    refreshed_run = db.session.get(ReportScheduleRun, run.id)
-    refreshed_schedule = db.session.get(ReportSchedule, schedule.id)
-
-    if refreshed_run is not None:
-        refreshed_run.status = 'success' if success else 'failed'
-        refreshed_run.finished_at = datetime.now(UTC)
-        refreshed_run.error_message = None if success else message
-        refreshed_run.delivery_result = delivery_result
-
-    if refreshed_schedule is not None:
-        refreshed_schedule.last_status = 'success' if success else 'failed'
-        refreshed_schedule.last_run_at = datetime.now(UTC)
-        refreshed_schedule.last_report_id = report.id
-        refreshed_schedule.next_run_at = calculate_next_run_at(
-            refreshed_schedule,
-            base=datetime.now(UTC),
-        )
-
+    dispatch = enqueue_report_generation(
+        report,
+        requested_by_user_id=schedule.created_by_id,
+        trigger_type=trigger_source,
+        schedule_id=schedule.id,
+        schedule_run_id=run.id,
+    )
+    run = db.session.get(ReportScheduleRun, run.id)
+    if run is not None:
+        run.job_execution_id = dispatch.job.id
+        run.status = 'queued'
+    schedule = db.session.get(ReportSchedule, schedule.id)
+    if schedule is not None:
+        schedule.last_status = 'queued'
     db.session.commit()
-
-    return success, message, report.id
+    return True, dispatch.message, report.id
 
 
 def validate_schedule_form_state(form_state: dict[str, Any]) -> list[str]:
@@ -715,15 +697,15 @@ def _get_storage_context() -> dict[str, Any]:
     try:
         backend_name = get_configured_storage_backend_name()
         if backend_name == 's3':
-            backend_status = get_report_storage_backend_status('s3')
-            ready = bool(backend_status.get('available', False))
+            health = build_s3_storage_health()
+            ready = bool(health.get('configuration_complete', False))
             return {
                 'backend': 's3',
-                'status': str(backend_status.get('status', 'Needs Review')),
-                'tone': str(backend_status.get('tone', 'amber')),
-                'description': str(backend_status.get('description') or ''),
-                'ready': ready,
-                'state': str(backend_status.get('state', 'unknown')),
+                'status': 'Ready' if ready else 'Needs Review',
+                'tone': 'blue' if ready else 'amber',
+                'description': 'S3-compatible storage is configured for scheduled report artifacts.'
+                if ready
+                else 'S3-compatible storage requires bucket/dependency configuration review.',
             }
 
         health = build_local_storage_health()
@@ -741,7 +723,7 @@ def _get_storage_context() -> dict[str, Any]:
             'backend': 'unknown',
             'status': 'Needs Review',
             'tone': 'amber',
-            'description': 'Storage readiness could not be evaluated. Review Reports Storage and server logs.',
+            'description': f'Storage readiness could not be evaluated: {exc}',
         }
 
 

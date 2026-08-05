@@ -1,7 +1,7 @@
 {#
   KAORI Analytics PDF publication primitives.
 
-  Canonical conceptual reference: Analytics Overview Report ID 34.
+  Canonical publication reference: KAORI Analytics PDF Publication Standard v3.0.
   Inventory workbooks do not use this component contract.
 #}
 
@@ -41,7 +41,7 @@
 
 {% macro footer(report_id, classification, page_number, page_count) -%}
 <div class="page-footer">
-  <span>Report ID: {{ report_id }} &nbsp; | &nbsp; {{ classification }}</span>
+  <span>{{ report_id }} &nbsp; | &nbsp; {{ classification }}</span>
   <span>Page {{ page_number }} of {{ page_count }}</span>
 </div>
 {%- endmacro %}
@@ -55,7 +55,7 @@
       <span>Knowledge, Automation, Operations, Resilience &amp; Intelligence</span>
     </div>
   </div>
-  <div class="cover-class"><span>{{ report_class }}</span><b>{{ classification|upper }} - REPORT ID {{ report_id }}</b></div>
+  <div class="cover-class"><span>{{ report_class }}</span><b>{{ classification|upper }} - {{ report_id }}</b></div>
 </div>
 {%- endmacro %}
 
@@ -197,5 +197,25 @@
     <div><strong>{{ item.label|default(item.title|default(item.status|default('Not Available'))) }}</strong><p>{{ item.description|default(item.definition|default('No supporting definition is available.')) }}</p></div>
   </div>
   {% endfor %}
+</div>
+{%- endmacro %}
+
+
+{% macro identity_register(title, items, subtitle='', extra_class='') -%}
+<div class="identity-register {{ extra_class }}">
+  <h3>{{ title }}</h3>
+  {% if subtitle %}<p class="identity-register-subtitle">{{ subtitle }}</p>{% endif %}
+  <div class="identity-grid{% if items|length <= 3 %} single-column{% endif %}">
+    {% for item in items %}
+    <div class="identity-item">
+      <span class="reference-code">{{ item.ref }}</span>
+      <div class="identity-copy">
+        <strong class="identity-title technical-identity">{{ item.identity|default(item.title|default(item.name)) }}</strong>
+        {% set identity_meta = item.meta|default(item.metadata|default('')) %}
+        {% if identity_meta %}<p class="identity-meta">{{ identity_meta }}</p>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
 </div>
 {%- endmacro %}

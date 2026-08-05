@@ -41,6 +41,7 @@ from app.reports.export.html_pdf.resource_utilization import (
 from app.reports.export.html_pdf.storage_analysis import build_storage_analysis_presentation
 from app.reports.export.html_pdf.top_consumers_analysis import build_top_consumers_analysis_presentation
 from app.reports.export.html_pdf.workload_analysis import build_workload_analysis_presentation
+from app.reports.reference import build_report_reference
 
 _SECTION_SOURCE_PATHS: dict[str, tuple[str, ...]] = {
     'analytics_summary': ('health_summary', 'summary'),
@@ -131,7 +132,8 @@ def build_report_document(
     )
     cluster_scope = _cluster_scope(report, payload)
     namespace_scope = sanitize_text(getattr(report, 'namespace', None), fallback='All Namespaces')
-    report_id = str(getattr(report, 'id', '-'))
+    internal_report_id = str(getattr(report, 'id', '-'))
+    report_id = build_report_reference(report, generated_at=generated_at)
     report_name = sanitize_text(getattr(report, 'name', None), fallback='KAORI Operational Report')
     report_type_spec = get_report_type_spec(report.report_type)
     report_type_label = report_type_spec.label.removesuffix(' Report')
@@ -139,9 +141,24 @@ def build_report_document(
     generated_at_label = generated_at.strftime('%d %b %Y %H:%M UTC')
     data_cutoff = _derive_data_cutoff(payload, generated_at)
     generated_by_label = sanitize_text(generated_by)
-    template_name = 'reports/pdf/report.html'
+    template_name = 'reports/pdf/analytics_unavailable.html'
     presentation: dict[str, Any] = {}
-    if report.report_type == 'analytics_overview' and not payload.get('_error'):
+    if payload.get('_error'):
+        presentation = _build_unavailable_presentation(
+            report,
+            payload,
+            report_reference=report_id,
+            report_name=report_name,
+            report_type_label=report_type_label,
+            cluster_scope=cluster_scope,
+            namespace_scope=namespace_scope,
+            period_label=period_label,
+            data_cutoff=data_cutoff,
+            generated_at=generated_at_label,
+            generated_by=generated_by_label,
+            classification=classification,
+        )
+    elif report.report_type == 'analytics_overview':
         template_name = 'reports/pdf/analytics_overview.html'
         presentation = build_analytics_overview_presentation(
             report,
@@ -158,7 +175,7 @@ def build_report_document(
             overall_posture=overall_posture,
             overall_tone=overall_tone,
         )
-    elif report.report_type == 'resource_utilization' and not payload.get('_error'):
+    elif report.report_type == 'resource_utilization':
         template_name = 'reports/pdf/resource_utilization.html'
         presentation = build_resource_utilization_presentation(
             report,
@@ -173,7 +190,7 @@ def build_report_document(
             generated_by=generated_by_label,
             classification=classification,
         )
-    elif report.report_type == 'capacity_analysis' and not payload.get('_error'):
+    elif report.report_type == 'capacity_analysis':
         template_name = 'reports/pdf/capacity_analysis.html'
         presentation = build_capacity_analysis_presentation(
             report,
@@ -188,7 +205,7 @@ def build_report_document(
             generated_by=generated_by_label,
             classification=classification,
         )
-    elif report.report_type == 'storage_analysis' and not payload.get('_error'):
+    elif report.report_type == 'storage_analysis':
         template_name = 'reports/pdf/storage_analysis.html'
         presentation = build_storage_analysis_presentation(
             report,
@@ -203,7 +220,7 @@ def build_report_document(
             generated_by=generated_by_label,
             classification=classification,
         )
-    elif report.report_type == 'resource_forecast' and not payload.get('_error'):
+    elif report.report_type == 'resource_forecast':
         template_name = 'reports/pdf/forecast_analysis.html'
         presentation = build_forecast_analysis_presentation(
             report,
@@ -218,7 +235,7 @@ def build_report_document(
             generated_by=generated_by_label,
             classification=classification,
         )
-    elif report.report_type == 'workload_analysis' and not payload.get('_error'):
+    elif report.report_type == 'workload_analysis':
         template_name = 'reports/pdf/workload_analysis.html'
         presentation = build_workload_analysis_presentation(
             report,
@@ -233,7 +250,7 @@ def build_report_document(
             generated_by=generated_by_label,
             classification=classification,
         )
-    elif report.report_type == 'top_consumers' and not payload.get('_error'):
+    elif report.report_type == 'top_consumers':
         template_name = 'reports/pdf/top_consumers_analysis.html'
         presentation = build_top_consumers_analysis_presentation(
             report,
@@ -248,7 +265,7 @@ def build_report_document(
             generated_by=generated_by_label,
             classification=classification,
         )
-    elif report.report_type == 'alerts_anomalies' and not payload.get('_error'):
+    elif report.report_type == 'alerts_anomalies':
         template_name = 'reports/pdf/alerts_anomalies.html'
         presentation = build_alerts_anomalies_presentation(
             report,
@@ -298,6 +315,8 @@ def build_report_document(
         presentation=presentation,
         metadata={
             'section_count': len(sections),
+            'internal_report_id': internal_report_id,
+            'report_reference': report_id,
             'selected_section_keys': selected_sections,
             'output_format': sanitize_text(getattr(report, 'output_format', None), fallback='Not Available').upper(),
         },
@@ -496,6 +515,74 @@ def _derive_data_cutoff(payload: Mapping[str, Any], generated_at: datetime) -> s
             return sanitize_text(value)
     return generated_at.strftime('%d %b %Y %H:%M UTC')
 
+
+
+def _build_unavailable_presentation(
+    report: Any,
+    payload: Mapping[str, Any],
+    *,
+    report_reference: str,
+    report_name: str,
+    report_type_label: str,
+    cluster_scope: str,
+    namespace_scope: str,
+    period_label: str,
+    data_cutoff: str,
+    generated_at: str,
+    generated_by: str,
+    classification: str,
+) -> dict[str, Any]:
+    error_message = sanitize_error_message(payload.get('_error'))
+    return {
+        'report_id': report_reference,
+        'report_name': report_name,
+        'report_type_label': report_type_label,
+        'cluster_scope': cluster_scope,
+        'namespace_scope': namespace_scope,
+        'period_label': period_label,
+        'data_cutoff': data_cutoff,
+        'generated_at': generated_at,
+        'generated_by': generated_by,
+        'classification': classification,
+        'page_count': 3,
+        'cover': {
+            'purpose': 'Record the selected report boundary and the source limitation without inventing analytical conclusions.',
+            'context': 'The required source payload was unavailable at generation time. Missing evidence remains explicit and is not converted to zero, healthy, stable, or clear.',
+        },
+        'availability': {
+            'status': 'Source Unavailable',
+            'tone': 'warning',
+            'summary': error_message or 'KAORI could not collect the required report payload at generation time.',
+            'findings': (
+                {
+                    'ref': 'A1',
+                    'title': 'Required Evidence Was Not Available',
+                    'description': 'The renderer received an explicit source limitation and excluded conclusions that require the missing evidence.',
+                },
+                {
+                    'ref': 'A2',
+                    'title': 'Previous Evidence Was Not Reused Silently',
+                    'description': 'This artifact does not substitute stale, unrelated, or cross-cluster evidence for the selected report boundary.',
+                },
+            ),
+        },
+        'recovery': {
+            'steps': (
+                'Review integration readiness and the related JobExecution record.',
+                'Restore the required source, permission, or worker dependency.',
+                'Regenerate the report for the same selected cluster and reporting period.',
+                'Validate the regenerated artifact before operational use.',
+            ),
+            'controls': (
+                ('Renderer', 'WeasyPrint HTML/PDF'),
+                ('Source Boundary', cluster_scope),
+                ('Namespace Boundary', namespace_scope),
+                ('Reporting Period', period_label),
+                ('Data Cut-off', data_cutoff),
+                ('Output', 'PDF'),
+            ),
+        },
+    }
 
 def _build_source_metrics(report: Any, payload: Mapping[str, Any]) -> tuple[ReportMetric, ...]:
     metrics = [

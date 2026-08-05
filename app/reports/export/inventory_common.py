@@ -10,6 +10,7 @@ from app.reports.catalog import validate_report_instance
 from app.reports.export.payloads.inventory import get_report_kubernetes_inventory_payload
 from app.reports.export.payloads.tls_inventory import get_report_tls_inventory_payload
 from app.reports.export.xlsx.standard import InventoryWorkbookProfile
+from app.reports.reference import build_report_reference
 from app.reports.storage.naming import get_report_cluster_name
 
 
@@ -69,7 +70,7 @@ def build_inventory_export_context(
 
     generated_at = generated_at or datetime.now(UTC)
     return InventoryExportContext(
-        report_id=report.id,
+        report_id=build_report_reference(report, generated_at=generated_at),
         report_name=report.name,
         report_type=report.report_type,
         generated_at=generated_at,

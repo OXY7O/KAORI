@@ -29,7 +29,7 @@ The interface is information-first. Violet establishes KAORI identity, hierarchy
 - Do not use raw hex values in Jinja templates.
 - Rebuild `app/static/css/output.css` after changing templates or tokens.
 - Validate light and dark mode for every reusable component.
-- Authenticated pages do not use gradient backgrounds.
+- Authenticated pages do not use decorative gradients. The canonical dark Hero gradient defined in `components/DARK_MODE.md` is the only approved authenticated-shell exception.
 - Status must not rely on color alone; pair color with text and, when useful, an icon.
 - Shared component geometry and typography are changed in the shared component first, never patched locally per page.
 - The practical component-selection and page-review contract is `docs/design/KAORI_STYLING_GUIDE.md`.
@@ -40,10 +40,10 @@ The interface is information-first. Violet establishes KAORI identity, hierarchy
 | Role | Light mode | Dark mode |
 |---|---|---|
 | Primary | `#7C3AED` | `#8B5CF6` |
-| Primary hover | `#6D28D9` | `#9F7AEA` |
+| Primary hover | `#6D28D9` | `#9D7CFA` |
 | Primary dark | `#5B21B6` | `#7C3AED` |
 | Accent | `#A78BFA` | `#B9A2FF` |
-| Primary soft | `#EDE9FE` | violet at 14% opacity |
+| Primary soft | `#F5F3FF` | violet at 12% opacity |
 | On-brand foreground | `#FFFFFF` | `#FFFFFF` |
 | On-brand muted | `#DDD6FE` | `#DDD6FE` |
 
@@ -56,8 +56,11 @@ Use functional token names rather than literal color names.
 ### Surfaces
 
 - `surface-page`
+- `surface-sunken`
+- `surface-shell`
 - `surface-sidebar`
 - `surface-card`
+- `surface-muted`
 - `surface-elevated`
 - `surface-hover`
 - `surface-selected`
@@ -77,6 +80,12 @@ Use functional token names rather than literal color names.
 - `outline-default`
 - `outline-strong`
 - `outline-focus`
+
+## Dark mode
+
+KAORI dark mode follows **neutral-first surfaces with controlled Violet**. The surface order is `page → shell → card → elevated`; Bright Violet is reserved for focus, primary interaction, selected state, and small identity accents. Large repeated surfaces remain neutral.
+
+The exact palette, Hero exception, sidebar treatment, prohibited patterns, and enforcement procedure are owned by `docs/design/components/DARK_MODE.md`. Page and module documentation may not redefine dark tokens.
 
 ## Global semantic color contract
 
@@ -171,14 +180,15 @@ Use a visible violet focus ring with a surface-colored offset. Functional transi
 - The desktop sidebar is 250 px when open and may be fully hidden; do not introduce an icon-only rail unless separately approved.
 - The sidebar uses `surface-sidebar`; violet is reserved for active state, focus, brand icon, and restrained highlights.
 - Sidebar and main application frame use a 16 px outer radius.
-- Active navigation uses a filled violet state with white text and icon.
+- Active navigation uses solid Violet in light mode and a translucent Violet surface with a left accent in dark mode; both retain readable white/inverse identity.
 - Nested navigation uses compact rows, a low-contrast guide, and violet selected state.
-- The main frame uses semantic surface and outline tokens in light and dark mode.
+- The main frame and navbar use `surface-shell`; cards use `surface-card`; menus, dialogs, and drawers use `surface-elevated`.
 
 ## Global component contracts
 
 Detailed component rules are maintained separately:
 
+- Dark mode: `docs/design/components/DARK_MODE.md`
 - Hero: `docs/design/components/HERO.md`
 - Tables and compact labels: `docs/design/components/TABLE_AND_LABEL.md`
 - Related page relationships: `docs/design/components/RELATED_PAGE_CARD.md`

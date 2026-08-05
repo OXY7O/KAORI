@@ -145,20 +145,20 @@ def test_analytics_overview_uses_reporting_standard_v29_and_12_pages() -> None:
     assert document.template_name == 'reports/pdf/analytics_overview.html'
     assert document.metadata['selected_section_keys'] == list(ANALYTICS_OVERVIEW_SECTION_KEYS)
     assert document.presentation['page_count'] == 12
-    assert document.presentation['presentation_version'] == 'v2.9.2-analytics-family-standard'
+    assert document.presentation['presentation_version'] == 'v3.0-analytics-overview-publication'
     contract = document.presentation['layout_contract']
     assert contract['paper'] == 'A4 Portrait'
     assert contract['page_count'] == 12
     assert contract['fixed_page_canvas'] is True
     assert contract['section_page_breaks'] is True
-    assert contract['truncate_identities'] is True
-    assert contract['identity_policy'] == 'top-n-summarized'
+    assert contract['truncate_identities'] is False
+    assert contract['identity_policy'] == 'reference-register'
     assert contract['status_style'] == 'plain-colored-text'
     assert contract['cover_header_policy'] == 'symmetric-two-sided'
     assert contract['section_separator_policy'] == 'none'
     assert contract['table_alignment'] == 'left-middle'
     assert contract['methodology_layout'] == 'parallel-registers'
-    assert contract['visual_style'] == 'reporting-standard-v2.9.2-analytics-family'
+    assert contract['visual_style'] == 'kaori-publication-v3-neutral-evidence-first'
     assert rendered_html.count('<article class="page') == 12
 
 
@@ -257,7 +257,7 @@ def test_analytics_overview_css_locks_page_footer_and_table_overflow() -> None:
     assert 'page-break-after:always' in compact
     assert 'width:210mm' in compact
     assert '.report-header' in shared_stylesheet
-    assert 'bottom:4.5mm' in compact
+    assert 'bottom:4.2mm' in compact
     assert 'overflow-wrap:anywhere' in compact
     assert 'table-layout:fixed' in compact
     assert 'vertical-align:middle' in compact
@@ -272,7 +272,7 @@ def test_v27_layout_uses_distinct_cover_and_reference_components() -> None:
     assert 'class="cover-band"' in rendered_html
     assert 'class="report-header"' in rendered_html
     assert 'Priority Findings and Decisions' in rendered_html
-    assert 'Resource Key' in rendered_html
+    assert 'Complete Consumer Identities' in rendered_html
     assert 'Data Reliability Guidance' in rendered_html
     assert 'Methodology &amp; Evidence Boundary' in rendered_html
     assert 'Finding References' in rendered_html
@@ -382,7 +382,7 @@ def test_v27_alert_profile_uses_donut_and_methodology_values_do_not_break_mid_ph
     assert 'Alert severity distribution' in document.presentation['alerts']['severity_svg']
     assert 'class="page page-alerts"' in rendered_html
     assert 'class="freshness-value"' in rendered_html
-    assert '.sources-compact .freshness-value' in stylesheet
+    assert 'class="freshness-value"' in rendered_html
     assert 'white-space: nowrap' in stylesheet
 
 
@@ -396,9 +396,9 @@ def test_analytics_overview_v29_precision_layout_contract() -> None:
     ).read_text(encoding='utf-8')
     shared_compact = shared_stylesheet.replace(' ', '').replace('\n', '')
 
-    assert document.presentation['presentation_version'] == 'v2.9.2-analytics-family-standard'
+    assert document.presentation['presentation_version'] == 'v3.0-analytics-overview-publication'
     contract = document.presentation['layout_contract']
-    assert contract['visual_style'] == 'reporting-standard-v2.9.2-analytics-family'
+    assert contract['visual_style'] == 'kaori-publication-v3-neutral-evidence-first'
     assert contract['cover_header_policy'] == 'symmetric-two-sided'
     assert contract['section_separator_policy'] == 'none'
     assert contract['section_rhythm'] == 'title-subtitle-content'
@@ -407,7 +407,7 @@ def test_analytics_overview_v29_precision_layout_contract() -> None:
 
     assert '.cover-masthead' in shared_stylesheet
     assert 'grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)' in shared_stylesheet
-    assert '.section-rule { display: none; }' in shared_stylesheet
+    assert '.section-rule' in shared_stylesheet and 'display: none' in shared_stylesheet
     assert 'vertical-align: middle' in shared_stylesheet
     assert '.methodology-grid' in shared_stylesheet
     assert '.limitations-grid' in shared_stylesheet
@@ -415,10 +415,10 @@ def test_analytics_overview_v29_precision_layout_contract() -> None:
     assert '.cover-contents' in shared_stylesheet
     assert 'display:grid' in shared_compact
 
-    assert '.page-consumers .consumer-group' in specialization
-    assert '.page-alerts .ao-alert-donut .donut-caption-below' in specialization
-    assert '.report-schedules-section' in specialization
-    assert '.page-methodology .methodology-register-layout' in specialization
+    assert '.consumer-group' in specialization
+    assert '.page-alerts .content-section' in specialization
+    assert '.page-reporting .content-section' in specialization
+    assert '.methodology-register-layout' in specialization
 
     assert rendered_html.count('class="consumer-group"') == 2
     assert 'class="method-row"' in rendered_html

@@ -1,5 +1,8 @@
 # Hero Context Panel Standard Audit — July 2026
 
+> **Status: Historical audit snapshot.** This file records the July 2026 migration and is not an implementation contract. Use `docs/design/components/HERO.md` and `scripts/verify_hero_component_standard.py` for the active standard.
+
+
 ## Scope
 
 This audit compared the Node Inventory hero against the Alertmanager Integrations and Alertmanager instance-detail heroes. The Node Inventory right-side posture panel was selected as the baseline because it provides the clearest hierarchy between posture identity, semantic status, compact metrics, and one operational action.
@@ -41,4 +44,4 @@ Examples normalized:
 
 - Jinja parsing passed for all modified templates.
 - Python compilation passed.
-- `tests/ui/test_hero_context_panel_contract.py`: 4 passed.
+- `scripts/verify_hero_component_standard.py` is the current automated guardrail.

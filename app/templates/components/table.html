@@ -137,12 +137,13 @@
     border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6
 {%- endmacro %}
 
-{% macro search_field(name, value, placeholder) -%}
+{% macro search_field(name, value, placeholder, id=None) -%}
     <div class="relative">
         <i data-lucide="search"
            class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
            aria-hidden="true"></i>
         <input type="search"
+               {% if id %}id="{{ id }}"{% endif %}
                name="{{ name }}"
                value="{{ value }}"
                placeholder="{{ placeholder }}"

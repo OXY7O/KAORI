@@ -28,14 +28,18 @@ def test_alerts_workspace_uses_shared_tabs_and_canonical_url_state() -> None:
     assert "context['selected_tab'] = _selected_tab()" in alert_routes
 
 
-def test_alerts_hero_uses_bottom_notice_and_incomplete_evidence_semantics() -> None:
+def test_alerts_hero_uses_canonical_context_card_and_evidence_semantics() -> None:
     hero = read(PARTIALS / '_hero.html')
 
-    assert 'page_hero.context_metric(' in hero
-    assert 'page_hero.context_bottom_notice(' in hero
+    assert 'page_hero.context_card(' in hero
+    assert "('shield-alert', 'Critical Alerts'" in hero
+    assert "('shield-check', 'Source Health'" in hero
+    assert 'evidence_incomplete' in hero
+    assert "posture_status = 'Watch'" in hero
+    assert "'Manage Clusters'" in hero
+    assert 'context_posture_header' not in hero
     assert 'context_posture_note' not in hero
-    assert "posture_value = 'Evidence Incomplete'" in hero
-    assert 'do not treat missing evidence as healthy' in hero
+    assert 'context_bottom_notice' not in hero
     assert 'text-[' not in hero
     assert 'tracking-[' not in hero
 

@@ -42,7 +42,7 @@ Uses the compact `snapshot_context_bar.html` pattern between the hero and asset 
 - committed coverage;
 - stale and missing snapshot exceptions.
 
-The component remains one compact context row. It does not become a second hero or a multi-row KPI section.
+The component remains one compact neutral context row. The identity block and four transparent metrics share one surface, with subtle dividers instead of nested Violet metric cards. Semantic color is limited to the status label and meaningful coverage/exception icons. It does not become a second hero or a multi-row KPI section.
 
 ### Inventory Asset Catalog
 
@@ -94,7 +94,13 @@ The summary includes total objects, populated asset categories, and largest inve
 
 Cluster detail uses concise section headers, compact identity/snapshot cards without redundant descriptions, and a divided plain-metric summary row. Technical values follow normal detail typography unless an explicit raw-copy monospace exception is requested.
 
+Every metric in **Cluster Snapshot Summary** must preserve the same three-level
+hierarchy: label, primary value, and concise supporting text. `Total Objects` uses
+`Committed Objects`, `Asset Categories` uses `Collected Categories`, and `Largest
+Segment` uses the dominant segment count. Do not leave one metric visually shorter
+than its peers.
+
 ## Snapshot Source and Signal Layout
 
-- The drawer uses the concise source label `Committed Snapshot` so `Snapshot Source` remains a single horizontal detail row.
+- The drawer uses the concise source label `Committed Snapshot`, rendered with `detail_row(..., nowrap=True)`, so `Snapshot Source` stays horizontally aligned with `Last Collected` and `Freshness Window`.
 - Inventory Signals are rendered as full-width stacked callouts. Each additional signal starts on the next row; signal cards are not placed side by side.

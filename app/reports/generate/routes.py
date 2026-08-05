@@ -7,6 +7,7 @@ from werkzeug.exceptions import HTTPException
 
 from app.notifications.service import queue_transient_feedback, record_operational_activity
 from app.rbac.decorators import permission_required
+from app.reports.reference import build_report_reference
 from app.reports.web import render_reports_unavailable
 from app.reports.generate.service import (
     create_report_request,
@@ -31,7 +32,7 @@ def generate_report() -> ResponseReturnValue:
                 status='success',
                 title='Report Request Created',
                 message='KAORI created the report request. Generate the configured PDF, Excel, or CSV artifact from Generated Reports.',
-                detail=f'Report ID: {report.id}.',
+                detail=f'Report reference: {build_report_reference(report)}.',
                 action_url=url_for('reports.generated_report_detail', report_id=report.id),
                 action_label='View report',
                 action_icon='file-text',

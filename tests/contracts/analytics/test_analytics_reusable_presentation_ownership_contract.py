@@ -13,24 +13,30 @@ HERO_FILES = [
 ]
 
 
-def test_page_hero_owns_inventory_aligned_metric_scale():
+def test_page_hero_owns_inventory_aligned_context_card_contract() -> None:
     template = Path('app/templates/components/page_hero.html').read_text()
-    assert 'macro context_posture_header' in template
+    assert 'macro context_card_body' in template
+    assert 'metrics[:2]' in template
     assert 'text-lg font-semibold leading-6 text-brand-foreground' in template
     assert 'value_classes or context_metric_value_classes()' in template
 
 
-def test_every_analytics_hero_uses_shared_posture_and_metric_contracts():
+def test_every_analytics_hero_uses_shared_context_card_contract() -> None:
     for filename in HERO_FILES:
         template = Path(filename).read_text()
-        assert 'page_hero.context_posture_header(' in template, filename
-        assert 'page_hero.context_metric(' in template, filename
+        assert (
+            'page_hero.context_card(' in template
+            or 'page_hero.context_card_body(' in template
+        ), filename
         assert 'value_classes=' not in template, filename
+        assert 'context_posture_header' not in template, filename
+        assert 'context_posture_note' not in template, filename
+        assert 'context_bottom_notice' not in template, filename
         assert 'text-2xl' not in template, filename
         assert 'text-3xl' not in template, filename
 
 
-def test_analytics_hero_metadata_remains_capped_at_three():
+def test_analytics_hero_metadata_remains_capped_at_three() -> None:
     intro_files = [
         'app/templates/analytics/overview/partials/_hero.html',
         'app/templates/analytics/utilization/partials/_hero.html',

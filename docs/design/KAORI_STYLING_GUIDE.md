@@ -170,7 +170,7 @@ Hero limits:
 - one concise description, normally one or two lines;
 - two or three metadata labels;
 - no more than two normal actions;
-- one optional right context panel with exactly two compact metrics and one bottom slot; the slot contains either one action or one short non-interactive notice, never both.
+- one optional right context panel with exactly two compact metrics and one full-width primary action.
 
 Do not place tables, charts, workflow instructions, diagnostic evidence, or paragraph-length copy in the hero. Do not change hero font size or height per page.
 
@@ -431,7 +431,7 @@ Avoid stacking multiple dark or tinted backgrounds. Use whitespace, divider, bor
 
 ### Snapshot context bar
 
-Use `snapshot_context_bar.html` for committed, archived, or worker-generated datasets. It owns the semantic snapshot state, concise interpretation, source strip, latest collected time, active scope, committed coverage, and snapshot exceptions. The canonical compact layout uses a 4/8 composition, inline source metadata, and four neutral context metrics in one desktop row. Exact sync time, freshness, and coverage belong here and must not be repeated in the hero.
+Use `snapshot_context_bar.html` for committed, archived, or worker-generated datasets. It owns the semantic snapshot state, concise interpretation, source strip, latest collected time, active scope, committed coverage, and snapshot exceptions. The canonical compact layout uses a 4/8 composition, inline source metadata, and four transparent neutral metrics in one desktop row separated by subtle dividers. Do not place each metric in a Lavender/Violet tile. Semantic color is limited to the status label and meaningful coverage/exception icons. Exact sync time, freshness, and coverage belong here and must not be repeated in the hero.
 
 ### Inventory asset card
 
@@ -439,7 +439,7 @@ Use `inventory_asset_card.html` for one navigable Kubernetes asset type. Asset c
 
 ### Right-side detail drawer
 
-Use `side_drawer.html` for compact contextual summaries that benefit from keeping the comparison table visible, such as Inventory Overview cluster details. The shared drawer owns overlay, panel geometry, close behavior, scrolling, accessibility, optional footer action, and reusable `section(...)` and `metric(...)` content primitives. Rich operational drawers follow Summary → Identity/Snapshot → Domain Breakdown → Signals → Operational Context. Drawer and section descriptions stay concise; self-explanatory identity/context sections may omit descriptions. Summary values use a divided plain-metric row instead of nested metric cards when card-inside-card density would dominate. The final Operational Context remains visible, states the data boundary, and gives one state-aware next action. Long values inside narrow drawer identity or snapshot columns use `details/_detail_content.html::stacked_detail_row(...)` so labels and values wrap within their owning column instead of forcing horizontal overflow.
+Use `side_drawer.html` for compact contextual summaries that benefit from keeping the comparison table visible, such as Inventory Overview cluster details. The shared drawer owns overlay, panel geometry, close behavior, scrolling, accessibility, optional footer action, and reusable `section(...)` and `metric(...)` content primitives. Rich operational drawers follow Summary → Identity/Snapshot → Domain Breakdown → Signals → Operational Context. Drawer and section descriptions stay concise; self-explanatory identity/context sections may omit descriptions. Summary values use a divided plain-metric row instead of nested metric cards when card-inside-card density would dominate. The final Operational Context remains visible, states the data boundary, and gives one state-aware next action. Long values inside narrow drawer identity or snapshot columns use `details/_detail_content.html::stacked_detail_row(...)` so labels and values wrap within their owning column instead of forcing horizontal overflow. Canonical short metadata such as `Snapshot Source: Committed Snapshot` remains a horizontal `detail_row(..., nowrap=True)`.
 
 ### Operational section card
 
@@ -513,15 +513,18 @@ Welcome may use `welcome_capability_group.html` as a documented dark Violet cate
 
 ## 18. Responsive, Dark Mode, and Accessibility
 
-Every reusable component is reviewed in:
+Every reusable component is reviewed in light and dark mode, at supported desktop widths, and with keyboard focus.
 
-- light and dark mode;
-- 1366×768, 1440×900, and 1920×1080;
-- open and closed navigation shell;
-- loading, empty, error, disabled, unknown, and permission states;
-- keyboard navigation and visible focus.
+Dark mode must follow `components/DARK_MODE.md`:
 
-Responsive reflow preserves semantic order. Primary content appears before contextual rail content. Icon-only actions require accessible names. Status never relies on color alone.
+- use the semantic `page → shell → card → elevated` surface stack;
+- keep ordinary content neutral;
+- reserve Bright Violet for focus, primary interaction, selection, and compact identity accents;
+- use the canonical Hero-owned gradient only through `page_hero.html`;
+- do not introduce page-local `dark:bg-slate-*`, raw dark hex values, or duplicate module token sets;
+- preserve status semantics, contrast, loading, empty, error, disabled, and permission states.
+
+Review at 1366×768, 1440×900, and 1920×1080 at 100% zoom. Verify expanded/collapsed sidebar, Hero, cards, tables, forms, dropdowns, dialogs, and drawers.
 
 ## 19. Page Review Workflow
 

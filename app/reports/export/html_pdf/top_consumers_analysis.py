@@ -85,14 +85,14 @@ def build_top_consumers_analysis_presentation(
     source_evidence = _source_evidence(payload, prometheus)
 
     return {
-        'presentation_version': 'v1.1-top-consumers-publication',
+        'presentation_version': 'v3.0-top-consumers-publication',
         'publication_family': ANALYTICS_PUBLICATION_FAMILY,
         'publication_standard': ANALYTICS_PUBLICATION_STANDARD,
         'canonical_reference': ANALYTICS_CANONICAL_REFERENCE,
         'page_count': _PAGE_COUNT,
         'layout_contract': analytics_layout_contract(
             page_count=9,
-            table_policy='single-line-technical-registers',
+            table_policy='concise-register-plus-reference',
             unit_policy='resource-specific-normalized-units',
             ranking_policy='displayed-set-share-per-resource',
             missing_evidence_policy='explicit-not-available',

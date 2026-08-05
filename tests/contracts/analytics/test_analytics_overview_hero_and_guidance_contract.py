@@ -9,7 +9,9 @@ def test_analytics_overview_hero_caps_metadata_and_uses_manage_clusters_action()
     assert "page_hero.meta_label('list-checks'" not in hero
 
     posture = Path('app/templates/analytics/overview/partials/_hero_posture.html').read_text()
-    assert "page_hero.context_panel_title_classes()" in posture
+    assert "page_hero.context_card_body(" in posture
+    assert "'Analytics Status'" in posture
+    assert 'metrics[:2]' in Path('app/templates/components/page_hero.html').read_text()
     assert "url_for('integrations.kubernetes')" in posture
     assert 'Manage Clusters' in posture
     assert 'context_bottom_notice' not in posture

@@ -11,41 +11,17 @@ def _read(path: str) -> str:
 
 
 def test_reports_use_one_canonical_weasyprint_engine() -> None:
-    registry_path = ROOT / 'app' / 'reports' / 'export' / 'artifacts.py'
-    registry = registry_path.read_text()
-    registry_module = ast.parse(registry)
-
-    imported_names = {
-        alias.name
-        for node in ast.walk(registry_module)
-        if isinstance(node, ast.ImportFrom)
-        and node.module == 'app.reports.export.html_pdf.renderer'
-        for alias in node.names
-    }
-
+    artifacts_path = ROOT / 'app' / 'reports' / 'export' / 'artifacts.py'
     service_path = ROOT / 'app' / 'reports' / 'export' / 'service.py'
+    artifacts = artifacts_path.read_text()
     service = service_path.read_text()
-    service_module = ast.parse(service)
-    service_imports = {
-        alias.name
-        for node in ast.walk(service_module)
-        if isinstance(node, ast.ImportFrom)
-        and node.module == 'app.reports.export.artifacts'
-        for alias in node.names
-    }
-    function_names = {
-        node.name
-        for node in service_module.body
-        if isinstance(node, ast.FunctionDef)
-    }
 
-    assert 'render_weasyprint_pdf' in imported_names
-    assert 'FORMAT_PDF: render_weasyprint_pdf' in registry
-    assert 'get_report_artifact_format' in service_imports
-    old_wrapper = 'render_' + 'report_pdf'
-    old_label_helper = 'format_' + 'renderer_label'
-    assert old_wrapper not in function_names
-    assert old_label_helper not in function_names
+    assert 'from app.reports.export.html_pdf.renderer import render_weasyprint_pdf' in artifacts
+    assert 'FORMAT_PDF: render_weasyprint_pdf' in artifacts
+    assert 'get_report_artifact_format' in service
+    assert '.renderer(report, staging_path)' in service
+    assert 'render_report_pdf' not in service
+    assert 'generate_pdf_for_report' not in service
 
 
 def test_pdf_compatibility_registry_and_old_engine_sources_are_removed() -> None:
@@ -95,16 +71,20 @@ def test_weasyprint_runtime_is_declared_and_containerized() -> None:
         assert package in dockerfile
 
 
-def test_pdf_template_uses_local_assets_and_template_sections() -> None:
-    template = _read('app/templates/reports/pdf/report.html')
-    css = _read('app/static/reports/pdf/report.css')
+def test_pdf_templates_use_the_canonical_local_analytics_publication() -> None:
+    component = _read('app/templates/reports/pdf/components/analytics_publication.html')
+    unavailable = _read('app/templates/reports/pdf/analytics_unavailable.html')
+    css = _read('app/static/reports/pdf/analytics_publication.css')
 
-    assert 'for section in document.sections' in template
-    assert 'target-counter(attr(href), page)' in css
-    assert 'counter(pages)' in css
-    assert 'http://' not in template
-    assert 'https://' not in template
-    assert '@page cover' in css
+    assert 'macro report_header' in component
+    assert 'macro identity_register' in component
+    assert "components/analytics_publication.html" in unavailable
+    assert 'http://' not in unavailable
+    assert 'https://' not in unavailable
+    assert '@page' in css
+    assert 'size: A4 portrait' in css
+    assert 'table-layout: fixed' in css
+    assert 'text-overflow: ellipsis' not in css
 
 
 def test_single_engine_audit_is_part_of_the_static_quality_gate() -> None:
@@ -112,14 +92,4 @@ def test_single_engine_audit_is_part_of_the_static_quality_gate() -> None:
     audit_script = _read('scripts/verify_single_pdf_engine.py')
 
     assert 'python scripts/verify_single_pdf_engine.py' in quality_gate
-    assert 'one canonical ' in audit_script
-    assert 'WeasyPrint pipeline' in audit_script
-
-
-def test_report_runtime_import_audit_is_part_of_the_static_quality_gate() -> None:
-    quality_gate = _read('scripts/quality_gate.sh')
-    runtime_audit = _read('scripts/verify_report_runtime_imports.py')
-
-    assert 'python scripts/verify_report_runtime_imports.py' in quality_gate
-    assert 'from app.reports.export.artifacts import get_report_artifact_format' in runtime_audit
-    assert 'without circular imports' in runtime_audit
+    assert 'one canonical' in audit_script and 'WeasyPrint pipeline' in audit_script

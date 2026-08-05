@@ -30,7 +30,7 @@ def render_document_pdf(
     analytics_stylesheet = ANALYTICS_TEMPLATE_STYLESHEETS.get(document.template_name)
     if analytics_stylesheet:
         # Analytics reports use one canonical publication grammar derived from
-        # Analytics Overview Report ID 34. Report-specific CSS is loaded first;
+        # Canonical Analytics publication. Report-specific CSS is loaded first;
         # the Analytics standard is loaded last and owns reusable primitives.
         report_css_path = css_path.with_name(analytics_stylesheet)
         analytics_css_path = css_path.with_name(ANALYTICS_SHARED_STYLESHEET)

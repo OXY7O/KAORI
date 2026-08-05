@@ -59,6 +59,7 @@ def test_workspace_link_card_owns_destination_card_geometry() -> None:
     assert 'table_label.metadata_label(workspace.scope)' in component
     assert 'data-workspace-card' in component
     assert 'Open Workspace' in component
+    assert 'kaori-workspace-card' in component
     assert 'rounded-xl border border-outline-default bg-surface-card' in component
     assert 'hover:shadow-md' in component
     assert 'hover:-translate-y' not in component
@@ -69,7 +70,8 @@ def test_workspace_link_card_owns_destination_card_geometry() -> None:
 def test_welcome_capability_group_is_a_restrained_landing_pattern() -> None:
     component = (ROOT / 'app/templates/components/welcome_capability_group.html').read_text()
 
-    assert 'bg-kaori-primary-dark' in component
+    assert 'kaori-brand-domain-panel' in component
+    assert 'bg-kaori-primary-dark' not in component
     assert 'data-group-result-count' in component
     assert 'text-lg font-semibold' in component
     assert 'data-lucide="star"' not in component

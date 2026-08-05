@@ -7,6 +7,10 @@ const requiredFragments = [
   ".bg-surface-card",
   ".border-outline-default",
   ".text-content-primary",
+  "--kaori-surface-shell",
+  ".bg-surface-shell",
+  ".kaori-hero-shell",
+  ".sidebar-parent-active",
 ];
 
 let css;
@@ -36,5 +40,5 @@ if (missingFragments.length > 0) {
 }
 
 console.log(
-  "KAORI CSS validation passed: Violet Infrastructure tokens and utilities are present.",
+  "KAORI CSS validation passed: Violet Infrastructure and neutral-first dark-mode tokens/utilities are present.",
 );

@@ -155,7 +155,7 @@ Node Inventory is the canonical implementation of the per-resource inventory pag
 Canonical Hero → Snapshot Context → Node Resource Posture → Compact Table → Full Workspace Modal
 ```
 
-The compact table groups Node identity, cluster, readiness, role, capacity, and network evidence. Role is metadata, readiness is operational status, and technical identifiers use the shared Technical Value component. Detail requests remain on demand and read the latest committed generation; they do not query the Kubernetes API live.
+The compact table groups Node identity, cluster, readiness, role, capacity, and network evidence. Role is metadata, readiness is operational status, and technical identifiers use the shared Technical Value component. The readiness cell also carries a concise cordon/pressure/network summary so the active-signal count can be traced without widening the table. Capacity totals expose reported-node coverage and never translate missing evidence into zero. Detail requests remain on demand and read the latest committed generation; they do not query the Kubernetes API live. The authoritative page contract is `docs/design/patterns/KUBERNETES_NODE_INVENTORY.md`.
 
 - Readable topology nodes use compact domain badges with one-line external name labels, bounded ellipsis, and quiet containment connectors. Full names and resource types remain available in Resource List and Details.
 - Inventory detail drawers use concise section descriptions and proportional technical value typography by default.

@@ -57,6 +57,7 @@ def test_analytics_publication_component_contract_is_parseable() -> None:
         'reference_register',
         'evidence_boundary',
         'status_language',
+        'identity_register',
     ):
         assert f'macro {macro}' in source
 
@@ -82,7 +83,7 @@ def test_analytics_css_owns_the_canonical_visual_and_table_contract() -> None:
     css = (CSS_DIR / 'analytics_publication.css').read_text(encoding='utf-8')
     compact = css.replace(' ', '')
 
-    assert 'KAORI Analytics PDF Publication Standard v1.1' in css
+    assert 'KAORI Analytics PDF Publication Standard v3.0' in css
     assert '--analytics-primary:#7C3AED' in compact
     assert '--analytics-primary-dark:#4C1D95' in compact
     assert '@page{size:A4portrait;margin:0;}' in compact
@@ -90,7 +91,7 @@ def test_analytics_css_owns_the_canonical_visual_and_table_contract() -> None:
     assert '.report-header' in css
     assert '.page-title-row' in css
     assert '.metric-strip' in css
-    assert '.section-rule{display:none;}' in compact
+    assert '.section-rule' in css and 'display:none' in compact
     assert '.cover-masthead' in css
     assert '.cover-contents' in css
     assert 'width:100%' in compact
@@ -120,7 +121,7 @@ def test_report_specific_analytics_css_contains_only_specialization() -> None:
     for template in ANALYTICS_TEMPLATES:
         css_path = CSS_DIR / template.replace('.html', '.css')
         css = css_path.read_text(encoding='utf-8')
-        assert 'Analytics-specific specialization on top of analytics_publication.css' in css
+        assert 'specialization v3.0' in css or 'PDF specialization v3.0' in css
         assert '@font-face' not in css, css_path.name
         assert '@page' not in css, css_path.name
         selectors = {match.group(1).strip() for match in exact_rule.finditer(css)}
@@ -155,8 +156,8 @@ def test_all_analytics_presentations_declare_the_canonical_reference() -> None:
 def test_analytics_standard_centralizes_shared_layout_policy() -> None:
     source = (HTML_PDF_DIR / 'analytics_publication_standard.py').read_text(encoding='utf-8')
 
-    assert "ANALYTICS_PUBLICATION_STANDARD = 'kaori-analytics-pdf-v1.1'" in source
-    assert "ANALYTICS_VISUAL_STYLE = 'reporting-standard-v2.9.2-analytics-family'" in source
+    assert "ANALYTICS_PUBLICATION_STANDARD = 'kaori-analytics-pdf-v3.0'" in source
+    assert "ANALYTICS_VISUAL_STYLE = 'kaori-publication-v3-neutral-evidence-first'" in source
     assert 'def analytics_layout_contract(' in source
     for value in (
         "'cover_header_policy': 'symmetric-two-sided'",

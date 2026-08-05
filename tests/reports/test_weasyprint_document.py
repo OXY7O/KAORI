@@ -126,7 +126,7 @@ def test_weasyprint_engine_creates_pdf(tmp_path: Path) -> None:
         document,
         output_path,
         template_environment=environment,
-        css_path=project_root / 'app' / 'static' / 'reports' / 'pdf' / 'report.css',
+        css_path=project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css',
         base_url=project_root,
         metadata={'pdf_identifier': 'test-report'},
     )

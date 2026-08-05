@@ -171,13 +171,19 @@ def test_dashboard_copy_uses_canonical_casing() -> None:
         for path in sorted(DASHBOARD_TEMPLATES.rglob('*.html'))
     )
 
-    assert 'Select A Cluster For Live Signals' not in all_source
+    assert 'Live Signals Enabled' not in all_source
+    assert 'Select a Cluster for Live Signals' not in all_source
     assert 'AlertManager' not in all_source
+    assert 'PDF output' not in all_source
+    assert 'stored PDF' not in all_source
     assert 'Continue With Alert Detail' not in all_source
     assert 'Continue With Reporting' not in all_source
     assert 'How To Read' not in all_source
     assert 'What To Do' not in all_source
-    assert 'Select a Cluster for Live Signals' in all_source
+    assert 'Cluster Signals Available' in all_source
+    assert 'Select a Cluster for Detailed Signals' in all_source
+    assert 'approved output' in all_source
+    assert 'stored artifact' in all_source
 
 
 def test_dashboard_uses_local_skeletons_and_section_owned_loading_bar() -> None:
@@ -219,3 +225,42 @@ def test_dashboard_restores_card_grid_freshness_and_visible_action_flows() -> No
     assert "extra_classes='h-full'" in capacity
     assert "extra_classes='h-full'" in alert
     assert "extra_classes='h-full'" in reporting
+
+
+def test_dashboard_tabs_support_canonical_keyboard_navigation() -> None:
+    source = read('app/templates/dashboards/kubernetes/partials/_content.html')
+    tabs = read('app/templates/components/workspace_tabs.html')
+    contract = read('docs/design/components/WORKSPACE_TABS.md')
+
+    assert 'moveTab(currentTab, direction, prefix)' in source
+    assert '@keydown.arrow-right.prevent' in tabs
+    assert '@keydown.arrow-left.prevent' in tabs
+    assert '@keydown.home.prevent' in tabs
+    assert '@keydown.end.prevent' in tabs
+    assert 'Arrow Left/Right move and wrap focus across peer tabs' in contract
+
+
+def test_dashboard_metric_card_has_no_unused_tone_api() -> None:
+    metric_card = read('app/templates/components/operational_metric_card.html')
+    kpi_cards = read('app/templates/dashboards/kubernetes/partials/_kpi_cards.html')
+
+    assert (
+        "macro render(label, value, description, icon, source_label='Operational', "
+        "scope_label='Active Scope')"
+        in metric_card
+    )
+    assert "tone='violet'" not in metric_card
+    assert 'scope_tone' not in metric_card
+    assert 'semantic_tones' not in kpi_cards
+    assert 'scope_tone' not in kpi_cards
+
+
+def test_dashboard_pattern_is_locked_by_documentation_and_quality_gate() -> None:
+    standard = read('docs/design/patterns/OPERATIONAL_DASHBOARD.md')
+    audit = read('docs/design/audits/KUBERNETES_OPERATIONS_DASHBOARD_ALIGNMENT_AUDIT_2026_08.md')
+    quality_gate = read('scripts/quality_gate.sh')
+
+    assert '# KAORI Operational Dashboard Pattern v1.1' in standard
+    assert '**Status:** Locked reference pattern' in standard
+    assert 'No visual redesign is required' in audit
+    assert 'python scripts/verify_operational_dashboard_standard.py' in quality_gate

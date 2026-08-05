@@ -6,6 +6,7 @@ This document is the entry point for KAORI's interface contract. New modules mus
 
 - `components/TYPOGRAPHY.md` — type scale, casing, weight, technical text.
 - `components/COLOR_AND_SEMANTIC.md` — brand and semantic colors.
+- `components/DARK_MODE.md` — locked neutral-first dark surface and Violet-emphasis contract.
 - `components/SPACING.md` — layout rhythm and density.
 - `components/ICONS.md` — icon hierarchy and contextual use.
 - `components/ACCESSIBILITY.md` — focus, labels, states, keyboard behavior.
@@ -14,6 +15,7 @@ This document is the entry point for KAORI's interface contract. New modules mus
 ## Components
 
 - `components/HERO.md`
+- `components/ANALYTICS_HERO.md` — domain extension for Kubernetes Analytics hero content.
 - `components/CARD.md`
 - `components/TABLE_AND_LABEL.md`
 - `components/FORM.md`
@@ -33,7 +35,7 @@ This document is the entry point for KAORI's interface contract. New modules mus
 - `components/CONNECTION_VALIDATION_HEADER.md`
 - `components/OPERATIONAL_TOGGLE.md`
 - `components/OPERATIONAL_ACTION_FEEDBACK.md`
-- `components/SIDEBAR_NAVIGATION.md` — locked v1.1 sidebar hierarchy, geometry, and information architecture.
+- `components/SIDEBAR_NAVIGATION.md` — locked v1.2 sidebar hierarchy, geometry, and information architecture.
 
 ## Global guardrail
 

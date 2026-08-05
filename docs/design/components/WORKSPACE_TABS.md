@@ -23,6 +23,7 @@ Use this style when each tab represents a peer view of the same resource scope, 
 - Scope, filter, and HTMX refreshes preserve the active tab.
 - Invalid tab values resolve to the module default.
 - Panels remain in semantic DOM order and only the active panel is displayed.
+- Arrow Left/Right move and wrap focus across peer tabs; Home selects the first tab and End selects the last tab.
 - The shared component exposes `data-kaori-tab-variant="integrated-workspace"` for audit and regression checks.
 
 ## Usage
@@ -40,7 +41,7 @@ Use this style when each tab represents a peer view of the same resource scope, 
 {{ workspace_tabs.render(tabs, prefix='kubernetes-dashboard') }}
 ```
 
-The owning page supplies `activeTab` and `setTab()` state and renders panels with matching IDs.
+The owning page supplies `activeTab`, `setTab()`, and `moveTab()` state and renders panels with matching IDs.
 
 ## Visual contract
 

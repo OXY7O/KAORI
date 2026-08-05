@@ -1,5 +1,7 @@
 # Kubernetes Operations Dashboard Styling Audit — July 2026
 
+**Status:** Historical snapshot. The active contract is `docs/design/patterns/OPERATIONAL_DASHBOARD.md` v1.1 and the latest review is `KUBERNETES_OPERATIONS_DASHBOARD_ALIGNMENT_AUDIT_2026_08.md`.
+
 ## Scope
 
 Reviewed `app/templates/dashboards/kubernetes/`, the dashboard route/service contract, shared dashboard components, and the duplicated forecast implementation in Kubernetes Analytics.

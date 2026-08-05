@@ -82,14 +82,14 @@ def build_alerts_anomalies_presentation(
     )
 
     return {
-        'presentation_version': 'v1.1-alerts-anomalies-publication',
+        'presentation_version': 'v3.0-alerts-anomalies-publication',
         'publication_family': ANALYTICS_PUBLICATION_FAMILY,
         'publication_standard': ANALYTICS_PUBLICATION_STANDARD,
         'canonical_reference': ANALYTICS_CANONICAL_REFERENCE,
         'page_count': _PAGE_COUNT,
         'layout_contract': analytics_layout_contract(
             page_count=9,
-            table_policy='single-line-operational-registers',
+            table_policy='concise-register-plus-reference',
             correlation_policy='review-lead-not-causality',
             missing_evidence_policy='explicit-not-available',
         ),

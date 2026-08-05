@@ -59,6 +59,7 @@ def test_compact_cluster_table_has_details_button_and_shared_right_drawer() -> N
     assert 'Inventory Breakdown' in content
     assert 'Snapshot Context' in content
     assert 'Cluster Snapshot Summary' in content
+    assert "'Committed Objects'" in content
     assert 'Largest Segment' in content
     assert 'Operational Context' in content
     assert 'Data Boundary' in content
@@ -107,7 +108,7 @@ def test_snapshot_source_uses_compact_non_wrapping_value() -> None:
     details_macro = read('app/templates/components/details/_detail_content.html')
 
     assert "'snapshot_source': 'Committed Snapshot'" in backend
-    assert "detail_row('Snapshot Source', cluster.snapshot_source)" in content
+    assert "detail_row('Snapshot Source', cluster.snapshot_source, nowrap=True)" in content
     assert "{% macro detail_row(label, value='-', break_all=False, nowrap=False) -%}" in details_macro
     assert "sm:text-right" in details_macro
 

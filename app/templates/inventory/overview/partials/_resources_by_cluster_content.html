@@ -174,7 +174,7 @@
                     density='compact'
                 ) %}
                     <dl class="grid gap-4 border-t border-outline-subtle pt-3 sm:grid-cols-3 sm:divide-x sm:divide-outline-subtle">
-                        <div class="sm:pr-4">{{ side_drawer.metric('Total Objects', cluster.total_objects, 'database', variant='plain') }}</div>
+                        <div class="sm:pr-4">{{ side_drawer.metric('Total Objects', cluster.total_objects, 'database', 'Committed Objects', variant='plain') }}</div>
                         <div class="sm:px-4">{{ side_drawer.metric('Asset Categories', cluster.populated_asset_types ~ '/8', 'layers-3', 'Collected Categories', variant='plain') }}</div>
                         <div class="sm:pl-4">{{ side_drawer.metric('Largest Segment', cluster.dominant_asset.label, 'chart-no-axes-column', cluster.dominant_asset.count ~ ' Objects', variant='plain') }}</div>
                     </dl>
@@ -205,7 +205,7 @@
                         <div class="space-y-3">
                             {{ detail_ui.detail_row('Last Collected', cluster.synced_at|user_datetime(date_format='day_month_numeric') if cluster.synced_at else 'Not Collected', nowrap=True) }}
                             {{ detail_ui.detail_row('Freshness Window', cluster.freshness_window_hours ~ ' Hours') }}
-                            {{ detail_ui.detail_row('Snapshot Source', cluster.snapshot_source) }}
+                            {{ detail_ui.detail_row('Snapshot Source', cluster.snapshot_source, nowrap=True) }}
                         </div>
                     {% endcall %}
                 </div>

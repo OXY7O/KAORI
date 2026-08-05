@@ -1,5 +1,7 @@
 # Kubernetes Operations Dark-Mode and Catalog Refinement Audit — July 2026
 
+**Status:** Historical module audit. Current global dark-mode authority is `docs/design/components/DARK_MODE.md`.
+
 ## Scope
 
 - ConfigMap Management

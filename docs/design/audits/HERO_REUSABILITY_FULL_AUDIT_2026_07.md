@@ -1,5 +1,8 @@
 # KAORI Hero Reusability Full Audit — July 2026
 
+> **Status: Historical audit snapshot.** Counts and page lists in this document are retained as migration evidence, not as the active contract. Use `docs/design/components/HERO.md` and `scripts/verify_hero_component_standard.py`.
+
+
 ## Baseline
 
 The visual baseline is the shared pattern used by **Infrastructure Integrations** and **Kubernetes Integrations**:
@@ -50,7 +53,7 @@ The generated report detail Hero was also reduced to two visible actions. Artifa
 
 ## Automated Guardrail
 
-`tests/contracts/ui/test_global_hero_reusability_contract.py` verifies:
+`scripts/verify_hero_component_standard.py` now verifies:
 
 - the complete Hero estate is still discovered;
 - required shared macros remain available;

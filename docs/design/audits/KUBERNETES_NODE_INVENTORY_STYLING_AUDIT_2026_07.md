@@ -1,3 +1,5 @@
+> Historical Snapshot — retained for traceability. The active contract is `docs/design/patterns/KUBERNETES_NODE_INVENTORY.md`; see the August 2026 alignment audit.
+
 # Kubernetes Node Inventory Styling Audit — July 2026
 
 ## Approved package

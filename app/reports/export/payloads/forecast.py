@@ -5,7 +5,7 @@ from typing import Any
 from app.analytics.forecast.service import present_forecast_materialized_context
 from app.cluster.constants import get_environment_label
 from app.models.report import Report
-from app.reports.export.payloads.common import get_report_selected_cluster
+from app.reports.export.payloads.common import get_report_selected_cluster, report_payload_error
 
 
 def get_report_resource_forecast_payload(report: Report) -> dict[str, Any]:
@@ -15,6 +15,7 @@ def get_report_resource_forecast_payload(report: Report) -> dict[str, Any]:
     history snapshot is loaded from ``analytics.forecast`` and re-projected in
     memory for the configured horizon and Holt-Winters method.
     """
+    cluster = None
     try:
         cluster = get_report_selected_cluster(report)
 
@@ -73,7 +74,7 @@ def get_report_resource_forecast_payload(report: Report) -> dict[str, Any]:
             ),
         }
     except Exception as exc:
-        return {'_error': str(exc)}
+        return report_payload_error(exc, cluster=cluster)
 
 
 def _read_committed_context(

@@ -1,10 +1,9 @@
 {% import "components/table_label.html" as table_label %}
 
-{% macro render(label, value, description, icon, tone='violet', source_label='Operational', scope_label='Active Scope', scope_tone='info') -%}
+{% macro render(label, value, description, icon, source_label='Operational', scope_label='Active Scope') -%}
     {#
-      The tone argument remains in the public macro signature for backward
-      compatibility. Operational Signal cards intentionally use one neutral
-      KAORI treatment so the overview stays calm and visually consistent.
+      Operational Signal cards intentionally use one neutral KAORI treatment
+      so the overview remains calm and visually consistent.
     #}
     <article class="relative flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">
         <div class="flex min-w-0 items-start gap-3">

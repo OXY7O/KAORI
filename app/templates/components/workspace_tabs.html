@@ -22,7 +22,11 @@
                             ? 'border-kaori-primary text-kaori-primary'
                             : 'border-transparent text-content-muted hover:border-outline-strong hover:text-content-primary'"
                         class="inline-flex min-h-11 shrink-0 items-center gap-2 border-b-2 px-1 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-inset"
-                        @click="setTab('{{ tab_key }}')">
+                        @click="setTab('{{ tab_key }}')"
+                        @keydown.arrow-right.prevent="moveTab('{{ tab_key }}', 1, '{{ prefix }}')"
+                        @keydown.arrow-left.prevent="moveTab('{{ tab_key }}', -1, '{{ prefix }}')"
+                        @keydown.home.prevent="moveTab('{{ tab_key }}', 'home', '{{ prefix }}')"
+                        @keydown.end.prevent="moveTab('{{ tab_key }}', 'end', '{{ prefix }}')">
                     <i data-lucide="{{ tab_icon }}" class="h-4 w-4" aria-hidden="true"></i>
                     <span>{{ tab_label }}</span>
                 </button>

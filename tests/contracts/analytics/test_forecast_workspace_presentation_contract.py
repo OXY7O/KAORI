@@ -19,12 +19,15 @@ def test_forecast_controls_separate_scope_and_projection_configuration() -> None
     assert 'analytics_materialization' in content
 
 
-def test_forecast_hero_uses_shared_metrics_and_bottom_notice() -> None:
+def test_forecast_hero_uses_canonical_context_card() -> None:
     content = read('app/templates/analytics/forecast/index.html')
-    assert "page_hero.context_metric('gauge', 'Highest Projection'" in content
-    assert "page_hero.context_metric('list-checks', 'Actionable'" in content
-    assert 'page_hero.context_bottom_notice(' in content
-    assert 'page_hero.context_posture_note(' not in content
+    assert 'page_hero.context_card(' in content
+    assert "('gauge', 'Highest Projection'" in content
+    assert "('list-checks', 'Actionable'" in content
+    assert "'Manage Clusters'" in content
+    assert 'context_posture_header' not in content
+    assert 'context_posture_note' not in content
+    assert 'context_bottom_notice' not in content
     assert 'analytics_forecast_chart.js' in content
     assert 'analytics_forecast.js' not in content
 

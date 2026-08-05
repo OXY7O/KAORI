@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import Any
 
 ANALYTICS_PUBLICATION_FAMILY = 'analytics'
-ANALYTICS_PUBLICATION_STANDARD = 'kaori-analytics-pdf-v1.1'
-ANALYTICS_CANONICAL_REFERENCE = 'analytics-overview-report-34'
-ANALYTICS_VISUAL_STYLE = 'reporting-standard-v2.9.2-analytics-family'
+ANALYTICS_PUBLICATION_STANDARD = 'kaori-analytics-pdf-v3.0'
+ANALYTICS_CANONICAL_REFERENCE = 'kaori-analytics-publication-v3'
+ANALYTICS_VISUAL_STYLE = 'kaori-publication-v3-neutral-evidence-first'
 ANALYTICS_SHARED_STYLESHEET = 'analytics_publication.css'
 
 ANALYTICS_TEMPLATE_STYLESHEETS: dict[str, str] = {
@@ -17,6 +17,7 @@ ANALYTICS_TEMPLATE_STYLESHEETS: dict[str, str] = {
     'reports/pdf/forecast_analysis.html': 'forecast_analysis.css',
     'reports/pdf/top_consumers_analysis.html': 'top_consumers_analysis.css',
     'reports/pdf/alerts_anomalies.html': 'alerts_anomalies.css',
+    'reports/pdf/analytics_unavailable.html': 'analytics_unavailable.css',
 }
 
 ANALYTICS_TEMPLATE_NAMES = tuple(ANALYTICS_TEMPLATE_STYLESHEETS)
@@ -46,6 +47,11 @@ def analytics_layout_contract(
         'section_rhythm': 'title-subtitle-content',
         'table_alignment': 'left-middle',
         'methodology_layout': 'parallel-registers',
+        'dynamic_identity_policy': 'reference-register',
+        'table_row_policy': 'fixed-comparison-fields',
+        'chart_label_policy': 'collision-safe-gutter',
+        'paragraph_rhythm': 'tokenized',
+        'public_reference_policy': 'family-type-date-fingerprint',
         'visual_style': ANALYTICS_VISUAL_STYLE,
     }
     contract.update(overrides)

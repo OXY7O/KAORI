@@ -10,11 +10,10 @@ from app.models.report import Report
 from app.reports.catalog import ReportContractError, validate_report_instance
 from app.reports.export.artifacts import get_report_artifact_format
 from app.reports.export.formatting import slugify
+from app.reports.reference import report_reference_filename
 from app.reports.storage.naming import build_report_object_key
 from app.reports.storage.service import (
     build_report_download_path,
-    get_report_storage_backend_status,
-    probe_report_artifact,
     report_file_exists,
     save_report_file,
 )
@@ -29,18 +28,10 @@ def generate_report_artifact(
     if report is None:
         return False, 'Report not found.'
 
-    backend_status = get_report_storage_backend_status()
-    if not bool(backend_status.get('write_available', False)):
-        return (
-            False,
-            'Report storage is temporarily unavailable. The report request remains unchanged; restore storage connectivity and retry generation.',
-        )
-
     previous_status = report.status
     previous_file_path = report.file_path
     previous_file_size_bytes = report.file_size_bytes
-    previous_artifact_access = probe_report_artifact(previous_file_path)
-    previous_artifact_available = bool(previous_artifact_access.get('exists', False))
+    previous_artifact_available = bool(previous_file_path) and report_file_exists(previous_file_path)
 
     staging_path: Path | None = None
     artifact_format = None
@@ -164,8 +155,9 @@ def build_report_output_path(report: Report) -> Path:
 
     timestamp = datetime.now(UTC).strftime('%Y%m%d%H%M%S')
     safe_name = slugify(report.name)
+    reference = report_reference_filename(report)
     extension = get_report_artifact_format(report.output_format).extension
-    return staging_dir / f'report-{report.id}-{safe_name}-{timestamp}{extension}'
+    return staging_dir / f'{reference}-{safe_name}-{timestamp}{extension}'
 
 
 def get_report_staging_dir() -> Path:

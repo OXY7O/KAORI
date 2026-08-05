@@ -2,15 +2,6 @@
 <div id="dashboard-kpi-cards"
      class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
      aria-live="polite">
-    {% set semantic_tones = {
-        'emerald': 'normal',
-        'amber': 'warning',
-        'orange': 'warning',
-        'red': 'critical',
-        'slate': 'unknown',
-        'blue': 'info',
-        'violet': 'info'
-    } %}
     {% for kpi in dashboard.global_kpis %}
         {% if kpi.label in ['CPU Usage', 'Memory Usage'] %}
             {% set source_label = 'Prometheus' %}
@@ -20,15 +11,13 @@
             {% set source_label = 'Inventory' %}
         {% endif %}
         {% set scope_label = 'Fleet' if kpi.label == 'Clusters' else 'Active Scope' %}
-        {% set scope_tone = semantic_tones.get(kpi.tone, 'info') %}
         {{ operational_metric_card.render(
             label=kpi.label,
             value=kpi.value,
             description=kpi.description,
             icon=kpi.icon,
             source_label=source_label,
-            scope_label=scope_label,
-            scope_tone=scope_tone
+            scope_label=scope_label
         ) }}
     {% endfor %}
 </div>

@@ -44,3 +44,22 @@ def test_shared_context_card_owns_inventory_metric_scale_and_action():
 
 def test_analytics_hero_helper_is_removed():
     assert not Path('app/templates/analytics/components/_hero_context.html').exists()
+
+
+def test_blocked_posture_uses_same_recovery_action_contract() -> None:
+    template = Path('app/templates/analytics/components/_blocked_posture.html').read_text()
+    assert 'page_hero.context_card_body(' in template
+    assert "'Manage Clusters'" in template
+    assert "url_for('integrations.kubernetes')" in template
+
+
+def test_storage_and_capacity_hero_helpers_are_concise_and_semantic() -> None:
+    storage = Path('app/templates/analytics/storage/partials/_hero.html').read_text()
+    capacity = Path('app/templates/analytics/capacity/partials/_hero.html').read_text()
+
+    assert "('server', 'Node Pressure'" in storage
+    assert "'Node filesystem'" in storage
+    assert 'filesystem.highest_node|default' not in storage
+    assert 'truncate(30' not in storage
+    assert "'Ready-Worker capacity'" in capacity
+    assert 'Tightest Ready-worker scheduling margin' not in capacity

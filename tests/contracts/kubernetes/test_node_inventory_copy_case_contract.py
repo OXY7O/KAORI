@@ -12,12 +12,12 @@ def test_node_inventory_supporting_copy_uses_kaori_sentence_case() -> None:
     template = read(SUMMARY)
 
     expected = [
-        "Reported CPU capacity in the active node scope.",
-        "Reported memory capacity across filtered nodes.",
-        "Reported local ephemeral storage capacity.",
+        "inventory.cpu_coverage_description",
+        "inventory.memory_coverage_description",
+        "inventory.ephemeral_coverage_description",
         "Nodes excluded from new workload scheduling.",
         "Nodes reporting memory, disk, or PID pressure.",
-        "Nodes reporting unavailable network condition.",
+        "Nodes reporting an unavailable network condition.",
     ]
     for copy in expected:
         assert copy in template
@@ -35,5 +35,6 @@ def test_node_inventory_copy_keeps_technical_acronyms() -> None:
     template = read(SUMMARY)
 
     assert "Total CPU" in template
-    assert "GiB" in template
+    assert "total_memory_display" in template
+    assert "total_ephemeral_storage_display" in template
     assert "PID pressure" in template

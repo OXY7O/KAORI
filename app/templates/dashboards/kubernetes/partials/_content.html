@@ -21,6 +21,17 @@
                      const url = new URL(window.location.href);
                      url.searchParams.set('tab', tab);
                      window.history.replaceState({}, '', url);
+                 },
+                 moveTab(currentTab, direction, prefix) {
+                     const currentIndex = this.allowedTabs.indexOf(currentTab);
+                     if (currentIndex < 0) return;
+                     let nextIndex = currentIndex;
+                     if (direction === 'home') nextIndex = 0;
+                     else if (direction === 'end') nextIndex = this.allowedTabs.length - 1;
+                     else nextIndex = (currentIndex + direction + this.allowedTabs.length) % this.allowedTabs.length;
+                     const nextTab = this.allowedTabs[nextIndex];
+                     this.setTab(nextTab);
+                     this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus());
                  }
              }"
              x-on:popstate.window="activeTab = allowedTabs.includes(new URL(window.location.href).searchParams.get('tab')) ? new URL(window.location.href).searchParams.get('tab') : 'overview'">

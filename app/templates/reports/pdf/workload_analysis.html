@@ -119,7 +119,7 @@
       <tbody>{% for item in p.inventory.register %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.dimension }}</td><td>{{ item.scope }}</td><td>{{ item.evidence }}</td><td class="status {{ item.tone }}">{{ item.status }}</td></tr>{% endfor %}</tbody>
     </table>
     {% endcall %}
-    {% call ui.section('Management Decision', 'Use committed signals to prioritize review, not to infer configuration compliance.', 'management-decision') %}<p>{{ p.inventory.decision }}</p>{% endcall %}
+    {% call ui.section('Management Decision', 'Use committed signals to prioritize review, not to infer configuration compliance.', 'management-decision') %}<p class="narrative-copy">{{ p.inventory.decision }}</p>{% endcall %}
   </div>
   {{ footer(3) }}
 </article>
@@ -174,9 +174,10 @@
     {{ metric_strip(p.mapping.metrics) }}
     {% call ui.section('Workload Resource Mapping Register', 'Technical identifiers remain compact; application ownership remains explicit when unavailable.') %}
     <table class="report-table mapping-register">
-      <thead><tr><th>Ref.</th><th>Workload</th><th>Type</th><th>Namespace</th><th>Mapping</th><th>Status</th></tr></thead>
-      <tbody>{% for item in p.mapping.records %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.workload }}</td><td>{{ item.type }}</td><td>{{ item.namespace }}</td><td>{{ item.mapping }}</td><td class="status {{ item.tone }}">{{ item.status }}</td></tr>{% else %}<tr><td colspan="6" class="empty-row">No committed workload mapping rows are available.</td></tr>{% endfor %}</tbody>
+      <thead><tr><th>Ref.</th><th>Type</th><th>Mapping</th><th>Status</th></tr></thead>
+      <tbody>{% for item in p.mapping.records %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.type }}</td><td>{{ item.mapping }}</td><td class="status {{ item.tone }}">{{ item.status }}</td></tr>{% else %}<tr><td colspan="4" class="empty-row">No committed workload mapping rows are available.</td></tr>{% endfor %}</tbody>
     </table>
+    {{ ui.identity_register('Workload Identity References', p.mapping.identities, 'Complete workload and namespace identities are separated from the fixed comparison register.') }}
     {% endcall %}
     <div class="two-column workload-mapping-split">
       {% call ui.section('Mapping Coverage', 'Available and missing relationship evidence.') %}
@@ -186,7 +187,7 @@
       <div class="interpretation-card"><strong>{{ p.mapping.interpretation_title }}</strong><p>{{ p.mapping.interpretation_body }}</p><small>Use short references in charts and retain complete technical identifiers in registers.</small></div>
       {% endcall %}
     </div>
-    {% call ui.section('Management Decision', 'Restore ownership and configuration mapping before bulk remediation.') %}<p>{{ p.mapping.decision }}</p>{% endcall %}
+    {% call ui.section('Management Decision', 'Restore ownership and configuration mapping before bulk remediation.') %}<p class="narrative-copy">{{ p.mapping.decision }}</p>{% endcall %}
   </div>
   {{ footer(5) }}
 </article>
@@ -201,16 +202,17 @@
       <div class="governance-bars">{% for item in p.configuration.coverage_rows %}{{ governance_bar(item) }}{% endfor %}</div>
       {% endcall %}
       {% call ui.section('Configuration Decision Boundary', 'Resource configuration and observed demand remain separate evidence.') %}
-      <div class="interpretation-card {% if not p.configuration.available %}warning-card{% endif %}"><strong>{% if p.configuration.available %}Configuration evidence is available for review.{% else %}Configuration posture cannot be assigned.{% endif %}</strong><p>{{ p.configuration.decision }}</p><small>Do not right-size from requests or limits alone without metrics coverage and service objectives.</small></div>
+      <div class="interpretation-card {% if not p.configuration.available %}warning-card{% endif %}"><strong>{% if p.configuration.available %}Configuration evidence is available for review.{% else %}Configuration posture cannot be assigned.{% endif %}</strong><p class="narrative-copy">{{ p.configuration.decision }}</p><small>Do not right-size from requests or limits alone without metrics coverage and service objectives.</small></div>
       {% endcall %}
     </div>
     {% call ui.section('Workload Configuration Register', 'Up to five committed rows keep requests, limits, QoS, and risk comparable.') %}
     <table class="report-table configuration-register">
-      <thead><tr><th>Ref.</th><th>Workload</th><th>Namespace</th><th>Requests</th><th>Limits</th><th>QoS</th><th>Risk</th></tr></thead>
-      <tbody>{% for item in p.configuration.records %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.workload }}</td><td>{{ item.namespace }}</td><td>{{ item.requests }}</td><td>{{ item.limits }}</td><td>{{ item.qos }}</td><td class="status {{ item.tone }}">{{ item.risk }}</td></tr>{% else %}<tr><td colspan="7" class="empty-row">No committed workload configuration rows are available.</td></tr>{% endfor %}</tbody>
+      <thead><tr><th>Ref.</th><th>Requests</th><th>Limits</th><th>QoS</th><th>Risk</th></tr></thead>
+      <tbody>{% for item in p.configuration.records %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.requests }}</td><td>{{ item.limits }}</td><td>{{ item.qos }}</td><td class="status {{ item.tone }}">{{ item.risk }}</td></tr>{% else %}<tr><td colspan="5" class="empty-row">No committed workload configuration rows are available.</td></tr>{% endfor %}</tbody>
     </table>
+    {{ ui.identity_register('Configuration Identity References', p.configuration.identities, 'Complete workload and namespace identities are preserved outside the fixed-width evidence register.') }}
     {% endcall %}
-    {% call ui.section('Management Decision', 'Review incomplete resource governance before changing capacity or autoscaling.') %}<p>{{ p.configuration.decision }}</p>{% endcall %}
+    {% call ui.section('Management Decision', 'Review incomplete resource governance before changing capacity or autoscaling.') %}<p class="narrative-copy">{{ p.configuration.decision }}</p>{% endcall %}
   </div>
   {{ footer(6) }}
 </article>

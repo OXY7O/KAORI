@@ -278,20 +278,29 @@ def get_inventory_freshness_context(cluster_id: str = '') -> dict[str, Any]:
     elif not committed:
         status = 'Not Collected'
         tone = 'warning'
-        description = 'Run Inventory Sync before relying on this inventory view.'
+        description = (
+            'No committed snapshot is available for the selected cluster.'
+            if len(selected) == 1
+            else 'No committed snapshots are available for the selected fleet scope.'
+        )
     elif stale_count or missing_count or collection_exception_count:
         status = 'Review Freshness'
         tone = 'warning'
         description = (
-            f'{len(committed)} of {len(selected)} cluster snapshots are committed; '
-            f'{stale_count} are stale and {collection_exception_count} collection capabilities require review.'
+            'The selected cluster snapshot needs freshness or collection review.'
+            if len(selected) == 1
+            else (
+                f'{len(committed)} of {len(selected)} cluster snapshots are committed; '
+                'review stale, missing, or partial collection evidence.'
+            )
         )
     else:
         status = 'Current'
         tone = 'normal'
         description = (
-            f'All {len(selected)} cluster snapshots are within the '
-            f'{INVENTORY_FRESHNESS_HOURS}-hour freshness window.'
+            'The selected cluster snapshot is current and fully committed.'
+            if len(selected) == 1
+            else f'All {len(selected)} cluster snapshots are current and fully committed.'
         )
 
     exception_parts = []
@@ -302,23 +311,60 @@ def get_inventory_freshness_context(cluster_id: str = '') -> dict[str, Any]:
     if collection_exception_count:
         exception_parts.append(f'{collection_exception_count} Collection')
     exception_label = ' · '.join(exception_parts) if exception_parts else 'No Exceptions'
+    selected_count = len(selected)
+    committed_count = len(committed)
+    coverage_complete = selected_count > 0 and committed_count == selected_count
+
+    if selected_count == 0:
+        coverage_label = 'No active scope'
+        coverage_supporting = 'Select a registered cluster'
+        coverage_tone = 'unknown'
+    elif coverage_complete:
+        coverage_label = f'{committed_count} of {selected_count} snapshots'
+        coverage_supporting = 'Fully committed'
+        coverage_tone = 'normal'
+    elif committed_count:
+        coverage_label = f'{committed_count} of {selected_count} snapshots'
+        coverage_supporting = 'Partially committed'
+        coverage_tone = 'warning'
+    else:
+        coverage_label = f'0 of {selected_count} snapshots'
+        coverage_supporting = 'No committed data'
+        coverage_tone = 'warning'
+
+    has_exceptions = bool(stale_count or missing_count or collection_exception_count)
 
     return {
         'latest_collected_at': latest,
         'oldest_collected_at': oldest,
-        'cluster_count': len(selected),
-        'committed_count': len(committed),
+        'cluster_count': selected_count,
+        'committed_count': committed_count,
         'missing_count': missing_count,
         'stale_count': stale_count,
         'collection_exception_count': collection_exception_count,
         'collection_exceptions': collection_exceptions,
         'freshness_window_hours': INVENTORY_FRESHNESS_HOURS,
-        'scope_label': selected[0].name if len(selected) == 1 else f'{len(selected)} Clusters',
+        'scope_label': selected[0].name if selected_count == 1 else f'{selected_count} Clusters',
+        'scope_supporting': (
+            'Selected cluster'
+            if selected_count == 1
+            else ('Fleet scope' if selected_count > 1 else 'No active scope')
+        ),
+        'latest_supporting': (
+            f'{INVENTORY_FRESHNESS_HOURS}-hour freshness window'
+            if latest is not None
+            else 'No committed timestamp'
+        ),
         'status': status,
         'tone': tone,
         'description': description,
-        'source_label': 'Committed Snapshot',
+        'source_label': 'Committed Inventory Snapshot',
+        'coverage_label': coverage_label,
+        'coverage_supporting': coverage_supporting,
+        'coverage_tone': coverage_tone,
         'exception_label': exception_label,
+        'exceptions_supporting': 'Review required' if has_exceptions else 'No issues detected',
+        'exceptions_tone': 'warning' if has_exceptions else 'normal',
     }
 
 

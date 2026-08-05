@@ -11,6 +11,7 @@ from app.reports.export.html_pdf.analytics_publication_standard import (
     ANALYTICS_PUBLICATION_STANDARD,
     analytics_layout_contract,
 )
+from app.reports.export.html_pdf.chart_labels import resolve_vertical_labels
 from app.reports.export.html_pdf.normalization import sanitize_text
 
 _FORECAST_PAGE_TITLES = (
@@ -94,14 +95,14 @@ def build_forecast_analysis_presentation(
     forecast_tone = _executive_tone(warning_count, critical_count, coverage_count)
 
     return {
-        'presentation_version': 'v1.1-forecast-analysis-publication',
+        'presentation_version': 'v3.0-forecast-analysis-publication',
         'publication_family': ANALYTICS_PUBLICATION_FAMILY,
         'publication_standard': ANALYTICS_PUBLICATION_STANDARD,
         'canonical_reference': ANALYTICS_CANONICAL_REFERENCE,
         'page_count': len(_FORECAST_PAGE_TITLES),
         'layout_contract': analytics_layout_contract(
             page_count=9,
-            table_policy='single-line-technical-registers',
+            table_policy='concise-register-plus-reference',
             missing_evidence_policy='explicit-not-available',
             forecast_policy='committed-materialized-evidence-only',
         ),
@@ -608,11 +609,12 @@ def _source_rows(
 
 
 def _combined_chart_svg(resources: Mapping[str, Mapping[str, Any]]) -> str:
-    width, height = 760, 238
-    left, top, chart_w, chart_h = 58.0, 24.0, 660.0, 160.0
+    width, height = 800, 238
+    left, top, chart_w, chart_h = 58.0, 24.0, 650.0, 160.0
+    label_x = 746.0
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" role="img" aria-label="Forecast portfolio chart">',
-        '<rect width="760" height="238" fill="#F8FAFC"/>',
+        '<rect width="800" height="238" fill="#F8FAFC"/>',
     ]
     for value in (0, 25, 50, 70, 85):
         y = top + chart_h - chart_h * value / 100.0
@@ -622,6 +624,9 @@ def _combined_chart_svg(resources: Mapping[str, Mapping[str, Any]]) -> str:
         parts.append(f'<text x="{left-10}" y="{y+4:.1f}" text-anchor="end" font-size="10" fill="#64748B">{value}%</text>')
     cutoff_x = left + chart_w * 0.68
     parts.append(f'<line x1="{cutoff_x:.1f}" y1="{top}" x2="{cutoff_x:.1f}" y2="{top+chart_h}" stroke="#A78BFA" stroke-dasharray="4 4"/>')
+
+    endpoint_labels: list[tuple[str, float]] = []
+    endpoint_meta: dict[str, tuple[float, str, str]] = {}
     for key in ('memory', 'pods', 'cpu', 'storage'):
         resource = resources[key]
         if not resource['available']:
@@ -637,8 +642,18 @@ def _combined_chart_svg(resources: Mapping[str, Mapping[str, Any]]) -> str:
         if proj_points:
             parts.append(f'<polyline points="{proj_points}" fill="none" stroke="{color}" stroke-width="3" stroke-dasharray="8 6" stroke-linecap="round" stroke-linejoin="round"/>')
         end_y = top + chart_h - chart_h * resource['projected_percent'] / 100.0
-        parts.append(f'<circle cx="{left+chart_w:.1f}" cy="{end_y:.1f}" r="4" fill="{color}"/>')
-        parts.append(f'<text x="{left+chart_w-6:.1f}" y="{end_y-8:.1f}" text-anchor="end" font-size="11" font-weight="700" fill="{color}">{escape(resource["projected_display"])}</text>')
+        end_x = left + chart_w
+        parts.append(f'<circle cx="{end_x:.1f}" cy="{end_y:.1f}" r="4" fill="{color}"/>')
+        endpoint_labels.append((key, end_y))
+        endpoint_meta[key] = (end_x, color, f'{resource["label"]} {resource["projected_display"]}')
+
+    resolved = resolve_vertical_labels(endpoint_labels, min_y=top + 7, max_y=top + chart_h - 4, min_gap=17)
+    for key, label_y in resolved.items():
+        end_x, color, text = endpoint_meta[key]
+        data_y = dict(endpoint_labels)[key]
+        parts.append(f'<path d="M {end_x+3:.1f} {data_y:.1f} L {label_x-8:.1f} {label_y:.1f}" fill="none" stroke="{color}" stroke-width="1" opacity=".75"/>')
+        parts.append(f'<text x="{label_x:.1f}" y="{label_y+4:.1f}" font-size="10.5" font-weight="700" fill="{color}">{escape(text)}</text>')
+
     parts.extend(
         [
             f'<text x="{left}" y="{top+chart_h+24}" font-size="10" fill="#64748B">Historical Start</text>',

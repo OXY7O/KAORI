@@ -8,6 +8,8 @@ from flask import abort, current_app
 from sqlalchemy import Select, func, or_, select
 
 from app.extensions.db import db
+from app.jobs.presentation import present_job_execution
+from app.models.job import JobExecution
 from app.models.cluster import Cluster
 from app.models.report import Report
 from app.models.user import User
@@ -16,15 +18,15 @@ from app.reports.export.artifacts import get_report_artifact_format
 from app.reports.generate.service import REPORT_TYPE_OPTIONS
 from app.reports.storage.service import (
     get_configured_storage_backend_name,
-    get_report_storage_backend_status,
     parse_report_storage_uri,
-    probe_report_artifact,
+    report_file_exists,
 )
 
 REPORT_TYPE_LABELS = {spec.value: spec.label for spec in REPORT_TYPE_SPECS}
 
 STATUS_LABELS = {
     'requested': 'Requested',
+    'queued': 'Queued',
     'generating': 'Generating',
     'ready': 'Ready',
     'failed': 'Failed',
@@ -32,6 +34,12 @@ STATUS_LABELS = {
 }
 
 STATUS_META = {
+    'queued': {
+        'label': 'Queued',
+        'tone': 'blue',
+        'icon': 'clock-3',
+        'description': 'The report is waiting for the Reports worker.',
+    },
     'requested': {
         'label': 'Requested',
         'tone': 'blue',
@@ -77,20 +85,17 @@ def get_generated_reports_payload(
     )
 
     summary_cards = get_summary_cards()
-    backend_status = get_report_storage_backend_status()
     unavailable_artifacts = sum(
         1
         for item in reports
         if item.get('file_path') and not bool(item.get('storage_reachable', True))
     )
-    storage_notice = None
-    if not bool(backend_status.get('available', False)):
-        storage_notice = str(backend_status.get('description') or '')
-    elif unavailable_artifacts:
-        storage_notice = (
-            f'{unavailable_artifacts} artifact(s) on this page could not be verified because their storage backend is unreachable. '
-            'Report records remain available; download actions stay paused until connectivity returns.'
-        )
+    storage_notice = (
+        f'{unavailable_artifacts} artifact(s) on this page could not be verified because the storage backend is unreachable. '
+        'Report records remain available; download actions stay paused until connectivity returns.'
+        if unavailable_artifacts
+        else None
+    )
 
     return {
         'page_title': 'Generated Reports',
@@ -109,7 +114,6 @@ def get_generated_reports_payload(
         'storage_context': get_storage_context(),
         'hero_posture': get_hero_posture(),
         'storage_notice': storage_notice,
-        'backend_status': backend_status,
     }
 
 
@@ -143,28 +147,13 @@ def get_report_detail_payload(
         user_map,
     )
     artifact_access = report_detail['artifact_access']
-    backend_status = get_report_storage_backend_status()
-    artifact_access_notice = get_report_artifact_access_notice(report, artifact_access)
-    storage_access_blocked = (
-        bool(report.file_path)
-        and not bool(backend_status.get('read_available', False))
-    ) or (
-        not bool(report.file_path)
-        and not bool(backend_status.get('write_available', False))
-    )
-    if artifact_access_notice is None and storage_access_blocked:
-        artifact_access_notice = {
-            'title': str(backend_status.get('title') or 'Report Storage Is Temporarily Unavailable'),
-            'description': str(backend_status.get('description') or ''),
-            'action_label': 'Review Report Storage',
-            'action_href': '/reports/storage',
-            'icon': str(backend_status.get('icon') or 'cloud-off'),
-        }
+    job = db.session.get(JobExecution, report.job_execution_id) if report.job_execution_id else None
 
     return {
         'page_title': 'Report Detail',
         'page_subtitle': 'Review report request metadata, selected sections, lifecycle status, and export readiness.',
         'report': report_detail,
+        'job_execution': present_job_execution(job) if job else None,
         'status_context': get_report_detail_status_context(
             report.status,
         ),
@@ -179,29 +168,26 @@ def get_report_detail_payload(
             report,
             artifact_access,
         ),
-        'artifact_access_notice': artifact_access_notice,
-        'backend_status': backend_status,
+        'artifact_access_notice': get_report_artifact_access_notice(
+            report,
+            artifact_access,
+        ),
     }
 
 
 def get_hero_posture() -> list[dict[str, str]]:
     backend_name = _get_active_storage_backend_name()
-    backend_status = get_report_storage_backend_status(backend_name)
     total_reports = _count_reports()
     ready_reports = _count_reports_by_status(
         [
             'ready',
         ]
     )
-    missing_artifacts = _count_missing_artifacts() if backend_status.get('read_available', False) else 0
+    missing_artifacts = _count_missing_artifacts()
 
-    storage_tone = str(backend_status.get('tone', 'amber'))
-    storage_status = str(backend_status.get('status', 'Needs Review'))
-    storage_caption = str(backend_status.get('label', 'Report storage'))
-    if missing_artifacts > 0:
-        storage_status = 'Storage Review'
-        storage_tone = 'amber'
-        storage_caption = f'{missing_artifacts} missing artifact reference(s)'
+    storage_label = 'S3-Compatible Storage' if backend_name == 's3' else 'Local Storage'
+    storage_tone = 'green' if missing_artifacts == 0 else 'amber'
+    storage_status = storage_label if missing_artifacts == 0 else 'Storage Review'
 
     return [
         {
@@ -221,7 +207,7 @@ def get_hero_posture() -> list[dict[str, str]]:
         {
             'label': 'Storage Backend',
             'value': storage_status,
-            'caption': storage_caption,
+            'caption': 'Active artifact backend',
             'icon': 'hard-drive',
             'tone': storage_tone,
         },
@@ -615,7 +601,6 @@ def get_storage_context(
     artifact_access: Mapping[str, Any] | None = None,
 ) -> list[dict[str, str]]:
     backend_name = _get_active_storage_backend_name()
-    backend_status = get_report_storage_backend_status(backend_name)
     ready_reports = _count_reports_by_status(
         [
             'ready',
@@ -628,13 +613,16 @@ def get_storage_context(
     )
     missing_artifacts = (
         _count_missing_artifacts()
-        if artifact_access is None and bool(backend_status.get('read_available', False))
+        if artifact_access is None
         else 0
     )
 
-    storage_tone = str(backend_status.get('tone', 'amber'))
-    storage_status = str(backend_status.get('status', 'Needs Review'))
-    storage_description = str(backend_status.get('description') or '')
+    storage_tone = 'green'
+    storage_status = 'Active'
+    storage_description = (
+        f'Generated report artifacts use the {backend_name.upper()} backend. '
+        'Existing records keep their own backend prefix, so mixed local/S3 history remains readable.'
+    )
 
     if artifact_access is not None and not bool(artifact_access.get('reachable', True)):
         storage_tone = 'amber'
@@ -660,13 +648,9 @@ def get_storage_context(
         },
         {
             'label': 'Download route active',
-            'description': (
-                'Ready and archived reports are downloadable when their storage artifact still exists.'
-                if bool(backend_status.get('read_available', False))
-                else 'Download is paused while the active storage backend is unavailable.'
-            ),
-            'status': 'Ready' if bool(backend_status.get('read_available', False)) else 'Paused',
-            'tone': 'green' if bool(backend_status.get('read_available', False)) else 'amber',
+            'description': 'Ready and archived reports are downloadable when their storage artifact still exists.',
+            'status': 'Ready',
+            'tone': 'green',
         },
         {
             'label': 'Ready artifacts tracked',
@@ -690,8 +674,7 @@ def get_storage_context(
 
 
 def get_recommended_actions() -> list[dict[str, str]]:
-    backend_status = get_report_storage_backend_status()
-    missing_artifacts = _count_missing_artifacts() if backend_status.get('read_available', False) else 0
+    missing_artifacts = _count_missing_artifacts()
 
     actions = [
         {
@@ -721,25 +704,7 @@ def get_recommended_actions() -> list[dict[str, str]]:
         },
     ]
 
-    if not bool(backend_status.get('reachable', False)):
-        actions.insert(
-            0,
-            {
-                'label': 'Restore report storage connectivity',
-                'description': str(backend_status.get('description') or 'Storage-dependent actions are temporarily paused.'),
-                'href': '/reports/storage',
-            },
-        )
-    elif not bool(backend_status.get('write_available', False)):
-        actions.insert(
-            0,
-            {
-                'label': 'Restore report storage write access',
-                'description': str(backend_status.get('description') or 'New report generation is paused until storage write access is restored.'),
-                'href': '/reports/storage',
-            },
-        )
-    elif missing_artifacts > 0:
+    if missing_artifacts > 0:
         actions.insert(
             0,
             {
@@ -915,11 +880,7 @@ def _serialize_report(
         report.file_path,
     )
     artifact_format = get_report_artifact_format(report.output_format)
-    active_backend_status = get_report_storage_backend_status()
-    can_generate_artifact = (
-        report.status in ['requested', 'failed', 'ready']
-        and bool(active_backend_status.get('write_available', False))
-    )
+    can_generate_artifact = report.status in ['requested', 'failed', 'ready']
     can_download_artifact = (
         report.status in ['ready', 'archived']
         and bool(report.file_path)
@@ -991,7 +952,6 @@ def _serialize_report(
         'storage_object_key': storage_location['object_key'],
         'storage_uri_display': storage_location['display'],
         'can_generate_artifact': can_generate_artifact,
-        'generation_storage_ready': bool(active_backend_status.get('write_available', False)),
         'generate_artifact_label': (
             f'Regenerate {artifact_format.label}'
             if report.status == 'ready'
@@ -1529,10 +1489,9 @@ def restore_archived_report_record(
     if not report.file_path:
         return False, 'Archived report has no storage metadata. Regenerate the artifact instead.'
 
-    artifact_access = _probe_report_file(report.file_path)
-    if not bool(artifact_access.get('reachable', True)):
-        return False, 'Report storage is temporarily unavailable. Restore connectivity before restoring this archived report.'
-    if not bool(artifact_access.get('exists', False)):
+    if not _report_file_exists(
+        report.file_path,
+    ):
         return False, 'Archived report artifact is missing in configured storage. Regenerate the artifact instead.'
 
     report.status = 'ready'
@@ -1824,8 +1783,9 @@ def _count_missing_artifacts() -> int:
             missing_count += 1
             continue
 
-        artifact_access = _probe_report_file(report.file_path)
-        if bool(artifact_access.get('reachable', True)) and not bool(artifact_access.get('exists', False)):
+        if not _report_file_exists(
+            report.file_path,
+        ):
             missing_count += 1
 
     return missing_count
@@ -1844,7 +1804,44 @@ def _report_file_exists(
 def _probe_report_file(
     file_path: str | None,
 ) -> dict[str, Any]:
-    return probe_report_artifact(file_path)
+    if not file_path:
+        return {
+            'exists': False,
+            'reachable': True,
+            'backend': 'none',
+            'backend_label': 'Report Storage',
+            'state': 'not_generated',
+        }
+
+    backend_name = 'unknown'
+
+    try:
+        backend_name, _object_key = parse_report_storage_uri(
+            file_path,
+        )
+        file_exists = report_file_exists(
+            file_path,
+        )
+    except Exception:  # External storage failures must not break report detail rendering.
+        current_app.logger.warning(
+            'Unable to verify generated report artifact in storage backend.',
+            exc_info=True,
+        )
+        return {
+            'exists': False,
+            'reachable': False,
+            'backend': backend_name,
+            'backend_label': _format_storage_backend_label(backend_name),
+            'state': 'unavailable',
+        }
+
+    return {
+        'exists': bool(file_exists),
+        'reachable': True,
+        'backend': backend_name,
+        'backend_label': _format_storage_backend_label(backend_name),
+        'state': 'available' if file_exists else 'missing',
+    }
 
 
 def _format_storage_backend_label(

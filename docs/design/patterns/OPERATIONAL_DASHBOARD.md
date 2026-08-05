@@ -1,38 +1,134 @@
-# KAORI Operational Dashboard Pattern
+# KAORI Operational Dashboard Pattern v1.1
+
+**Status:** Locked reference pattern
+**Reference implementation:** Kubernetes Operations Dashboard
+**Canonical page:** `app/templates/dashboards/kubernetes/partials/_content.html`
 
 ## Purpose
 
-This pattern defines a read-only, snapshot-backed operational dashboard that combines scope, KPIs, integrated tabs, tables, charts, and visible action guidance without creating page-local styling systems.
+This pattern defines a read-only, snapshot-backed operational dashboard that combines scope, operational indicators, peer workspace tabs, tables, charts, and visible action guidance without creating page-local styling systems.
+
+The Kubernetes Operations Dashboard is the visual and technical reference for future KAORI operational dashboards. New dashboards may change domain content, but they must preserve the composition, data-boundary, interaction, accessibility, and style-ownership rules in this document.
 
 ## Canonical composition
 
 ```text
 Canonical Hero
-Scope and Freshness Toolbar
-Operational KPI Grid
+Operational Signal Overview
+├── Scope selector
+├── Snapshot update context
+└── Operational KPI grid
 Tab Style 1 — Integrated Workspace Tabs
-├── Primary Operational Sections
-├── Full-Width Complex Tables
-└── Equal-Height Peer Content Grid
+├── Operations Overview
+│   ├── Cluster Health table
+│   └── Inventory / Data Freshness peer grid
+├── Capacity & Demand
+│   ├── Capacity / Forecast peer grid
+│   └── Top Consumers
+├── Signals & Actions
+│   ├── Alerts / Response Guidance peer grid
+│   └── Recommended Actions
+└── Reporting
+    └── Reporting Summary / Guidance peer grid
 ```
 
-## Rules
+## Visual contract
 
-- Web requests read committed database or worker snapshots only; styling changes must not weaken the data boundary.
-- Keep hero geometry canonical and avoid duplicate freshness metadata.
-- Use `operational_metric_card.html` for KPI cards.
-- Use Tab Style 1 (`integrated-workspace`) through `workspace_tabs.html`; tabs attach to the workspace and do not become a separate card.
-- Persist the active tab in the URL.
-- Use `operational_section_card.html` for repeated block shells.
-- Use `peer_content_grid.html` when both dashboard blocks are primary tab content.
-- Peer boxes stretch to the tallest box in the row.
-- Use `context_rail.html` only when the right side is genuinely secondary supporting context.
-- Use `operational_flow_steps.html` for static action or response flow boxes inside peer main content. Supporting tips may follow the flow through `operational_callout.html` and remain visible.
-- Use `forecast_projection_chart.html` for historical/projected resource visuals.
-- Use canonical tables, labels, states, pagination, and resource-aware copy.
-- Initial asynchronous sections use local skeleton placeholders. Tables with in-place pagination or filtering also use a section-owned loading bar.
-- Avoid card-inside-card composition, duplicate actions, and expandable primary flows.
+- Use `components/page_hero.html` for the page Hero.
+- Use `components/operational_metric_card.html` for the KPI grid.
+- Use `components/workspace_tabs.html` with semantic key `integrated-workspace`.
+- Use `components/operational_section_card.html` for repeated section shells.
+- Use `components/peer_content_grid.html` for equal-height peer content.
+- Use `components/operational_flow_steps.html` for visible action and response flows.
+- Use `components/operational_callout.html` for interpretation and supporting guidance.
+- Use `components/forecast_projection_chart.html` for historical and projected utilization.
+- Use canonical table, label, empty-state, loading, and pagination components.
+- Do not introduce page-local card shells, tab geometry, label geometry, pagination, chart SVGs, arbitrary typography, or dark-mode colors.
+- The dashboard remains neutral-first in dark mode. Violet is limited to identity, active state, focus, links, progress, and primary actions.
 
-## Reference implementation
+## Information hierarchy
 
-`app/templates/dashboards/kubernetes/partials/_content.html` is the first canonical implementation.
+The page follows this sequence:
+
+```text
+Identity → Scope → Indicators → Peer analysis → Interpretation → Action
+```
+
+The Hero establishes identity and readiness. The Operational Signal Overview owns scope and high-level indicators. Tabs represent peer perspectives of the same dashboard scope. Each section presents evidence before guidance or action.
+
+## Data-boundary contract
+
+- Web requests read committed database rows and worker snapshots only.
+- Web requests must not query Kubernetes, Prometheus, Alertmanager, S3, or another provider directly.
+- Missing, pending, failed, stale, or expired snapshots are rendered explicitly.
+- All-cluster mode may summarize inventory and per-cluster evidence.
+- Detailed capacity, forecast, consumer, and alert signals require a selected cluster.
+- UI copy must use `snapshot`, `committed`, `available`, or `detailed signals`; it must not imply that the page performs live provider queries.
+- Reporting guidance must remain format-neutral because Analytics supports PDF/CSV and Inventory supports XLSX/CSV.
+
+## Request and loading contract
+
+- The first request renders the shell, Hero, scope, inventory aggregate, reporting summary, and local placeholders.
+- Heavy sections load independently through `get_dashboard_section()` and HTMX.
+- Hidden tab sections load when revealed.
+- Initial async sections use local skeletons.
+- Tables with pagination or filtering own their loading bar.
+- Do not add a global dashboard loading overlay.
+- An unavailable section must not prevent the rest of the dashboard from rendering.
+
+## Tab interaction contract
+
+Tab Style 1 is URL-backed and accessible:
+
+- active state is stored in `?tab=`;
+- scope changes preserve the active tab;
+- invalid values resolve to `overview`;
+- `role="tablist"`, `role="tab"`, and `role="tabpanel"` are required;
+- only the active tab has `tabindex="0"`;
+- Arrow Left/Right wrap through tabs;
+- Home selects the first tab;
+- End selects the last tab;
+- keyboard selection moves focus and updates the URL.
+
+## Responsive contract
+
+- Tabs scroll horizontally on narrow screens.
+- KPI cards progress from one to two to four columns.
+- Peer content stacks on smaller screens and becomes equal-height 6/6 or 7/5 content at desktop sizes.
+- Tables retain canonical horizontal overflow behavior.
+- Controls remain at least 44 px high where they act as primary interactive targets.
+
+## Operational wording
+
+Use these terms consistently:
+
+- `Cluster Signals Available`
+- `Select a Cluster for Detailed Signals`
+- `Alertmanager`
+- `approved output`
+- `stored artifact`
+
+Do not use:
+
+- `Live Signals Enabled`
+- `Select a Cluster for Live Signals`
+- `AlertManager`
+- generic reporting guidance that assumes every artifact is PDF
+
+## Change control
+
+The reference dashboard may evolve only when the change improves a reusable KAORI pattern. A visual change must update, in the same commit:
+
+1. shared component or canonical dashboard implementation;
+2. this document;
+3. `app/dashboards/kubernetes/README.md` when the data or request boundary changes;
+4. `scripts/verify_operational_dashboard_standard.py`;
+5. dashboard contract tests;
+6. the latest alignment audit when the decision is material.
+
+Run:
+
+```bash
+python3 scripts/verify_operational_dashboard_standard.py
+python3 -m pytest -q tests/contracts/kubernetes/test_operations_dashboard_styling_guide_contract.py
+```

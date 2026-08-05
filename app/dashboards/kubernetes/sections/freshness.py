@@ -28,7 +28,9 @@ def build_hero_integration_meta(
 
     return {
         'prometheus_status_label': 'Snapshot Ready' if prometheus_available else 'Unavailable',
-        'prometheus_status_description': 'Worker snapshot available' if prometheus_available else 'Awaiting worker refresh',
+        'prometheus_status_description': (
+            'Worker snapshot available' if prometheus_available else 'Awaiting worker refresh'
+        ),
         'prometheus_status_tone': 'green' if prometheus_available else 'slate',
         'alertmanager_status_label': 'Snapshot Ready' if alertmanager_available else 'Unavailable',
         'alertmanager_status_description': (
@@ -59,7 +61,10 @@ def build_data_freshness(
         prometheus_description = (
             'Prometheus-backed utilization, capacity, consumer, and forecast data for the selected cluster.'
             if has_prometheus_data
-            else 'Run or validate analytics materialization for the selected cluster before using live metric signals.'
+            else (
+                'Run or validate analytics materialization for the selected cluster before using '
+                'detailed metric signals.'
+            )
         )
 
         alert_status = 'Ready' if has_alertmanager_data else 'Unavailable'
@@ -70,7 +75,7 @@ def build_data_freshness(
             else 'No committed alert snapshot'
         )
         alert_description = (
-            'AlertManager or Prometheus alert data is available for the selected cluster.'
+            'Alertmanager or Prometheus alert data is available for the selected cluster.'
             if has_alertmanager_data
             else 'Validate the alert source and refresh the selected cluster before relying on alert signals.'
         )
@@ -79,7 +84,8 @@ def build_data_freshness(
         prometheus_tone = 'info'
         prometheus_value = 'Resolved from committed cluster snapshots'
         prometheus_description = (
-            'All Clusters mode summarizes committed capacity snapshots by cluster. Select one cluster for detailed analytics.'
+            'All Clusters mode summarizes committed capacity snapshots by cluster. '
+            'Select one cluster for detailed analytics.'
         )
 
         alert_status = 'Per Cluster'
@@ -132,6 +138,9 @@ def build_data_freshness(
                 else 'No generated report artifacts'
             ),
             icon='file-text',
-            description='Generated reports are retained operational artifacts, separate from live Kubernetes signal health.',
+            description=(
+                'Generated reports are retained operational artifacts, separate from current '
+                'Kubernetes health signals.'
+            ),
         ),
     ]

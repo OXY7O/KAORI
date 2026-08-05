@@ -28,12 +28,12 @@ def test_node_posture_copy_is_functional_and_does_not_duplicate_hero_readiness()
 
     expected = (
         "Node Resource Posture",
-        "Reported CPU capacity in the active node scope.",
-        "Reported memory capacity across filtered nodes.",
-        "Reported local ephemeral storage capacity.",
+        "inventory.cpu_coverage_description",
+        "inventory.memory_coverage_description",
+        "inventory.ephemeral_coverage_description",
         "Nodes excluded from new workload scheduling.",
         "Nodes reporting memory, disk, or PID pressure.",
-        "Nodes reporting unavailable network condition.",
+        "Nodes reporting an unavailable network condition.",
     )
     for text in expected:
         assert text in summary

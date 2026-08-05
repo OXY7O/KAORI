@@ -109,7 +109,7 @@ def _rendered_html() -> str:
 def test_top_consumers_presentation_uses_nine_page_contract() -> None:
     presentation = _presentation()
 
-    assert presentation['presentation_version'] == 'v1.1-top-consumers-publication'
+    assert presentation['presentation_version'] == 'v3.0-top-consumers-publication'
     assert presentation['page_count'] == 9
     assert presentation['layout_contract']['ranking_policy'] == 'displayed-set-share-per-resource'
 

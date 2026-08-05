@@ -31,12 +31,12 @@ def test_node_inventory_supporting_copy_uses_sentence_case_and_footer_resource_c
     table = _read('app/templates/inventory/nodes/partials/_table_content.html')
 
     expected = (
-        'Reported CPU capacity in the active node scope.',
-        'Reported memory capacity across filtered nodes.',
-        'Reported local ephemeral storage capacity.',
+        'inventory.cpu_coverage_description',
+        'inventory.memory_coverage_description',
+        'inventory.ephemeral_coverage_description',
         'Nodes excluded from new workload scheduling.',
         'Nodes reporting memory, disk, or PID pressure.',
-        'Nodes reporting unavailable network condition.',
+        'Nodes reporting an unavailable network condition.',
     )
     for description in expected:
         assert description in summary

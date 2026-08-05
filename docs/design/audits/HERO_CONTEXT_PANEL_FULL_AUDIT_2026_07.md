@@ -1,5 +1,8 @@
 # Hero Context Panel Full Audit — July 2026
 
+> **Status: Historical audit snapshot.** Counts in this document describe the July 2026 estate only. The current estate is discovered dynamically by `scripts/verify_hero_component_standard.py`. Use `docs/design/components/HERO.md` for implementation decisions.
+
+
 ## Scope
 
 The audit reviewed all 72 templates that import the shared `page_hero` component and all 31 Hero templates that render a right-side context panel through `page_hero.aside_classes()`.

@@ -87,16 +87,16 @@ def build_analytics_overview_presentation(
 
     common = {
         'page_count': len(_ANALYTICS_PAGE_TITLES),
-        'presentation_version': 'v2.9.2-analytics-family-standard',
+        'presentation_version': 'v3.0-analytics-overview-publication',
         'publication_family': ANALYTICS_PUBLICATION_FAMILY,
         'publication_standard': ANALYTICS_PUBLICATION_STANDARD,
         'canonical_reference': ANALYTICS_CANONICAL_REFERENCE,
         'layout_contract': analytics_layout_contract(
             page_count=len(_ANALYTICS_PAGE_TITLES),
-            table_policy='concise-decision-registers',
+            table_policy='concise-register-plus-reference',
             section_page_breaks=True,
-            truncate_identities=True,
-            identity_policy='top-n-summarized',
+            truncate_identities=False,
+            identity_policy='reference-register',
         ),
         'report_id': report_id,
         'report_name': report_name,
@@ -1299,6 +1299,9 @@ def _consumer_rows(items: Sequence[Any], resource_label: str) -> list[dict[str, 
         if item.get('percent') is not None:
             share_percent = max(0.0, min(_number(item.get('percent')), 100.0))
         raw_value = _measurement_number(display)
+        if resource_label.lower() == 'memory' and raw_value > 1024**2:
+            raw_value = raw_value / 1024**3
+            display = f'{raw_value:.2f} GiB'
         rows.append(
             {
                 'rank': index,
@@ -1355,12 +1358,12 @@ def _consumer_insight(groups: Mapping[str, Sequence[Mapping[str, Any]]]) -> str:
     memory = list(groups.get('memory') or [])
     if memory:
         top = memory[:2]
-        names = ' and '.join(_text(item.get('name')) for item in top)
+        refs = ' and '.join(f'M{index}' for index in range(1, len(top) + 1))
         share = sum(_number(item.get('percent')) for item in top)
-        return f'{names} account for {_display_percent(share)} of the displayed memory consumer signal.'
+        return f'{refs} account for {_display_percent(share)} of the displayed memory consumer signal. Complete identities are listed in the reference register.'
     cpu = list(groups.get('cpu') or [])
     if cpu:
-        return f'{_text(cpu[0].get("name"))} is the highest displayed CPU consumer.'
+        return 'C1 is the highest displayed CPU consumer. Complete identity and namespace evidence are listed in the reference register.'
     return 'Top-consumer evidence is not available for the selected reporting boundary.'
 
 

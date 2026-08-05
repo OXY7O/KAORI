@@ -230,6 +230,10 @@ def test_inventory_overview_components_and_pattern_are_documented() -> None:
     assert 'xl:col-span-4' in snapshot
     assert 'xl:col-span-8' in snapshot
     assert 'xl:grid-cols-4' in snapshot
+    assert 'xl:divide-x' in snapshot
+    assert 'bg-surface-hover' not in snapshot
+    assert 'coverage_tone' in snapshot
+    assert 'transparent neutral metrics' in guide
     assert 'Open Inventory' in asset_card
     assert 'role="dialog"' in drawer
     assert '{% macro section(' in drawer
@@ -340,7 +344,8 @@ def test_analytics_overview_surface_hierarchy_is_documented_and_shared() -> None
     assert 'macro readiness_shell_classes' in shared
     assert 'macro interpretation_grid_classes' in shared
     assert 'macro context_panel_classes' in shared
-    assert 'macro context_bottom_notice' in hero
+    assert 'macro context_card_body' in hero
+    assert 'metrics[:2]' in hero
     assert "'green'" in labels
     assert "'amber'" in labels
     assert "'red'" in labels

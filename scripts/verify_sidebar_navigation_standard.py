@@ -57,8 +57,8 @@ PARENT_TOKENS = (
     "leading-6",
     "[.sidebar-collapsed_&]:justify-center",
     "[.sidebar-collapsed_&]:px-2",
-    "bg-kaori-primary",
-    "hover:bg-white/[0.07]",
+    "sidebar-parent-active",
+    "sidebar-item-idle",
 )
 
 SUBMENU_TOKENS = (
@@ -74,7 +74,7 @@ SUBMENU_TOKENS = (
     "transition",
     "bg-white/[0.08]",
     "text-kaori-accent",
-    "hover:bg-white/[0.07]",
+    "sidebar-item-idle",
     "h-1.5 w-1.5",
     "h-3.5 w-3.5",
     "truncate whitespace-nowrap",
@@ -146,8 +146,8 @@ def verify() -> None:
     )
 
     section_pattern = re.compile(
-        r'<div class="sidebar-expanded-only mb-1\.5 px-3 '
-        r'text-xs font-extrabold uppercase tracking-widest text-white/40">([^<]+)</div>'
+        r'<div class="sidebar-expanded-only mb-1\.5 px-3 sidebar-section-label '
+        r'text-xs font-extrabold uppercase tracking-widest">([^<]+)</div>'
     )
     section_order = tuple(match.strip() for match in section_pattern.findall(sidebar))
     if section_order != EXPECTED_SECTION_ORDER:
@@ -179,7 +179,7 @@ def verify() -> None:
         for tag, block in blocks:
             parent_count += 1
             _require_tokens(block, PARENT_TOKENS, f"{filename} parent")
-            _require_tokens(block, ("h-8 w-8", "h-4 w-4", "truncate whitespace-nowrap"), f"{filename} parent identity")
+            _require_tokens(block, ("h-8 w-8", "h-4 w-4", "truncate whitespace-nowrap", "sidebar-parent-active-icon", "sidebar-item-idle-icon"), f"{filename} parent identity")
             if "text-sm" in block or "text-xs" in block or "text-[" in block:
                 raise AssertionError(f"{filename}: parent typography must remain text-base")
             if 'title="' not in block or 'aria-label="' not in block:
@@ -216,12 +216,14 @@ def verify() -> None:
                 raise AssertionError(f"{filename} submenu #{index}: submenu typography must remain text-sm")
 
     doc_tokens = (
-        "# KAORI Sidebar Navigation Standard v1.1",
-        "Status:** Locked application-shell contract",
+        "# KAORI Sidebar Navigation Standard v1.2",
+        "Status:** Locked application-shell and dark-mode contract",
         "Parent menu label | 16 px",
         "Submenu label | 14 px",
         "Parent:  min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold leading-6",
         "Child:   rounded-lg px-2.5 py-1.5 text-sm leading-5",
+        "sidebar-parent-active",
+        "dark mode uses Violet at 18% opacity",
         "## Canonical Information Architecture",
         "## Enforcement and Change Control",
         "scripts/verify_sidebar_navigation_standard.py",
@@ -235,7 +237,7 @@ def verify() -> None:
 
     print(
         "KAORI sidebar navigation standard passed: "
-        f"{parent_count} parent blocks and {submenu_count} submenu links conform to v1.1; "
+        f"{parent_count} parent blocks and {submenu_count} submenu links conform to v1.2; "
         "section order, collapse behavior, accessibility, typography, and documentation are locked."
     )
 

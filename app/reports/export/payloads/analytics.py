@@ -10,12 +10,13 @@ from app.extensions.db import db
 from app.models.report import Report, ReportSchedule
 from app.reports.catalog import require_selected_cluster
 from app.reports.export.payloads.alerts import get_report_alerts_anomalies_payload
-from app.reports.export.payloads.common import get_report_selected_cluster
+from app.reports.export.payloads.common import get_report_selected_cluster, report_payload_error
 
 
 def get_report_analytics_overview_payload(
     report: Report,
 ) -> dict[str, Any]:
+    cluster = None
     try:
         selected_cluster_id = str(get_report_selected_cluster(report).id)
         time_range = report.period or '24h'
@@ -31,11 +32,7 @@ def get_report_analytics_overview_payload(
         payload['data_freshness'] = _collect_data_freshness(payload)
         return payload
     except Exception as exc:
-        return {
-            '_error': str(
-                exc,
-            ),
-        }
+        return report_payload_error(exc, cluster=cluster)
 
 
 def _collect_alert_detail(report: Report) -> dict[str, Any]:

@@ -42,7 +42,7 @@
                             <i data-lucide="scan-search" class="h-3.5 w-3.5" aria-hidden="true"></i>
                             <p class="{{ page_hero.context_metric_label_classes() }}">Hidden Resources</p>
                         </div>
-                        <p id="topology-hero-coverage" class="mt-1.5 {{ page_hero.context_metric_value_classes(true) }}">{{ graph.summary.omitted_nodes }}</p>
+                        <p id="topology-hero-coverage" class="mt-1.5 {{ page_hero.context_metric_value_classes() }}">{{ graph.summary.omitted_nodes }}</p>
                         <p class="{{ page_hero.context_metric_helper_classes() }}">Graph limit omitted</p>
                     </div>
                 </div>

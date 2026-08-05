@@ -1,1128 +1,218 @@
-/* Analytics-specific specialization on top of analytics_publication.css. */
-/* Do not redefine shared typography, page canvas, header, footer, section, table, or cover primitives here. */
+/*
+ * KAORI Analytics Overview PDF specialization v3.0.
+ * This stylesheet owns only Overview-specific charts, registers, and page budgets.
+ * Shared publication geometry and typography are owned by analytics_publication.css.
+ */
 
-/* Content-page masthead. Explicit physical width avoids WeasyPrint shrink-to-fit. */
+/* Cover */
+.posture-line { display: flex; align-items: center; gap: 3mm; margin: 2mm 0; }
+.posture-line strong { font-size: 10pt; }
+.posture-line span { color: #64748B; font-size: 6.4pt; }
+.cover-message { margin-top: 7mm; padding: 4mm 4.5mm; border-left: 1.2mm solid #7C3AED; background: #F8FAFC; }
+.cover-message strong { display: block; font-size: 8pt; }
+.cover-message p { margin: 1.5mm 0 0; font-size: 7.1pt; line-height: 1.48; }
 
-.lead-paragraph { max-width: 170mm; font-size: 9pt; line-height: 1.58; }
-.source-note { margin: 2.5mm 0 0; color: #64748B; font-size: 6.5pt; line-height: 1.4; }
-.spaced { margin-top: 3mm !important; }
+/* Shared table register geometry */
+.priority-register th:nth-child(1) { width: 8%; }
+.priority-register th:nth-child(2) { width: 12%; }
+.priority-register th:nth-child(3) { width: 39%; }
+.priority-register th:nth-child(4) { width: 25%; }
+.priority-register th:nth-child(5) { width: 16%; }
+.compact-table th:nth-child(1) { width: 25%; }
+.compact-table th:nth-child(2) { width: 51%; }
+.compact-table th:nth-child(3) { width: 24%; }
 
-.priority-table th:nth-child(1), .priority-table td:nth-child(1) { width: 11%; }
-.priority-table th:nth-child(2), .priority-table td:nth-child(2) { width: 30%; }
-.priority-table th:nth-child(3), .priority-table td:nth-child(3) { width: 39%; }
-.priority-table th:nth-child(4), .priority-table td:nth-child(4) { width: 20%; }
-.capacity-table th:nth-child(1) { width: 13%; }
-.capacity-table th:nth-child(2) { width: 15%; }
-.capacity-table th:nth-child(3) { width: 15%; }
-.capacity-table th:nth-child(4) { width: 13%; }
-.resource-key th:nth-child(1) { width: 8%; }
-.resource-key th:nth-child(2) { width: 43%; }
-.resource-key th:nth-child(3) { width: 23%; }
-.resource-key th:nth-child(4) { width: 12%; }
-.resource-key th:nth-child(5) { width: 14%; }
-.risk-table th:nth-child(1) { width: 8%; }
-.risk-table th:nth-child(2) { width: 34%; }
-.risk-table th:nth-child(3) { width: 58%; }
-.recommendation-table { font-size: 6.75pt; }
-.recommendation-table th:nth-child(1) { width: 9%; }
-.recommendation-table th:nth-child(2) { width: 30%; }
-.recommendation-table th:nth-child(3) { width: 10%; }
-.recommendation-table th:nth-child(4) { width: 22%; }
-.recommendation-table th:nth-child(5) { width: 16%; }
-.recommendation-table th:nth-child(6) { width: 13%; }
-.reports-table th:nth-child(1) { width: 44%; }
-.reports-table th:nth-child(2) { width: 28%; }
-.reports-table th:nth-child(3) { width: 13%; }
-.reports-table th:nth-child(4) { width: 15%; }
-.alert-table th:nth-child(1) { width: 8%; }
-.alert-table th:nth-child(2) { width: 13%; }
-.alert-table th:nth-child(3) { width: 42%; }
-.alert-table th:nth-child(4) { width: 23%; }
-.alert-table th:nth-child(5) { width: 14%; }
-.cluster-table th:nth-child(1) { width: 42%; }
-.cluster-table th:nth-child(2) { width: 10%; }
-.cluster-table th:nth-child(3) { width: 13%; }
-.cluster-table th:nth-child(4) { width: 13%; }
-.cluster-table th:nth-child(5) { width: 10%; }
-.cluster-table th:nth-child(6) { width: 12%; }
-.fresh-table th:nth-child(1) { width: 38%; }
-.fresh-table th:nth-child(2) { width: 25%; }
-.fresh-table th:nth-child(3) { width: 17%; }
-.fresh-table th:nth-child(4) { width: 20%; }
-.status-table th:first-child { width: 24%; }
-.method-table th:first-child { width: 34%; }
-
-.chart-frame { width: 100%; height: 52mm; overflow: hidden; }
-.chart-frame svg, .severity-chart svg, .freshness-chart svg { width: 100%; height: 100%; display: block; }
-.chart-frame .ao-chart-svg { width: 100%; height: 100%; }
-.chart-svg { width: 100%; height: auto; display: block; }
-.chart-label { font: 12px Inter; fill: #172033; }
-.chart-ref { font: 600 12px Inter; fill: #7C3AED; }
-.chart-value { font: 600 12px Inter; fill: #172033; }
-.chart-muted, .axis-label, .chart-note { font: 10px Inter; fill: #64748B; }
-.strong { font-weight: 600; }
-.bar-track { fill: #E5E7EB; }
-.bar-fill { fill: #7C3AED; }
-.gridline { stroke: #DDE3EA; stroke-width: 1; }
-.threshold-warning { stroke: #D97706; stroke-width: 1.5; stroke-dasharray: 5 5; }
-.threshold-critical { stroke: #DC2626; stroke-width: 1.5; stroke-dasharray: 5 5; }
-.chart-note.warning { fill: #B45309; }
-.chart-note.critical { fill: #B91C1C; }
-.accent { fill: #6D28D9; }
-.band-warning { fill: #FFF7ED; }
-.band-critical { fill: #FEF2F2; }
-.forecast-divider { stroke: #C4B5FD; stroke-width: 1.5; stroke-dasharray: 4 4; }
-.line-historical { fill: none; stroke: #7C3AED; stroke-width: 3; }
-.line-projected { fill: none; stroke: #7C3AED; stroke-width: 3; stroke-dasharray: 7 6; }
-.point { fill: #7C3AED; }
-.area-fill { fill: #F3E8FF; opacity: .7; }
-
-.utilization-chart { position: relative; padding-top: 4mm; }
-.util-row { display: grid; grid-template-columns: 26mm minmax(0, 1fr) 23mm 25mm; gap: 3.4mm; align-items: center; margin-bottom: 5mm; font-size: 7.3pt; }
-.util-row > strong { font-size: 8pt; }
-.util-row > span { text-align: right; font-weight: 600; }
-.util-row > em { color: #64748B; text-align: right; font-style: normal; }
-.util-track { position: relative; height: 5mm; overflow: visible; border-radius: 1mm; background: #E5E7EB; }
-.util-track i { display: block; height: 100%; border-radius: 1mm; background: #7C3AED; }
-.util-track b { position: absolute; top: -1.5mm; bottom: -1.5mm; width: .35mm; }
-.util-track .warn-line { left: 70%; background: #D97706; }
-.util-track .crit-line { left: 85%; background: #DC2626; }
-.util-axis { display: block; position: relative; height: 5.2mm; margin-right: 51mm; margin-left: 29.4mm; color: #64748B; font-size: 5.4pt; }
-.util-axis span { position: absolute; top: 0; white-space: nowrap; }
-.util-axis .axis-start { left: 0; }
-.util-axis .axis-warning { left: 70%; transform: translateX(-50%); color: #B45309; font-weight: 600; }
-.util-axis .axis-critical { left: 85%; transform: translateX(-50%); color: #B91C1C; font-weight: 600; }
-.util-axis .axis-end { right: 0; text-align: right; }
-
-.consumer-chart { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12mm; }
-.consumer-chart h3 { margin: 0 0 4mm; }
-.consumer-row { display: grid; grid-template-columns: 9mm minmax(0, 1fr) 24mm; gap: 3mm; align-items: center; margin-bottom: 4mm; }
-.consumer-row > b { color: #7C3AED; font-size: 7.4pt; }
-.consumer-row > strong { text-align: right; font-size: 7pt; }
-.consumer-track { height: 4.4mm; overflow: hidden; border-radius: .8mm; background: #E5E7EB; }
-.consumer-track i { display: block; height: 100%; background: #7C3AED; }
-
-.two-chart-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12mm; }
-.two-chart-grid h3 { margin-bottom: 4mm; }
-.severity-chart { height: 48mm; }
-.freshness-chart { height: 43mm; }
-.mini-bars { height: 45mm; display: flex; align-items: flex-end; justify-content: space-around; padding: 0 8mm 4mm; border-bottom: .3mm solid #CBD5E1; }
-.mini-bars div { width: 24mm; display: flex; flex-direction: column; align-items: center; gap: 1.5mm; }
-.mini-bars span { color: #64748B; font-size: 7pt; }
-.mini-bars b { display: block; width: 12mm; border-radius: 2mm 2mm 0 0; }
-.mini-bars em { font-size: 8pt; font-style: normal; font-weight: 600; }
-.category-list { display: flex; flex-direction: column; gap: 4mm; margin-top: 7mm; }
-.category-list div { display: flex; justify-content: space-between; padding-bottom: 3mm; border-bottom: .25mm solid #E2E8F0; }
-
-.readiness-line { display: flex; align-items: baseline; gap: 4mm; margin-bottom: 2.5mm; flex-wrap: wrap; }
-.readiness-line strong { font-size: 10.2pt; letter-spacing: -.01em; }
-.empty-state { margin: 0; color: #64748B; font-style: italic; }
-.readiness-grid, .count-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: .3mm solid #CBD5E1; border-bottom: .3mm solid #CBD5E1; }
-.readiness-grid div, .count-strip div { min-width: 0; display: flex; flex-direction: column; gap: 1mm; padding: 4mm; border-right: .3mm solid #CBD5E1; }
-.readiness-grid div:last-child, .count-strip div:last-child { border-right: none; }
-.readiness-grid strong, .count-strip strong { font-size: 14pt; line-height: 1.05; }
-.readiness-grid span, .count-strip span { color: #64748B; font-size: 7pt; }
-.action-list { margin: 3mm 0 0; padding-left: 6mm; }
-.action-list li { margin-bottom: 2.5mm; padding-left: 1.5mm; }
-.action-list li:last-child { margin-bottom: 0; }
-.detail-flow { display: flex; flex-direction: column; gap: 1mm; }
-.detail-flow > div { display: grid; grid-template-columns: 34mm minmax(0, 1fr); column-gap: 6mm; align-items: start; padding: 2.2mm 0; border-bottom: .25mm solid #E2E8F0; }
-.detail-flow > div:last-child { border-bottom: none; }
-.detail-flow strong { color: #5B21B6; font-weight: 600; }
-.evidence-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12mm; margin-top: 5mm; }
-.evidence-columns ul, .content-section ul { margin: 2mm 0 0; padding-left: 5mm; }
-.evidence-columns li, .content-section li { margin-bottom: 1.8mm; }
-
-.reliability-list { margin-top: 0; grid-template-columns: 38mm minmax(0, 1fr); }
-.report-overview { align-items: start; }
-.report-overview .content-section { margin-top: 0; }
-
-/* Distinct cover masthead: exact approved V2.1 geometry. */
-
-.posture-line { display: flex; align-items: center; gap: 5mm; margin: 5mm 0 4mm; }
-.posture-line strong { font-size: 14pt; }
-.posture-line span { color: #64748B; }
-
-/* Page-specific structures preserve the global type scale while controlling density. */
-.freshness-chart-wide { height: 36mm; }
-.fresh-table { font-size: 6.85pt; }
-.fresh-table th:nth-child(1) { width: 24%; }
-.fresh-table th:nth-child(2) { width: 19%; }
-.fresh-table th:nth-child(3) { width: 24%; }
-.fresh-table th:nth-child(4) { width: 14%; }
-.fresh-table th:nth-child(5) { width: 19%; }
-.quality-table th:nth-child(1) { width: 52%; }
-.quality-table th:nth-child(2) { width: 14%; }
-.quality-table th:nth-child(3) { width: 17%; }
-.quality-table th:nth-child(4) { width: 17%; }
-
-.sources-compact, .method-summary, .status-table { font-size: 6.65pt; }
-.sources-compact th:nth-child(1) { width: 36%; }
-.sources-compact th:nth-child(2) { width: 21%; }
-.sources-compact th:nth-child(3) { width: 43%; }
-.method-summary th:nth-child(1) { width: 34%; }
-
-/* Methodology is the densest evidence page. Keep the global hierarchy, but
-   use the compact table rhythm defined by the approved V2.1 proof. */
-.page-methodology .page-title-row { margin-bottom: 5mm; }
-.page-methodology .metric { min-height: 20mm; padding: 3mm 3.5mm 2.6mm; }
-.page-methodology .metric > strong { margin-top: 1.4mm; font-size: 12.5pt; }
-.page-methodology .content-section { margin-top: 4.5mm; }
-.page-methodology .section-rule { margin-top: 1.7mm; }
-.page-methodology .section-body { margin-top: 3mm; font-size: 7.6pt; line-height: 1.38; }
-.page-methodology .report-table { font-size: 6.35pt; }
-.page-methodology .report-table thead th { padding: 1.35mm 1.7mm; }
-.page-methodology .report-table td { padding: 1.4mm 1.7mm; line-height: 1.26; }
-.page-methodology .methodology-grid { gap: 7mm; }
-.page-methodology .methodology-grid h3 { margin-bottom: 2mm; }
-.page-methodology .evidence-columns { gap: 8mm; margin-top: 3mm; }
-.page-methodology .evidence-columns li,
-.page-methodology .content-section li { margin-bottom: 1mm; }
-.page-methodology .limitations-grid p { margin-top: 2mm; }
-
-/* V2.2 quality-audit corrections. */
-.activity-bars {
-  min-height: 45mm;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 5mm;
-  padding: 4mm 2mm;
-}
-.activity-row {
-  display: grid;
-  grid-template-columns: 30mm minmax(0, 1fr) 12mm;
-  gap: 4mm;
-  align-items: center;
-  font-size: 7.6pt;
-}
-.activity-row > span { color: #475569; font-weight: 600; }
-.activity-row > strong { text-align: right; font-size: 8pt; }
-.activity-track {
-  height: 5mm;
-  overflow: hidden;
-  border-radius: 1mm;
-  background: #E5E7EB;
-}
-.activity-track i { display: block; height: 100%; background: #7C3AED; }
-.activity-track i.normal { background: #15803D; }
-.activity-track i.info { background: #7C3AED; }
-.activity-track i.critical { background: #B91C1C; }
-.activity-track i.neutral { background: #94A3B8; }
-
-.freshness-chart-wide {
-  height: 40mm;
-  overflow: hidden;
-}
-.freshness-chart-wide svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-/* Executive decisions remain readable even when technical evidence is long. */
-.priority-table { font-size: 7.35pt; }
-.priority-table th:nth-child(1), .priority-table td:nth-child(1) { width: 10%; }
-.priority-table th:nth-child(2), .priority-table td:nth-child(2) { width: 31%; }
-.priority-table th:nth-child(3), .priority-table td:nth-child(3) { width: 40%; }
-.priority-table th:nth-child(4), .priority-table td:nth-child(4) { width: 19%; }
-
-/* Consumer bar length is normalized within each signal group. */
-.consumer-row { grid-template-columns: 9mm minmax(0, 1fr) 28mm; }
-.consumer-row > strong { white-space: nowrap; }
-
-/* Keep the summary blocks visually distinct from table rules. */
-
-/* V2.3 layout refinements for cleaner publication rhythm. */
-.page-reporting .two-chart-grid {
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
-  gap: 10mm;
-}
-.page-reporting .activity-bars {
-  min-height: 0;
-  padding: 3mm 1mm 1mm;
-  gap: 4.2mm;
-}
-.page-reporting .activity-row {
-  grid-template-columns: 23mm minmax(0, 1fr) 8mm;
-  gap: 3.2mm;
-}
-.page-reporting .content-section p {
-  line-height: 1.58;
-}
-.page-reporting .empty-state {
-  font-style: normal;
-}
-
-.page-recommendations .recommendation-table {
-  font-size: 6.95pt;
-}
-.page-recommendations .recommendation-table th:nth-child(1) { width: 8%; }
-.page-recommendations .recommendation-table th:nth-child(2) { width: 31%; }
-.page-recommendations .recommendation-table th:nth-child(3) { width: 10%; }
-.page-recommendations .recommendation-table th:nth-child(4) { width: 22%; }
-.page-recommendations .recommendation-table th:nth-child(5) { width: 17%; }
-.page-recommendations .recommendation-table th:nth-child(6) { width: 12%; }
-.page-recommendations .detail-flow p { line-height: 1.48; }
-.page-recommendations .content-section h3 { margin-bottom: 2.6mm; font-size: 10.3pt; }
-
-.page-methodology .page-title-row { margin-bottom: 5.4mm; }
-.page-methodology .metric-strip { margin-bottom: 5.4mm; }
-.page-methodology .metric { min-height: 18.5mm; padding: 3.1mm 3.4mm 2.7mm; }
-.page-methodology .metric > span { font-size: 6pt; }
-.page-methodology .metric > strong { margin-top: 1.3mm; font-size: 11.6pt; line-height: 1.02; }
-.page-methodology .metric > strong.metric-medium { font-size: 10pt; }
-.page-methodology .metric > strong.metric-long { font-size: 8.4pt; line-height: 1.1; }
-.page-methodology .content-section { margin-top: 5.2mm; }
-.page-methodology .section-rule { margin-top: 2.1mm; }
-.page-methodology .section-body { margin-top: 3.8mm; font-size: 7.25pt; line-height: 1.42; }
-.page-methodology .methodology-grid { grid-template-columns: minmax(0, 1fr) minmax(0, .95fr); gap: 7mm; }
-.page-methodology .report-table { font-size: 6.15pt; }
-.page-methodology .report-table td { line-height: 1.24; }
-.page-methodology .content-section h3 { font-size: 8.8pt; }
-
-.page-resource .content-section:first-of-type .section-body {
-  margin-top: 4.5mm;
-}
-.page-consumers .consumer-chart {
-  gap: 10mm;
-}
-
-.page-recommendations .metric-strip { margin-bottom: 5mm; }
-.page-recommendations .metric { min-height: 20mm; padding: 3.1mm 3.8mm 2.8mm; }
-.page-recommendations .metric > strong { font-size: 13.2pt; }
-.page-recommendations .content-section { margin-top: 5mm; }
-.page-recommendations .section-rule { margin-top: 2.1mm; }
-.page-recommendations .section-body { margin-top: 3.6mm; font-size: 7.7pt; line-height: 1.43; }
-.page-recommendations .report-table thead th { padding: 1.8mm 2.2mm; }
-.page-recommendations .report-table td { padding: 1.9mm 2.2mm; line-height: 1.28; }
-.page-recommendations .detail-flow > div { padding: 1.7mm 0; }
-
-
-/* V2.4 final - compact enterprise publication standard. */
-
-.lead-paragraph {
-  max-width: 172mm;
-  font-size: 8.4pt;
-  line-height: 1.52;
-}
-.source-note {
-  margin-top: 2mm;
-  font-size: 6.05pt;
-  line-height: 1.35;
-}
-
-.page-executive .content-section:first-of-type .section-body {
-  padding: 3mm 4mm;
-  border-left: 1.1mm solid var(--kaori-violet-accent);
-  background: var(--report-surface);
-}
-
-.utilization-chart { padding-top: 2mm; }
-.util-row {
-  grid-template-columns: 24mm minmax(0, 1fr) 22mm 24mm;
-  gap: 3mm;
-  margin-bottom: 4.2mm;
-  font-size: 6.8pt;
-}
-.util-row > strong { font-size: 7.25pt; }
-.util-track { height: 4.2mm; border-radius: .65mm; }
-.util-track i { border-radius: .65mm; }
-.util-axis {
-  height: 4.5mm;
-  margin: .7mm 49mm 0 27mm;
-  font-size: 5pt;
-}
-
-.chart-frame { height: 48mm; }
-.consumer-chart { gap: 9mm; }
-.consumer-chart h3 { margin-bottom: 3mm; }
-.consumer-row {
-  grid-template-columns: 8mm minmax(0, 1fr) 23mm;
-  gap: 2.5mm;
-  margin-bottom: 3.2mm;
-}
-.consumer-track { height: 3.7mm; border-radius: .6mm; }
-.consumer-row > strong { font-size: 6.45pt; }
-.consumer-row > b { font-size: 6.7pt; }
-
-.two-chart-grid { gap: 9mm; }
-.severity-chart { height: 43mm; }
-.freshness-chart { height: 39mm; }
-.activity-bars { gap: 3.7mm; padding: 2mm 1mm 1mm; }
-.activity-row {
-  grid-template-columns: 21mm minmax(0, 1fr) 7mm;
-  gap: 2.8mm;
-  font-size: 6.8pt;
-}
-.activity-track { height: 4mm; border-radius: .65mm; }
-
-.readiness-grid, .count-strip {
-  border-top: .28mm solid var(--report-rule);
-  border-bottom: .28mm solid var(--report-rule);
-}
-.readiness-grid div, .count-strip div {
-  gap: .7mm;
-  padding: 3mm;
-  border-right: .28mm solid var(--report-rule);
-}
-.readiness-grid strong, .count-strip strong { font-size: 12.2pt; }
-.readiness-grid span, .count-strip span { font-size: 6.35pt; }
-
-.detail-flow { gap: 0; }
-.detail-flow > div {
-  grid-template-columns: 32mm minmax(0, 1fr);
-  column-gap: 5mm;
-  padding: 1.55mm 0;
-  border-bottom: .22mm solid var(--report-rule-light);
-}
-.detail-flow strong { font-size: 6.9pt; }
-
-/* Cover - formal enterprise proportions. */
-
-.posture-line { gap: 4mm; margin: 4mm 0 3mm; }
-.posture-line strong { font-size: 12.5pt; }
-
-/* Dense pages retain the same scale and use tighter structure only. */
-.page-reporting .content-section { margin-top: 5.3mm; }
-.page-reporting .report-table td { padding-top: 1.55mm; padding-bottom: 1.55mm; }
-.page-recommendations .metric-strip { margin-bottom: 4.4mm; }
-.page-recommendations .content-section { margin-top: 4.4mm; }
-.page-recommendations .section-body { margin-top: 3.1mm; font-size: 7.25pt; }
-.page-recommendations .report-table { font-size: 6.35pt; }
-.page-recommendations .report-table thead th { padding: 1.35mm 1.75mm; }
-.page-recommendations .report-table td { padding: 1.45mm 1.75mm; line-height: 1.23; }
-.page-recommendations .content-section h3 { margin-bottom: 2mm; font-size: 9.4pt; }
-.page-recommendations .detail-flow p { line-height: 1.38; }
-.page-methodology .page-title-row { margin-bottom: 4.5mm; }
-.page-methodology .metric-strip { margin-bottom: 4.5mm; }
-.page-methodology .metric { min-height: 16.5mm; padding: 2.4mm 3mm 2mm; }
-.page-methodology .metric > strong { font-size: 10.7pt; }
-.page-methodology .metric > strong.metric-medium { font-size: 9.2pt; }
-.page-methodology .metric > strong.metric-long { font-size: 7.9pt; }
-.page-methodology .content-section { margin-top: 4.4mm; }
-.page-methodology .section-body { margin-top: 3.1mm; font-size: 6.9pt; line-height: 1.35; }
-.page-methodology .report-table { font-size: 5.95pt; }
-.page-methodology .report-table thead th { padding: 1.15mm 1.45mm; }
-.page-methodology .report-table td { padding: 1.2mm 1.45mm; line-height: 1.2; }
-.page-methodology .content-section h3 { font-size: 8.25pt; }
-.page-methodology .methodology-grid { gap: 6mm; }
-.page-methodology .evidence-columns { gap: 7mm; margin-top: 2.5mm; }
-
-/* Reference-note standard: tables compare; references explain. */
-
-/* Fixed registers use short decision fields only. */
-.priority-register th:nth-child(1), .priority-register td:nth-child(1) { width: 8%; }
-.priority-register th:nth-child(2), .priority-register td:nth-child(2) { width: 13%; }
-.priority-register th:nth-child(3), .priority-register td:nth-child(3) { width: 38%; }
-.priority-register th:nth-child(4), .priority-register td:nth-child(4) { width: 26%; }
-.priority-register th:nth-child(5), .priority-register td:nth-child(5) { width: 15%; }
+/* Resource posture */
+.utilization-chart { position: relative; padding: 2mm 0 7mm; }
+.util-row { display: grid; grid-template-columns: 24mm minmax(0, 1fr) 23mm 24mm; gap: 3mm; align-items: center; margin: 3.4mm 0; }
+.util-row > strong { font-size: 6.9pt; }
+.util-row > span,
+.util-row > em { font-size: 6.25pt; line-height: 1.25; font-style: normal; text-align: right; }
+.util-row > span { font-weight: 700; }
+.util-row > em { color: #64748B; }
+.util-track { position: relative; height: 5mm; overflow: hidden; background: #E5E7EB; }
+.util-track i { display: block; height: 100%; background: #7C3AED; }
+.warn-line,
+.crit-line { position: absolute; top: 0; bottom: 0; width: .45mm; }
+.warn-line { left: 70%; background: #D97706; }
+.crit-line { left: 85%; background: #DC2626; }
+.util-axis { position: absolute; left: 27mm; right: 50mm; bottom: 0; height: 4mm; color: #64748B; font-size: 5.55pt; }
+.util-axis span { position: absolute; transform: translateX(-50%); }
+.axis-start { left: 0; transform: none !important; }
+.axis-warning { left: 70%; }
+.axis-critical { left: 85%; }
+.axis-end { left: 100%; transform: translateX(-100%) !important; }
 .capacity-register th:nth-child(1) { width: 8%; }
-.capacity-register th:nth-child(2) { width: 15%; }
+.capacity-register th:nth-child(2) { width: 17%; }
 .capacity-register th:nth-child(3) { width: 20%; }
-.capacity-register th:nth-child(4) { width: 18%; }
-.capacity-register th:nth-child(5) { width: 20%; }
-.capacity-register th:nth-child(6) { width: 19%; }
+.capacity-register th:nth-child(4) { width: 19%; }
+.capacity-register th:nth-child(5) { width: 23%; }
+.capacity-register th:nth-child(6) { width: 13%; }
+
+/* Forecast */
+.chart-frame { border: .3mm solid #D7DEE8; background: #FCFDFE; padding: 3mm 4mm 2mm; overflow: hidden; }
+.chart-frame svg { display: block; width: 100%; max-height: 61mm; }
 .forecast-register th:nth-child(1) { width: 9%; }
-.forecast-register th:nth-child(2) { width: 21%; }
-.forecast-register th:nth-child(3) { width: 20%; }
-.forecast-register th:nth-child(4) { width: 30%; }
+.forecast-register th:nth-child(2) { width: 22%; }
+.forecast-register th:nth-child(3) { width: 18%; }
+.forecast-register th:nth-child(4) { width: 31%; }
 .forecast-register th:nth-child(5) { width: 20%; }
-.risk-register th:nth-child(1) { width: 9%; }
-.risk-register th:nth-child(2) { width: 55%; }
-.risk-register th:nth-child(3) { width: 18%; }
+.forecast-register td small { display: block; margin-top: .5mm; color: #64748B; }
+.forecast-references { margin-top: 2.7mm; }
+
+/* Consumers */
+.consumer-chart { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; align-items: start; }
+.consumer-group h3 { margin: 0 0 3mm; font-size: 7.7pt; }
+.consumer-row { display: grid; grid-template-columns: 8mm minmax(0, 1fr) 25mm; gap: 3mm; align-items: center; margin: 3mm 0; }
+.consumer-row > b { color: #7C3AED; font-size: 6.5pt; }
+.consumer-row > strong { font-size: 6.55pt; text-align: right; white-space: nowrap; }
+.consumer-track { height: 4.6mm; overflow: hidden; background: #E5E7EB; }
+.consumer-track i { display: block; height: 100%; background: #7C3AED; }
+.resource-key-compact th:nth-child(1) { width: 10%; }
+.resource-key-compact th:nth-child(2) { width: 42%; }
+.resource-key-compact th:nth-child(3) { width: 24%; }
+.resource-key-compact th:nth-child(4) { width: 24%; }
+.page-consumers .identity-item { padding-top: 1.55mm; padding-bottom: 1.55mm; }
+.page-consumers .identity-title { font-size: 6.75pt; }
+.page-consumers .identity-meta { font-size: 6pt; }
+
+/* Capacity pressure */
+.capacity-table th:nth-child(1) { width: 18%; }
+.capacity-table th:nth-child(2) { width: 24%; }
+.capacity-table th:nth-child(3) { width: 21%; }
+.capacity-table th:nth-child(4) { width: 23%; }
+.capacity-table th:nth-child(5) { width: 14%; }
+.risk-register th:nth-child(1) { width: 10%; }
+.risk-register th:nth-child(2) { width: 52%; }
+.risk-register th:nth-child(3) { width: 20%; }
 .risk-register th:nth-child(4) { width: 18%; }
-.recommendation-register th:nth-child(1) { width: 7%; }
+.action-list { margin: 2mm 0 0; padding-left: 5mm; font-size: 7.2pt; line-height: 1.48; }
+.action-list li { margin: 1.2mm 0; }
+
+/* Alerts */
+.two-chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7mm; align-items: start; }
+.severity-chart { min-height: 41mm; }
+.severity-chart svg { display: block; width: 100%; max-height: 42mm; }
+.category-list > div { display: flex; align-items: center; justify-content: space-between; padding: 2.2mm 0; border-bottom: .22mm solid #E2E8F0; font-size: 6.7pt; }
+.category-list strong { font-size: 7pt; }
+.alert-summary-register th:nth-child(1) { width: 12%; }
+.alert-summary-register th:nth-child(2) { width: 24%; }
+.alert-summary-register th:nth-child(3) { width: 42%; }
+.alert-summary-register th:nth-child(4) { width: 22%; }
+.anomaly-summary-register th:nth-child(1) { width: 14%; }
+.anomaly-summary-register th:nth-child(2) { width: 50%; }
+.anomaly-summary-register th:nth-child(3) { width: 36%; }
+.page-alerts .identity-item { padding-top: 1.35mm; padding-bottom: 1.35mm; }
+.page-alerts .identity-title { font-size: 6.7pt; }
+.page-alerts .identity-meta { font-size: 5.95pt; }
+.page-alerts .compact-identities { margin-top: 2.7mm; }
+
+/* Reporting */
+.report-overview { grid-template-columns: 1fr 1fr; }
+.activity-row { display: grid; grid-template-columns: 30mm minmax(0, 1fr) 10mm; gap: 3mm; align-items: center; margin: 3mm 0; font-size: 6.5pt; }
+.activity-track { height: 4.6mm; overflow: hidden; background: #E5E7EB; }
+.activity-track i { display: block; height: 100%; background: #64748B; }
+.activity-track i.normal { background: #15803D; }
+.activity-track i.warning { background: #D97706; }
+.activity-track i.info { background: #7C3AED; }
+.readiness-line { display: flex; align-items: center; gap: 3mm; margin-bottom: 2.5mm; }
+.readiness-line strong { font-size: 8pt; }
+.empty-state { margin: 0; padding: 4mm; border: .3mm dashed #CBD5E1; background: #F8FAFC; color: #64748B; }
+.reports-table th:nth-child(1) { width: 45%; }
+.reports-table th:nth-child(2) { width: 25%; }
+.reports-table th:nth-child(3) { width: 15%; }
+.reports-table th:nth-child(4) { width: 15%; }
+.spaced { margin-top: 2.2mm !important; }
+
+/* Inventory */
+.cluster-table th:nth-child(1) { width: 35%; }
+.cluster-table th:nth-child(2),
+.cluster-table th:nth-child(3),
+.cluster-table th:nth-child(4),
+.cluster-table th:nth-child(5) { width: 12%; }
+.cluster-table th:nth-child(6) { width: 17%; }
+.readiness-grid,
+.count-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: .28mm solid #CBD5E1; border-bottom: .28mm solid #CBD5E1; }
+.readiness-grid > div,
+.count-strip > div { min-height: 19mm; padding: 3mm; border-right: .28mm solid #CBD5E1; }
+.readiness-grid > div:last-child,
+.count-strip > div:last-child { border-right: none; }
+.readiness-grid strong,
+.count-strip strong { display: block; font-size: 11pt; line-height: 1.05; }
+.readiness-grid span,
+.count-strip span { display: block; margin-top: 1.5mm; color: #64748B; font-size: 6pt; }
+
+/* Freshness */
+.freshness-chart { min-height: 47mm; border: .3mm solid #E2E8F0; background: #F8FAFC; overflow: hidden; }
+.freshness-chart svg { display: block; width: 100%; max-height: 48mm; }
+.fresh-table th:nth-child(1) { width: 29%; }
+.fresh-table th:nth-child(2) { width: 20%; }
+.fresh-table th:nth-child(3) { width: 24%; }
+.fresh-table th:nth-child(4) { width: 16%; }
+.fresh-table th:nth-child(5) { width: 11%; }
+.quality-table th:nth-child(1) { width: 52%; }
+.quality-table th:nth-child(2) { width: 12%; }
+.quality-table th:nth-child(3) { width: 18%; }
+.quality-table th:nth-child(4) { width: 18%; }
+
+/* Recommendations */
+.recommendation-register th:nth-child(1) { width: 8%; }
 .recommendation-register th:nth-child(2) { width: 9%; }
 .recommendation-register th:nth-child(3) { width: 34%; }
-.recommendation-register th:nth-child(4) { width: 21%; }
+.recommendation-register th:nth-child(4) { width: 22%; }
 .recommendation-register th:nth-child(5) { width: 17%; }
-.recommendation-register th:nth-child(6) { width: 12%; }
+.recommendation-register th:nth-child(6) { width: 10%; }
+.register-ref { color: #7C3AED; }
+.priority-code { white-space: nowrap; }
+.register-title { font-weight: 650; }
+.recommendation-references { grid-template-columns: 1fr 1fr; gap: 0 7mm; }
+.detail-flow { border: .28mm solid #D7DEE8; }
+.detail-flow > div { display: grid; grid-template-columns: 40mm minmax(0, 1fr); border-bottom: .22mm solid #E2E8F0; }
+.detail-flow > div:last-child { border-bottom: none; }
+.detail-flow strong { padding: 2.2mm 3mm; background: #F1F5F9; font-size: 6.5pt; }
+.detail-flow p { margin: 0; padding: 2.2mm 3mm; font-size: 6.55pt; line-height: 1.4; }
+
+/* Methodology */
+.methodology-register-layout { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, .88fr); gap: 6mm; align-items: start; }
+.methodology-register-layout h3 { margin: 0 0 2.4mm; font-size: 7.5pt; }
+.sources-compact th:nth-child(1) { width: 46%; }
+.sources-compact th:nth-child(2) { width: 20%; }
+.sources-compact th:nth-child(3) { width: 34%; }
 .method-register th:nth-child(1) { width: 14%; }
-.method-register th:nth-child(2) { width: 38%; }
-.method-register th:nth-child(3) { width: 48%; }
-.status-register th:nth-child(1) { width: 22%; }
-.status-register th:nth-child(2) { width: 78%; }
+.method-register th:nth-child(2) { width: 42%; }
+.method-register th:nth-child(3) { width: 44%; }
+.sources-compact td,
+.method-register td { white-space: normal; overflow-wrap: break-word; }
+.methodology-references { margin-top: 3mm; }
+.methodology-reference-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5mm; }
+.methodology-reference-grid .reference-item { grid-template-columns: 8mm minmax(0, 1fr); }
+.evidence-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; margin-top: 2.5mm; }
+.evidence-columns h3,
+.limitations-status-layout h3 { margin: 0 0 1.5mm; font-size: 7.2pt; }
+.evidence-columns ul,
+.limitations-copy ul { margin: 0; padding-left: 4.5mm; font-size: 6.35pt; line-height: 1.42; }
+.evidence-columns li,
+.limitations-copy li { margin: .8mm 0; }
+.limitations-status-layout { display: grid; grid-template-columns: .92fr 1.08fr; gap: 7mm; align-items: start; }
+.limitations-copy p { margin-top: 2mm; font-size: 6.35pt; line-height: 1.42; }
+.status-legend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5mm 5mm; }
+.status-legend-item { display: grid; grid-template-columns: 8mm minmax(0, 1fr); gap: 2.4mm; align-items: start; }
+.status-legend-item strong { display: block; font-size: 6.4pt; line-height: 1.25; }
+.status-legend-item p { margin: .5mm 0 0; color: #64748B; font-size: 5.9pt; line-height: 1.35; }
 
-/* Page density tuned for the reference-note pattern. */
-.page-executive .page-title-row,
-.page-trend .page-title-row,
-.page-capacity-pressure .page-title-row,
-.page-recommendations .page-title-row,
-.page-methodology .page-title-row { margin-bottom: 5.2mm; }
-.page-executive .metric-strip,
-.page-capacity-pressure .metric-strip,
-.page-recommendations .metric-strip,
-.page-methodology .metric-strip { margin-bottom: 5mm; }
-.page-executive .metric,
-.page-capacity-pressure .metric,
-.page-recommendations .metric { min-height: 20mm; padding: 3.2mm 3.5mm 2.8mm; }
+/* Page budgets */
 .page-executive .content-section,
+.page-resource .content-section,
 .page-trend .content-section,
+.page-consumers .content-section,
 .page-capacity-pressure .content-section,
-.page-recommendations .content-section { margin-top: 5.2mm; }
-.page-executive .section-body,
-.page-trend .section-body,
-.page-capacity-pressure .section-body,
-.page-recommendations .section-body { margin-top: 3.8mm; }
-.page-executive .report-table,
-.page-trend .report-table,
-.page-capacity-pressure .report-table,
-.page-recommendations .report-table { font-size: 6.8pt; }
-.page-executive .report-table th,
-.page-executive .report-table td,
-.page-trend .report-table th,
-.page-trend .report-table td,
-.page-capacity-pressure .report-table th,
-.page-capacity-pressure .report-table td,
-.page-recommendations .report-table th,
-.page-recommendations .report-table td { padding-top: 1.7mm; padding-bottom: 1.7mm; }
-.page-executive .reference-item,
-.page-capacity-pressure .reference-item,
-.page-recommendations .reference-item { padding: 1.35mm 0; }
-.page-executive .reference-copy p,
-.page-capacity-pressure .reference-copy p,
-.page-recommendations .reference-copy p { font-size: 6.75pt; line-height: 1.34; }
-
-.page-resource .content-section { margin-top: 5.5mm; }
-.page-resource .section-body { margin-top: 4mm; }
-.page-resource .capacity-register { font-size: 6.8pt; }
-.page-resource .capacity-register th,
-.page-resource .capacity-register td { padding-top: 1.7mm; padding-bottom: 1.7mm; }
-.page-resource .reference-notes { margin-top: 3mm; padding-top: 2.4mm; }
-.page-resource .reference-item { padding: 1.25mm 0; }
-.page-resource .reference-copy p { font-size: 6.65pt; line-height: 1.32; }
-
-.page-trend .chart-frame { height: 43mm; }
-.page-trend .forecast-references { margin-top: 2.8mm; padding-top: 2.2mm; }
-.page-trend .forecast-references .reference-item { padding: 1.2mm 0; }
-.page-trend .forecast-references .reference-copy p { font-size: 6.5pt; line-height: 1.3; }
-
-.page-capacity-pressure .action-list { margin-top: 2mm; }
-.page-capacity-pressure .action-list li { margin-bottom: 1.5mm; }
-
-.page-recommendations .recommendation-references { margin-top: 0; padding-top: 0; border-top: none; }
-.page-recommendations .recommendation-references .reference-item { padding: 1.15mm 0; }
-.page-recommendations .recommendation-references .reference-copy > strong { font-size: 7pt; }
-.page-recommendations .recommendation-references .reference-copy p { font-size: 6.45pt; line-height: 1.28; }
-.page-recommendations .detail-flow > div { padding: 1.35mm 0; }
-.page-recommendations .detail-flow p { font-size: 6.8pt; line-height: 1.34; }
-
-.page-methodology .metric { min-height: 17.5mm; padding: 2.6mm 3mm 2.2mm; }
-.page-methodology .metric > strong { font-size: 10.8pt; }
-.page-methodology .content-section { margin-top: 4.1mm; }
-.page-methodology .section-body { margin-top: 2.8mm; font-size: 6.9pt; line-height: 1.32; }
-.page-methodology .reference-method-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6mm; }
-.page-methodology .report-table { font-size: 5.95pt; }
-.page-methodology .report-table th,
-.page-methodology .report-table td { padding: 1.1mm 1.35mm; line-height: 1.2; }
-.page-methodology .methodology-references,
-.page-methodology .status-references { margin-top: 2.2mm; padding-top: 1.8mm; }
-.page-methodology .methodology-references .reference-item,
-.page-methodology .status-references .reference-item { padding: .8mm 0; grid-template-columns: 7mm minmax(0, 1fr); gap: 2mm; }
-.page-methodology .reference-code { min-height: 5mm; font-size: 5.9pt; }
-.page-methodology .reference-copy > strong { font-size: 6.35pt; margin-bottom: .3mm; }
-.page-methodology .reference-copy p { font-size: 5.9pt; line-height: 1.22; }
-.page-methodology .evidence-columns { margin-top: 2.2mm; gap: 6mm; }
-.page-methodology .content-section li { margin-bottom: .7mm; }
-.page-methodology .limitations-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6mm; }
-
-.recommendation-register thead th + th { border-left: .2mm solid #D9E0EA; }
-.page-resource .reference-notes .reference-item,
-.page-trend .forecast-references .reference-item { grid-template-columns: 9mm minmax(0, 1fr); }
-
-/* V2.6 - register and methodology layout refinement. */
-.page-recommendations .recommendation-register {
-  width: 100%;
-  table-layout: fixed;
-  font-size: 6.55pt;
-  border-top: .3mm solid #CBD5E1;
-}
-.page-recommendations .recommendation-register thead th {
-  padding: 1.8mm 2mm;
-  vertical-align: middle;
-  white-space: nowrap;
-  background: #F1F5F9;
-  color: #334155;
-  font-size: 6.3pt;
-  line-height: 1.15;
-}
-.page-recommendations .recommendation-register tbody td {
-  padding: 2.1mm 2mm;
-  vertical-align: middle;
-  line-height: 1.24;
-  overflow-wrap: normal;
-  word-break: normal;
-}
-.page-recommendations .recommendation-register th + th,
-.page-recommendations .recommendation-register td + td {
-  border-left: .18mm solid #E2E8F0;
-}
-.page-recommendations .recommendation-register th:nth-child(1),
-.page-recommendations .recommendation-register td:nth-child(1) { width: 7%; text-align: center; }
-.page-recommendations .recommendation-register th:nth-child(2),
-.page-recommendations .recommendation-register td:nth-child(2) { width: 9%; text-align: center; }
-.page-recommendations .recommendation-register th:nth-child(3),
-.page-recommendations .recommendation-register td:nth-child(3) { width: 35%; }
-.page-recommendations .recommendation-register th:nth-child(4),
-.page-recommendations .recommendation-register td:nth-child(4) { width: 20%; }
-.page-recommendations .recommendation-register th:nth-child(5),
-.page-recommendations .recommendation-register td:nth-child(5) { width: 18%; }
-.page-recommendations .recommendation-register th:nth-child(6),
-.page-recommendations .recommendation-register td:nth-child(6) { width: 11%; }
-.page-recommendations .register-ref,
-.page-methodology .register-ref {
-  color: #5B21B6;
-  font-weight: 700;
-  white-space: nowrap;
-}
-.page-recommendations .priority-code {
-  color: #334155;
-  font-weight: 700;
-  white-space: nowrap;
-}
-.page-recommendations .register-title {
-  display: block;
-  color: #172033;
-  font-weight: 600;
-  line-height: 1.24;
-}
-.page-recommendations .recommendation-register td:nth-child(4),
-.page-recommendations .recommendation-register td:nth-child(5) {
-  color: #334155;
-  font-size: 6.4pt;
-}
-.page-recommendations .recommendation-register td:nth-child(6) {
-  white-space: nowrap;
-}
-
-.page-methodology .methodology-register-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr);
-  gap: 7mm;
-  align-items: start;
-}
-.page-methodology .methodology-source-block,
-.page-methodology .methodology-table-block {
-  min-width: 0;
-}
-.page-methodology .methodology-register-layout h3 {
-  margin: 0 0 2.2mm;
-  color: #172033;
-  font-size: 8.45pt;
-  line-height: 1.2;
-}
-.page-methodology .sources-compact,
-.page-methodology .method-register {
-  font-size: 6.25pt;
-}
-.page-methodology .sources-compact th:nth-child(1) { width: 42%; }
-.page-methodology .sources-compact th:nth-child(2) { width: 19%; }
-.page-methodology .sources-compact th:nth-child(3) { width: 39%; }
-.page-methodology .method-register th:nth-child(1) { width: 13%; }
-.page-methodology .method-register th:nth-child(2) { width: 39%; }
-.page-methodology .method-register th:nth-child(3) { width: 48%; }
-.page-methodology .methodology-register-layout .report-table th,
-.page-methodology .methodology-register-layout .report-table td {
-  padding: 1.35mm 1.55mm;
-  line-height: 1.23;
-}
-.page-methodology .methodology-register-layout .report-table th {
-  white-space: nowrap;
-  background: #F1F5F9;
-}
-.page-methodology .methodology-references {
-  margin-top: 3.1mm;
-  padding-top: 2.4mm;
-}
-.page-methodology .methodology-references > h3 {
-  margin-bottom: 2mm;
-  font-size: 8pt;
-}
-.page-methodology .methodology-reference-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0 5mm;
-}
-.page-methodology .methodology-reference-grid .reference-item {
-  grid-template-columns: 7mm minmax(0, 1fr);
-  gap: 2mm;
-  padding: 1.1mm 0;
-  border-bottom: none;
-}
-.page-methodology .methodology-reference-grid .reference-code {
-  min-height: 5.2mm;
-  font-size: 6pt;
-}
-.page-methodology .methodology-reference-grid .reference-copy > strong {
-  margin-bottom: .45mm;
-  font-size: 6.45pt;
-  line-height: 1.18;
-}
-.page-methodology .methodology-reference-grid .reference-copy p {
-  font-size: 5.95pt;
-  line-height: 1.24;
-}
-
-.page-methodology .limitations-status-layout {
-  display: grid;
-  grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
-  gap: 8mm;
-  align-items: start;
-}
-.page-methodology .limitations-copy,
-.page-methodology .status-language-block {
-  min-width: 0;
-}
-.page-methodology .limitations-status-layout h3 {
-  margin: 0 0 2.1mm;
-  color: #172033;
-  font-size: 8.35pt;
-  line-height: 1.2;
-}
-.page-methodology .limitations-copy ul {
-  margin: 0 0 2.4mm;
-  padding-left: 4.7mm;
-}
-.page-methodology .limitations-copy li {
-  margin-bottom: 1.1mm;
-  line-height: 1.34;
-}
-.page-methodology .limitations-copy p {
-  margin: 0;
-  line-height: 1.4;
-}
-.page-methodology .status-legend-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 5mm;
-  border-top: .28mm solid #CBD5E1;
-}
-.page-methodology .status-legend-item {
-  display: grid;
-  grid-template-columns: 7mm minmax(0, 1fr);
-  gap: 2mm;
-  align-items: start;
-  padding: 1.5mm 0;
-  border-bottom: .22mm solid #E2E8F0;
-  break-inside: avoid;
-}
-.page-methodology .status-legend-item .reference-code {
-  min-height: 5.1mm;
-  font-size: 5.9pt;
-}
-.page-methodology .status-legend-item strong {
-  display: block;
-  margin: 0 0 .35mm;
-  color: #172033;
-  font-size: 6.35pt;
-  line-height: 1.18;
-}
-.page-methodology .status-legend-item p {
-  margin: 0;
-  color: #475569;
-  font-size: 5.85pt;
-  line-height: 1.24;
-}
-
-/* Keep the revised methodology page compact without shrinking the body into unreadable text. */
-.page-methodology .content-section { margin-top: 4.2mm; }
-.page-methodology .section-body { margin-top: 3mm; font-size: 7.05pt; line-height: 1.36; }
-.page-methodology .evidence-columns { margin-top: 2.6mm; gap: 8mm; }
-.page-methodology .evidence-columns h3 { margin-bottom: 1.5mm; }
-.page-methodology .evidence-columns ul { margin-top: 0; }
-
-/* V2.7 analytics-family refinements. */
-.page-alerts .two-chart-grid {
-  grid-template-columns: minmax(0, 1.02fr) minmax(0, .98fr);
-  gap: 10mm;
-  align-items: center;
-}
-.page-alerts .severity-chart {
-  height: 41mm;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.page-alerts .severity-chart svg {
-  width: 100%;
-  height: 100%;
-}
-.page-alerts .ao-alert-donut .donut-total {
-  font: 700 25px "Inter", "DejaVu Sans", Arial, sans-serif;
-  fill: #172033;
-}
-.page-alerts .ao-alert-donut .donut-caption {
-  font: 500 10px "Inter", "DejaVu Sans", Arial, sans-serif;
-  fill: #64748B;
-}
-.page-alerts .ao-alert-donut .donut-legend-label {
-  font: 500 11px "Inter", "DejaVu Sans", Arial, sans-serif;
-  fill: #475569;
-}
-.page-alerts .ao-alert-donut .donut-legend-value {
-  font: 700 11px "Inter", "DejaVu Sans", Arial, sans-serif;
-  fill: #172033;
-}
-.page-alerts .category-list {
-  margin-top: 4mm;
-  gap: 2.8mm;
-}
-.page-alerts .category-list div {
-  padding: 0 0 2.5mm;
-}
-
-.page-methodology .sources-compact th:nth-child(1) { width: 38%; }
-.page-methodology .sources-compact th:nth-child(2) { width: 26%; }
-.page-methodology .sources-compact th:nth-child(3) { width: 36%; }
-.page-methodology .sources-compact .freshness-value,
-.page-methodology .sources-compact .collected-value {
-  white-space: nowrap;
-}
-.page-methodology .sources-compact .freshness-value {
-  font-size: 6.1pt;
-}
-.page-methodology .sources-compact .collected-value {
-  font-size: 6.05pt;
-}
-
-/* V2.8 - Analytics Overview precision typography, chart, and spacing refinement. */
-.page-consumers .consumer-chart h3 {
-  margin: 0 0 5mm;
-  font-size: 8.75pt;
-  line-height: 1.22;
-}
-.page-consumers .consumer-row {
-  margin-bottom: 3.6mm;
-}
-.page-consumers .consumer-row:last-child {
-  margin-bottom: 0;
-}
-
-.page-alerts .severity-chart {
-  height: 37mm;
-}
-.page-alerts .ao-alert-donut .donut-total {
-  font: 700 18px "Inter", "DejaVu Sans", Arial, sans-serif;
-}
-.page-alerts .ao-alert-donut .donut-caption {
-  font: 500 7.8px "Inter", "DejaVu Sans", Arial, sans-serif;
-}
-.page-alerts .ao-alert-donut .donut-legend-label {
-  font: 500 8.6px "Inter", "DejaVu Sans", Arial, sans-serif;
-}
-.page-alerts .ao-alert-donut .donut-legend-value {
-  font: 700 8.6px "Inter", "DejaVu Sans", Arial, sans-serif;
-}
-
-.page-reporting .report-overview {
-  align-items: stretch;
-}
-.page-reporting .report-overview > .content-section {
-  margin-top: 0;
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-}
-.page-reporting .report-overview > .content-section > .section-subtitle {
-  min-height: 7mm;
-}
-.page-reporting .report-overview > .content-section > .section-body {
-  flex: 1;
-}
-.page-reporting .report-schedules-section {
-  margin-top: 8.5mm;
-}
-
-.page-methodology .methodology-register-layout {
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr);
-  gap: 6mm;
-}
-.page-methodology .sources-compact th:nth-child(1) { width: 45%; }
-.page-methodology .sources-compact th:nth-child(2) { width: 20%; }
-.page-methodology .sources-compact th:nth-child(3) { width: 35%; }
-.page-methodology .method-register th:nth-child(1) { width: 14%; }
-.page-methodology .method-register th:nth-child(2) { width: 38%; }
-.page-methodology .method-register th:nth-child(3) { width: 48%; }
-.page-methodology .methodology-register-layout .report-table thead tr {
-  height: 7.2mm;
-}
-.page-methodology .methodology-register-layout .report-table tbody tr {
-  height: 8mm;
-}
-.page-methodology .methodology-register-layout .report-table th,
-.page-methodology .methodology-register-layout .report-table td {
-  vertical-align: middle;
-}
-.page-methodology .sources-compact td:first-child {
-  font-size: 5.8pt;
-  line-height: 1.16;
-}
-.page-methodology .sources-compact .freshness-value {
-  font-size: 5.9pt;
-}
-.page-methodology .sources-compact .collected-value {
-  font-size: 5.75pt;
-}
-
-.page-methodology .evidence-columns {
-  margin-top: 3.8mm;
-  gap: 10mm;
-}
-.page-methodology .evidence-columns h3 {
-  margin: 0 0 2.8mm;
-}
-.page-methodology .evidence-columns ul {
-  margin: 0;
-  padding-left: 5mm;
-}
-.page-methodology .evidence-columns li {
-  margin-bottom: 1.35mm;
-  line-height: 1.38;
-}
-.page-methodology .limitations-status-layout h3 {
-  margin: 0 0 3mm;
-}
-.page-methodology .limitations-copy ul {
-  margin: 0 0 3mm;
-}
-.page-methodology .limitations-copy li {
-  margin-bottom: 1.45mm;
-  line-height: 1.38;
-}
-.page-methodology .limitations-copy p {
-  margin-top: .5mm;
-  line-height: 1.45;
-}
-.page-methodology .status-legend-grid {
-  margin-top: .2mm;
-}
-.page-methodology .status-legend-item {
-  padding: 1.8mm 0;
-  align-items: center;
-}
-.page-methodology .status-legend-item strong {
-  margin-bottom: .65mm;
-}
-
-
-/* V2.9 - separator-free rhythm and precision alignment. */
-.page-consumers .consumer-chart {
-  align-items: start;
-}
-.page-consumers .consumer-chart > div {
-  min-width: 0;
-}
-.page-consumers .consumer-chart h3 {
-  min-height: 4.6mm;
-  margin: 0 0 6.8mm;
-  padding: 0;
-  font-size: 8.6pt;
-  line-height: 1.18;
-}
-.page-consumers .consumer-row {
-  min-height: 6mm;
-  margin-bottom: 4mm;
-  align-items: center;
-}
-
-.page-alerts .severity-chart {
-  height: 35mm;
-  justify-content: flex-start;
-}
-.page-alerts .ao-alert-donut {
-  overflow: visible;
-}
-.page-alerts .ao-alert-donut .donut-total {
-  font: 700 15px "Inter", "DejaVu Sans", Arial, sans-serif;
-  dominant-baseline: middle;
-}
-.page-alerts .ao-alert-donut .donut-caption {
-  font: 600 7.2px "Inter", "DejaVu Sans", Arial, sans-serif;
-  dominant-baseline: middle;
-  letter-spacing: 0;
-}
-.page-alerts .ao-alert-donut .donut-legend-label {
-  font: 500 7.8px "Inter", "DejaVu Sans", Arial, sans-serif;
-  dominant-baseline: middle;
-}
-.page-alerts .ao-alert-donut .donut-legend-value {
-  font: 700 8px "Inter", "DejaVu Sans", Arial, sans-serif;
-  dominant-baseline: middle;
-}
-
-.page-reporting .report-overview {
-  align-items: start;
-}
-.page-reporting .report-overview > .content-section {
-  display: block;
-}
-.page-reporting .report-overview > .content-section > .section-subtitle {
-  min-height: 0;
-  margin-top: 1.8mm;
-}
-.page-reporting .report-overview > .content-section > .section-body {
-  margin-top: 4mm;
-}
-.page-reporting .report-schedules-section {
-  margin-top: 7mm;
-}
-
-.page-methodology .methodology-register-layout {
-  grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr);
-  gap: 6.5mm;
-  align-items: start;
-}
-.page-methodology .methodology-register-layout h3 {
-  margin: 0 0 2.8mm;
-}
-.page-methodology .method-register {
-  font-size: 5.75pt;
-}
-.page-methodology .method-register th:nth-child(1) { width: 12%; }
-.page-methodology .method-register th:nth-child(2) { width: 43%; }
-.page-methodology .method-register th:nth-child(3) { width: 45%; }
-.page-methodology .method-register th,
-.page-methodology .method-register td {
-  padding: 1.15mm 1.25mm;
-  line-height: 1.15;
-  white-space: nowrap;
-  vertical-align: middle;
-}
-.page-methodology .methodology-register-layout .report-table thead tr {
-  height: 6.8mm;
-}
-.page-methodology .methodology-register-layout .report-table tbody tr {
-  height: 7.2mm;
-}
-.page-methodology .sources-compact th:nth-child(1) { width: 43%; }
-.page-methodology .sources-compact th:nth-child(2) { width: 21%; }
-.page-methodology .sources-compact th:nth-child(3) { width: 36%; }
-
-.page-methodology .evidence-columns {
-  margin-top: 4.6mm;
-  gap: 11mm;
-}
-.page-methodology .evidence-columns h3 {
-  margin: 0 0 3.4mm;
-  line-height: 1.2;
-}
-.page-methodology .evidence-columns li {
-  margin-bottom: 1.7mm;
-  line-height: 1.42;
-}
-.page-methodology .limitations-status-layout {
-  gap: 9mm;
-}
-.page-methodology .limitations-status-layout h3 {
-  margin: 0 0 3.4mm;
-  line-height: 1.2;
-}
-.page-methodology .limitations-copy ul {
-  margin: 0 0 3.5mm;
-}
-.page-methodology .limitations-copy li {
-  margin-bottom: 1.7mm;
-  line-height: 1.42;
-}
-.page-methodology .limitations-copy p {
-  margin: 1mm 0 0;
-  line-height: 1.48;
-}
-.page-methodology .status-legend-grid {
-  margin-top: 0;
-  border-top: none;
-}
-.page-methodology .methodology-references {
-  padding-top: 0;
-  border-top: none;
-}
-.page-methodology .status-legend-item {
-  grid-template-columns: 8mm minmax(0, 1fr);
-  gap: 2.8mm;
-  padding: 2mm 0;
-  align-items: center;
-}
-.page-methodology .status-legend-item strong {
-  margin-bottom: .8mm;
-  line-height: 1.16;
-}
-.page-methodology .status-legend-item p {
-  line-height: 1.28;
-}
-
-
-/* V2.9.1 - refine consumer spacing and move donut caption below the ring. */
-.page-consumers .consumer-chart h3 {
-  min-height: 5.2mm;
-  margin: 0 0 8.2mm;
-  line-height: 1.2;
-}
-.page-consumers .consumer-group {
-  padding-top: .6mm;
-}
-.page-consumers .consumer-row {
-  min-height: 6.4mm;
-  margin-bottom: 4.4mm;
-}
-.page-consumers .consumer-row:first-of-type {
-  margin-top: .8mm;
-}
-.page-consumers .consumer-row > b {
-  line-height: 1.2;
-}
-
-.page-alerts .severity-chart {
-  height: 39mm;
-  align-items: flex-start;
-}
-.page-alerts .ao-alert-donut .donut-total {
-  font: 700 14px "Inter", "DejaVu Sans", Arial, sans-serif;
-}
-.page-alerts .ao-alert-donut .donut-caption {
-  font: 600 7.0px "Inter", "DejaVu Sans", Arial, sans-serif;
-}
-.page-alerts .ao-alert-donut .donut-caption-below {
-  fill: #475569;
-}
-
-
-/* V2.9.2 - page rhythm, consumer spacing, reporting compactness, and methodology readability. */
-.page-consumers .consumer-chart { gap: 10mm; align-items: start; }
-.page-consumers .consumer-chart h3 { min-height: 0; margin: 0 0 7.6mm; font-size: 8.65pt; line-height: 1.18; }
-.page-consumers .consumer-group { padding-top: 1.2mm; }
-.page-consumers .consumer-row { min-height: 6.6mm; margin-bottom: 4.6mm; align-items: center; }
-.page-consumers .consumer-row:first-of-type { margin-top: 1mm; }
-.page-consumers .consumer-row > b { padding-top: .2mm; }
-.page-alerts .two-chart-grid { gap: 11mm; align-items: start; }
-.page-alerts .severity-chart { height: 42mm; padding-top: 1.2mm; align-items: flex-start; justify-content: flex-start; }
-.page-alerts .ao-alert-donut .donut-total { font: 700 13px "Inter", "DejaVu Sans", Arial, sans-serif; }
-.page-alerts .ao-alert-donut .donut-caption { font: 600 6.8px "Inter", "DejaVu Sans", Arial, sans-serif; }
-.page-alerts .ao-alert-donut .donut-caption-below { fill: #172033; }
-.page-alerts .category-list { margin-top: 3.2mm; gap: 3.2mm; }
-.page-alerts .category-list div { padding: 0 0 2.7mm; }
-.page-reporting .report-overview > .content-section > .section-subtitle { margin-top: 1.4mm; }
-.page-reporting .report-overview > .content-section > .section-body { margin-top: 3.2mm; }
-.page-reporting .report-schedules-section { margin-top: 5.4mm; max-width: 100mm; }
-.page-reporting .report-schedules-section > .section-body { margin-top: 2.4mm; }
-.page-reporting .report-schedules-section p { max-width: 96mm; line-height: 1.42; }
-.page-methodology .methodology-register-layout { gap: 7.2mm; align-items: start; }
-.page-methodology .methodology-register-layout h3 { margin: 0 0 3.2mm; font-size: 8.55pt; line-height: 1.18; }
-.page-methodology .sources-compact th, .page-methodology .sources-compact td, .page-methodology .method-register th, .page-methodology .method-register td { padding: 1.45mm 1.45mm; vertical-align: middle; }
-.page-methodology .sources-compact tbody tr, .page-methodology .method-register tbody tr { height: 7.4mm; }
-.page-methodology .method-register th:nth-child(1) { width: 12%; }
-.page-methodology .method-register th:nth-child(2) { width: 41%; }
-.page-methodology .method-register th:nth-child(3) { width: 47%; }
-.page-methodology .evidence-columns { margin-top: 5mm; gap: 12mm; }
-.page-methodology .evidence-columns h3 { margin: 0 0 3.1mm; }
-.page-methodology .evidence-columns li { margin-bottom: 1.8mm; line-height: 1.42; }
-.page-methodology .limitations-status-layout { grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr); gap: 10mm; }
-.page-methodology .limitations-copy { padding-right: 4mm; }
-.page-methodology .limitations-copy ul { margin: .4mm 0 4mm; padding-left: 5.1mm; }
-.page-methodology .limitations-copy li { margin-bottom: 1.8mm; line-height: 1.42; }
-.page-methodology .limitations-copy p { margin: 1.4mm 0 0; max-width: 82mm; line-height: 1.48; }
-.page-methodology .status-language-block h3 { margin: 0 0 3.2mm; }
-.page-methodology .status-legend-grid { gap: 1.2mm 5mm; }
-.page-methodology .status-legend-item { padding: 1.8mm 0 2.2mm; }
-.page-methodology .status-legend-item strong { margin: 0 0 .6mm; }
-.page-methodology .status-legend-item p { max-width: 42mm; line-height: 1.28; }
+.page-alerts .content-section,
+.page-reporting .content-section,
+.page-freshness .content-section,
+.page-recommendations .content-section { margin-top: 4.6mm; }
+.page-methodology .content-section { margin-top: 3.8mm; }
+.page-methodology .section-body { margin-top: 2.4mm; }
+.page-methodology .report-table { font-size: 6.25pt; }
+.page-methodology .reference-item p { font-size: 6.1pt; }
+.page-alerts .content-section { margin-top: 4.1mm; }
+.page-alerts .section-body { margin-top: 2.4mm; }

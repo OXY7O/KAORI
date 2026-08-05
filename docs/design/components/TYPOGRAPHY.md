@@ -109,7 +109,7 @@ The hierarchy is semantic and fixed. Page templates do not shrink or enlarge a r
 | Fine metadata | `text-xs` | 12 px | `font-normal` | Preserve value casing | Muted content |
 | Technical code/value | `text-xs` to `text-sm` plus monospace only when alignment matters | 12–14 px | `font-normal` or `font-medium` | Preserve exact casing | Primary/secondary content |
 
-Shared components may contain documented arbitrary values such as the 13 px hero description. Page templates may not introduce new arbitrary typography values.
+The shared Hero uses the standard `text-base` description size. Page templates may not introduce arbitrary typography values or override component-owned roles.
 
 ## 5. Heading treatment
 

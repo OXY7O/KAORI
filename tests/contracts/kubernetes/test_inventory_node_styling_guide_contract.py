@@ -46,7 +46,7 @@ def test_node_readiness_semantics_and_posture_signals_are_normalized_in_service(
     service = read("app/inventory/resources/nodes.py")
 
     assert "elif not_ready_nodes == total_nodes:" in service
-    assert "readiness_tone, readiness_label = 'critical', 'Critical'" in service
+    assert "fleet_posture_tone, fleet_posture_label = 'critical', 'Critical'" in service
     assert "unknown_nodes" in service
     assert "cordoned_nodes" in service
     assert "pressure_nodes" in service

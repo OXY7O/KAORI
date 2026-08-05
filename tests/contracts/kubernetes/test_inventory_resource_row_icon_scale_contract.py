@@ -47,7 +47,7 @@ def test_node_resource_cell_uses_shared_two_line_identity_and_technical_network_
 
     assert "table_ui.title_cell(node.node_name, node.identity_supporting, 'server')" in content
     assert 'components/technical_value.html' in content
-    assert 'technical_value.render(node.internal_ip)' in content
+    assert "technical_value.render(node.internal_ip or 'Not Reported')" in content
     assert 'node.hostname_address' not in content
     assert "{{ 'h-10 w-10' if supporting_text else 'h-8 w-8' }}" in shared_table
 
