@@ -25,7 +25,7 @@
         {{ detail.summary_strip([
             ('Operational State', workload.operational_state_label, workload.state_display),
             ('Managed Pods', workload.pod_count, ''),
-            ('Template Containers', workload.template_container_count, ''),
+            ('Template Containers', workload.template_container_count if workload.pod_configuration_reported else 'Not Reported', ''),
             ('Delivery Model', workload.delivery_model, workload.delivery_supporting)
         ], compact=true) }}
 
@@ -51,7 +51,7 @@
             </div>
 
             <div class="space-y-4">
-                {% call detail.detail_card('Pod Template', 'container', workload.template_container_count ~ ' Containers', badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.detail_card('Pod Template', 'container', workload.template_container_count ~ ' Containers' if workload.pod_configuration_reported else 'Not Reported', badge_size='detail', stretch=false, density='compact') %}
                     {% if workload.pod_configuration_reported %}
                         {{ detail.evidence_grid(workload.pod_configuration_rows, columns=3) }}
                     {% else %}
@@ -68,10 +68,52 @@
                     'No Associated Pods',
                     'No Pods are currently resolved to this workload in the committed snapshot.',
                     workload.pods_truncated,
-                    url_for('inventory.pods', cluster_id=workload.cluster_id, namespace=workload.namespace, owner_type=workload.type),
+                    url_for('inventory.pods', cluster_id=workload.cluster_id, namespace=workload.namespace, owner_type=workload.type, search=workload.name),
                     'Open Pod Inventory'
                 ) }}
             </div>
+
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card xl:col-span-2">
+                <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3.5">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="list-checks" class="h-4 w-4"></i></span>
+                        <div>
+                            <h4 class="text-sm font-semibold text-content-primary">Controller Conditions</h4>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Condition status, reason, transition time, and message reported by the workload controller.</p>
+                        </div>
+                    </div>
+                    {{ table_label.metadata_label(workload.condition_count ~ ' ' ~ ('Condition' if workload.condition_count == 1 else 'Conditions')) }}
+                </header>
+                {% if workload.conditions %}
+                    <div class="overflow-x-auto">
+                        <table class="{{ table_ui.table_classes('min-w-[68rem]') }}">
+                            <caption class="sr-only">Controller conditions for {{ workload.name }}.</caption>
+                            <thead class="{{ table_ui.head_classes() }}">
+                                <tr>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Condition</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Status</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Reason</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Last Transition</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[24rem]">Message</th>
+                                </tr>
+                            </thead>
+                            <tbody class="{{ table_ui.body_classes() }}">
+                                {% for condition in workload.conditions %}
+                                    <tr class="{{ table_ui.row_classes() }}">
+                                        <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ condition.type }}</span></td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(condition.status, condition.tone) }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-medium text-content-primary">{{ condition.reason }}</span></td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(condition.last_transition_time) }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}"><p class="break-words text-sm leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ condition.message }}</p></td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="p-4">{{ detail.empty_evidence('Controller Conditions Not Reported', 'The committed workload snapshot does not contain controller condition evidence.', 'list-checks') }}</div>
+                {% endif %}
+            </section>
 
             <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 xl:col-span-2">
                 <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -85,13 +127,19 @@
                     </div>
                     <div>
                         {{ detail.subsection('Placement Constraints') }}
-                        {{ detail.evidence_grid(workload.placement_rows, columns=2) }}
+                        {% if workload.placement_evidence_reported %}
+                            {{ detail.evidence_grid(workload.placement_rows, columns=2) }}
+                        {% else %}
+                            {{ detail.empty_evidence('Placement Evidence Not Reported', 'Node selectors, affinity, tolerations, and topology spread cannot be evaluated without a reported Pod template.', 'map-pin') }}
+                        {% endif %}
                     </div>
                 </div>
-                <div class="mt-4 grid gap-4 lg:grid-cols-2">
-                    {{ metadata_collection.render('Node Selectors', workload.node_selectors, 'binary', 'No Node Selectors', 'No node selector was declared in the reported Pod template.', 'Selectors remain factual scheduling evidence until evaluated against an explicit policy.') }}
-                    {{ metadata_collection.render('Tolerations', workload.tolerations, 'shield', 'No Tolerations', 'No toleration was declared in the reported Pod template.', 'Tolerations remain factual scheduling evidence until evaluated against an explicit policy.', compact_pairs=true) }}
-                </div>
+                {% if workload.placement_evidence_reported %}
+                    <div class="mt-4 grid gap-4 lg:grid-cols-2">
+                        {{ metadata_collection.render('Node Selectors', workload.node_selectors, 'binary', 'No Node Selectors', 'No node selector was declared in the reported Pod template.', 'Selectors remain factual scheduling evidence until evaluated against an explicit policy.') }}
+                        {{ metadata_collection.render('Tolerations', workload.tolerations, 'shield', 'No Tolerations', 'No toleration was declared in the reported Pod template.', 'Tolerations remain factual scheduling evidence until evaluated against an explicit policy.', compact_pairs=true) }}
+                    </div>
+                {% endif %}
             </section>
 
             <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card xl:col-span-2">

@@ -2,14 +2,6 @@
 {% block title %}Workload Inventory{% endblock title %}
 {% block dashboard_content %}
     {% import "components/resource_detail_modal.html" as resource_detail_modal %}
-    <div class="space-y-6">
-        {% include "inventory/workloads/partials/_hero.html" %}
-        {% include "inventory/components/_data_freshness.html" %}
-        {% if cluster_onboarding.is_blocked %}
-            {% include "components/cluster/_onboarding_banner.html" %}
-        {% else %}
-            {% include "inventory/workloads/partials/_inventory_scope.html" %}
-        {% endif %}
-    </div>
+    {% include "inventory/workloads/partials/_page_workspace.html" %}
     {{ resource_detail_modal.host('Workload', url_for('inventory.workload_details', workload_id=0)) }}
 {% endblock dashboard_content %}

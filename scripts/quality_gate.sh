@@ -18,6 +18,8 @@ run_static() {
     python scripts/verify_tabular_export_standard.py
     python scripts/verify_node_inventory_standard.py
     python scripts/verify_namespace_inventory_standard.py
+    python scripts/verify_workload_inventory_standard.py
+    python scripts/verify_pod_inventory_standard.py
     python scripts/verify_dark_mode_standard.py
     python scripts/verify_hero_component_standard.py
     python scripts/verify_operational_dashboard_standard.py

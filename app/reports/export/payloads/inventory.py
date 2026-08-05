@@ -66,6 +66,29 @@ def _join_json(value: Any, fallback: str = 'Not Available', limit: int = 3) -> s
     return rendered
 
 
+def _detail_row_value(details: dict[str, Any], key: str, *labels: str) -> Any:
+    wanted = {label.casefold() for label in labels}
+    for row in details.get(key) or []:
+        if not isinstance(row, dict):
+            continue
+        if str(row.get('label') or '').casefold() in wanted:
+            value = row.get('value')
+            return None if value in (None, '', '-', 'None') else value
+    return None
+
+
+def _detail_integer(details: dict[str, Any], field: str, *fallback_labels: str) -> int | None:
+    value = details.get(field)
+    if value is None and fallback_labels:
+        value = _detail_row_value(details, 'state_rows', *fallback_labels)
+    if value in (None, '', '-', 'None'):
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def _node_row(item: NodeInventory, cluster_name: str, environment: str) -> dict[str, Any]:
     status = 'Not Ready' if item.status == 'NotReady' else _text(item.status, 'Unknown')
     return {
@@ -125,6 +148,9 @@ def _namespace_row(item: NamespaceInventory, cluster_name: str, environment: str
 
 def _workload_row(item: WorkloadInventory, cluster_name: str, environment: str) -> dict[str, Any]:
     details = item.details or {}
+    update_strategy = details.get('update_strategy') or details.get('strategy')
+    if update_strategy is None:
+        update_strategy = _detail_row_value(details, 'delivery_rows', 'Strategy', 'Update Strategy')
     return {
         'status': _text(item.status, 'Unknown'),
         'cluster': cluster_name,
@@ -133,11 +159,11 @@ def _workload_row(item: WorkloadInventory, cluster_name: str, environment: str) 
         'name': item.name,
         'resource_type': item.workload_type,
         'ready': _text(item.ready, 'Not Reported'),
-        'update_strategy': _text(details.get('update_strategy') or details.get('strategy'), 'Not Available'),
-        'desired_replicas': details.get('desired_replicas') if details.get('desired_replicas') is not None else details.get('replicas'),
-        'available_replicas': details.get('available_replicas'),
-        'updated_replicas': details.get('updated_replicas'),
-        'unavailable_replicas': details.get('unavailable_replicas'),
+        'update_strategy': _text(update_strategy, 'Not Available'),
+        'desired_replicas': _detail_integer(details, 'desired_replicas', 'Desired Replicas', 'Completions', 'Desired Scheduled'),
+        'available_replicas': _detail_integer(details, 'available_replicas', 'Available Replicas', 'Available', 'Succeeded'),
+        'updated_replicas': _detail_integer(details, 'updated_replicas', 'Updated Replicas', 'Updated'),
+        'unavailable_replicas': _detail_integer(details, 'unavailable_replicas', 'Unavailable Replicas', 'Unavailable'),
         'created_at': item.created_at,
         'collected_at': item.collected_at,
     }
@@ -145,6 +171,23 @@ def _workload_row(item: WorkloadInventory, cluster_name: str, environment: str) 
 
 def _pod_row(item: PodInventory, cluster_name: str, environment: str) -> dict[str, Any]:
     details = item.details or {}
+    configuration = details.get('configuration') or {}
+    specification_reported = bool(
+        details.get(
+            'specification_evidence_reported',
+            configuration.get('reported', bool(configuration or item.container_names)),
+        )
+    )
+    runtime_reported = bool(
+        details.get(
+            'runtime_evidence_reported',
+            item.ready not in (None, '', 'Not Reported'),
+        )
+    )
+    configured_container_count = configuration.get('container_count')
+    if configured_container_count is None and specification_reported:
+        configured_container_count = len(item.container_names or [])
+
     return {
         'status': _text(item.phase, 'Unknown'),
         'cluster': cluster_name,
@@ -154,15 +197,19 @@ def _pod_row(item: PodInventory, cluster_name: str, environment: str) -> dict[st
         'pod': item.pod_name,
         'resource_type': _text(item.workload_type, 'Standalone'),
         'workload': _text(item.workload_name, 'Standalone'),
-        'node': _text(item.node_name, 'Unscheduled'),
-        'pod_ip': _text(item.pod_ip, 'Not Available'),
+        'node': _text(item.node_name, 'Not Scheduled'),
+        'pod_ip': _text(item.pod_ip, 'Not Reported'),
         'ready': _text(item.ready, 'Not Reported'),
-        'restarts': item.restart_count,
-        'container_count': len(item.container_names or []),
-        'image_count': item.image_count or len(item.container_images or []),
-        'configuration_references': len(item.configuration_references or []),
-        'persistent_volume_claims': len(item.persistent_volume_claims or []),
-        'qos_class': _text(details.get('qos_class'), 'Not Available'),
+        'restarts': item.restart_count if runtime_reported else None,
+        'container_count': configured_container_count if specification_reported else None,
+        'image_count': item.image_count if specification_reported else None,
+        'configuration_references': (
+            len(item.configuration_references or []) if specification_reported else None
+        ),
+        'persistent_volume_claims': (
+            len(item.persistent_volume_claims or []) if specification_reported else None
+        ),
+        'qos_class': _text(details.get('qos_class'), 'Not Reported'),
         'created_at': item.created_at,
         'collected_at': item.collected_at,
     }

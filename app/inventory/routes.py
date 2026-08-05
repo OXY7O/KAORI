@@ -94,6 +94,8 @@ _INVENTORY_PARTIAL_TEMPLATES = {
 }
 _INVENTORY_PARTIAL_TEMPLATES['nodes']['workspace'] = 'inventory/nodes/partials/_page_workspace.html'
 _INVENTORY_PARTIAL_TEMPLATES['namespaces']['workspace'] = 'inventory/namespaces/partials/_page_workspace.html'
+_INVENTORY_PARTIAL_TEMPLATES['workloads']['workspace'] = 'inventory/workloads/partials/_page_workspace.html'
+_INVENTORY_PARTIAL_TEMPLATES['pods']['workspace'] = 'inventory/pods/partials/_page_workspace.html'
 
 inventory_bp = Blueprint(
     'inventory',
@@ -472,7 +474,8 @@ def workloads():
         namespace=namespace,
         workload_type=workload_type,
     )
-    if status and status not in workload_statuses:
+    valid_workload_statuses = {option['value'] for option in workload_statuses}
+    if status and status not in valid_workload_statuses:
         status = ''
 
     inventory = get_workload_inventory(
@@ -544,9 +547,11 @@ def pods():
         namespace=namespace,
         owner_type=owner_type,
     )
-    if status and status not in pod_statuses:
+    valid_pod_statuses = {option['value'] for option in pod_statuses}
+    valid_nodes = {option['value'] for option in nodes}
+    if status and status not in valid_pod_statuses:
         status = ''
-    if node and node not in nodes:
+    if node and node not in valid_nodes:
         node = ''
 
     inventory = get_pod_inventory(
@@ -563,10 +568,7 @@ def pods():
     inventory['pod_statuses'] = pod_statuses
     inventory['owner_types'] = owner_types
     inventory['nodes'] = nodes
-    inventory['scope_label'] = next(
-        (cluster.name for cluster in clusters if str(cluster.id) == str(cluster_id)),
-        'All Clusters',
-    )
+    inventory['scope_label'] = _inventory_scope_label(clusters, cluster_id)
 
     return render_template(
         _inventory_template('pods'),
@@ -626,10 +628,7 @@ def services():
     )
     inventory['namespaces'] = namespaces
     inventory['service_filter_types'] = service_types
-    inventory['scope_label'] = next(
-        (cluster.name for cluster in clusters if str(cluster.id) == str(cluster_id)),
-        'All Clusters',
-    )
+    inventory['scope_label'] = _inventory_scope_label(clusters, cluster_id)
 
     return render_template(
         _inventory_template('services'),
@@ -688,10 +687,7 @@ def ingresses():
     )
     inventory['classes'] = ingress_classes
     inventory['namespaces'] = namespaces
-    inventory['scope_label'] = next(
-        (cluster.name for cluster in clusters if str(cluster.id) == str(cluster_id)),
-        'All Clusters',
-    )
+    inventory['scope_label'] = _inventory_scope_label(clusters, cluster_id)
 
     return render_template(
         _inventory_template('ingresses'),

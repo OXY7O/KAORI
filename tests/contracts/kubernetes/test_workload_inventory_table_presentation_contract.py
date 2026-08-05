@@ -11,14 +11,14 @@ def test_workload_table_uses_compact_operational_columns() -> None:
         'Workload',
         'Scope',
         'Operational State',
-        'Runtime Footprint',
-        'Delivery Model',
+        'Managed Pods',
+        'Update Strategy',
         'Details',
     ):
         assert f'>{heading}<' in content
 
-    assert '>Update Strategy<' not in content
-    assert '>Pods<' not in content
+    assert '>Runtime Footprint<' not in content
+    assert '>Delivery Model<' not in content
     assert 'resource_detail_modal.detail_button(' in content
     assert 'expandable.detail_row(' not in content
 
@@ -29,8 +29,9 @@ def test_workload_table_separates_posture_from_factual_evidence() -> None:
     assert 'table_label.status_indicator_label(workload.operational_state_label, workload.operational_state_tone)' in content
     assert '{{ workload.state_display }}' in content
     assert 'table_label.status_label(workload.update_strategy' not in content
-    assert '{{ workload.delivery_model }}' in content
-    assert '{{ workload.delivery_supporting }}' in content
+    assert '{{ workload.update_strategy }}' in content
+    assert '{{ workload.update_strategy_supporting }}' in content
+    assert 'Containers ·' not in content
 
 
 def test_workload_table_uses_shared_namespaced_scope_and_htmx_pagination() -> None:

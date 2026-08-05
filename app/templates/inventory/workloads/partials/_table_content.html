@@ -4,14 +4,15 @@
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
 <div class="overflow-x-auto">
     <table class="{{ table_ui.table_classes('min-w-[76rem]') }}">
+        <caption class="sr-only">Workload inventory records for {{ inventory.scope_label }}.</caption>
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
-                <th class="{{ table_ui.header_cell_classes() }} min-w-[16rem]">Workload</th>
-                <th class="{{ table_ui.header_cell_classes() }} min-w-[13rem]">Scope</th>
-                <th class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Operational State</th>
-                <th class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Runtime Footprint</th>
-                <th class="{{ table_ui.header_cell_classes() }} min-w-[13rem]">Delivery Model</th>
-                <th class="{{ table_ui.header_cell_classes(true) }}">Details</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[16rem]">Workload</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[13rem]">Scope</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Operational State</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Managed Pods</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[13rem]">Update Strategy</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes(true) }}">Details</th>
             </tr>
         </thead>
         <tbody class="{{ table_ui.body_classes() }}">
@@ -25,11 +26,11 @@
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
                         <p class="text-sm font-semibold leading-5 text-content-primary">{{ workload.runtime_primary }}</p>
-                        <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ workload.runtime_secondary }}</p>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted" title="{{ workload.delivery_supporting }}">{{ workload.delivery_model }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
-                        <p class="text-sm font-semibold leading-5 text-content-primary">{{ workload.delivery_model }}</p>
-                        <p class="mt-0.5 break-all text-xs leading-5 text-content-muted">{{ workload.delivery_supporting }}</p>
+                        <p class="text-sm font-semibold leading-5 text-content-primary">{{ workload.update_strategy }}</p>
+                        <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ workload.update_strategy_supporting }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes(true) }}">
                         {{ resource_detail_modal.detail_button(workload.id, url_for('inventory.workload_details', workload_id=workload.id), workload.name, 'Workload') }}
