@@ -47,7 +47,7 @@ def test_storage_uses_canonical_tab_and_mixed_scope_ownership() -> None:
     assert 'PV evidence remains cluster-scoped' in contract
 
 
-def test_storage_primary_evidence_is_bright_and_guidance_is_darker() -> None:
+def test_storage_primary_evidence_and_operational_reading_use_neutral_cards() -> None:
     overview = read('app/templates/analytics/storage/partials/_overview.html')
     capacity = read('app/templates/analytics/storage/partials/_capacity_utilization_panel.html')
     filesystem = read('app/templates/analytics/storage/partials/_filesystem_panel.html')
@@ -55,7 +55,10 @@ def test_storage_primary_evidence_is_bright_and_guidance_is_darker() -> None:
     pv = read('app/templates/analytics/storage/partials/_persistent_volumes_panel.html')
 
     assert 'analysis_surface.evidence_shell_classes()' in overview
-    assert 'analysis_surface.record_guidance_classes()' in overview
+    assert 'analysis_surface.guidance_card_classes()' in overview
+    assert 'data-kaori-operational-reading' in overview
+    assert 'md:grid-cols-3 md:divide-x md:divide-y-0' in overview
+    assert 'Keep Node, Namespace, And Cluster Storage Evidence Separate' in overview
     assert 'resource_pressure_lane.render(' in capacity
     assert 'analysis_surface.interpretation_grid_classes()' in capacity
     assert 'evidence_list.shell(' in filesystem

@@ -24,7 +24,7 @@
     'focus': selected_focus,
     'per_page': pagination.per_page|default(5)
 } %}
-<div id="consumer-detail-results" class="space-y-5" aria-live="polite">
+<div id="consumer-detail-results" aria-live="polite">
     {% if render_dependency_blocker|default(false) and dependency_blocker %}
         {% include "components/dependencies/_blocker.html" %}
     {% elif render_materialization_pending|default(false) %}
@@ -33,7 +33,7 @@
         {% if selected_focus %}
             {% set clear_focus_args = pagination_query.copy() %}
             {% set _ = clear_focus_args.update({'focus': '', 'page': 1}) %}
-            <div class="{{ analysis_surface.record_guidance_classes('flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between') }}">
+            <div class="{{ analysis_surface.record_guidance_classes('mx-4 my-4 flex flex-col gap-3 px-4 py-3 sm:mx-5 sm:flex-row sm:items-center sm:justify-between') }}">
                 <div class="flex min-w-0 items-start gap-3">
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary" aria-hidden="true">
                         <i data-lucide="filter" class="h-4 w-4"></i>
@@ -56,7 +56,7 @@
             </div>
         {% endif %}
 
-        {% call evidence_list.shell('Consumer Evidence Records') %}
+        {% call evidence_list.shell('Consumer Records', embedded=true) %}
             {% if rows %}
                 {% call evidence_list.header() %}
                     {{ evidence_list.header_cell('Rank', 1) }}
@@ -203,15 +203,16 @@
                                     </section>
                                 </div>
 
-                                <section class="{{ analysis_surface.record_guidance_classes('mt-4 p-0') }}">
+                                <section class="mt-4">
                                     {{ analysis_surface.interpretation_callout(
                                         'Recommended Action',
                                         row.recommendation,
                                         'Prioritize configuration gaps and resource-specific pressure before acting on contribution share alone.',
                                         icon='list-checks',
-                role='brand',
+                                        role='brand',
                                         tone=risk.tone|default('unknown'),
-                                        compact=true
+                                        compact=true,
+                                        card=true
                                     ) }}
                                 </section>
                             </div>
@@ -233,7 +234,8 @@
             'analytics.top_consumers_table',
             'analytics.top_consumers',
             pagination_query,
-            'Consumers'
+            'Consumers',
+            embedded=true
         ) }}
     {% endif %}
 </div>

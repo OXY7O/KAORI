@@ -36,7 +36,7 @@ def test_forecast_workspace_uses_capacity_surface_grammar() -> None:
     content = read('app/templates/analytics/forecast/partials/_forecast_section.html')
     assert 'analysis_surface.evidence_shell_classes()' in content
     assert 'analysis_surface.metric_grid_classes(4)' in content
-    assert 'analysis_surface.interpretation_grid_classes()' in content
+    assert 'grid gap-4 lg:grid-cols-2' in content
     assert 'Latest Daily Average' in content
     assert 'Weekly Trend' in content
     assert 'Historical Signal Quality' in content
@@ -93,3 +93,17 @@ def test_forecast_templates_have_no_page_local_arbitrary_microcopy() -> None:
         content = read(relative)
         assert 'text-[' not in content
         assert 'tracking-[' not in content
+
+
+def test_forecast_guidance_uses_white_standalone_cards() -> None:
+    overview = read('app/templates/analytics/forecast/partials/_overview_methodology.html')
+    section = read('app/templates/analytics/forecast/partials/_forecast_section.html')
+
+    assert 'Forecast Operating Boundary' in overview
+    assert 'analysis_surface.guidance_card_classes()' in overview
+    assert 'data-kaori-forecast-boundary' in overview
+    assert 'sm:grid-cols-3 sm:divide-x sm:divide-y-0' in overview
+    assert "card=true" in overview
+    assert 'Recommended Action' in section
+    assert 'grid gap-4 lg:grid-cols-2' in section
+    assert section.count('card=true') >= 2

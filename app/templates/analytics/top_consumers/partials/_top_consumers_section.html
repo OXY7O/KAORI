@@ -15,7 +15,7 @@
 {% if render_dependency_blocker|default(false) and dependency_blocker %}
     {% include "components/dependencies/_blocker.html" %}
 {% elif not dependency_blocker %}
-    <section class="{{ analysis_surface.snapshot_shell_classes() }}"
+    <section class="space-y-5"
              data-top-consumers-tabset
              data-analytics-tabset
              data-analytics-tabset-id="top-consumers-content"
@@ -26,7 +26,9 @@
             ('records', 'Consumer Records', 'list-filter'),
             ('recommendations', 'Recommendations', 'list-checks')
         ] %}
-        {{ analytics_content_tabs.render('top-consumers-content', consumer_tabs, 'Top Consumers Workspace', embedded=true) }}
+        <section class="{{ analysis_surface.snapshot_shell_classes() }}">
+            {{ analytics_content_tabs.render('top-consumers-content', consumer_tabs, 'Top Consumers Workspace', embedded=true) }}
+        </section>
 
         <div id="top-consumers-content-panel-rankings"
              role="tabpanel"
@@ -35,7 +37,7 @@
              x-show="activeTab === 'rankings'"
              x-bind:hidden="activeTab !== 'rankings'"
              {% if active_tab != 'rankings' %}hidden x-cloak{% endif %}
-             class="space-y-5 p-5 sm:p-6">
+             class="{{ analysis_surface.snapshot_shell_classes() }} space-y-5 p-5 sm:p-6">
             <header class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div class="flex min-w-0 items-start gap-3">
                     <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="bar-chart-3" class="h-4 w-4"></i></span>
@@ -121,7 +123,7 @@
              x-show="activeTab === 'records'"
              x-bind:hidden="activeTab !== 'records'"
              {% if active_tab != 'records' %}hidden x-cloak{% endif %}
-             class="p-5 sm:p-6">
+             class="">
             {% include "analytics/top_consumers/partials/_consumer_detail_section.html" %}
         </div>
 
@@ -132,7 +134,7 @@
              x-show="activeTab === 'recommendations'"
              x-bind:hidden="activeTab !== 'recommendations'"
              {% if active_tab != 'recommendations' %}hidden x-cloak{% endif %}
-             class="space-y-5 p-5 sm:p-6">
+             class="{{ analysis_surface.snapshot_shell_classes() }} space-y-5 p-5 sm:p-6">
             <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div class="flex min-w-0 items-start gap-3">
                     <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-checks" class="h-4 w-4"></i></span>

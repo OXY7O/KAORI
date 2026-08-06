@@ -96,3 +96,18 @@ def test_top_consumers_design_contract_is_registered() -> None:
     assert 'Mixed-Resource Sort Contract' in contract
     assert 'Namespace Snapshot Ownership' in contract
     assert 'Top Consumers presentation and snapshot contract' in analytics_readme
+
+
+def test_top_consumers_overview_records_and_summary_follow_inventory_density() -> None:
+    section = read('app/templates/analytics/top_consumers/partials/_consumer_detail_section.html')
+    results = read('app/templates/analytics/top_consumers/partials/_consumer_detail_results.html')
+    summary = read('app/templates/analytics/top_consumers/partials/_summary.html')
+
+    assert 'Consumer Records Overview' in section
+    assert 'Consumer Records' in section
+    assert section.count('analysis_surface.snapshot_shell_classes()') >= 2
+    assert "evidence_list.shell('Consumer Records', embedded=true)" in results
+    assert 'embedded=true' in results
+    assert 'sm:grid-cols-2 xl:grid-cols-4' in summary
+    assert '2xl:grid-cols-4' not in summary
+    assert 'truncate text-xs text-content-secondary' in summary

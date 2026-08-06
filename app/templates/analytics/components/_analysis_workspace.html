@@ -169,24 +169,26 @@
     </section>
 {%- endmacro %}
 
-{% macro tabbed(tabset_id, tabs, aria_label, title, description, icon, initial_tab, allowed_tabs) -%}
+{% macro tabbed(tabset_id, tabs, aria_label, title, description, icon, initial_tab, allowed_tabs, detached=false) -%}
     <section data-analytics-tabset
              data-analytics-tabset-id="{{ tabset_id }}"
              data-default-tab="{{ initial_tab }}"
              x-data='kaoriAnalyticsTabs({{ initial_tab|tojson }}, {{ allowed_tabs|tojson }}, {{ tabset_id|tojson }})'
-             class="{{ analysis_surface.snapshot_shell_classes() }}">
-        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}">
-                    <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
-                </span>
-                <div class="min-w-0">
-                    <h2 class="text-lg font-semibold text-content-primary">{{ title }}</h2>
-                    <p class="mt-1 text-sm leading-6 text-content-muted">{{ description }}</p>
+             class="{{ 'space-y-5' if detached else analysis_surface.snapshot_shell_classes() }}">
+        {% if detached %}<section class="{{ analysis_surface.snapshot_shell_classes() }}">{% endif %}
+            <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="{{ analysis_surface.snapshot_header_icon_classes() }}">
+                        <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h2 class="text-lg font-semibold text-content-primary">{{ title }}</h2>
+                        <p class="mt-1 text-sm leading-6 text-content-muted">{{ description }}</p>
+                    </div>
                 </div>
-            </div>
-        </header>
-        {{ analytics_content_tabs.render(tabset_id, tabs, aria_label, embedded=true) }}
-        <div class="p-5 sm:p-6">{{ caller() }}</div>
+            </header>
+            {{ analytics_content_tabs.render(tabset_id, tabs, aria_label, embedded=true) }}
+        {% if detached %}</section>{% endif %}
+        <div class="{{ '' if detached else 'p-5 sm:p-6' }}">{{ caller() }}</div>
     </section>
 {%- endmacro %}

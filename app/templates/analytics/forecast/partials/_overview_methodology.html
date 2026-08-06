@@ -54,23 +54,41 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="{{ analysis_surface.interpretation_grid_classes() }}">
+    <div class="mt-4 grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <section class="{{ analysis_surface.guidance_card_classes() }}" data-kaori-forecast-boundary>
             <div class="px-4 py-4 sm:px-5">
-                <p class="{{ analysis_surface.metric_label_classes() }}">Forecast Operating Boundary</p>
-                <dl class="mt-3 grid gap-3 sm:grid-cols-3">
-                    <div><dt class="text-xs text-content-muted">Model</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ forecast_payload.method_label }}</dd></div>
-                    <div><dt class="text-xs text-content-muted">History</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ forecast_payload.history_days }} Days</dd></div>
-                    <div><dt class="text-xs text-content-muted">Horizon</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ forecast_payload.horizon_days }} Days</dd></div>
-                </dl>
+                {{ analysis_surface.interpretation_content(
+                    'Forecast Operating Boundary',
+                    'Use One Documented Model Boundary Across Every Resource',
+                    'Model, history window, and projection horizon are explicit inputs and must remain visible when interpreting threshold timing.',
+                    icon='ruler',
+                    role='brand',
+                    compact=true
+                ) }}
             </div>
-            {{ analysis_surface.interpretation_callout(
-                'How To Read',
-                'Read The Model Boundary Before Using The Projection',
-                forecast_payload.method_description ~ ' Historical Signal Quality describes sample completeness and stability; it is not a claim of forecast accuracy.',
-                icon='chart-spline',
-                role='insight'
-            ) }}
-        </div>
+            <dl class="{{ analysis_surface.guidance_fact_grid_classes(3) }}">
+                {% for label, value in [
+                    ('Model', forecast_payload.method_label),
+                    ('History', forecast_payload.history_days ~ ' Days'),
+                    ('Horizon', forecast_payload.horizon_days ~ ' Days')
+                ] %}
+                    <div class="{{ analysis_surface.guidance_fact_classes('flex items-center justify-between gap-3 sm:block') }}">
+                        <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
+                        <dd class="min-w-0 break-words text-right text-sm font-semibold text-content-primary sm:mt-1 sm:text-left">{{ value }}</dd>
+                    </div>
+                {% endfor %}
+            </dl>
+        </section>
+
+        {{ analysis_surface.interpretation_callout(
+            'How To Read',
+            'Read The Model Boundary Before Using The Projection',
+            forecast_payload.method_description ~ ' Historical Signal Quality describes sample completeness and stability; it is not a claim of forecast accuracy.',
+            icon='chart-spline',
+            role='insight',
+            card=true
+        ) }}
     </div>
 {% endcall %}

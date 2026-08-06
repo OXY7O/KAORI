@@ -1,8 +1,8 @@
 {# Inventory-aligned record-oriented evidence list for Kubernetes Analytics. #}
 {% import "components/table_primitives.html" as table_ui %}
 
-{% macro shell(label='Evidence Records') -%}
-    <section class="{{ table_ui.block_classes() }}" aria-label="{{ label }}" data-kaori-analytics-record-table>
+{% macro shell(label='Evidence Records', embedded=false) -%}
+    <section class="{{ 'overflow-hidden' if embedded else table_ui.block_classes() }}" aria-label="{{ label }}" data-kaori-analytics-record-table>
         {{ caller() }}
     </section>
 {%- endmacro %}

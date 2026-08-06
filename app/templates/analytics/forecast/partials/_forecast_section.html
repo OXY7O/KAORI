@@ -138,22 +138,23 @@
 
                         {% set forecast_action_headline = 'Validate Historical Evidence Before Capacity Commitment' if item.has_data and not item.planning_ready else ('Expand Capacity Or Reduce Demand Before The Critical ETA' if tone == 'critical' else ('Plan Remediation Before The Warning ETA' if tone == 'warning' else ('Restore Forecast Evidence Before Deciding' if tone == 'unknown' else 'Continue Monitoring Forecast Direction'))) %}
                         {% set forecast_action_body = 'Use a longer history window or restore missing daily observations. Low Historical Signal Quality is suitable for monitoring but not for an authoritative capacity commitment.' if item.has_data and not item.planning_ready else ('Prioritize capacity expansion or workload reduction before the Critical ETA and validate the projection after the next committed snapshot.' if tone == 'critical' else ('Review growth drivers and schedule remediation before the Warning ETA.' if tone == 'warning' else ('Restore history or capacity evidence before making a forecast-based capacity decision.' if tone == 'unknown' else 'Continue monitoring. No immediate capacity change is required unless trend or threshold timing worsens.'))) %}
-                        <div class="{{ analysis_surface.interpretation_grid_classes() }}">
+                        <div class="grid gap-4 lg:grid-cols-2">
                             {{ analysis_surface.interpretation_callout(
                                 'How To Read',
                                 'Use Committed Daily Evidence And Signal Quality',
                                 'The latest daily average is the final committed daily observation, not an instantaneous reading. Historical Signal Quality describes sample completeness and stability, not model accuracy.',
                                 icon='chart-no-axes-combined',
-                role='insight'
+                                role='insight',
+                                card=true
                             ) }}
                             {{ analysis_surface.interpretation_callout(
                                 'Recommended Action',
                                 forecast_action_headline,
                                 forecast_action_body,
                                 icon='shield-alert' if tone == 'critical' else ('triangle-alert' if tone == 'warning' else ('circle-help' if tone == 'unknown' else 'circle-check')),
-                role='brand',
+                                role='brand',
                                 tone=tone,
-                                extra='border-t border-outline-subtle lg:border-t-0'
+                                card=true
                             ) }}
                         </div>
                     </div>

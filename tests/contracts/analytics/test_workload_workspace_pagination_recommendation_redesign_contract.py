@@ -69,7 +69,7 @@ def test_workload_overview_uses_compact_metric_strip_and_scope_context() -> None
     assert 'High-Risk Workloads' in overview
     assert 'Operational Reading' in overview
     assert 'analysis_surface.evidence_shell_classes' in overview
-    assert 'analysis_surface.guidance_card_classes' in overview
+    assert 'card=true' in overview
     assert 'text-[' not in overview
     assert 'tracking-[' not in overview
 

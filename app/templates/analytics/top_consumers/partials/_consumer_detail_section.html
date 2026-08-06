@@ -1,55 +1,94 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "analytics/components/_record_filter_bar.html" as record_filter %}
 {% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table_label.html" as table_label %}
 {% set payload = consumer_payload|default({}, true) %}
 {% set pagination = payload.pagination|default({}, true) %}
+{% set coverage = payload.coverage|default({}, true) %}
+{% set scope = payload.scope|default({}, true) %}
 {% set advanced_active = selected_sort not in ['priority', 'absolute'] or selected_focus %}
 {% if render_dependency_blocker|default(false) and dependency_blocker %}
     <section id="consumer-detail-section" class="space-y-5">{% include "analytics/top_consumers/partials/_consumer_detail_results.html" %}</section>
 {% elif not dependency_blocker %}
     <section id="consumer-detail-section" class="space-y-5" hx-sync="#consumer-detail-results:replace">
-        <header class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-filter" class="h-4 w-4"></i></span>
-                <div class="min-w-0">
-                    <h2 class="text-lg font-semibold text-content-primary">Consumer Records</h2>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Inspect factual consumer identity, absolute consumption, scope contribution, request and limit boundaries, resource-specific pressure, and recommended action.</p>
+        <section class="{{ analysis_surface.snapshot_shell_classes() }}">
+            <header class="{{ analysis_surface.snapshot_header_classes() }}">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-filter" class="h-4 w-4"></i></span>
+                    <div class="min-w-0">
+                        <p class="{{ analysis_surface.metric_label_classes() }}">Consumer Evidence</p>
+                        <h2 class="mt-1 text-lg font-semibold text-content-primary">Consumer Records Overview</h2>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Summarize the active record scope before applying table filters or opening resource-specific evidence.</p>
+                    </div>
                 </div>
+                {{ table_label.metadata_label(scope.label|default('Cluster Scope'), 'scan-search', size='compact') }}
+            </header>
+            <div class="{{ analysis_surface.metric_grid_classes(4) }}">
+                {% set overview_metrics = [
+                    ('Scope Records', payload.scope_total_rows|default(payload.total_rows|default(0)), 'Top-level committed consumer scope', 'list-filter'),
+                    ('Complete Resources', coverage.complete_count|default(0), 'Of 4 resource domains', 'database-check'),
+                    ('Unavailable Resources', coverage.unavailable_count|default(0), 'Domains requiring evidence recovery', 'database-zap'),
+                    ('Scope Boundary', scope.label|default('Cluster Scope'), coverage.label|default('Evidence Unavailable'), 'scan-search')
+                ] %}
+                {% for label, value, helper, icon in overview_metrics %}
+                    <article class="{{ analysis_surface.metric_cell_classes() }}">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                                <p class="mt-1 break-words text-lg font-semibold text-content-primary">{{ value }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                            </div>
+                        </div>
+                    </article>
+                {% endfor %}
             </div>
-        </header>
+        </section>
 
-        {% call record_filter.extended_form(
-            'consumer-detail-filter',
-            url_for('analytics.top_consumers'),
-            url_for('analytics.top_consumers_table'),
-            '#consumer-detail-results',
-            '#consumer-detail-loading-indicator',
-            "keyup[event.target.name === 'search'] changed delay:350ms, search[event.target.name === 'search'], change",
-            advanced_active
-        ) %}
-            <input type="hidden" name="cluster_id" value="{{ cluster.id if cluster else '' }}">
-            <input type="hidden" name="namespace" value="{{ selected_namespace }}">
-            <input type="hidden" name="tab" value="records">
-            <input type="hidden" name="page" value="1">
-            <input type="hidden" name="per_page" value="{{ pagination.per_page|default(5) }}">
-            {% call record_filter.primary_grid() %}
-                {{ record_filter.search('search', selected_search, 'Search owner, pod, container, PVC, or namespace...', 'Search Consumers') }}
-                {{ record_filter.select_items('resource', selected_resource, resource_options, '', 'Resource') }}
-                {{ record_filter.select_items('priority', selected_priority, priority_options, '', 'Operational Priority') }}
-                {{ record_filter.advanced_toggle((1 if selected_focus else 0) + (1 if selected_sort not in ['priority', 'absolute'] else 0)) }}
+        <section class="{{ analysis_surface.snapshot_shell_classes() }}">
+            <header class="{{ analysis_surface.snapshot_header_classes() }}">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="table-properties" class="h-4 w-4"></i></span>
+                    <div class="min-w-0">
+                        <h3 class="text-base font-semibold text-content-primary">Consumer Records</h3>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Inspect factual identity, consumption, scope contribution, request and limit boundaries, resource pressure, and recommended action.</p>
+                    </div>
+                </div>
+                {{ loading_bar.render('consumer-detail-loading-indicator', label='Refreshing Consumer Records') }}
+            </header>
+
+            {% call record_filter.extended_form(
+                'consumer-detail-filter',
+                url_for('analytics.top_consumers'),
+                url_for('analytics.top_consumers_table'),
+                '#consumer-detail-results',
+                '#consumer-detail-loading-indicator',
+                "keyup[event.target.name === 'search'] changed delay:350ms, search[event.target.name === 'search'], change",
+                advanced_active
+            ) %}
+                <input type="hidden" name="cluster_id" value="{{ cluster.id if cluster else '' }}">
+                <input type="hidden" name="namespace" value="{{ selected_namespace }}">
+                <input type="hidden" name="tab" value="records">
+                <input type="hidden" name="page" value="1">
+                <input type="hidden" name="per_page" value="{{ pagination.per_page|default(5) }}">
+                {% call record_filter.primary_grid() %}
+                    {{ record_filter.search('search', selected_search, 'Search owner, pod, container, PVC, or namespace...', 'Search Consumers') }}
+                    {{ record_filter.select_items('resource', selected_resource, resource_options, '', 'Resource') }}
+                    {{ record_filter.select_items('priority', selected_priority, priority_options, '', 'Operational Priority') }}
+                    {{ record_filter.advanced_toggle((1 if selected_focus else 0) + (1 if selected_sort not in ['priority', 'absolute'] else 0)) }}
+                {% endcall %}
+                {% call record_filter.advanced_grid() %}
+                    {{ record_filter.select_items('sort', selected_sort, sort_options, '', 'Sort Consumers') }}
+                    {{ record_filter.select_items('focus', selected_focus, focus_options, '', 'Focused Record View') }}
+                    {{ record_filter.reset_link(
+                        url_for('analytics.top_consumers', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, tab='records'),
+                        url_for('analytics.top_consumers_table', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, tab='records', page=1, per_page=pagination.per_page|default(5)),
+                        '#consumer-detail-results',
+                        '#consumer-detail-loading-indicator'
+                    ) }}
+                {% endcall %}
             {% endcall %}
-            {% call record_filter.advanced_grid() %}
-                {{ record_filter.select_items('sort', selected_sort, sort_options, '', 'Sort Consumers') }}
-                {{ record_filter.select_items('focus', selected_focus, focus_options, '', 'Focused Record View') }}
-                {{ record_filter.reset_link(
-                    url_for('analytics.top_consumers', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, tab='records'),
-                    url_for('analytics.top_consumers_table', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, tab='records', page=1, per_page=pagination.per_page|default(5)),
-                    '#consumer-detail-results',
-                    '#consumer-detail-loading-indicator'
-                ) }}
-            {% endcall %}
-        {% endcall %}
-        {{ loading_bar.render('consumer-detail-loading-indicator', label='Refreshing Consumer Records') }}
-        {% include "analytics/top_consumers/partials/_consumer_detail_results.html" %}
+            {% include "analytics/top_consumers/partials/_consumer_detail_results.html" %}
+        </section>
     </section>
 {% endif %}

@@ -51,5 +51,21 @@
             </div>
         </section>
     </div>
-    <div class="{{ analysis_surface.attention_strip_classes() }}"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"><i data-lucide="users-round" class="h-4 w-4"></i></span><div><p class="text-sm font-semibold text-content-primary">Triage Ownership Boundary</p><p class="mt-1 text-xs leading-5 text-content-muted">Owner, contact, and runbook metadata determine whether an active signal can be assigned and resolved without manual discovery.</p></div></div>
+    {% call analysis_surface.boundary_card(
+        'Triage Ownership Boundary',
+        'Owner, contact, and runbook metadata determine whether an active signal can be assigned and resolved without manual discovery.',
+        icon='users-round',
+        label='Triage Boundary'
+    ) %}
+        <div class="flex flex-wrap gap-2 lg:justify-end">
+            {{ table_label.metadata_label(ownership_summary.owner_count ~ ' Owners', 'users', size='compact') }}
+            {{ table_label.metadata_label(ownership_summary.contact_count ~ ' Contacts', 'contact', size='compact') }}
+            {{ table_label.metadata_label(ownership_summary.runbook_count ~ ' Runbooks', 'book-open', size='compact') }}
+            {% if ownership_summary.missing_metadata_items %}
+                {{ table_label.status_label(ownership_summary.missing_metadata_items|length ~ ' Metadata Gaps', 'warning', size='compact') }}
+            {% else %}
+                {{ table_label.status_label('Metadata Complete', 'normal', size='compact') }}
+            {% endif %}
+        </div>
+    {% endcall %}
 </section>

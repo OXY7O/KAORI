@@ -12,22 +12,19 @@
 {% set advanced_filter_count = (1 if selected_workload_configuration else 0) + (1 if selected_workload_qos else 0) %}
 {% set full_page_url = url_for('analytics.workload', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, time_range=selected_time_range, tab='mapping') %}
 {% set partial_url = url_for('analytics.workload_resource_mapping') %}
-<section id="workload-resource-mapping" class="{{ analysis_surface.evidence_shell_classes() }}">
-    <header class="{{ analysis_surface.snapshot_header_classes() }}">
-        <div class="flex min-w-0 items-start gap-3">
-            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="network" class="h-4 w-4"></i></span>
-            <div class="min-w-0">
-                <p class="{{ analysis_surface.metric_label_classes() }}">Resource Governance</p>
-                <h2 class="mt-1 text-lg font-semibold text-content-primary">Workload Resource Mapping</h2>
-                <p class="mt-1 text-sm leading-6 text-content-muted">Compare request and limit coverage, factual QoS classification, current usage, selected-window pod peak sums, and evidence-gated right-sizing risk.</p>
+<section id="workload-resource-mapping" class="space-y-5">
+    <section class="{{ analysis_surface.snapshot_shell_classes() }}">
+        <header class="{{ analysis_surface.snapshot_header_classes() }}">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="network" class="h-4 w-4"></i></span>
+                <div class="min-w-0">
+                    <p class="{{ analysis_surface.metric_label_classes() }}">Resource Governance</p>
+                    <h2 class="mt-1 text-lg font-semibold text-content-primary">Workload Resource Mapping</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">Compare request and limit coverage, factual QoS classification, current usage, selected-window pod peak sums, and evidence-gated right-sizing risk.</p>
+                </div>
             </div>
-        </div>
-        {{ loading_bar.render(indicator_id, label='Refreshing Workload Resource Mapping') }}
-    </header>
-
-    <div class="space-y-5 p-4 sm:p-5">
-        <div class="{{ analysis_surface.evidence_shell_classes() }}">
-            <div class="{{ analysis_surface.metric_grid_classes(4) }}">
+        </header>
+        <div class="{{ analysis_surface.metric_grid_classes(4) }}">
                 {% set scope_evidence_available = scope_summary.scope_evidence_available|default(false) %}
                 {% set mapping_metrics = [
                     ('Mapped Workloads', scope_summary.scope_total|default(0) if scope_evidence_available else 'N/A', 'Top-Level Active Scope' if scope_evidence_available else 'No Active Workload Evidence', 'boxes'),
@@ -47,8 +44,20 @@
                         </div>
                     </article>
                 {% endfor %}
-            </div>
         </div>
+    </section>
+
+    <section class="{{ analysis_surface.snapshot_shell_classes() }}">
+        <header class="{{ analysis_surface.snapshot_header_classes() }}">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-filter" class="h-4 w-4"></i></span>
+                <div class="min-w-0">
+                    <h3 class="text-base font-semibold text-content-primary">Workload Resource Mapping Records</h3>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Filter and inspect the active workload evidence without mixing record controls into the overview metrics.</p>
+                </div>
+            </div>
+            {{ loading_bar.render(indicator_id, label='Refreshing Workload Resource Mapping') }}
+        </header>
 
         {% call record_filter.extended_form(
             'workload-mapping-filter-form',
@@ -78,7 +87,7 @@
             {% endcall %}
         {% endcall %}
 
-        {% call evidence_list.shell('Workload Resource Mapping Records') %}
+        {% call evidence_list.shell('Workload Resource Mapping Records', embedded=true) %}
             {% call evidence_list.header() %}
                 {{ evidence_list.header_cell('Workload & Namespace', 3) }}
                 {{ evidence_list.header_cell('Configuration & Risk', 3) }}
@@ -107,13 +116,15 @@
                                     <div class="flex items-center justify-between gap-3"><span class="text-content-muted">CPU</span><span class="font-semibold tabular-nums {{ 'text-content-primary' if row.cpu_request_utilization_available else analysis_surface.unavailable_value_classes() }}">{{ row.cpu_request_utilization_display }}{% if row.cpu_request_utilization_available %}%{% endif %}</span></div>
                                     <div class="flex items-center justify-between gap-3"><span class="text-content-muted">Memory</span><span class="font-semibold tabular-nums {{ 'text-content-primary' if row.memory_request_utilization_available else analysis_surface.unavailable_value_classes() }}">{{ row.memory_request_utilization_display }}{% if row.memory_request_utilization_available %}%{% endif %}</span></div>
                                 </div>
-                                <p class="mt-2 text-xs leading-5 text-content-muted">Current usage against requests; unavailable resource evidence renders N/A. Right-sizing still requires Complete evidence.</p>
+                                <p class="mt-2 text-xs font-medium text-content-muted">Interpretation in View Details</p>
                             {% endcall %}
                             {% call evidence_list.cell(2) %}
                                 {{ evidence_list.mobile_label('Evidence & QoS') }}
-                                {{ table_label.status_label(row.metrics_coverage.label, row.metrics_coverage.tone, size='compact') }}
-                                <div class="mt-2">{{ table_label.metadata_label(row.qos.label, 'layers', size='compact') }}</div>
-                                <p class="mt-2 text-xs leading-5 text-content-muted">{{ row.metrics_coverage.description }}</p>
+                                <div class="flex flex-wrap gap-1.5">
+                                    {{ table_label.status_label(row.metrics_coverage.label, row.metrics_coverage.tone, size='compact') }}
+                                    {{ table_label.metadata_label(row.qos.label, 'layers', size='compact') }}
+                                </div>
+                                <p class="mt-2 text-xs font-medium text-content-muted">{{ row.detail.pods|length }} Pods · Evidence narrative in details</p>
                             {% endcall %}
                             {% call evidence_list.cell(2, 'right') %}
                                 {{ evidence_list.mobile_label('Action') }}
@@ -164,6 +175,14 @@
                                         {{ table_label.status_label('Evidence ' ~ row.metrics_coverage.label, row.metrics_coverage.tone, size='compact') }}
                                         {{ table_label.metadata_label('QoS ' ~ row.qos.label, 'layers', size='compact') }}
                                     </div>
+                                    <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-hover px-3 py-3">
+                                        <p class="{{ analysis_surface.metric_label_classes() }}">Request Fit Interpretation</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">Current usage is compared with configured requests. Unavailable resource evidence renders N/A, and right-sizing remains blocked until current and selected-window CPU and memory evidence is complete.</p>
+                                    </div>
+                                    <div class="mt-3 rounded-lg border border-outline-subtle bg-surface-card px-3 py-3">
+                                        <p class="{{ analysis_surface.metric_label_classes() }}">Runtime Evidence Narrative</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.metrics_coverage.description }}</p>
+                                    </div>
                                     <p class="mt-4 text-xs leading-5 text-content-muted">Selected-window pod peak sum is an upper-bound signal because individual Pod peaks may occur at different timestamps.</p>
                                     <p class="mt-4 text-xs font-semibold uppercase tracking-wide text-content-muted">Pods</p>
                                     <div class="mt-2 flex flex-wrap gap-1.5">
@@ -173,15 +192,16 @@
                                 </section>
                             </div>
 
-                            <div class="mt-3 {{ analysis_surface.record_guidance_classes('p-0') }}">
+                            <div class="mt-3">
                                 {{ analysis_surface.interpretation_callout(
                                     'Recommended Action',
                                     row.recommendation,
                                     'Right-sizing is active only when current and selected-window CPU and memory evidence is complete.',
                                     icon='sparkles',
-                role='brand',
+                                    role='brand',
                                     tone=row.risk.tone,
-                                    compact=true
+                                    compact=true,
+                                    card=true
                                 ) }}
                             </div>
                         </div>
@@ -214,7 +234,8 @@
             'analytics.workload_resource_mapping',
             'analytics.workload',
             workload_pagination_query,
-            'Workloads'
+            'Workloads',
+            embedded=true
         ) }}
-    </div>
+    </section>
 </section>

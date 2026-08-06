@@ -120,3 +120,21 @@ def test_alert_recommendations_use_canonical_tabs() -> None:
     assert '/analytics/alerts?tab=anomalies' in engine
     assert '/analytics/alerts?tab=readiness' in engine
     assert '/analytics/alerts-anomalies' not in overview
+
+
+def test_alert_boundaries_use_white_structured_boundary_cards() -> None:
+    boundary_partials = (
+        '_operational_resources.html',
+        '_ownership_summary.html',
+        '_routing_summary.html',
+        '_silence_inhibition_summary.html',
+    )
+
+    for name in boundary_partials:
+        content = read(PARTIALS / name)
+        assert 'analysis_surface.boundary_card(' in content
+        assert 'analysis_surface.attention_strip_classes(' not in content
+
+    routing = read(PARTIALS / '_routing_summary.html')
+    assert 'Top Grouping Keys' in routing
+    assert '{% call analysis_surface.boundary_card(' in routing

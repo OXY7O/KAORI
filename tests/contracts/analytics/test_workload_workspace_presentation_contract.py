@@ -51,7 +51,8 @@ def test_workload_mapping_uses_extended_filters_closed_by_default() -> None:
     assert 'record_filter.reset_link' in mapping
 
 
-def test_workload_sections_use_shared_bright_evidence_and_darker_guidance() -> None:
+def test_workload_sections_use_inventory_aligned_overview_and_record_cards() -> None:
+    page = read('app/templates/analytics/workload/index.html')
     for relative in (
         'app/templates/analytics/workload/partials/_overview.html',
         'app/templates/analytics/workload/partials/_tenant_quota_section.html',
@@ -59,7 +60,7 @@ def test_workload_sections_use_shared_bright_evidence_and_darker_guidance() -> N
     ):
         source = read(relative)
         assert 'analytics/components/_analysis_surfaces.html' in source
-        assert 'analysis_surface.evidence_shell_classes' in source
+        assert 'analysis_surface.snapshot_shell_classes' in source or 'analysis_surface.evidence_shell_classes' in source
         assert 'text-[' not in source
         assert 'tracking-[' not in source
 
@@ -69,8 +70,21 @@ def test_workload_sections_use_shared_bright_evidence_and_darker_guidance() -> N
     assert 'analytics/components/_record_filter_bar.html' in tenant
     assert 'analytics/components/_evidence_record_list.html' in mapping
     assert 'analytics/components/_record_filter_bar.html' in mapping
-    assert 'analysis_surface.record_guidance_classes' in tenant
-    assert 'analysis_surface.record_guidance_classes' in mapping
+    assert tenant.count('analysis_surface.snapshot_shell_classes') >= 2
+    assert mapping.count('analysis_surface.snapshot_shell_classes') >= 2
+    assert "evidence_list.shell('Tenant Quota Records', embedded=true)" in tenant
+    assert "evidence_list.shell('Workload Resource Mapping Records', embedded=true)" in mapping
+    assert 'embedded=true' in tenant
+    assert 'embedded=true' in mapping
+    assert 'Runtime Demand Interpretation' in tenant
+    assert 'Request Fit Interpretation' in mapping
+    assert 'Demand basis in View Details' in tenant
+    assert 'Interpretation in View Details' in mapping
+    assert '{{ row.recommendation }}</p>' not in tenant.split("evidence_list.mobile_label('Risk')", 1)[1].split("evidence_list.cell(2, 'right')", 1)[0]
+    assert '{{ row.metrics_coverage.description }}</p>' not in mapping.split("evidence_list.mobile_label('Evidence & QoS')", 1)[1].split("evidence_list.cell(2, 'right')", 1)[0]
+    assert 'card=true' in tenant
+    assert 'card=true' in mapping
+    assert 'detached=true' in page
 
 
 def test_workload_summary_is_top_level_scope_owned() -> None:

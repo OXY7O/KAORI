@@ -111,7 +111,7 @@
 {%- endmacro %}
 
 {% macro attention_strip_classes(tone=none) -%}
-    flex flex-col gap-3 border-t border-outline-subtle bg-surface-card px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5
+    border-t border-outline-subtle bg-surface-card p-4 sm:p-5
 {%- endmacro %}
 
 {% macro interpretation_grid_classes(extra='', cards=false) -%}
@@ -136,6 +136,18 @@
 
 {% macro guidance_card_classes(extra='') -%}
     overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ extra }}
+{%- endmacro %}
+
+{% macro guidance_fact_grid_classes(columns=3, extra='') -%}
+    grid gap-px border-t border-outline-subtle bg-outline-subtle {{ 'sm:grid-cols-4' if columns == 4 else ('sm:grid-cols-2' if columns == 2 else 'sm:grid-cols-3') }} {{ extra }}
+{%- endmacro %}
+
+{% macro guidance_fact_classes(extra='') -%}
+    min-w-0 bg-surface-card px-4 py-3 sm:px-5 {{ extra }}
+{%- endmacro %}
+
+{% macro boundary_zone_classes(extra='') -%}
+    border-t border-outline-subtle bg-surface-card p-4 sm:p-5 {{ extra }}
 {%- endmacro %}
 
 {% macro nested_evidence_card_classes(extra='') -%}
@@ -180,13 +192,13 @@
 {%- endmacro %}
 
 {% macro interpretation_content(label, headline, body, icon='info', role='brand', tone='info', compact=false) -%}
-    <div class="flex items-start gap-3">
+    <div class="flex min-w-0 items-start gap-3">
         <span class="{{ guidance_icon_classes(role, tone, 'compact' if compact else 'default') }}">
             <i data-lucide="{{ icon }}" class="{{ 'h-3.5 w-3.5' if compact else 'h-4 w-4' }}"></i>
         </span>
         <div class="min-w-0">
             <p class="{{ role_label_classes(role, tone) }}">{{ label }}</p>
-            {% if headline %}<p class="mt-1.5 text-sm font-semibold leading-5 text-content-primary">{{ headline }}</p>{% endif %}
+            {% if headline %}<p class="mt-1.5 text-sm font-semibold leading-6 text-content-primary">{{ headline }}</p>{% endif %}
             <p class="mt-1.5 text-xs leading-5 text-content-secondary">{{ body }}</p>
         </div>
     </div>
@@ -194,8 +206,8 @@
 
 {% macro interpretation_callout(label, headline, body, icon='info', role='brand', tone='info', extra='', compact=false, card=false) -%}
     {% set geometry = 'px-3 py-3' if compact else 'px-4 py-4 sm:px-5' %}
-    {% if card and not compact %}
-        <article class="rounded-lg border border-outline-subtle bg-surface-card {{ geometry }} {{ extra }}">
+    {% if card %}
+        <article class="{{ guidance_card_classes(geometry ~ ' ' ~ extra) }}" data-kaori-guidance-card>
             {{ interpretation_content(label, headline, body, icon, role, tone, compact) }}
         </article>
     {% else %}
@@ -203,6 +215,30 @@
             {{ interpretation_content(label, headline, body, icon, role, tone, compact) }}
         </article>
     {% endif %}
+{%- endmacro %}
+
+{% macro boundary_card(title, description, icon='shield-check', label='Evidence Boundary', extra='') -%}
+    <div class="{{ boundary_zone_classes(extra) }}">
+        <section class="{{ guidance_card_classes() }}" data-kaori-boundary-card>
+            <div class="grid gap-4 px-4 py-4 sm:px-5 {% if caller is defined %}lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.9fr)] lg:items-center{% endif %}">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="{{ role_icon_classes('brand') }}" aria-hidden="true">
+                        <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="{{ role_label_classes('evidence') }}">{{ label }}</p>
+                        <h4 class="mt-1.5 text-sm font-semibold leading-5 text-content-primary">{{ title }}</h4>
+                        <p class="mt-1.5 text-xs leading-5 text-content-secondary">{{ description }}</p>
+                    </div>
+                </div>
+                {% if caller is defined %}
+                    <div class="min-w-0 border-t border-outline-subtle pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
+                        {{ caller() }}
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+    </div>
 {%- endmacro %}
 
 {% macro snapshot_unavailable(panel, title, description, icon='database-zap') -%}

@@ -10,22 +10,19 @@
 {% set indicator_id = 'tenant-quota-loading-indicator' %}
 {% set full_page_url = url_for('analytics.workload', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, time_range=selected_time_range, tab='quotas') %}
 {% set partial_url = url_for('analytics.workload_tenant_quota') %}
-<section id="tenant-quota-analysis" class="{{ analysis_surface.evidence_shell_classes() }}">
-    <header class="{{ analysis_surface.snapshot_header_classes() }}">
-        <div class="flex min-w-0 items-start gap-3">
-            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="badge-gauge" class="h-4 w-4"></i></span>
-            <div class="min-w-0">
-                <p class="{{ analysis_surface.metric_label_classes() }}">Quota Governance</p>
-                <h2 class="mt-1 text-lg font-semibold text-content-primary">Tenant Quota Analysis</h2>
-                <p class="mt-1 text-sm leading-6 text-content-muted">Review ResourceQuota coverage, pressure ownership, runtime demand, and governance risk for the top-level active scope.</p>
+<section id="tenant-quota-analysis" class="space-y-5">
+    <section class="{{ analysis_surface.snapshot_shell_classes() }}">
+        <header class="{{ analysis_surface.snapshot_header_classes() }}">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="badge-gauge" class="h-4 w-4"></i></span>
+                <div class="min-w-0">
+                    <p class="{{ analysis_surface.metric_label_classes() }}">Quota Governance</p>
+                    <h2 class="mt-1 text-lg font-semibold text-content-primary">Tenant Quota Analysis</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">Review ResourceQuota coverage, pressure ownership, runtime demand, and governance risk for the top-level active scope.</p>
+                </div>
             </div>
-        </div>
-        {{ loading_bar.render(indicator_id, label='Refreshing Tenant Quota Analysis') }}
-    </header>
-
-    <div class="space-y-5 p-4 sm:p-5">
-        <div class="{{ analysis_surface.evidence_shell_classes() }}">
-            <div class="{{ analysis_surface.metric_grid_classes(4) }}">
+        </header>
+        <div class="{{ analysis_surface.metric_grid_classes(4) }}">
                 {% for card in tenant_quota_summary.summary_cards %}
                     <article class="{{ analysis_surface.metric_cell_classes() }}">
                         <div class="flex min-w-0 items-start gap-3">
@@ -38,8 +35,20 @@
                         </div>
                     </article>
                 {% endfor %}
-            </div>
         </div>
+    </section>
+
+    <section class="{{ analysis_surface.snapshot_shell_classes() }}">
+        <header class="{{ analysis_surface.snapshot_header_classes() }}">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-filter" class="h-4 w-4"></i></span>
+                <div class="min-w-0">
+                    <h3 class="text-base font-semibold text-content-primary">Tenant Quota Records</h3>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Filter namespace quota evidence independently from the overview posture and scope metrics.</p>
+                </div>
+            </div>
+            {{ loading_bar.render(indicator_id, label='Refreshing Tenant Quota Analysis') }}
+        </header>
 
         {% call record_filter.form(
             'tenant-quota-filter-form',
@@ -60,7 +69,7 @@
             {{ record_filter.select('tenant_risk', selected_tenant_risk, tenant_risk_options, 'All Risks', 'Tenant Risk') }}
         {% endcall %}
 
-        {% call evidence_list.shell('Tenant Quota Records') %}
+        {% call evidence_list.shell('Tenant Quota Records', embedded=true) %}
             {% call evidence_list.header() %}
                 {{ evidence_list.header_cell('Namespace', 3) }}
                 {{ evidence_list.header_cell('Quota Pressure', 3) }}
@@ -101,12 +110,12 @@
                                     {% if row.runtime_demand_object %}{{ table_label.metadata_label(row.runtime_demand_object, 'shield', size='compact') }}{% endif %}
                                 </div>
                                 <p class="mt-1 text-lg font-semibold tabular-nums {{ 'text-content-primary' if row.runtime_demand_available else analysis_surface.unavailable_value_classes() }}">{{ row.actual_usage_percent_display }}{% if row.runtime_demand_available %}%{% endif %}</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Highest active-Pod demand against the most restrictive applicable hard quota.</p>
+                                <p class="mt-1 text-xs font-medium text-content-muted">Demand basis in View Details</p>
                             {% endcall %}
                             {% call evidence_list.cell(2) %}
                                 {{ evidence_list.mobile_label('Risk') }}
                                 {{ table_label.status_label(row.risk.label, row.risk.tone, size='compact') }}
-                                <p class="mt-2 text-xs leading-5 text-content-muted">{{ row.recommendation }}</p>
+                                <p class="mt-2 text-xs font-medium text-content-muted">Recommended action in details</p>
                             {% endcall %}
                             {% call evidence_list.cell(2, 'right') %}
                                 {{ evidence_list.mobile_label('Action') }}
@@ -167,18 +176,23 @@
                                     {% else %}
                                         <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3 text-sm font-semibold text-content-secondary">Combined ResourceQuota key coverage is complete.</div>
                                     {% endif %}
+                                    <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-hover px-3 py-3">
+                                        <p class="{{ analysis_surface.metric_label_classes() }}">Runtime Demand Interpretation</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.runtime_demand_resource }} demand{% if row.runtime_demand_object %} against {{ row.runtime_demand_object }}{% endif %} is {{ row.actual_usage_percent_display }}{% if row.runtime_demand_available %}%{% endif %}. The displayed percentage is the highest active-Pod demand against the most restrictive applicable hard quota for this namespace.</p>
+                                    </div>
                                     <p class="mt-4 text-xs leading-5 text-content-muted">Multiple ResourceQuota objects are evaluated independently. The displayed pressure is the most constraining observed object and resource. A configured zero value remains a configured key.</p>
                                 </section>
                             </div>
-                            <div class="mt-3 {{ analysis_surface.record_guidance_classes('p-0') }}">
+                            <div class="mt-3">
                                 {{ analysis_surface.interpretation_callout(
                                     'Recommended Action',
                                     row.recommendation,
                                     'Validate the pressure resource, runtime demand, and tenant ownership before changing quota boundaries.',
                                     icon='lightbulb',
-                role='brand',
+                                    role='brand',
                                     tone=row.risk.tone,
-                                    compact=true
+                                    compact=true,
+                                    card=true
                                 ) }}
                             </div>
                         </div>
@@ -209,7 +223,8 @@
             'analytics.workload_tenant_quota',
             'analytics.workload',
             quota_pagination_query,
-            'Namespaces'
+            'Namespaces',
+            embedded=true
         ) }}
-    </div>
+    </section>
 </section>

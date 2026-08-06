@@ -74,13 +74,14 @@
         </aside>
     </div>
 
-    <div class="mt-4 {{ analysis_surface.guidance_card_classes() }}">
+    <div class="mt-4">
         {{ analysis_surface.interpretation_callout(
             'Operational Reading',
             'Evaluate Governance And Runtime Evidence Together',
             'Workload governance combines ResourceQuota coverage, request configuration, memory limit policy, factual QoS classification, runtime evidence coverage, and selected-window pressure. Review Critical and High-risk records before changing requests, limits, quota, or replicas.',
             icon='book-open-check',
-                role='insight'
+            role='insight',
+            card=true
         ) }}
     </div>
 {% endcall %}
