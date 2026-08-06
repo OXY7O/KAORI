@@ -235,11 +235,14 @@ def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
     assert 'Connection Evidence' in connection
     assert 'Operational Boundary' in connection
     assert 'Operational Flow' in connection
-    assert 'xl:grid-cols-[minmax(20rem,0.8fr)_minmax(0,1.2fr)]' in connection
-    assert 'lg:grid-cols-[minmax(20rem,1.4fr)_repeat(3,minmax(12rem,0.75fr))]' in connection
+    assert 'data-kaori-connection-contract-v3' in connection
+    assert 'data-kaori-configuration-layout' in connection
+    assert '2xl:grid-cols-[minmax(0,1fr)_28rem]' in connection
+    assert 'Configuration Command Center' in connection
+    assert 'data-kaori-configuration-command-center' in connection
     assert '_minimum_validation_rbac.html' in connection
+    assert 'font-sans' in connection
     assert 'font-mono' not in connection
-    assert 'xl:grid-cols-[minmax(0,1.45fr)_minmax(20rem,0.55fr)]' not in connection
     assert 'data-kaori-capability-workspace-v4' in capability
     assert 'data-kaori-capability-overview' in capability
     assert 'Capability Explorer' in capability
@@ -255,6 +258,41 @@ def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
     assert 'Runtime Operating Model' in runtime
     assert 'Diagnostic Evidence' in runtime
     assert 'components/table.html' in runtime
+
+
+def test_kubernetes_peer_tabs_use_shared_kaori_violet_workspace_language() -> None:
+    primitives = read('app/templates/integrations/components/_violet_workspace.html')
+    detail = read('app/templates/integrations/kubernetes/detail.html')
+    connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
+    runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
+    inventory = read('app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html')
+    history = read('app/templates/integrations/partials/_runtime_history.html')
+
+    for token in (
+        'border-kaori-primary/20',
+        'bg-kaori-soft',
+        'text-kaori-primary',
+        'command_center_classes',
+    ):
+        assert token in primitives
+
+    assert 'data-kaori-violet-configuration-workspace' in connection
+    assert 'data-kaori-configuration-command-center' in connection
+    assert 'data-kaori-violet-runtime-workspace' in runtime
+    assert 'data-kaori-runtime-command-center' in runtime
+    assert 'data-kaori-violet-inventory-workspace' in inventory
+    assert 'data-kaori-inventory-command-center' in inventory
+    for template in (connection, runtime, inventory):
+        assert 'integrations/components/_violet_workspace.html' in template
+        assert 'font-sans' in template
+        assert 'bg-kaori-soft' in template
+        assert 'text-kaori-primary' in template
+        assert '2xl:grid-cols-[minmax(0,1fr)_28rem]' in template
+
+    assert "runtime_history_variant='violet-v2'" in detail
+    assert "runtime_history_variant='violet-v2'" in runtime
+    assert 'data-kaori-runtime-history-violet-v2' in history
+    assert 'runtime_history_is_violet' in history
 
 
 def test_kubernetes_registry_bulk_loads_provider_bindings() -> None:

@@ -1,152 +1,190 @@
 {% import "components/table.html" as table_ui %}
-{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "integrations/components/_violet_workspace.html" as violet_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-<div class="space-y-5">
-    <section class="{{ integration_ui.section_shell_classes() }}"
-             aria-labelledby="inventory-operational-use-title">
+<div class="space-y-5 font-sans" data-kaori-inventory-workspace-v3 data-kaori-violet-inventory-workspace>
+    <section class="{{ violet_ui.shell_classes() }}" aria-labelledby="inventory-operational-use-title">
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-content-secondary" aria-hidden="true">
-                    <i data-lucide="database" class="h-5 w-5"></i>
-                </span>
+            <div class="flex min-w-0 items-start gap-3.5">
+                <span class="{{ violet_ui.icon_classes('lg') }}" aria-hidden="true"><i data-lucide="database" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
-                    <h2 id="inventory-operational-use-title" class="text-base font-semibold text-content-primary">Inventory & Operational Use</h2>
-                    <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Review committed inventory freshness, KAORI consumers, reusable observability sources, and the lifecycle boundary associated with this Kubernetes connection.</p>
+                    <p class="text-xs font-semibold text-kaori-primary">Kubernetes Evidence Domain</p>
+                    <h2 id="inventory-operational-use-title" class="mt-0.5 text-base font-semibold text-content-primary">Inventory & Operational Use</h2>
+                    <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Review committed inventory freshness, KAORI consumers, reusable observability sources, and lifecycle boundaries associated with this connection.</p>
                 </div>
             </div>
         </header>
 
-        <div class="grid gap-px border-b border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
-            <article class="bg-surface-card p-4">
-                <div class="flex items-start justify-between gap-3">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Inventory Nodes</p>
-                        <p class="mt-2 text-2xl font-semibold tabular-nums text-content-primary">{{ operational_use.node_count }}</p>
-                    </div>
-                    {{ integration_status('ready' if operational_use.inventory_status == 'committed' else 'not_observed', operational_use.inventory_status_label) }}
-                </div>
-                <p class="mt-2 text-xs leading-5 text-content-secondary">Last collected {{ operational_use.inventory_collected_at_display }}</p>
-            </article>
-            <article class="bg-surface-card p-4">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Validated Features</p>
-                <p class="mt-2 text-2xl font-semibold tabular-nums text-content-primary">{{ operational_use.validated_feature_count }}</p>
-                <p class="mt-2 text-xs leading-5 text-content-secondary">Selected API and effective RBAC evidence.</p>
-            </article>
-            <article class="bg-surface-card p-4">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Operational Domains</p>
-                <p class="mt-2 text-2xl font-semibold tabular-nums text-content-primary">{{ operational_use.operational_domain_count }}</p>
-                <p class="mt-2 text-xs leading-5 text-content-secondary">Inventory, Analytics, Operations, and Governance scope.</p>
-            </article>
-            <article class="bg-surface-card p-4">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Bound Sources</p>
-                <p class="mt-2 text-2xl font-semibold tabular-nums text-content-primary">{{ operational_use.binding_count }}</p>
-                <p class="mt-2 text-xs leading-5 text-content-secondary">{{ operational_use.report_count }} reports · {{ operational_use.schedule_count }} schedules retained.</p>
-            </article>
-        </div>
-
-        <div class="grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            <section class="border-b border-outline-subtle xl:border-b-0 xl:border-r" aria-labelledby="operational-consumers-title">
-                <header class="border-b border-outline-subtle bg-surface-hover px-5 py-3 sm:px-6">
-                    <h3 id="operational-consumers-title" class="text-sm font-semibold text-content-primary">KAORI Operational Consumers</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Workspaces consuming Kubernetes authority or committed evidence.</p>
-                </header>
-                <div class="divide-y divide-outline-subtle">
-                    {% set consumers = [
-                        ('boxes', 'Kubernetes Inventory', 'Normalized nodes, namespaces, workloads, pods, services, ingress, storage, and topology.'),
-                        ('chart-no-axes-combined', 'Kubernetes Analytics', 'Metrics-backed utilization, capacity, storage, workload, forecasting, and alert context.'),
-                        ('shield-check', 'Governance', 'TLS inventory, protected-secret policy, and operational compliance context.'),
-                        ('square-terminal', 'Operations', 'Live ConfigMap and Secret workflows use the registered Kubernetes authority and separate write guardrails.'),
-                        ('file-chart-column', 'Reports', 'Generated reports remain available even when the Kubernetes registration is later removed.')
-                    ] %}
-                    {% for icon, title, description in consumers %}
-                        <article class="flex items-start gap-3 px-5 py-3.5 transition hover:bg-kaori-mist sm:px-6">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-content-secondary" aria-hidden="true">
-                                <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-                            </span>
-                            <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ description }}</p>
+        <div class="p-5 sm:p-6">
+            <section class="overflow-hidden rounded-xl border border-kaori-primary/20 bg-surface-card shadow-sm" data-kaori-inventory-overview data-kaori-violet-command-strip>
+                <div class="grid gap-px bg-outline-subtle xl:grid-cols-[minmax(24rem,1.35fr)_repeat(3,minmax(11rem,0.55fr))]">
+                    <div class="bg-kaori-soft p-5 sm:p-6">
+                        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                            <div class="flex min-w-0 items-start gap-3.5">
+                                <span class="{{ violet_ui.icon_classes('lg') }}" aria-hidden="true"><i data-lucide="boxes" class="h-5 w-5"></i></span>
+                                <div class="min-w-0">
+                                    <p class="text-xs font-semibold text-content-secondary">Committed Inventory Snapshot</p>
+                                    <p class="mt-1 text-lg font-semibold text-content-primary">{{ operational_use.node_count }} discovered node{{ '' if operational_use.node_count == 1 else 's' }}</p>
+                                    <p class="mt-1 text-sm leading-6 text-content-secondary">Last collected {{ operational_use.inventory_collected_at_display }}. Downstream workspaces consume committed evidence rather than uncontrolled live reads.</p>
+                                </div>
                             </div>
-                        </article>
+                            {{ integration_status('ready' if operational_use.inventory_status == 'committed' else 'not_observed', operational_use.inventory_status_label) }}
+                        </div>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <span class="{{ violet_ui.chip_classes() }}">{{ operational_use.inventory_status_label }}</span>
+                            <span class="{{ violet_ui.neutral_chip_classes() }}">{{ operational_use.report_count }} reports retained</span>
+                            <span class="{{ violet_ui.neutral_chip_classes() }}">{{ operational_use.schedule_count }} schedules retained</span>
+                        </div>
+                    </div>
+
+                    {% set inventory_metrics = [
+                        ('layers-3', 'Validated Features', operational_use.validated_feature_count, 'Selected API and effective RBAC evidence.'),
+                        ('layout-grid', 'Operational Domains', operational_use.operational_domain_count, 'Inventory, Analytics, Operations, and Governance.'),
+                        ('waypoints', 'Bound Sources', operational_use.binding_count, 'Reusable observability sources in cluster scope.')
+                    ] %}
+                    {% for icon, label, value, helper in inventory_metrics %}
+                        <div class="bg-surface-card p-5 sm:p-6">
+                            <span class="{{ violet_ui.icon_classes('sm') }}" aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                            <p class="mt-4 text-2xl font-semibold tabular-nums text-content-primary">{{ value }}</p>
+                            <p class="mt-2 text-sm font-semibold text-content-primary">{{ label }}</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</p>
+                        </div>
                     {% endfor %}
                 </div>
             </section>
 
-            <section aria-labelledby="bound-sources-title">
-                <header class="border-b border-outline-subtle bg-surface-hover px-5 py-3 sm:px-6">
-                    <h3 id="bound-sources-title" class="text-sm font-semibold text-content-primary">Bound Observability Sources</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Source readiness, binding validation, and effective resolution remain independent evidence.</p>
-                </header>
-                <div class="overflow-x-auto">
-                    <table class="{{ table_ui.table_classes('min-w-[700px]') }}">
-                        <thead class="{{ table_ui.head_classes() }}">
-                            <tr>
-                                <th class="{{ table_ui.header_cell_classes() }}">Source</th>
-                                <th class="{{ table_ui.header_cell_classes() }}">Source Readiness</th>
-                                <th class="{{ table_ui.header_cell_classes() }}">Binding Validation</th>
-                                <th class="{{ table_ui.header_cell_classes(action=true) }}">Effective Resolution</th>
-                            </tr>
-                        </thead>
-                        <tbody class="{{ table_ui.body_classes() }}">
-                            {% for source in source_bindings %}
-                                <tr class="{{ table_ui.row_classes() }}">
-                                    <td class="{{ table_ui.cell_classes() }}">
-                                        <div class="flex min-w-[12rem] items-start gap-3">
-                                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-content-secondary" aria-hidden="true">
-                                                <i data-lucide="{{ source.icon }}" class="h-4 w-4"></i>
-                                            </span>
-                                            <div class="min-w-0">
-                                                <p class="text-xs font-semibold text-content-muted">{{ source.provider }}</p>
-                                                <p class="mt-1 truncate text-sm font-semibold text-content-primary" title="{{ source.name }}">{{ source.name }}</p>
-                                                <p class="mt-1 text-xs text-content-secondary">{{ source.role|title ~ ' source binding' if source.role else 'No reusable source is bound.' }}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="{{ table_ui.cell_classes() }}">{{ integration_status(source.source_readiness) }}</td>
-                                    <td class="{{ table_ui.cell_classes() }}">{{ integration_status(source.binding_validation) }}</td>
-                                    <td class="{{ table_ui.cell_classes(action=true) }}">{{ integration_status(source.effective_status, source.effective_label) }}</td>
-                                </tr>
+            <div class="mt-4 grid items-start gap-4 2xl:grid-cols-[minmax(0,1fr)_28rem]" data-kaori-inventory-layout>
+                <div class="min-w-0 space-y-4">
+                    <section class="{{ violet_ui.panel_classes() }}" aria-labelledby="operational-consumers-title">
+                        <header class="{{ violet_ui.soft_header_classes() }}">
+                            <div class="flex items-start gap-3">
+                                <span class="{{ violet_ui.icon_classes('sm') }}" aria-hidden="true"><i data-lucide="workflow" class="h-4 w-4"></i></span>
+                                <div>
+                                    <h3 id="operational-consumers-title" class="text-sm font-semibold text-content-primary">KAORI Operational Consumers</h3>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Workspaces consuming Kubernetes authority or committed evidence.</p>
+                                </div>
+                            </div>
+                        </header>
+                        <div class="grid divide-y divide-outline-subtle lg:grid-cols-2 lg:divide-x lg:divide-y-0">
+                            {% set consumers = [
+                                ('boxes', 'Kubernetes Inventory', 'Normalized nodes, namespaces, workloads, pods, services, ingress, storage, and topology.'),
+                                ('chart-no-axes-combined', 'Kubernetes Analytics', 'Metrics-backed utilization, capacity, storage, workload, forecasting, and alert context.'),
+                                ('shield-check', 'Governance', 'TLS inventory, protected-secret policy, and operational compliance context.'),
+                                ('square-terminal', 'Operations', 'Live ConfigMap and Secret workflows use registered authority and separate write guardrails.'),
+                                ('file-chart-column', 'Reports', 'Generated reports remain available even when the Kubernetes registration is later removed.')
+                            ] %}
+                            {% for icon, title, description in consumers %}
+                                <article class="flex items-start gap-3 px-5 py-4 transition hover:bg-kaori-mist sm:px-6 {% if loop.index > 2 %}lg:border-t lg:border-outline-subtle{% endif %}">
+                                    <span class="{{ violet_ui.icon_classes('sm') }}" aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ description }}</p>
+                                    </div>
+                                </article>
                             {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                <div class="border-t border-outline-subtle px-5 py-4 sm:px-6">
-                    <p class="text-xs font-semibold text-content-primary">Shared Source Boundary</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Deleting this Kubernetes connection removes only its scope bindings. Reusable Prometheus and Alertmanager instances, plus their other bindings, remain intact.</p>
-                </div>
-            </section>
-        </div>
+                        </div>
+                    </section>
 
-        <section class="border-t border-outline-subtle" aria-labelledby="inventory-lifecycle-boundary-title">
-            <header class="border-b border-outline-subtle bg-surface-hover px-5 py-3 sm:px-6">
-                <h3 id="inventory-lifecycle-boundary-title" class="text-sm font-semibold text-content-primary">Lifecycle Boundary</h3>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Understand which records are scoped to the Kubernetes registration and which evidence remains retained.</p>
-            </header>
-            <div class="grid md:grid-cols-2 md:divide-x md:divide-outline-subtle">
-                <div class="p-5 sm:px-6">
-                    <div class="flex items-center gap-2">
-                        <i data-lucide="trash-2" class="h-4 w-4 text-status-critical-text" aria-hidden="true"></i>
-                        <h4 class="text-sm font-semibold text-content-primary">Removed With the Connection</h4>
-                    </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">Kubernetes identity, stored kubeconfig, synchronized inventory, cluster-scoped governance/configuration rows, and this cluster's source bindings.</p>
+                    <section class="{{ violet_ui.panel_classes() }}" aria-labelledby="bound-sources-title">
+                        <header class="{{ violet_ui.soft_header_classes() }}">
+                            <div class="flex items-start gap-3">
+                                <span class="{{ violet_ui.icon_classes('sm') }}" aria-hidden="true"><i data-lucide="radio-tower" class="h-4 w-4"></i></span>
+                                <div>
+                                    <h3 id="bound-sources-title" class="text-sm font-semibold text-content-primary">Bound Observability Sources</h3>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Source readiness, binding validation, and effective resolution remain independent evidence.</p>
+                                </div>
+                            </div>
+                        </header>
+                        <div class="overflow-x-auto">
+                            <table class="{{ table_ui.table_classes('min-w-[700px]') }}">
+                                <thead class="{{ table_ui.head_classes() }}">
+                                    <tr>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Source</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Source Readiness</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Binding Validation</th>
+                                        <th class="{{ table_ui.header_cell_classes(action=true) }}">Effective Resolution</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="{{ table_ui.body_classes() }}">
+                                    {% for source in source_bindings %}
+                                        <tr class="{{ table_ui.row_classes() }}">
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <div class="flex min-w-[12rem] items-start gap-3">
+                                                    <span class="{{ violet_ui.icon_classes('sm') }}" aria-hidden="true"><i data-lucide="{{ source.icon }}" class="h-4 w-4"></i></span>
+                                                    <div class="min-w-0">
+                                                        <p class="text-xs font-semibold text-kaori-primary">{{ source.provider }}</p>
+                                                        <p class="mt-1 truncate text-sm font-semibold text-content-primary" title="{{ source.name }}">{{ source.name }}</p>
+                                                        <p class="mt-1 text-xs text-content-secondary">{{ source.role|title ~ ' source binding' if source.role else 'No reusable source is bound.' }}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">{{ integration_status(source.source_readiness) }}</td>
+                                            <td class="{{ table_ui.cell_classes() }}">{{ integration_status(source.binding_validation) }}</td>
+                                            <td class="{{ table_ui.cell_classes(action=true) }}">{{ integration_status(source.effective_status, source.effective_label) }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
                 </div>
-                <div class="border-t border-outline-subtle p-5 md:border-t-0 sm:px-6">
-                    <div class="flex items-center gap-2">
-                        <i data-lucide="archive-restore" class="h-4 w-4 text-status-normal-text" aria-hidden="true"></i>
-                        <h4 class="text-sm font-semibold text-content-primary">Retained After Deletion</h4>
-                    </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">Shared Prometheus/Alertmanager instances, generated reports and schedules, runtime observation history, JobExecution history, and Activity Audit evidence.</p>
-                </div>
+
+                <aside class="{{ violet_ui.command_center_classes() }} 2xl:sticky 2xl:top-4" aria-labelledby="inventory-command-center-title" data-kaori-inventory-command-center>
+                    <header class="{{ violet_ui.soft_header_classes() }}">
+                        <div class="flex items-start gap-3">
+                            <span class="{{ violet_ui.icon_classes('sm') }}" aria-hidden="true"><i data-lucide="database-zap" class="h-4 w-4"></i></span>
+                            <div>
+                                <h3 id="inventory-command-center-title" class="text-sm font-semibold text-content-primary">Inventory Command Center</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">Freshness, source ownership, retention, and deletion boundaries.</p>
+                            </div>
+                        </div>
+                    </header>
+
+                    <section class="border-b border-outline-subtle p-5">
+                        <p class="text-sm font-semibold text-content-primary">Snapshot Freshness</p>
+                        <dl class="mt-4 divide-y divide-outline-subtle rounded-lg border border-outline-subtle">
+                            {% for label, value in [
+                                ('Status', operational_use.inventory_status_label),
+                                ('Last Collected', operational_use.inventory_collected_at_display),
+                                ('Node Evidence', operational_use.node_count ~ ' discovered'),
+                                ('Bound Sources', operational_use.binding_count)
+                            ] %}
+                                <div class="flex items-start justify-between gap-4 px-3.5 py-3">
+                                    <dt class="text-xs font-semibold text-content-secondary">{{ label }}</dt>
+                                    <dd class="text-right text-xs font-semibold text-content-primary">{{ value }}</dd>
+                                </div>
+                            {% endfor %}
+                        </dl>
+                    </section>
+
+                    <section class="border-b border-outline-subtle p-5" aria-labelledby="inventory-lifecycle-boundary-title">
+                        <h4 id="inventory-lifecycle-boundary-title" class="text-sm font-semibold text-content-primary">Lifecycle Boundary</h4>
+                        <div class="mt-4 space-y-4">
+                            <div class="flex items-start gap-3">
+                                <i data-lucide="trash-2" class="mt-0.5 h-4 w-4 shrink-0 text-status-critical-text" aria-hidden="true"></i>
+                                <div><p class="text-xs font-semibold text-content-primary">Removed With the Connection</p><p class="mt-1 text-xs leading-5 text-content-secondary">Kubernetes identity, stored kubeconfig, synchronized inventory, cluster-scoped rows, and this cluster's source bindings.</p></div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <i data-lucide="archive-restore" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                <div><p class="text-xs font-semibold text-content-primary">Retained After Deletion</p><p class="mt-1 text-xs leading-5 text-content-secondary">Shared providers, generated reports and schedules, runtime history, JobExecution history, and Activity Audit evidence.</p></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <footer class="bg-kaori-soft p-4">
+                        <div class="flex items-start gap-2.5">
+                            <i data-lucide="waypoints" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                            <div><p class="text-xs font-semibold text-content-primary">Shared Source Boundary</p><p class="mt-1 text-xs leading-5 text-content-secondary">Deleting this connection removes only its scope bindings. Reusable Prometheus and Alertmanager instances remain intact.</p></div>
+                        </div>
+                    </footer>
+                </aside>
             </div>
-        </section>
+        </div>
     </section>
 
-    <section class="{{ integration_ui.section_shell_classes() }}" aria-labelledby="connection-lifecycle-title">
-        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+    <section class="{{ violet_ui.shell_classes() }}" aria-labelledby="connection-lifecycle-title" data-kaori-connection-lifecycle>
+        <header class="{{ violet_ui.soft_header_classes() }}">
             <div class="flex items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-content-secondary" aria-hidden="true">
-                    <i data-lucide="shield-alert" class="h-5 w-5"></i>
-                </span>
+                <span class="{{ violet_ui.icon_classes('sm') }}" aria-hidden="true"><i data-lucide="shield-alert" class="h-4 w-4"></i></span>
                 <div>
                     <h2 id="connection-lifecycle-title" class="text-base font-semibold text-content-primary">Connection Lifecycle</h2>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">KAORI performs a governed delete only after active work and protected operational requests are resolved.</p>
@@ -168,8 +206,10 @@
                         </div>
                     </div>
                 {% else %}
-                    <p class="text-sm font-semibold text-content-primary">Deletion Guardrails Passed</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">No active Kubernetes job or pending/approved Protected Secret Reveal request currently blocks deletion. Confirmation still explains the irreversible impact before submission.</p>
+                    <div class="flex items-start gap-3">
+                        <span class="{{ violet_ui.icon_classes('sm') }}" aria-hidden="true"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
+                        <div><p class="text-sm font-semibold text-content-primary">Deletion Guardrails Passed</p><p class="mt-1 text-xs leading-5 text-content-secondary">No active Kubernetes job or pending/approved Protected Secret Reveal request currently blocks deletion. Confirmation still explains irreversible impact.</p></div>
+                    </div>
                 {% endif %}
             </div>
             {% if current_user.has_permission('clusters.manage') %}

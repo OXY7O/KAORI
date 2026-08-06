@@ -6,13 +6,15 @@
 {% set runtime_history_detail_url_value = runtime_history_detail_url|default(runtime_history_url, true) %}
 {% set runtime_history_route_args_value = runtime_history_route_args|default(request.view_args.copy() if request.view_args else {}, true) %}
 {% set runtime_history_tab_name = runtime_history_tab|default('runtime', true) %}
+{% set runtime_history_is_violet = runtime_history_variant|default('') == 'violet-v2' %}
 <section id="{{ runtime_history_id }}"
          {% if runtime_history_oob|default(false) %}hx-swap-oob="outerHTML"{% endif %}
-         class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+         class="relative overflow-hidden rounded-xl border {{ 'border-kaori-primary/20' if runtime_history_is_violet else 'border-outline-default' }} bg-surface-card shadow-sm"
+         {% if runtime_history_is_violet %}data-kaori-runtime-history-violet-v2{% endif %}>
+    <header class="border-b {{ 'border-kaori-primary/15 bg-kaori-soft' if runtime_history_is_violet else 'border-outline-subtle' }} px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-content-secondary">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border {{ 'border-kaori-primary/15 bg-surface-card text-kaori-primary shadow-sm' if runtime_history_is_violet else 'border-outline-subtle bg-surface-card text-content-secondary' }}">
                     <i data-lucide="history" class="h-5 w-5"></i>
                 </span>
                 <div>
@@ -44,20 +46,20 @@
     </header>
     {% if runtime_history.rows %}
         <div class="grid gap-px border-b border-outline-subtle bg-outline-subtle sm:grid-cols-4">
-            <div class="bg-surface-card p-4">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Ready Samples</p>
+            <div class="{{ 'bg-kaori-soft' if runtime_history_is_violet else 'bg-surface-card' }} p-4">
+                <p class="text-xs font-semibold text-content-secondary">Ready Samples</p>
                 <p class="mt-3 text-sm font-semibold text-content-primary">{{ runtime_history.posture_counts.ready }}</p>
             </div>
             <div class="bg-surface-card p-4">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Attention Samples</p>
+                <p class="text-xs font-semibold text-content-secondary">Attention Samples</p>
                 <p class="mt-3 text-sm font-semibold text-content-primary">{{ runtime_history.posture_counts.attention }}</p>
             </div>
             <div class="bg-surface-card p-4">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Blocked Samples</p>
+                <p class="text-xs font-semibold text-content-secondary">Blocked Samples</p>
                 <p class="mt-3 text-sm font-semibold text-content-primary">{{ runtime_history.posture_counts.blocked }}</p>
             </div>
             <div class="bg-surface-card p-4">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Not Observed</p>
+                <p class="text-xs font-semibold text-content-secondary">Not Observed</p>
                 <p class="mt-3 text-sm font-semibold text-content-primary">{{ runtime_history.posture_counts.not_observed }}</p>
             </div>
         </div>
@@ -68,7 +70,7 @@
                     <summary class="grid cursor-pointer list-none gap-3 px-5 py-4 transition hover:bg-kaori-mist sm:px-6 lg:grid-cols-5 lg:items-center [&::-webkit-details-marker]:hidden">
                         <div class="min-w-0">
                             <div class="flex items-center gap-2">
-                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-content-secondary"><i data-lucide="activity" class="h-4 w-4"></i></span>
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border {{ 'border-kaori-primary/15 bg-kaori-soft text-kaori-primary' if runtime_history_is_violet else 'border-outline-subtle bg-surface-card text-content-secondary' }}"><i data-lucide="activity" class="h-4 w-4"></i></span>
                                 <div class="min-w-0">
                                     <p class="text-sm font-semibold text-content-primary">{{ row.observed_at_display }}</p>
                                     <p class="mt-0.5 text-xs text-content-secondary">{{ row.trigger_type_label }} observation</p>
@@ -250,7 +252,7 @@
             </div>
         </div>
     {% endif %}
-    <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs text-content-muted lg:flex-row lg:items-center lg:justify-between sm:px-6">
+    <footer class="flex flex-col gap-3 border-t {{ 'border-kaori-primary/15 bg-kaori-soft' if runtime_history_is_violet else 'border-outline-subtle bg-surface-hover' }} px-5 py-3.5 text-xs text-content-muted lg:flex-row lg:items-center lg:justify-between sm:px-6">
         <div class="flex flex-wrap items-center gap-3">
             <p>Showing <span class="font-semibold text-content-primary">{{ runtime_history.pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ runtime_history.pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ runtime_history.pagination.total_items }}</span> Runtime Observations</p>
             <div class="inline-flex items-center gap-2">
