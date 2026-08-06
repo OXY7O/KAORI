@@ -171,10 +171,20 @@ def test_top_consumers_use_calm_ranked_surfaces_without_divider_noise() -> None:
 
     assert 'Top Consumer Snapshot' in source
     assert 'Ranked Records' in source
-    assert 'grid gap-5 p-4 sm:p-5 xl:grid-cols-2 2xl:grid-cols-4' in source
-    assert '<ol class="mt-3 space-y-2"' in source
-    assert "overview_surface.ranked_item_classes('px-3 py-2.5')" in source
-    assert "overview_surface.empty_evidence_classes('mt-3 px-4 py-6 text-center')" in source
+    assert 'grid gap-4 p-4 sm:p-5 lg:grid-cols-2' in source
+    assert '2xl:grid-cols-4' not in source
+    assert '<ol class="space-y-2 p-3 sm:p-4"' in source
+    assert "overview_surface.ranked_item_classes('px-3 py-2.5 transition-colors hover:bg-kaori-mist')" in source
+    assert 'overflow-hidden rounded-xl border bg-surface-card shadow-sm' in source
+    assert "'accent_classes': 'bg-violet-500'" in source
+    assert "'accent_classes': 'bg-cyan-500'" in source
+    assert "'accent_classes': 'bg-emerald-500'" in source
+    assert "'accent_classes': 'bg-amber-500'" in source
+    assert 'Compute Demand' in source
+    assert 'Working Set' in source
+    assert 'Persistent Storage' in source
+    assert 'Workload Density' in source
+    assert "overview_surface.empty_evidence_classes('m-3 px-4 py-6 text-center sm:m-4')" in source
     assert 'break-words text-sm font-semibold' in source
     assert 'progress_bar' not in source
     assert 'divide-y divide-outline-subtle' not in source
@@ -357,7 +367,7 @@ def test_primary_overview_evidence_stays_bright_and_guidance_is_bounded() -> Non
     alerts = read('partials/_alerts_snapshot.html')
     action_summary = read('partials/_actionable_recommendation_summary.html')
 
-    assert "overview_surface.ranked_item_classes('px-3 py-2.5')" in consumers
+    assert "overview_surface.ranked_item_classes('px-3 py-2.5 transition-colors hover:bg-kaori-mist')" in consumers
     assert "surface_classes='bg-surface-card'" in forecast
     assert 'overview_surface.interpretation_callout' in forecast
     assert 'overview_surface.guidance_card_classes' in storage
