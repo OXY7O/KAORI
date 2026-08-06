@@ -80,7 +80,7 @@
                                 {% call evidence_list.cell(4) %}
                                     {{ evidence_list.mobile_label('Consumer Identity') }}
                                     <div class="flex min-w-0 items-start gap-3">
-                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                        <span class="{{ analysis_surface.metric_icon_classes() }}" aria-hidden="true">
                                             <i data-lucide="{{ identity.icon|default(row.resource_icon|default('activity')) }}" class="h-4 w-4"></i>
                                         </span>
                                         <div class="min-w-0">
@@ -209,6 +209,7 @@
                                         row.recommendation,
                                         'Prioritize configuration gaps and resource-specific pressure before acting on contribution share alone.',
                                         icon='list-checks',
+                role='brand',
                                         tone=risk.tone|default('unknown'),
                                         compact=true
                                     ) }}

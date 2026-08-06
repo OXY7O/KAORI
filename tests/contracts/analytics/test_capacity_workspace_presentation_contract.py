@@ -75,18 +75,16 @@ def test_capacity_semantic_status_is_owned_by_domain_not_css_or_jinja() -> None:
     assert "'critical' in item.status.class" not in risk
 
 
-def test_capacity_progress_remains_violet_and_primary_evidence_is_bright() -> None:
+def test_capacity_progress_uses_semantic_status_and_primary_evidence_is_bright() -> None:
     overview = read('app/templates/analytics/capacity/partials/_overview.html')
     allocation = read('app/templates/analytics/capacity/partials/_allocation.html')
     risk = read('app/templates/analytics/capacity/partials/_risk.html')
     contract = read('docs/design/components/ANALYTICS_CAPACITY_ANALYSIS.md')
 
-    for source in (overview, allocation, risk):
-        assert 'bg-kaori-primary' in source
-        assert 'bg-red-' not in source
-        assert 'bg-amber-' not in source
-        assert 'bg-emerald-' not in source
-    assert 'progress bars remain KAORI Violet' in contract
+    assert 'progress_bar.semantic_bar(item.utilization_percent, item.tone' in overview
+    assert "progress_bar.semantic_bar(allocation_item['percent'], allocation_item['tone']" in allocation
+    assert 'progress_bar.semantic_bar(item.headroom, tone' in risk
+    assert 'Capacity status bars use the shared semantic renderer' in contract
 
 
 def test_capacity_separates_findings_from_review_navigation_and_storage_actions() -> None:

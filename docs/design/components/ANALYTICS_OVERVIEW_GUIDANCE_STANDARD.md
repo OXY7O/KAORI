@@ -1,6 +1,7 @@
-# KAORI Analytics Neutral Guidance Standard
+# KAORI Analytics Guidance Standard
 
-This standard applies to Analytics Overview and the shared interpretation regions used by every Kubernetes Analytics page.
+This standard applies to Analytics Overview and to every reusable
+interpretation region across Kubernetes Analytics.
 
 Covered labels include:
 
@@ -12,57 +13,19 @@ Covered labels include:
 - Recommended Review Path
 - Operational Triage
 - Forecast Decision
+- Measurement Standard
+- Methodology
 
-## Visual hierarchy
+The complete color-role contract is defined in:
 
-Analytics uses three deliberately separated visual layers.
+```text
+docs/design/components/ANALYTICS_VISUAL_ROLE_SYSTEM.md
+```
 
-### 1. Neutral evidence and guidance
+## Shared ownership
 
-Analytics pages apply the `kaori-analytics-page` token scope.
-
-Light mode uses:
-
-- white primary cards;
-- slate-50 supporting and icon surfaces;
-- slate supporting typography;
-- neutral slate outlines.
-
-Dark mode uses:
-
-- neutral charcoal cards rather than purple-tinted panels;
-- neutral charcoal supporting surfaces;
-- slate supporting typography;
-- neutral slate outlines.
-
-The analytics scope must not restore the former lavender values such as `#f8f5fc`, `#ded6e8`, or `#26212f`.
-
-### 2. KAORI identity
-
-Bright Violet is reserved for:
-
-- section identity icons;
-- tabs and active navigation;
-- links and buttons;
-- non-semantic guidance icons;
-- loading and composition indicators.
-
-Violet must not represent Normal, Warning, Critical, or Unknown health.
-
-### 3. Semantic state
-
-Semantic colors are reserved for:
-
-- compact status labels;
-- an explicitly semantic status glyph;
-- quantitative pressure or utilization bars;
-- compact threshold legends.
-
-Semantic colors must not tint an entire guidance region, metric card, headline, divider, or evidence surface.
-
-## Shared guidance composition
-
-Every Analytics interpretation region uses `interpretation_callout()` from:
+Every guidance region uses `interpretation_callout()` or
+`interpretation_content()` from:
 
 ```text
 app/templates/analytics/components/_analysis_surfaces.html
@@ -76,80 +39,86 @@ Canonical composition:
         'How To Read',
         headline,
         description,
-        icon='chart-column'
+        icon='chart-column',
+        role='insight'
     ) }}
     {{ analysis_surface.interpretation_callout(
         'What To Do',
         action_headline,
         action_description,
-        icon='scan-search'
+        icon='scan-search',
+        role='brand'
     ) }}
 </div>
 ```
 
-Rules:
+## Role selection
 
-- use one white or neutral-charcoal interpretation region;
-- do not use a full lavender, green, amber, red, or blue background;
-- use a subtle horizontal separator on mobile and vertical separator on desktop;
-- use a muted uppercase label;
-- use a neutral primary headline;
-- use stronger neutral secondary text for the explanatory body;
-- use a Violet icon for How To Read, What To Do, Recommended Action, and Review Path;
-- use `semantic=true` only when the callout itself communicates an actual health state, such as Operational Reading;
-- do not add accent bars, semantic borders, semantic headline colors, or separate colored cards;
-- do not recreate shared guidance labels using raw template markup.
+### Insight
 
-## Operational cards
+Use `role='insight'` for explanation and methodology:
 
-Metric cards and health cards use neutral icon tiles:
+- How To Read;
+- Measurement Standard;
+- Methodology;
+- Decision Thresholds.
+
+This role uses the KAORI information/cyan family as a compact visual cue.
+
+### Brand
+
+Use `role='brand'` for navigation and recommended action:
+
+- What To Do;
+- Recommended Action;
+- Recommended Review Path;
+- Forecast Decision;
+- Operational Triage.
+
+This role uses KAORI Bright Violet as the product/action cue.
+
+### Evidence
+
+Use `role='evidence'` for passive scope or contextual guidance that is neither
+an action nor a health state.
+
+### Status
+
+Use `role='status'` only when the guidance itself communicates the current
+operational state. Supply the resolved semantic `tone`.
+
+Example:
 
 ```jinja
-{{ analysis_surface.metric_icon_classes() }}
+{{ analysis_surface.interpretation_callout(
+    'Operational Reading',
+    reading.headline,
+    reading.description,
+    icon='triangle-alert',
+    role='status',
+    tone=reading.tone
+) }}
 ```
 
-The compact status badge is the primary health indicator. Do not repeat the same status using a colored metric icon unless the icon is the only status indicator available.
+## Surface and typography
 
-Operational Health Summary uses no more than three columns at desktop width so each label, value, status, and description remains readable.
+Guidance uses a neutral surface to protect readability. Color is concentrated
+in the compact icon tile and eyebrow label.
 
-## Status bars
-
-Status-bearing progress bars use `progress_bar.semantic_bar()`:
-
-- Normal → green
-- Warning → amber
-- Critical → red
-- Unknown → slate
-- Info → blue
-
-The bar is the quantitative semantic indicator. Its card, heading, and supporting text remain neutral.
-
-Composition-only loading bars may continue to use KAORI Violet.
-
-## Attention and unavailable states
-
-An attention strip uses:
-
-- a white or neutral-charcoal surface;
-- a neutral border;
-- one semantic warning glyph;
-- one compact warning badge;
-- primary title text;
-- neutral secondary explanatory text.
-
-For singular grammar use `1 Dataset Needs Attention`; for plural grammar use `N Datasets Need Attention`.
-
-Unavailable states use a neutral dashed surface and explicit Unknown/N/A wording. They must not use a large Violet or semantic-tinted background.
-
-## Typography
-
-Canonical guidance hierarchy:
+Canonical hierarchy:
 
 ```text
-Label       12px semibold uppercase, muted slate
-Headline    14px semibold, primary text
-Body        12px regular with 20px line-height, secondary slate
+Icon tile    visual role color
+Label        role-aware eyebrow color
+Headline     text-content-primary
+Body         text-content-secondary
+Container    bg-surface-card
+Divider      outline-subtle
 ```
+
+Do not apply a full Violet, cyan, green, amber, red, or slate fill to an
+ordinary guidance row. Do not color the headline semantically. Do not add a
+local accent bar.
 
 Recommended spacing:
 
@@ -161,15 +130,41 @@ Horizontal padding    16–20px
 Vertical padding      16px
 ```
 
-## Cross-page consistency
+## Responsive layout
 
-Utilization, Capacity, Storage, Workload, Forecast, Top Consumers, Alerts, and Overview import the same surface macros. Forecast must also carry the `kaori-analytics-page` scope so shared neutral tokens are identical across every Analytics page.
+On desktop, paired guidance uses two columns separated by a subtle neutral gap.
+On mobile, it becomes a vertical stack with the same separator treatment.
 
-Any change to shared guidance composition or Analytics color tokens requires regression coverage for:
+The shared grid must own this behavior; domain templates must not recreate the
+divider geometry.
 
-- neutral light-mode surface values;
-- neutral dark-mode surface values;
-- brand-only non-semantic guidance icons;
-- semantic bars and status labels;
-- absence of semantic card fills and accent bars;
-- Forecast analytics token scope.
+## Status bars
+
+Guidance containers remain neutral. Quantitative status bars still follow
+semantic meaning:
+
+- Normal → green;
+- Warning → amber;
+- Critical → red;
+- Unknown → slate;
+- Info → blue.
+
+Composition-only bars remain KAORI Violet.
+
+## Attention and unavailable states
+
+Dataset Attention uses a neutral surface with:
+
+- a semantic warning glyph;
+- a compact Warning/Refresh Required badge;
+- primary title text;
+- secondary explanatory text.
+
+Unavailable states use neutral dashed surfaces and explicit Unknown/N/A text.
+They must not imply Normal health.
+
+## DRY enforcement
+
+Every Analytics interpretation invocation must declare `role=` explicitly.
+Do not add `semantic=true`, domain-local icon color maps, or duplicated raw
+brand icon geometry. Shared-role regression tests enforce this contract.

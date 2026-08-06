@@ -177,10 +177,48 @@ The final correction applies the following rules:
 - Analytics supporting text uses slate rather than purple-tinted content tokens;
 - guidance regions use `bg-surface-card`, not a full `bg-surface-muted` band;
 - How To Read, What To Do, Recommended Action, and Review Path use the same Violet non-semantic icon treatment;
-- only an actual health reading may request `semantic=true` for its glyph;
+- only an actual health reading uses `role='status'` with its resolved semantic tone;
 - health and pressure rows use neutral icons while status badges and quantitative bars carry semantic color;
 - Dataset Attention remains neutral and uses Warning only for its glyph and compact badge;
 - singular Dataset Attention grammar is corrected to `1 Dataset Needs Attention`;
 - Forecast now carries `kaori-analytics-page`, removing the last cross-page token inconsistency.
 
 This correction remains presentation-only. Analytics evidence, snapshot dimensions, thresholds, routes, and recommendation logic are unchanged.
+
+## Cross-Analytics visual-role standardization — 2026-08-06
+
+The neutral correction was refined after product review clarified that KAORI
+color should remain expressive rather than being removed. The final contract
+therefore assigns color by reusable visual role across every Analytics page:
+
+- Brand: Bright Violet for identity, navigation, primary action, and review path;
+- Insight: cyan/info for How To Read, methodology, and explanatory content;
+- Evidence: slate for passive context, Namespace, workload, ownership, and scope;
+- Status: semantic green, amber, red, or slate only for actual operational state.
+
+Large evidence and guidance surfaces remain neutral for contrast. Color is
+concentrated in compact icon tiles, eyebrow labels, badges, charts, and status
+bars. This provides stronger use of the KAORI palette without restoring the
+former visually noisy full-card tints.
+
+The implementation is DRY:
+
+- `role_icon_classes()` owns role icon geometry and color;
+- `role_label_classes()` owns eyebrow label color;
+- `resource_icon_classes()` owns resource/category mapping;
+- `semantic_icon_classes()` owns status glyph presentation;
+- every `interpretation_callout()` and `interpretation_content()` invocation
+  explicitly declares `role=`;
+- Capacity and other status-bearing bars use semantic colors, while composition,
+  ranking, loading, and materialization bars remain KAORI Violet.
+
+The system applies to Overview, Utilization, Capacity, Storage, Workload,
+Forecast, Top Consumers, and Alerts & Anomalies. No domain-local compatibility
+wrapper or new color-token exception was introduced.
+
+Regression ownership:
+
+- `tests/contracts/analytics/test_analytics_visual_role_system_contract.py`
+- `tests/contracts/analytics/test_analytics_guidance_callout_standard_contract.py`
+- `tests/contracts/analytics/test_semantic_status_bar_contract.py`
+- `tests/contracts/analytics/test_overview_semantic_visual_hierarchy_contract.py`

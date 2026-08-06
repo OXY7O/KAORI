@@ -40,7 +40,7 @@
         {% for metric in metrics %}
             <article class="{{ overview_surface.metric_cell_classes() }}">
                 <div class="flex items-center justify-between gap-3">
-                    <span class="{{ overview_surface.metric_icon_classes() }}"><i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i></span>
+                    <span class="{{ overview_surface.semantic_icon_classes(metric.tone) }}"><i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i></span>
                     <span class="text-xl font-semibold text-content-primary">{{ metric.value }}</span>
                 </div>
                 <p class="mt-3 text-xs font-semibold uppercase tracking-wider text-content-muted">{{ metric.label }}</p>
@@ -60,14 +60,14 @@
             <div class="mt-4 divide-y divide-outline-subtle border-y border-outline-subtle">
                 <div class="flex items-start justify-between gap-4 py-3">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="{{ overview_surface.metric_icon_classes() }}"><i data-lucide="siren" class="h-4 w-4"></i></span>
+                        <span class="{{ overview_surface.semantic_icon_classes('critical') }}"><i data-lucide="siren" class="h-4 w-4"></i></span>
                         <div><p class="text-sm font-semibold text-content-primary">Immediate Review</p><p class="mt-1 text-xs leading-5 text-content-muted">Investigate critical and firing alerts before optimization or planned change work.</p></div>
                     </div>
                     <span class="shrink-0">{{ table_label.status_label(immediate_count, 'critical', size='compact') }}</span>
                 </div>
                 <div class="flex items-start justify-between gap-4 py-3">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="{{ overview_surface.metric_icon_classes() }}"><i data-lucide="calendar-clock" class="h-4 w-4"></i></span>
+                        <span class="{{ overview_surface.semantic_icon_classes('warning') }}"><i data-lucide="calendar-clock" class="h-4 w-4"></i></span>
                         <div><p class="text-sm font-semibold text-content-primary">Planned Follow-Up</p><p class="mt-1 text-xs leading-5 text-content-muted">Group warning and pending alerts into the next operational review.</p></div>
                     </div>
                     <span class="shrink-0">{{ table_label.status_label(follow_up_count, 'warning', size='compact') }}</span>
@@ -91,6 +91,7 @@
                         'Validate Critical Signal Ownership And Routing',
                         'Validate routing, ownership, runbook coverage, and recent deployment changes for the highest-severity active signal.',
                         icon='shield-alert',
+                role='brand',
                         tone='critical'
                     ) }}
                 {% elif alerts.recent_anomalies > 0 %}
@@ -99,6 +100,7 @@
                         'Correlate Anomaly Candidates Before Escalation',
                         'Correlate anomaly candidates with workload, traffic, and deployment changes before escalating them as incidents.',
                         icon='search-code',
+                role='brand',
                         tone='warning'
                     ) }}
                 {% elif not alerts.evidence_complete|default(false) %}
@@ -107,6 +109,7 @@
                         'Restore Complete Signal Evidence',
                         'Refresh Alertmanager and Prometheus anomaly evidence before treating the absence of active signals as a stable condition.',
                         icon='circle-help',
+                role='brand',
                         tone='warning'
                     ) }}
                 {% else %}
@@ -115,6 +118,7 @@
                         'Continue Signal Quality Monitoring',
                         'Continue monitoring signal quality and ownership coverage. No immediate incident escalation is indicated.',
                         icon='circle-check',
+                role='brand',
                         tone='normal'
                     ) }}
                 {% endif %}

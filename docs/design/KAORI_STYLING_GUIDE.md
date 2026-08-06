@@ -244,14 +244,14 @@ Capacity is the reference composition for Analytics pages and Analytics Overview
 1. one calm snapshot shell;
 2. one compact header with icon, semantic posture, description, and at most one drill-down action;
 3. one peer metric strip when the domain has summary metrics;
-4. one bright evidence or context body;
-5. one darker soft interpretation, decision, or recommended-action region.
+4. one neutral evidence or context body with compact role-colored anchors;
+5. one neutral interpretation, decision, or recommended-action region using the shared Brand, Insight, Evidence, or Status role.
 
-Primary evidence and analytical context use `bg-surface-card`. Interpretation, recommended action, review path, and execution guidance use `bg-surface-hover`. Attention strips use the darker soft surface plus semantic Warning or Critical treatment.
+Primary evidence, analytical context, interpretation, recommended action, review path, and execution guidance use neutral surfaces with subtle outlines or separators. Color is concentrated in compact icon tiles, eyebrow labels, badges, charts, and bars. Dataset Attention uses a neutral strip plus one semantic Warning glyph and compact badge.
 
-Do not darken the entire Prometheus/readiness body. Keep the source and committed snapshot panels bright, then place dataset attention below them as a distinct strip. Charts, ranked records, findings, and context side panels such as Pressure Posture remain bright and use borders for separation. Use `analytics/components/_analysis_surfaces.html`; individual tabs must not reconstruct the snapshot shell, header, metric geometry, or surface hierarchy.
+Do not tint the entire Prometheus/readiness body, chart, record list, metric card, or guidance region. Use `analytics/components/_analysis_surfaces.html`; individual tabs must not reconstruct the snapshot shell, header, metric geometry, role icon geometry, guidance composition, or surface hierarchy.
 
-Analytics status tones are normalized through `table_label.semantic_tone(...)`. Critical, Warning, and Normal values must never fall back to the Unknown/slate treatment.
+Analytics assigns color by visual role: Brand Violet for identity/navigation/actions, Insight cyan for explanation/methodology, Evidence slate for passive context, and semantic green/amber/red/slate only for actual operational state. Status tones are normalized through `table_label.semantic_tone(...)`. Critical, Warning, and Normal values must never fall back to the Unknown/slate treatment.
 
 ## 9. Pagination Standard
 
@@ -800,7 +800,7 @@ Workload Analysis follows `components/ANALYTICS_WORKLOAD_ANALYSIS.md`. Tenant Qu
 
 ## Analytics Unavailable Metric Contract
 
-An unavailable denominator must render `Unknown` and `N/A`, not `0.0%`. Suppress the progress bar and state how evidence can be restored. Progress fills remain KAORI Violet; semantic severity belongs to status labels and operational reading. Capacity Analysis is cluster-level Ready-worker fleet analysis, while node-level pressure belongs to Resource Utilization.
+An unavailable denominator must render `Unknown` and `N/A`, not `0.0%`. Suppress the progress bar and state how evidence can be restored. Status-bearing utilization, pressure, risk, and headroom bars use semantic color; composition, contribution, loading, and materialization bars remain KAORI Violet. Capacity Analysis is cluster-level Ready-worker fleet analysis, while node-level pressure belongs to Resource Utilization.
 
 ## Analytics Resource Forecast
 
@@ -808,8 +808,8 @@ Resource Forecast follows the shared Analytics Analysis Surface hierarchy and th
 
 - Group Cluster/Namespace under Scope and Model/History/Horizon under Projection Configuration.
 - Resource tabs own CPU, Memory, Storage, Pods, Trend, and Recommendations navigation. Do not duplicate this with a Resource Focus selector.
-- Use bright surfaces for forecast metrics, capacity projection, charts, and resource outlook.
-- Use darker soft surfaces for interpretation and recommended action.
+- Use neutral surfaces for forecast metrics, capacity projection, charts, resource outlook, interpretation, and recommended action.
+- Use Insight cyan for methodology/How To Read and Brand Violet for What To Do or review-path anchors.
 - Use Latest Daily Average, Weekly Trend, and Historical Signal Quality.
 - Historical Signal Quality is not forecast accuracy.
 - Unknown evidence displays N/A and suppresses progress.
@@ -819,7 +819,7 @@ Resource Forecast follows the shared Analytics Analysis Surface hierarchy and th
 
 ### Analytics Alerts & Anomalies Standard
 
-Alerts & Anomalies follows `components/ANALYTICS_ALERTS_ANOMALIES.md`. Connected source health, committed snapshot availability, anomaly collection, routing, suppression, ownership, and incident readiness remain separate evidence signals. Missing or partial evidence must not resolve to Healthy. Primary records and operational evidence stay bright; interpretation, attention, and recommended actions use the darker soft surface. Semantic levels are normalized in the template layer and domain payloads never emit CSS classes.
+Alerts & Anomalies follows `components/ANALYTICS_ALERTS_ANOMALIES.md`. Connected source health, committed snapshot availability, anomaly collection, routing, suppression, ownership, and incident readiness remain separate evidence signals. Missing or partial evidence must not resolve to Healthy. Records, operational evidence, interpretation, attention, and recommended actions use neutral surfaces; semantic color is reserved for actual status, while Brand and Insight roles identify action and explanation. Semantic levels are normalized in the template layer and domain payloads never emit CSS classes.
 
 ## Analytics Top Consumers Standard
 

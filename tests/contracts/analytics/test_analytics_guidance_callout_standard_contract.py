@@ -9,17 +9,21 @@ RAW_GUIDANCE_PATTERN = re.compile(
 )
 
 
-def test_analysis_surface_owns_guidance_callout_geometry_and_tones():
+def test_analysis_surface_owns_role_based_guidance_geometry_and_palette():
     surface = (ANALYTICS_ROOT / "components/_analysis_surfaces.html").read_text()
-    assert 'macro interpretation_content' in surface
-    assert 'macro interpretation_callout' in surface
-    assert 'guidance_icon_classes' in surface
-    assert 'semantic=false' in surface
-    assert 'table_label.tone_icon_classes' in surface
-    assert 'text-content-secondary' in surface
-    assert 'table_label.tone_surface_classes(resolved_tone)' not in surface
-    assert 'table_label.tone_dot_classes(resolved_tone)' not in surface
-    assert 'compact=false' in surface
+    assert "macro role_icon_classes(role='brand', tone='info', size='default')" in surface
+    assert "macro role_label_classes(role='brand', tone='info')" in surface
+    assert "macro guidance_icon_classes(role='brand', tone='info', size='default')" in surface
+    assert "macro interpretation_content" in surface
+    assert "macro interpretation_callout" in surface
+    assert "role='brand'" in surface
+    assert "border-kaori-border bg-kaori-soft text-kaori-primary" in surface
+    assert "table_label.tone_border_classes('info')" in surface
+    assert "table_label.tone_surface_classes('info')" in surface
+    assert "table_label.tone_icon_classes('info')" in surface
+    assert "table_label.tone_surface_classes(resolved_tone)" in surface
+    assert "text-content-secondary" in surface
+    assert "semantic=false" not in surface
 
 
 def test_analytics_templates_do_not_recreate_guidance_labels_as_raw_markup():
@@ -47,6 +51,7 @@ def test_every_analytics_domain_uses_shared_guidance_callouts():
     for domain, relative in expected.items():
         content = (ANALYTICS_ROOT / relative).read_text()
         assert "interpretation_" in content, domain
+        assert "role=" in content, domain
 
 
 def test_record_level_guidance_uses_compact_shared_variant():
@@ -60,3 +65,4 @@ def test_record_level_guidance_uses_compact_shared_variant():
     for relative in record_templates:
         content = (ANALYTICS_ROOT / relative).read_text()
         assert "compact=true" in content, relative
+        assert "role=" in content, relative

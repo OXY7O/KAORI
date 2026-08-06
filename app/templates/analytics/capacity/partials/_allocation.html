@@ -40,8 +40,7 @@
                     reason=operational_reason,
                     headroom=item.headroom,
                     status_label=item.status_label,
-                    available=item.evidence_available,
-                    progress_fill_classes='bg-kaori-primary'
+                    available=item.evidence_available
                 ) }}
             {% endfor %}
         </div>
@@ -72,7 +71,7 @@
                                         <span class="font-semibold tabular-nums {{ 'text-content-primary' if allocation_item['available'] else analysis_surface.unavailable_value_classes() }}">{{ allocation_item['display'] }}</span>
                                     </div>
                                     {% if allocation_item['available'] %}
-                                        {{ progress_bar.bar(allocation_item['percent'], 'mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-hover', 'h-full rounded-full bg-kaori-primary transition-all duration-500', allocation_item['label'] ~ ' allocation status') }}
+                                        {{ progress_bar.semantic_bar(allocation_item['percent'], allocation_item['tone'], track_classes='mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-hover', label=allocation_item['label'] ~ ' allocation status') }}
                                     {% else %}
                                         <div class="mt-1.5 h-1.5 rounded-full border border-dashed border-outline-strong bg-surface-hover" aria-label="{{ allocation_item['label'] }} evidence unavailable"></div>
                                     {% endif %}
@@ -99,13 +98,15 @@
             'How To Read',
             'Compare Utilization, Commitments, And Remaining Headroom',
             'High usage with low headroom indicates immediate pressure. High requests with low actual usage indicates reservation inefficiency. Limits above allocatable indicate overcommit exposure, not current consumption.',
-            icon='chart-pie'
+            icon='chart-pie',
+                role='insight'
         ) }}
         {{ analysis_surface.interpretation_callout(
             'What To Do',
             'Validate The Constrained Resource Before Expanding Capacity',
             'Validate the constrained resource, identify workloads driving requests and limits, then right-size reservations or expand Ready-worker capacity.',
             icon='scan-search',
+                role='brand',
             tone=capacity_action_tone,
             extra='border-t border-outline-subtle lg:border-t-0'
         ) }}

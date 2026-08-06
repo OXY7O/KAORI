@@ -2,13 +2,15 @@
 {#
   KAORI Analytics presentation primitives.
 
-  Visual hierarchy:
-  - neutral surfaces and slate typography carry evidence and guidance,
-  - Violet identifies KAORI sections, navigation, and non-semantic actions,
-  - semantic colors are reserved for status badges, status glyphs, and
-    quantitative pressure bars,
-  - interpretation guidance never uses a semantic background, accent bar,
-    or colored headline.
+  Reusable visual roles:
+  - brand: KAORI Violet for identity, navigation, and primary actions,
+  - insight: cyan/info for explanation, methodology, and how-to-read guidance,
+  - evidence: slate-neutral for supporting facts and passive context,
+  - status: semantic green/amber/red/slate only for actual operational state.
+
+  Surfaces remain readable and mostly neutral. Color is concentrated in small
+  role icons, eyebrow labels, badges, charts, and status bars so all Analytics
+  pages share one DRY visual language without turning every box into a tint.
 #}
 {% macro snapshot_shell_classes() -%}
     overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm
@@ -18,22 +20,64 @@
     flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between
 {%- endmacro %}
 
-{% macro snapshot_header_icon_classes() -%}
-    flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary
+{% macro role_icon_classes(role='brand', tone='info', size='default') -%}
+    {% set resolved_role = role|default('brand', true)|lower|replace(' ', '_') %}
+    {% set resolved_tone = table_label.semantic_tone(tone)|trim %}
+    {% set geometry = 'h-7 w-7 rounded-md' if size == 'compact' else ('h-10 w-10 rounded-lg' if size == 'large' else 'h-8 w-8 rounded-lg') %}
+    {% if resolved_role == 'status' %}
+        flex {{ geometry }} shrink-0 items-center justify-center border {{ table_label.tone_border_classes(resolved_tone)|trim }} {{ table_label.tone_surface_classes(resolved_tone)|trim }}
+    {% elif resolved_role in ['insight', 'read', 'methodology'] %}
+        flex {{ geometry }} shrink-0 items-center justify-center border {{ table_label.tone_border_classes('info')|trim }} {{ table_label.tone_surface_classes('info')|trim }} {{ table_label.tone_icon_classes('info')|trim }}
+    {% elif resolved_role in ['evidence', 'neutral', 'context'] %}
+        flex {{ geometry }} shrink-0 items-center justify-center border border-outline-subtle bg-surface-muted text-content-secondary
+    {% else %}
+        flex {{ geometry }} shrink-0 items-center justify-center border border-kaori-border bg-kaori-soft text-kaori-primary
+    {% endif %}
 {%- endmacro %}
 
-{% macro metric_icon_classes(size='default') -%}
-    flex {{ 'h-7 w-7 rounded-md' if size == 'compact' else 'h-8 w-8 rounded-lg' }} shrink-0 items-center justify-center border border-outline-subtle bg-surface-muted text-content-secondary
+{% macro role_label_classes(role='brand', tone='info') -%}
+    {% set resolved_role = role|default('brand', true)|lower|replace(' ', '_') %}
+    {% set resolved_tone = table_label.semantic_tone(tone)|trim %}
+    {% if resolved_role == 'status' %}
+        text-xs font-semibold uppercase tracking-wide {{ table_label.tone_icon_classes(resolved_tone)|trim }}
+    {% elif resolved_role in ['insight', 'read', 'methodology'] %}
+        text-xs font-semibold uppercase tracking-wide text-status-info-text
+    {% elif resolved_role in ['evidence', 'neutral', 'context'] %}
+        text-xs font-semibold uppercase tracking-wide text-content-muted
+    {% else %}
+        text-xs font-semibold uppercase tracking-wide text-kaori-primary-dark dark:text-kaori-accent
+    {% endif %}
+{%- endmacro %}
+
+{% macro snapshot_header_icon_classes() -%}
+    {{ role_icon_classes('brand', size='large') }}
+{%- endmacro %}
+
+{% macro metric_icon_classes(size='default', role='brand', tone='info') -%}
+    {{ role_icon_classes(role, tone, size) }}
+{%- endmacro %}
+
+{% macro resource_role(resource='') -%}
+    {% set normalized = resource|default('', true)|lower|replace(' ', '_') %}
+    {%- if normalized in ['memory', 'storage', 'filesystem', 'node_filesystem', 'pvc', 'pv', 'persistent_volume', 'persistent_volume_claim', 'methodology'] -%}
+        insight
+    {%- elif normalized in ['namespace', 'workload', 'workloads', 'pods', 'pod', 'ownership', 'scope', 'context'] -%}
+        evidence
+    {%- else -%}
+        brand
+    {%- endif -%}
+{%- endmacro %}
+
+{% macro resource_icon_classes(resource='', size='default') -%}
+    {{ role_icon_classes(resource_role(resource)|trim, size=size) }}
 {%- endmacro %}
 
 {% macro semantic_icon_classes(tone='unknown', size='default') -%}
-    {% set resolved_tone = table_label.semantic_tone(tone)|trim %}
-    flex {{ 'h-7 w-7 rounded-md' if size == 'compact' else 'h-8 w-8 rounded-lg' }} shrink-0 items-center justify-center border border-outline-subtle bg-surface-muted {{ table_label.tone_icon_classes(resolved_tone)|trim }}
+    {{ role_icon_classes('status', tone, size) }}
 {%- endmacro %}
 
-{% macro guidance_icon_classes(tone='info', size='default', semantic=false) -%}
-    {% set resolved_tone = table_label.semantic_tone(tone)|trim %}
-    flex {{ 'h-7 w-7 rounded-md' if size == 'compact' else 'h-8 w-8 rounded-lg' }} shrink-0 items-center justify-center border border-outline-subtle bg-surface-muted {{ table_label.tone_icon_classes(resolved_tone)|trim if semantic else 'text-kaori-primary' }}
+{% macro guidance_icon_classes(role='brand', tone='info', size='default') -%}
+    {{ role_icon_classes(role, tone, size) }}
 {%- endmacro %}
 
 {% macro metric_grid_classes(columns=4) -%}
@@ -70,7 +114,7 @@
 {%- endmacro %}
 
 {% macro interpretation_grid_classes(extra='', cards=false) -%}
-    grid divide-y divide-outline-subtle border-t border-outline-subtle bg-surface-card lg:grid-cols-2 lg:divide-x lg:divide-y-0 {{ extra }}
+    grid gap-px border-t border-outline-subtle bg-outline-subtle lg:grid-cols-2 {{ extra }}
 {%- endmacro %}
 
 {% macro interpretation_panel_classes(extra='') -%}
@@ -102,7 +146,7 @@
 {%- endmacro %}
 
 {% macro review_path_grid_classes(extra='') -%}
-    grid divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle bg-surface-card sm:grid-cols-2 sm:divide-x sm:divide-y-0 {{ extra }}
+    grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2 {{ extra }}
 {%- endmacro %}
 
 {% macro compact_scope_grid_classes(columns=3) -%}
@@ -117,27 +161,28 @@
     rounded-lg border border-outline-subtle bg-surface-card px-4 py-4 {{ extra }}
 {%- endmacro %}
 
-{% macro interpretation_content(label, headline, body, icon='info', tone='info', compact=false, semantic=false) -%}
+{% macro interpretation_content(label, headline, body, icon='info', role='brand', tone='info', compact=false) -%}
     <div class="flex items-start gap-3">
-        <span class="{{ guidance_icon_classes(tone, 'compact' if compact else 'default', semantic) }}">
+        <span class="{{ guidance_icon_classes(role, tone, 'compact' if compact else 'default') }}">
             <i data-lucide="{{ icon }}" class="{{ 'h-3.5 w-3.5' if compact else 'h-4 w-4' }}"></i>
         </span>
         <div class="min-w-0">
-            <p class="{{ metric_label_classes() }}">{{ label }}</p>
+            <p class="{{ role_label_classes(role, tone) }}">{{ label }}</p>
             {% if headline %}<p class="mt-1.5 text-sm font-semibold leading-5 text-content-primary">{{ headline }}</p>{% endif %}
             <p class="mt-1.5 text-xs leading-5 text-content-secondary">{{ body }}</p>
         </div>
     </div>
 {%- endmacro %}
 
-{% macro interpretation_callout(label, headline, body, icon='info', tone='info', extra='', compact=false, card=false, semantic=false) -%}
+{% macro interpretation_callout(label, headline, body, icon='info', role='brand', tone='info', extra='', compact=false, card=false) -%}
+    {% set geometry = 'px-3 py-3' if compact else 'px-4 py-4 sm:px-5' %}
     {% if card and not compact %}
-        <article class="rounded-lg border border-outline-subtle bg-surface-card px-4 py-4 sm:px-5 {{ extra }}">
-            {{ interpretation_content(label, headline, body, icon, tone, compact, semantic) }}
+        <article class="rounded-lg border border-outline-subtle bg-surface-card {{ geometry }} {{ extra }}">
+            {{ interpretation_content(label, headline, body, icon, role, tone, compact) }}
         </article>
     {% else %}
-        <article class="{{ 'px-3 py-3' if compact else 'px-4 py-4 sm:px-5' }} {{ extra }}">
-            {{ interpretation_content(label, headline, body, icon, tone, compact, semantic) }}
+        <article class="bg-surface-card {{ geometry }} {{ extra }}">
+            {{ interpretation_content(label, headline, body, icon, role, tone, compact) }}
         </article>
     {% endif %}
 {%- endmacro %}

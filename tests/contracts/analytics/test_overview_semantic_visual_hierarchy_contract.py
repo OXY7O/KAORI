@@ -20,13 +20,13 @@ def test_shared_analysis_surface_uses_neutral_guidance_composition() -> None:
 
     assert "macro attention_strip_classes(tone=none)" in source
     assert "macro interpretation_grid_classes(extra='', cards=false)" in source
-    assert "macro guidance_icon_classes(tone='info', size='default', semantic=false)" in source
+    assert "macro guidance_icon_classes(role='brand', tone='info', size='default')" in source
     assert "macro interpretation_callout(" in source
     assert 'bg-surface-card' in source
     assert 'divide-y divide-outline-subtle' in source
     assert 'text-content-secondary' in source
-    assert "semantic=false" in source
-    assert 'table_label.tone_surface_classes(resolved_tone)' not in source
+    assert "macro role_label_classes(role='brand', tone='info')" in source
+    assert 'table_label.tone_surface_classes(resolved_tone)' in source
     assert 'table_label.tone_dot_classes(resolved_tone)' not in source
     assert 'block h-1' not in source
 
@@ -75,12 +75,11 @@ def test_operational_health_uses_neutral_signal_cards_and_status_badges() -> Non
     assert "'Needs' if issue_count == 1 else 'Need'" in source
     assert "table_label.status_label('Refresh Required', 'warning'" in source
     assert 'grid gap-px bg-outline-subtle sm:grid-cols-2 lg:grid-cols-3' in source
-    assert 'overview_surface.metric_icon_classes()' in source
-    assert 'overview_surface.semantic_icon_classes(semantic_tone)' not in source
+    assert 'overview_surface.semantic_icon_classes(semantic_tone)' in source
     assert 'table_label.status_label(item.status' in source
     assert 'overview_surface.interpretation_grid_classes()' in source
-    assert 'semantic=true' in source
-    assert "tone='maintenance'" in source
+    assert "role='status'" in source
+    assert "role='brand'" in source
     assert '2xl:grid-cols-6' not in source
 
 
@@ -88,8 +87,7 @@ def test_resource_pressure_keeps_semantic_bars_without_colored_guidance_icons() 
     source = read(RESOURCE)
 
     assert 'progress_bar.semantic_bar(percent, semantic_tone' in source
-    assert 'overview_surface.metric_icon_classes()' in source
-    assert 'overview_surface.semantic_icon_classes(semantic_tone)' not in source
+    assert 'overview_surface.resource_icon_classes(item.label)' in source
     assert "bar_class =" not in source
     assert "else 'bg-kaori-primary'" not in source
     assert 'overview_surface.interpretation_grid_classes()' in source
@@ -102,6 +100,6 @@ def test_storage_pressure_uses_status_bar_and_neutral_values() -> None:
 
     assert 'progress_bar.pressure_tone(used_percent, pressure_available)' in source
     assert 'progress_bar.semantic_bar(used_percent, pressure_tone' in source
-    assert 'overview_surface.metric_icon_classes()' in source
+    assert 'overview_surface.resource_icon_classes(metric.label)' in source
     assert 'text-status-normal' not in source
     assert 'bar_class' not in source

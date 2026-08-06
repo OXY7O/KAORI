@@ -1,3 +1,4 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% set tracker_id = analytics_tracker_id|default('analytics-load-tracker') %}
 {% set page_id = analytics_page_id|default('analytics-page') %}
 {% set title = analytics_load_title|default('Loading analytics page') %}
@@ -14,7 +15,7 @@
      data-analytics-complete-description="{{ complete_description }}">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex items-center gap-3">
-            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+            <div class="{{ analysis_surface.snapshot_header_icon_classes() }}">
                 <i data-lucide="loader-2" class="h-5 w-5 animate-spin"></i>
             </div>
             <div>

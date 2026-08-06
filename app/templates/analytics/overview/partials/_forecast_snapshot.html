@@ -42,7 +42,7 @@
     <div class="{{ overview_surface.metric_grid_classes(4) }}">
         {% for metric in metrics %}
             <article class="{{ overview_surface.metric_cell_classes() }}">
-                <span class="{{ overview_surface.metric_icon_classes() }}">
+                <span class="{{ overview_surface.resource_icon_classes(metric.label) }}">
                     <i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i>
                 </span>
                 <p class="mt-3 text-xs font-semibold uppercase tracking-wider text-content-muted">{{ metric.label }}</p>
@@ -116,19 +116,22 @@
             'How To Read',
             'Compare Projection With Threshold Timing',
             'Compare the dashed projection with warning and critical thresholds. A rising line is actionable when current utilization or headroom is already constrained.',
-            icon='chart-column'
+            icon='chart-column',
+                role='insight'
         ) }}
         {{ overview_surface.interpretation_callout(
             'What To Do',
             'Validate Signal Quality Before Capacity Changes',
             'Validate historical signal quality, growth drivers, and the nearest threshold ETA before scheduling capacity or workload changes.',
-            icon='scan-search'
+            icon='scan-search',
+                role='brand'
         ) }}
         {{ overview_surface.interpretation_callout(
             'Forecast Decision',
             forecast.risk_note,
             'Use the current risk posture, projected horizon, and nearest threshold direction to decide whether monitoring is enough or capacity planning should begin now.',
             icon='triangle-alert' if risk_count > 0 else 'circle-check',
+                role='brand',
             tone='warning' if risk_count > 0 else 'normal'
         ) }}
     </div>

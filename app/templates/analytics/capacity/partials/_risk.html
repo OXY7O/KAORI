@@ -20,13 +20,13 @@
                     {% set resource_label = item.label %}
                     <article class="grid gap-3 bg-surface-card px-4 py-4 sm:grid-cols-3 sm:items-center">
                         <div class="flex items-center gap-3">
-                            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="{{ item.icon }}" class="h-4 w-4"></i></span>
+                            <span class="{{ analysis_surface.resource_icon_classes(item.label) }}"><i data-lucide="{{ item.icon }}" class="h-4 w-4"></i></span>
                             <div><p class="text-sm font-semibold text-content-primary">{{ resource_label }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ item.scope_label }}</p><div class="mt-2">{{ table_label.status_label(item.status.label, tone=tone, size='compact') }}</div></div>
                         </div>
                         <div>
                             <div class="flex items-center justify-between gap-3 text-xs"><span class="text-content-muted">Remaining Headroom</span><span class="font-semibold tabular-nums {{ 'text-content-primary' if item.evidence_available else analysis_surface.unavailable_value_classes() }}">{{ item.headroom_display }}</span></div>
                             {% if item.evidence_available %}
-                                {{ progress_bar.bar(item.headroom, 'mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', 'h-full rounded-full bg-kaori-primary transition-all duration-500', resource_label ~ ' headroom status') }}
+                                {{ progress_bar.semantic_bar(item.headroom, tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=resource_label ~ ' headroom status') }}
                             {% else %}
                                 <div class="mt-2 flex h-8 items-center rounded-md border border-dashed border-outline-strong bg-surface-hover px-3 text-xs font-medium text-content-muted">Evidence unavailable</div>
                             {% endif %}
@@ -56,7 +56,8 @@
                         'Recommended Review Path',
                         'Continue Into The Domain That Owns The Evidence',
                         'Use the resource-specific review links below to validate the signal before changing capacity or workload placement.',
-                        icon='route'
+                        icon='route',
+                role='brand'
                     ) }}
                 </div>
                 <div class="{{ analysis_surface.review_path_grid_classes() }}">

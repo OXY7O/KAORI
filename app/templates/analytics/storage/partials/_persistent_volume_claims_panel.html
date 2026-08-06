@@ -25,7 +25,7 @@
                 ('Observed Usage', pvc.used, ('%.1f%% of observed capacity'|format(pvc.used_percent|float)) if pvc.pressure_evidence_available else 'Usage evidence unavailable', 'hard-drive-download')
             ] %}
             {% for label, value, helper, icon in metrics %}
-                <article class="{{ analysis_surface.metric_cell_classes() }}"><div class="flex items-center gap-2.5"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p></div><p class="mt-3 break-words text-xl font-semibold tabular-nums {{ 'text-content-primary' if value != 'N/A' else analysis_surface.unavailable_value_classes() }}">{{ value }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p></article>
+                <article class="{{ analysis_surface.metric_cell_classes() }}"><div class="flex items-center gap-2.5"><span class="{{ analysis_surface.resource_icon_classes(label) }}"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p></div><p class="mt-3 break-words text-xl font-semibold tabular-nums {{ 'text-content-primary' if value != 'N/A' else analysis_surface.unavailable_value_classes() }}">{{ value }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p></article>
             {% endfor %}
         </div>
         <div class="border-t border-outline-subtle px-4 py-3">

@@ -34,7 +34,7 @@
             {% set semantic_tone = table_label.semantic_tone(item.tone or item.status)|trim %}
             <article class="{{ overview_surface.metric_cell_classes() }}">
                 <div class="flex items-center justify-between gap-3">
-                    <span class="{{ overview_surface.metric_icon_classes() }}">
+                    <span class="{{ overview_surface.resource_icon_classes(item.label) }}">
                         <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
                     </span>
                     {{ table_label.status_label(item.status|replace('_', ' ')|title, semantic_tone, size='compact') }}
@@ -54,13 +54,15 @@
             'How To Read',
             'Headroom Is Remaining Worker Allocatable Capacity',
             'CPU and memory values represent remaining allocatable capacity. Pod capacity represents available scheduling slots across worker nodes.',
-            icon='chart-pie'
+            icon='chart-pie',
+                role='insight'
         ) }}
         {{ overview_surface.interpretation_callout(
             'Recommended Action',
             ('Review ' ~ recommendations ~ ' Capacity Recommendation' ~ ('' if recommendations == 1 else 's')) if recommendations > 0 else 'Continue Monitoring Capacity Headroom',
             'Validate requests, limits, usage peaks, and worker distribution before adding capacity or changing workload placement.' if recommendations > 0 else 'No immediate capacity recommendation is present. Recheck when workload growth, forecast risk, or scheduling pressure changes.',
             icon='triangle-alert' if recommendations > 0 else 'circle-check',
+                role='brand',
             tone='warning' if recommendations > 0 else 'normal'
         ) }}
     </div>

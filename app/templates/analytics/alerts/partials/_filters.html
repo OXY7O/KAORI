@@ -58,7 +58,7 @@
                 <section class="px-4 py-4">
                     <div class="flex flex-wrap items-start justify-between gap-3">
                         <div class="flex min-w-0 items-start gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="radio-tower" class="h-4 w-4"></i></span>
+                            <span class="{{ analysis_surface.role_icon_classes('insight') }}"><i data-lucide="radio-tower" class="h-4 w-4"></i></span>
                             <div class="min-w-0"><h3 class="text-sm font-semibold text-content-primary">Alert Source Readiness</h3><p class="mt-1 text-xs leading-5 text-content-muted">Provider resolved by the committed alert dataset.</p></div>
                         </div>
                         {{ table_label.status_label(source_label, source_tone, size='compact') }}
@@ -72,7 +72,7 @@
                 <section class="border-t border-outline-subtle px-4 py-4 lg:border-l lg:border-t-0">
                     <div class="flex flex-wrap items-start justify-between gap-3">
                         <div class="flex min-w-0 items-start gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="database-clock" class="h-4 w-4"></i></span>
+                            <span class="{{ analysis_surface.role_icon_classes('evidence') }}"><i data-lucide="database-clock" class="h-4 w-4"></i></span>
                             <div class="min-w-0"><h3 class="text-sm font-semibold text-content-primary">Latest Data Snapshot</h3><p class="mt-1 text-xs leading-5 text-content-muted">Committed worker evidence used by this workspace.</p></div>
                         </div>
                         {{ table_label.status_label(snapshot_label, snapshot_tone, size='compact') }}

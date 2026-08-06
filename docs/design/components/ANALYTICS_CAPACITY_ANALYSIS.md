@@ -123,7 +123,7 @@ A missing metric or label is an integration capability failure. Capacity must no
 
 ## Semantic Color
 
-Capacity progress bars remain KAORI Violet across Healthy, Watch, and Critical states. Semantic risk belongs to compact status labels and operational interpretation. Do not turn an entire resource lane or progress fill red, amber, or green.
+Capacity status bars use the shared semantic renderer: Healthy/Normal is green, Watch is amber, Critical is red, and Unknown is slate. KAORI Violet remains reserved for composition-only indicators, navigation, and primary actions. Resource lanes and card surfaces stay neutral so the semantic bar and compact status badge remain readable without tinting the entire box.
 
 Primary evidence uses bright KAORI surfaces. Interpretation, review paths, and action guidance use the darker shared Analytics guidance surface.
 

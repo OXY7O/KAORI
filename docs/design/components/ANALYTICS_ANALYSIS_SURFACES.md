@@ -13,8 +13,8 @@ Analytics pages have different evidence, but they must read as one product. Capa
 1. One calm `rounded-xl` analysis shell.
 2. One compact header with icon, Title Case title, semantic status, short description, and at most one drill-down action.
 3. One peer metric strip when the domain has summary metrics.
-4. Bright evidence and context regions.
-5. Darker soft interpretation, decision, attention, or recommended-action regions.
+4. Neutral evidence and context regions with role-colored compact anchors.
+5. Neutral interpretation, decision, attention, and recommended-action regions whose icon and eyebrow label express Brand, Insight, Evidence, or Status role.
 
 Use:
 
@@ -34,13 +34,13 @@ The previous Overview-only surface component was removed. Do not introduce a com
 
 ## Primary Evidence
 
-Controls, readiness, committed snapshot metadata, charts, ranked records, pressure lanes, findings, and analytical context use `bg-surface-card`. Borders and whitespace separate peer evidence. Do not use a dark fill for primary data.
+Controls, readiness, committed snapshot metadata, charts, ranked records, pressure lanes, findings, and analytical context use neutral `bg-surface-card` or `bg-surface-muted` surfaces. Borders and whitespace separate peer evidence. Role-colored compact icons, labels, badges, charts, and bars provide hierarchy without tinting complete evidence panels.
 
 ## Interpretation and Attention
 
-Use `bg-surface-hover` only for interpretation, recommended action, review path, decision guidance, or attention. An attention strip also carries a semantic Warning or Critical cue.
+Interpretation, recommended action, review path, decision guidance, and attention use neutral card surfaces with subtle outlines or separators. A compact icon and eyebrow label express the assigned visual role. Attention may also carry one semantic Warning or Critical badge.
 
-All operator guidance is rendered through the canonical callout contract documented in `ANALYTICS_GUIDANCE_CALLOUT_STANDARD.md`. `interpretation_callout(...)` owns the wrapper and spacing. `interpretation_content(...)` supplies the same icon-led hierarchy inside an existing record, side panel, or pressure lane.
+All operator guidance is rendered through the canonical callout contract documented in `ANALYTICS_OVERVIEW_GUIDANCE_STANDARD.md` and the role system in `ANALYTICS_VISUAL_ROLE_SYSTEM.md`. `interpretation_callout(...)` owns the wrapper and spacing. `interpretation_content(...)` supplies the same role-aware icon-led hierarchy inside an existing record, side panel, or pressure lane.
 
 ## Resource Pressure Lane
 
@@ -69,7 +69,7 @@ Missing analytical evidence is not a zero value. Use semantic `Unknown`, display
 
 ## Semantic Progress Ownership
 
-Progress fills remain KAORI Violet unless a domain-specific visualization contract explicitly says otherwise. Healthy, Warning, and Critical meaning belongs to semantic labels, icons, and operational copy rather than recoloring the entire evidence lane.
+Progress color follows meaning. Status-bearing utilization, pressure, risk, and headroom bars use semantic green, amber, red, or slate through `progress_bar.semantic_bar(...)`. Composition, contribution, ranking, loading, and materialization bars remain KAORI Violet. The surrounding evidence lane remains neutral.
 
 ## Evidence Record Collection
 
@@ -95,7 +95,7 @@ When one workspace combines datasets with different Kubernetes scopes, every pan
 - No duplicated shell, header, metric, tone, or pressure-lane geometry in page templates.
 - No inline multi-hundred-line chart scripts inside Jinja templates.
 - No polling while a heavy tab is hidden.
-- No `bg-surface-hover` around primary charts, metrics, ranked data, or pressure evidence.
+- No full Brand, Insight, or semantic tint around primary charts, metrics, ranked data, pressure evidence, or ordinary guidance.
 
 ## Analytics Projection Configuration
 
@@ -115,5 +115,5 @@ All record-oriented Analytics domains use `analytics/components/_record_paginati
 
 ## Alerts & Anomalies Signal Evidence
 
-Alerts & Anomalies follows `ANALYTICS_ALERTS_ANOMALIES.md`. Source readiness and committed snapshot evidence remain separate. Optional anomaly, routing, silence, or inhibition gaps produce `Evidence Incomplete` or a limited semantic state; they never produce Healthy by absence. Alerts and Anomalies records use the shared evidence collection and record pagination, while routing, suppression, ownership, and readiness evidence remain bright and their interpretation or recommended action remains darker.
+Alerts & Anomalies follows `ANALYTICS_ALERTS_ANOMALIES.md`. Source readiness and committed snapshot evidence remain separate. Optional anomaly, routing, silence, or inhibition gaps produce `Evidence Incomplete` or a limited semantic state; they never produce Healthy by absence. Alerts and Anomalies records use the shared evidence collection and record pagination, while routing, suppression, ownership, and readiness evidence remain neutral and their interpretation or recommended action uses the shared role-aware guidance composition.
 

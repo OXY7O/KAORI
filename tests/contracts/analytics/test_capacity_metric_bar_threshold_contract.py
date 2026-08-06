@@ -28,16 +28,16 @@ def test_capacity_domain_preserves_initialisms_and_distinct_pressure_thresholds(
     assert "f'{resource_display_label(resource)} Limit Overcommit'" in domain
 
 
-def test_capacity_templates_use_backend_status_and_violet_progress() -> None:
+def test_capacity_templates_use_backend_status_and_semantic_progress() -> None:
     allocation = read('app/templates/analytics/capacity/partials/_allocation.html')
     risk = read('app/templates/analytics/capacity/partials/_risk.html')
 
     assert "section['status']" in allocation
     assert "progress_bar.pressure_tone" not in allocation
     assert "progress_bar.headroom_tone" not in allocation
-    assert "bg-kaori-primary" in allocation
+    assert "progress_bar.semantic_bar(allocation_item['percent'], allocation_item['tone']" in allocation
     assert "item.label" in risk
-    assert "bg-kaori-primary" in risk
+    assert "progress_bar.semantic_bar(item.headroom, tone" in risk
 
 
 def test_capacity_pod_profile_has_no_duplicate_usage_row() -> None:

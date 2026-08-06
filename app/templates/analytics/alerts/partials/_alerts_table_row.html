@@ -13,7 +13,7 @@
     <div class="grid gap-4 px-4 py-4 lg:grid-cols-12 lg:items-center">
         <div class="min-w-0 lg:col-span-4">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}">
                     <i data-lucide="bell-ring" class="h-4 w-4"></i>
                 </span>
                 <div class="min-w-0">
@@ -72,7 +72,7 @@
         <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
             <div class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-start lg:justify-between">
                 <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <span class="{{ analysis_surface.snapshot_header_icon_classes() }}">
                         <i data-lucide="bell-ring" class="h-5 w-5"></i>
                     </span>
                     <div class="min-w-0">
@@ -116,7 +116,7 @@
 
                     <div class="border-t border-outline-subtle pt-5">
                         <div class="flex items-start gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                            <span class="{{ analysis_surface.metric_icon_classes() }}">
                                 <i data-lucide="list-checks" class="h-4 w-4"></i>
                             </span>
                             <div>

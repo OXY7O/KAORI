@@ -187,17 +187,20 @@ Storage Analysis uses mixed but explicit scope ownership: Cluster and Namespace 
 ## Analytics presentation contract
 
 - Use the shared Analytics content-tab component and `kaoriAnalyticsTabs`; do not maintain a separate Overview-only tab implementation.
-- Capacity is the analytics snapshot-style baseline. Analytics Overview tabs and domain workspaces uses the shared snapshot shell, header, header icon, metric strip when applicable, bright evidence/context body, and darker interpretation/action region from `analytics/components/_analysis_surfaces.html`. Domain layouts may differ, but they must not fork the geometry or surface contract.
+- Capacity is the analytics snapshot-style baseline. Analytics Overview tabs and domain workspaces use the shared snapshot shell, header, metric strip, evidence surface, and interpretation primitives from `analytics/components/_analysis_surfaces.html`. Domain layouts may differ, but they must not fork the geometry or visual-role contract.
 - Every requested Overview section declares its tracked load state. The compact progress strip counts only sections actually requested; composite OOB targets are marked loaded by the Health Summary response. The tracker runtime lives in `app/static/js/analytics_overview.js`, not an inline script.
 - Snapshot section headers, actions, metric labels, status text, and empty-state titles use Title Case. Descriptive sentences and technical identifiers retain their natural casing.
 - Resource utilization progress bars must receive resolved class strings, clamp width to 0–100%, and update from the committed snapshot percentage. Do not pass nested Jinja expressions inside a quoted macro argument.
 - Top Consumers and Alerts & Anomalies Snapshot are always visible on the Overview page. They must not use `details`, chevrons, or expand/collapse state.
 - Storage Snapshot and Trend Summary end with concise operational tips using the shared `components/detail_tip.html` treatment.
 - Overview redesigns must preserve first-activation HTMX loading, selected cluster/time-range state, parameter-exact snapshot matching, and worker-first committed-snapshot boundaries.
-- Overview primary data, readiness, charts, metric grids, and side context panels use the bright `bg-surface-card` surface. `bg-surface-hover` is reserved for attention, interpretation, recommended-action, review-path, and execution-guidance strips through `analytics/components/_analysis_surfaces.html`.
-- Prometheus status and committed dataset metadata remain bright; dataset freshness exceptions appear as a distinct darker attention strip below them.
-- Pressure Posture and equivalent analytical context panels remain bright and use borders for separation.
+- Analytics surfaces remain neutral for readability. Color is assigned by reusable role: Brand Violet for identity/navigation/actions, Insight cyan for explanation/methodology, Evidence slate for passive context, and semantic green/amber/red/slate only for actual operational state. All role geometry and colors are owned by `analytics/components/_analysis_surfaces.html`.
+- Prometheus status and committed dataset metadata remain on neutral evidence surfaces. Dataset freshness exceptions use a neutral attention strip with a semantic warning glyph and compact badge rather than a full tinted panel.
+- Pressure Posture and equivalent analytical context panels use neutral card surfaces and subtle outlines. Status is carried by a badge, semantic glyph, or quantitative bar instead of a full-card fill.
 - Normalize all status tones through `table_label.semantic_tone(...)`. New presentation payloads use semantic tones; legacy color aliases are accepted only at the shared label boundary.
+- Every interpretation call declares a visual `role=` explicitly: `insight` for How To Read/methodology, `brand` for What To Do/review paths, `evidence` for passive context, and `status` only for actual operational state.
+- Status-bearing utilization, pressure, risk, and headroom bars use `progress_bar.semantic_bar(...)`; composition, ranking contribution, loading, and materialization bars remain KAORI Violet.
+- Category icons use `resource_icon_classes(...)`; domain templates must not duplicate Brand icon geometry or introduce local color maps.
 - Analytics heroes use `page_hero.context_card(...)` or `context_card_body(...)` with exactly two metrics and one `Manage Clusters` action. Interpretation and attention messages belong below the hero in shared Analytics content surfaces.
 
 ## Analytics Overview runtime and evidence flow

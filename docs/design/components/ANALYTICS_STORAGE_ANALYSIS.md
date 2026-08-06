@@ -130,7 +130,7 @@ Filesystem and PVC pressure use one threshold contract:
 - 75% through 89.9%: Watch / Warning;
 - 90% and above: Critical.
 
-The Python domain model owns these thresholds. Jinja does not recalculate them. Progress fills remain KAORI Violet; semantic severity belongs to status labels and operational interpretation.
+The Python domain model owns these thresholds. Jinja does not recalculate them. Filesystem and PVC pressure bars use the resolved semantic tone; composition-only bars remain KAORI Violet. The surrounding evidence surface remains neutral.
 
 ## Loading and URL Ownership
 

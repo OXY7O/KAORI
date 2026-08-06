@@ -74,7 +74,8 @@ The Styling Guide selects the correct reusable component. The Design System and 
 - `patterns/KUBERNETES_STORAGE_CONFIGURATION_INVENTORY.md`
 - `patterns/KUBERNETES_CONFIGMAP_SECRET_OPERATIONS.md`
 
-- `components/ANALYTICS_GUIDANCE_CALLOUT_STANDARD.md` — canonical icon-led How To Read, What To Do, Operational Reading, and Recommended Action presentation across Kubernetes Analytics.
+- `components/ANALYTICS_VISUAL_ROLE_SYSTEM.md` — canonical DRY color-role system for Brand, Insight, Evidence, and Status across every Kubernetes Analytics workspace.
+- `components/ANALYTICS_OVERVIEW_GUIDANCE_STANDARD.md` — reusable How To Read, What To Do, Operational Reading, and Recommended Action composition built on the shared visual roles.
 
 ## Domain Specifications
 

@@ -18,13 +18,15 @@
                 'How To Read',
                 'Compare Percentage Pressure With Absolute Consumption',
                 'Compare percentage pressure with absolute used and allocatable values. Missing denominator evidence remains N/A and must not be interpreted as spare capacity.',
-                icon='chart-column'
+                icon='chart-column',
+                role='insight'
             ) }}
             {{ analysis_surface.interpretation_callout(
                 'What To Do',
                 'Validate Trend And Node Concentration Before Resizing',
                 'Open Trend Analysis for sustained pressure and Node Detail for concentration. Resize workloads or expand capacity only after both views confirm the risk.',
                 icon='scan-search',
+                role='brand',
                 tone=presentation.posture_tone|default('unknown'),
                 extra='border-t border-outline-subtle lg:border-t-0'
             ) }}

@@ -42,7 +42,7 @@
         {% for metric in metrics %}
             <article class="{{ overview_surface.metric_cell_classes() }}">
                 <div class="flex items-center justify-between gap-3">
-                    <span class="{{ overview_surface.metric_icon_classes() }}">
+                    <span class="{{ overview_surface.resource_icon_classes(item.label) }}">
                         <i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i>
                     </span>
                     <span class="text-xl font-semibold text-content-primary">{{ metric.value }}</span>
@@ -86,6 +86,7 @@
                 'Define Missing Requests First',
                 'Complete CPU and memory requests before interpreting scheduling, quota, or right-sizing evidence.',
                 icon='badge-alert',
+                role='brand',
                 tone='critical'
             ) }}
         {% elif memory_limit_gaps > 0 %}
@@ -94,6 +95,7 @@
                 'Review Memory Limit Coverage',
                 'Apply memory limits according to workload criticality while preserving intentional CPU limit policy.',
                 icon='triangle-alert',
+                role='brand',
                 tone='warning'
             ) }}
         {% elif workload.under_provisioned > 0 or workload.over_provisioned > 0 %}
@@ -101,14 +103,16 @@
                 'Recommended Action',
                 'Validate Evidence-Gated Right-Sizing',
                 'Prioritize under-provisioned workloads, then reduce excess requests only where current and selected-window evidence is complete.',
-                icon='scale'
+                icon='scale',
+                role='brand'
             ) }}
         {% elif workload.cpu_limits_unset > 0 %}
             {{ overview_surface.interpretation_callout(
                 'Recommended Action',
                 'Confirm CPU Limit Policy',
                 'Unset CPU limits are informational by default. Confirm that the configuration matches the workload governance policy.',
-                icon='info'
+                icon='info',
+                role='brand'
             ) }}
         {% else %}
             {{ overview_surface.interpretation_callout(
@@ -116,6 +120,7 @@
                 'Continue Workload Governance Monitoring',
                 'No immediate request, memory-limit, or evidence-complete right-sizing finding is present.',
                 icon='circle-check',
+                role='brand',
                 tone='normal'
             ) }}
         {% endif %}

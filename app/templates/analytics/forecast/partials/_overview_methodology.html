@@ -22,7 +22,7 @@
             ] %}
                 <div class="{{ analysis_surface.metric_cell_classes() }}">
                     <div class="flex items-start gap-2.5">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                        <span class="{{ analysis_surface.resource_icon_classes(label) }}"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
                         <div class="min-w-0">
                             <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
                             <p class="mt-1 break-words text-lg font-semibold text-content-primary">{{ value }}</p>
@@ -36,7 +36,7 @@
         <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="activity" class="h-4 w-4"></i></span>
+                    <span class="{{ analysis_surface.role_icon_classes('brand') }}"><i data-lucide="activity" class="h-4 w-4"></i></span>
                     <div class="min-w-0">
                         <div class="flex flex-wrap items-center gap-2">
                             <h3 class="{{ analysis_surface.section_title_classes() }}">Projected Capacity Posture</h3>
@@ -68,7 +68,8 @@
                 'How To Read',
                 'Read The Model Boundary Before Using The Projection',
                 forecast_payload.method_description ~ ' Historical Signal Quality describes sample completeness and stability; it is not a claim of forecast accuracy.',
-                icon='chart-spline'
+                icon='chart-spline',
+                role='insight'
             ) }}
         </div>
     </div>

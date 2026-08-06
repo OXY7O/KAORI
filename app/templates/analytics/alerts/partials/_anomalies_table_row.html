@@ -7,7 +7,7 @@
     <div class="grid gap-4 px-4 py-4 lg:grid-cols-12 lg:items-center">
         <div class="min-w-0 lg:col-span-4">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}">
                     <i data-lucide="radar" class="h-4 w-4"></i>
                 </span>
                 <div class="min-w-0">
@@ -54,7 +54,7 @@
         <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
             <header class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-start lg:justify-between">
                 <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <span class="{{ analysis_surface.snapshot_header_icon_classes() }}">
                         <i data-lucide="radar" class="h-5 w-5"></i>
                     </span>
                     <div class="min-w-0">
@@ -92,6 +92,7 @@
                             'Validate The Deviation Before Creating An Incident',
                             'Determine whether this deviation is workload-driven, capacity-driven, or caused by source gaps. Compare recent deployments, namespace density, and node pressure before escalating.',
                             icon='search',
+                role='brand',
                             tone=severity_tone,
                             compact=true
                         ) }}
@@ -105,7 +106,7 @@
 
                 <aside class="border-t border-outline-subtle bg-surface-hover p-5 lg:border-l lg:border-t-0">
                     <div class="flex items-center gap-2">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <span class="{{ analysis_surface.metric_icon_classes() }}">
                             <i data-lucide="route" class="h-4 w-4"></i>
                         </span>
                         <h4 class="text-sm font-semibold text-content-primary">Next Operational Action</h4>

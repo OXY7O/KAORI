@@ -35,7 +35,7 @@ def test_status_related_analytics_bars_use_semantic_renderer():
         assert 'progress_bar.semantic_bar(' in source, filename
 
 
-def test_neutral_progress_and_composition_bars_remain_violet():
+def test_composition_bars_remain_violet_and_capacity_status_bars_are_semantic():
     materialization = Path('app/templates/analytics/materialization/_pending.html').read_text()
     ranked = Path('app/templates/analytics/components/_ranked_evidence_panel.html').read_text()
     consumers = Path('app/templates/analytics/top_consumers/partials/_consumer_detail_results.html').read_text()
@@ -49,8 +49,8 @@ def test_neutral_progress_and_composition_bars_remain_violet():
     assert 'bg-kaori-primary' in consumers
     for path in capacity_paths:
         source = Path(path).read_text()
-        assert 'bg-kaori-primary' in source, path
-        assert 'progress_bar.semantic_bar(' not in source, path
+        assert 'progress_bar.semantic_bar' in source, path
+        assert 'capacity status' in source or 'allocation status' in source or 'headroom status' in source, path
 
 
 def test_alert_routing_only_semanticizes_severity_distribution():

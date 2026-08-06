@@ -73,7 +73,7 @@
                                 ] %}
                                     <div class="{{ analysis_surface.metric_cell_classes() }}">
                                         <div class="flex items-start gap-2.5">
-                                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                                            <span class="{{ analysis_surface.resource_icon_classes(label) }}"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
                                             <div class="min-w-0">
                                                 <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
                                                 <p class="mt-1 break-words text-lg font-semibold {{ 'text-content-primary' if value != 'N/A' else analysis_surface.unavailable_value_classes() }}">{{ value }}</p>
@@ -143,13 +143,15 @@
                                 'How To Read',
                                 'Use Committed Daily Evidence And Signal Quality',
                                 'The latest daily average is the final committed daily observation, not an instantaneous reading. Historical Signal Quality describes sample completeness and stability, not model accuracy.',
-                                icon='chart-no-axes-combined'
+                                icon='chart-no-axes-combined',
+                role='insight'
                             ) }}
                             {{ analysis_surface.interpretation_callout(
                                 'Recommended Action',
                                 forecast_action_headline,
                                 forecast_action_body,
                                 icon='shield-alert' if tone == 'critical' else ('triangle-alert' if tone == 'warning' else ('circle-help' if tone == 'unknown' else 'circle-check')),
+                role='brand',
                                 tone=tone,
                                 extra='border-t border-outline-subtle lg:border-t-0'
                             ) }}
@@ -190,7 +192,7 @@
                             ('Warning Resources', forecast_payload.summary.warning_count|default(0), 'Projected at or above warning', 'triangle-alert'),
                             ('Critical Resources', forecast_payload.summary.critical_count|default(0), 'Projected at or above critical', 'shield-alert')
                         ] %}
-                            <div class="{{ analysis_surface.metric_cell_classes() }}"><div class="flex items-start gap-2.5"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><div><p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p><p class="mt-1 text-lg font-semibold text-content-primary">{{ value }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p></div></div></div>
+                            <div class="{{ analysis_surface.metric_cell_classes() }}"><div class="flex items-start gap-2.5"><span class="{{ analysis_surface.resource_icon_classes(label) }}"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><div><p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p><p class="mt-1 text-lg font-semibold text-content-primary">{{ value }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p></div></div></div>
                         {% endfor %}
                     </div>
                 </div>
@@ -214,7 +216,7 @@
                         {% for item in forecast_items %}
                             {% set item_tone = item.status if item.status in ['critical', 'warning', 'normal', 'unknown'] else 'unknown' %}
                             <article class="grid gap-3 px-4 py-4 md:grid-cols-[minmax(0,1.2fr)_repeat(4,minmax(0,0.8fr))] md:items-center">
-                                <div class="flex min-w-0 items-center gap-3"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ item.icon }}" class="h-4 w-4"></i></span><div class="min-w-0"><p class="text-sm font-semibold text-content-primary">{{ item.label }}</p><p class="mt-0.5 text-xs text-content-muted">{{ item.comparison_label }}</p></div></div>
+                                <div class="flex min-w-0 items-center gap-3"><span class="{{ analysis_surface.resource_icon_classes(item.label) }}"><i data-lucide="{{ item.icon }}" class="h-4 w-4"></i></span><div class="min-w-0"><p class="text-sm font-semibold text-content-primary">{{ item.label }}</p><p class="mt-0.5 text-xs text-content-muted">{{ item.comparison_label }}</p></div></div>
                                 <div><p class="{{ analysis_surface.metric_label_classes() }}">Latest Daily Average</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ item.latest_daily_average_display }}</p></div>
                                 <div><p class="{{ analysis_surface.metric_label_classes() }}">Projected</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ item.projected_display }}</p></div>
                                 <div><p class="{{ analysis_surface.metric_label_classes() }}">Warning / Critical ETA</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ item.warning_eta.label }} / {{ item.critical_eta.label }}</p></div>
@@ -229,13 +231,15 @@
                         'How To Read',
                         'Compare Slope And Threshold Timing Within Each Scope',
                         "Compare the slope and threshold timing across resources, but retain each panel's scope boundary. Namespace CPU, memory, and pods are demand shares against cluster capacity; namespace storage uses observed namespace volume capacity.",
-                        icon='chart-no-axes-combined'
+                        icon='chart-no-axes-combined',
+                role='insight'
                     ) }}
                     {{ analysis_surface.interpretation_callout(
                         'What To Do',
                         'Prioritize The Nearest Threshold With Reliable Evidence',
                         'Prioritize the nearest threshold ETA, validate demand drivers, and treat Low or Unavailable Historical Signal Quality as a reason to gather evidence before committing capacity changes.',
                         icon='scan-search',
+                role='brand',
                         extra='border-t border-outline-subtle lg:border-t-0'
                     ) }}
                 </div>
@@ -257,7 +261,7 @@
                             {% for recommendation in forecast_payload.recommendation_cards %}
                                 {% set priority_tone = 'critical' if recommendation.priority in ['P1', 'Critical'] else ('warning' if recommendation.priority in ['P2', 'Warning'] else 'info') %}
                                 <article class="flex flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between" data-kaori-recommendation-item {% if loop.index > 3 %}hidden{% endif %}>
-                                    <div class="flex min-w-0 items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ recommendation.icon }}" class="h-5 w-5"></i></span><div class="min-w-0"><div class="flex flex-wrap items-center gap-2">{{ table_label.status_label('Priority: ' ~ recommendation.priority, tone=priority_tone, size='compact') }}{{ table_label.metadata_label('Derived From: ' ~ recommendation.source_label|default('Forecast'), 'database-zap') }}</div><h4 class="mt-2 font-semibold text-content-primary">{{ recommendation.title }}</h4><p class="mt-1 text-sm leading-6 text-content-muted">{{ recommendation.description }}</p></div></div>
+                                    <div class="flex min-w-0 items-start gap-3"><span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="{{ recommendation.icon }}" class="h-5 w-5"></i></span><div class="min-w-0"><div class="flex flex-wrap items-center gap-2">{{ table_label.status_label('Priority: ' ~ recommendation.priority, tone=priority_tone, size='compact') }}{{ table_label.metadata_label('Derived From: ' ~ recommendation.source_label|default('Forecast'), 'database-zap') }}</div><h4 class="mt-2 font-semibold text-content-primary">{{ recommendation.title }}</h4><p class="mt-1 text-sm leading-6 text-content-muted">{{ recommendation.description }}</p></div></div>
                                     <a href="{{ recommendation.href|default(url_for('analytics.forecast', tab='recommendations')) }}" class="{{ table_ui.action_classes() }} shrink-0"><i data-lucide="arrow-right" class="h-4 w-4"></i>Review</a>
                                 </article>
                             {% endfor %}

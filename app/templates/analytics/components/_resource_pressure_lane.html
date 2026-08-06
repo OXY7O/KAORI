@@ -19,7 +19,7 @@
     {% set resolved_icon = 'shield-alert' if resolved_tone == 'critical' else ('triangle-alert' if resolved_tone == 'warning' else ('circle-check' if resolved_tone == 'normal' else 'circle-help')) %}
     <article class="grid min-w-0 gap-4 bg-surface-card px-4 py-4 lg:grid-cols-12 lg:items-center">
         <div class="flex min-w-0 items-start gap-3 lg:col-span-3">
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+            <span class="{{ analysis_surface.resource_icon_classes(label) }}" aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
             <div class="min-w-0">
                 <p class="text-sm font-semibold text-content-primary">{{ label }}</p>
                 <div class="mt-1">{{ table_label.status_label(resolved_status, resolved_tone, resolved_icon, 'compact') }}</div>
@@ -53,6 +53,7 @@
                 (reason or description) if resolved_available else 'Restore Capacity Evidence Before Deciding',
                 description if resolved_available and reason and description else ('Use the committed utilization, absolute consumption, and remaining headroom together.' if resolved_available else 'Restore committed capacity evidence before making scheduling or growth decisions for this resource.'),
                 icon=resolved_icon,
+                role='status',
                 tone=resolved_tone,
                 compact=true
             ) }}
