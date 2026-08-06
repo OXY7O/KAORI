@@ -180,51 +180,50 @@ def test_minimum_validation_rbac_uses_copy_friendly_modal() -> None:
     assert '<details' not in rbac
 
 
-def test_capability_workspace_uses_modern_explorer_and_consistent_typography() -> None:
+def test_capability_workspace_uses_registry_inspector_and_consistent_typography() -> None:
     capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
 
-    assert 'data-kaori-capability-workspace-v6' in capability
+    assert 'data-kaori-capability-workspace-v7' in capability
     assert 'data-kaori-capability-overview' in capability
     assert 'data-kaori-capability-explorer' in capability
     assert 'data-kaori-capability-matrix' in capability
     assert 'data-kaori-capability-matrix-header' in capability
     assert 'data-kaori-capability-matrix-row' in capability
+    assert 'Capability Registry' in capability
     assert 'Search Capability' in capability
     assert 'All Requirements' in capability
     assert 'All Statuses' in capability
     assert 'x-model.debounce.150ms="query"' in capability
     assert 'x-show="matches($el)"' in capability
-    assert 'data-kaori-capability-expanded-evidence' in capability
     assert 'data-kaori-capability-layout' in capability
-    assert 'xl:grid-cols-[minmax(0,1fr)_22rem]' in capability
-    assert '2xl:grid-cols-[minmax(0,1fr)_24rem]' in capability
+    assert 'xl:grid-cols-[minmax(0,1fr)_26rem]' in capability
+    assert '2xl:grid-cols-[minmax(0,1fr)_28rem]' in capability
     assert 'data-kaori-capability-side-panel' in capability
+    assert 'data-kaori-capability-inspector-panel' in capability
+    assert 'Capability Inspector' in capability
+    assert 'data-kaori-capability-view-more' in capability
+    assert 'View More' in capability
+    assert 'x-ref="inspector"' in capability
+    assert 'data-kaori-capability-inspector-content' in capability
+    assert 'data-kaori-capability-technical-check' in capability
+    assert 'Open the copy-ready discovery and RBAC script.' in capability
     assert 'data-kaori-capability-decision-panel' in capability
-    assert 'Validation Decision Center' in capability
-    assert 'Operational Gate Decision' in capability
-    assert 'data-kaori-neutral-command-strip' in capability
-    assert 'data-kaori-neutral-command-center' in capability
+    assert 'Validation Decision' in capability
     assert 'data-kaori-readiness-score' in capability
     assert 'data-kaori-capability-posture-grid' in capability
-    assert 'bg-surface-subtle' in capability
-    assert 'border-outline-default' in capability
-    assert 'Capability readiness' in capability
-    assert 'Capability Coverage' in capability
-    assert 'Downstream Eligibility' in capability
+    assert 'Operational Gate' in capability
     assert 'Next Operational Action' in capability
     assert 'Validation Workflow' in capability
-    assert 'Required Usable' in capability
-    assert 'Optional Available' in capability
+    assert 'data-kaori-validation-operating-boundary' in capability
     assert 'xl:sticky xl:top-4' in capability
     assert "('1', 'Interpret'" in capability
     assert "('4', 'Synchronize'" in capability
     assert 'font-sans' in capability
     assert 'font-mono' not in capability
     assert 'uppercase tracking-wide' not in capability
-    assert 'Kubernetes API Capability Detail' not in capability
-    assert 'data-kaori-capability-card-grid' not in capability
-    assert 'open:lg:col-span-2' not in capability
-
+    assert 'data-kaori-capability-expanded-evidence' not in capability
+    assert '<details class="group bg-surface-card"' not in capability
+    assert 'Validation Decision Center' not in capability
 
 def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
     connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')

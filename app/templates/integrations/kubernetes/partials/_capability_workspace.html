@@ -29,6 +29,7 @@
          data-kaori-capability-workspace-v4
          data-kaori-capability-workspace-v5
          data-kaori-capability-workspace-v6
+         data-kaori-capability-workspace-v7
          {% if validation_job and validation_job.is_active %}hx-get="{{ url_for('integrations.kubernetes_capability_validation_status', cluster_id=cluster.id, task_id=validation_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML"{% endif %}>
     {% call connection_validation_header.render(
         'Compatibility & Capability Matrix',
@@ -150,30 +151,39 @@
             </section>
         {% endif %}
 
-        <div class="mt-4 grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_24rem]"
-             data-kaori-capability-layout>
+        <div class="mt-4 grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_26rem] 2xl:grid-cols-[minmax(0,1fr)_28rem]"
+             data-kaori-capability-layout
+             x-data='{
+                query: "",
+                requirement: "all",
+                status: "all",
+                selected: {{ (feature_rows[0].key if feature_rows else "")|tojson }},
+                matches(element) {
+                    const search = (element.dataset.search || "").toLowerCase();
+                    const matchesQuery = !this.query.trim() || search.includes(this.query.trim().toLowerCase());
+                    const matchesRequirement = this.requirement === "all" || element.dataset.requirement === this.requirement;
+                    const matchesStatus = this.status === "all" || element.dataset.status === this.status;
+                    return matchesQuery && matchesRequirement && matchesStatus;
+                },
+                inspect(key) {
+                    this.selected = key;
+                    this.$nextTick(() => {
+                        if (window.matchMedia("(max-width: 1279px)").matches && this.$refs.inspector) {
+                            this.$refs.inspector.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }
+                    });
+                }
+             }'>
             <section class="min-w-0 overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
                      aria-labelledby="kubernetes-capability-matrix-title"
                      data-kaori-capability-explorer
-                     data-kaori-capability-matrix
-                     x-data="{
-                        query: '',
-                        requirement: 'all',
-                        status: 'all',
-                        matches(element) {
-                            const search = (element.dataset.search || '').toLowerCase();
-                            const matchesQuery = !this.query.trim() || search.includes(this.query.trim().toLowerCase());
-                            const matchesRequirement = this.requirement === 'all' || element.dataset.requirement === this.requirement;
-                            const matchesStatus = this.status === 'all' || element.dataset.status === this.status;
-                            return matchesQuery && matchesRequirement && matchesStatus;
-                        }
-                     }">
+                     data-kaori-capability-matrix>
                 <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-start lg:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
                         {{ integration_ui.palette_icon('blocks', 'info', size='lg', rounded='xl') }}
                         <div>
-                            <h3 id="kubernetes-capability-matrix-title" class="text-base font-semibold text-content-primary">Capability Matrix</h3>
-                            <p class="mt-1 text-sm leading-6 text-content-secondary">Compare capability identity, selected API contract, requirement level, and effective validation status.</p>
+                            <h3 id="kubernetes-capability-matrix-title" class="text-base font-semibold text-content-primary">Capability Registry</h3>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">Scan the active API contract, requirement level, and validation state. Open one capability in the inspector without expanding the record list.</p>
                         </div>
                     </div>
                     <span class="inline-flex min-h-7 shrink-0 items-center rounded-md border border-outline-subtle bg-surface-subtle px-2.5 text-xs font-semibold text-content-primary">{{ feature_rows|length }} capability contracts</span>
@@ -211,13 +221,13 @@
                     </div>
                 </div>
 
-                <div class="hidden grid-cols-[minmax(15rem,1.35fr)_minmax(11rem,0.85fr)_8.5rem_8rem_2.5rem] gap-4 border-b border-outline-subtle bg-surface-hover px-5 py-3 text-xs font-semibold text-content-secondary lg:grid"
+                <div class="hidden grid-cols-[minmax(15rem,1.35fr)_minmax(10rem,0.8fr)_7.5rem_7rem_7.5rem] gap-4 border-b border-outline-subtle bg-surface-hover px-5 py-3 text-xs font-semibold text-content-secondary lg:grid"
                      data-kaori-capability-matrix-header>
                     <span>Capability</span>
                     <span>API Contract</span>
                     <span>Requirement</span>
                     <span>Status</span>
-                    <span class="sr-only">Details</span>
+                    <span class="text-right">Details</span>
                 </div>
 
                 <div class="divide-y divide-outline-subtle" data-kaori-capability-records>
@@ -225,150 +235,47 @@
                         {% set tone = 'ready' if row.status == 'ready' else ('degraded' if row.status == 'legacy' else 'blocked') %}
                         {% set requirement_key = 'required' if row.required else 'optional' %}
                         {% set row_icon_tone = 'normal' if row.status == 'ready' else ('warning' if row.status == 'legacy' else 'critical') %}
-                        <details class="group bg-surface-card"
+                        <article class="bg-surface-card px-5 py-4 transition hover:bg-kaori-mist"
+                                 :class='selected === {{ row.key|tojson }} ? "bg-surface-subtle" : ""'
                                  data-kaori-capability-record
                                  data-kaori-capability-matrix-row
                                  data-search="{{ (row.key ~ ' ' ~ row.resource ~ ' ' ~ row.api_version ~ ' ' ~ row.requirement_label)|lower|e }}"
                                  data-requirement="{{ requirement_key }}"
                                  data-status="{{ row.status }}"
                                  x-show="matches($el)">
-                            <summary class="cursor-pointer list-none px-5 py-4 transition hover:bg-kaori-mist group-open:bg-surface-subtle [&::-webkit-details-marker]:hidden">
-                                <div class="grid gap-4 lg:grid-cols-[minmax(15rem,1.35fr)_minmax(11rem,0.85fr)_8.5rem_8rem_2.5rem] lg:items-center">
-                                    <div class="flex min-w-0 items-start gap-3">
-                                        {{ integration_ui.palette_icon('box' if row.required else 'shield', row_icon_tone, size='md') }}
-                                        <div class="min-w-0">
-                                            <p class="text-sm font-semibold text-content-primary">{{ row.key|replace('.', ' · ')|replace('_', ' ')|title }}</p>
-                                            <p class="mt-1 truncate text-xs text-content-secondary" title="{{ row.resource }}">Resource · {{ row.resource }}</p>
-                                        </div>
-                                    </div>
+                            <div class="grid gap-4 lg:grid-cols-[minmax(15rem,1.35fr)_minmax(10rem,0.8fr)_7.5rem_7rem_7.5rem] lg:items-center">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    {{ integration_ui.palette_icon('box' if row.required else 'shield', row_icon_tone, size='md') }}
                                     <div class="min-w-0">
-                                        <p class="text-xs font-semibold text-content-muted lg:hidden">API Contract</p>
-                                        <p class="mt-1 truncate text-sm font-semibold text-content-primary lg:mt-0" title="{{ row.api_version }}">{{ row.api_version }}</p>
-                                        <p class="mt-1 text-xs text-content-secondary">{{ row.stability|title }} API</p>
+                                        <p class="text-sm font-semibold text-content-primary">{{ row.key|replace('.', ' · ')|replace('_', ' ')|title }}</p>
+                                        <p class="mt-1 truncate text-xs text-content-secondary" title="{{ row.resource }}">Resource · {{ row.resource }}</p>
                                     </div>
-                                    <div>
-                                        <p class="text-xs font-semibold text-content-muted lg:hidden">Requirement</p>
-                                        <span class="mt-1 inline-flex min-h-7 items-center rounded-md border border-outline-subtle bg-surface-subtle px-2.5 text-xs font-semibold text-content-secondary lg:mt-0">{{ row.requirement_label }}</span>
-                                    </div>
-                                    <div>
-                                        <p class="text-xs font-semibold text-content-muted lg:hidden">Status</p>
-                                        <span class="mt-1 inline-flex lg:mt-0">{{ integration_status(tone, 'Ready' if row.status == 'ready' else ('Legacy Fallback' if row.status == 'legacy' else 'Blocked')) }}</span>
-                                    </div>
-                                    <span class="flex h-8 w-8 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-content-muted transition group-open:text-content-primary">
-                                        <i data-lucide="chevron-down" class="h-4 w-4 transition group-open:rotate-180" aria-hidden="true"></i>
-                                    </span>
                                 </div>
-                            </summary>
-
-                            <div class="border-t border-outline-subtle bg-surface-subtle p-4 sm:p-5" data-kaori-capability-expanded-evidence>
-                                {% if row.message %}
-                                    <div class="flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-card p-4">
-                                        {{ integration_ui.palette_icon('file-check-2', row_icon_tone, size='sm') }}
-                                        <div>
-                                            <p class="text-sm font-semibold text-content-primary">Validation Evidence</p>
-                                            <p class="mt-1 text-sm leading-6 text-content-secondary">{{ row.message }}</p>
-                                        </div>
-                                    </div>
-                                {% endif %}
-
-                                <dl class="mt-3 grid overflow-hidden rounded-lg border border-outline-subtle bg-surface-card md:grid-cols-3 md:divide-x md:divide-outline-subtle">
-                                    <div class="p-4">
-                                        <dt class="text-xs font-semibold text-content-muted">Selected API</dt>
-                                        <dd class="mt-2 text-sm font-semibold text-content-primary">{{ row.api_version }}</dd>
-                                        <dd class="mt-1 text-xs text-content-secondary">Stability · {{ row.stability|title }}</dd>
-                                    </div>
-                                    <div class="border-t border-outline-subtle p-4 md:border-t-0">
-                                        <dt class="text-xs font-semibold text-content-muted">Access Contract</dt>
-                                        <dd class="mt-2 text-sm font-semibold text-content-primary">{{ row.requirement_label }} Capability</dd>
-                                        <dd class="mt-1 text-xs text-content-secondary">Required verbs · {{ row.required_verbs_display }}</dd>
-                                    </div>
-                                    <div class="border-t border-outline-subtle p-4 md:border-t-0">
-                                        <dt class="text-xs font-semibold text-content-muted">Operational Impact</dt>
-                                        <dd class="mt-2 text-sm leading-6 text-content-secondary">
-                                            {% if row.status == 'ready' %}
-                                                KAORI can use this capability through the preferred stable API.
-                                            {% elif row.status == 'legacy' %}
-                                                The capability remains available, but upgrade planning is required before the fallback API is removed upstream.
-                                            {% elif row.required %}
-                                                Dependent inventory or operational features remain unavailable until API serving or RBAC access is corrected.
-                                            {% else %}
-                                                Core Kubernetes readiness remains available. Only the optional governed workflow stays unavailable.
-                                            {% endif %}
-                                        </dd>
-                                    </div>
-                                </dl>
-
-                                {% set api_group = row.api_version.split('/')[0] if '/' in row.api_version else '' %}
-                                {% set api_resource = row.resource ~ ('.' ~ api_group if api_group else '') %}
-                                {% set discovery_path = '/apis/' ~ row.api_version if '/' in row.api_version else '/api/' ~ row.api_version %}
-                                {% set check_tone = 'normal' if row.status == 'ready' else ('warning' if row.status == 'legacy' else 'critical') %}
-                                {% set check_icon = 'circle-check' if row.status == 'ready' else ('triangle-alert' if row.status == 'legacy' else 'circle-x') %}
-                                {% set check_status = 'Ready' if row.status == 'ready' else ('Legacy Fallback' if row.status == 'legacy' else 'Blocked') %}
-                                {% set api_group_argument = '--api-group=' ~ api_group if api_group else '--api-group=""' %}
-                                {% if row.required %}
-                                    {% set runnable_script = [
-                                        'set -euo pipefail',
-                                        '# Confirm the selected API version is served',
-                                        'kubectl get --raw "' ~ discovery_path ~ '" >/dev/null',
-                                        '# Confirm the expected resource is discoverable',
-                                        'kubectl api-resources ' ~ api_group_argument ~ ' -o name | grep -Fx "' ~ api_resource ~ '"',
-                                        '# Confirm the current identity can list the required resource',
-                                        'kubectl auth can-i list "' ~ api_resource ~ '" --all-namespaces',
-                                        '# Execute a bounded live read through the same API contract',
-                                        'kubectl get "' ~ api_resource ~ '" --all-namespaces --limit=1 -o name'
-                                    ] | join('\n') %}
-                                {% else %}
-                                    {% set runnable_script = [
-                                        'set -euo pipefail',
-                                        'NAMESPACE="<approved-namespace>"',
-                                        '# Optional sensitive-resource access is namespace scoped',
-                                        'kubectl auth can-i list "' ~ api_resource ~ '" --namespace="${NAMESPACE}"',
-                                        '# Execute a bounded read only in the approved namespace',
-                                        'kubectl get "' ~ api_resource ~ '" --namespace="${NAMESPACE}" --limit=1 -o name'
-                                    ] | join('\n') %}
-                                {% endif %}
-                                {% set kubernetes_check = {
-                                    'label': 'Kubernetes API and RBAC Check',
-                                    'evidence': row.message,
-                                    'status_label': check_status,
-                                    'tone': check_tone,
-                                    'icon': check_icon,
-                                    'value_summary': 'Selected API: ' ~ row.api_version ~ ' · Resource: ' ~ api_resource,
-                                    'query': runnable_script,
-                                    'query_help': 'Run this script from a shell where kubectl uses the same cluster and service-account identity registered in KAORI.'
-                                } %}
-
-                                <div class="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)] xl:items-start">
-                                    <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
-                                        <header class="border-b border-outline-subtle bg-surface-subtle px-4 py-3">
-                                            <p class="text-sm font-semibold text-content-primary">Technical Checks</p>
-                                            <p class="mt-1 text-xs leading-5 text-content-secondary">Inspect and copy the exact Kubernetes discovery, RBAC, and bounded-read script.</p>
-                                        </header>
-                                        <div class="p-3">{{ technical_check.render(kubernetes_check, query_label='Runnable Kubernetes Script') }}</div>
-                                    </section>
-
-                                    <aside class="rounded-lg border border-outline-subtle bg-surface-card p-4">
-                                        <div class="flex items-start gap-3">
-                                            {{ integration_ui.palette_icon(check_icon, row_icon_tone, size='sm') }}
-                                            <div>
-                                                <p class="text-sm font-semibold text-content-primary">Recommended Action</p>
-                                                <p class="mt-1 text-sm leading-6 text-content-secondary">
-                                                    {% if row.status == 'ready' %}
-                                                        No corrective action is required. Revalidate after Kubernetes upgrades or RBAC changes.
-                                                    {% elif row.status == 'legacy' %}
-                                                        Upgrade the cluster or API extension so the stable API is served, then rerun Full Validation and confirm the fallback disappears.
-                                                    {% elif row.required %}
-                                                        Ensure the resource API is served and grant the KAORI service account the required verbs shown above. Do not use an older API to bypass missing authorization.
-                                                    {% else %}
-                                                        Grant the optional namespace-scoped permission only when the related governed workflow is approved. Do not expand the baseline ClusterRole.
-                                                    {% endif %}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </aside>
+                                <div class="min-w-0">
+                                    <p class="text-xs font-semibold text-content-muted lg:hidden">API Contract</p>
+                                    <p class="mt-1 truncate text-sm font-semibold text-content-primary lg:mt-0" title="{{ row.api_version }}">{{ row.api_version }}</p>
+                                    <p class="mt-1 text-xs text-content-secondary">{{ row.stability|title }} API</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-semibold text-content-muted lg:hidden">Requirement</p>
+                                    <span class="mt-1 inline-flex min-h-7 items-center rounded-md border border-outline-subtle bg-surface-subtle px-2.5 text-xs font-semibold text-content-secondary lg:mt-0">{{ row.requirement_label }}</span>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-semibold text-content-muted lg:hidden">Status</p>
+                                    <span class="mt-1 inline-flex lg:mt-0">{{ integration_status(tone, 'Ready' if row.status == 'ready' else ('Legacy Fallback' if row.status == 'legacy' else 'Blocked')) }}</span>
+                                </div>
+                                <div class="lg:text-right">
+                                    <button type="button"
+                                            class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:border-outline-focus hover:bg-surface-subtle"
+                                            :class='selected === {{ row.key|tojson }} ? "border-outline-focus bg-surface-subtle" : ""'
+                                            @click='inspect({{ row.key|tojson }})'
+                                            data-kaori-capability-view-more>
+                                        <i data-lucide="panel-right-open" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                        <span x-text='selected === {{ row.key|tojson }} ? "Viewing" : "View More"'></span>
+                                    </button>
                                 </div>
                             </div>
-                        </details>
+                        </article>
                     {% else %}
                         <div class="px-5 py-10 text-center">
                             {{ integration_ui.palette_icon('scan-search', 'neutral', size='lg') }}
@@ -379,147 +286,276 @@
                 </div>
             </section>
 
-            <aside class="self-start overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:sticky xl:top-4"
+            <aside class="self-start space-y-4 xl:sticky xl:top-4"
+                   x-ref="inspector"
                    data-kaori-capability-side-panel
-                   data-kaori-capability-decision-panel
-                   data-kaori-neutral-command-center>
-                <header class="border-b border-outline-subtle bg-surface-subtle p-5">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="flex min-w-0 items-start gap-3">
-                            {{ integration_ui.palette_icon('gauge', 'brand', size='lg', rounded='xl') }}
+                   data-kaori-capability-inspector-panel>
+                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                    <header class="border-b border-outline-subtle bg-surface-subtle p-5">
+                        <div class="flex items-start gap-3">
+                            {{ integration_ui.palette_icon('panel-right', 'brand', size='lg', rounded='xl') }}
                             <div class="min-w-0">
-                                <h4 class="text-base font-semibold text-content-primary">Validation Decision Center</h4>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Current gate posture, downstream eligibility, and the next controlled action.</p>
+                                <h4 class="text-base font-semibold text-content-primary">Capability Inspector</h4>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">The selected capability stays visible here while the registry remains compact.</p>
                             </div>
                         </div>
-                        {{ integration_status(validation_state.readiness, validation_state.readiness_label) }}
-                    </div>
+                    </header>
 
-                    <div class="mt-5 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-4 rounded-xl border border-outline-subtle bg-surface-card p-4" data-kaori-readiness-score>
-                        <div class="flex h-16 w-16 items-center justify-center rounded-full border-4 border-kaori-primary/20 bg-surface-subtle">
-                            <span class="text-lg font-semibold tabular-nums text-content-primary">{{ capability_readiness_percent|round|int }}%</span>
-                        </div>
-                        <div>
-                            <p class="text-xs font-semibold text-content-secondary">Capability readiness</p>
-                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ validated_feature_count }} validated of {{ capability_total }} discovered</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ required_usable_count }} of {{ capability_counts.required }} required contracts are usable.</p>
-                        </div>
-                    </div>
-                </header>
+                    {% for row in feature_rows %}
+                        {% set tone = 'ready' if row.status == 'ready' else ('degraded' if row.status == 'legacy' else 'blocked') %}
+                        {% set row_icon_tone = 'normal' if row.status == 'ready' else ('warning' if row.status == 'legacy' else 'critical') %}
+                        {% set check_tone = 'normal' if row.status == 'ready' else ('warning' if row.status == 'legacy' else 'critical') %}
+                        {% set check_icon = 'circle-check' if row.status == 'ready' else ('triangle-alert' if row.status == 'legacy' else 'circle-x') %}
+                        {% set check_status = 'Ready' if row.status == 'ready' else ('Legacy Fallback' if row.status == 'legacy' else 'Blocked') %}
+                        {% set api_group = row.api_version.split('/')[0] if '/' in row.api_version else '' %}
+                        {% set api_resource = row.resource ~ ('.' ~ api_group if api_group else '') %}
+                        {% set discovery_path = '/apis/' ~ row.api_version if '/' in row.api_version else '/api/' ~ row.api_version %}
+                        {% set api_group_argument = '--api-group=' ~ api_group if api_group else '--api-group=""' %}
+                        {% if row.required %}
+                            {% set runnable_script = [
+                                'set -euo pipefail',
+                                '# Confirm the selected API version is served',
+                                'kubectl get --raw "' ~ discovery_path ~ '" >/dev/null',
+                                '# Confirm the expected resource is discoverable',
+                                'kubectl api-resources ' ~ api_group_argument ~ ' -o name | grep -Fx "' ~ api_resource ~ '"',
+                                '# Confirm the current identity can list the required resource',
+                                'kubectl auth can-i list "' ~ api_resource ~ '" --all-namespaces',
+                                '# Execute a bounded live read through the same API contract',
+                                'kubectl get "' ~ api_resource ~ '" --all-namespaces --limit=1 -o name'
+                            ] | join('\n') %}
+                        {% else %}
+                            {% set runnable_script = [
+                                'set -euo pipefail',
+                                'NAMESPACE="<approved-namespace>"',
+                                '# Optional sensitive-resource access is namespace scoped',
+                                'kubectl auth can-i list "' ~ api_resource ~ '" --namespace="${NAMESPACE}"',
+                                '# Execute a bounded read only in the approved namespace',
+                                'kubectl get "' ~ api_resource ~ '" --namespace="${NAMESPACE}" --limit=1 -o name'
+                            ] | join('\n') %}
+                        {% endif %}
+                        {% set kubernetes_check = {
+                            'label': 'Kubernetes API and RBAC Check',
+                            'evidence': row.message,
+                            'status_label': check_status,
+                            'tone': check_tone,
+                            'icon': check_icon,
+                            'value_summary': 'Selected API: ' ~ row.api_version ~ ' · Resource: ' ~ api_resource,
+                            'query': runnable_script,
+                            'query_help': 'Run this script from a shell where kubectl uses the same cluster and service-account identity registered in KAORI.'
+                        } %}
 
-                <section class="border-b border-outline-subtle p-4" aria-labelledby="gate-decision-title" data-kaori-capability-gate-decision>
-                    <div class="flex items-start gap-3">
-                        {{ integration_ui.palette_icon('shield-check' if validation_state.readiness == 'ready' else 'shield-alert', 'normal' if validation_state.readiness == 'ready' else 'warning', size='md') }}
-                        <div>
-                            <h5 id="gate-decision-title" class="text-sm font-semibold text-content-primary">Operational Gate Decision</h5>
-                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ 'Core Workspaces Eligible' if validation_state.readiness == 'ready' else 'Remediation Required' }}</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">
-                                {% if validation_state.readiness == 'ready' %}
-                                    Required API and RBAC contracts permit Inventory and downstream KAORI workspaces to operate.
-                                {% else %}
-                                    Resolve required API or RBAC blocks before runtime refresh and inventory synchronization.
-                                {% endif %}
-                            </p>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="border-b border-outline-subtle p-4" aria-labelledby="capability-posture-title">
-                    <div class="flex items-center justify-between gap-3">
-                        <h5 id="capability-posture-title" class="text-sm font-semibold text-content-primary">Capability Coverage</h5>
-                        <span class="text-xs font-medium text-content-muted">Latest validation</span>
-                    </div>
-                    <dl class="mt-3 divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle" data-kaori-capability-posture-grid>
-                        {% set posture_rows = [
-                            ('circle-check-big', 'normal', 'Required Usable', required_usable_count, capability_counts.required),
-                            ('sparkles', 'info', 'Stable APIs', capability_counts.ready, capability_total),
-                            ('history', 'warning', 'Legacy Fallbacks', capability_counts.legacy, capability_counts.required),
-                            ('shield-check', 'normal' if not optional_blocked_features else 'warning', 'Optional Available', optional_available_count, capability_counts.optional)
-                        ] %}
-                        {% for icon, icon_tone, label, value, total in posture_rows %}
-                            <div class="flex items-center justify-between gap-3 bg-surface-card p-3">
-                                <div class="flex min-w-0 items-center gap-3">
-                                    {{ integration_ui.palette_icon(icon, icon_tone, size='sm') }}
-                                    <dt class="text-xs font-semibold text-content-secondary">{{ label }}</dt>
+                        <div x-show='selected === {{ row.key|tojson }}'
+                             x-cloak
+                             data-kaori-capability-inspector-content>
+                            <div class="border-b border-outline-subtle p-5">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="flex min-w-0 items-start gap-3">
+                                        {{ integration_ui.palette_icon('box' if row.required else 'shield', row_icon_tone, size='md') }}
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-semibold text-content-primary">{{ row.key|replace('.', ' · ')|replace('_', ' ')|title }}</p>
+                                            <p class="mt-1 text-xs text-content-secondary">Resource · {{ row.resource }}</p>
+                                        </div>
+                                    </div>
+                                    {{ integration_status(tone, check_status) }}
                                 </div>
-                                <dd class="text-sm font-semibold tabular-nums text-content-primary">{{ value }} / {{ total }}</dd>
+
+                                <dl class="mt-4 grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2">
+                                    <div class="bg-surface-card p-3">
+                                        <dt class="text-xs font-semibold text-content-muted">Selected API</dt>
+                                        <dd class="mt-1 text-sm font-semibold text-content-primary">{{ row.api_version }}</dd>
+                                        <dd class="mt-0.5 text-xs text-content-secondary">{{ row.stability|title }} stability</dd>
+                                    </div>
+                                    <div class="bg-surface-card p-3">
+                                        <dt class="text-xs font-semibold text-content-muted">Access Contract</dt>
+                                        <dd class="mt-1 text-sm font-semibold text-content-primary">{{ row.requirement_label }}</dd>
+                                        <dd class="mt-0.5 text-xs text-content-secondary">Verbs · {{ row.required_verbs_display }}</dd>
+                                    </div>
+                                </dl>
                             </div>
-                        {% endfor %}
-                    </dl>
+
+                            <div class="space-y-4 p-5">
+                                <section>
+                                    <div class="flex items-start gap-3">
+                                        {{ integration_ui.palette_icon('file-check-2', row_icon_tone, size='sm') }}
+                                        <div>
+                                            <p class="text-sm font-semibold text-content-primary">Validation Evidence</p>
+                                            <p class="mt-1 text-sm leading-6 text-content-secondary">{{ row.message or 'No validation message is available for this capability.' }}</p>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section class="rounded-lg border border-outline-subtle bg-surface-subtle p-4">
+                                    <p class="text-sm font-semibold text-content-primary">Operational Impact</p>
+                                    <p class="mt-1 text-sm leading-6 text-content-secondary">
+                                        {% if row.status == 'ready' %}
+                                            KAORI can use this capability through the preferred stable API.
+                                        {% elif row.status == 'legacy' %}
+                                            The capability remains available, but upgrade planning is required before the fallback API is removed upstream.
+                                        {% elif row.required %}
+                                            Dependent inventory or operational features remain unavailable until API serving or RBAC access is corrected.
+                                        {% else %}
+                                            Core Kubernetes readiness remains available. Only the optional governed workflow stays unavailable.
+                                        {% endif %}
+                                    </p>
+                                </section>
+
+                                <section class="rounded-lg border border-outline-subtle bg-surface-card p-4">
+                                    <div class="flex items-start gap-3">
+                                        {{ integration_ui.palette_icon(check_icon, row_icon_tone, size='sm') }}
+                                        <div>
+                                            <p class="text-sm font-semibold text-content-primary">Recommended Action</p>
+                                            <p class="mt-1 text-sm leading-6 text-content-secondary">
+                                                {% if row.status == 'ready' %}
+                                                    No corrective action is required. Revalidate after Kubernetes upgrades or RBAC changes.
+                                                {% elif row.status == 'legacy' %}
+                                                    Upgrade the cluster or API extension so the stable API is served, then rerun Full Validation.
+                                                {% elif row.required %}
+                                                    Serve the required API and grant only the required verbs. Do not use an older API to bypass missing authorization.
+                                                {% else %}
+                                                    Grant optional namespace-scoped access only for an approved governed workflow. Do not expand the baseline ClusterRole.
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <details class="group overflow-hidden rounded-lg border border-outline-subtle bg-surface-card" data-kaori-capability-technical-check>
+                                    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden">
+                                        <div class="flex items-center gap-3">
+                                            {{ integration_ui.palette_icon('terminal-square', 'info', size='sm') }}
+                                            <div>
+                                                <p class="text-sm font-semibold text-content-primary">Technical Check</p>
+                                                <p class="mt-0.5 text-xs text-content-secondary">Open the copy-ready discovery and RBAC script.</p>
+                                            </div>
+                                        </div>
+                                        <i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition group-open:rotate-180" aria-hidden="true"></i>
+                                    </summary>
+                                    <div class="border-t border-outline-subtle bg-surface-subtle p-3">{{ technical_check.render(kubernetes_check, query_label='Runnable Kubernetes Script') }}</div>
+                                </details>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="p-5 text-center">
+                            <p class="text-sm font-semibold text-content-primary">Select a Capability</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Run Full Validation to populate the capability inspector.</p>
+                        </div>
+                    {% endfor %}
                 </section>
 
-                <section class="border-b border-outline-subtle p-4" aria-labelledby="eligibility-title">
-                    <h5 id="eligibility-title" class="text-sm font-semibold text-content-primary">Downstream Eligibility</h5>
-                    <div class="mt-3 space-y-2">
-                        {% set eligibility_rows = [
-                            ('boxes', 'Core Inventory', 'Required APIs and RBAC', validation_state.readiness, validation_state.readiness_label),
-                            ('workflow', 'KAORI Workspaces', 'Analytics, Operations, Governance, Reports', 'ready' if validation_state.readiness == 'ready' else 'degraded', 'Eligible' if validation_state.readiness == 'ready' else 'Review'),
-                            ('shield', 'Sensitive Resources', 'Optional namespace-scoped access', 'degraded' if optional_blocked_features else 'ready', 'Limited' if optional_blocked_features else 'Available')
-                        ] %}
-                        {% for icon, label, description, state, state_label in eligibility_rows %}
-                            <div class="flex items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-subtle p-3">
-                                <div class="flex min-w-0 items-center gap-3">
-                                    {{ integration_ui.palette_icon(icon, 'normal' if state == 'ready' else 'warning', size='sm') }}
-                                    <div class="min-w-0">
-                                        <p class="text-sm font-semibold text-content-primary">{{ label }}</p>
-                                        <p class="mt-0.5 truncate text-xs text-content-secondary" title="{{ description }}">{{ description }}</p>
+                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+                         data-kaori-capability-decision-panel
+                         data-kaori-neutral-command-center>
+                    <header class="border-b border-outline-subtle bg-surface-subtle p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex min-w-0 items-start gap-3">
+                                {{ integration_ui.palette_icon('gauge', 'brand', size='md') }}
+                                <div>
+                                    <h4 class="text-sm font-semibold text-content-primary">Validation Decision</h4>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Current gate posture and next controlled action.</p>
+                                </div>
+                            </div>
+                            {{ integration_status(validation_state.readiness, validation_state.readiness_label) }}
+                        </div>
+                    </header>
+
+                    <div class="divide-y divide-outline-subtle">
+                        <section class="p-4" data-kaori-readiness-score>
+                            <div class="flex items-center justify-between gap-4">
+                                <div>
+                                    <p class="text-xs font-semibold text-content-secondary">Capability Readiness</p>
+                                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ validated_feature_count }} of {{ capability_total }} validated</p>
+                                    <p class="mt-1 text-xs text-content-secondary">{{ required_usable_count }} of {{ capability_counts.required }} required contracts usable.</p>
+                                </div>
+                                <span class="text-2xl font-semibold tabular-nums text-content-primary">{{ capability_readiness_percent|round|int }}%</span>
+                            </div>
+                        </section>
+
+                        <section class="p-4" data-kaori-capability-gate-decision>
+                            <div class="flex items-start gap-3">
+                                {{ integration_ui.palette_icon('shield-check' if validation_state.readiness == 'ready' else 'shield-alert', 'normal' if validation_state.readiness == 'ready' else 'warning', size='sm') }}
+                                <div>
+                                    <p class="text-xs font-semibold text-content-secondary">Operational Gate</p>
+                                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ 'Core Workspaces Eligible' if validation_state.readiness == 'ready' else 'Remediation Required' }}</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                        {% if validation_state.readiness == 'ready' %}
+                                            Required API and RBAC contracts permit Inventory and downstream workspaces to operate.
+                                        {% else %}
+                                            Resolve required API or RBAC blocks before runtime refresh and inventory synchronization.
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="p-4">
+                            <p class="text-xs font-semibold text-content-secondary">Coverage</p>
+                            <dl class="mt-3 grid grid-cols-2 gap-2" data-kaori-capability-posture-grid>
+                                {% set posture_rows = [
+                                    ('Required', required_usable_count ~ ' / ' ~ capability_counts.required),
+                                    ('Stable APIs', capability_counts.ready ~ ' / ' ~ capability_total),
+                                    ('Legacy', capability_counts.legacy ~ ' / ' ~ capability_counts.required),
+                                    ('Optional', optional_available_count ~ ' / ' ~ capability_counts.optional)
+                                ] %}
+                                {% for label, value in posture_rows %}
+                                    <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
+                                        <dt class="text-xs font-medium text-content-secondary">{{ label }}</dt>
+                                        <dd class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ value }}</dd>
+                                    </div>
+                                {% endfor %}
+                            </dl>
+                        </section>
+
+                        <section class="p-4">
+                            <div class="flex items-start gap-3">
+                                {{ integration_ui.palette_icon('crosshair', 'warning' if blocked_features or legacy_features or optional_blocked_features else 'normal', size='sm') }}
+                                <div>
+                                    <p class="text-xs font-semibold text-content-secondary">Next Operational Action</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                        {% if blocked_features %}
+                                            Resolve {{ blocked_features|length }} required API or RBAC block{{ '' if blocked_features|length == 1 else 's' }}, then rerun Full Validation.
+                                        {% elif legacy_features %}
+                                            Migrate {{ legacy_features|length }} legacy API fallback{{ '' if legacy_features|length == 1 else 's' }}, then revalidate.
+                                        {% elif optional_blocked_features %}
+                                            Core readiness is available. Review optional governed access only for approved workflows.
+                                        {% else %}
+                                            No corrective action is required. Revalidate after Kubernetes upgrades or RBAC changes.
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <details class="group" data-kaori-validation-operating-boundary>
+                            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden">
+                                <div class="flex items-center gap-3">
+                                    {{ integration_ui.palette_icon('route', 'info', size='sm') }}
+                                    <div>
+                                        <p class="text-xs font-semibold text-content-secondary">Validation Workflow</p>
+                                        <p class="mt-1 text-xs text-content-secondary">Interpret → Remediate → Revalidate → Synchronize</p>
                                     </div>
                                 </div>
-                                {{ integration_status(state, state_label) }}
-                            </div>
-                        {% endfor %}
+                                <i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition group-open:rotate-180" aria-hidden="true"></i>
+                            </summary>
+                            <ol class="space-y-3 border-t border-outline-subtle bg-surface-subtle p-4">
+                                {% set validation_steps = [
+                                    ('1', 'Interpret', 'Separate required blocks, optional gaps, and legacy fallbacks.'),
+                                    ('2', 'Remediate', 'Resolve required API and RBAC failures before optional access.'),
+                                    ('3', 'Revalidate', 'Run Full Validation after API, version, or permission changes.'),
+                                    ('4', 'Synchronize', 'Refresh runtime health and commit inventory after validation.')
+                                ] %}
+                                {% for number, title, description in validation_steps %}
+                                    <li class="grid grid-cols-[1.75rem_minmax(0,1fr)] gap-3">
+                                        <span class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-outline-subtle bg-surface-card text-xs font-semibold text-content-primary">{{ number }}</span>
+                                        <div class="pb-2 {% if not loop.last %}border-b border-outline-subtle{% endif %}">
+                                            <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
+                                            <p class="mt-0.5 text-xs leading-5 text-content-secondary">{{ description }}</p>
+                                        </div>
+                                    </li>
+                                {% endfor %}
+                            </ol>
+                        </details>
                     </div>
                 </section>
-
-                <section class="border-b border-outline-subtle bg-surface-subtle p-4" aria-labelledby="review-focus-title">
-                    <div class="flex items-start gap-3">
-                        {{ integration_ui.palette_icon('crosshair', 'warning' if blocked_features or legacy_features or optional_blocked_features else 'normal', size='md') }}
-                        <div>
-                            <h5 id="review-focus-title" class="text-sm font-semibold text-content-primary">Next Operational Action</h5>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">
-                                {% if blocked_features %}
-                                    Resolve {{ blocked_features|length }} required API or RBAC block{{ '' if blocked_features|length == 1 else 's' }} before runtime refresh or inventory synchronization.
-                                {% elif legacy_features %}
-                                    Migrate {{ legacy_features|length }} required legacy API fallback{{ '' if legacy_features|length == 1 else 's' }}, then rerun Full Validation.
-                                {% elif optional_blocked_features %}
-                                    Core readiness is available. Review optional governed access only for approved workflows.
-                                {% else %}
-                                    No corrective action is required. Revalidate after Kubernetes upgrades, API changes, or RBAC updates.
-                                {% endif %}
-                            </p>
-                        </div>
-                    </div>
-                </section>
-
-                <details class="group" data-kaori-validation-operating-boundary>
-                    <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden">
-                        <div class="flex items-center gap-3">
-                            {{ integration_ui.palette_icon('route', 'info', size='md') }}
-                            <div>
-                                <p class="text-sm font-semibold text-content-primary">Validation Workflow</p>
-                                <p class="mt-0.5 text-xs text-content-secondary">Interpret → Remediate → Revalidate → Synchronize</p>
-                            </div>
-                        </div>
-                        <i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition group-open:rotate-180" aria-hidden="true"></i>
-                    </summary>
-                    {% set validation_steps = [
-                        ('1', 'Interpret', 'Separate required blocks, optional gaps, and legacy fallbacks.'),
-                        ('2', 'Remediate', 'Resolve required API and RBAC failures before optional access.'),
-                        ('3', 'Revalidate', 'Run Full Validation after API, version, or permission changes.'),
-                        ('4', 'Synchronize', 'Refresh runtime health and commit inventory after validation.')
-                    ] %}
-                    <ol class="space-y-3 border-t border-outline-subtle bg-surface-subtle p-4">
-                        {% for number, title, description in validation_steps %}
-                            <li class="grid grid-cols-[2rem_minmax(0,1fr)] gap-3">
-                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-outline-subtle bg-surface-card text-xs font-semibold text-content-primary">{{ number }}</span>
-                                <div class="pb-3 {% if not loop.last %}border-b border-outline-subtle{% endif %}">
-                                    <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
-                                    <p class="mt-0.5 text-xs leading-5 text-content-secondary">{{ description }}</p>
-                                </div>
-                            </li>
-                        {% endfor %}
-                    </ol>
-                </details>
             </aside>
         </div>
     </div>
