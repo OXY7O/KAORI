@@ -1241,6 +1241,7 @@ def build_forecast_actionable_recommendations(
     forecast_horizon = str(
         payload.get('forecast_horizon') or payload.get('selected_forecast_horizon') or 'forecast window'
     )
+    trend_href = _forecast_review_href(payload, 'trend')
 
     for item in items:
         if not isinstance(item, dict):

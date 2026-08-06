@@ -158,3 +158,15 @@ The audit adds contracts for:
 - timestamp-aligned charts;
 - legacy route removal;
 - report threshold and peak-projection parity.
+
+## Post-audit Runtime Correction — 2026-08-06
+
+A production-like request to `/analytics/forecast` exposed an uninitialized local variable in the non-actionable recommendation path. The ETA recommendation refactor moved trend-link construction into `_build_forecast_eta_recommendation()`, while the two baseline fallback cards still referenced `trend_href` from the former function-local block.
+
+Resolution:
+
+- initialize the canonical Trend review URL once at the start of `build_forecast_actionable_recommendations()`;
+- continue using the same scoped URL contract for both baseline fallback recommendations;
+- add a runtime regression test that executes the empty/non-actionable payload path and verifies both fallback cards, their Trend URL, namespace preservation, and non-actionable state.
+
+This correction does not alter Forecast evidence, thresholds, materialization identity, or recommendation priority semantics.
