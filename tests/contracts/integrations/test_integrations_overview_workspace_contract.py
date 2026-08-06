@@ -77,7 +77,7 @@ def test_runtime_footer_uses_standard_showing_and_rows_copy() -> None:
     runtime = read('app/templates/integrations/partials/_runtime_overview.html')
     registry = read('app/templates/integrations/components/_provider_registry.html')
 
-    assert "item_label='integration targets'" in runtime
+    assert "item_label='Integration'" in runtime
     assert 'provider_registry.pagination_footer(' in runtime
     assert '>Rows</span>' in registry
     assert 'pagination.start_item' in registry
@@ -102,9 +102,14 @@ def test_portfolio_and_domain_coverage_use_neutral_card_semantics() -> None:
     assert 'Connection and Authority Boundary' in overview
     assert 'Integration Portfolio Overview' not in overview
     assert 'Integration Domain Coverage' in overview
-    assert 'Provider Ownership' in overview
-    assert 'Operational readiness' in overview
-    assert 'Roadmap Boundary' in overview
+    assert 'Operational Domains' in overview
+    assert 'Planned Domains' in overview
+    assert 'Provider Workspaces' in overview
+    assert 'Operational Readiness' in overview
+    assert 'Planned Provider Ownership' in overview
+    assert 'Coverage Boundary' in overview
+    assert "coverage|selectattr('lifecycle', 'equalto', 'available')|list" in overview
+    assert "coverage|rejectattr('lifecycle', 'equalto', 'available')|list" in overview
     assert 'coverage_stats.available_domains' in overview
     assert "table_ui.table_classes('min-w-[56rem]')" not in overview
     assert "'description': 'Metrics, alert routing, runtime validation, and capability evidence.'" in service
