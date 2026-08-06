@@ -294,6 +294,22 @@ def test_kubernetes_runtime_is_neutral_while_inventory_retains_optional_violet_l
     assert 'runtime_history_is_violet' in history
 
 
+def test_connection_contract_uses_controlled_kaori_icon_palette() -> None:
+    connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
+
+    assert 'data-kaori-connection-icon-palette' in connection
+    assert 'data-kaori-palette-icon="brand"' in connection
+    assert 'data-kaori-palette-icon="info"' in connection
+    assert 'data-kaori-palette-icon="success"' in connection
+    assert 'bg-kaori-soft text-kaori-primary' in connection
+    assert 'bg-status-info-soft text-status-info' in connection
+    assert 'bg-status-normal-soft text-status-normal' in connection
+    assert 'bg-status-warning-soft text-status-warning' in connection
+    assert "if connection.verify_ssl else 'bg-status-warning-soft text-status-warning'" in connection
+    assert 'data-kaori-violet-command-strip' not in connection
+    assert 'data-kaori-violet-command-center' not in connection
+
+
 def test_kubernetes_registry_bulk_loads_provider_bindings() -> None:
     coverage = read('app/integrations/coverage.py')
     service = read('app/integrations/service.py')
