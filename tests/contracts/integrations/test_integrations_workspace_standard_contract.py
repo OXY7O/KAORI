@@ -52,36 +52,30 @@ def test_provider_registries_share_geometry_loading_and_pagination() -> None:
     assert 'provider_registry.registry_header(' in coverage
 
 
-def test_runtime_overview_uses_bright_evidence_and_shared_controls() -> None:
+def test_runtime_overview_uses_inventory_table_and_shared_controls() -> None:
     runtime = read('app/templates/integrations/partials/_runtime_overview.html')
 
     assert 'integrations/components/_workspace.html' in runtime
+    assert 'components/table.html' in runtime
     assert 'integration_ui.metric_grid_classes(' in runtime
     assert 'integration_ui.metric_card(' in runtime
-    assert 'integration_ui.control_classes()' in runtime
+    assert 'table_ui.inventory_filter_bar_classes()' in runtime
+    assert 'table_ui.table_classes(' in runtime
+    assert 'table_ui.row_classes()' in runtime
+    assert 'resource_detail_modal.detail_button(' in runtime
     assert 'provider_registry.pagination_footer(' in runtime
     assert 'components/loading_bar.html' in runtime
 
 
-def test_runtime_history_has_one_provider_neutral_shared_component() -> None:
+def test_runtime_history_has_one_direct_shared_component() -> None:
     routes = read('app/integrations/routes.py')
     shared = read('app/templates/integrations/partials/_runtime_history.html')
-    prometheus = read('app/templates/prometheus/partials/_runtime_history.html')
-    alertmanager = read('app/templates/alertmanager/partials/_runtime_history.html')
 
     assert not exists('app/templates/integrations/kubernetes/partials/_runtime_history.html')
     assert "'integrations/partials/_runtime_history.html'" in routes
     assert 'integrations/components/_semantic_status.html' in shared
-    assert 'runtime_history_endpoint_name' in shared
-    assert 'runtime_history_detail_endpoint_name' in shared
-    assert 'runtime_history_route_args_value' in shared
-    assert 'cluster.id' not in shared
-    assert "integrations.kubernetes_detail" not in shared
-
-    assert "runtime_history_endpoint = 'prometheus.instance_runtime_history'" in prometheus
-    assert "runtime_history_detail_endpoint = 'prometheus.instance_detail'" in prometheus
-    assert "runtime_history_endpoint = 'alertmanager.runtime_history'" in alertmanager
-    assert "runtime_history_detail_endpoint = 'alertmanager.instance_detail'" in alertmanager
+    assert "href_endpoint='integrations.kubernetes_detail'" in shared
+    assert "endpoint='integrations.kubernetes_runtime_history'" in shared
 
 
 def test_dead_binding_presentation_is_removed() -> None:

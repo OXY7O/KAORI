@@ -2,7 +2,7 @@ from flask import Blueprint, abort, current_app, redirect, render_template, requ
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
-from app.common.http import is_htmx_request
+from app.common.http import htmx_target, is_htmx_request
 from app.integrations.binding_service import create_cluster_source_binding
 from app.integrations.coverage import build_binding_workspace
 from app.integrations.repository import get_kubernetes_connection_by_cluster_id
@@ -10,6 +10,7 @@ from app.integrations.runtime.presentation import runtime_history_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.integrations.service import (
     build_alertmanager_page,
+    build_integration_runtime_detail,
     build_integrations_overview,
     build_kubernetes_detail,
     build_kubernetes_page,
@@ -43,9 +44,29 @@ def overview() -> ResponseReturnValue:
         page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
     )
-    if request.headers.get('HX-Request') == 'true':
+    is_runtime_partial = (
+        is_htmx_request()
+        and htmx_target() == 'integration-runtime-overview'
+        and context['active_tab'] == 'runtime'
+    )
+    if is_runtime_partial:
         return render_template('integrations/partials/_runtime_overview.html', **context)
     return render_template('integrations/overview.html', **context)
+
+
+@integrations_bp.get('/runtime/<string:detail_key>/details')
+@permission_required('settings.manage_integrations')
+def runtime_overview_details(detail_key: str) -> ResponseReturnValue:
+    provider, separator, instance_id = detail_key.partition(':')
+    if not separator or not provider or not instance_id:
+        abort(404)
+    detail = build_integration_runtime_detail(provider, instance_id)
+    if detail is None:
+        abort(404)
+    return render_template(
+        'integrations/partials/_runtime_detail_content.html',
+        detail=detail,
+    )
 
 
 @integrations_bp.get('/kubernetes')
@@ -333,11 +354,8 @@ def kubernetes_runtime_history(cluster_id: str) -> ResponseReturnValue:
         runtime_history_id='kubernetes-runtime-history',
         runtime_history_loading_id='kubernetes-history-loading',
         runtime_history_url=url_for('integrations.kubernetes_runtime_history', cluster_id=cluster_id),
-        runtime_history_endpoint='integrations.kubernetes_runtime_history',
-        runtime_history_route_args={'cluster_id': cluster_id},
-        runtime_history_detail_url=url_for('integrations.kubernetes_detail', cluster_id=cluster_id),
-        runtime_history_detail_endpoint='integrations.kubernetes_detail',
         provider_label='Kubernetes',
+        cluster=connection.cluster,
     )
 
 

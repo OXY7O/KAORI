@@ -28,10 +28,10 @@
                 </div>
                 <div class="{{ page_hero.context_actions_classes() }}">
                     <a href="#integration-workspace"
-                       @click="activateTab('catalog')"
+                       @click="setTab('catalog', true)"
                        class="{{ page_hero.context_action_classes() }}"><i data-lucide="package-search" class="h-4 w-4"></i>Browse Providers</a>
                     <button type="button"
-                            @click="activateTab('runtime')"
+                            @click="setTab('runtime', true)"
                             hx-get="{{ url_for('integrations.overview', tab='runtime', provider=selected_provider, health=selected_health, readiness=selected_readiness, per_page=runtime_pagination.per_page) }}"
                             hx-target="#integration-runtime-overview"
                             hx-swap="outerHTML"
