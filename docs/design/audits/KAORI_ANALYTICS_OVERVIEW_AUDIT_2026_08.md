@@ -222,3 +222,27 @@ Regression ownership:
 - `tests/contracts/analytics/test_analytics_guidance_callout_standard_contract.py`
 - `tests/contracts/analytics/test_semantic_status_bar_contract.py`
 - `tests/contracts/analytics/test_overview_semantic_visual_hierarchy_contract.py`
+
+## Template-scope runtime hotfix — 2026-08-06
+
+Runtime validation after the cross-Analytics visual-role rollout found two
+Jinja scope regressions in lazy-loaded Overview fragments:
+
+- `_health_summary.html` imported the shared surface macros as
+  `overview_surface` but two header icons referenced the undeclared
+  `analysis_surface` alias;
+- `_workload_snapshot.html` iterated with `metric` but one resource icon still
+  referenced `item.label`.
+
+Both references now use their locally declared aliases and loop variables. The
+fix is presentation-only and does not change snapshot data, materialization,
+status semantics, or routing.
+
+Regression ownership is added in:
+
+- `tests/contracts/analytics/test_overview_template_scope_contract.py`
+
+The contract parses every Analytics Overview partial with Jinja metadata and
+rejects unbound shared-surface aliases or common loop-variable names. This
+covers lazy HTMX fragments that static string contracts previously did not
+execute.

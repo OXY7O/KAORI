@@ -42,7 +42,7 @@
         {% for metric in metrics %}
             <article class="{{ overview_surface.metric_cell_classes() }}">
                 <div class="flex items-center justify-between gap-3">
-                    <span class="{{ overview_surface.resource_icon_classes(item.label) }}">
+                    <span class="{{ overview_surface.resource_icon_classes(metric.label) }}">
                         <i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i>
                     </span>
                     <span class="text-xl font-semibold text-content-primary">{{ metric.value }}</span>
