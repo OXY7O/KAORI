@@ -57,3 +57,11 @@ def test_runtime_history_full_page_fallback_opens_runtime_tab() -> None:
     assert "url.searchParams.get('tab')" in detail
     assert 'syncTabFromLocation()' in detail
     assert "nextUrl.searchParams.set('tab', tab)" in detail
+
+
+def test_runtime_history_footer_uses_kaori_inventory_wording() -> None:
+    runtime = read('app/templates/integrations/partials/_runtime_history.html')
+
+    assert 'Runtime Observations</p>' in runtime
+    assert '>Rows</span>' in runtime
+    assert '> observations</p>' not in runtime

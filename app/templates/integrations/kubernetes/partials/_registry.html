@@ -20,9 +20,10 @@
           hx-push-url="true"
           hx-indicator="#kubernetes-registry-loading"
           hx-trigger="input changed delay:300ms from:#kubernetes-registry-search, change delay:100ms from:select"
-          class="grid gap-3 border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6 lg:grid-cols-[minmax(15rem,1.4fr)_repeat(3,minmax(10rem,0.7fr))]">
+          class="overflow-x-auto border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
         <input type="hidden" name="page" value="1">
         <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
+        <div data-kaori-one-line-filters class="grid min-w-[840px] grid-cols-[minmax(17rem,1.45fr)_repeat(3,minmax(11rem,0.85fr))] gap-3">
         <div>
             <label for="kubernetes-registry-search" class="{{ table_ui.filter_label_classes() }}">Search</label>
             <div class="relative">
@@ -56,6 +57,7 @@
                 <option value="">All Coverage</option>
                 {% for option in coverage_options %}<option value="{{ option.value }}" {% if selected_coverage == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
             </select>
+        </div>
         </div>
     </form>
 

@@ -40,7 +40,9 @@ def test_kubernetes_registry_uses_one_line_htmx_filters_and_inventory_table() ->
     service = read('app/integrations/service.py')
 
     assert 'components/table.html' in registry
-    assert 'lg:grid-cols-[minmax(15rem,1.4fr)_repeat(3,minmax(10rem,0.7fr))]' in registry
+    assert 'data-kaori-one-line-filters' in registry
+    assert 'min-w-[840px]' in registry
+    assert 'grid-cols-[minmax(17rem,1.45fr)_repeat(3,minmax(11rem,0.85fr))]' in registry
     assert 'input changed delay:300ms' in registry
     assert 'change delay:100ms from:select' in registry
     assert 'Apply Filters' not in registry
@@ -124,10 +126,12 @@ def test_inventory_freshness_and_capability_dimensions_are_explicit() -> None:
 def test_kubernetes_coverage_uses_dependency_chains_without_fixed_height_cards() -> None:
     coverage = read('app/templates/integrations/kubernetes/partials/_integration_coverage.html')
 
-    assert 'Operational Dependency Chains' in coverage
+    assert 'Operational Dependency Matrix' in coverage
+    assert 'data-kaori-dependency-matrix' in coverage
     assert 'Kubernetes Analytics' in coverage
     assert 'Alert Intelligence' in coverage
     assert 'Kubernetes API' in coverage
+    assert 'Reusable Source' in coverage
     assert 'Binding Validation' in coverage
     assert 'Effective Resolution' in coverage
     assert 'min-h-[260px]' not in coverage
@@ -148,6 +152,38 @@ def test_secret_capability_is_optional_and_kept_out_of_baseline_readiness() -> N
     assert 'Optional Capability Access Is Limited' in capability
     assert 'Do not expand the baseline ClusterRole.' in capability
     assert '{{ validation_state.readiness_label }}</span>' in capability
+
+
+
+def test_minimum_validation_rbac_uses_copy_friendly_modal() -> None:
+    rbac = read('app/templates/integrations/kubernetes/partials/_minimum_validation_rbac.html')
+
+    assert 'Open RBAC Examples' in rbac
+    assert 'x-teleport="body"' in rbac
+    assert 'role="dialog"' in rbac
+    assert 'Copy Baseline YAML' in rbac
+    assert 'Copy Secret Reader YAML' in rbac
+    assert '<details' not in rbac
+
+
+def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
+    connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
+    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
+    inventory = read('app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html')
+    runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
+
+    assert 'Connection Evidence' in connection
+    assert 'Operational Flow' in connection
+    assert "_minimum_validation_rbac.html" in connection
+    assert 'Kubernetes API Capability Detail' in capability
+    assert 'Validation Operating Boundary' in capability
+    assert 'lg:grid-cols-[minmax(15rem,1.3fr)' in capability
+    assert 'Bound Observability Sources' in inventory
+    assert 'components/table.html' in inventory
+    assert 'Lifecycle Boundary' in inventory
+    assert 'Runtime Operating Model' in runtime
+    assert 'Diagnostic Evidence' in runtime
+    assert 'components/table.html' in runtime
 
 
 def test_kubernetes_registry_bulk_loads_provider_bindings() -> None:
