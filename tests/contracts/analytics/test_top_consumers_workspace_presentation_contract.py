@@ -111,3 +111,11 @@ def test_top_consumers_overview_records_and_summary_follow_inventory_density() -
     assert 'sm:grid-cols-2 xl:grid-cols-4' in summary
     assert '2xl:grid-cols-4' not in summary
     assert 'truncate text-xs text-content-secondary' in summary
+    assert 'Top Consumer Snapshot' in summary
+    for category in ('cpu', 'memory', 'pods', 'storage'):
+        assert f'data-consumer-category="{{{{ cfg.key }}}}"' in summary
+        assert f"'key': '{category}'" in summary
+    assert "'accent_classes': 'bg-amber-500 dark:bg-amber-400'" in summary
+    assert "'accent_classes': 'bg-cyan-500 dark:bg-cyan-400'" in summary
+    assert "'accent_classes': 'bg-kaori-primary'" in summary
+    assert "'accent_classes': 'bg-emerald-500 dark:bg-emerald-400'" in summary
