@@ -235,11 +235,10 @@ def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
     assert 'Connection Evidence' in connection
     assert 'Operational Boundary' in connection
     assert 'Operational Flow' in connection
-    assert 'data-kaori-connection-contract-v3' in connection
-    assert 'data-kaori-configuration-layout' in connection
-    assert '2xl:grid-cols-[minmax(0,1fr)_28rem]' in connection
-    assert 'Configuration Command Center' in connection
-    assert 'data-kaori-configuration-command-center' in connection
+    assert 'xl:grid-cols-[minmax(20rem,0.8fr)_minmax(0,1.2fr)]' in connection
+    assert 'lg:grid-cols-[minmax(20rem,1.4fr)_repeat(3,minmax(12rem,0.75fr))]' in connection
+    assert 'data-kaori-connection-contract-v3' not in connection
+    assert 'Configuration Command Center' not in connection
     assert '_minimum_validation_rbac.html' in connection
     assert 'font-sans' in connection
     assert 'font-mono' not in connection
@@ -260,10 +259,9 @@ def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
     assert 'components/table.html' in runtime
 
 
-def test_kubernetes_peer_tabs_use_shared_kaori_violet_workspace_language() -> None:
+def test_kubernetes_runtime_and_inventory_tabs_use_shared_kaori_violet_workspace_language() -> None:
     primitives = read('app/templates/integrations/components/_violet_workspace.html')
     detail = read('app/templates/integrations/kubernetes/detail.html')
-    connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
     runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
     inventory = read('app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html')
     history = read('app/templates/integrations/partials/_runtime_history.html')
@@ -276,13 +274,11 @@ def test_kubernetes_peer_tabs_use_shared_kaori_violet_workspace_language() -> No
     ):
         assert token in primitives
 
-    assert 'data-kaori-violet-configuration-workspace' in connection
-    assert 'data-kaori-configuration-command-center' in connection
     assert 'data-kaori-violet-runtime-workspace' in runtime
     assert 'data-kaori-runtime-command-center' in runtime
     assert 'data-kaori-violet-inventory-workspace' in inventory
     assert 'data-kaori-inventory-command-center' in inventory
-    for template in (connection, runtime, inventory):
+    for template in (runtime, inventory):
         assert 'integrations/components/_violet_workspace.html' in template
         assert 'font-sans' in template
         assert 'bg-kaori-soft' in template
