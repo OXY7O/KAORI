@@ -20,3 +20,19 @@ Analytics posture values use the same title geometry as the Inventory context ca
 ## Dynamic identity rule
 
 Analytics hero metrics must not truncate or expose long technical identifiers. The hero presents a semantic context label instead, for example `Node Filesystem`, `Ready-Worker Capacity`, `Namespace Scope`, or `Selected Cluster`. Full hostnames, object names, and technical identifiers remain available in the detailed workspace.
+
+## Workspace alignment beyond the hero
+
+Inventory is also the canonical reference for Analytics workspace mechanics:
+
+- table and responsive evidence-record shells;
+- filter labels, inputs, selects, and focus states;
+- pagination wording and page-size control;
+- card radius, border, shadow, and row hover;
+- right-aligned row actions;
+- empty states and detail expansion;
+- Violet brand emphasis and semantic status separation.
+
+The full contract is documented in
+`ANALYTICS_INVENTORY_UI_CONVERGENCE.md`. Analytics must not redefine a gray or
+slate workspace palette inside `.kaori-analytics-page`.

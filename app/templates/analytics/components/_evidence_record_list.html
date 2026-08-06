@@ -1,56 +1,50 @@
-{# Canonical record-oriented evidence list for Kubernetes Analytics. #}
-{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{# Inventory-aligned record-oriented evidence list for Kubernetes Analytics. #}
+{% import "components/table_primitives.html" as table_ui %}
 
 {% macro shell(label='Evidence Records') -%}
-    <section class="{{ analysis_surface.evidence_shell_classes() }}" aria-label="{{ label }}">
+    <section class="{{ table_ui.block_classes() }}" aria-label="{{ label }}" data-kaori-analytics-record-table>
         {{ caller() }}
     </section>
 {%- endmacro %}
 
 {% macro header() -%}
-    <div class="hidden grid-cols-12 gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3 lg:grid">
+    <div class="hidden grid-cols-12 gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3 text-xs font-semibold text-content-muted lg:grid">
         {{ caller() }}
     </div>
 {%- endmacro %}
 
 {% macro header_cell(label, span=3, align='left') -%}
     {% set span_class = 'col-span-1' if span == 1 else ('col-span-2' if span == 2 else ('col-span-4' if span == 4 else ('col-span-5' if span == 5 else 'col-span-3'))) %}
-    <div class="{{ span_class }} {{ 'text-right' if align == 'right' else '' }} text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</div>
+    <div class="{{ span_class }} {{ 'text-right' if align == 'right' else 'text-left' }}">{{ label }}</div>
 {%- endmacro %}
 
 {% macro row(extra='') -%}
-    <article class="grid min-w-0 gap-4 bg-surface-card px-4 py-4 lg:grid-cols-12 lg:items-center {{ extra }}">
+    <article class="grid min-w-0 gap-4 bg-surface-card px-4 py-4 transition-colors hover:bg-kaori-mist lg:grid-cols-12 lg:items-center {{ extra }}">
         {{ caller() }}
     </article>
 {%- endmacro %}
 
 {% macro cell(span=3, align='left', extra='') -%}
     {% set span_class = 'lg:col-span-1' if span == 1 else ('lg:col-span-2' if span == 2 else ('lg:col-span-4' if span == 4 else ('lg:col-span-5' if span == 5 else 'lg:col-span-3'))) %}
-    <div class="min-w-0 {{ span_class }} {{ 'lg:text-right' if align == 'right' else '' }} {{ extra }}">
+    <div class="min-w-0 {{ span_class }} {{ 'lg:text-right' if align == 'right' else 'lg:text-left' }} {{ extra }}">
         {{ caller() }}
     </div>
 {%- endmacro %}
 
 {% macro identity(icon, title, subtitle='') -%}
-    <div class="flex min-w-0 items-start gap-3">
-        <span class="{{ analysis_surface.metric_icon_classes() }}" aria-hidden="true">
-            <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-        </span>
-        <div class="min-w-0">
-            <p class="break-words text-sm font-semibold leading-5 text-content-primary" title="{{ title }}">{{ title }}</p>
-            {% if subtitle %}<p class="mt-1 break-words text-xs leading-5 text-content-muted" title="{{ subtitle }}">{{ subtitle }}</p>{% endif %}
-        </div>
-    </div>
+    {{ table_ui.title_cell(title, subtitle, icon) }}
 {%- endmacro %}
 
 {% macro mobile_label(label) -%}
-    <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-content-muted lg:hidden">{{ label }}</p>
+    <p class="mb-1.5 text-xs font-semibold text-content-muted lg:hidden">{{ label }}</p>
 {%- endmacro %}
 
 {% macro empty(title, description, icon='database') -%}
-    <div class="p-4">
-        <div class="{{ analysis_surface.empty_evidence_classes('flex min-h-[190px] flex-col items-center justify-center px-5 py-8 text-center') }}">
-            <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"><i data-lucide="{{ icon }}" class="h-5 w-5"></i></span>
+    <div class="p-0">
+        <div class="flex min-h-[190px] flex-col items-center justify-center bg-surface-card px-5 py-8 text-center" data-kaori-empty-state>
+            <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
+            </span>
             <h4 class="mt-3 text-sm font-semibold text-content-primary">{{ title }}</h4>
             <p class="mt-1 max-w-xl text-xs leading-5 text-content-muted">{{ description }}</p>
         </div>

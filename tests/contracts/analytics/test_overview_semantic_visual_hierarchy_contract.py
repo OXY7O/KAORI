@@ -31,25 +31,14 @@ def test_shared_analysis_surface_uses_neutral_guidance_composition() -> None:
     assert 'block h-1' not in source
 
 
-def test_analytics_scope_replaces_violet_tinted_supporting_surfaces_with_slate_neutrals() -> None:
+def test_analytics_inherits_the_same_kaori_palette_as_inventory() -> None:
     source = read(STYLES)
-    analytics_block = source.split('.kaori-analytics-page {', 1)[1].split('@theme inline', 1)[0]
 
-    for expected in (
-        '--kaori-surface-muted: #f8fafc;',
-        '--kaori-surface-hover: #f1f5f9;',
-        '--kaori-content-secondary: #475569;',
-        '--kaori-content-muted: #64748b;',
-        '--kaori-outline-subtle: #e2e8f0;',
-        '--kaori-surface-card: #181b22;',
-        '--kaori-content-secondary: #cbd5e1;',
-        '--kaori-content-muted: #94a3b8;',
-    ):
-        assert expected in analytics_block
-
-    assert '#f8f5fc' not in analytics_block
-    assert '#ded6e8' not in analytics_block
-    assert '#26212f' not in analytics_block
+    assert '.kaori-analytics-page {' not in source
+    assert '.dark .kaori-analytics-page {' not in source
+    assert 'Analytics pages inherit the same KAORI surface' in source
+    assert '--color-kaori-primary-dark: var(--kaori-brand-primary-dark);' in source
+    assert '--color-kaori-soft: var(--kaori-brand-soft);' in source
     assert 'class="kaori-analytics-page space-y-6"' in read(FORECAST_INDEX)
 
 

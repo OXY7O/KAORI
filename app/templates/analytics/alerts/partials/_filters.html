@@ -37,15 +37,15 @@
 
     <div class="space-y-5 p-5 sm:p-6">
         <div class="grid gap-4 sm:grid-cols-2">
-            <label class="block min-w-0">
+            <label for="alerts-cluster-select" class="block min-w-0">
                 <span class="{{ analytics_workspace.control_label_classes() }}">Cluster</span>
                 <select id="alerts-cluster-select" name="cluster_id" data-kaori-reset-fields="alerts_page=1,anomalies_page=1" class="{{ analytics_workspace.control_select_classes() }}">
                     {% for cluster in clusters %}<option value="{{ cluster.id }}" {% if selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>{% endfor %}
                 </select>
             </label>
-            <label class="block min-w-0">
+            <label for="alerts-source-filter" class="block min-w-0">
                 <span class="{{ analytics_workspace.control_label_classes() }}">Signal Source</span>
-                <select name="source" class="{{ analytics_workspace.control_select_classes() }}">
+                <select id="alerts-source-filter" name="source" class="{{ analytics_workspace.control_select_classes() }}">
                     <option value="auto" {% if selected_source == 'auto' %}selected{% endif %}>Automatic</option>
                     <option value="alertmanager" {% if selected_source == 'alertmanager' %}selected{% endif %}>Alertmanager</option>
                     <option value="prometheus" {% if selected_source == 'prometheus' %}selected{% endif %}>Prometheus</option>

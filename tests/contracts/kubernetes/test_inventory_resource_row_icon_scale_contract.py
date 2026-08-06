@@ -44,12 +44,14 @@ def test_namespaced_inventory_tables_use_shared_namespace_identity() -> None:
 def test_node_resource_cell_uses_shared_two_line_identity_and_technical_network_value() -> None:
     content = _table('nodes')
     shared_table = (ROOT / 'app/templates/components/table.html').read_text(encoding='utf-8')
+    table_primitives = (ROOT / 'app/templates/components/table_primitives.html').read_text(encoding='utf-8')
 
+    assert 'components/table_primitives.html' in shared_table
     assert "table_ui.title_cell(node.node_name, node.identity_supporting, 'server')" in content
     assert 'components/technical_value.html' in content
     assert "technical_value.render(node.internal_ip or 'Not Reported')" in content
     assert 'node.hostname_address' not in content
-    assert "{{ 'h-10 w-10' if supporting_text else 'h-8 w-8' }}" in shared_table
+    assert "{{ 'h-10 w-10' if supporting_text else 'h-8 w-8' }}" in table_primitives
 
 
 def test_workload_resource_cell_uses_namespaced_scope_and_operational_state() -> None:

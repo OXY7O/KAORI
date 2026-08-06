@@ -21,15 +21,15 @@
         eyebrow='Storage Analysis'
     ) %}
         <div class="grid gap-4 sm:grid-cols-2">
-            <label class="block">
+            <label for="storage-cluster-filter" class="block">
                 <span class="{{ analytics_workspace.control_label_classes() }}">Cluster</span>
-                <select name="cluster_id" data-kaori-reset-fields="namespace=,storage_node=" class="{{ analytics_workspace.control_select_classes() }}">
+                <select id="storage-cluster-filter" name="cluster_id" data-kaori-reset-fields="namespace=,storage_node=" class="{{ analytics_workspace.control_select_classes() }}">
                     {% for item in clusters %}<option value="{{ item.id }}" {% if cluster and cluster.id == item.id %}selected{% endif %}>{{ item.name }}</option>{% endfor %}
                 </select>
             </label>
-            <label class="block">
+            <label for="storage-namespace-filter" class="block">
                 <span class="{{ analytics_workspace.control_label_classes() }}">Namespace</span>
-                <select name="namespace" class="{{ analytics_workspace.control_select_classes() }}">
+                <select id="storage-namespace-filter" name="namespace" class="{{ analytics_workspace.control_select_classes() }}">
                     <option value="">All Namespaces</option>
                     {% for namespace in namespace_options %}<option value="{{ namespace }}" {% if selected_namespace == namespace %}selected{% endif %}>{{ namespace }}</option>{% endfor %}
                 </select>

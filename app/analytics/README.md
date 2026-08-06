@@ -86,6 +86,24 @@ target boundary now; it does not perform the move.
 - Analytics enriches and interprets provider data. It does not replace
   Prometheus, Alertmanager, Thanos, or the Kubernetes API.
 
+## UI system boundary
+
+Kubernetes Inventory is the canonical KAORI workspace reference for Analytics.
+Analytics may add charts, evidence interpretation, and domain-specific detail,
+but it must reuse the same global palette, table primitives, filters, pagination
+grammar, card geometry, empty states, and action hierarchy.
+
+The reusable contract is documented in:
+
+```text
+docs/design/components/ANALYTICS_INVENTORY_UI_CONVERGENCE.md
+```
+
+Shared ownership belongs to `components/table_primitives.html`,
+`components/table.html`, `components/pagination.html`, and the Analytics shared
+components. Domain templates must not create local palette overrides or a
+second table/pagination system.
+
 ## Worker snapshot request boundary
 
 The Kubernetes Analytics request path is worker-first:

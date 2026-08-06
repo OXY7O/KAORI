@@ -247,3 +247,20 @@ tests/contracts/analytics/test_analytics_guidance_callout_standard_contract.py
 tests/contracts/analytics/test_semantic_status_bar_contract.py
 tests/contracts/analytics/test_overview_semantic_visual_hierarchy_contract.py
 ```
+
+## Inventory convergence
+
+Visual roles do not create an Analytics-specific palette. Every Analytics page
+inherits the same surface, outline, typography, and dark-mode tokens as
+Kubernetes Inventory.
+
+The `.kaori-analytics-page` marker must not redefine `--kaori-surface-*`,
+`--kaori-content-*`, or `--kaori-outline-*` variables. Analytics identity is
+expressed through the role macros, charts, status indicators, and analytical
+content while the workspace shell remains consistent with Inventory.
+
+Record tables, filters, pagination, and review actions follow:
+
+```text
+docs/design/components/ANALYTICS_INVENTORY_UI_CONVERGENCE.md
+```

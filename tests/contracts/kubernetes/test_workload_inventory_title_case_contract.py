@@ -30,7 +30,7 @@ def test_workload_pagination_uses_lowercase_preposition() -> None:
     template = _read('app/templates/inventory/workloads/partials/_table_content.html')
     assert '</span> of <span' in template
     assert '</span> Of <span' not in template
-    assert "'Workload' if pagination.total_items == 1 else 'Workloads'" in template
+    assert "pagination_ui.resource_name('Workloads', pagination.total_items)|trim" in template
 
 
 def test_delivery_and_placement_is_full_width_factual_evidence() -> None:

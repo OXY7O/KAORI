@@ -44,8 +44,6 @@
             'alerts_per_page': selected_alerts_per_page,
             'anomalies_per_page': selected_anomalies_per_page
         } %}
-        <div class="px-4 pb-4 sm:px-5">
-            {{ record_pagination.render(anomalies_pagination, 'anomalies_page', 'anomalies_per_page', 'anomalies-table-container', 'anomalies-table-filter-form', 'anomalies-table-loading-indicator', 'analytics.alerts_anomalies_table', 'analytics.alerts', pagination_query, 'Anomalies') }}
-        </div>
+        {{ record_pagination.render(anomalies_pagination, 'anomalies_page', 'anomalies_per_page', 'anomalies-table-container', 'anomalies-table-filter-form', 'anomalies-table-loading-indicator', 'analytics.alerts_anomalies_table', 'analytics.alerts', pagination_query, 'Anomalies', embedded=true) }}
     </div>
 {% endcall %}

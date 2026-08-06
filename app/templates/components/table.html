@@ -5,73 +5,27 @@
   This component owns visual classes only. Page templates remain responsible for
   routes, HTMX parameters, filters, sorting, data, and authorization.
 #}
-{% macro block_classes() -%}
-    overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm
-{%- endmacro %}
-{% macro block_header_classes() -%}
-    flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6
-{%- endmacro %}
-{% macro block_icon_classes() -%}
-    flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary
-{%- endmacro %}
-{% macro block_title_classes() -%}
-    text-base font-semibold text-content-primary
-{%- endmacro %}
-{% macro block_description_classes() -%}
-    mt-1 text-sm leading-6 text-content-secondary
-{%- endmacro %}
-{% macro loading_bar_classes() -%}
-    htmx-indicator pointer-events-none h-1 w-full overflow-hidden bg-kaori-soft
-{%- endmacro %}
-{% macro filter_bar_classes() -%}
-    grid gap-3 border-b border-outline-subtle bg-surface-card px-5 py-4 sm:grid-cols-2 lg:flex lg:items-end lg:px-6
-{%- endmacro %}
-{% macro filter_label_classes() -%}
-    mb-1.5 block text-xs font-semibold text-content-secondary
-{%- endmacro %}
-{% macro filter_input_classes() -%}
-    h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none transition-colors placeholder:text-content-muted hover:border-outline-strong focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-content-muted
-{%- endmacro %}
-{% macro filter_select_classes() -%}
-    h-10 w-full cursor-pointer rounded-md border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none transition-colors hover:border-outline-strong focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-content-muted
-{%- endmacro %}
-{% macro table_classes(min_width='') -%}
-    {{ min_width }} w-full table-auto text-left text-sm text-content-secondary
-{%- endmacro %}
-{% macro head_classes() -%}
-    border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted
-{%- endmacro %}
-{% macro header_cell_classes(action=false) -%}
-    px-4 py-3 {{ 'text-right' if action else 'text-left' }}
-{%- endmacro %}
-{% macro body_classes() -%}
-    divide-y divide-outline-subtle
-{%- endmacro %}
-{% macro row_classes() -%}
-    transition-colors hover:bg-kaori-mist
-{%- endmacro %}
-{% macro cell_classes(action=false) -%}
-    px-4 py-3 align-middle {{ 'text-right' if action else 'text-left' }}
-{%- endmacro %}
-{% macro title_cell(name, supporting_text='', icon='') -%}
-    <div class="flex min-w-0 items-center gap-2.5">
-        {% if icon %}
-            <span class="flex {{ 'h-10 w-10' if supporting_text else 'h-8 w-8' }} shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
-                  aria-hidden="true">
-                <i data-lucide="{{ icon }}"
-                   class="{{ 'h-[18px] w-[18px]' if supporting_text else 'h-4 w-4' }}"></i>
-            </span>
-        {% endif %}
-        <div class="min-w-0">
-            <p class="truncate text-sm font-semibold text-content-primary"
-               title="{{ name }}">{{ name }}</p>
-            {% if supporting_text %}
-                <p class="mt-0.5 truncate text-xs text-content-muted"
-                   title="{{ supporting_text }}">{{ supporting_text }}</p>
-            {% endif %}
-        </div>
-    </div>
-{%- endmacro %}
+{% import "components/table_primitives.html" as table_primitives %}
+
+{% macro block_classes() -%}{{ table_primitives.block_classes() }}{%- endmacro %}
+{% macro block_header_classes() -%}{{ table_primitives.block_header_classes() }}{%- endmacro %}
+{% macro block_icon_classes() -%}{{ table_primitives.block_icon_classes() }}{%- endmacro %}
+{% macro block_title_classes() -%}{{ table_primitives.block_title_classes() }}{%- endmacro %}
+{% macro block_description_classes() -%}{{ table_primitives.block_description_classes() }}{%- endmacro %}
+{% macro loading_bar_classes() -%}{{ table_primitives.loading_bar_classes() }}{%- endmacro %}
+{% macro filter_bar_classes() -%}{{ table_primitives.filter_bar_classes() }}{%- endmacro %}
+{% macro filter_label_classes() -%}{{ table_primitives.filter_label_classes() }}{%- endmacro %}
+{% macro filter_input_classes() -%}{{ table_primitives.filter_input_classes() }}{%- endmacro %}
+{% macro filter_select_classes() -%}{{ table_primitives.filter_select_classes() }}{%- endmacro %}
+{% macro table_classes(min_width='') -%}{{ table_primitives.table_classes(min_width) }}{%- endmacro %}
+{% macro head_classes() -%}{{ table_primitives.head_classes() }}{%- endmacro %}
+{% macro header_cell_classes(action=false) -%}{{ table_primitives.header_cell_classes(action) }}{%- endmacro %}
+{% macro body_classes() -%}{{ table_primitives.body_classes() }}{%- endmacro %}
+{% macro row_classes() -%}{{ table_primitives.row_classes() }}{%- endmacro %}
+{% macro cell_classes(action=false) -%}{{ table_primitives.cell_classes(action) }}{%- endmacro %}
+{% macro title_cell(name, supporting_text='', icon='') -%}{{ table_primitives.title_cell(name, supporting_text, icon) }}{%- endmacro %}
+{% macro action_classes(destructive=false) -%}{{ table_primitives.action_classes(destructive) }}{%- endmacro %}
+
 {% macro namespace_identity(name, class_name='max-w-[220px]') -%}
     <div class="flex min-w-0 items-center gap-2 {{ class_name }}">
         <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
@@ -108,10 +62,6 @@
     </div>
 {%- endmacro %}
 
-{% macro action_classes(destructive=false) -%}
-    inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 {{ 'border-status-critical/30 bg-surface-card text-status-critical-text hover:bg-status-critical-soft focus-visible:ring-status-critical/30' if destructive else 'border-outline-default bg-surface-card text-content-secondary hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:ring-outline-focus' }}
-{%- endmacro %}
-
 {% macro inventory_block_header(icon, title, description, loading_id, loading_label, action_href, action_label='Manage Clusters') -%}
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -133,20 +83,8 @@
     </header>
 {%- endmacro %}
 
-{% macro inventory_filter_bar_classes() -%}
-    border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6
-{%- endmacro %}
+{% macro inventory_filter_bar_classes() -%}{{ table_primitives.inventory_filter_bar_classes() }}{%- endmacro %}
 
 {% macro search_field(name, value, placeholder, id=None) -%}
-    <div class="relative">
-        <i data-lucide="search"
-           class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
-           aria-hidden="true"></i>
-        <input type="search"
-               {% if id %}id="{{ id }}"{% endif %}
-               name="{{ name }}"
-               value="{{ value }}"
-               placeholder="{{ placeholder }}"
-               class="{{ filter_input_classes() }} pl-10" />
-    </div>
+    {{ table_primitives.search_field(name, value, placeholder, id) }}
 {%- endmacro %}

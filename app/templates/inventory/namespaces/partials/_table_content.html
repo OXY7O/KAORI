@@ -53,9 +53,9 @@
         </tbody>
     </table>
 </div>
-<footer class="flex flex-col gap-4 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs text-content-muted lg:flex-row lg:items-center lg:justify-between">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-        <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ 'Namespace' if pagination.total_items == 1 else 'Namespaces' }}</p>
+<footer class="{{ pagination_ui.footer_classes() }}">
+    <div class="{{ pagination_ui.summary_group_classes() }}">
+        <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ pagination_ui.resource_name('Namespaces', pagination.total_items)|trim }}</p>
         <form hx-get="{{ url_for('inventory.namespaces') }}" hx-target="#namespaces-table-content" hx-swap="innerHTML" hx-indicator="#namespaces-table-loading" class="flex items-center gap-2">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}">
@@ -68,7 +68,7 @@
             </select>
         </form>
     </div>
-    <div class="flex flex-wrap items-center gap-2">
+    <div class="{{ pagination_ui.navigation_group_classes() }}">
         {% if pagination.has_prev %}
             {% set prev_url = url_for('inventory.namespaces', cluster_id=selected_cluster_id, status=selected_status, search=search, page=pagination.prev_page, per_page=pagination.per_page) %}
             <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#namespaces-table-content" hx-swap="innerHTML" hx-indicator="#namespaces-table-loading" class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>

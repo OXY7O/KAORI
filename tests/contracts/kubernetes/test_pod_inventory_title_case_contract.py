@@ -19,7 +19,7 @@ def test_pod_inventory_posture_copy_uses_canonical_sentence_case() -> None:
 def test_pod_inventory_footer_uses_resource_aware_count_and_rows_label() -> None:
     source = read('app/templates/inventory/pods/partials/_table_content.html')
 
-    assert "'Pod' if pagination.total_items == 1 else 'Pods'" in source
+    assert "pagination_ui.resource_name('Pods', pagination.total_items)|trim" in source
     assert 'for="pods-per-page"' in source
     assert '>Rows</label>' in source
     assert 'hx-target="#pods-table-content"' in source

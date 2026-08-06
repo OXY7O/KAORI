@@ -154,9 +154,12 @@ Domain-specific UI rules live under `docs/modules/` or the owning module README.
 
 ## Audit Reports
 
+- `audits/KAORI_ANALYTICS_INVENTORY_CONVERGENCE_AUDIT_2026_08.md` — Inventory-referenced palette, table, filter, pagination, and review-path convergence audit.
 - `audits/INTEGRATIONS_FULL_AUDIT_20260731.md`
 - `audits/KAORI_ANALYTICS_STORAGE_AUDIT_2026_08.md` — Storage evidence, lifecycle, HTMX, and report-boundary audit.
 - `audits/KAORI_ANALYTICS_WORKLOAD_AUDIT_2026_08.md` — Active-Pod, ResourceQuota-object, materialization, HTMX, and code-ownership audit.
 - `audits/KAORI_ANALYTICS_FORECAST_AUDIT_2026_08.md` — Ready-worker evidence, peak projection, bounded ETA, materialization identity, chart alignment, report parity, and legacy-route audit.
 - `audits/KAORI_ANALYTICS_TOP_CONSUMERS_AUDIT_2026_08.md` — Active-consumer evidence, Ready-worker denominators, exact Namespace scope, HTMX transport, report parity, and legacy-route audit.
 - `audits/KAORI_ANALYTICS_ALERTS_AUDIT_2026_08.md` — Alert-source fallback, HA deduplication, active-Pod anomaly evidence, partial-source semantics, independent pagination, committed report, and Overview parity audit.
+
+- [Analytics and Inventory UI Convergence](components/ANALYTICS_INVENTORY_UI_CONVERGENCE.md)

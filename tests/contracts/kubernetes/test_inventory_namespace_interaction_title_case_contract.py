@@ -11,7 +11,7 @@ def test_inventory_pagination_copy_uses_resource_aware_title_case():
     cluster = read("app/templates/inventory/overview/partials/_resources_by_cluster_content.html")
     namespace = read("app/templates/inventory/namespaces/partials/_table_content.html")
     assert "'Cluster' if" in cluster and "'Clusters'" in cluster
-    assert "'Namespace' if" in namespace and "'Namespaces'" in namespace
+    assert "pagination_ui.resource_name('Namespaces', pagination.total_items)|trim" in namespace
     assert '>Rows</label>' in namespace
 
 

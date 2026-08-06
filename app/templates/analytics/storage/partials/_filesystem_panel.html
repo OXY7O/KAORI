@@ -23,7 +23,7 @@
         <input type="hidden" name="tab" value="filesystem">
         <input type="hidden" name="filesystem_page" value="1">
         <div><p class="{{ analysis_surface.metric_label_classes() }}">Filesystem Scope</p><p class="mt-1 text-xs leading-5 text-content-muted">Node selection applies only to this filesystem evidence panel.</p></div>
-        <label class="block min-w-[220px]"><span class="sr-only">Node Filesystem Scope</span><select name="storage_node" class="{{ analytics_workspace.control_select_classes() }} mt-0"><option value="">All Nodes</option>{% for node in filesystem.available_nodes %}<option value="{{ node }}" {% if selected_storage_node == node %}selected{% endif %}>{{ node }}</option>{% endfor %}</select></label>
+        <label for="storage-filesystem-node-filter" class="block min-w-[220px]"><span class="{{ analytics_workspace.control_label_classes() }}">Node</span><select id="storage-filesystem-node-filter" name="storage_node" class="{{ analytics_workspace.control_select_classes() }}"><option value="">All Nodes</option>{% for node in filesystem.available_nodes %}<option value="{{ node }}" {% if selected_storage_node == node %}selected{% endif %}>{{ node }}</option>{% endfor %}</select></label>
     </form>
 
     <section class="{{ analysis_surface.evidence_shell_classes() }}">

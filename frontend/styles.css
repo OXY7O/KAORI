@@ -246,35 +246,10 @@
 }
 
 
-/* Analytics workspace tuning.
-   Analytics uses neutral evidence surfaces and slate typography so Violet remains
-   reserved for KAORI identity, navigation, and actions. Semantic colors remain
-   limited to status badges, status glyphs, and quantitative pressure bars. */
-.kaori-analytics-page {
-    --kaori-surface-card: #ffffff;
-    --kaori-surface-elevated: #ffffff;
-    --kaori-surface-muted: #f8fafc;
-    --kaori-surface-hover: #f1f5f9;
-    --kaori-surface-selected: #f5f3ff;
-    --kaori-content-secondary: #475569;
-    --kaori-content-muted: #64748b;
-    --kaori-outline-subtle: #e2e8f0;
-    --kaori-outline-default: #d7dee8;
-    --kaori-outline-strong: #a8b4c4;
-}
-
-.dark .kaori-analytics-page {
-    --kaori-surface-card: #181b22;
-    --kaori-surface-elevated: #20252e;
-    --kaori-surface-muted: #141820;
-    --kaori-surface-hover: #232a35;
-    --kaori-surface-selected: rgba(139, 92, 246, 0.14);
-    --kaori-content-secondary: #cbd5e1;
-    --kaori-content-muted: #94a3b8;
-    --kaori-outline-subtle: #2b3441;
-    --kaori-outline-default: #3a4555;
-    --kaori-outline-strong: #5b6879;
-}
+/* Analytics pages inherit the same KAORI surface, outline, and typography
+   tokens as Inventory. Domain-specific differentiation belongs in reusable
+   visual roles, charts, status badges, and evidence semantics—not a second
+   workspace palette. */
 
 @theme inline {
     --font-sans: 'Inter Variable', Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;

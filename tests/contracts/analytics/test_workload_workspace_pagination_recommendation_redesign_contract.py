@@ -28,7 +28,9 @@ def test_workload_table_pagination_uses_full_page_and_partial_endpoint_ownership
     assert 'replacePage(href, page, pageParam)' in pagination_js
     assert 'partial_endpoint' in record_pagination
     assert 'href_endpoint' in record_pagination
-    assert 'Scope Contains' in record_pagination
+    assert 'Showing <span class="font-semibold text-content-primary">{{ start_item }}</span>–' in record_pagination
+    assert 'pagination_ui.resource_name(resource_label, total_rows)' in record_pagination
+    assert '>Rows</label>' in record_pagination
     assert 'allowed_per_page=(5, 10, 25, 50)' in record_pagination
     assert "'analytics.workload_tenant_quota'" in tenant
     assert "'analytics.workload_resource_mapping'" in mapping

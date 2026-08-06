@@ -1,4 +1,5 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/table_primitives.html" as table_ui %}
 {#
   KAORI Analytics presentation primitives.
 
@@ -13,11 +14,11 @@
   pages share one DRY visual language without turning every box into a tint.
 #}
 {% macro snapshot_shell_classes() -%}
-    overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm
+    {{ table_ui.block_classes() }}
 {%- endmacro %}
 
 {% macro snapshot_header_classes() -%}
-    flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between
+    {{ table_ui.block_header_classes() }}
 {%- endmacro %}
 
 {% macro role_icon_classes(role='brand', tone='info', size='default') -%}
@@ -31,7 +32,7 @@
     {% elif resolved_role in ['evidence', 'neutral', 'context'] %}
         flex {{ geometry }} shrink-0 items-center justify-center border border-outline-subtle bg-surface-muted text-content-secondary
     {% else %}
-        flex {{ geometry }} shrink-0 items-center justify-center border border-kaori-border bg-kaori-soft text-kaori-primary
+        flex {{ geometry }} shrink-0 items-center justify-center border border-kaori-border bg-kaori-soft text-kaori-primary-dark dark:text-kaori-accent
     {% endif %}
 {%- endmacro %}
 
@@ -50,7 +51,7 @@
 {%- endmacro %}
 
 {% macro snapshot_header_icon_classes() -%}
-    {{ role_icon_classes('brand', size='large') }}
+    {{ table_ui.block_icon_classes() }}
 {%- endmacro %}
 
 {% macro metric_icon_classes(size='default', role='brand', tone='info') -%}
@@ -106,7 +107,7 @@
 {%- endmacro %}
 
 {% macro evidence_shell_classes(extra='') -%}
-    overflow-hidden rounded-lg border border-outline-subtle bg-surface-card {{ extra }}
+    overflow-hidden rounded-xl border border-outline-default bg-surface-card {{ extra }}
 {%- endmacro %}
 
 {% macro attention_strip_classes(tone=none) -%}
@@ -134,7 +135,7 @@
 {%- endmacro %}
 
 {% macro guidance_card_classes(extra='') -%}
-    rounded-lg border border-outline-subtle bg-surface-card {{ extra }}
+    overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ extra }}
 {%- endmacro %}
 
 {% macro nested_evidence_card_classes(extra='') -%}
@@ -146,7 +147,7 @@
 {%- endmacro %}
 
 {% macro review_path_grid_classes(extra='') -%}
-    grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2 {{ extra }}
+    divide-y divide-outline-subtle border-t border-outline-subtle {{ extra }}
 {%- endmacro %}
 
 {% macro compact_scope_grid_classes(columns=3) -%}
@@ -154,11 +155,28 @@
 {%- endmacro %}
 
 {% macro scope_strip_classes(extra='') -%}
-    flex flex-col gap-3 rounded-lg border border-outline-subtle bg-surface-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between {{ extra }}
+    flex flex-col gap-3 rounded-xl border border-outline-default bg-surface-hover px-4 py-4 sm:flex-row sm:items-end sm:justify-between {{ extra }}
 {%- endmacro %}
 
 {% macro record_guidance_classes(extra='') -%}
-    rounded-lg border border-outline-subtle bg-surface-card px-4 py-4 {{ extra }}
+    overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ extra }}
+{%- endmacro %}
+
+
+{% macro review_path_link(href, label, description, icon='arrow-right') -%}
+    <a href="{{ href }}"
+       class="flex items-start justify-between gap-4 bg-surface-card px-4 py-4 transition-colors hover:bg-kaori-mist sm:px-5">
+        <span class="flex min-w-0 items-start gap-3">
+            <span class="{{ role_icon_classes('brand', size='compact') }}" aria-hidden="true">
+                <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+            </span>
+            <span class="min-w-0">
+                <span class="block text-sm font-semibold text-content-primary">{{ label }}</span>
+                <span class="mt-1 block text-xs leading-5 text-content-muted">{{ description }}</span>
+            </span>
+        </span>
+        <i data-lucide="chevron-right" class="mt-1 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+    </a>
 {%- endmacro %}
 
 {% macro interpretation_content(label, headline, body, icon='info', role='brand', tone='info', compact=false) -%}

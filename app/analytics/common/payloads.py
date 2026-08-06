@@ -13,7 +13,7 @@ from app.analytics.common.params import (
 def get_empty_pagination() -> dict[str, Any]:
     return {
         'page': 1,
-        'per_page': 10,
+        'per_page': 5,
         'total_items': 0,
         'total_pages': 1,
         'start_item': 0,
@@ -221,7 +221,7 @@ def get_empty_capacity_payload(
 def get_empty_storage_payload(
     selected_namespace: str,
 ) -> dict[str, Any]:
-    empty_pagination = {**get_empty_pagination(), 'per_page': 5}
+    empty_pagination = get_empty_pagination()
     unknown_risk = {'label': 'Unknown', 'tone': 'unknown'}
     return {
         'storage_summary': {
