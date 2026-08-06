@@ -19,7 +19,7 @@
                     <h2 class="text-base font-semibold text-content-primary">Prioritized Actions</h2>
                     {{ table_label.metadata_label((recommendations|length ~ ' Recommendations') if evidence_available else 'Evidence Unavailable', 'list-checks', size='compact') }}
                 </div>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Highest-priority actions from consolidated analytics evidence.</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Highest-priority actions from consolidated analytics evidence.</p>
             </div>
         </div>
         <div class="flex flex-wrap items-center gap-2">
@@ -50,7 +50,7 @@
                                     {{ table_label.metadata_label(source_label, 'database-zap', size='compact') }}
                                 </div>
                                 <h3 class="mt-2 text-sm font-semibold text-content-primary">{{ recommendation.title }}</h3>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ recommendation.description }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ recommendation.description }}</p>
                             </div>
                         </div>
                         <span class="inline-flex shrink-0 items-center gap-2 text-xs font-semibold text-kaori-primary">

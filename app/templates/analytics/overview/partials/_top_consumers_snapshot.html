@@ -23,7 +23,7 @@
                     <h2 class="text-base font-semibold text-content-primary">Top Consumer Snapshot</h2>
                     {{ table_label.metadata_label(total_items ~ ' Ranked Records', 'list-ordered', size='compact') }}
                 </div>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Highest CPU, memory, storage, and pod consumers in the selected analysis window.</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Highest CPU, memory, storage, and pod consumers in the selected analysis window.</p>
             </div>
         </div>
         {{ section_link_button.render(
@@ -42,7 +42,7 @@
                         </span>
                         <div class="min-w-0">
                             <h3 class="text-sm font-semibold text-content-primary">Top {{ group.title }} Consumers</h3>
-                            <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ group.description }}</p>
+                            <p class="mt-0.5 text-xs leading-5 text-content-secondary">{{ group.description }}</p>
                         </div>
                     </div>
                     {{ table_label.metadata_label(group.consumers|length ~ ' Items', size='compact') }}
@@ -57,7 +57,7 @@
                                     <div class="min-w-0 flex-1">
                                         <p class="break-words text-sm font-semibold leading-5 text-content-primary" title="{{ item.name }}">{{ item.name }}</p>
                                         {% if item.namespace %}
-                                            <p class="mt-0.5 break-words text-xs leading-5 text-content-muted" title="{{ item.namespace }}">
+                                            <p class="mt-0.5 break-words text-xs leading-5 text-content-secondary" title="{{ item.namespace }}">
                                                 <span class="font-semibold text-content-secondary">Namespace:</span> {{ item.namespace }}
                                             </p>
                                         {% endif %}
@@ -71,7 +71,7 @@
                     <div class="{{ overview_surface.empty_evidence_classes('mt-3 px-4 py-6 text-center') }}">
                         <i data-lucide="users" class="mx-auto h-6 w-6 text-content-disabled"></i>
                         <p class="mt-2 text-sm font-semibold text-content-secondary">No Consumer Data Available</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Rankings appear after utilization metrics are committed.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Rankings appear after utilization metrics are committed.</p>
                     </div>
                 {% endif %}
             </article>

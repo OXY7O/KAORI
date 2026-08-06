@@ -3,12 +3,12 @@
   KAORI Analytics presentation primitives.
 
   Visual hierarchy:
-  - neutral surfaces carry structure and evidence,
-  - violet identifies KAORI sections, navigation, and actions,
-  - semantic colors are reserved for compact status labels, status icons,
-    and quantitative status bars,
-  - interpretation guidance uses one calm shared layout without colored
-    card accents or semantic headline colors.
+  - neutral surfaces and slate typography carry evidence and guidance,
+  - Violet identifies KAORI sections, navigation, and non-semantic actions,
+  - semantic colors are reserved for status badges, status glyphs, and
+    quantitative pressure bars,
+  - interpretation guidance never uses a semantic background, accent bar,
+    or colored headline.
 #}
 {% macro snapshot_shell_classes() -%}
     overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm
@@ -22,13 +22,18 @@
     flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary
 {%- endmacro %}
 
-{% macro metric_icon_classes() -%}
-    flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-muted text-content-secondary
+{% macro metric_icon_classes(size='default') -%}
+    flex {{ 'h-7 w-7 rounded-md' if size == 'compact' else 'h-8 w-8 rounded-lg' }} shrink-0 items-center justify-center border border-outline-subtle bg-surface-muted text-content-secondary
 {%- endmacro %}
 
 {% macro semantic_icon_classes(tone='unknown', size='default') -%}
     {% set resolved_tone = table_label.semantic_tone(tone)|trim %}
-    flex {{ 'h-7 w-7 rounded-md' if size == 'compact' else 'h-8 w-8 rounded-lg' }} shrink-0 items-center justify-center border border-outline-subtle bg-surface-card {{ table_label.tone_icon_classes(resolved_tone)|trim }}
+    flex {{ 'h-7 w-7 rounded-md' if size == 'compact' else 'h-8 w-8 rounded-lg' }} shrink-0 items-center justify-center border border-outline-subtle bg-surface-muted {{ table_label.tone_icon_classes(resolved_tone)|trim }}
+{%- endmacro %}
+
+{% macro guidance_icon_classes(tone='info', size='default', semantic=false) -%}
+    {% set resolved_tone = table_label.semantic_tone(tone)|trim %}
+    flex {{ 'h-7 w-7 rounded-md' if size == 'compact' else 'h-8 w-8 rounded-lg' }} shrink-0 items-center justify-center border border-outline-subtle bg-surface-muted {{ table_label.tone_icon_classes(resolved_tone)|trim if semantic else 'text-kaori-primary' }}
 {%- endmacro %}
 
 {% macro metric_grid_classes(columns=4) -%}
@@ -49,7 +54,7 @@
 {%- endmacro %}
 
 {% macro section_description_classes() -%}
-    mt-1 text-xs leading-5 text-content-muted
+    mt-1 text-xs leading-5 text-content-secondary
 {%- endmacro %}
 
 {% macro readiness_shell_classes() -%}
@@ -61,15 +66,15 @@
 {%- endmacro %}
 
 {% macro attention_strip_classes(tone=none) -%}
-    flex flex-col gap-3 border-t border-outline-subtle bg-surface-muted px-4 py-3 sm:flex-row sm:items-start sm:justify-between
+    flex flex-col gap-3 border-t border-outline-subtle bg-surface-card px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5
 {%- endmacro %}
 
 {% macro interpretation_grid_classes(extra='', cards=false) -%}
-    grid divide-y divide-outline-subtle border-t border-outline-subtle bg-surface-muted lg:grid-cols-2 lg:divide-x lg:divide-y-0 {{ extra }}
+    grid divide-y divide-outline-subtle border-t border-outline-subtle bg-surface-card lg:grid-cols-2 lg:divide-x lg:divide-y-0 {{ extra }}
 {%- endmacro %}
 
 {% macro interpretation_panel_classes(extra='') -%}
-    bg-surface-muted {{ extra }}
+    bg-surface-card {{ extra }}
 {%- endmacro %}
 
 {% macro context_panel_classes(extra='') -%}
@@ -85,7 +90,7 @@
 {%- endmacro %}
 
 {% macro guidance_card_classes(extra='') -%}
-    rounded-lg border border-outline-subtle bg-surface-muted {{ extra }}
+    rounded-lg border border-outline-subtle bg-surface-card {{ extra }}
 {%- endmacro %}
 
 {% macro nested_evidence_card_classes(extra='') -%}
@@ -97,7 +102,7 @@
 {%- endmacro %}
 
 {% macro review_path_grid_classes(extra='') -%}
-    grid gap-3 bg-surface-muted p-4 sm:grid-cols-2 {{ extra }}
+    grid divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle bg-surface-card sm:grid-cols-2 sm:divide-x sm:divide-y-0 {{ extra }}
 {%- endmacro %}
 
 {% macro compact_scope_grid_classes(columns=3) -%}
@@ -109,31 +114,30 @@
 {%- endmacro %}
 
 {% macro record_guidance_classes(extra='') -%}
-    rounded-lg border border-outline-subtle bg-surface-muted px-4 py-4 {{ extra }}
+    rounded-lg border border-outline-subtle bg-surface-card px-4 py-4 {{ extra }}
 {%- endmacro %}
 
-{% macro interpretation_content(label, headline, body, icon='info', tone='info', compact=false) -%}
-    {% set resolved_tone = table_label.semantic_tone(tone)|trim %}
+{% macro interpretation_content(label, headline, body, icon='info', tone='info', compact=false, semantic=false) -%}
     <div class="flex items-start gap-3">
-        <span class="{{ semantic_icon_classes(resolved_tone, 'compact' if compact else 'default') }}">
+        <span class="{{ guidance_icon_classes(tone, 'compact' if compact else 'default', semantic) }}">
             <i data-lucide="{{ icon }}" class="{{ 'h-3.5 w-3.5' if compact else 'h-4 w-4' }}"></i>
         </span>
         <div class="min-w-0">
             <p class="{{ metric_label_classes() }}">{{ label }}</p>
-            {% if headline %}<p class="mt-1 text-sm font-semibold leading-5 text-content-primary">{{ headline }}</p>{% endif %}
-            <p class="mt-1 text-xs leading-5 text-content-muted">{{ body }}</p>
+            {% if headline %}<p class="mt-1.5 text-sm font-semibold leading-5 text-content-primary">{{ headline }}</p>{% endif %}
+            <p class="mt-1.5 text-xs leading-5 text-content-secondary">{{ body }}</p>
         </div>
     </div>
 {%- endmacro %}
 
-{% macro interpretation_callout(label, headline, body, icon='info', tone='info', extra='', compact=false, card=false) -%}
+{% macro interpretation_callout(label, headline, body, icon='info', tone='info', extra='', compact=false, card=false, semantic=false) -%}
     {% if card and not compact %}
         <article class="rounded-lg border border-outline-subtle bg-surface-card px-4 py-4 sm:px-5 {{ extra }}">
-            {{ interpretation_content(label, headline, body, icon, tone, compact) }}
+            {{ interpretation_content(label, headline, body, icon, tone, compact, semantic) }}
         </article>
     {% else %}
         <article class="{{ 'px-3 py-3' if compact else 'px-4 py-4 sm:px-5' }} {{ extra }}">
-            {{ interpretation_content(label, headline, body, icon, tone, compact) }}
+            {{ interpretation_content(label, headline, body, icon, tone, compact, semantic) }}
         </article>
     {% endif %}
 {%- endmacro %}
@@ -147,7 +151,7 @@
             </span>
             <div class="min-w-0">
                 <h2 class="text-base font-semibold text-content-primary">{{ title }}</h2>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Committed worker evidence for this domain.</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Committed worker evidence for this domain.</p>
             </div>
         </div>
     </header>

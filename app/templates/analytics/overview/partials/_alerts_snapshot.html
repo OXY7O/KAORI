@@ -20,7 +20,7 @@
                     <h2 class="text-base font-semibold text-content-primary">Alerts &amp; Anomalies Snapshot</h2>
                     {{ table_label.status_label(alerts.status|default('Unknown'), alert_tone) }}
                 </div>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Active alert pressure, severity distribution, and recent anomaly candidates.</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Active alert pressure, severity distribution, and recent anomaly candidates.</p>
             </div>
         </div>
         {{ section_link_button.render(
@@ -60,14 +60,14 @@
             <div class="mt-4 divide-y divide-outline-subtle border-y border-outline-subtle">
                 <div class="flex items-start justify-between gap-4 py-3">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="{{ overview_surface.semantic_icon_classes('critical') }}"><i data-lucide="siren" class="h-4 w-4"></i></span>
+                        <span class="{{ overview_surface.metric_icon_classes() }}"><i data-lucide="siren" class="h-4 w-4"></i></span>
                         <div><p class="text-sm font-semibold text-content-primary">Immediate Review</p><p class="mt-1 text-xs leading-5 text-content-muted">Investigate critical and firing alerts before optimization or planned change work.</p></div>
                     </div>
                     <span class="shrink-0">{{ table_label.status_label(immediate_count, 'critical', size='compact') }}</span>
                 </div>
                 <div class="flex items-start justify-between gap-4 py-3">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="{{ overview_surface.semantic_icon_classes('warning') }}"><i data-lucide="calendar-clock" class="h-4 w-4"></i></span>
+                        <span class="{{ overview_surface.metric_icon_classes() }}"><i data-lucide="calendar-clock" class="h-4 w-4"></i></span>
                         <div><p class="text-sm font-semibold text-content-primary">Planned Follow-Up</p><p class="mt-1 text-xs leading-5 text-content-muted">Group warning and pending alerts into the next operational review.</p></div>
                     </div>
                     <span class="shrink-0">{{ table_label.status_label(follow_up_count, 'warning', size='compact') }}</span>
@@ -84,7 +84,7 @@
                 {{ table_label.metadata_label(alerts.recent_anomalies ~ ' Candidates', 'radar', size='compact') }}
             </div>
             <p class="mt-2 text-xs leading-5 text-content-muted">{{ alerts.highest_severity_description }}</p>
-            <div class="mt-4 overflow-hidden rounded-lg border border-outline-subtle bg-surface-muted">
+            <div class="mt-4 overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
                 {% if immediate_count > 0 %}
                     {{ overview_surface.interpretation_callout(
                         'Recommended Action',

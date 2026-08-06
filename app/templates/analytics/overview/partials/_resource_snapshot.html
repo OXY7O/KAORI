@@ -22,7 +22,7 @@
                     <h2 class="text-base font-semibold text-content-primary">Resource Utilization Snapshot</h2>
                     {{ table_label.status_label('Critical' if overall_tone == 'critical' else ('Review Required' if overall_tone == 'warning' else 'Normal'), overall_tone) }}
                 </div>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Current CPU, memory, storage, and pod utilization from the committed snapshot.</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Current CPU, memory, storage, and pod utilization from the committed snapshot.</p>
             </div>
         </div>
         {{ section_link_button.render(
@@ -55,7 +55,7 @@
         <div class="flex flex-col gap-3 px-4 py-3 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
                 <h3 class="text-sm font-semibold text-content-primary">Current Resource Pressure</h3>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Read each utilization lane against remaining headroom and the operational thresholds.</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Read each utilization lane against remaining headroom and the operational thresholds.</p>
             </div>
             {{ table_label.metadata_label(highest.label ~ ' Highest', 'arrow-up-right', size='compact') }}
         </div>
@@ -70,7 +70,7 @@
                         <article class="py-3">
                             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
                                 <div class="flex min-w-0 items-center gap-3 sm:w-40 sm:shrink-0">
-                                    <span class="{{ overview_surface.semantic_icon_classes(semantic_tone) }}">
+                                    <span class="{{ overview_surface.metric_icon_classes() }}">
                                         <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
                                     </span>
                                     <div class="min-w-0">
@@ -99,7 +99,7 @@
                 <div class="mt-2 flex items-start justify-between gap-3">
                     <div class="min-w-0">
                         <p class="break-words text-base font-semibold text-content-primary">{{ highest.label }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Highest current pressure at {{ highest.value }}{{ highest.unit }}.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Highest current pressure at {{ highest.value }}{{ highest.unit }}.</p>
                     </div>
                     {{ table_label.status_label('Critical' if overall_tone == 'critical' else ('Warning' if overall_tone == 'warning' else 'Normal'), overall_tone, size='compact') }}
                 </div>

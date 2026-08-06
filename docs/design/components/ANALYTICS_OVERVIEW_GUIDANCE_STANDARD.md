@@ -1,8 +1,8 @@
-# KAORI Analytics Guidance and Semantic Visual Standard
+# KAORI Analytics Neutral Guidance Standard
 
-This standard applies to Analytics Overview and to shared interpretation regions across every Kubernetes Analytics page.
+This standard applies to Analytics Overview and the shared interpretation regions used by every Kubernetes Analytics page.
 
-Covered guidance labels include:
+Covered labels include:
 
 - How To Read
 - What To Do
@@ -15,24 +15,54 @@ Covered guidance labels include:
 
 ## Visual hierarchy
 
-Analytics uses three distinct visual layers:
+Analytics uses three deliberately separated visual layers.
 
-1. **Neutral structure**
-   - page, panel, metric, evidence, and interpretation surfaces use the standard surface and outline tokens;
-   - guidance areas use `bg-surface-muted` only to separate interpretation from primary evidence;
-   - text remains `text-content-primary`, `text-content-secondary`, or `text-content-muted` according to hierarchy.
+### 1. Neutral evidence and guidance
 
-2. **KAORI identity**
-   - Bright Violet is reserved for section identity, navigation, metadata, links, and actions;
-   - violet must not communicate Normal, Warning, Critical, or Unknown health.
+Analytics pages apply the `kaori-analytics-page` token scope.
 
-3. **Semantic state**
-   - semantic colors are limited to compact status labels, the glyph inside a neutral icon tile, and quantitative status bars;
-   - semantic colors must not tint an entire guidance box, metric card, headline, or evidence surface.
+Light mode uses:
+
+- white primary cards;
+- slate-50 supporting and icon surfaces;
+- slate supporting typography;
+- neutral slate outlines.
+
+Dark mode uses:
+
+- neutral charcoal cards rather than purple-tinted panels;
+- neutral charcoal supporting surfaces;
+- slate supporting typography;
+- neutral slate outlines.
+
+The analytics scope must not restore the former lavender values such as `#f8f5fc`, `#ded6e8`, or `#26212f`.
+
+### 2. KAORI identity
+
+Bright Violet is reserved for:
+
+- section identity icons;
+- tabs and active navigation;
+- links and buttons;
+- non-semantic guidance icons;
+- loading and composition indicators.
+
+Violet must not represent Normal, Warning, Critical, or Unknown health.
+
+### 3. Semantic state
+
+Semantic colors are reserved for:
+
+- compact status labels;
+- an explicitly semantic status glyph;
+- quantitative pressure or utilization bars;
+- compact threshold legends.
+
+Semantic colors must not tint an entire guidance region, metric card, headline, divider, or evidence surface.
 
 ## Shared guidance composition
 
-Every Analytics guidance region uses `interpretation_callout()` from:
+Every Analytics interpretation region uses `interpretation_callout()` from:
 
 ```text
 app/templates/analytics/components/_analysis_surfaces.html
@@ -46,47 +76,41 @@ Canonical composition:
         'How To Read',
         headline,
         description,
-        icon='chart-column',
-        tone='info'
+        icon='chart-column'
     ) }}
     {{ analysis_surface.interpretation_callout(
-        'Recommended Action',
+        'What To Do',
         action_headline,
         action_description,
-        icon='triangle-alert',
-        tone=action_tone
+        icon='scan-search'
     ) }}
 </div>
 ```
 
 Rules:
 
-- use one continuous neutral interpretation region rather than separate colored cards;
-- use horizontal separation on desktop and vertical separation on smaller screens;
-- keep label uppercase and muted;
-- keep headline neutral and semibold;
-- keep supporting copy neutral and compact;
-- tone affects only the icon glyph inside the neutral icon tile;
-- do not add top accent bars, semantic borders, semantic backgrounds, or semantic headline colors;
-- do not recreate guidance labels in raw template markup.
+- use one white or neutral-charcoal interpretation region;
+- do not use a full lavender, green, amber, red, or blue background;
+- use a subtle horizontal separator on mobile and vertical separator on desktop;
+- use a muted uppercase label;
+- use a neutral primary headline;
+- use stronger neutral secondary text for the explanatory body;
+- use a Violet icon for How To Read, What To Do, Recommended Action, and Review Path;
+- use `semantic=true` only when the callout itself communicates an actual health state, such as Operational Reading;
+- do not add accent bars, semantic borders, semantic headline colors, or separate colored cards;
+- do not recreate shared guidance labels using raw template markup.
 
-## Operational metric cards
+## Operational cards
 
-Overview metric and health cards use neutral icon tiles:
+Metric cards and health cards use neutral icon tiles:
 
 ```jinja
 {{ analysis_surface.metric_icon_classes() }}
 ```
 
-Health signal cards may use:
+The compact status badge is the primary health indicator. Do not repeat the same status using a colored metric icon unless the icon is the only status indicator available.
 
-```jinja
-{{ analysis_surface.semantic_icon_classes(signal_tone) }}
-```
-
-The tile remains neutral. Only the glyph receives the semantic color. The compact status badge remains the primary semantic indicator.
-
-Operational Health Summary uses a maximum of three columns so the label, value, status, and description remain readable. Six narrow single-row cards are not allowed.
+Operational Health Summary uses no more than three columns at desktop width so each label, value, status, and description remains readable.
 
 ## Status bars
 
@@ -96,22 +120,56 @@ Status-bearing progress bars use `progress_bar.semantic_bar()`:
 - Warning → amber
 - Critical → red
 - Unknown → slate
-- Info → cyan/blue
+- Info → blue
 
-The bar is the quantitative semantic indicator. Surrounding cards and labels remain neutral.
+The bar is the quantitative semantic indicator. Its card, heading, and supporting text remain neutral.
 
-Composition-only progress, loading, and navigation indicators may continue to use KAORI Violet.
+Composition-only loading bars may continue to use KAORI Violet.
 
 ## Attention and unavailable states
 
-Attention strips use a neutral surface and outline. They contain:
+An attention strip uses:
 
-- a neutral icon tile with a semantic glyph;
-- a concise title and supporting description;
-- a compact semantic status label when action is required.
+- a white or neutral-charcoal surface;
+- a neutral border;
+- one semantic warning glyph;
+- one compact warning badge;
+- primary title text;
+- neutral secondary explanatory text.
 
-Unavailable states use neutral dashed surfaces. They must not use a large violet or semantic-tinted background.
+For singular grammar use `1 Dataset Needs Attention`; for plural grammar use `N Datasets Need Attention`.
+
+Unavailable states use a neutral dashed surface and explicit Unknown/N/A wording. They must not use a large Violet or semantic-tinted background.
+
+## Typography
+
+Canonical guidance hierarchy:
+
+```text
+Label       12px semibold uppercase, muted slate
+Headline    14px semibold, primary text
+Body        12px regular with 20px line-height, secondary slate
+```
+
+Recommended spacing:
+
+```text
+Icon to content       12px
+Label to headline      6px
+Headline to body       6px
+Horizontal padding    16–20px
+Vertical padding      16px
+```
 
 ## Cross-page consistency
 
-Because Utilization, Capacity, Storage, Workload, Forecast, Top Consumers, Alerts, and Overview import the same surface macros, changes to the shared guidance composition must be regression-tested across all Analytics domains.
+Utilization, Capacity, Storage, Workload, Forecast, Top Consumers, Alerts, and Overview import the same surface macros. Forecast must also carry the `kaori-analytics-page` scope so shared neutral tokens are identical across every Analytics page.
+
+Any change to shared guidance composition or Analytics color tokens requires regression coverage for:
+
+- neutral light-mode surface values;
+- neutral dark-mode surface values;
+- brand-only non-semantic guidance icons;
+- semantic bars and status labels;
+- absence of semantic card fills and accent bars;
+- Forecast analytics token scope.

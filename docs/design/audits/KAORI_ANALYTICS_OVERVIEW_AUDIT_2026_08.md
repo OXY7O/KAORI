@@ -166,3 +166,21 @@ Regression ownership:
 - `tests/contracts/analytics/test_analytics_guidance_callout_standard_contract.py`
 - `tests/contracts/analytics/test_semantic_status_bar_contract.py`
 - `tests/contracts/analytics/test_overview_workspace_presentation_contract.py`
+
+## Neutral surface and typography correction — 2026-08-06
+
+A second visual review found that removing accent bars was not sufficient because the Analytics token scope still supplied lavender supporting surfaces, purple-tinted outlines, and purple-tinted supporting text. The result looked washed out and made guidance regions compete with primary evidence.
+
+The final correction applies the following rules:
+
+- `kaori-analytics-page` overrides supporting surfaces with slate neutrals in light mode and charcoal neutrals in dark mode;
+- Analytics supporting text uses slate rather than purple-tinted content tokens;
+- guidance regions use `bg-surface-card`, not a full `bg-surface-muted` band;
+- How To Read, What To Do, Recommended Action, and Review Path use the same Violet non-semantic icon treatment;
+- only an actual health reading may request `semantic=true` for its glyph;
+- health and pressure rows use neutral icons while status badges and quantitative bars carry semantic color;
+- Dataset Attention remains neutral and uses Warning only for its glyph and compact badge;
+- singular Dataset Attention grammar is corrected to `1 Dataset Needs Attention`;
+- Forecast now carries `kaori-analytics-page`, removing the last cross-page token inconsistency.
+
+This correction remains presentation-only. Analytics evidence, snapshot dimensions, thresholds, routes, and recommendation logic are unchanged.

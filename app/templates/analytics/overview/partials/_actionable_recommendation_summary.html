@@ -18,7 +18,7 @@
                     <h2 class="text-base font-semibold text-content-primary">Actionable Recommendation Summary</h2>
                     {{ table_label.status_label(summary.status|replace('_', ' ')|title, summary_tone) }}
                 </div>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Consolidated action counts across all Kubernetes Analytics domains.</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Consolidated action counts across all Kubernetes Analytics domains.</p>
             </div>
         </div>
         {{ table_label.metadata_label((summary.total_count ~ ' Actionable') if evidence_available else 'Evidence Unavailable', 'clipboard-list', size='compact') }}
@@ -45,12 +45,12 @@
             <div class="flex items-center justify-between gap-3">
                 <div>
                     <h3 class="text-sm font-semibold text-content-primary">Recommendation Source Queue</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Review domains with the largest actionable count first.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Review domains with the largest actionable count first.</p>
                 </div>
                 {{ table_label.metadata_label(summary.sources|length ~ ' Domains', 'layers-3', size='compact') }}
             </div>
             {% if not evidence_available %}
-                <p class="mt-4 text-xs leading-5 text-content-muted">Recommendation sources will appear after at least one committed analytics dataset is available.</p>
+                <p class="mt-4 text-xs leading-5 text-content-secondary">Recommendation sources will appear after at least one committed analytics dataset is available.</p>
             {% elif summary.sources %}
                 <div class="mt-4 divide-y divide-outline-subtle border-y border-outline-subtle">
                     {% for source in top_sources %}
@@ -59,14 +59,14 @@
                            class="flex items-center justify-between gap-4 py-3 transition hover:text-kaori-primary">
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">{{ source.label }}</p>
-                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ source.description }}</p>
+                                <p class="mt-0.5 text-xs leading-5 text-content-secondary">{{ source.description }}</p>
                             </div>
                             {{ table_label.status_label(source.count, source_tone, size='compact') }}
                         </a>
                     {% endfor %}
                 </div>
             {% else %}
-                <p class="mt-4 text-xs leading-5 text-content-muted">No actionable recommendation source is available.</p>
+                <p class="mt-4 text-xs leading-5 text-content-secondary">No actionable recommendation source is available.</p>
             {% endif %}
         </article>
 
@@ -132,7 +132,7 @@
                             </span>
                             <div class="min-w-0">
                                 <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
-                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>
+                                <p class="mt-0.5 text-xs leading-5 text-content-secondary">{{ description }}</p>
                             </div>
                         </div>
                     {% endfor %}
@@ -142,19 +142,19 @@
             <div class="mt-4 border-t border-outline-subtle pt-3">
                 <p class="text-xs font-semibold text-content-primary">Next Review Focus</p>
                 {% if not evidence_available %}
-                    <p class="mt-1 text-xs leading-5 text-content-muted">No review order can be established until committed analytics evidence is available.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">No review order can be established until committed analytics evidence is available.</p>
                 {% elif highest_source %}
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Open <span class="font-semibold text-content-secondary">{{ highest_source.label }}</span> first because it currently contributes {{ highest_source.count }} actionable item{{ '' if highest_source.count == 1 else 's' }}.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Open <span class="font-semibold text-content-secondary">{{ highest_source.label }}</span> first because it currently contributes {{ highest_source.count }} actionable item{{ '' if highest_source.count == 1 else 's' }}.</p>
                 {% else %}
-                    <p class="mt-1 text-xs leading-5 text-content-muted">No domain currently contributes an actionable recommendation. Continue preventive review.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">No domain currently contributes an actionable recommendation. Continue preventive review.</p>
                 {% endif %}
             </div>
 
             <div class="mt-4 border-t border-outline-subtle pt-3">
                 <p class="text-xs font-semibold text-content-primary">Decision Principle</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Risk severity determines order; source evidence and operational ownership determine whether action is safe to execute.</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Risk severity determines order; source evidence and operational ownership determine whether action is safe to execute.</p>
             </div>
-            <p class="mt-4 text-xs leading-5 text-content-muted">{{ summary.description }}</p>
+            <p class="mt-4 text-xs leading-5 text-content-secondary">{{ summary.description }}</p>
         </aside>
     </div>
 </section>

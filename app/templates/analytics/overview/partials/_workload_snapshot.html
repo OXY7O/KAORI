@@ -23,7 +23,7 @@
                     <h2 class="text-base font-semibold text-content-primary">Workload Governance Snapshot</h2>
                     {{ table_label.status_label(workload.status|replace('_', ' ')|title, workload_tone) }}
                 </div>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Request coverage, memory limit policy, factual CPU limit configuration, and evidence-gated right-sizing signals.</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Request coverage, memory limit policy, factual CPU limit configuration, and evidence-gated right-sizing signals.</p>
             </div>
         </div>
         {{ section_link_button.render(
@@ -53,12 +53,12 @@
         {% endfor %}
     </div>
 
-    <div class="grid divide-y divide-outline-subtle border-t border-outline-subtle bg-surface-muted xl:grid-cols-3 xl:divide-x xl:divide-y-0">
+    <div class="grid divide-y divide-outline-subtle border-t border-outline-subtle bg-surface-card xl:grid-cols-3 xl:divide-x xl:divide-y-0">
         <article class="bg-surface-card px-4 py-4 sm:px-5 xl:col-span-2">
             <div class="flex items-center justify-between gap-3">
                 <div>
                     <h3 class="text-sm font-semibold text-content-primary">Resource Governance Signals</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Request gaps and memory limit gaps are actionable; unset CPU limits remain factual policy evidence.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Request gaps and memory limit gaps are actionable; unset CPU limits remain factual policy evidence.</p>
                 </div>
                 {{ table_label.metadata_label(governance_signals ~ ' Signals', 'clipboard-list', size='compact') }}
             </div>

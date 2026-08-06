@@ -239,7 +239,7 @@ def test_overview_readiness_and_interpretation_surface_hierarchy_is_canonical() 
 
     assert 'analytics_workspace.prometheus_card(payload.prometheus)' in health
     assert 'analytics_workspace.snapshot_card(' in health
-    assert "overview_surface.attention_strip_classes('warning')" in health
+    assert 'overview_surface.attention_strip_classes()' in health
     assert 'overview_surface.interpretation_grid_classes()' in health
     assert 'bg-surface-card' in surfaces
     assert 'bg-surface-muted' in surfaces

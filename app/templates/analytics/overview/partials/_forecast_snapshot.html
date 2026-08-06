@@ -24,7 +24,7 @@
                     <h2 class="text-base font-semibold text-content-primary">Forecast &amp; Trend Snapshot</h2>
                     {{ table_label.status_label('Unknown' if not has_forecast_evidence else ('Review Required' if risk_count > 0 else 'Normal'), risk_tone) }}
                 </div>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Historical direction, projected utilization, and threshold risk for core resources.</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Historical direction, projected utilization, and threshold risk for core resources.</p>
             </div>
         </div>
         {{ section_link_button.render(

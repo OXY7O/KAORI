@@ -246,23 +246,34 @@
 }
 
 
-/* Kubernetes Analytics uses a clearer surface hierarchy than the general app.
-   Primary cards remain white, secondary surfaces receive a restrained violet tint,
-   and outlines are strong enough to remain visible on laptop displays. */
+/* Analytics workspace tuning.
+   Analytics uses neutral evidence surfaces and slate typography so Violet remains
+   reserved for KAORI identity, navigation, and actions. Semantic colors remain
+   limited to status badges, status glyphs, and quantitative pressure bars. */
 .kaori-analytics-page {
-    --kaori-surface-hover: #f8f5fc;
-    --kaori-surface-selected: #f1ebff;
-    --kaori-outline-subtle: #ded6e8;
-    --kaori-outline-default: #d1c6de;
-    --kaori-outline-strong: #b3a3c4;
+    --kaori-surface-card: #ffffff;
+    --kaori-surface-elevated: #ffffff;
+    --kaori-surface-muted: #f8fafc;
+    --kaori-surface-hover: #f1f5f9;
+    --kaori-surface-selected: #f5f3ff;
+    --kaori-content-secondary: #475569;
+    --kaori-content-muted: #64748b;
+    --kaori-outline-subtle: #e2e8f0;
+    --kaori-outline-default: #d7dee8;
+    --kaori-outline-strong: #a8b4c4;
 }
 
 .dark .kaori-analytics-page {
-    --kaori-surface-hover: #26212f;
+    --kaori-surface-card: #181b22;
+    --kaori-surface-elevated: #20252e;
+    --kaori-surface-muted: #141820;
+    --kaori-surface-hover: #232a35;
     --kaori-surface-selected: rgba(139, 92, 246, 0.14);
-    --kaori-outline-subtle: #332d3c;
-    --kaori-outline-default: #3f374a;
-    --kaori-outline-strong: #574c63;
+    --kaori-content-secondary: #cbd5e1;
+    --kaori-content-muted: #94a3b8;
+    --kaori-outline-subtle: #2b3441;
+    --kaori-outline-default: #3a4555;
+    --kaori-outline-strong: #5b6879;
 }
 
 @theme inline {

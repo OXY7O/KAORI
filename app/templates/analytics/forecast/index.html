@@ -2,7 +2,7 @@
 {% import "components/page_hero.html" as page_hero %}
 {% block title %}Resource Forecast{% endblock title %}
 {% block dashboard_content %}
-    <div id="forecast-page" class="space-y-6" data-analytics-page-request-tracking="false">
+    <div id="forecast-page" class="kaori-analytics-page space-y-6" data-analytics-page-request-tracking="false">
         {% set selected_cluster_name = cluster.name if cluster else 'No Cluster Selected' %}
         {% set summary = forecast_payload.summary %}
         {% set recommendation_count = forecast_payload.recommendation_count|default(0) %}
