@@ -183,9 +183,12 @@ def test_minimum_validation_rbac_uses_copy_friendly_modal() -> None:
 def test_capability_workspace_uses_modern_explorer_and_consistent_typography() -> None:
     capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
 
-    assert 'data-kaori-capability-workspace-v5' in capability
+    assert 'data-kaori-capability-workspace-v6' in capability
     assert 'data-kaori-capability-overview' in capability
     assert 'data-kaori-capability-explorer' in capability
+    assert 'data-kaori-capability-matrix' in capability
+    assert 'data-kaori-capability-matrix-header' in capability
+    assert 'data-kaori-capability-matrix-row' in capability
     assert 'Search Capability' in capability
     assert 'All Requirements' in capability
     assert 'All Statuses' in capability
@@ -193,24 +196,20 @@ def test_capability_workspace_uses_modern_explorer_and_consistent_typography() -
     assert 'x-show="matches($el)"' in capability
     assert 'data-kaori-capability-expanded-evidence' in capability
     assert 'data-kaori-capability-layout' in capability
-    assert 'xl:grid-cols-[minmax(0,1fr)_24rem]' in capability
-    assert '2xl:grid-cols-[minmax(0,1fr)_26rem]' in capability
-    assert 'data-kaori-capability-card-grid' in capability
-    assert 'lg:grid-cols-2' in capability
-    assert 'open:lg:col-span-2' in capability
+    assert 'xl:grid-cols-[minmax(0,1fr)_22rem]' in capability
+    assert '2xl:grid-cols-[minmax(0,1fr)_24rem]' in capability
     assert 'data-kaori-capability-side-panel' in capability
-    assert 'Validation Control Panel' in capability
+    assert 'data-kaori-capability-decision-panel' in capability
+    assert 'Validation Decision Center' in capability
+    assert 'Operational Gate Decision' in capability
     assert 'data-kaori-neutral-command-strip' in capability
     assert 'data-kaori-neutral-command-center' in capability
     assert 'data-kaori-readiness-score' in capability
     assert 'data-kaori-capability-posture-grid' in capability
-    assert 'bg-kaori-soft' not in capability
-    assert 'text-kaori-primary' not in capability
-    assert 'border-kaori-primary/' not in capability
     assert 'bg-surface-subtle' in capability
     assert 'border-outline-default' in capability
     assert 'Capability readiness' in capability
-    assert 'Capability Posture' in capability
+    assert 'Capability Coverage' in capability
     assert 'Downstream Eligibility' in capability
     assert 'Next Operational Action' in capability
     assert 'Validation Workflow' in capability
@@ -223,7 +222,8 @@ def test_capability_workspace_uses_modern_explorer_and_consistent_typography() -
     assert 'font-mono' not in capability
     assert 'uppercase tracking-wide' not in capability
     assert 'Kubernetes API Capability Detail' not in capability
-
+    assert 'data-kaori-capability-card-grid' not in capability
+    assert 'open:lg:col-span-2' not in capability
 
 
 def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
@@ -249,7 +249,7 @@ def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
     assert 'font-mono' not in connection
     assert 'data-kaori-capability-workspace-v4' in capability
     assert 'data-kaori-capability-overview' in capability
-    assert 'Capability Explorer' in capability
+    assert 'Capability Matrix' in capability
     assert 'data-kaori-capability-filters' in capability
     assert 'data-kaori-capability-record' in capability
     assert 'Validation Workflow' in capability
