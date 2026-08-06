@@ -28,11 +28,12 @@
     <div class="space-y-5 p-4 sm:p-5">
         <div class="{{ analysis_surface.evidence_shell_classes() }}">
             <div class="{{ analysis_surface.metric_grid_classes(4) }}">
+                {% set scope_evidence_available = scope_summary.scope_evidence_available|default(false) %}
                 {% set mapping_metrics = [
-                    ('Mapped Workloads', scope_summary.scope_total|default(0), 'Top-Level Active Scope', 'boxes'),
-                    ('Request Coverage', scope_summary.scope_request_coverage_percent|default(0) ~ '%', scope_summary.scope_request_complete|default(0) ~ ' Complete', 'shield-check'),
-                    ('Complete Evidence', scope_summary.scope_complete_evidence_count|default(0), 'Current + Selected Window', 'database-check'),
-                    ('High-Risk Workloads', scope_summary.scope_high_risk_count|default(0), scope_summary.scope_best_effort_count|default(0) ~ ' BestEffort', 'shield-alert')
+                    ('Mapped Workloads', scope_summary.scope_total|default(0) if scope_evidence_available else 'N/A', 'Top-Level Active Scope' if scope_evidence_available else 'No Active Workload Evidence', 'boxes'),
+                    ('Request Coverage', scope_summary.scope_request_coverage_display|default('N/A') ~ ('%' if scope_evidence_available else ''), scope_summary.scope_request_complete|default(0) ~ ' Complete' if scope_evidence_available else 'Request Evidence Unavailable', 'shield-check'),
+                    ('Complete Evidence', scope_summary.scope_complete_evidence_count|default(0) if scope_evidence_available else 'N/A', 'Current + Selected Window' if scope_evidence_available else 'Runtime Evidence Unavailable', 'database-check'),
+                    ('High-Risk Workloads', scope_summary.scope_high_risk_count|default(0) if scope_evidence_available else 'N/A', scope_summary.scope_best_effort_count|default(0) ~ ' BestEffort' if scope_evidence_available else 'Risk Evidence Unavailable', 'shield-alert')
                 ] %}
                 {% for label, value, helper, icon in mapping_metrics %}
                     <article class="{{ analysis_surface.metric_cell_classes() }}">

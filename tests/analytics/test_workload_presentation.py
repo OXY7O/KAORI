@@ -8,21 +8,28 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_workload_service_emits_semantic_payloads_without_css_classes() -> None:
-    source = read('app/analytics/workload/service.py')
+def test_workload_domain_modules_emit_semantic_payloads_without_css_classes() -> None:
+    source = '\n'.join(
+        read(path)
+        for path in (
+            'app/analytics/workload/domain.py',
+            'app/analytics/workload/quota.py',
+            'app/analytics/workload/mapping.py',
+        )
+    )
 
     assert "'tone': 'critical'" in source
     assert "'tone': 'warning'" in source
     assert "'tone': 'normal'" in source
+    assert "'tone': 'unknown'" in source
     assert "'class': 'bg-" not in source
-    assert 'critical in' not in source
-    assert 'warning in' not in source
 
 
 def test_configured_zero_quota_key_is_not_classified_as_missing() -> None:
-    source = read('app/analytics/workload/service.py')
+    source = read('app/analytics/workload/quota.py')
 
-    assert 'missing_keys = [key for key in REQUIRED_QUOTA_KEYS if key not in hard_values]' in source
+    assert 'configured_keys = {key for values in hard_objects.values() for key in values}' in source
+    assert 'missing_keys = [key for key in REQUIRED_QUOTA_KEYS if key not in configured_keys]' in source
     assert 'if not hard_values.get(key, 0)' not in source
 
 
@@ -56,8 +63,10 @@ def test_workload_snapshot_separates_cpu_limit_policy_from_memory_limit_gaps() -
         assert 'missing_cpu_limits' not in source
         assert 'missing_memory_limits' not in source
 
-    assert "'cpu_limits_unset': cpu_limits_unset" in workload
-    assert "'memory_limits_missing': memory_limits_missing" in workload
+    assert "'cpu_limits_unset': 0" in workload
+    assert "'memory_limits_missing': 0" in workload
+    assert "counters['cpu_limits_unset']" in workload
+    assert "counters['memory_limits_missing']" in workload
     assert 'CPU Limits Unset' in template
     assert 'Memory Limit Gaps' in template
     assert 'factual configuration' in template.lower()

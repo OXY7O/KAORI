@@ -71,3 +71,16 @@ Node filesystem expressions are reused from the canonical Utilization query regi
 ## Storage Analytics Evidence Contract
 
 Storage Analytics registers one query per signal. Filesystem pressure requires a matching size and available-byte pair for `/var` or fallback `/`. PVC pressure uses `kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes`; requested claim bytes are a separate demand signal. Capacity, used, and available PVC gauges use `max by (namespace, persistentvolumeclaim)` so duplicate kubelet scrape targets do not inflate the value. Missing query results remain unavailable evidence rather than synthetic zero.
+
+## Workload Analytics query boundary
+
+Workload Analytics uses the `kubernetes-v1` query family with these invariants:
+
+- active scope is limited to Pods in `Pending|Running`;
+- request, limit, current usage, owner, and QoS signals are joined on `namespace,pod` with that active-Pod set;
+- container gauges/rates are deduplicated with `max by(namespace,pod,container)` before Pod or Namespace aggregation;
+- active Pod counts use `kube_pod_status_phase`, not unscoped `kube_pod_info`;
+- ResourceQuota hard/used evidence keeps `namespace,resourcequota,resource,type` and uses `max` to normalize duplicate scrape copies;
+- selected-window peak templates preserve the same active-Pod and duplicate-series boundary inside the subquery.
+
+Consumers must not flatten multiple ResourceQuota objects into one namespace/resource map. Query-profile label validation requires ResourceQuota object identity and active-Pod phase labels.

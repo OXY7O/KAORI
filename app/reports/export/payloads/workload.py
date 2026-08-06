@@ -34,8 +34,6 @@ def get_report_workload_analysis_payload(
         selected_namespace = report.namespace or ''
         selected_time_range = report.period or '24h'
 
-        namespace_options = workload_service.get_all_namespace_options()
-
         tenant_quota_summary = workload_service.get_tenant_quota_summary(
             selected_namespace=selected_namespace,
         )
@@ -53,6 +51,14 @@ def get_report_workload_analysis_payload(
         workload_mapping_rows = workload_mapping_payload.get(
             'rows',
             [],
+        )
+
+        namespace_options = sorted(
+            {
+                str(row.get('namespace') or '').strip()
+                for row in [*tenant_quota_rows, *workload_mapping_rows]
+                if isinstance(row, dict) and str(row.get('namespace') or '').strip()
+            }
         )
 
         governance_findings = workload_service.get_governance_findings(

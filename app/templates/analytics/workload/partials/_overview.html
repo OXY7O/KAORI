@@ -7,11 +7,13 @@
     'layout-dashboard',
     workload_posture.value|default('Overview')
 ) %}
+    {% set quota_evidence_available = tenant_quota_summary.scope_evidence_available|default(false) %}
+    {% set workload_evidence_available = workload_scope_summary.scope_evidence_available|default(false) %}
     {% set overview_metrics = [
-        ('Quota Coverage', tenant_quota_summary.scope_quota_coverage_percent|default(0), '%', tenant_quota_summary.scope_covered|default(0) ~ ' of ' ~ tenant_quota_summary.scope_total|default(0) ~ ' Namespaces', 'shield-check'),
-        ('Request Coverage', workload_scope_summary.scope_request_coverage_percent|default(0), '%', workload_scope_summary.scope_request_complete|default(0) ~ ' of ' ~ workload_scope_summary.scope_total|default(0) ~ ' Workloads', 'settings-2'),
-        ('BestEffort Workloads', workload_scope_summary.scope_best_effort_count|default(0), '', 'QoS Classification', 'gauge'),
-        ('High-Risk Workloads', workload_scope_summary.scope_high_risk_count|default(0), '', 'Configuration or Demand Risk', 'shield-alert')
+        ('Quota Coverage', tenant_quota_summary.scope_quota_coverage_display|default('N/A'), '%' if quota_evidence_available else '', tenant_quota_summary.scope_covered|default(0) ~ ' of ' ~ tenant_quota_summary.scope_total|default(0) ~ ' Namespaces' if quota_evidence_available else 'No Committed Namespace Evidence', 'shield-check'),
+        ('Request Coverage', workload_scope_summary.scope_request_coverage_display|default('N/A'), '%' if workload_evidence_available else '', workload_scope_summary.scope_request_complete|default(0) ~ ' of ' ~ workload_scope_summary.scope_total|default(0) ~ ' Workloads' if workload_evidence_available else 'No Active Workload Evidence', 'settings-2'),
+        ('BestEffort Workloads', workload_scope_summary.scope_best_effort_count|default(0) if workload_evidence_available else 'N/A', '', 'QoS Classification' if workload_evidence_available else 'QoS Evidence Unavailable', 'gauge'),
+        ('High-Risk Workloads', workload_scope_summary.scope_high_risk_count|default(0) if workload_evidence_available else 'N/A', '', 'Configuration or Demand Risk' if workload_evidence_available else 'Risk Evidence Unavailable', 'shield-alert')
     ] %}
     <div class="{{ analysis_surface.evidence_shell_classes() }}">
         <div class="{{ analysis_surface.metric_grid_classes(4) }}">

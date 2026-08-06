@@ -439,7 +439,7 @@ outgrown its original purpose:
 | Workspace service | Approximate size | Priority |
 |---|---:|---|
 | `alerts/service.py` | 4,648 lines | Critical |
-| `workload/service.py` | 2,390 lines | High |
+| `workload/service.py` | ~400 lines | Refactored |
 | `top_consumers/service.py` | 2,158 lines | High |
 | `forecast/service.py` | 2,157 lines | High |
 | `overview/service.py` | 1,943 lines | High |
@@ -512,13 +512,19 @@ Missing or zero denominator evidence is not zero utilization. The canonical Util
 ## Workload Analytics capability contract
 
 Workload Analytics uses `PrometheusConsumer` and requires `instant_query`, `range_query`,
-`kubernetes_identity`, `workload_metrics`, and `resource_requests_limits`. Namespace,
-ResourceQuota, pod ownership, QoS, placement, requests/limits, and usage labels must pass
-validation before the feature is available. Provider-specific fallback logic must not be
-implemented in the analytics layer.
+`kubernetes_identity`, `workload_metrics`, and `resource_requests_limits`. Provider-specific
+fallback logic must not be implemented in the Analytics layer.
 
-Templates touched by this feature consume presentation-ready counters, status metadata,
-latency labels, and posture values from Python rather than deriving them in Jinja.
+All request, limit, owner, QoS, current-usage, peak, and active-Pod count evidence is intersected
+with Pods in `Pending|Running`. Container series are normalized with `max by(namespace,pod,container)`
+before aggregation so duplicate scrape copies do not inflate values. ResourceQuota evidence retains
+`namespace + resourcequota + resource + type`; multiple quota objects are evaluated independently.
+
+Ownership is split by responsibility: `service.py` collects provider evidence and builds the committed
+cluster/time-range payload; `quota.py` evaluates ResourceQuota objects; `mapping.py` evaluates workload
+resource evidence; `domain.py` owns findings and aggregate posture; and `presentation.py` applies
+Namespace, tab, local filter, and pagination state. Missing evidence is Unknown/Limited, never synthetic
+zero or Healthy.
 
 ## Worker-Backed Materialization
 
@@ -596,9 +602,11 @@ the partial-source warning is rendered explicitly.
 
 ## Workload Analysis presentation contract
 
-Workload Analysis follows `docs/design/components/ANALYTICS_WORKLOAD_ANALYSIS.md`. Cluster, Namespace, and Time Range own the top-level scope. Tenant Quota and Recommendations render immediately; Workload Resource Mapping loads on first activation and owns its local filters, pagination, and indicator. Summary metrics follow the top-level scope rather than local search/filter results.
+Workload Analysis follows `docs/design/components/ANALYTICS_WORKLOAD_ANALYSIS.md` and the runtime audit in `docs/design/audits/KAORI_ANALYTICS_WORKLOAD_AUDIT_2026_08.md`. The committed snapshot is keyed only by Cluster and Time Range. Namespace, active tab, local filters, and pagination are presentation state.
 
-Request Coverage, Limit Coverage, QoS, Risk, and Analytics Evidence Coverage are distinct signals. QoS is factual metadata. Current observations are labeled Current Usage. Selected-window aggregates are labeled Selected-Window Pod Peak Sum and described as upper-bound evidence. CPU and Memory request utilization remain separate; no composite Efficiency value is produced. Right-sizing is deferred unless current and selected-window CPU and memory evidence is Complete. Missing CPU limits are informational by default, while missing memory limits remain governance review evidence.
+The active deep-linked tab renders in the initial response; inactive Tenant Quota and Workload Mapping panels load once on first activation. Fragment endpoints require HTMX, are `no-store`, vary on `HX-Request`, and redirect direct navigation to the full page.
+
+Request Coverage, Limit Coverage, QoS, Risk, and Analytics Evidence Coverage remain distinct signals. Current observations are labeled Current Usage; selected-window aggregates are labeled Selected-Window Pod Peak Sum. CPU and Memory request utilization remain separate. ResourceQuota object identity is visible and the controlling pressure/runtime boundary names its quota object. Right-sizing is deferred unless evidence is Complete. Aggregate Healthy requires complete tenant and workload evidence; empty or incomplete evidence is Unknown/Limited Evidence.
 
 
 ## Capacity Analysis Presentation

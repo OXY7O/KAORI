@@ -1,22 +1,23 @@
 # Analytics Workload Analysis
 
-Status: Canonical KAORI Workload Analysis presentation and evidence contract
+Status: Canonical KAORI Workload Analysis presentation, evidence, and runtime contract
 
 Implementation:
 
-- `app/templates/analytics/workload/`
 - `app/analytics/workload/service.py`
-- `app/templates/analytics/components/_analysis_surfaces.html`
-- `app/templates/analytics/components/_evidence_record_list.html`
-- `app/templates/analytics/components/_record_filter_bar.html`
+- `app/analytics/workload/quota.py`
+- `app/analytics/workload/mapping.py`
+- `app/analytics/workload/domain.py`
+- `app/analytics/workload/presentation.py`
+- `app/analytics/workload/routes.py`
+- `app/templates/analytics/workload/`
+- `app/integrations/prometheus/query_profiles/kubernetes_v1.py`
 
 ## Purpose
 
-Workload Analysis combines Namespace ResourceQuota governance with workload request, limit, QoS, runtime-evidence, and right-sizing signals. It must distinguish configuration facts from health state and must never manufacture a right-sizing conclusion from missing observations.
+Workload Analysis combines Namespace ResourceQuota governance with active workload request, limit, QoS, current runtime, and selected-window peak evidence. It must separate configuration facts from runtime observations and must never manufacture a healthy or right-sizing conclusion from missing evidence.
 
 ## Workspace Composition
-
-Use the Capacity reference grammar without forcing identical domain content:
 
 ```text
 Hero
@@ -28,47 +29,89 @@ Tabbed Detailed Workspace
 └── Workload Recommendations
 ```
 
-Tenant Quota and Recommendations render with the page. Workload Resource Mapping loads on first tab activation. Hidden tabs do not request or poll.
+The active deep-linked tab renders in the initial full-page response. Inactive Tenant Quota and Workload Mapping panels load only on first tab activation through HTMX. Hidden panels do not request, poll, or materialize a second snapshot.
 
-## Scope Ownership
+## Materialization and Presentation Ownership
 
-Top-level scope is:
-
-```text
-Cluster + Namespace + Time Range
-```
-
-Cluster and Time Range identify the committed worker snapshot. Namespace is a presentation filter applied to that snapshot. Local Search, Type, Configuration, QoS, Risk, and pagination filters update only the owning record panel.
-
-Summary metrics follow the top-level active scope. Local filters do not change those summary metrics. The record footer reports both the filtered result count and the top-level scope count.
-
-## Surface Hierarchy
-
-- Summary metrics, scope context, quota evidence, workload mapping records, and expanded CPU/Memory evidence use bright surfaces.
-- Operational Reading, Recommended Action, and interpretation guidance use the darker soft surface.
-- Semantic status is carried by shared labels, not by tinting entire record rows.
-
-## Extended Record Filter Bar
-
-Workload Mapping uses the shared extended local filter pattern:
+Committed dataset identity:
 
 ```text
-Always Visible
-├── Search
-├── Workload Type
-└── Risk
-
-Advanced Filters — Closed By Default
-├── Resource Configuration
-├── QoS
-└── Reset Filters
+analytics.workload
++ cluster_id
++ time_range
 ```
 
-Advanced Filters may open initially only when an advanced filter is active. Do not keep five peer controls in one dense laptop-width row.
+The following values are presentation state and must not create snapshot variants:
+
+- Namespace;
+- active tab;
+- tenant/workload search;
+- quota status, configuration, QoS, type, and risk filters;
+- page number;
+- rows per page.
+
+`service.py` owns provider orchestration and committed payload construction. `presentation.py` owns namespace scoping, local filters, active-tab state, pagination, option lists, and presentation-scoped recommendations.
+
+## Active-Pod Evidence Boundary
+
+All Workload runtime, request, limit, owner, and QoS evidence is restricted to Pods whose phase is `Pending` or `Running`.
+
+Terminal Pods must not affect:
+
+- active Pod counts;
+- namespace runtime demand;
+- request or limit coverage;
+- workload mapping;
+- QoS distribution;
+- current usage;
+- selected-window peak evidence.
+
+PromQL must intersect each workload series with the canonical active-Pod identity:
+
+```promql
+max by (namespace, pod) (
+  kube_pod_status_phase{phase=~"Pending|Running"} == 1
+)
+```
+
+## Duplicate-Series Handling
+
+Kube-state-metrics, kubelet, and cAdvisor series may be scraped through multiple targets. Gauge and rate inputs must be normalized with `max by` at their canonical identity before aggregation.
+
+Canonical identities:
+
+```text
+Resource requests/limits : namespace + pod + container
+Container usage          : namespace + pod + container
+Pod phase                : namespace + pod
+Pod owner                : namespace + pod + owner kind + owner name
+Pod QoS                  : namespace + pod + QoS class
+ResourceQuota            : namespace + ResourceQuota object + resource + type
+```
+
+Do not sum duplicate scrape copies.
+
+## ResourceQuota Object Semantics
+
+ResourceQuota evidence is retained per object:
+
+```text
+namespace
+└── resourcequota
+    └── resource
+        ├── hard
+        └── used
+```
+
+Multiple ResourceQuota objects are evaluated independently. Their hard values must not be flattened into one arbitrary namespace-level map.
+
+- **Quota Pressure** is the highest valid `used / hard` ratio from a specific quota object and resource.
+- **Runtime Demand** is active-Pod demand against the most restrictive positive applicable hard boundary and names the owning quota object.
+- A configured quota key with numeric value `0` remains configured. Missing-key detection checks key presence, not truthiness.
+- A zero or missing denominator does not produce `0%`; it produces unavailable evidence.
+- The UI shows the quota object count and object names so the operator can identify the controlling boundary.
 
 ## Request and Limit Coverage
-
-Request Coverage and Limit Coverage are separate evidence contracts.
 
 Request Coverage:
 
@@ -86,7 +129,17 @@ Limit Coverage:
 - `Partial`
 - `Unknown`
 
-Missing CPU or memory requests are high-risk because scheduling and right-sizing depend on them. Missing memory limits are warning-level governance evidence. `CPU Limit Unset` is factual information by default and must not be classified as a failure unless a separate governance policy requires CPU limits.
+Missing CPU or memory requests are high-risk because scheduling and right-sizing depend on them. Missing memory limits are warning-level governance evidence. `CPU Limit Unset` is factual information by default unless a separate policy explicitly requires CPU limits.
+
+## Workload Identity
+
+A workload aggregate key includes:
+
+```text
+namespace + owner kind + owner name
+```
+
+Owner kind is mandatory. A Deployment and StatefulSet with the same name in one namespace must remain separate records. ReplicaSet owners are normalized to their Deployment name where the owner relationship supports it. Pod-name inference is a fallback only when owner evidence is absent.
 
 ## QoS Semantics
 
@@ -98,78 +151,88 @@ Kubernetes QoS is factual metadata:
 - `Mixed`
 - `Unknown`
 
-QoS uses metadata-label treatment. Risk remains owned by Request Coverage, Limit Coverage, runtime evidence, and the dedicated Risk column. Do not use QoS as a duplicate semantic health badge.
+QoS uses metadata-label treatment. Risk remains owned by Request Coverage, Limit Coverage, runtime evidence, and the dedicated Risk field.
 
 ## Analytics Evidence Coverage
 
 Every workload record exposes runtime Evidence Coverage:
 
-- `Complete`: every Pod has current CPU, current memory, selected-window CPU peak, and selected-window memory peak observations.
-- `Partial`: at least one observation exists, but the complete four-signal set is not available for every Pod.
+- `Complete`: every active Pod has current CPU, current memory, selected-window CPU peak, and selected-window memory peak observations.
+- `Partial`: at least one signal exists, but the complete four-signal set is not available for every active Pod.
 - `Unavailable`: no usable complete runtime and selected-window evidence is available.
 
-Semantic ownership:
-
-```text
-Complete     → Normal
-Partial      → Warning
-Unavailable  → Unknown
-```
-
-Right-sizing is active only when Evidence Coverage is `Complete`. Partial evidence may produce review guidance, but it must not generate an automatic increase or reduction recommendation.
+Right-sizing is active only when Evidence Coverage is `Complete`. Partial or unavailable evidence must defer increase/reduction recommendations.
 
 ## Runtime Terminology
 
-The instantaneous Prometheus signals are labeled `Current Usage`, not `Average Usage`.
+Instant observations are labeled `Current Usage`.
 
-The selected-window aggregate is labeled `Selected-Window Pod Peak Sum`. It is an upper-bound signal because individual Pod peaks may occur at different timestamps. Do not label it as a simultaneous workload peak or average.
+The selected-window aggregate is labeled `Selected-Window Pod Peak Sum`. It is an upper-bound signal because individual Pod peaks may occur at different timestamps. It must not be described as a simultaneous workload peak or an average.
 
-## Request Fit
+CPU and Memory request utilization remain separate. Do not calculate one averaged `Efficiency` value.
 
-Do not calculate or display one averaged CPU/Memory `Efficiency` percentage. Show CPU Request Utilization and Memory Request Utilization separately so one resource bottleneck cannot be hidden by the other.
+## Aggregate Posture
 
-When evidence or the request denominator is unavailable:
+Allowed states:
 
-- render `N/A`;
-- use semantic `Unknown` when appropriate;
-- suppress progress;
-- defer right-sizing.
+- `Critical`
+- `Watch`
+- `Limited Evidence`
+- `Healthy`
+- `Unknown`
 
-## ResourceQuota Semantics
+`Healthy` is allowed only when tenant quota and workload evidence are complete and no actionable governance finding exists. No records means `Unknown`, not `Healthy`. Incomplete quota pressure, runtime demand, requests, or selected-window metrics means `Limited Evidence` unless a stronger warning or critical finding already exists.
 
-A configured quota key with numeric value `0` remains configured. Missing-key detection checks key presence, not value truthiness.
+Governance findings contain only factual findings. Do not create a synthetic “no findings” row to force a positive posture.
 
-Quota Pressure identifies the resource producing the highest valid used-to-hard ratio. Runtime Demand identifies the resource producing the highest valid current-to-limit ratio. Each value names its owning resource. Unavailable denominators render `N/A` rather than `0%`.
+## Filters, Pagination, and URL Ownership
 
-## Pagination and URL Ownership
-
-Normal links always target the full Workload page:
+Normal links target the full page:
 
 ```text
 /analytics/workload?tab=quotas
 /analytics/workload?tab=mapping
 ```
 
-HTMX requests target the owning partial endpoint. Previous, numeric pages, Next, and 5/10/25/50 page-size changes retain Cluster, Namespace, Time Range, active tab, and local filters. Direct navigation must never open a fragment without the KAORI layout.
+HTMX partial endpoints:
+
+- require `HX-Request: true`;
+- redirect direct navigation to the full page;
+- return `Cache-Control: no-store, max-age=0`;
+- vary on `HX-Request`;
+- push the canonical full-page URL.
+
+Cluster, Namespace, Time Range, active tab, local filters, and 5/10/25/50 page-size choices remain in the browser URL. Local filters do not change top-level scope summary cards.
+
+## Surface Hierarchy
+
+- Summary metrics, scope context, quota evidence, workload records, and expanded CPU/Memory evidence use bright surfaces.
+- Operational Reading, Recommended Action, and interpretation guidance use the darker Analytics guidance surface.
+- Semantic status is carried by shared labels, not by tinting entire rows.
+- Missing values render `N/A`, use Unknown semantics, and suppress progress bars.
 
 ## Recommendation Destinations
 
-Recommendations deep-link to the owning tab and filter context. Examples:
+Recommendations deep-link to the owning tab and filter context:
 
 - missing ResourceQuota → Quotas / Missing;
 - incomplete requests → Mapping / Requests Missing or Requests Partial;
 - BestEffort → Mapping / BestEffort;
-- right-sizing → Mapping / relevant Risk;
-- general practice → Recommendations.
+- right-sizing review → Mapping / relevant Risk;
+- general practices → Recommendations.
 
 ## Prohibited Patterns
 
-- No composite page loading tracker outside Analytics Overview.
-- No `Average Usage` label for current Prometheus observations.
-- No composite CPU/Memory Efficiency value.
+- No terminal Pod evidence in active workload metrics.
+- No duplicate-scrape summation before identity normalization.
+- No namespace-level ResourceQuota flattening that loses object identity.
+- No snapshot variants for namespace, filters, tab, or pagination.
 - No right-sizing recommendation when Evidence Coverage is not Complete.
+- No synthetic zero for missing denominator or missing observation.
+- No synthetic healthy finding.
+- No composite CPU/Memory Efficiency value.
 - No CSS class in domain status payloads.
-- No label parsing in Jinja to infer semantic tone.
+- No semantic tone inference in Jinja.
 - No QoS health coloring.
-- No partial endpoint as a normal form action or pagination `href`.
-- No compatibility aliases for retired workload filter or snapshot field names.
+- No partial endpoint as a normal full-page destination.
+- No compatibility aliases for retired workload fields.

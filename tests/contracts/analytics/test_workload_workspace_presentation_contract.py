@@ -74,12 +74,13 @@ def test_workload_sections_use_shared_bright_evidence_and_darker_guidance() -> N
 
 
 def test_workload_summary_is_top_level_scope_owned() -> None:
-    service = read('app/analytics/workload/service.py')
+    service = read('app/analytics/workload/presentation.py')
     pagination = read('app/templates/analytics/components/_record_pagination.html')
     tenant = read('app/templates/analytics/workload/partials/_tenant_quota_section.html')
     mapping = read('app/templates/analytics/workload/partials/_workload_mapping_section.html')
 
-    assert 'tenant_summary = build_tenant_scope_summary(tenant_scope_rows)' in service
+    assert 'tenant_summary = {' in service
+    assert '**build_tenant_scope_summary(tenant_scope_rows)' in service
     assert 'workload_scope_summary = build_workload_scope_summary(workload_scope_rows)' in service
     assert "tenant_filtered = filter_tenant_quota_rows(" in service
     assert "workload_filtered = filter_workload_rows(" in service

@@ -36,7 +36,19 @@
                          x-show="activeTab === 'quotas'"
                          x-bind:hidden="activeTab !== 'quotas'"
                          {% if active_tab != 'quotas' %}hidden x-cloak{% endif %}>
-                        {% include "analytics/workload/partials/_tenant_quota_section.html" %}
+                        {% if active_tab == 'quotas' %}
+                            {% include "analytics/workload/partials/_tenant_quota_section.html" %}
+                        {% else %}
+                            <div id="tenant-quota-analysis"
+                                 class="min-h-[280px]"
+                                 hx-get="{{ url_for('analytics.workload_tenant_quota', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, time_range=selected_time_range, tab='quotas', quota_page=1, quota_per_page=5) }}"
+                                 hx-trigger="kaori:analytics-tab-activated once"
+                                 hx-swap="outerHTML"
+                                 hx-indicator="#tenant-quota-lazy-indicator">
+                                {{ loading_bar.render('tenant-quota-lazy-indicator', label='Loading Tenant Quota Analysis') }}
+                                <div class="mt-4 h-52 animate-pulse rounded-lg border border-outline-subtle bg-surface-hover"></div>
+                            </div>
+                        {% endif %}
                     </div>
 
                     <div id="workload-content-panel-mapping"
@@ -46,19 +58,23 @@
                          x-show="activeTab === 'mapping'"
                          x-bind:hidden="activeTab !== 'mapping'"
                          {% if active_tab != 'mapping' %}hidden x-cloak{% endif %}>
-                        <div id="workload-resource-mapping"
-                             class="min-h-[280px]"
-                             hx-get="{{ url_for('analytics.workload_resource_mapping', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, time_range=selected_time_range, tab='mapping', workload_page=1, workload_per_page=5) }}"
-                             hx-trigger="kaori:analytics-tab-activated once"
-                             hx-swap="outerHTML"
-                             hx-indicator="#workload-mapping-lazy-indicator">
-                            {{ loading_bar.render('workload-mapping-lazy-indicator', label='Loading Workload Resource Mapping') }}
-                            <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                                <div class="h-28 animate-pulse rounded-lg border border-outline-subtle bg-surface-hover"></div>
-                                <div class="h-28 animate-pulse rounded-lg border border-outline-subtle bg-surface-hover"></div>
+                        {% if active_tab == 'mapping' %}
+                            {% include "analytics/workload/partials/_workload_mapping_section.html" %}
+                        {% else %}
+                            <div id="workload-resource-mapping"
+                                 class="min-h-[280px]"
+                                 hx-get="{{ url_for('analytics.workload_resource_mapping', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, time_range=selected_time_range, tab='mapping', workload_page=1, workload_per_page=5) }}"
+                                 hx-trigger="kaori:analytics-tab-activated once"
+                                 hx-swap="outerHTML"
+                                 hx-indicator="#workload-mapping-lazy-indicator">
+                                {{ loading_bar.render('workload-mapping-lazy-indicator', label='Loading Workload Resource Mapping') }}
+                                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                                    <div class="h-28 animate-pulse rounded-lg border border-outline-subtle bg-surface-hover"></div>
+                                    <div class="h-28 animate-pulse rounded-lg border border-outline-subtle bg-surface-hover"></div>
+                                </div>
+                                <div class="mt-3 h-52 animate-pulse rounded-lg border border-outline-subtle bg-surface-hover"></div>
                             </div>
-                            <div class="mt-3 h-52 animate-pulse rounded-lg border border-outline-subtle bg-surface-hover"></div>
-                        </div>
+                        {% endif %}
                     </div>
 
                     <div id="workload-content-panel-recommendations"

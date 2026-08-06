@@ -1,7 +1,7 @@
 {% import "components/page_hero.html" as page_hero %}
 {% set selected_cluster_name = cluster.name if cluster else 'No Cluster Selected' %}
 {% set workload_tone = workload_posture.tone|default('unknown') %}
-{% set workload_status = 'Healthy' if workload_tone == 'normal' else ('Watch' if workload_tone == 'warning' else ('Critical' if workload_tone == 'critical' else 'Unknown')) %}
+{% set workload_status = workload_posture.value|default('Unknown') %}
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
