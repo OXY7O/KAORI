@@ -16,14 +16,27 @@ def test_numeric_pagination_preserves_route_view_arguments() -> None:
     assert 'last_args.update(query_params.copy() if query_params else request.args.to_dict())' in pagination
 
 
-def test_kubernetes_runtime_history_supplies_cluster_id_and_owning_endpoints() -> None:
+def test_runtime_history_pagination_uses_provider_owned_routing() -> None:
     runtime = read('app/templates/integrations/partials/_runtime_history.html')
+    kubernetes_detail = read('app/templates/integrations/kubernetes/detail.html')
+    kubernetes_workspace = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
+    prometheus = read('app/templates/prometheus/partials/_runtime_history.html')
+    alertmanager = read('app/templates/alertmanager/partials/_runtime_history.html')
 
-    assert "'cluster_id': cluster.id" in runtime
-    assert "endpoint='integrations.kubernetes_runtime_history'" in runtime
-    assert "href_endpoint='integrations.kubernetes_detail'" in runtime
+    assert 'runtime_history_route_args_value.copy()' in runtime
+    assert 'endpoint=runtime_history_endpoint_name' in runtime
+    assert 'href_endpoint=runtime_history_detail_endpoint_name' in runtime
     assert "hx_target='#' ~ runtime_history_id" in runtime
     assert "hx_swap='outerHTML'" in runtime
+    assert 'cluster.id' not in runtime
+
+    for template in (kubernetes_detail, kubernetes_workspace):
+        assert "runtime_history_route_args={'cluster_id': cluster.id}" in template
+        assert "runtime_history_endpoint='integrations.kubernetes_runtime_history'" in template
+        assert "runtime_history_detail_endpoint='integrations.kubernetes_detail'" in template
+
+    assert "runtime_history_route_args = {'instance_id': instance.id}" in prometheus
+    assert "runtime_history_route_args = {'instance_id': instance.id}" in alertmanager
 
 
 def test_full_page_kubernetes_detail_reads_requested_history_page() -> None:
@@ -39,7 +52,7 @@ def test_runtime_history_full_page_fallback_opens_runtime_tab() -> None:
     runtime = read('app/templates/integrations/partials/_runtime_history.html')
     detail = read('app/templates/integrations/kubernetes/detail.html')
 
-    assert 'name="tab" value="runtime"' in runtime
-    assert "tab='runtime'" in runtime
+    assert 'name="tab" value="{{ runtime_history_tab_name }}"' in runtime
+    assert "runtime_history_tab|default('runtime', true)" in runtime
     assert "URLSearchParams(window.location.search).get('tab')" in detail
     assert "nextUrl.searchParams.set('tab', tab)" in detail

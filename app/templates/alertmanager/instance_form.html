@@ -131,9 +131,7 @@
         </section>
         {% if instance %}
             {% include "alertmanager/partials/_runtime_panel.html" %}
-            {% with runtime_history_id='alertmanager-runtime-history', runtime_history_loading_id='alertmanager-history-loading', runtime_history_url=url_for('alertmanager.runtime_history', instance_id=instance.id), provider_label='Alertmanager' %}
-                {% include 'integrations/partials/_runtime_history.html' %}
-            {% endwith %}
+            {% include 'alertmanager/partials/_runtime_history.html' %}
         {% endif %}
         <div class="grid gap-5 xl:grid-cols-12 xl:items-start">
             <form id="alertmanager-instance-form"

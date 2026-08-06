@@ -119,7 +119,7 @@
                     {% with validation_job=runtime_validation_job %}
                         {% include 'integrations/kubernetes/partials/_runtime_workspace.html' %}
                     {% endwith %}
-                    {% with runtime_history=history, runtime_history_id='kubernetes-runtime-history', runtime_history_loading_id='kubernetes-history-loading', runtime_history_url=url_for('integrations.kubernetes_runtime_history', cluster_id=cluster.id), provider_label='Kubernetes' %}
+                    {% with runtime_history=history, runtime_history_id='kubernetes-runtime-history', runtime_history_loading_id='kubernetes-history-loading', runtime_history_url=url_for('integrations.kubernetes_runtime_history', cluster_id=cluster.id), runtime_history_endpoint='integrations.kubernetes_runtime_history', runtime_history_route_args={'cluster_id': cluster.id}, runtime_history_detail_url=url_for('integrations.kubernetes_detail', cluster_id=cluster.id), runtime_history_detail_endpoint='integrations.kubernetes_detail', provider_label='Kubernetes' %}
                         {% include 'integrations/partials/_runtime_history.html' %}
                     {% endwith %}
                 </div>

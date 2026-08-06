@@ -13,7 +13,5 @@
                 icon='route') }}
     </section>
     {% include 'prometheus/partials/_runtime_panel.html' %}
-    {% with runtime_history_id='prometheus-runtime-history', runtime_history_loading_id='prometheus-history-loading', runtime_history_url=url_for('prometheus.instance_runtime_history', instance_id=instance.id), provider_label='Prometheus' %}
-        {% include 'integrations/partials/_runtime_history.html' %}
-    {% endwith %}
+    {% include 'prometheus/partials/_runtime_history.html' %}
 </div>

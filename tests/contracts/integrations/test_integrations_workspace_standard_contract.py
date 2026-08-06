@@ -63,15 +63,25 @@ def test_runtime_overview_uses_bright_evidence_and_shared_controls() -> None:
     assert 'components/loading_bar.html' in runtime
 
 
-def test_runtime_history_has_one_direct_shared_component() -> None:
+def test_runtime_history_has_one_provider_neutral_shared_component() -> None:
     routes = read('app/integrations/routes.py')
     shared = read('app/templates/integrations/partials/_runtime_history.html')
+    prometheus = read('app/templates/prometheus/partials/_runtime_history.html')
+    alertmanager = read('app/templates/alertmanager/partials/_runtime_history.html')
 
     assert not exists('app/templates/integrations/kubernetes/partials/_runtime_history.html')
     assert "'integrations/partials/_runtime_history.html'" in routes
     assert 'integrations/components/_semantic_status.html' in shared
-    assert "href_endpoint='integrations.kubernetes_detail'" in shared
-    assert "endpoint='integrations.kubernetes_runtime_history'" in shared
+    assert 'runtime_history_endpoint_name' in shared
+    assert 'runtime_history_detail_endpoint_name' in shared
+    assert 'runtime_history_route_args_value' in shared
+    assert 'cluster.id' not in shared
+    assert "integrations.kubernetes_detail" not in shared
+
+    assert "runtime_history_endpoint = 'prometheus.instance_runtime_history'" in prometheus
+    assert "runtime_history_detail_endpoint = 'prometheus.instance_detail'" in prometheus
+    assert "runtime_history_endpoint = 'alertmanager.runtime_history'" in alertmanager
+    assert "runtime_history_detail_endpoint = 'alertmanager.instance_detail'" in alertmanager
 
 
 def test_dead_binding_presentation_is_removed() -> None:

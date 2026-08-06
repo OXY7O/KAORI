@@ -333,8 +333,11 @@ def kubernetes_runtime_history(cluster_id: str) -> ResponseReturnValue:
         runtime_history_id='kubernetes-runtime-history',
         runtime_history_loading_id='kubernetes-history-loading',
         runtime_history_url=url_for('integrations.kubernetes_runtime_history', cluster_id=cluster_id),
+        runtime_history_endpoint='integrations.kubernetes_runtime_history',
+        runtime_history_route_args={'cluster_id': cluster_id},
+        runtime_history_detail_url=url_for('integrations.kubernetes_detail', cluster_id=cluster_id),
+        runtime_history_detail_endpoint='integrations.kubernetes_detail',
         provider_label='Kubernetes',
-        cluster=connection.cluster,
     )
 
 

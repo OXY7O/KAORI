@@ -1,5 +1,4 @@
 {% include "alertmanager/partials/_runtime_panel.html" %}
-{% with runtime_history_oob=true, runtime_history_id='alertmanager-runtime-history', runtime_history_loading_id='alertmanager-history-loading', runtime_history_url=url_for('alertmanager.runtime_history', instance_id=instance.id), provider_label='Alertmanager' %}
-    {% include 'integrations/partials/_runtime_history.html' %}
-{% endwith %}
+{% set runtime_history_oob = true %}
+{% include 'alertmanager/partials/_runtime_history.html' %}
 {% include 'components/operation_feedback_oob.html' %}

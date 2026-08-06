@@ -1,6 +1,11 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
+{% set runtime_history_endpoint_name = runtime_history_endpoint|default(request.endpoint, true) %}
+{% set runtime_history_detail_endpoint_name = runtime_history_detail_endpoint|default(request.endpoint, true) %}
+{% set runtime_history_detail_url_value = runtime_history_detail_url|default(runtime_history_url, true) %}
+{% set runtime_history_route_args_value = runtime_history_route_args|default(request.view_args.copy() if request.view_args else {}, true) %}
+{% set runtime_history_tab_name = runtime_history_tab|default('runtime', true) %}
 <section id="{{ runtime_history_id }}"
          {% if runtime_history_oob|default(false) %}hx-swap-oob="outerHTML"{% endif %}
          class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
@@ -249,13 +254,13 @@
         <div class="flex flex-wrap items-center gap-3">
             <p>Showing <span class="font-semibold text-content-primary">{{ runtime_history.pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ runtime_history.pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ runtime_history.pagination.total_items }}</span> observations</p>
             <form method="get"
-                  action="{{ url_for('integrations.kubernetes_detail', cluster_id=cluster.id) }}"
+                  action="{{ runtime_history_detail_url_value }}"
                   hx-get="{{ runtime_history_url }}"
                   hx-target="#{{ runtime_history_id }}"
                   hx-swap="outerHTML"
                   hx-indicator="#{{ runtime_history_loading_id }}"
                   class="inline-flex items-center">
-                <input type="hidden" name="tab" value="runtime">
+                <input type="hidden" name="tab" value="{{ runtime_history_tab_name }}">
                 <input type="hidden" name="page" value="1">
                 <select name="per_page"
                         aria-label="Runtime observations per page"
@@ -272,7 +277,13 @@
         <nav class="flex flex-wrap items-center gap-2"
              aria-label="{{ provider_label }} runtime history pagination">
             {% if runtime_history.pagination.has_prev %}
-                <a href="{{ url_for('integrations.kubernetes_detail', cluster_id=cluster.id, tab='runtime', page=runtime_history.pagination.prev_page, per_page=runtime_history.pagination.per_page) }}"
+                {% set previous_detail_args = runtime_history_route_args_value.copy() %}
+                {% set _ = previous_detail_args.update({
+                    'tab': runtime_history_tab_name,
+                    'page': runtime_history.pagination.prev_page,
+                    'per_page': runtime_history.pagination.per_page
+                }) %}
+                <a href="{{ url_for(runtime_history_detail_endpoint_name, **previous_detail_args) }}"
                    hx-get="{{ runtime_history_url }}?page={{ runtime_history.pagination.prev_page }}&per_page={{ runtime_history.pagination.per_page }}"
                    hx-target="#{{ runtime_history_id }}"
                    hx-swap="outerHTML"
@@ -282,24 +293,30 @@
                 <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"
                       aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
             {% endif %}
-            {% set runtime_pagination_args = {
-                'cluster_id': cluster.id,
-                'tab': 'runtime',
+            {% set runtime_pagination_args = runtime_history_route_args_value.copy() %}
+            {% set _ = runtime_pagination_args.update({
+                'tab': runtime_history_tab_name,
                 'per_page': runtime_history.pagination.per_page
-            } %}
+            }) %}
             {{ pagination_ui.numeric_pages(
                 runtime_history.pagination.page,
                 runtime_history.pagination.total_pages,
                 'page',
                 hx_target='#' ~ runtime_history_id,
                 hx_indicator='#' ~ runtime_history_loading_id,
-                endpoint='integrations.kubernetes_runtime_history',
+                endpoint=runtime_history_endpoint_name,
                 query_params=runtime_pagination_args,
                 hx_swap='outerHTML',
-                href_endpoint='integrations.kubernetes_detail'
+                href_endpoint=runtime_history_detail_endpoint_name
             ) }}
             {% if runtime_history.pagination.has_next %}
-                <a href="{{ url_for('integrations.kubernetes_detail', cluster_id=cluster.id, tab='runtime', page=runtime_history.pagination.next_page, per_page=runtime_history.pagination.per_page) }}"
+                {% set next_detail_args = runtime_history_route_args_value.copy() %}
+                {% set _ = next_detail_args.update({
+                    'tab': runtime_history_tab_name,
+                    'page': runtime_history.pagination.next_page,
+                    'per_page': runtime_history.pagination.per_page
+                }) %}
+                <a href="{{ url_for(runtime_history_detail_endpoint_name, **next_detail_args) }}"
                    hx-get="{{ runtime_history_url }}?page={{ runtime_history.pagination.next_page }}&per_page={{ runtime_history.pagination.per_page }}"
                    hx-target="#{{ runtime_history_id }}"
                    hx-swap="outerHTML"
