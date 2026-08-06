@@ -183,7 +183,7 @@ def test_minimum_validation_rbac_uses_copy_friendly_modal() -> None:
 def test_capability_workspace_uses_modern_explorer_and_consistent_typography() -> None:
     capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
 
-    assert 'data-kaori-capability-workspace-v3' in capability
+    assert 'data-kaori-capability-workspace-v4' in capability
     assert 'data-kaori-capability-overview' in capability
     assert 'data-kaori-capability-explorer' in capability
     assert 'Search Capability' in capability
@@ -193,16 +193,24 @@ def test_capability_workspace_uses_modern_explorer_and_consistent_typography() -
     assert 'x-show="matches($el)"' in capability
     assert 'data-kaori-capability-expanded-evidence' in capability
     assert 'data-kaori-capability-layout' in capability
-    assert 'xl:grid-cols-[minmax(0,1fr)_22rem]' in capability
+    assert '2xl:grid-cols-[minmax(0,1fr)_28rem]' in capability
+    assert 'xl:grid-cols-[minmax(0,1fr)_22rem]' not in capability
     assert 'data-kaori-capability-command-center' in capability
     assert 'Validation Command Center' in capability
+    assert 'data-kaori-violet-command-strip' in capability
+    assert 'data-kaori-violet-command-center' in capability
+    assert 'data-kaori-readiness-score' in capability
+    assert 'bg-kaori-soft' in capability
+    assert 'text-kaori-primary' in capability
+    assert 'border-kaori-primary/20' in capability
+    assert 'Capability readiness score' in capability
     assert 'Capability Posture' in capability
     assert 'Operational Eligibility' in capability
     assert 'Current Review Focus' in capability
     assert 'Validation Workflow' in capability
     assert 'Required Usable' in capability
     assert 'Optional Available' in capability
-    assert 'xl:sticky xl:top-4' in capability
+    assert '2xl:sticky 2xl:top-4' in capability
     assert 'xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]' in capability
     assert "('1', 'Interpret'" in capability
     assert "('4', 'Synchronize'" in capability
@@ -232,7 +240,7 @@ def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
     assert '_minimum_validation_rbac.html' in connection
     assert 'font-mono' not in connection
     assert 'xl:grid-cols-[minmax(0,1.45fr)_minmax(20rem,0.55fr)]' not in connection
-    assert 'data-kaori-capability-workspace-v3' in capability
+    assert 'data-kaori-capability-workspace-v4' in capability
     assert 'data-kaori-capability-overview' in capability
     assert 'Capability Explorer' in capability
     assert 'data-kaori-capability-filters' in capability
