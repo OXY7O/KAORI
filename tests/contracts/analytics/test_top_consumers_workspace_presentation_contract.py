@@ -115,7 +115,11 @@ def test_top_consumers_overview_records_and_summary_follow_inventory_density() -
     for category in ('cpu', 'memory', 'pods', 'storage'):
         assert f'data-consumer-category="{{{{ cfg.key }}}}"' in summary
         assert f"'key': '{category}'" in summary
-    assert "'accent_classes': 'bg-amber-500 dark:bg-amber-400'" in summary
-    assert "'accent_classes': 'bg-cyan-500 dark:bg-cyan-400'" in summary
-    assert "'accent_classes': 'bg-kaori-primary'" in summary
-    assert "'accent_classes': 'bg-emerald-500 dark:bg-emerald-400'" in summary
+    assert 'accent_classes' not in summary
+    assert 'bg-amber-500' not in summary
+    assert 'bg-cyan-500' not in summary
+    assert 'bg-emerald-500' not in summary
+    assert 'h-1.5 w-full' not in summary
+    assert 'border border-outline-default bg-surface-card p-4 shadow-sm' in summary
+    assert 'border-outline-subtle bg-surface-hover text-kaori-primary' in summary
+    assert 'border-outline-subtle bg-surface-hover px-2' in summary
