@@ -46,7 +46,8 @@
                 </div>
                 <div class="flex flex-wrap gap-2">
                     {{ table_label.metadata_label(scope.label|default('Cluster'), 'scan-search', size='compact') }}
-                    {{ table_label.status_label(coverage.label|default('Evidence Unavailable'), 'normal' if coverage.complete_count|default(0) == 4 else 'warning', size='compact') }}
+                    {% set coverage_tone = 'normal' if coverage.complete_count|default(0) == 4 else ('unknown' if coverage.unavailable_count|default(0) == 4 else 'warning') %}
+                    {{ table_label.status_label(coverage.label|default('Evidence Unavailable'), coverage_tone, size='compact') }}
                 </div>
             </header>
 
@@ -98,7 +99,7 @@
                 {{ analysis_surface.interpretation_callout(
                     'How To Read',
                     'Separate Consumption, Contribution, And Pressure',
-                    'Consumption answers who uses the most. Contribution answers how much of the selected scope each consumer represents. Pressure compares usage against the relevant request, limit, cluster-capacity, or claim-capacity boundary.',
+                    'Consumption answers who uses the most. Contribution answers how much of the selected scope each consumer represents. Pressure compares usage against the relevant request, limit, Ready-worker capacity, or observed volume-capacity boundary.',
                     icon='list-ordered'
                 ) }}
                 {{ analysis_surface.interpretation_callout(

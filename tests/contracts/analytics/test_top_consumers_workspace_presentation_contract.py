@@ -28,15 +28,15 @@ def test_top_consumers_controls_own_only_snapshot_scope() -> None:
 
 
 def test_top_consumers_identity_and_pressure_are_structured() -> None:
-    service = read('app/analytics/top_consumers/service.py')
+    rows = read('app/analytics/top_consumers/rows.py')
     results = read('app/templates/analytics/top_consumers/partials/_consumer_detail_results.html')
 
-    assert "'entity_type': 'container'" in service
-    assert "'workload_owner': workload_owner" in service
-    assert "'request_utilization'" in service
-    assert "'limit_utilization'" in service
-    assert "'contribution_percent'" in service
-    assert "'pressure_percent'" in service
+    assert "'entity_type': 'container'" in rows
+    assert "'workload_owner': spec.workload_owner" in rows
+    assert "'request_utilization'" in rows
+    assert "'limit_utilization'" in rows
+    assert "'contribution_percent'" in rows
+    assert "'pressure_percent'" in rows
     assert 'card.label.split' not in read('app/templates/analytics/top_consumers/partials/_summary.html')
     assert 'identity.primary' in results
     assert 'Request Utilization' in results
@@ -46,24 +46,24 @@ def test_top_consumers_identity_and_pressure_are_structured() -> None:
 
 
 def test_top_consumers_mixed_resource_sort_is_unit_safe() -> None:
-    service = read('app/analytics/top_consumers/service.py')
+    contracts = read('app/analytics/top_consumers/contracts.py')
+    presentation = read('app/analytics/top_consumers/presentation.py')
 
-    assert "{'value': 'priority', 'label': 'Operational Priority'}" in service
-    assert "{'value': 'contribution', 'label': 'Contribution to Scope'}" in service
-    assert "{'value': 'absolute', 'label': 'Absolute Consumption'}" in service
-    assert "if selected_sort == 'absolute' and selected_resource != 'all'" in service
-    assert "selected_sort == 'absolute' and selected_resource == 'all'" not in service
+    assert "{'value': 'priority', 'label': 'Operational Priority'}" in contracts
+    assert "{'value': 'contribution', 'label': 'Contribution to Scope'}" in contracts
+    assert "{'value': 'absolute', 'label': 'Absolute Consumption'}" in contracts
+    assert "if selected_sort == 'absolute' and selected_resource != 'all'" in presentation
+    assert "selected_sort == 'absolute' and selected_resource == 'all'" not in presentation
 
 
 def test_top_consumers_evidence_and_progress_semantics_are_canonical() -> None:
-    service = read('app/analytics/top_consumers/service.py')
+    domain = read('app/analytics/top_consumers/domain.py')
     results = read('app/templates/analytics/top_consumers/partials/_consumer_detail_results.html')
     ranked = read('app/templates/analytics/components/_ranked_evidence_panel.html')
 
-    assert "evidence_state('complete')" in service
-    assert "evidence_state('partial')" in service
-    assert "evidence_state('unavailable')" in service
-    assert "'label': 'Evidence Incomplete'" in service
+    assert "evidence_state('complete' if complete else 'partial')" in domain
+    assert "evidence_state('unavailable')" in domain
+    assert "'label': 'Limited Evidence'" in domain
     assert "fill_classes='h-full rounded-full bg-kaori-primary'" in results
     assert "fill_classes='h-full rounded-full bg-kaori-primary'" in ranked
     assert 'bg-status-critical' not in results

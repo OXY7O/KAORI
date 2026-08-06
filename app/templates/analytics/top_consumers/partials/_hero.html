@@ -3,11 +3,12 @@
 {% set scope = payload.scope|default({}, true) %}
 {% set coverage = payload.coverage|default({}, true) %}
 {% set consumer_tone = posture.tone|default('unknown') %}
-{% set consumer_status = 'Healthy' if consumer_tone == 'normal' else ('Watch' if consumer_tone == 'warning' else ('Critical' if consumer_tone == 'critical' else 'Unknown')) %}
+{% set consumer_status = posture.label|default('Unknown', true) %}
 {% set highest_pressure_display = posture.highest_pressure|default('N/A') %}
 {% set highest_pressure_parts = highest_pressure_display.split(' · ') %}
 {% set highest_pressure_value = highest_pressure_parts[1] if highest_pressure_parts|length > 1 else highest_pressure_display %}
 {% set highest_pressure_resource = highest_pressure_parts[0] if highest_pressure_parts|length > 1 else 'Highest valid pressure' %}
+{% set manage_clusters_href = url_for('integrations.kubernetes') if url_for is defined else '#' %}
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
@@ -20,7 +21,7 @@
                         {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
                     {% else %}
                         {{ page_hero.meta_label('scan-search', scope.label|default('Cluster Scope')) }}
-                        {{ page_hero.meta_label('database', coverage.label|default('0 of 4 Resources')) }}
+                        {{ page_hero.meta_label('database', coverage.label|default('0 of 4 Resources Complete')) }}
                     {% endif %}
                 </div>
             {% endcall %}
@@ -42,7 +43,7 @@
                     ('list-checks', 'Actionable', recommendation_count, 'Prioritized actions')
                 ],
                 'Manage Clusters',
-                url_for('integrations.kubernetes'),
+                manage_clusters_href,
                 'server-cog'
             ) }}
         {% endif %}

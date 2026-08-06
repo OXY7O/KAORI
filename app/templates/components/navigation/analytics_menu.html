@@ -54,8 +54,8 @@
             <span class="truncate whitespace-nowrap">Resource Forecast</span>
         </a>
         <a href="{{ url_for('analytics.top_consumers') }}"
-           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint in ['analytics.top_consumers', 'analytics.top_consumers_section', 'analytics.top_consumers_table'] else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
-            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint in ['analytics.top_consumers', 'analytics.top_consumers_section', 'analytics.top_consumers_table'] else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint in ['analytics.top_consumers', 'analytics.top_consumers_table'] else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint in ['analytics.top_consumers', 'analytics.top_consumers_table'] else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
             <i data-lucide="users" class="h-3.5 w-3.5"></i>
             <span class="truncate whitespace-nowrap">Top Consumers</span>
         </a>

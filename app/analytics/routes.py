@@ -20,7 +20,6 @@ from app.analytics.storage.routes import (
 )
 from app.analytics.top_consumers.routes import (
     top_consumers,
-    top_consumers_section,
     top_consumers_table,
 )
 from app.analytics.utilization.routes import (
@@ -408,15 +407,6 @@ analytics_bp.add_url_rule(
     '/top-consumers',
     endpoint='top_consumers',
     view_func=top_consumers,
-    methods=[
-        'GET',
-    ],
-)
-
-analytics_bp.add_url_rule(
-    '/top-consumers/section',
-    endpoint='top_consumers_section',
-    view_func=top_consumers_section,
     methods=[
         'GET',
     ],

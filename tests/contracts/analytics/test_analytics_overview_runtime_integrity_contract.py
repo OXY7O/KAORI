@@ -57,7 +57,7 @@ def test_unavailable_domain_snapshots_return_none_not_synthetic_zero_payloads() 
         'app/analytics/capacity/service.py': 'if not isinstance(capacity_summary, dict):\n        return None',
         'app/analytics/storage/service.py': 'if not storage_summary:\n        return None',
         'app/analytics/workload/service.py': 'if not result.available:\n        return None',
-        'app/analytics/top_consumers/service.py': 'if not is_current_top_consumers_payload(payload):\n        return None',
+        'app/analytics/top_consumers/service.py': 'if not is_current_payload(payload):\n        return None',
         'app/analytics/forecast/presentation.py': 'if not isinstance(forecast_payload, dict):\n        return None',
         'app/analytics/alerts/snapshots.py': 'if not result.available:\n        return None',
     }

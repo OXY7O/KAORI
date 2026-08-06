@@ -12,13 +12,15 @@ def read(relative: str) -> str:
 
 
 def test_top_consumers_payload_declares_and_checks_schema_version() -> None:
-    source = read('app/analytics/top_consumers/service.py')
+    contracts = read('app/analytics/top_consumers/contracts.py')
+    domain = read('app/analytics/top_consumers/domain.py')
+    presentation = read('app/analytics/top_consumers/presentation.py')
 
-    assert 'TOP_CONSUMERS_PAYLOAD_SCHEMA_VERSION = 2' in source
-    assert "'schema_version': TOP_CONSUMERS_PAYLOAD_SCHEMA_VERSION" in source
-    assert 'def is_current_top_consumers_payload(payload: Any) -> bool:' in source
-    assert 'if not is_current_top_consumers_payload(payload):' in source
-    assert 'Run Refresh/Materialize Top Consumers' in source
+    assert 'TOP_CONSUMERS_PAYLOAD_SCHEMA_VERSION = 3' in contracts
+    assert "'schema_version': TOP_CONSUMERS_PAYLOAD_SCHEMA_VERSION" in domain
+    assert 'def is_current_payload(payload: Any) -> bool:' in domain
+    assert 'if not is_current_payload(payload):' in presentation
+    assert 'Run Refresh/Materialize Top Consumers' in presentation
 
 
 def test_top_consumers_hero_handles_legacy_payload_without_scope() -> None:

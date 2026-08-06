@@ -7,7 +7,7 @@ KAORI does not permit PromQL to be added directly to routes, templates, or servi
 - Profile: `prometheus-kubernetes-v1`
 - Prometheus API family: Prometheus 2.x HTTP API v1
 - Thanos query family: Thanos Query implementing the Prometheus HTTP v1 API
-- Registered queries: 171
+- Registered queries: 161
 - Source domains: core Prometheus, alerts, capacity, forecast, storage, top consumers, utilization, and workload analytics
 
 Each `QueryDefinition` declares:
@@ -90,3 +90,16 @@ Consumers must not flatten multiple ResourceQuota objects into one namespace/res
 Forecast query profiles use the longest supported history declaration (`required_history='90d'`). CPU, memory, and Pod demand are joined to Pod node identity, restricted to Ready workers, and exclude both `control-plane` and legacy `master` roles. Container and Pod gauges are normalized with `max by` over canonical identities before summation. Active Pod demand includes `Pending|Running`.
 
 Storage Forecast uses `kubelet_volume_stats_used_bytes` divided by `kubelet_volume_stats_capacity_bytes`. Duplicate scrape samples are normalized with `max by(namespace,persistentvolumeclaim)` before aggregation. Namespace variants filter both usage and capacity to the selected Namespace. Forecast capability validation covers CPU, memory, Pods, and Storage inputs.
+## Top Consumers query boundary
+
+Top Consumers uses current active workload and observed volume evidence with these invariants:
+
+- CPU and memory rates/gauges are normalized with `max by(namespace,pod,container)` before ranking or summation;
+- compute usage, requests, limits, and Pod ownership are joined to Pods in `Pending|Running`;
+- Pod density counts distinct `Running` Pods by Namespace;
+- CPU, memory, and Pod capacity intersect Ready nodes and exclude `control-plane|master`;
+- PVC usage and capacity use `max by(namespace,persistentvolumeclaim)` to avoid duplicate kubelet scrape inflation;
+- PVC pressure uses `kubelet_volume_stats_capacity_bytes`, never requested claim bytes;
+- cluster and Namespace query variants preserve identical identity and denominator semantics.
+
+Runtime transport requires instant-query capability. Domain capability observations remain advisory: when an advisory capability is missing and its exact query returns no series, KAORI preserves Unavailable evidence instead of interpreting the result as confirmed zero or a confirmed configuration gap.

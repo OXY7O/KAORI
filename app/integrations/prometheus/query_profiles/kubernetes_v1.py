@@ -13,6 +13,154 @@ _CONTAINER_MEMORY_NODE_LABEL = ('container_memory_working_set_bytes', ('containe
 _POD_PHASE_LABEL = ('kube_pod_status_phase', ('namespace', 'pod', 'phase'))
 _POD_INFO_LABEL = ('kube_pod_info', ('namespace', 'pod', 'node'))
 
+_NODE_READY_LABEL = (
+    'kube_node_status_condition',
+    ('node', 'condition', 'status'),
+)
+_TC_WORKER_METRICS = (
+    'kube_pod_info',
+    'kube_pod_status_phase',
+    'kube_node_status_condition',
+    'kube_node_role',
+)
+_TC_WORKER_LABELS = (
+    _POD_INFO_LABEL,
+    _POD_PHASE_LABEL,
+    _NODE_READY_LABEL,
+    _NODE_ROLE_LABEL,
+)
+
+def _tc_scope(namespace: str) -> str:
+    return f'namespace="{namespace}"' if namespace else 'namespace!=""'
+
+def _tc_active_worker_pods(
+    namespace: str,
+    *,
+    phases: str = 'Pending|Running',
+) -> str:
+    scope = _tc_scope(namespace)
+    return (
+        'max by (namespace, pod) (\n'
+        '  (\n'
+        f'    kube_pod_info{{{scope}, pod!="", node!=""}}\n'
+        '    and on(node)\n'
+        '    (\n'
+        '      (kube_node_status_condition{condition="Ready", status="true"} == 1)\n'
+        '      unless on(node)\n'
+        '      kube_node_role{role=~"control-plane|master"}\n'
+        '    )\n'
+        '  )\n'
+        '  and on(namespace, pod)\n'
+        '  max by (namespace, pod) (\n'
+        f'    kube_pod_status_phase{{{scope}, pod!="", phase=~"{phases}"}} == 1\n'
+        '  )\n'
+        ')'
+    )
+
+def _tc_container_signal(signal: str, namespace: str) -> str:
+    return (
+        'max by (namespace, pod, container) (\n'
+        '  max by (namespace, pod, container) (\n'
+        f'    {signal}\n'
+        '  )\n'
+        '  and on(namespace, pod)\n'
+        f'  {_tc_active_worker_pods(namespace)}\n'
+        ')'
+    )
+
+def _tc_cpu_signal(namespace: str) -> str:
+    scope = _tc_scope(namespace)
+    return _tc_container_signal(
+        'rate('
+        f'container_cpu_usage_seconds_total{{{scope}, pod!="", container!="", '
+        'container!="POD", image!=""}[5m])',
+        namespace,
+    )
+
+def _tc_memory_signal(namespace: str) -> str:
+    scope = _tc_scope(namespace)
+    return _tc_container_signal(
+        f'container_memory_working_set_bytes{{{scope}, pod!="", container!="", '
+        'container!="POD", image!=""}',
+        namespace,
+    )
+
+def _tc_resource_signal(namespace: str, *, resource: str, kind: str) -> str:
+    scope = _tc_scope(namespace)
+    metric = f'kube_pod_container_resource_{kind}'
+    unit = 'core' if resource == 'cpu' else 'byte'
+    return _tc_container_signal(
+        f'{metric}{{{scope}, pod!="", container!="", '
+        f'resource="{resource}", unit="{unit}"}}',
+        namespace,
+    )
+
+def _tc_pod_owner(namespace: str) -> str:
+    scope = _tc_scope(namespace)
+    return (
+        'max by (namespace, pod, owner_kind, owner_name, owner_is_controller) (\n'
+        f'  kube_pod_owner{{{scope}, pod!=""}}\n'
+        ')\n'
+        'and on(namespace, pod)\n'
+        f'{_tc_active_worker_pods(namespace)}'
+    )
+
+def _tc_pod_count(namespace: str) -> str:
+    return f'sum by (namespace) (\n{_tc_active_worker_pods(namespace, phases="Running")}\n)'
+
+def _tc_ready_worker_capacity(resource: str, unit: str) -> str:
+    return (
+        'sum(\n'
+        '  (\n'
+        f'    kube_node_status_allocatable{{resource="{resource}", unit="{unit}"}}\n'
+        '    unless on(node)\n'
+        '    kube_node_role{role=~"control-plane|master"}\n'
+        '  )\n'
+        '  and on(node)\n'
+        '  (kube_node_status_condition{condition="Ready", status="true"} == 1)\n'
+        ')'
+    )
+
+def _tc_pvc_signal(namespace: str, metric: str) -> str:
+    scope = _tc_scope(namespace)
+    return (
+        'max by (namespace, persistentvolumeclaim) (\n'
+        f'  {metric}{{{scope}, persistentvolumeclaim!=""}}\n'
+        ')'
+    )
+
+def _tc_definition(
+    key: str,
+    expression: str,
+    *,
+    metrics: tuple[str, ...],
+    labels: tuple[tuple[str, tuple[str, ...]], ...],
+    worker_scoped: bool = False,
+    worker_capacity: bool = False,
+) -> QueryDefinition:
+    required_metrics = metrics
+    required_labels = labels
+    if worker_scoped:
+        required_metrics = tuple(dict.fromkeys((*metrics, *_TC_WORKER_METRICS)))
+        required_labels = tuple(dict.fromkeys((*labels, *_TC_WORKER_LABELS)))
+    elif worker_capacity:
+        required_metrics = tuple(
+            dict.fromkeys(
+                (*metrics, 'kube_node_status_condition', 'kube_node_role')
+            )
+        )
+        required_labels = tuple(
+            dict.fromkeys((*labels, _NODE_READY_LABEL, _NODE_ROLE_LABEL))
+        )
+    return QueryDefinition(
+        key=key,
+        expression=expression,
+        domain='app.analytics.top_consumers',
+        required_metrics=required_metrics,
+        required_labels=required_labels,
+    )
+
+
 QUERIES: dict[str, QueryDefinition] = {
     'prometheus.queries.CLUSTER_NODE_COUNT': QueryDefinition(
         key='prometheus.queries.CLUSTER_NODE_COUNT',
@@ -437,257 +585,222 @@ QUERIES: dict[str, QueryDefinition] = {
         required_metrics=('kube_persistentvolume_status_phase',),
         required_labels=(),
     ),
-    'analytics.top_consumers.queries.NAMESPACE_ACTIVE_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.NAMESPACE_ACTIVE_QUERY',
-        expression='kube_namespace_status_phase{phase="Active"} == 1',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kube_namespace_status_phase',),
-        required_labels=(('kube_namespace_status_phase', ('phase',)),),
+    'analytics.top_consumers.queries.NAMESPACE_ACTIVE_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.NAMESPACE_ACTIVE_QUERY',
+        'max by (namespace) (kube_namespace_status_phase{phase="Active"} == 1)',
+        metrics=('kube_namespace_status_phase',),
+        labels=(('kube_namespace_status_phase', ('namespace', 'phase')),),
     ),
-    'analytics.top_consumers.queries.TOP_CPU_CONSUMERS_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.TOP_CPU_CONSUMERS_QUERY',
-        expression='topk(50, sum by (namespace, pod, container) (rate(container_cpu_usage_seconds_total{container!="", image!=""}[5m])))',
-        domain='app.analytics.top_consumers',
-        required_metrics=('container_cpu_usage_seconds_total',),
-        required_labels=(('container_cpu_usage_seconds_total', ('container', 'image')),),
+    'analytics.top_consumers.queries.TOP_CPU_CONSUMERS_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.TOP_CPU_CONSUMERS_QUERY',
+        f'topk(50,\n{_tc_cpu_signal("")}\n)',
+        metrics=('container_cpu_usage_seconds_total',),
+        labels=(('container_cpu_usage_seconds_total', ('namespace', 'pod', 'container', 'image')),),
+        worker_scoped=True,
     ),
-    'analytics.top_consumers.queries.TOP_CPU_CONSUMERS_BY_NAMESPACE_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.TOP_CPU_CONSUMERS_BY_NAMESPACE_QUERY',
-        expression='topk(50, sum by (namespace, pod, container) (rate(container_cpu_usage_seconds_total{container!="", image!="", namespace="$namespace"}[5m])))',
-        domain='app.analytics.top_consumers',
-        required_metrics=('container_cpu_usage_seconds_total',),
-        required_labels=(('container_cpu_usage_seconds_total', ('container', 'image', 'namespace')),),
+    'analytics.top_consumers.queries.TOP_CPU_CONSUMERS_BY_NAMESPACE_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.TOP_CPU_CONSUMERS_BY_NAMESPACE_QUERY',
+        f'topk(50,\n{_tc_cpu_signal("$namespace")}\n)',
+        metrics=('container_cpu_usage_seconds_total',),
+        labels=(('container_cpu_usage_seconds_total', ('namespace', 'pod', 'container', 'image')),),
+        worker_scoped=True,
     ),
-    'analytics.top_consumers.queries.CPU_REQUEST_BY_CONTAINER_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.CPU_REQUEST_BY_CONTAINER_QUERY',
-        expression='sum by (namespace, pod, container) (kube_pod_container_resource_requests{resource="cpu", unit="core"})',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kube_pod_container_resource_requests',),
-        required_labels=(('kube_pod_container_resource_requests', ('resource', 'unit')),),
+    'analytics.top_consumers.queries.CPU_REQUEST_BY_CONTAINER_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.CPU_REQUEST_BY_CONTAINER_QUERY',
+        _tc_resource_signal('', resource='cpu', kind='requests'),
+        metrics=('kube_pod_container_resource_requests',),
+        labels=(('kube_pod_container_resource_requests', ('namespace', 'pod', 'container', 'resource', 'unit')),),
+        worker_scoped=True,
     ),
-    'analytics.top_consumers.queries.CPU_REQUEST_BY_CONTAINER_NAMESPACE_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.CPU_REQUEST_BY_CONTAINER_NAMESPACE_QUERY',
-        expression='sum by (namespace, pod, container) (kube_pod_container_resource_requests{resource="cpu", unit="core", namespace="$namespace"})',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kube_pod_container_resource_requests',),
-        required_labels=(('kube_pod_container_resource_requests', ('namespace', 'resource', 'unit')),),
+    'analytics.top_consumers.queries.CPU_REQUEST_BY_CONTAINER_NAMESPACE_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.CPU_REQUEST_BY_CONTAINER_NAMESPACE_QUERY',
+        _tc_resource_signal('$namespace', resource='cpu', kind='requests'),
+        metrics=('kube_pod_container_resource_requests',),
+        labels=(('kube_pod_container_resource_requests', ('namespace', 'pod', 'container', 'resource', 'unit')),),
+        worker_scoped=True,
     ),
-    'analytics.top_consumers.queries.CPU_LIMIT_BY_CONTAINER_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.CPU_LIMIT_BY_CONTAINER_QUERY',
-        expression='sum by (namespace, pod, container) (kube_pod_container_resource_limits{resource="cpu", unit="core"})',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kube_pod_container_resource_limits',),
-        required_labels=(('kube_pod_container_resource_limits', ('resource', 'unit')),),
+    'analytics.top_consumers.queries.CPU_LIMIT_BY_CONTAINER_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.CPU_LIMIT_BY_CONTAINER_QUERY',
+        _tc_resource_signal('', resource='cpu', kind='limits'),
+        metrics=('kube_pod_container_resource_limits',),
+        labels=(('kube_pod_container_resource_limits', ('namespace', 'pod', 'container', 'resource', 'unit')),),
+        worker_scoped=True,
     ),
-    'analytics.top_consumers.queries.CPU_LIMIT_BY_CONTAINER_NAMESPACE_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.CPU_LIMIT_BY_CONTAINER_NAMESPACE_QUERY',
-        expression='sum by (namespace, pod, container) (kube_pod_container_resource_limits{resource="cpu", unit="core", namespace="$namespace"})',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kube_pod_container_resource_limits',),
-        required_labels=(('kube_pod_container_resource_limits', ('namespace', 'resource', 'unit')),),
+    'analytics.top_consumers.queries.CPU_LIMIT_BY_CONTAINER_NAMESPACE_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.CPU_LIMIT_BY_CONTAINER_NAMESPACE_QUERY',
+        _tc_resource_signal('$namespace', resource='cpu', kind='limits'),
+        metrics=('kube_pod_container_resource_limits',),
+        labels=(('kube_pod_container_resource_limits', ('namespace', 'pod', 'container', 'resource', 'unit')),),
+        worker_scoped=True,
     ),
-    'analytics.top_consumers.queries.CPU_ALLOCATABLE_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.CPU_ALLOCATABLE_QUERY',
-        expression='sum(kube_node_status_allocatable{resource="cpu", unit="core"} unless on(node) kube_node_role{role=~"control-plane|master"})',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kube_node_status_allocatable', 'kube_node_role'),
-        required_labels=(('kube_node_role', ('role',)), ('kube_node_status_allocatable', ('resource', 'unit'))),
+    'analytics.top_consumers.queries.CPU_ALLOCATABLE_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.CPU_ALLOCATABLE_QUERY',
+        _tc_ready_worker_capacity('cpu', 'core'),
+        metrics=('kube_node_status_allocatable',),
+        labels=(_ALLOCATABLE_NODE_RESOURCE_LABEL,),
+        worker_capacity=True,
     ),
-    'analytics.top_consumers.queries.TOTAL_CPU_USAGE_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.TOTAL_CPU_USAGE_QUERY',
-        expression='sum(rate(container_cpu_usage_seconds_total{container!="", image!=""}[5m]))',
-        domain='app.analytics.top_consumers',
-        required_metrics=('container_cpu_usage_seconds_total',),
-        required_labels=(('container_cpu_usage_seconds_total', ('container', 'image')),),
+    'analytics.top_consumers.queries.TOTAL_CPU_USAGE_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.TOTAL_CPU_USAGE_QUERY',
+        f'sum(\n{_tc_cpu_signal("")}\n)',
+        metrics=('container_cpu_usage_seconds_total',),
+        labels=(('container_cpu_usage_seconds_total', ('namespace', 'pod', 'container', 'image')),),
+        worker_scoped=True,
     ),
-    'analytics.top_consumers.queries.TOTAL_CPU_USAGE_BY_NAMESPACE_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.TOTAL_CPU_USAGE_BY_NAMESPACE_QUERY',
-        expression='sum(rate(container_cpu_usage_seconds_total{container!="", image!="", namespace="$namespace"}[5m]))',
-        domain='app.analytics.top_consumers',
-        required_metrics=('container_cpu_usage_seconds_total',),
-        required_labels=(('container_cpu_usage_seconds_total', ('container', 'image', 'namespace')),),
+    'analytics.top_consumers.queries.TOTAL_CPU_USAGE_BY_NAMESPACE_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.TOTAL_CPU_USAGE_BY_NAMESPACE_QUERY',
+        f'sum(\n{_tc_cpu_signal("$namespace")}\n)',
+        metrics=('container_cpu_usage_seconds_total',),
+        labels=(('container_cpu_usage_seconds_total', ('namespace', 'pod', 'container', 'image')),),
+        worker_scoped=True,
     ),
-    'analytics.top_consumers.queries.TOP_MEMORY_CONSUMERS_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.TOP_MEMORY_CONSUMERS_QUERY',
-        expression='topk(50, sum by (namespace, pod, container) (container_memory_working_set_bytes{container!="", image!=""}))',
-        domain='app.analytics.top_consumers',
-        required_metrics=('container_memory_working_set_bytes',),
-        required_labels=(('container_memory_working_set_bytes', ('container', 'image')),),
+    'analytics.top_consumers.queries.TOP_MEMORY_CONSUMERS_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.TOP_MEMORY_CONSUMERS_QUERY',
+        f'topk(50,\n{_tc_memory_signal("")}\n)',
+        metrics=('container_memory_working_set_bytes',),
+        labels=(('container_memory_working_set_bytes', ('namespace', 'pod', 'container', 'image')),),
+        worker_scoped=True,
     ),
-    'analytics.top_consumers.queries.TOP_MEMORY_CONSUMERS_BY_NAMESPACE_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.TOP_MEMORY_CONSUMERS_BY_NAMESPACE_QUERY',
-        expression='topk(50, sum by (namespace, pod, container) (container_memory_working_set_bytes{container!="", image!="", namespace="$namespace"}))',
-        domain='app.analytics.top_consumers',
-        required_metrics=('container_memory_working_set_bytes',),
-        required_labels=(('container_memory_working_set_bytes', ('container', 'image', 'namespace')),),
+    'analytics.top_consumers.queries.TOP_MEMORY_CONSUMERS_BY_NAMESPACE_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.TOP_MEMORY_CONSUMERS_BY_NAMESPACE_QUERY',
+        f'topk(50,\n{_tc_memory_signal("$namespace")}\n)',
+        metrics=('container_memory_working_set_bytes',),
+        labels=(('container_memory_working_set_bytes', ('namespace', 'pod', 'container', 'image')),),
+        worker_scoped=True,
     ),
-    'analytics.top_consumers.queries.MEMORY_REQUEST_BY_CONTAINER_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.MEMORY_REQUEST_BY_CONTAINER_QUERY',
-        expression='sum by (namespace, pod, container) (kube_pod_container_resource_requests{resource="memory", unit="byte"})',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kube_pod_container_resource_requests',),
-        required_labels=(('kube_pod_container_resource_requests', ('resource', 'unit')),),
+    'analytics.top_consumers.queries.MEMORY_REQUEST_BY_CONTAINER_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.MEMORY_REQUEST_BY_CONTAINER_QUERY',
+        _tc_resource_signal('', resource='memory', kind='requests'),
+        metrics=('kube_pod_container_resource_requests',),
+        labels=(('kube_pod_container_resource_requests', ('namespace', 'pod', 'container', 'resource', 'unit')),),
+        worker_scoped=True,
     ),
-    'analytics.top_consumers.queries.MEMORY_REQUEST_BY_CONTAINER_NAMESPACE_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.MEMORY_REQUEST_BY_CONTAINER_NAMESPACE_QUERY',
-        expression='sum by (namespace, pod, container) (kube_pod_container_resource_requests{resource="memory", unit="byte", namespace="$namespace"})',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kube_pod_container_resource_requests',),
-        required_labels=(('kube_pod_container_resource_requests', ('namespace', 'resource', 'unit')),),
+    'analytics.top_consumers.queries.MEMORY_REQUEST_BY_CONTAINER_NAMESPACE_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.MEMORY_REQUEST_BY_CONTAINER_NAMESPACE_QUERY',
+        _tc_resource_signal('$namespace', resource='memory', kind='requests'),
+        metrics=('kube_pod_container_resource_requests',),
+        labels=(('kube_pod_container_resource_requests', ('namespace', 'pod', 'container', 'resource', 'unit')),),
+        worker_scoped=True,
     ),
-    'analytics.top_consumers.queries.MEMORY_LIMIT_BY_CONTAINER_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.MEMORY_LIMIT_BY_CONTAINER_QUERY',
-        expression='sum by (namespace, pod, container) (kube_pod_container_resource_limits{resource="memory", unit="byte"})',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kube_pod_container_resource_limits',),
-        required_labels=(('kube_pod_container_resource_limits', ('resource', 'unit')),),
+    'analytics.top_consumers.queries.MEMORY_LIMIT_BY_CONTAINER_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.MEMORY_LIMIT_BY_CONTAINER_QUERY',
+        _tc_resource_signal('', resource='memory', kind='limits'),
+        metrics=('kube_pod_container_resource_limits',),
+        labels=(('kube_pod_container_resource_limits', ('namespace', 'pod', 'container', 'resource', 'unit')),),
+        worker_scoped=True,
     ),
-    'analytics.top_consumers.queries.MEMORY_LIMIT_BY_CONTAINER_NAMESPACE_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.MEMORY_LIMIT_BY_CONTAINER_NAMESPACE_QUERY',
-        expression='sum by (namespace, pod, container) (kube_pod_container_resource_limits{resource="memory", unit="byte", namespace="$namespace"})',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kube_pod_container_resource_limits',),
-        required_labels=(('kube_pod_container_resource_limits', ('namespace', 'resource', 'unit')),),
+    'analytics.top_consumers.queries.MEMORY_LIMIT_BY_CONTAINER_NAMESPACE_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.MEMORY_LIMIT_BY_CONTAINER_NAMESPACE_QUERY',
+        _tc_resource_signal('$namespace', resource='memory', kind='limits'),
+        metrics=('kube_pod_container_resource_limits',),
+        labels=(('kube_pod_container_resource_limits', ('namespace', 'pod', 'container', 'resource', 'unit')),),
+        worker_scoped=True,
     ),
-    'analytics.top_consumers.queries.MEMORY_ALLOCATABLE_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.MEMORY_ALLOCATABLE_QUERY',
-        expression='sum(kube_node_status_allocatable{resource="memory", unit="byte"} unless on(node) kube_node_role{role=~"control-plane|master"})',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kube_node_status_allocatable', 'kube_node_role'),
-        required_labels=(('kube_node_role', ('role',)), ('kube_node_status_allocatable', ('resource', 'unit'))),
+    'analytics.top_consumers.queries.MEMORY_ALLOCATABLE_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.MEMORY_ALLOCATABLE_QUERY',
+        _tc_ready_worker_capacity('memory', 'byte'),
+        metrics=('kube_node_status_allocatable',),
+        labels=(_ALLOCATABLE_NODE_RESOURCE_LABEL,),
+        worker_capacity=True,
     ),
-    'analytics.top_consumers.queries.TOTAL_MEMORY_USAGE_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.TOTAL_MEMORY_USAGE_QUERY',
-        expression='sum(container_memory_working_set_bytes{container!="", image!=""})',
-        domain='app.analytics.top_consumers',
-        required_metrics=('container_memory_working_set_bytes',),
-        required_labels=(('container_memory_working_set_bytes', ('container', 'image')),),
+    'analytics.top_consumers.queries.TOTAL_MEMORY_USAGE_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.TOTAL_MEMORY_USAGE_QUERY',
+        f'sum(\n{_tc_memory_signal("")}\n)',
+        metrics=('container_memory_working_set_bytes',),
+        labels=(('container_memory_working_set_bytes', ('namespace', 'pod', 'container', 'image')),),
+        worker_scoped=True,
     ),
-    'analytics.top_consumers.queries.TOTAL_MEMORY_USAGE_BY_NAMESPACE_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.TOTAL_MEMORY_USAGE_BY_NAMESPACE_QUERY',
-        expression='sum(container_memory_working_set_bytes{container!="", image!="", namespace="$namespace"})',
-        domain='app.analytics.top_consumers',
-        required_metrics=('container_memory_working_set_bytes',),
-        required_labels=(('container_memory_working_set_bytes', ('container', 'image', 'namespace')),),
+    'analytics.top_consumers.queries.TOTAL_MEMORY_USAGE_BY_NAMESPACE_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.TOTAL_MEMORY_USAGE_BY_NAMESPACE_QUERY',
+        f'sum(\n{_tc_memory_signal("$namespace")}\n)',
+        metrics=('container_memory_working_set_bytes',),
+        labels=(('container_memory_working_set_bytes', ('namespace', 'pod', 'container', 'image')),),
+        worker_scoped=True,
     ),
-    'analytics.top_consumers.queries.POD_OWNER_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.POD_OWNER_QUERY',
-        expression='kube_pod_owner{namespace!="", pod!=""}',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kube_pod_owner',),
-        required_labels=(('kube_pod_owner', ('namespace', 'pod', 'owner_kind', 'owner_name')),),
+    'analytics.top_consumers.queries.POD_OWNER_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.POD_OWNER_QUERY',
+        _tc_pod_owner(''),
+        metrics=('kube_pod_owner',),
+        labels=(('kube_pod_owner', ('namespace', 'pod', 'owner_kind', 'owner_name', 'owner_is_controller')),),
+        worker_scoped=True,
     ),
-    'analytics.top_consumers.queries.POD_OWNER_BY_NAMESPACE_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.POD_OWNER_BY_NAMESPACE_QUERY',
-        expression='kube_pod_owner{namespace="$namespace", pod!=""}',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kube_pod_owner',),
-        required_labels=(('kube_pod_owner', ('namespace', 'pod', 'owner_kind', 'owner_name')),),
+    'analytics.top_consumers.queries.POD_OWNER_BY_NAMESPACE_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.POD_OWNER_BY_NAMESPACE_QUERY',
+        _tc_pod_owner('$namespace'),
+        metrics=('kube_pod_owner',),
+        labels=(('kube_pod_owner', ('namespace', 'pod', 'owner_kind', 'owner_name', 'owner_is_controller')),),
+        worker_scoped=True,
     ),
-    'analytics.top_consumers.queries.TOP_POD_CONSUMERS_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.TOP_POD_CONSUMERS_QUERY',
-        expression='topk(50, sum by (namespace) (kube_pod_status_phase{phase="Running"} == 1))',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kube_pod_status_phase',),
-        required_labels=(('kube_pod_status_phase', ('phase',)),),
+    'analytics.top_consumers.queries.TOP_POD_CONSUMERS_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.TOP_POD_CONSUMERS_QUERY',
+        f'topk(50, {_tc_pod_count("")})',
+        metrics=(),
+        labels=(),
+        worker_scoped=True,
     ),
-    'analytics.top_consumers.queries.TOP_POD_CONSUMERS_BY_NAMESPACE_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.TOP_POD_CONSUMERS_BY_NAMESPACE_QUERY',
-        expression='topk(50, sum by (namespace) (kube_pod_status_phase{phase="Running", namespace="$namespace"} == 1))',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kube_pod_status_phase',),
-        required_labels=(('kube_pod_status_phase', ('namespace', 'phase')),),
+    'analytics.top_consumers.queries.TOP_POD_CONSUMERS_BY_NAMESPACE_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.TOP_POD_CONSUMERS_BY_NAMESPACE_QUERY',
+        f'topk(50, {_tc_pod_count("$namespace")})',
+        metrics=(),
+        labels=(),
+        worker_scoped=True,
     ),
-    'analytics.top_consumers.queries.POD_CAPACITY_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.POD_CAPACITY_QUERY',
-        expression='sum(kube_node_status_allocatable{resource="pods", unit="integer"} unless on(node) kube_node_role{role=~"control-plane|master"})',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kube_node_status_allocatable', 'kube_node_role'),
-        required_labels=(('kube_node_role', ('role',)), ('kube_node_status_allocatable', ('resource', 'unit'))),
+    'analytics.top_consumers.queries.POD_CAPACITY_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.POD_CAPACITY_QUERY',
+        _tc_ready_worker_capacity('pods', 'integer'),
+        metrics=('kube_node_status_allocatable',),
+        labels=(_ALLOCATABLE_NODE_RESOURCE_LABEL,),
+        worker_capacity=True,
     ),
-    'analytics.top_consumers.queries.TOTAL_RUNNING_PODS_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.TOTAL_RUNNING_PODS_QUERY',
-        expression='sum(kube_pod_status_phase{phase="Running"} == 1)',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kube_pod_status_phase',),
-        required_labels=(('kube_pod_status_phase', ('phase',)),),
+    'analytics.top_consumers.queries.TOTAL_RUNNING_PODS_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.TOTAL_RUNNING_PODS_QUERY',
+        f'sum({_tc_pod_count("")})',
+        metrics=(),
+        labels=(),
+        worker_scoped=True,
     ),
-    'analytics.top_consumers.queries.TOTAL_RUNNING_PODS_BY_NAMESPACE_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.TOTAL_RUNNING_PODS_BY_NAMESPACE_QUERY',
-        expression='sum(kube_pod_status_phase{phase="Running", namespace="$namespace"} == 1)',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kube_pod_status_phase',),
-        required_labels=(('kube_pod_status_phase', ('namespace', 'phase')),),
+    'analytics.top_consumers.queries.TOTAL_RUNNING_PODS_BY_NAMESPACE_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.TOTAL_RUNNING_PODS_BY_NAMESPACE_QUERY',
+        f'sum({_tc_pod_count("$namespace")})',
+        metrics=(),
+        labels=(),
+        worker_scoped=True,
     ),
-    'analytics.top_consumers.queries.TOP_PVC_CONSUMERS_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.TOP_PVC_CONSUMERS_QUERY',
-        expression='topk(50, kubelet_volume_stats_used_bytes{persistentvolumeclaim!=""})',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kubelet_volume_stats_used_bytes',),
-        required_labels=(('kubelet_volume_stats_used_bytes', ('persistentvolumeclaim',)),),
+    'analytics.top_consumers.queries.TOP_PVC_CONSUMERS_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.TOP_PVC_CONSUMERS_QUERY',
+        f'topk(50,\n{_tc_pvc_signal("", "kubelet_volume_stats_used_bytes")}\n)',
+        metrics=('kubelet_volume_stats_used_bytes',),
+        labels=(('kubelet_volume_stats_used_bytes', ('namespace', 'persistentvolumeclaim')),),
     ),
-    'analytics.top_consumers.queries.TOP_PVC_CONSUMERS_BY_NAMESPACE_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.TOP_PVC_CONSUMERS_BY_NAMESPACE_QUERY',
-        expression='topk(50, kubelet_volume_stats_used_bytes{persistentvolumeclaim!="", namespace="$namespace"})',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kubelet_volume_stats_used_bytes',),
-        required_labels=(('kubelet_volume_stats_used_bytes', ('namespace', 'persistentvolumeclaim')),),
+    'analytics.top_consumers.queries.TOP_PVC_CONSUMERS_BY_NAMESPACE_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.TOP_PVC_CONSUMERS_BY_NAMESPACE_QUERY',
+        f'topk(50,\n{_tc_pvc_signal("$namespace", "kubelet_volume_stats_used_bytes")}\n)',
+        metrics=('kubelet_volume_stats_used_bytes',),
+        labels=(('kubelet_volume_stats_used_bytes', ('namespace', 'persistentvolumeclaim')),),
     ),
-    'analytics.top_consumers.queries.PVC_CAPACITY_BY_CLAIM_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.PVC_CAPACITY_BY_CLAIM_QUERY',
-        expression='kubelet_volume_stats_capacity_bytes{persistentvolumeclaim!=""}',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kubelet_volume_stats_capacity_bytes',),
-        required_labels=(('kubelet_volume_stats_capacity_bytes', ('persistentvolumeclaim',)),),
+    'analytics.top_consumers.queries.PVC_CAPACITY_BY_CLAIM_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.PVC_CAPACITY_BY_CLAIM_QUERY',
+        _tc_pvc_signal('', 'kubelet_volume_stats_capacity_bytes'),
+        metrics=('kubelet_volume_stats_capacity_bytes',),
+        labels=(('kubelet_volume_stats_capacity_bytes', ('namespace', 'persistentvolumeclaim')),),
     ),
-    'analytics.top_consumers.queries.PVC_CAPACITY_BY_CLAIM_NAMESPACE_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.PVC_CAPACITY_BY_CLAIM_NAMESPACE_QUERY',
-        expression='kubelet_volume_stats_capacity_bytes{persistentvolumeclaim!="", namespace="$namespace"}',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kubelet_volume_stats_capacity_bytes',),
-        required_labels=(('kubelet_volume_stats_capacity_bytes', ('namespace', 'persistentvolumeclaim')),),
+    'analytics.top_consumers.queries.PVC_CAPACITY_BY_CLAIM_NAMESPACE_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.PVC_CAPACITY_BY_CLAIM_NAMESPACE_QUERY',
+        _tc_pvc_signal('$namespace', 'kubelet_volume_stats_capacity_bytes'),
+        metrics=('kubelet_volume_stats_capacity_bytes',),
+        labels=(('kubelet_volume_stats_capacity_bytes', ('namespace', 'persistentvolumeclaim')),),
     ),
-    'analytics.top_consumers.queries.PVC_AVAILABLE_BY_CLAIM_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.PVC_AVAILABLE_BY_CLAIM_QUERY',
-        expression='kubelet_volume_stats_available_bytes{persistentvolumeclaim!=""}',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kubelet_volume_stats_available_bytes',),
-        required_labels=(('kubelet_volume_stats_available_bytes', ('persistentvolumeclaim',)),),
+    'analytics.top_consumers.queries.TOTAL_PVC_USED_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.TOTAL_PVC_USED_QUERY',
+        f'sum(\n{_tc_pvc_signal("", "kubelet_volume_stats_used_bytes")}\n)',
+        metrics=('kubelet_volume_stats_used_bytes',),
+        labels=(('kubelet_volume_stats_used_bytes', ('namespace', 'persistentvolumeclaim')),),
     ),
-    'analytics.top_consumers.queries.PVC_AVAILABLE_BY_CLAIM_NAMESPACE_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.PVC_AVAILABLE_BY_CLAIM_NAMESPACE_QUERY',
-        expression='kubelet_volume_stats_available_bytes{persistentvolumeclaim!="", namespace="$namespace"}',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kubelet_volume_stats_available_bytes',),
-        required_labels=(('kubelet_volume_stats_available_bytes', ('namespace', 'persistentvolumeclaim')),),
-    ),
-    'analytics.top_consumers.queries.TOTAL_PVC_USED_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.TOTAL_PVC_USED_QUERY',
-        expression='sum(kubelet_volume_stats_used_bytes{persistentvolumeclaim!=""})',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kubelet_volume_stats_used_bytes',),
-        required_labels=(('kubelet_volume_stats_used_bytes', ('persistentvolumeclaim',)),),
-    ),
-    'analytics.top_consumers.queries.TOTAL_PVC_USED_BY_NAMESPACE_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.TOTAL_PVC_USED_BY_NAMESPACE_QUERY',
-        expression='sum(kubelet_volume_stats_used_bytes{persistentvolumeclaim!="", namespace="$namespace"})',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kubelet_volume_stats_used_bytes',),
-        required_labels=(('kubelet_volume_stats_used_bytes', ('namespace', 'persistentvolumeclaim')),),
-    ),
-    'analytics.top_consumers.queries.TOTAL_PVC_CAPACITY_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.TOTAL_PVC_CAPACITY_QUERY',
-        expression='sum(kubelet_volume_stats_capacity_bytes{persistentvolumeclaim!=""})',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kubelet_volume_stats_capacity_bytes',),
-        required_labels=(('kubelet_volume_stats_capacity_bytes', ('persistentvolumeclaim',)),),
-    ),
-    'analytics.top_consumers.queries.TOTAL_PVC_CAPACITY_BY_NAMESPACE_QUERY': QueryDefinition(
-        key='analytics.top_consumers.queries.TOTAL_PVC_CAPACITY_BY_NAMESPACE_QUERY',
-        expression='sum(kubelet_volume_stats_capacity_bytes{persistentvolumeclaim!="", namespace="$namespace"})',
-        domain='app.analytics.top_consumers',
-        required_metrics=('kubelet_volume_stats_capacity_bytes',),
-        required_labels=(('kubelet_volume_stats_capacity_bytes', ('namespace', 'persistentvolumeclaim')),),
+    'analytics.top_consumers.queries.TOTAL_PVC_USED_BY_NAMESPACE_QUERY': _tc_definition(
+        'analytics.top_consumers.queries.TOTAL_PVC_USED_BY_NAMESPACE_QUERY',
+        f'sum(\n{_tc_pvc_signal("$namespace", "kubelet_volume_stats_used_bytes")}\n)',
+        metrics=('kubelet_volume_stats_used_bytes',),
+        labels=(('kubelet_volume_stats_used_bytes', ('namespace', 'persistentvolumeclaim')),),
     ),
     'analytics.utilization.queries.CPU_CAPACITY': QueryDefinition(
         key='analytics.utilization.queries.CPU_CAPACITY',

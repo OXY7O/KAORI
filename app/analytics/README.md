@@ -621,7 +621,9 @@ Resource Forecast uses Holt-Winters as the default model, with Linear Trend and 
 
 ## Top Consumers presentation and snapshot contract
 
-Top Consumers follows `docs/design/components/ANALYTICS_TOP_CONSUMERS.md`. Namespace is a materialized snapshot dimension; local record controls do not create new snapshots. Structured consumer identity, resource-specific pressure, and Complete/Partial/Unavailable resource evidence replace display-string parsing and the former blended usage ratio. Rankings use the shared ranked evidence panel. Storage, Workload, and Top Consumers use the same shared Analytics record pagination component with full-page and HTMX ownership.
+Top Consumers follows `docs/design/components/ANALYTICS_TOP_CONSUMERS.md` and `docs/design/audits/KAORI_ANALYTICS_TOP_CONSUMERS_AUDIT_2026_08.md`. Namespace is a materialized snapshot dimension; resource, search, priority, focus, sort, active tab, and pagination are presentation-only. A requested Namespace must match the committed payload scope exactly.
+
+CPU and memory evidence includes only active Pods and normalizes duplicate container series before ranking. Pod pressure uses Ready-worker allocatable Pod capacity. PVC pressure uses observed mounted-volume capacity. Missing domain capability plus an empty query remains Unavailable rather than becoming confirmed zero or a false configuration gap. Ownership is split across `contracts.py`, `evidence.py`, `rows.py`, `domain.py`, `presentation.py`, `recommendations.py`, `service.py`, and `routes.py`. The table endpoint is HTMX-only and the unused `/top-consumers/section` compatibility surface is removed.
 
 ## Alerts & Anomalies Presentation Contract
 
