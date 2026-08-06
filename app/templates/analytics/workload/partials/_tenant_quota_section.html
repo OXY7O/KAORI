@@ -1,5 +1,6 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "analytics/components/_evidence_record_list.html" as evidence_list %}
+{% import "analytics/components/_record_detail_modal.html" as record_detail_modal %}
 {% import "analytics/components/_record_filter_bar.html" as record_filter %}
 {% import "analytics/components/_record_pagination.html" as record_pagination %}
 {% import "components/loading_bar.html" as loading_bar %}
@@ -79,7 +80,7 @@
             {% endcall %}
             <div class="divide-y divide-outline-subtle">
                 {% for row in tenant_quota_summary.rows %}
-                    <article x-data="{ expanded: false }" @keydown.escape.window="expanded = false" @kaori:analytics-collapse-details.window="expanded = false">
+                    <article x-data="{ detailOpen: false }" @kaori:analytics-collapse-details.window="detailOpen = false">
                         {% call evidence_list.row() %}
                             {% call evidence_list.cell(3) %}
                                 {{ evidence_list.identity('folder-tree', row.namespace, row.workloads ~ ' Active Pods · ' ~ row.quota_object_count ~ ' Quota Objects') }}
@@ -110,92 +111,196 @@
                                     {% if row.runtime_demand_object %}{{ table_label.metadata_label(row.runtime_demand_object, 'shield', size='compact') }}{% endif %}
                                 </div>
                                 <p class="mt-1 text-lg font-semibold tabular-nums {{ 'text-content-primary' if row.runtime_demand_available else analysis_surface.unavailable_value_classes() }}">{{ row.actual_usage_percent_display }}{% if row.runtime_demand_available %}%{% endif %}</p>
-                                <p class="mt-1 text-xs font-medium text-content-muted">Demand basis in View Details</p>
+                                <p class="mt-1 text-xs font-medium text-content-muted">Demand basis in View More</p>
                             {% endcall %}
                             {% call evidence_list.cell(2) %}
                                 {{ evidence_list.mobile_label('Risk') }}
                                 {{ table_label.status_label(row.risk.label, row.risk.tone, size='compact') }}
-                                <p class="mt-2 text-xs font-medium text-content-muted">Recommended action in details</p>
+                                <p class="mt-2 text-xs font-medium text-content-muted">Recommended action in View More</p>
                             {% endcall %}
                             {% call evidence_list.cell(2, 'right') %}
                                 {{ evidence_list.mobile_label('Action') }}
                                 <button type="button"
                                         class="{{ table_ui.action_classes() }} w-full whitespace-nowrap sm:w-auto"
-                                        @click="expanded = !expanded"
-                                        :aria-expanded="expanded ? 'true' : 'false'"
-                                        aria-controls="tenant-quota-details-{{ loop.index }}">
-                                    <i data-lucide="chevron-down" class="h-4 w-4 transition-transform" :class="expanded ? 'rotate-180' : ''"></i>
-                                    <span x-text="expanded ? 'Hide Details' : 'View Details'">View Details</span>
+                                        aria-haspopup="dialog"
+                                        :aria-expanded="detailOpen ? 'true' : 'false'"
+                                        aria-controls="tenant-quota-modal-{{ loop.index }}"
+                                        @click="detailOpen = true">
+                                    <i data-lucide="panel-top-open" class="h-4 w-4"></i>
+                                    <span>View More</span>
                                 </button>
                             {% endcall %}
                         {% endcall %}
-                        <div id="tenant-quota-details-{{ loop.index }}"
-                             x-show="expanded"
-                             x-bind:hidden="!expanded"
-                             hidden
-                             x-cloak
-                             class="border-t border-outline-subtle bg-surface-subtle px-4 py-4">
-                            <div class="grid overflow-hidden rounded-lg border border-outline-subtle bg-surface-card lg:grid-cols-3 lg:divide-x lg:divide-outline-subtle">
-                                <section class="p-4">
-                                    <div class="flex items-center gap-2">
-                                        <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="cpu" class="h-4 w-4"></i></span>
-                                        <h4 class="{{ analysis_surface.section_title_classes() }}">Effective CPU Boundary</h4>
+                        {% call record_detail_modal.render(
+                            'tenant-quota-modal-' ~ loop.index,
+                            'Tenant Quota Analysis',
+                            row.namespace,
+                            row.workloads ~ ' Active Pods · ' ~ row.quota_object_count ~ ' ResourceQuota Objects',
+                            icon='badge-gauge',
+                            footer_text='Quota boundaries, observed allocation, and runtime demand come from the latest committed Workload Analysis snapshot.'
+                        ) %}
+                            <div class="space-y-5">
+                                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                                    <div class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+                                        <div class="min-w-0">
+                                            <p class="{{ analysis_surface.metric_label_classes() }}">Tenant Governance Posture</p>
+                                            <h3 class="mt-1 text-base font-semibold text-content-primary">Effective Quota Boundary and Runtime Demand</h3>
+                                            <p class="mt-1 text-xs leading-5 text-content-secondary">Review the most restrictive ResourceQuota boundary, observed allocation, and active-Pod demand before approving tenant changes.</p>
+                                        </div>
+                                        <div class="flex flex-wrap gap-1.5">
+                                            {{ table_label.status_label(row.quota_status.label, row.quota_status.tone, size='compact') }}
+                                            {{ table_label.status_label(row.risk.label, row.risk.tone, size='compact') }}
+                                            {{ table_label.metadata_label(row.quota_object_count ~ ' Quota Objects', 'shield', size='compact') }}
+                                        </div>
                                     </div>
-                                    <dl class="mt-4 space-y-2 text-sm">
-                                        {% for label, value in [('Quota Limit', row.cpu_quota), ('Requested', row.cpu_requested), ('Limited', row.cpu_limited), ('Current Usage', row.cpu_actual)] %}
-                                            <div class="flex items-center justify-between gap-3"><dt class="text-content-muted">{{ label }}</dt><dd class="font-semibold text-content-primary">{{ value }}</dd></div>
-                                        {% endfor %}
-                                    </dl>
+                                    <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+                                        <div class="min-w-0 px-4 py-3 sm:px-5">
+                                            <p class="{{ analysis_surface.metric_label_classes() }}">Highest Quota Pressure</p>
+                                            <p class="mt-1 text-lg font-semibold text-content-primary">{{ row.quota_usage_percent_display }}{% if row.quota_pressure_available %}%{% endif %}</p>
+                                            <p class="mt-1 truncate text-xs leading-5 text-content-muted" title="{{ row.quota_pressure_resource }}{% if row.quota_pressure_object %} · {{ row.quota_pressure_object }}{% endif %}">{{ row.quota_pressure_resource }}{% if row.quota_pressure_object %} · {{ row.quota_pressure_object }}{% endif %}</p>
+                                        </div>
+                                        <div class="min-w-0 px-4 py-3 sm:px-5">
+                                            <p class="{{ analysis_surface.metric_label_classes() }}">Runtime Demand</p>
+                                            <p class="mt-1 text-lg font-semibold text-content-primary">{{ row.actual_usage_percent_display }}{% if row.runtime_demand_available %}%{% endif %}</p>
+                                            <p class="mt-1 truncate text-xs leading-5 text-content-muted" title="{{ row.runtime_demand_resource }}{% if row.runtime_demand_object %} · {{ row.runtime_demand_object }}{% endif %}">{{ row.runtime_demand_resource }}{% if row.runtime_demand_object %} · {{ row.runtime_demand_object }}{% endif %}</p>
+                                        </div>
+                                        <div class="min-w-0 px-4 py-3 sm:px-5">
+                                            <p class="{{ analysis_surface.metric_label_classes() }}">Active Pods</p>
+                                            <p class="mt-1 text-lg font-semibold text-content-primary">{{ row.workloads }}</p>
+                                            <p class="mt-1 text-xs leading-5 text-content-muted">Current namespace demand scope</p>
+                                        </div>
+                                        <div class="min-w-0 px-4 py-3 sm:px-5">
+                                            <p class="{{ analysis_surface.metric_label_classes() }}">Quota Key Coverage</p>
+                                            <p class="mt-1 text-lg font-semibold text-content-primary">{{ 'Complete' if not row.missing_key_labels else 'Review Required' }}</p>
+                                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ row.missing_key_labels|length }} required keys missing</p>
+                                        </div>
+                                    </div>
                                 </section>
-                                <section class="p-4">
-                                    <div class="flex items-center gap-2">
-                                        <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="memory-stick" class="h-4 w-4"></i></span>
-                                        <h4 class="{{ analysis_surface.section_title_classes() }}">Effective Memory Boundary</h4>
-                                    </div>
-                                    <dl class="mt-4 space-y-2 text-sm">
-                                        {% for label, value in [('Quota Limit', row.memory_quota), ('Requested', row.memory_requested), ('Limited', row.memory_limited), ('Current Usage', row.memory_actual)] %}
-                                            <div class="flex items-center justify-between gap-3"><dt class="text-content-muted">{{ label }}</dt><dd class="font-semibold text-content-primary">{{ value }}</dd></div>
-                                        {% endfor %}
-                                    </dl>
-                                </section>
-                                <section class="p-4">
-                                    <div class="flex items-center gap-2">
-                                        <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
-                                        <h4 class="{{ analysis_surface.section_title_classes() }}">Quota Object Coverage</h4>
-                                    </div>
-                                    <div class="mt-4 flex flex-wrap gap-1.5">
+
+                                <div class="grid gap-4 lg:grid-cols-2">
+                                    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                                        <header class="flex items-start gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5">
+                                            <span class="{{ analysis_surface.resource_icon_classes('cpu') }}"><i data-lucide="cpu" class="h-4 w-4"></i></span>
+                                            <div>
+                                                <h3 class="text-sm font-semibold text-content-primary">Effective CPU Boundary</h3>
+                                                <p class="mt-1 text-xs leading-5 text-content-secondary">The most restrictive CPU hard limit is compared with requested, limited, and current active-Pod demand.</p>
+                                            </div>
+                                        </header>
+                                        <div class="grid grid-cols-2 divide-x divide-y divide-outline-subtle">
+                                            {% for label, value in [('Quota Limit', row.cpu_quota), ('Requested', row.cpu_requested), ('Limited', row.cpu_limited), ('Current Usage', row.cpu_actual)] %}
+                                                <div class="min-w-0 px-4 py-3">
+                                                    <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                                                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ value }}</p>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                        <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
+                                            <div class="flex items-center justify-between gap-3 text-xs"><span class="text-content-muted">Current Demand Against CPU Quota</span><span class="font-semibold tabular-nums text-content-primary">{{ row.cpu_actual_percent }}{% if row.cpu_actual_available and row.cpu_quota != 'N/A' %}%{% endif %}</span></div>
+                                            {% if row.cpu_actual_available and row.cpu_quota != 'N/A' %}{% set cpu_quota_tone = progress_bar.pressure_tone(row.cpu_actual_percent)|trim %}{{ progress_bar.semantic_bar(row.cpu_actual_percent, cpu_quota_tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.namespace ~ ' CPU runtime demand against quota') }}{% else %}<p class="mt-2 text-xs text-content-muted">CPU runtime demand or quota denominator is unavailable.</p>{% endif %}
+                                        </div>
+                                    </section>
+
+                                    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                                        <header class="flex items-start gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5">
+                                            <span class="{{ analysis_surface.resource_icon_classes('memory') }}"><i data-lucide="memory-stick" class="h-4 w-4"></i></span>
+                                            <div>
+                                                <h3 class="text-sm font-semibold text-content-primary">Effective Memory Boundary</h3>
+                                                <p class="mt-1 text-xs leading-5 text-content-secondary">The most restrictive memory hard limit is compared with requested, limited, and current working-set demand.</p>
+                                            </div>
+                                        </header>
+                                        <div class="grid grid-cols-2 divide-x divide-y divide-outline-subtle">
+                                            {% for label, value in [('Quota Limit', row.memory_quota), ('Requested', row.memory_requested), ('Limited', row.memory_limited), ('Current Usage', row.memory_actual)] %}
+                                                <div class="min-w-0 px-4 py-3">
+                                                    <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                                                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ value }}</p>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                        <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
+                                            <div class="flex items-center justify-between gap-3 text-xs"><span class="text-content-muted">Current Demand Against Memory Quota</span><span class="font-semibold tabular-nums text-content-primary">{{ row.memory_actual_percent }}{% if row.memory_actual_available and row.memory_quota != 'N/A' %}%{% endif %}</span></div>
+                                            {% if row.memory_actual_available and row.memory_quota != 'N/A' %}{% set memory_quota_tone = progress_bar.pressure_tone(row.memory_actual_percent)|trim %}{{ progress_bar.semantic_bar(row.memory_actual_percent, memory_quota_tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.namespace ~ ' memory runtime demand against quota') }}{% else %}<p class="mt-2 text-xs text-content-muted">Memory runtime demand or quota denominator is unavailable.</p>{% endif %}
+                                        </div>
+                                    </section>
+                                </div>
+
+                                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                                    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+                                        <div class="flex min-w-0 items-start gap-3">
+                                            <span class="{{ analysis_surface.role_icon_classes('evidence') }}"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
+                                            <div>
+                                                <h3 class="text-sm font-semibold text-content-primary">ResourceQuota Object Evidence</h3>
+                                                <p class="mt-1 text-xs leading-5 text-content-secondary">Each ResourceQuota object remains independent. Effective pressure uses the most constraining observed object and resource.</p>
+                                            </div>
+                                        </div>
+                                        {% if row.missing_key_labels %}{{ table_label.status_label(row.missing_key_labels|length ~ ' Missing Keys', tone='warning', size='compact') }}{% else %}{{ table_label.status_label('Required Keys Complete', tone='normal', size='compact') }}{% endif %}
+                                    </header>
+                                    <div class="grid gap-4 p-4 sm:p-5 lg:grid-cols-2">
                                         {% for quota in row.quota_objects %}
-                                            {{ table_label.metadata_label(quota.name, 'shield', size='compact') }}
+                                            <article class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
+                                                <div class="flex items-center justify-between gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3">
+                                                    <div class="flex min-w-0 items-center gap-2">
+                                                        <i data-lucide="shield" class="h-4 w-4 shrink-0 text-content-muted"></i>
+                                                        <h4 class="truncate text-sm font-semibold text-content-primary" title="{{ quota.name }}">{{ quota.name }}</h4>
+                                                    </div>
+                                                    {{ table_label.metadata_label((quota.hard_items|length) ~ ' Hard Keys', size='compact') }}
+                                                </div>
+                                                <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+                                                    <div class="p-4">
+                                                        <p class="{{ analysis_surface.metric_label_classes() }}">Hard Boundary</p>
+                                                        <dl class="mt-3 space-y-2 text-xs">
+                                                            {% for item in quota.hard_items %}<div class="flex items-center justify-between gap-3"><dt class="text-content-muted">{{ item.label }}</dt><dd class="text-right font-semibold text-content-primary">{{ item.value }}</dd></div>{% else %}<p class="text-content-muted">No hard quota keys observed.</p>{% endfor %}
+                                                        </dl>
+                                                    </div>
+                                                    <div class="p-4">
+                                                        <p class="{{ analysis_surface.metric_label_classes() }}">Observed Used</p>
+                                                        <dl class="mt-3 space-y-2 text-xs">
+                                                            {% for item in quota.used_items %}<div class="flex items-center justify-between gap-3"><dt class="text-content-muted">{{ item.label }}</dt><dd class="text-right font-semibold text-content-primary">{{ item.value }}</dd></div>{% else %}<p class="text-content-muted">Used-value evidence is unavailable.</p>{% endfor %}
+                                                        </dl>
+                                                    </div>
+                                                </div>
+                                            </article>
                                         {% else %}
-                                            {{ table_label.metadata_label('No ResourceQuota Object', 'circle-help', size='compact') }}
+                                            <div class="lg:col-span-2 rounded-lg border border-dashed border-outline-strong bg-surface-muted px-5 py-8 text-center">
+                                                <p class="text-sm font-semibold text-content-primary">No ResourceQuota Object Available</p>
+                                                <p class="mt-1 text-xs leading-5 text-content-muted">This namespace has active demand but no committed ResourceQuota object evidence.</p>
+                                            </div>
                                         {% endfor %}
                                     </div>
-                                    {% if row.missing_key_labels %}
-                                        <p class="mt-4 text-xs font-semibold uppercase tracking-wide text-content-muted">Missing Keys Across All Quota Objects</p>
-                                        <div class="mt-2 flex flex-wrap gap-1.5">{% for item in row.missing_key_labels %}{{ table_label.status_label(item, tone='warning', size='compact') }}{% endfor %}</div>
-                                    {% else %}
-                                        <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3 text-sm font-semibold text-content-secondary">Combined ResourceQuota key coverage is complete.</div>
-                                    {% endif %}
-                                    <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-hover px-3 py-3">
-                                        <p class="{{ analysis_surface.metric_label_classes() }}">Runtime Demand Interpretation</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.runtime_demand_resource }} demand{% if row.runtime_demand_object %} against {{ row.runtime_demand_object }}{% endif %} is {{ row.actual_usage_percent_display }}{% if row.runtime_demand_available %}%{% endif %}. The displayed percentage is the highest active-Pod demand against the most restrictive applicable hard quota for this namespace.</p>
+                                    <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
+                                        {% if row.missing_key_labels %}
+                                            <p class="{{ analysis_surface.metric_label_classes() }}">Missing Keys Across All Quota Objects</p>
+                                            <div class="mt-2 flex flex-wrap gap-1.5">{% for item in row.missing_key_labels %}{{ table_label.status_label(item, tone='warning', size='compact') }}{% endfor %}</div>
+                                        {% else %}
+                                            <p class="text-xs leading-5 text-content-secondary">Combined ResourceQuota coverage includes every required CPU, memory, and pod key.</p>
+                                        {% endif %}
                                     </div>
-                                    <p class="mt-4 text-xs leading-5 text-content-muted">Multiple ResourceQuota objects are evaluated independently. The displayed pressure is the most constraining observed object and resource. A configured zero value remains a configured key.</p>
+                                </section>
+
+                                <section class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)]">
+                                    <article class="rounded-xl border border-outline-default bg-surface-card p-4 sm:p-5">
+                                        <div class="flex items-start gap-3">
+                                            <span class="{{ analysis_surface.role_icon_classes('evidence') }}"><i data-lucide="activity" class="h-4 w-4"></i></span>
+                                            <div class="min-w-0">
+                                                <p class="{{ analysis_surface.metric_label_classes() }}">Runtime Demand Interpretation</p>
+                                                <h3 class="mt-1 text-sm font-semibold text-content-primary">{{ row.runtime_demand_resource }}{% if row.runtime_demand_object %} Against {{ row.runtime_demand_object }}{% endif %}</h3>
+                                                <p class="mt-2 text-xs leading-5 text-content-secondary">The displayed {{ row.actual_usage_percent_display }}{% if row.runtime_demand_available %}%{% endif %} is the highest active-Pod demand against the most restrictive applicable hard quota for this namespace.</p>
+                                                <p class="mt-2 text-xs leading-5 text-content-muted">A configured zero remains a configured key. Multiple ResourceQuota objects are not merged into a synthetic denominator.</p>
+                                            </div>
+                                        </div>
+                                    </article>
+
+                                    {{ analysis_surface.interpretation_callout(
+                                        'Recommended Action',
+                                        row.recommendation,
+                                        'Validate the pressure resource, owning team, and application growth expectation before changing quota boundaries.',
+                                        icon='lightbulb',
+                                        role='brand',
+                                        tone=row.risk.tone,
+                                        card=true
+                                    ) }}
                                 </section>
                             </div>
-                            <div class="mt-3">
-                                {{ analysis_surface.interpretation_callout(
-                                    'Recommended Action',
-                                    row.recommendation,
-                                    'Validate the pressure resource, runtime demand, and tenant ownership before changing quota boundaries.',
-                                    icon='lightbulb',
-                                    role='brand',
-                                    tone=row.risk.tone,
-                                    compact=true,
-                                    card=true
-                                ) }}
-                            </div>
-                        </div>
+                        {% endcall %}
                     </article>
                 {% else %}
                     {{ evidence_list.empty('No Tenant Quota Data Available', 'No Namespace quota records matched the active scope and local filters, or committed quota evidence is unavailable.', 'users-round') }}

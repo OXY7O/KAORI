@@ -38,23 +38,44 @@ def test_workload_table_pagination_uses_full_page_and_partial_endpoint_ownership
     assert "'analytics.workload'" in mapping
 
 
-def test_workload_detail_actions_are_restored_to_the_action_column() -> None:
+def test_workload_detail_actions_open_contextual_modals_from_the_action_column() -> None:
+    component = read('app/templates/analytics/components/_record_detail_modal.html')
     tenant = read('app/templates/analytics/workload/partials/_tenant_quota_section.html')
     mapping = read('app/templates/analytics/workload/partials/_workload_mapping_section.html')
+
+    assert 'x-teleport="body"' in component
+    assert 'role="dialog"' in component
+    assert 'aria-modal="true"' in component
+    assert 'max-w-6xl' in component
+    assert 'overflow-y-auto' in component
 
     for content in (tenant, mapping):
         assert "evidence_list.header_cell('Action'" in content
         assert 'components/table.html' in content
+        assert 'analytics/components/_record_detail_modal.html' in content
+        assert 'record_detail_modal.render' in content
         assert 'table_ui.action_classes()' in content
         assert 'w-full whitespace-nowrap sm:w-auto' in content
-        assert "expanded ? 'Hide Details' : 'View Details'" in content
-        assert 'data-lucide="scan-search"' not in content
-        assert content.count('data-lucide="chevron-down"') >= 1
-        assert 'class="group flex w-full items-center gap-3 border-t' not in content
-        assert 'class="border-t border-outline-subtle bg-surface-subtle px-4 py-4"' in content
+        assert 'aria-haspopup="dialog"' in content
+        assert 'data-lucide="panel-top-open"' in content
+        assert '<span>View More</span>' in content
+        assert 'x-data="{ detailOpen: false }"' in content
+        assert '@click="detailOpen = true"' in content
+        assert 'expanded ?' not in content
+        assert 'data-lucide="chevron-down"' not in content
+        assert 'class="border-t border-outline-subtle bg-surface-subtle px-4 py-4"' not in content
 
-    assert 'aria-controls="tenant-quota-details-{{ loop.index }}"' in tenant
-    assert 'aria-controls="workload-mapping-details-{{ loop.index }}"' in mapping
+    assert 'aria-controls="tenant-quota-modal-{{ loop.index }}"' in tenant
+    assert "'tenant-quota-modal-' ~ loop.index" in tenant
+    assert 'ResourceQuota Object Evidence' in tenant
+    assert 'Effective CPU Boundary' in tenant
+    assert 'Effective Memory Boundary' in tenant
+
+    assert 'aria-controls="workload-mapping-modal-{{ loop.index }}"' in mapping
+    assert "'workload-mapping-modal-' ~ loop.index" in mapping
+    assert 'CPU Request and Limit Profile' in mapping
+    assert 'Memory Request and Limit Profile' in mapping
+    assert 'Pod Membership' in mapping
 
 
 def test_workload_overview_uses_compact_metric_strip_and_scope_context() -> None:
@@ -230,6 +251,7 @@ def test_changed_templates_parse() -> None:
     changed_templates = (
         'app/templates/components/pagination.html',
         'app/templates/components/recommendation_pager.html',
+        'app/templates/analytics/components/_record_detail_modal.html',
         'app/templates/analytics/workload/partials/_overview.html',
         'app/templates/analytics/workload/partials/_tenant_quota_section.html',
         'app/templates/analytics/workload/partials/_workload_mapping_section.html',

@@ -78,12 +78,14 @@ def test_workload_sections_use_inventory_aligned_overview_and_record_cards() -> 
     assert 'embedded=true' in mapping
     assert 'Runtime Demand Interpretation' in tenant
     assert 'Request Fit Interpretation' in mapping
-    assert 'Demand basis in View Details' in tenant
-    assert 'Interpretation in View Details' in mapping
+    assert 'Demand basis in View More' in tenant
+    assert 'Interpretation in View More' in mapping
     assert '{{ row.recommendation }}</p>' not in tenant.split("evidence_list.mobile_label('Risk')", 1)[1].split("evidence_list.cell(2, 'right')", 1)[0]
     assert '{{ row.metrics_coverage.description }}</p>' not in mapping.split("evidence_list.mobile_label('Evidence & QoS')", 1)[1].split("evidence_list.cell(2, 'right')", 1)[0]
     assert 'card=true' in tenant
     assert 'card=true' in mapping
+    assert 'record_detail_modal.render' in tenant
+    assert 'record_detail_modal.render' in mapping
     assert 'detached=true' in page
 
 

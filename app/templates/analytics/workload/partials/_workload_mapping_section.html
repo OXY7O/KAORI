@@ -1,5 +1,6 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "analytics/components/_evidence_record_list.html" as evidence_list %}
+{% import "analytics/components/_record_detail_modal.html" as record_detail_modal %}
 {% import "analytics/components/_record_filter_bar.html" as record_filter %}
 {% import "analytics/components/_record_pagination.html" as record_pagination %}
 {% import "components/loading_bar.html" as loading_bar %}
@@ -97,7 +98,7 @@
             {% endcall %}
             <div class="divide-y divide-outline-subtle">
                 {% for row in workload_mapping_payload.rows %}
-                    <article x-data="{ expanded: false }" @keydown.escape.window="expanded = false" @kaori:analytics-collapse-details.window="expanded = false">
+                    <article x-data="{ detailOpen: false }" @kaori:analytics-collapse-details.window="detailOpen = false">
                         {% call evidence_list.row() %}
                             {% call evidence_list.cell(3) %}
                                 {{ evidence_list.identity('boxes', row.workload, row.type ~ ' · ' ~ row.namespace ~ ' · ' ~ row.replicas ~ ' Pods') }}
@@ -116,7 +117,7 @@
                                     <div class="flex items-center justify-between gap-3"><span class="text-content-muted">CPU</span><span class="font-semibold tabular-nums {{ 'text-content-primary' if row.cpu_request_utilization_available else analysis_surface.unavailable_value_classes() }}">{{ row.cpu_request_utilization_display }}{% if row.cpu_request_utilization_available %}%{% endif %}</span></div>
                                     <div class="flex items-center justify-between gap-3"><span class="text-content-muted">Memory</span><span class="font-semibold tabular-nums {{ 'text-content-primary' if row.memory_request_utilization_available else analysis_surface.unavailable_value_classes() }}">{{ row.memory_request_utilization_display }}{% if row.memory_request_utilization_available %}%{% endif %}</span></div>
                                 </div>
-                                <p class="mt-2 text-xs font-medium text-content-muted">Interpretation in View Details</p>
+                                <p class="mt-2 text-xs font-medium text-content-muted">Interpretation in View More</p>
                             {% endcall %}
                             {% call evidence_list.cell(2) %}
                                 {{ evidence_list.mobile_label('Evidence & QoS') }}
@@ -124,87 +125,165 @@
                                     {{ table_label.status_label(row.metrics_coverage.label, row.metrics_coverage.tone, size='compact') }}
                                     {{ table_label.metadata_label(row.qos.label, 'layers', size='compact') }}
                                 </div>
-                                <p class="mt-2 text-xs font-medium text-content-muted">{{ row.detail.pods|length }} Pods · Evidence narrative in details</p>
+                                <p class="mt-2 text-xs font-medium text-content-muted">{{ row.detail.pods|length }} Pods · Evidence narrative in View More</p>
                             {% endcall %}
                             {% call evidence_list.cell(2, 'right') %}
                                 {{ evidence_list.mobile_label('Action') }}
                                 <button type="button"
                                         class="{{ table_ui.action_classes() }} w-full whitespace-nowrap sm:w-auto"
-                                        @click="expanded = !expanded"
-                                        :aria-expanded="expanded ? 'true' : 'false'"
-                                        aria-controls="workload-mapping-details-{{ loop.index }}">
-                                    <i data-lucide="chevron-down" class="h-4 w-4 transition-transform" :class="expanded ? 'rotate-180' : ''"></i>
-                                    <span x-text="expanded ? 'Hide Details' : 'View Details'">View Details</span>
+                                        aria-haspopup="dialog"
+                                        :aria-expanded="detailOpen ? 'true' : 'false'"
+                                        aria-controls="workload-mapping-modal-{{ loop.index }}"
+                                        @click="detailOpen = true">
+                                    <i data-lucide="panel-top-open" class="h-4 w-4"></i>
+                                    <span>View More</span>
                                 </button>
                             {% endcall %}
                         {% endcall %}
 
-                        <div id="workload-mapping-details-{{ loop.index }}"
-                             x-show="expanded"
-                             x-bind:hidden="!expanded"
-                             hidden
-                             x-cloak
-                             class="border-t border-outline-subtle bg-surface-subtle px-4 py-4">
-                            <div class="grid overflow-hidden rounded-lg border border-outline-subtle bg-surface-card lg:grid-cols-3 lg:divide-x lg:divide-outline-subtle">
-                                <section class="p-4">
-                                    <div class="flex items-center gap-2"><span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="cpu" class="h-4 w-4"></i></span><h4 class="{{ analysis_surface.section_title_classes() }}">CPU Profile</h4></div>
-                                    <dl class="mt-4 space-y-2 text-sm">
-                                        {% for label, value in [('Request', row.cpu_request), ('Limit', row.cpu_limit), ('Current Usage', row.cpu_current), ('Selected-Window Pod Peak Sum', row.cpu_peak_sum), ('Current Request Utilization', row.cpu_request_utilization_display ~ ('%' if row.cpu_request_utilization_available else '')), ('Peak Request Utilization', row.cpu_peak_request_utilization_display ~ ('%' if row.cpu_peak_request_utilization_available else ''))] %}
-                                            <div class="flex items-center justify-between gap-3"><dt class="text-content-muted">{{ label }}</dt><dd class="text-right font-semibold text-content-primary">{{ value }}</dd></div>
+                        {% call record_detail_modal.render(
+                            'workload-mapping-modal-' ~ loop.index,
+                            'Workload Resource Mapping',
+                            row.workload,
+                            row.type ~ ' · ' ~ row.namespace ~ ' · ' ~ row.replicas ~ ' Pods',
+                            icon='boxes',
+                            footer_text='Request, limit, usage, and selected-window peak evidence come from the latest committed Workload Analysis snapshot.'
+                        ) %}
+                            <div class="space-y-5">
+                                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                                    <div class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+                                        <div class="min-w-0">
+                                            <p class="{{ analysis_surface.metric_label_classes() }}">Governance Posture</p>
+                                            <h3 class="mt-1 text-base font-semibold text-content-primary">Resource Configuration and Runtime Evidence</h3>
+                                            <p class="mt-1 text-xs leading-5 text-content-secondary">Assess whether configured boundaries fit current and selected-window demand before changing requests or limits.</p>
+                                        </div>
+                                        <div class="flex flex-wrap gap-1.5">
+                                            {{ table_label.status_label(row.configuration_status.label, row.configuration_status.tone, size='compact') }}
+                                            {{ table_label.status_label(row.risk.label, row.risk.tone, size='compact') }}
+                                            {{ table_label.metadata_label('QoS ' ~ row.qos.label, 'layers', size='compact') }}
+                                            {{ table_label.status_label('Evidence ' ~ row.metrics_coverage.label, row.metrics_coverage.tone, size='compact') }}
+                                        </div>
+                                    </div>
+                                    <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+                                        {% for label, value, helper in [
+                                            ('Request Coverage', row.request_coverage.label, 'CPU and memory requests'),
+                                            ('Limit Coverage', row.limit_coverage.label, 'CPU and memory limits'),
+                                            ('CPU Request Fit', row.cpu_request_utilization_display ~ ('%' if row.cpu_request_utilization_available else ''), 'Current usage versus request'),
+                                            ('Memory Request Fit', row.memory_request_utilization_display ~ ('%' if row.memory_request_utilization_available else ''), 'Current usage versus request')
+                                        ] %}
+                                            <div class="min-w-0 px-4 py-3 sm:px-5">
+                                                <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                                                <p class="mt-1 text-lg font-semibold text-content-primary">{{ value }}</p>
+                                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                                            </div>
                                         {% endfor %}
-                                    </dl>
-                                    {% if row.cpu_request_utilization_available %}{% set cpu_fit_tone = progress_bar.pressure_tone(row.cpu_request_utilization)|trim %}{{ progress_bar.semantic_bar(row.cpu_request_utilization, cpu_fit_tone, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.workload ~ ' CPU request utilization status') }}{% endif %}
-                                </section>
-                                <section class="p-4">
-                                    <div class="flex items-center gap-2"><span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="memory-stick" class="h-4 w-4"></i></span><h4 class="{{ analysis_surface.section_title_classes() }}">Memory Profile</h4></div>
-                                    <dl class="mt-4 space-y-2 text-sm">
-                                        {% for label, value in [('Request', row.memory_request), ('Limit', row.memory_limit), ('Current Usage', row.memory_current), ('Selected-Window Pod Peak Sum', row.memory_peak_sum), ('Current Request Utilization', row.memory_request_utilization_display ~ ('%' if row.memory_request_utilization_available else '')), ('Peak Request Utilization', row.memory_peak_request_utilization_display ~ ('%' if row.memory_peak_request_utilization_available else ''))] %}
-                                            <div class="flex items-center justify-between gap-3"><dt class="text-content-muted">{{ label }}</dt><dd class="text-right font-semibold text-content-primary">{{ value }}</dd></div>
-                                        {% endfor %}
-                                    </dl>
-                                    {% if row.memory_request_utilization_available %}{% set memory_fit_tone = progress_bar.pressure_tone(row.memory_request_utilization)|trim %}{{ progress_bar.semantic_bar(row.memory_request_utilization, memory_fit_tone, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.workload ~ ' memory request utilization status') }}{% endif %}
-                                </section>
-                                <section class="p-4">
-                                    <div class="flex items-center justify-between gap-3">
-                                        <div class="flex items-center gap-2"><span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="package-search" class="h-4 w-4"></i></span><h4 class="{{ analysis_surface.section_title_classes() }}">Pods, QoS & Evidence</h4></div>
-                                        {{ table_label.metadata_label((row.detail.pods|length) ~ ' Pods', size='compact') }}
-                                    </div>
-                                    <div class="mt-4 flex flex-wrap gap-2">
-                                        {{ table_label.status_label('Requests ' ~ row.request_coverage.label, row.request_coverage.tone, size='compact') }}
-                                        {{ table_label.status_label('Limits ' ~ row.limit_coverage.label, row.limit_coverage.tone, size='compact') }}
-                                        {{ table_label.status_label('Evidence ' ~ row.metrics_coverage.label, row.metrics_coverage.tone, size='compact') }}
-                                        {{ table_label.metadata_label('QoS ' ~ row.qos.label, 'layers', size='compact') }}
-                                    </div>
-                                    <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-hover px-3 py-3">
-                                        <p class="{{ analysis_surface.metric_label_classes() }}">Request Fit Interpretation</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-secondary">Current usage is compared with configured requests. Unavailable resource evidence renders N/A, and right-sizing remains blocked until current and selected-window CPU and memory evidence is complete.</p>
-                                    </div>
-                                    <div class="mt-3 rounded-lg border border-outline-subtle bg-surface-card px-3 py-3">
-                                        <p class="{{ analysis_surface.metric_label_classes() }}">Runtime Evidence Narrative</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.metrics_coverage.description }}</p>
-                                    </div>
-                                    <p class="mt-4 text-xs leading-5 text-content-muted">Selected-window pod peak sum is an upper-bound signal because individual Pod peaks may occur at different timestamps.</p>
-                                    <p class="mt-4 text-xs font-semibold uppercase tracking-wide text-content-muted">Pods</p>
-                                    <div class="mt-2 flex flex-wrap gap-1.5">
-                                        {% for pod in row.detail.pods[:12] %}{{ table_label.metadata_label(pod, wrap=true, size='compact') }}{% endfor %}
-                                        {% if row.detail.pods|length > 12 %}{{ table_label.metadata_label('+' ~ (row.detail.pods|length - 12) ~ ' More', size='compact') }}{% endif %}
                                     </div>
                                 </section>
-                            </div>
 
-                            <div class="mt-3">
+                                <div class="grid gap-4 lg:grid-cols-2">
+                                    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                                        <header class="flex items-start gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5">
+                                            <span class="{{ analysis_surface.resource_icon_classes('cpu') }}"><i data-lucide="cpu" class="h-4 w-4"></i></span>
+                                            <div>
+                                                <h3 class="text-sm font-semibold text-content-primary">CPU Request and Limit Profile</h3>
+                                                <p class="mt-1 text-xs leading-5 text-content-secondary">Current usage and selected-window peak are evaluated against the configured CPU request.</p>
+                                            </div>
+                                        </header>
+                                        <div class="grid grid-cols-2 divide-x divide-y divide-outline-subtle">
+                                            {% for label, value in [('Request', row.cpu_request), ('Limit', row.cpu_limit), ('Current Usage', row.cpu_current), ('Selected-Window Pod Peak Sum', row.cpu_peak_sum)] %}
+                                                <div class="min-w-0 px-4 py-3">
+                                                    <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                                                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ value }}</p>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                        <div class="space-y-4 border-t border-outline-subtle px-4 py-4 sm:px-5">
+                                            <div>
+                                                <div class="flex items-center justify-between gap-3 text-xs"><span class="text-content-muted">Current Request Utilization</span><span class="font-semibold tabular-nums text-content-primary">{{ row.cpu_request_utilization_display }}{% if row.cpu_request_utilization_available %}%{% endif %}</span></div>
+                                                {% if row.cpu_request_utilization_available %}{% set cpu_fit_tone = progress_bar.pressure_tone(row.cpu_request_utilization)|trim %}{{ progress_bar.semantic_bar(row.cpu_request_utilization, cpu_fit_tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.workload ~ ' CPU current request utilization') }}{% else %}<p class="mt-2 text-xs text-content-muted">Current CPU request-fit evidence is unavailable.</p>{% endif %}
+                                            </div>
+                                            <div>
+                                                <div class="flex items-center justify-between gap-3 text-xs"><span class="text-content-muted">Peak Request Utilization</span><span class="font-semibold tabular-nums text-content-primary">{{ row.cpu_peak_request_utilization_display }}{% if row.cpu_peak_request_utilization_available %}%{% endif %}</span></div>
+                                                {% if row.cpu_peak_request_utilization_available %}{% set cpu_peak_tone = progress_bar.pressure_tone(row.cpu_peak_request_utilization)|trim %}{{ progress_bar.semantic_bar(row.cpu_peak_request_utilization, cpu_peak_tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.workload ~ ' CPU peak request utilization') }}{% else %}<p class="mt-2 text-xs text-content-muted">Selected-window CPU peak evidence is unavailable.</p>{% endif %}
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                                        <header class="flex items-start gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5">
+                                            <span class="{{ analysis_surface.resource_icon_classes('memory') }}"><i data-lucide="memory-stick" class="h-4 w-4"></i></span>
+                                            <div>
+                                                <h3 class="text-sm font-semibold text-content-primary">Memory Request and Limit Profile</h3>
+                                                <p class="mt-1 text-xs leading-5 text-content-secondary">Working-set usage and selected-window peak are evaluated against the configured memory request.</p>
+                                            </div>
+                                        </header>
+                                        <div class="grid grid-cols-2 divide-x divide-y divide-outline-subtle">
+                                            {% for label, value in [('Request', row.memory_request), ('Limit', row.memory_limit), ('Current Usage', row.memory_current), ('Selected-Window Pod Peak Sum', row.memory_peak_sum)] %}
+                                                <div class="min-w-0 px-4 py-3">
+                                                    <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                                                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ value }}</p>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                        <div class="space-y-4 border-t border-outline-subtle px-4 py-4 sm:px-5">
+                                            <div>
+                                                <div class="flex items-center justify-between gap-3 text-xs"><span class="text-content-muted">Current Request Utilization</span><span class="font-semibold tabular-nums text-content-primary">{{ row.memory_request_utilization_display }}{% if row.memory_request_utilization_available %}%{% endif %}</span></div>
+                                                {% if row.memory_request_utilization_available %}{% set memory_fit_tone = progress_bar.pressure_tone(row.memory_request_utilization)|trim %}{{ progress_bar.semantic_bar(row.memory_request_utilization, memory_fit_tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.workload ~ ' memory current request utilization') }}{% else %}<p class="mt-2 text-xs text-content-muted">Current memory request-fit evidence is unavailable.</p>{% endif %}
+                                            </div>
+                                            <div>
+                                                <div class="flex items-center justify-between gap-3 text-xs"><span class="text-content-muted">Peak Request Utilization</span><span class="font-semibold tabular-nums text-content-primary">{{ row.memory_peak_request_utilization_display }}{% if row.memory_peak_request_utilization_available %}%{% endif %}</span></div>
+                                                {% if row.memory_peak_request_utilization_available %}{% set memory_peak_tone = progress_bar.pressure_tone(row.memory_peak_request_utilization)|trim %}{{ progress_bar.semantic_bar(row.memory_peak_request_utilization, memory_peak_tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.workload ~ ' memory peak request utilization') }}{% else %}<p class="mt-2 text-xs text-content-muted">Selected-window memory peak evidence is unavailable.</p>{% endif %}
+                                            </div>
+                                        </div>
+                                    </section>
+                                </div>
+
+                                <div class="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+                                    <section class="rounded-xl border border-outline-default bg-surface-card p-4 sm:p-5">
+                                        <div class="flex items-start gap-3">
+                                            <span class="{{ analysis_surface.role_icon_classes('evidence') }}"><i data-lucide="database-check" class="h-4 w-4"></i></span>
+                                            <div class="min-w-0">
+                                                <h3 class="text-sm font-semibold text-content-primary">Evidence Boundary and Request Fit Interpretation</h3>
+                                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.metrics_coverage.description }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                                            <div class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3">
+                                                <p class="{{ analysis_surface.metric_label_classes() }}">Interpretation</p>
+                                                <p class="mt-1 text-xs leading-5 text-content-secondary">Current usage is compared with configured requests. Right-sizing remains blocked until current and selected-window CPU and memory evidence is complete.</p>
+                                            </div>
+                                            <div class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3">
+                                                <p class="{{ analysis_surface.metric_label_classes() }}">Selected-Window Boundary</p>
+                                                <p class="mt-1 text-xs leading-5 text-content-secondary">Pod peak sums are an upper-bound signal because individual Pod peaks may occur at different timestamps.</p>
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <section class="rounded-xl border border-outline-default bg-surface-card p-4 sm:p-5">
+                                        <div class="flex items-center justify-between gap-3">
+                                            <div class="flex items-center gap-3">
+                                                <span class="{{ analysis_surface.role_icon_classes('evidence') }}"><i data-lucide="package-search" class="h-4 w-4"></i></span>
+                                                <h3 class="text-sm font-semibold text-content-primary">Pod Membership</h3>
+                                            </div>
+                                            {{ table_label.metadata_label((row.detail.pods|length) ~ ' Pods', size='compact') }}
+                                        </div>
+                                        <div class="mt-4 flex max-h-36 flex-wrap gap-1.5 overflow-y-auto pr-1">
+                                            {% for pod in row.detail.pods %}{{ table_label.metadata_label(pod, wrap=true, size='compact') }}{% else %}{{ table_label.metadata_label('No Pod Evidence', 'circle-help', size='compact') }}{% endfor %}
+                                        </div>
+                                    </section>
+                                </div>
+
                                 {{ analysis_surface.interpretation_callout(
                                     'Recommended Action',
                                     row.recommendation,
-                                    'Right-sizing is active only when current and selected-window CPU and memory evidence is complete.',
+                                    'Validate ownership and application intent before changing requests or limits. Right-sizing is actionable only when current and selected-window CPU and memory evidence is complete.',
                                     icon='sparkles',
                                     role='brand',
                                     tone=row.risk.tone,
-                                    compact=true,
                                     card=true
                                 ) }}
                             </div>
-                        </div>
+                        {% endcall %}
                     </article>
                 {% else %}
                     {{ evidence_list.empty('No Workload Mapping Data Available', 'No Workload records matched the active scope and local filters, or committed request and runtime evidence is unavailable.', 'boxes') }}

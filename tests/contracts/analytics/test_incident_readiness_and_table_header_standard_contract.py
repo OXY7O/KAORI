@@ -95,9 +95,12 @@ def test_workload_detail_actions_use_dedicated_action_columns() -> None:
 
     for content in (quota, mapping):
         assert "evidence_list.header_cell('Action'" in content
-        assert "expanded ? 'Hide Details' : 'View Details'" in content
+        assert '<span>View More</span>' in content
+        assert 'aria-haspopup="dialog"' in content
+        assert 'record_detail_modal.render' in content
         assert 'data-lucide="scan-search"' not in content
-        assert 'data-lucide="chevron-down"' in content
+        assert 'data-lucide="panel-top-open"' in content
+        assert 'data-lucide="chevron-down"' not in content
         assert 'table_ui.action_classes()' in content
         assert 'w-full whitespace-nowrap sm:w-auto' in content
         assert 'class="group flex w-full items-center gap-3 border-t' not in content
