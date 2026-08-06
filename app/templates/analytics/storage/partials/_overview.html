@@ -6,6 +6,7 @@
 {% set pv = storage_summary.persistent_storage.pv %}
 {% set pvc = storage_summary.persistent_storage.pvc %}
 {% set posture = storage_posture %}
+{% set filesystem_coverage_label = 'Complete Coverage' if filesystem.evidence_complete else ('Limited Evidence' if filesystem.evidence_available else 'No Coverage') %}
 {% set pvc_coverage_label = 'Complete Coverage' if pvc.pressure_evidence_complete else ('Limited Evidence' if pvc.pressure_evidence_available else 'No Coverage') %}
 {% call analytics_workspace.overview(
     'Storage Analysis Overview',
@@ -39,8 +40,32 @@
             </div>
             <div class="mt-4 grid gap-4 lg:grid-cols-2">
                 <div class="rounded-lg border border-outline-subtle bg-surface-card px-4 py-4">
-                    <div class="flex items-center justify-between gap-3 text-xs"><span class="font-medium text-content-secondary">Node Filesystem · {{ storage_summary.node_filesystem.scope_label|default('All Nodes') }}</span><span class="font-semibold tabular-nums {{ 'text-content-primary' if filesystem.evidence_available else analysis_surface.unavailable_value_classes() }}">{{ ('%.1f%% Used'|format(filesystem.usage_percent|float)) if filesystem.evidence_available else 'N/A' }}</span></div>
-                    {% if filesystem.evidence_available %}{{ progress_bar.semantic_bar(filesystem.usage_percent, filesystem.risk.tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label='Filesystem utilization status') }}{% else %}<div class="mt-2 h-8 rounded-md border border-dashed border-outline-strong bg-surface-hover px-3 py-2 text-xs text-content-muted">Filesystem capacity and available-byte evidence is incomplete.</div>{% endif %}
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-content-secondary">Node Filesystem · {{ storage_summary.node_filesystem.scope_label|default('All Nodes') }}</p>
+                            <p class="mt-1 text-xs text-content-muted">Aggregate uses nodes with paired filesystem capacity and available-byte evidence.</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            {{ table_label.status_label(filesystem_coverage_label, 'normal' if filesystem.evidence_complete else 'unknown', size='compact') }}
+                            <span class="font-semibold tabular-nums {{ 'text-content-primary' if filesystem.evidence_available else analysis_surface.unavailable_value_classes() }}">{{ ('%.1f%% Used'|format(filesystem.usage_percent|float)) if filesystem.evidence_available else 'N/A' }}</span>
+                        </div>
+                    </div>
+                    {% if filesystem.evidence_available %}
+                        {{ progress_bar.semantic_bar(filesystem.usage_percent, filesystem.risk.tone, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover', label='Filesystem utilization status') }}
+                        <div class="mt-3 flex flex-col gap-1 text-xs text-content-muted sm:flex-row sm:items-center sm:justify-between">
+                            <span>{{ filesystem.used }} used · {{ filesystem.free }} remaining of {{ filesystem.capacity }}</span>
+                            <span class="font-medium text-content-secondary">Coverage {{ filesystem.complete_node_count }} of {{ filesystem.observed_node_count }} nodes</span>
+                        </div>
+                        <div class="mt-2 flex flex-col gap-1 text-xs text-content-muted sm:flex-row sm:items-center sm:justify-between">
+                            <span>Highest pressure: {{ filesystem.highest_node }} · {{ filesystem.highest_mountpoint }}</span>
+                            <span class="font-medium tabular-nums text-content-secondary">{{ '%.1f%%'|format(filesystem.highest_usage|float) }}</span>
+                        </div>
+                        {% if not filesystem.evidence_complete %}
+                            <p class="mt-2 text-xs leading-5 text-content-muted">Partial aggregate: {{ filesystem.incomplete_node_count }} nodes do not expose paired filesystem capacity and available-byte evidence.</p>
+                        {% endif %}
+                    {% else %}
+                        <div class="mt-3 rounded-md border border-dashed border-outline-strong bg-surface-hover px-3 py-2 text-xs leading-5 text-content-muted">Filesystem capacity and available-byte evidence is incomplete.</div>
+                    {% endif %}
                 </div>
                 <div class="rounded-lg border border-outline-subtle bg-surface-card px-4 py-4">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">

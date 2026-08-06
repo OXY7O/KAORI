@@ -647,23 +647,45 @@ def summarize_pv(
 ) -> dict[str, Any]:
     inventory_available = inventory_observed or bool(rows)
     count = len(rows)
-    capacity_complete = inventory_available and all(
-        row.get('capacity_bytes') is not None for row in rows
+    capacity_rows = [
+        row for row in rows if row.get('capacity_bytes') is not None
+    ]
+    capacity_observed_count = len(capacity_rows)
+    capacity_available = inventory_available and (
+        count == 0 or capacity_observed_count > 0
+    )
+    capacity_complete = (
+        inventory_available and capacity_observed_count == count
     )
     lifecycle_complete = inventory_available and status_observed and all(
         str(row.get('status') or 'Unknown') != 'Unknown' for row in rows
     )
-    capacity_total = _sum_known(rows, 'capacity_bytes')
+    capacity_total = _sum_known(capacity_rows, 'capacity_bytes')
+
     claims = claim_rows or []
     claims_observed = claim_inventory_observed or bool(claims)
-    requested_complete = claims_observed and all(
-        row.get('requested_bytes') is not None for row in claims
+    claim_count = len(claims)
+    requested_rows = [
+        row for row in claims if row.get('requested_bytes') is not None
+    ]
+    used_rows = [
+        row for row in claims if row.get('used_bytes') is not None
+    ]
+    requested_observed_count = len(requested_rows)
+    used_observed_count = len(used_rows)
+    requested_available = claims_observed and (
+        claim_count == 0 or requested_observed_count > 0
     )
-    used_complete = claims_observed and all(
-        row.get('used_bytes') is not None for row in claims
+    used_available = claims_observed and (
+        claim_count == 0 or used_observed_count > 0
     )
-    requested_total = _sum_known(claims, 'requested_bytes')
-    used_total = _sum_known(claims, 'used_bytes')
+    requested_complete = (
+        claims_observed and requested_observed_count == claim_count
+    )
+    used_complete = claims_observed and used_observed_count == claim_count
+    requested_total = _sum_known(requested_rows, 'requested_bytes')
+    used_total = _sum_known(used_rows, 'used_bytes')
+
     unallocated = (
         max(capacity_total - requested_total, 0.0)
         if capacity_complete and requested_complete
@@ -682,31 +704,65 @@ def summarize_pv(
     risk = _highest_row_risk(rows)
     if count == 0 and inventory_available:
         risk = {'label': 'No Volumes', 'tone': 'info'}
+
+    requested_gap_count = max(claim_count - requested_observed_count, 0)
+    used_gap_count = max(claim_count - used_observed_count, 0)
     return {
         'inventory_evidence_available': inventory_available,
         'status_evidence_available': lifecycle_complete,
-        'capacity_evidence_available': capacity_complete,
-        'requested_claim_evidence_available': requested_complete,
-        'observed_claim_usage_evidence_available': used_complete,
+        'capacity_evidence_available': capacity_available,
+        'capacity_evidence_complete': capacity_complete,
+        'requested_claim_evidence_available': requested_available,
+        'requested_claim_evidence_complete': requested_complete,
+        'observed_claim_usage_evidence_available': used_available,
+        'observed_claim_usage_evidence_complete': used_complete,
         'unallocated_evidence_available': (
             capacity_complete and requested_complete
         ),
-        'evidence_available': capacity_complete,
-        'evidence_complete': inventory_available and lifecycle_complete and capacity_complete,
+        'evidence_available': capacity_available,
+        'evidence_complete': (
+            inventory_available and lifecycle_complete and capacity_complete
+        ),
         'has_resources': count > 0,
         'count': count,
         'count_display': str(count) if inventory_available else 'N/A',
+        'capacity_observed_count': capacity_observed_count,
+        'total_claim_count': claim_count,
+        'requested_claim_observed_count': requested_observed_count,
+        'observed_claim_usage_count': used_observed_count,
+        'requested_claim_gap_count': requested_gap_count,
+        'observed_claim_usage_gap_count': used_gap_count,
+        'requested_claim_coverage_percent': _coverage_percent(
+            requested_observed_count,
+            claim_count,
+            claims_observed,
+        ),
+        'observed_claim_usage_coverage_percent': _coverage_percent(
+            used_observed_count,
+            claim_count,
+            claims_observed,
+        ),
+        'requested_claim_coverage_display': _coverage_display(
+            requested_observed_count,
+            claim_count,
+            claims_observed,
+        ),
+        'observed_claim_usage_coverage_display': _coverage_display(
+            used_observed_count,
+            claim_count,
+            claims_observed,
+        ),
         'capacity': format_storage_bytes(
             capacity_total,
-            available=capacity_complete,
+            available=capacity_available,
         ),
         'observed_claim_usage': format_storage_bytes(
             used_total,
-            available=used_complete,
+            available=used_available,
         ),
         'requested_claim_capacity': format_storage_bytes(
             requested_total,
-            available=requested_complete,
+            available=requested_available,
         ),
         'unallocated_provisioned_difference': format_storage_bytes(
             unallocated,

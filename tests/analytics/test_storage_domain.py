@@ -386,3 +386,40 @@ def test_unobserved_empty_pvc_scope_remains_unknown() -> None:
     assert summary['capacity'] == 'N/A'
     assert summary['used'] == 'N/A'
     assert summary['pressure_coverage_display'] == 'N/A'
+
+
+def test_pv_summary_preserves_partial_observed_claim_usage() -> None:
+    domain = _load_domain()
+    pv_rows = [
+        {
+            'status': 'Bound',
+            'capacity_bytes': 600.0,
+            'risk': {'label': 'Healthy', 'tone': 'normal'},
+        },
+    ]
+    claim_rows = [
+        {'requested_bytes': 100.0, 'used_bytes': 40.0},
+        {'requested_bytes': 200.0, 'used_bytes': 60.0},
+        {'requested_bytes': 300.0, 'used_bytes': None},
+    ]
+
+    summary = domain.summarize_pv(
+        pv_rows,
+        inventory_observed=True,
+        status_observed=True,
+        claim_rows=claim_rows,
+        claim_inventory_observed=True,
+    )
+
+    assert summary['capacity'] == '600 B'
+    assert summary['requested_claim_capacity'] == '600 B'
+    assert summary['observed_claim_usage'] == '100 B'
+    assert summary['observed_claim_usage_evidence_available'] is True
+    assert summary['observed_claim_usage_evidence_complete'] is False
+    assert summary['observed_claim_usage_count'] == 2
+    assert summary['total_claim_count'] == 3
+    assert summary['observed_claim_usage_gap_count'] == 1
+    assert summary['observed_claim_usage_coverage_display'] == '2 of 3 PVC'
+    assert summary['observed_claim_usage_coverage_percent'] == 66.7
+    assert summary['claim_usage_vs_provisioned_percent'] is None
+    assert summary['unallocated_provisioned_difference'] == '0 B'

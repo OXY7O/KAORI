@@ -2,6 +2,7 @@
 {% import "analytics/components/_resource_pressure_lane.html" as resource_pressure_lane %}
 {% import "components/table_label.html" as table_label %}
 {% set pv = storage_summary.persistent_storage.pv %}
+{% set observed_claim_usage_helper = (pv.observed_claim_usage_coverage_display ~ ' observed · ' ~ ('Complete Coverage' if pv.observed_claim_usage_evidence_complete else 'Limited Evidence')) if pv.observed_claim_usage_evidence_available else 'Runtime claim usage evidence unavailable' %}
 <div class="space-y-5">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div class="flex items-start gap-3">
@@ -43,8 +44,8 @@
             {% set pv_metrics = [
                 ('Provisioned PV Capacity', pv.capacity, 'Total cluster PV capacity', 'database', pv.capacity_evidence_available),
                 ('Requested Claim Capacity', pv.requested_claim_capacity, 'Requested across all namespaces', 'hard-drive-upload', pv.requested_claim_evidence_available),
-                ('Observed Claim Usage', pv.observed_claim_usage, 'Observed across all namespaces', 'hard-drive-download', pv.observed_claim_usage_evidence_available),
-                ('Unallocated Difference', pv.unallocated_provisioned_difference, 'Provisioned minus requested capacity', 'scale', pv.unallocated_evidence_available)
+                ('Observed Claim Usage', pv.observed_claim_usage, observed_claim_usage_helper, 'hard-drive-download', pv.observed_claim_usage_evidence_available),
+                ('Provisioning Difference', pv.unallocated_provisioned_difference, 'Provisioned minus requested capacity', 'scale', pv.unallocated_evidence_available)
             ] %}
             {% for label, value, helper, icon, available in pv_metrics %}
                 <article class="{{ analysis_surface.metric_cell_classes() }}">

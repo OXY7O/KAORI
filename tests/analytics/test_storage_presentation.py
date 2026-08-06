@@ -86,5 +86,9 @@ def test_storage_empty_payload_defines_partial_pvc_coverage_contract() -> None:
         'pressure_capacity',
         'pressure_used',
         'pressure_free',
+        'observed_claim_usage_evidence_complete',
+        'observed_claim_usage_count',
+        'observed_claim_usage_gap_count',
+        'observed_claim_usage_coverage_display',
     ):
         assert f"'{field}'" in storage_payload

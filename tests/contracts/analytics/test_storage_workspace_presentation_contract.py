@@ -183,3 +183,28 @@ def test_storage_pvc_partial_coverage_is_visible_without_hiding_valid_totals() -
     assert 'pvc.pressure_coverage_display' in hero
     assert "pvc.get('pressure_used', 'N/A')" in presentation
     assert "pvc.get('pressure_capacity', 'N/A')" in presentation
+
+
+def test_storage_pv_partial_usage_and_filesystem_context_are_visible() -> None:
+    domain = read('app/analytics/storage/domain.py')
+    payloads = read('app/analytics/common/payloads.py')
+    overview = read('app/templates/analytics/storage/partials/_overview.html')
+    capacity = read(
+        'app/templates/analytics/storage/partials/_capacity_utilization_panel.html'
+    )
+    pv_panel = read(
+        'app/templates/analytics/storage/partials/_persistent_volumes_panel.html'
+    )
+
+    assert "'observed_claim_usage_evidence_complete': used_complete" in domain
+    assert "'observed_claim_usage_coverage_display'" in domain
+    assert "'observed_claim_usage_gap_count'" in domain
+    assert "'observed_claim_usage_evidence_complete': False" in payloads
+    assert 'filesystem.used' in overview
+    assert 'filesystem.free' in overview
+    assert 'filesystem.complete_node_count' in overview
+    assert 'filesystem.highest_node' in overview
+    assert 'observed_claim_usage_helper' in capacity
+    assert 'Provisioning Difference' in capacity
+    assert 'Unallocated Difference' not in capacity
+    assert 'observed_claim_usage_helper' in pv_panel

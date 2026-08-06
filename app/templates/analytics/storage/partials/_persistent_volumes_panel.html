@@ -6,6 +6,7 @@
 {% import "components/table_label.html" as table_label %}
 {% set panel_indicator = 'persistent-volumes-loading-indicator' %}
 {% set pv = storage_summary.persistent_storage.pv %}
+{% set observed_claim_usage_helper = (pv.observed_claim_usage_coverage_display ~ ' observed · ' ~ ('Complete Coverage' if pv.observed_claim_usage_evidence_complete else 'Limited Evidence')) if pv.observed_claim_usage_evidence_available else 'Runtime claim usage evidence unavailable' %}
 <div id="persistent-volumes-panel" class="space-y-5">
     <header class="border-b border-outline-subtle pb-5">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -26,7 +27,7 @@
                 ('Volumes', pv.count_display, 'Cluster PV inventory', 'database'),
                 ('Provisioned Capacity', pv.capacity, 'Total PV capacity', 'hard-drive'),
                 ('Requested Claims', pv.requested_claim_capacity, 'Requested across all namespaces', 'hard-drive-upload'),
-                ('Observed Claim Usage', pv.observed_claim_usage, 'Observed across all namespaces', 'hard-drive-download')
+                ('Observed Claim Usage', pv.observed_claim_usage, observed_claim_usage_helper, 'hard-drive-download')
             ] %}
             {% for label, value, helper, icon in metrics %}
                 <article class="{{ analysis_surface.metric_cell_classes() }}">
