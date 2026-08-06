@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.extensions.db import db
+from app.jobs.serialization import to_json_compatible
 from app.models.audit import AuditEvent
 from app.models.job import JobExecution
 
@@ -29,15 +30,17 @@ def record_automatic_job_event(
     event.target_id = job.public_id
     event.action = action
     event.summary = summary[:255]
-    event.metadata_json = {
-        'job_execution_id': job.id,
-        'job_public_id': job.public_id,
-        'job_type': job.job_type,
-        'operation': job.operation,
-        'queue_name': job.queue_name,
-        'status': job.status,
-        **(metadata or {}),
-    }
+    event.metadata_json = to_json_compatible(
+        {
+            'job_execution_id': job.id,
+            'job_public_id': job.public_id,
+            'job_type': job.job_type,
+            'operation': job.operation,
+            'queue_name': job.queue_name,
+            'status': job.status,
+            **(metadata or {}),
+        }
+    )
     db.session.add(event)
     if commit:
         db.session.commit()

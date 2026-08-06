@@ -37,7 +37,7 @@ def run_report_schedules(limit: int, dry_run: bool) -> None:
     )
 
     click.echo('Report schedule runner')
-    click.echo(f'Checked at: {result["checked_at"].isoformat()}')
+    click.echo(f'Checked at: {result["checked_at"]}')
     click.echo(f'Dry run: {result["dry_run"]}')
     click.echo(f'Due schedules: {result["due_count"]}')
 

@@ -292,7 +292,7 @@ def run_due_schedules(
                     'schedule_id': schedule.id,
                     'name': schedule.name,
                     'status': 'due',
-                    'next_run_at': schedule.next_run_at,
+                    'next_run_at': schedule.next_run_at.isoformat() if schedule.next_run_at else None,
                 }
             )
             continue
@@ -309,7 +309,7 @@ def run_due_schedules(
         )
 
     return {
-        'checked_at': now_utc,
+        'checked_at': now_utc.isoformat(),
         'dry_run': dry_run,
         'due_count': len(due_schedules),
         'results': results,

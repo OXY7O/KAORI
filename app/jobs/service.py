@@ -13,6 +13,7 @@ from app.extensions.db import db
 from app.jobs.audit import is_automatic_execution
 from app.jobs.constants import ACTIVE_JOB_STATUSES, DEFAULT_PRIORITIES, HEAVY_WORKLOAD_CLASSES
 from app.jobs.fingerprint import build_deduplication_key, payload_fingerprint
+from app.jobs.serialization import to_json_compatible
 from app.models.audit import AuditEvent
 from app.models.job import JobExecution, JobExecutionSubscriber
 
@@ -216,7 +217,7 @@ def create_or_attach_job(
     job.deduplication_key = key
     job.active_deduplication_key = key
     job.parameter_fingerprint = fingerprint
-    job.payload_json = payload or parameters or {}
+    job.payload_json = to_json_compatible(payload or parameters or {})
     job.celery_task_id = celery_task_id or str(uuid4())
     job.parent_job_id = parent_job_id
     job.max_attempts = max(max_attempts, 1)
@@ -297,16 +298,18 @@ def _append_automatic_terminal_audit(job: JobExecution) -> None:
     operation_label = job.operation.replace('_', ' ').title()
     status_label = job.status.replace('_', ' ').title()
     event.summary = f'Automatic {operation_label} finished with status {status_label}.'[:255]
-    event.metadata_json = {
-        'job_execution_id': job.id,
-        'job_public_id': job.public_id,
-        'job_type': job.job_type,
-        'operation': job.operation,
-        'queue_name': job.queue_name,
-        'status': job.status,
-        'result_summary': job.result_summary_json or {},
-        'error_code': job.error_code,
-    }
+    event.metadata_json = to_json_compatible(
+        {
+            'job_execution_id': job.id,
+            'job_public_id': job.public_id,
+            'job_type': job.job_type,
+            'operation': job.operation,
+            'queue_name': job.queue_name,
+            'status': job.status,
+            'result_summary': job.result_summary_json or {},
+            'error_code': job.error_code,
+        }
+    )
     db.session.add(event)
 
 
@@ -330,7 +333,7 @@ def mark_job_succeeded(
         db.session.commit()
         return job
     _terminalize(job, 'partially_succeeded' if partial else 'succeeded')
-    job.result_summary_json = result_summary or {}
+    job.result_summary_json = to_json_compatible(result_summary or {})
     job.result_type = result_type
     job.result_reference = result_reference
     if job.progress_total:
