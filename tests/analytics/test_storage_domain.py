@@ -267,3 +267,122 @@ def test_incomplete_domains_are_not_classified_healthy() -> None:
 
     assert posture['label'] == 'Limited Evidence'
     assert posture['tone'] == 'unknown'
+
+
+def test_pvc_summary_preserves_partial_capacity_and_usage_aggregates() -> None:
+    domain = _load_domain()
+    rows = [
+        {
+            'status': 'Bound',
+            'requested_bytes': 100.0,
+            'capacity_bytes': 100.0,
+            'used_bytes': 40.0,
+            'free_bytes': 60.0,
+            'risk': {'label': 'Healthy', 'tone': 'normal'},
+        },
+        {
+            'status': 'Bound',
+            'requested_bytes': 200.0,
+            'capacity_bytes': 200.0,
+            'used_bytes': 60.0,
+            'free_bytes': 140.0,
+            'risk': {'label': 'Healthy', 'tone': 'normal'},
+        },
+        {
+            'status': 'Bound',
+            'requested_bytes': 300.0,
+            'capacity_bytes': None,
+            'used_bytes': None,
+            'free_bytes': None,
+            'risk': {'label': 'Unknown', 'tone': 'unknown'},
+        },
+    ]
+
+    summary = domain.summarize_pvc(
+        rows,
+        inventory_observed=True,
+        status_observed=True,
+        scope_label='All Namespaces',
+    )
+
+    assert summary['capacity'] == '300 B'
+    assert summary['used'] == '100 B'
+    assert summary['pressure_capacity'] == '300 B'
+    assert summary['pressure_used'] == '100 B'
+    assert summary['pressure_free'] == '200 B'
+    assert summary['used_percent'] == 33.3
+    assert summary['capacity_evidence_available'] is True
+    assert summary['used_evidence_available'] is True
+    assert summary['pressure_evidence_available'] is True
+    assert summary['capacity_evidence_complete'] is False
+    assert summary['used_evidence_complete'] is False
+    assert summary['pressure_evidence_complete'] is False
+    assert summary['capacity_observed_count'] == 2
+    assert summary['used_observed_count'] == 2
+    assert summary['pressure_observed_count'] == 2
+    assert summary['pressure_coverage_display'] == '2 of 3 PVC'
+    assert summary['pressure_coverage_percent'] == 66.7
+    assert summary['evidence_gap_count'] == 1
+    assert summary['risk'] == {'label': 'Limited Evidence', 'tone': 'unknown'}
+
+
+def test_pvc_pressure_uses_only_rows_with_paired_capacity_and_usage() -> None:
+    domain = _load_domain()
+    rows = [
+        {
+            'status': 'Bound',
+            'requested_bytes': 100.0,
+            'capacity_bytes': 100.0,
+            'used_bytes': 50.0,
+            'free_bytes': 50.0,
+            'risk': {'label': 'Healthy', 'tone': 'normal'},
+        },
+        {
+            'status': 'Bound',
+            'requested_bytes': 200.0,
+            'capacity_bytes': 200.0,
+            'used_bytes': None,
+            'free_bytes': None,
+            'risk': {'label': 'Unknown', 'tone': 'unknown'},
+        },
+        {
+            'status': 'Bound',
+            'requested_bytes': 300.0,
+            'capacity_bytes': None,
+            'used_bytes': 70.0,
+            'free_bytes': None,
+            'risk': {'label': 'Unknown', 'tone': 'unknown'},
+        },
+    ]
+
+    summary = domain.summarize_pvc(
+        rows,
+        inventory_observed=True,
+        status_observed=True,
+        scope_label='All Namespaces',
+    )
+
+    assert summary['capacity'] == '300 B'
+    assert summary['used'] == '120 B'
+    assert summary['pressure_capacity'] == '100 B'
+    assert summary['pressure_used'] == '50 B'
+    assert summary['used_percent'] == 50.0
+    assert summary['capacity_coverage_display'] == '2 of 3 PVC'
+    assert summary['used_coverage_display'] == '2 of 3 PVC'
+    assert summary['pressure_coverage_display'] == '1 of 3 PVC'
+
+
+def test_unobserved_empty_pvc_scope_remains_unknown() -> None:
+    domain = _load_domain()
+
+    summary = domain.summarize_pvc(
+        [],
+        inventory_observed=False,
+        status_observed=False,
+        scope_label='All Namespaces',
+    )
+
+    assert summary['risk'] == {'label': 'Unknown', 'tone': 'unknown'}
+    assert summary['capacity'] == 'N/A'
+    assert summary['used'] == 'N/A'
+    assert summary['pressure_coverage_display'] == 'N/A'

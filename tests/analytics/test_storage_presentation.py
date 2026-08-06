@@ -66,3 +66,25 @@ def test_storage_recommendations_use_owning_tab_destinations() -> None:
     assert "href='/analytics/storage?tab=pv'" in engine
     assert "target_tab = 'filesystem'" in recommendations
     assert 'tab=target_tab' in recommendations
+
+
+def test_storage_empty_payload_defines_partial_pvc_coverage_contract() -> None:
+    payloads = read('app/analytics/common/payloads.py')
+    storage_payload = payloads.split('def get_empty_storage_payload', 1)[1].split(
+        'def get_empty_workload_payload', 1
+    )[0]
+
+    for field in (
+        'capacity_evidence_complete',
+        'used_evidence_complete',
+        'pressure_evidence_complete',
+        'capacity_observed_count',
+        'used_observed_count',
+        'pressure_observed_count',
+        'evidence_gap_count',
+        'pressure_coverage_display',
+        'pressure_capacity',
+        'pressure_used',
+        'pressure_free',
+    ):
+        assert f"'{field}'" in storage_payload

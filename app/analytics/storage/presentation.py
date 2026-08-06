@@ -361,6 +361,17 @@ def _pressure_lanes(storage_summary: dict[str, Any]) -> list[dict[str, Any]]:
     filesystem = (storage_summary.get('node_filesystem') or {}).get('summary') or {}
     persistent = storage_summary.get('persistent_storage') or {}
     pvc = persistent.get('pvc') or {}
+    pvc_scope = str(pvc.get('scope_label') or 'All Namespaces')
+    pvc_coverage = str(pvc.get('pressure_coverage_display') or 'N/A')
+    pvc_complete = bool(pvc.get('pressure_evidence_complete'))
+    pvc_reason = (
+        'Observed claim usage is measured against paired observed volume capacity. '
+        + (
+            'Coverage is complete for the active scope.'
+            if pvc_complete
+            else 'The aggregate excludes claims without paired kubelet volume statistics.'
+        )
+    )
     return [
         {
             'label': 'Node Filesystem',
@@ -384,11 +395,17 @@ def _pressure_lanes(storage_summary: dict[str, Any]) -> list[dict[str, Any]]:
             'label': 'PVC Volume Usage',
             'icon': 'box',
             'value': pvc.get('used_percent'),
-            'used_capacity': f"{pvc.get('used', 'N/A')} / {pvc.get('capacity', 'N/A')}",
-            'description': 'Scope: ' + str(pvc.get('scope_label') or 'All Namespaces'),
+            'used_capacity': (
+                f"{pvc.get('pressure_used', 'N/A')} / "
+                f"{pvc.get('pressure_capacity', 'N/A')}"
+            ),
+            'description': (
+                f'Scope: {pvc_scope}'
+                + (f' · Coverage: {pvc_coverage}' if pvc_coverage != 'N/A' else '')
+            ),
             'tone': (pvc.get('risk') or {}).get('tone', 'unknown'),
             'status_label': (pvc.get('risk') or {}).get('label', 'Unknown'),
-            'reason': 'Observed claim usage is measured against observed volume capacity.',
+            'reason': pvc_reason,
             'headroom': pvc.get('free_percent'),
             'available': bool(pvc.get('pressure_evidence_available')),
         },

@@ -160,3 +160,26 @@ def test_storage_standard_is_documented_and_registered() -> None:
     assert 'Mixed-Scope Analytics' in analysis
     assert 'Observed PVC usage must never be labeled as PV utilization' in guide
     assert 'The canonical workspace parameter is `tab`' in storage
+
+
+def test_storage_pvc_partial_coverage_is_visible_without_hiding_valid_totals() -> None:
+    domain = read('app/analytics/storage/domain.py')
+    overview = read('app/templates/analytics/storage/partials/_overview.html')
+    pvc = read('app/templates/analytics/storage/partials/_persistent_volume_claims_panel.html')
+    hero = read('app/templates/analytics/storage/partials/_hero.html')
+    presentation = read('app/analytics/storage/presentation.py')
+
+    assert "'capacity_evidence_complete': capacity_complete" in domain
+    assert "'pressure_evidence_complete': pressure_complete" in domain
+    assert "'pressure_coverage_display'" in domain
+    assert "'pressure_capacity'" in domain
+    assert "'pressure_used'" in domain
+    assert 'pressure_rows = [' in domain
+    assert 'Partial aggregate:' in overview
+    assert 'Coverage {{ pvc.pressure_coverage_display }}' in overview
+    assert 'pvc.capacity_coverage_display' in pvc
+    assert 'pvc.used_coverage_display' in pvc
+    assert 'pvc.evidence_gap_count' in pvc
+    assert 'pvc.pressure_coverage_display' in hero
+    assert "pvc.get('pressure_used', 'N/A')" in presentation
+    assert "pvc.get('pressure_capacity', 'N/A')" in presentation

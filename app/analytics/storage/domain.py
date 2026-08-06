@@ -443,52 +443,96 @@ def summarize_pvc(
 ) -> dict[str, Any]:
     inventory_available = inventory_observed or bool(rows)
     count = len(rows)
-    requested_complete = inventory_available and all(
-        row.get('requested_bytes') is not None for row in rows
-    )
-    capacity_complete = inventory_available and all(
-        row.get('capacity_bytes') is not None for row in rows
-    )
-    used_complete = inventory_available and all(
-        row.get('used_bytes') is not None for row in rows
-    )
-    free_complete = inventory_available and all(
-        row.get('free_bytes') is not None for row in rows
-    )
+
+    requested_rows = [
+        row for row in rows if row.get('requested_bytes') is not None
+    ]
+    capacity_rows = [
+        row for row in rows if row.get('capacity_bytes') is not None
+    ]
+    used_rows = [row for row in rows if row.get('used_bytes') is not None]
+    free_rows = [row for row in rows if row.get('free_bytes') is not None]
+    pressure_rows = [
+        row
+        for row in rows
+        if row.get('capacity_bytes') is not None
+        and row.get('used_bytes') is not None
+    ]
+
+    requested_observed_count = len(requested_rows)
+    capacity_observed_count = len(capacity_rows)
+    used_observed_count = len(used_rows)
+    free_observed_count = len(free_rows)
+    pressure_observed_count = len(pressure_rows)
+
+    requested_complete = inventory_available and requested_observed_count == count
+    capacity_complete = inventory_available and capacity_observed_count == count
+    used_complete = inventory_available and used_observed_count == count
+    free_complete = inventory_available and free_observed_count == count
+    pressure_complete = inventory_available and pressure_observed_count == count
     lifecycle_complete = inventory_available and status_observed and all(
         str(row.get('status') or 'Unknown') != 'Unknown' for row in rows
     )
-    requested_total = _sum_known(rows, 'requested_bytes')
-    capacity_total = _sum_known(rows, 'capacity_bytes')
-    used_total = _sum_known(rows, 'used_bytes')
-    free_total = _sum_known(rows, 'free_bytes')
-    pressure_complete = capacity_complete and used_complete
-    pressure_available = count > 0 and pressure_complete and capacity_total > 0
+
+    requested_available = inventory_available and (
+        count == 0 or requested_observed_count > 0
+    )
+    capacity_available = inventory_available and (
+        count == 0 or capacity_observed_count > 0
+    )
+    used_available = inventory_available and (count == 0 or used_observed_count > 0)
+    free_available = inventory_available and (count == 0 or free_observed_count > 0)
+
+    requested_total = _sum_known(requested_rows, 'requested_bytes')
+    capacity_total = _sum_known(capacity_rows, 'capacity_bytes')
+    used_total = _sum_known(used_rows, 'used_bytes')
+    free_total = _sum_known(free_rows, 'free_bytes')
+
+    pressure_capacity_total = _sum_known(pressure_rows, 'capacity_bytes')
+    pressure_used_total = _sum_known(pressure_rows, 'used_bytes')
+    pressure_free_total = sum(
+        max(float(row['capacity_bytes']) - float(row['used_bytes']), 0.0)
+        for row in pressure_rows
+    )
+    pressure_available = (
+        pressure_observed_count > 0 and pressure_capacity_total > 0
+    )
     used_percent = (
-        raw_percent(used_total, capacity_total)
+        raw_percent(pressure_used_total, pressure_capacity_total)
         if pressure_available
         else None
     )
-    free_percent = _pvc_free_percent(
-        free_total=free_total,
-        capacity_total=capacity_total,
-        free_complete=free_complete,
-        pressure_available=pressure_available,
-        used_percent=used_percent,
+    free_percent = (
+        raw_percent(pressure_free_total, pressure_capacity_total)
+        if pressure_available
+        else None
     )
+
     risk = _highest_row_risk(rows)
     if count == 0 and inventory_available:
         risk = {'label': 'No Claims', 'tone': 'info'}
-    elif risk['tone'] == 'normal' and not pressure_complete:
+    elif (
+        inventory_available
+        and count > 0
+        and risk['tone'] not in {'critical', 'warning'}
+        and not pressure_complete
+    ):
         risk = {'label': 'Limited Evidence', 'tone': 'unknown'}
+
+    evidence_gap_count = max(count - pressure_observed_count, 0)
     return {
         'inventory_evidence_available': inventory_available,
         'status_evidence_available': lifecycle_complete,
-        'requested_evidence_available': requested_complete,
-        'capacity_evidence_available': capacity_complete,
-        'used_evidence_available': used_complete,
-        'free_evidence_available': free_complete,
+        'requested_evidence_available': requested_available,
+        'capacity_evidence_available': capacity_available,
+        'used_evidence_available': used_available,
+        'free_evidence_available': free_available,
         'pressure_evidence_available': pressure_available,
+        'requested_evidence_complete': requested_complete,
+        'capacity_evidence_complete': capacity_complete,
+        'used_evidence_complete': used_complete,
+        'free_evidence_complete': free_complete,
+        'pressure_evidence_complete': pressure_complete,
         'evidence_available': pressure_available,
         'evidence_complete': (
             inventory_available
@@ -498,16 +542,65 @@ def summarize_pvc(
         'has_resources': count > 0,
         'count': count,
         'count_display': str(count) if inventory_available else 'N/A',
+        'total_pvc_count': count,
+        'requested_observed_count': requested_observed_count,
+        'capacity_observed_count': capacity_observed_count,
+        'used_observed_count': used_observed_count,
+        'free_observed_count': free_observed_count,
+        'pressure_observed_count': pressure_observed_count,
+        'evidence_gap_count': evidence_gap_count,
+        'requested_coverage_percent': _coverage_percent(
+            requested_observed_count, count, inventory_available
+        ),
+        'capacity_coverage_percent': _coverage_percent(
+            capacity_observed_count, count, inventory_available
+        ),
+        'used_coverage_percent': _coverage_percent(
+            used_observed_count, count, inventory_available
+        ),
+        'free_coverage_percent': _coverage_percent(
+            free_observed_count, count, inventory_available
+        ),
+        'pressure_coverage_percent': _coverage_percent(
+            pressure_observed_count, count, inventory_available
+        ),
+        'requested_coverage_display': _coverage_display(
+            requested_observed_count, count, inventory_available
+        ),
+        'capacity_coverage_display': _coverage_display(
+            capacity_observed_count, count, inventory_available
+        ),
+        'used_coverage_display': _coverage_display(
+            used_observed_count, count, inventory_available
+        ),
+        'free_coverage_display': _coverage_display(
+            free_observed_count, count, inventory_available
+        ),
+        'pressure_coverage_display': _coverage_display(
+            pressure_observed_count, count, inventory_available
+        ),
         'requested': format_storage_bytes(
             requested_total,
-            available=requested_complete,
+            available=requested_available,
         ),
         'capacity': format_storage_bytes(
             capacity_total,
-            available=capacity_complete,
+            available=capacity_available,
         ),
-        'used': format_storage_bytes(used_total, available=used_complete),
-        'free': format_storage_bytes(free_total, available=free_complete),
+        'used': format_storage_bytes(used_total, available=used_available),
+        'free': format_storage_bytes(free_total, available=free_available),
+        'pressure_capacity': format_storage_bytes(
+            pressure_capacity_total,
+            available=pressure_available,
+        ),
+        'pressure_used': format_storage_bytes(
+            pressure_used_total,
+            available=pressure_available,
+        ),
+        'pressure_free': format_storage_bytes(
+            pressure_free_total,
+            available=pressure_available,
+        ),
         'used_percent': (
             safe_round(used_percent, 1) if used_percent is not None else None
         ),
@@ -522,19 +615,26 @@ def summarize_pvc(
     }
 
 
-def _pvc_free_percent(
-    *,
-    free_total: float,
-    capacity_total: float,
-    free_complete: bool,
-    pressure_available: bool,
-    used_percent: float | None,
+def _coverage_percent(
+    observed_count: int,
+    total_count: int,
+    inventory_available: bool,
 ) -> float | None:
-    if pressure_available and free_complete:
-        return raw_percent(free_total, capacity_total)
-    if used_percent is not None:
-        return max(100.0 - used_percent, 0.0)
-    return None
+    if not inventory_available:
+        return None
+    if total_count == 0:
+        return 100.0
+    return safe_round(raw_percent(observed_count, total_count), 1)
+
+
+def _coverage_display(
+    observed_count: int,
+    total_count: int,
+    inventory_available: bool,
+) -> str:
+    if not inventory_available:
+        return 'N/A'
+    return f'{observed_count} of {total_count} PVC'
 
 
 def summarize_pv(
