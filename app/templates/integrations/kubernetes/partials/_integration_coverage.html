@@ -1,184 +1,115 @@
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
 <section aria-labelledby="kubernetes-integration-coverage-title"
-         class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+         class="{{ integration_ui.section_shell_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div class="flex items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
-                      aria-hidden="true">
-                    <i data-lucide="workflow" class="h-5 w-5"></i>
-                </span>
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-content-secondary" aria-hidden="true"><i data-lucide="workflow" class="h-5 w-5"></i></span>
                 <div>
-                    <h2 id="kubernetes-integration-coverage-title"
-                        class="text-lg font-semibold text-content-primary">Kubernetes Integration Coverage</h2>
-                    <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">
-                        Review the readiness chain from Kubernetes API validation through Prometheus and Alertmanager source bindings.
-                    </p>
+                    <h2 id="kubernetes-integration-coverage-title" class="text-base font-semibold text-content-primary">Kubernetes Integration Coverage</h2>
+                    <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Trace each downstream consumer through Kubernetes API readiness, reusable source readiness, binding validation, and effective operational resolution.</p>
                 </div>
             </div>
-            {{ integration_status('ready' if stats.total > 0 and stats.fully_operational == stats.total
-                        else ('degraded' if stats.total > 0 else 'not_configured') ,
-            (stats.fully_operational ~ ' of ' ~ stats.total ~ ' Operational')
-            if stats.total > 0 else 'Not Configured'
+            {{ integration_status(
+                'ready' if stats.total > 0 and stats.fully_operational == stats.total else ('degraded' if stats.total > 0 else 'not_configured'),
+                (stats.fully_operational ~ ' of ' ~ stats.total ~ ' Fully Operational') if stats.total > 0 else 'Not Configured'
             ) }}
         </div>
     </header>
-    <div class="grid gap-px bg-outline-subtle lg:grid-cols-3">
-        <article class="flex min-h-[260px] flex-col bg-surface-card p-5 sm:p-6">
-            <div class="flex items-start justify-between gap-4">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="server-cog" class="h-5 w-5" aria-hidden="true"></i>
-                </span>
-                {{ integration_status('ready' if stats.total > 0 and stats.ready == stats.total
-                                else ('degraded' if stats.total > 0 else 'not_configured') ,
-                (stats.ready ~ ' / ' ~ stats.total ~ ' Ready') if stats.total > 0 else 'Not Configured'
-                ) }}
+
+    <div class="grid gap-px border-b border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+        {% for label, value, helper in [
+            ('Registered', stats.total, 'Kubernetes API connections'),
+            ('API Ready', stats.ready, 'Validation and compatibility ready'),
+            ('Fully Operational', stats.fully_operational, 'Inventory, metrics, and alerts ready'),
+            ('Needs Review', stats.attention, 'Connections not API-ready')
+        ] %}
+            <div class="bg-surface-card p-4">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
+                        <p class="mt-2 text-xs leading-5 text-content-secondary">{{ helper }}</p>
+                    </div>
+                    <p class="shrink-0 text-2xl font-semibold tabular-nums text-content-primary">{{ value }}</p>
+                </div>
             </div>
-            <h3 class="mt-4 text-sm font-semibold text-content-primary">Kubernetes API</h3>
-            <p class="mt-1 text-xs leading-5 text-content-muted">
-                Validates API access, RBAC, compatibility, and capabilities required by Inventory and downstream integrations.
-            </p>
-            <dl class="mt-4 grid gap-0 divide-y divide-outline-subtle">
-                <div class="flex items-center justify-between gap-4 py-2.5 text-xs">
-                    <dt class="text-content-muted">Registered</dt>
-                    <dd class="font-semibold text-content-primary">
-                        {{ stats.total }}
-                    </dd>
-                </div>
-                <div class="flex items-center justify-between gap-4 py-2.5 text-xs">
-                    <dt class="text-content-muted">API Ready</dt>
-                    <dd class="font-semibold text-content-primary">
-                        {{ stats.ready }}
-                    </dd>
-                </div>
-                <div class="flex items-center justify-between gap-4 py-2.5 text-xs">
-                    <dt class="text-content-muted">Needs Attention</dt>
-                    <dd class="font-semibold text-content-primary">
-                        {{ stats.attention }}
-                    </dd>
-                </div>
-            </dl>
-            <p class="mt-auto pt-4 text-xs leading-5 text-content-muted">
-                Inventory readiness follows Kubernetes API validation directly.
-            </p>
-        </article>
-        <article class="flex min-h-[260px] flex-col bg-surface-card p-5 sm:p-6">
-            <div class="flex items-start justify-between gap-4">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="chart-no-axes-combined"
-                       class="h-5 w-5"
-                       aria-hidden="true"></i>
-                </span>
-                {{ integration_status('ready' if stats.total > 0 and stats.prometheus_operational == stats.total
-                                else ('degraded' if stats.prometheus_configured > 0 else 'not_configured') ,
-                (stats.prometheus_operational ~ ' / ' ~ stats.total ~ ' Operational')
-                if stats.total > 0 else 'Not Configured'
-                ) }}
-            </div>
-            <h3 class="mt-4 text-sm font-semibold text-content-primary">Prometheus Metrics</h3>
-            <p class="mt-1 text-xs leading-5 text-content-muted">
-                Supplies utilization, capacity, forecasting, and top-consumer signals used by Kubernetes Analytics.
-            </p>
-            <dl class="mt-4 grid gap-0 divide-y divide-outline-subtle">
-                <div class="flex items-center justify-between gap-4 py-2.5 text-xs">
-                    <dt class="text-content-muted">Sources Bound</dt>
-                    <dd class="font-semibold text-content-primary">
-                        {{ stats.prometheus_configured }} / {{ stats.total }}
-                    </dd>
-                </div>
-                <div class="flex items-center justify-between gap-4 py-2.5 text-xs">
-                    <dt class="text-content-muted">Sources Ready</dt>
-                    <dd class="font-semibold text-content-primary">
-                        {{ stats.prometheus_source_ready }}
-                    </dd>
-                </div>
-                <div class="flex items-center justify-between gap-4 py-2.5 text-xs">
-                    <dt class="text-content-muted">Bindings Ready</dt>
-                    <dd class="font-semibold text-content-primary">
-                        {{ stats.prometheus_binding_ready }}
-                    </dd>
-                </div>
-            </dl>
-            <p class="mt-auto pt-4 text-xs leading-5 text-content-muted">
-                Analytics requires Kubernetes API readiness, Prometheus source readiness, and a validated binding.
-            </p>
-        </article>
-        <article class="flex min-h-[260px] flex-col bg-surface-card p-5 sm:p-6">
-            <div class="flex items-start justify-between gap-4">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="siren" class="h-5 w-5" aria-hidden="true"></i>
-                </span>
-                {{ integration_status('ready' if stats.total > 0 and stats.alertmanager_operational == stats.total
-                                else ('degraded' if stats.alertmanager_configured > 0 else 'not_configured') ,
-                (stats.alertmanager_operational ~ ' / ' ~ stats.total ~ ' Operational')
-                if stats.total > 0 else 'Not Configured'
-                ) }}
-            </div>
-            <h3 class="mt-4 text-sm font-semibold text-content-primary">Alertmanager Alerts</h3>
-            <p class="mt-1 text-xs leading-5 text-content-muted">
-                Supplies active alerts, routing context, inhibition evidence, and signals used by alert intelligence.
-            </p>
-            <dl class="mt-4 grid gap-0 divide-y divide-outline-subtle">
-                <div class="flex items-center justify-between gap-4 py-2.5 text-xs">
-                    <dt class="text-content-muted">Sources Bound</dt>
-                    <dd class="font-semibold text-content-primary">
-                        {{ stats.alertmanager_configured }} / {{ stats.total }}
-                    </dd>
-                </div>
-                <div class="flex items-center justify-between gap-4 py-2.5 text-xs">
-                    <dt class="text-content-muted">Sources Ready</dt>
-                    <dd class="font-semibold text-content-primary">
-                        {{ stats.alertmanager_source_ready }}
-                    </dd>
-                </div>
-                <div class="flex items-center justify-between gap-4 py-2.5 text-xs">
-                    <dt class="text-content-muted">Bindings Ready</dt>
-                    <dd class="font-semibold text-content-primary">
-                        {{ stats.alertmanager_binding_ready }}
-                    </dd>
-                </div>
-            </dl>
-            <p class="mt-auto pt-4 text-xs leading-5 text-content-muted">
-                Alert workflows require Kubernetes API readiness, Alertmanager source readiness, and a validated binding.
-            </p>
-        </article>
+        {% endfor %}
     </div>
-    <div class="border-t border-outline-subtle bg-surface-subtle px-5 py-4 sm:px-6">
-        <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+
+    <div class="p-5 sm:p-6">
+        <div class="mb-3">
+            <h3 class="text-sm font-semibold text-content-primary">Operational Dependency Chains</h3>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">A downstream workspace is operational only when every evidence stage in its chain is ready.</p>
+        </div>
+        <div class="overflow-hidden rounded-xl border border-outline-subtle divide-y divide-outline-subtle">
+            {% set chains = [
+                {
+                    'icon': 'chart-no-axes-combined',
+                    'title': 'Kubernetes Analytics',
+                    'provider': 'Prometheus',
+                    'description': 'Utilization, capacity, storage, workload, forecast, and top-consumer evidence.',
+                    'source_configured': stats.prometheus_configured,
+                    'source_ready': stats.prometheus_source_ready,
+                    'binding_ready': stats.prometheus_binding_ready,
+                    'operational': stats.prometheus_operational
+                },
+                {
+                    'icon': 'siren',
+                    'title': 'Alert Intelligence',
+                    'provider': 'Alertmanager',
+                    'description': 'Active alerts, routing, inhibition, suppression, ownership, and anomaly context.',
+                    'source_configured': stats.alertmanager_configured,
+                    'source_ready': stats.alertmanager_source_ready,
+                    'binding_ready': stats.alertmanager_binding_ready,
+                    'operational': stats.alertmanager_operational
+                }
+            ] %}
+            {% for chain in chains %}
+                <article class="bg-surface-card px-4 py-4 sm:px-5">
+                    <div class="grid gap-4 xl:grid-cols-[minmax(15rem,1fr)_minmax(0,2.2fr)] xl:items-center">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-content-secondary" aria-hidden="true"><i data-lucide="{{ chain.icon }}" class="h-5 w-5"></i></span>
+                            <div class="min-w-0">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h4 class="text-sm font-semibold text-content-primary">{{ chain.title }}</h4>
+                                    {{ integration_status(
+                                        'ready' if stats.total > 0 and chain.operational == stats.total else ('degraded' if chain.source_configured > 0 else 'not_configured'),
+                                        (chain.operational ~ ' of ' ~ stats.total ~ ' Operational') if stats.total > 0 else 'Not Configured'
+                                    ) }}
+                                </div>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ chain.description }}</p>
+                            </div>
+                        </div>
+                        <ol class="grid gap-2 sm:grid-cols-4" aria-label="{{ chain.title }} readiness chain">
+                            <li class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Kubernetes API</p>
+                                <div class="mt-2 flex items-center justify-between gap-2"><span class="text-sm font-semibold tabular-nums text-content-primary">{{ stats.ready }} / {{ stats.total }}</span>{{ integration_status('ready' if stats.total > 0 and stats.ready == stats.total else ('degraded' if stats.ready > 0 else 'validation_required'), 'Ready') }}</div>
+                            </li>
+                            <li class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ chain.provider }} Source</p>
+                                <div class="mt-2 flex items-center justify-between gap-2"><span class="text-sm font-semibold tabular-nums text-content-primary">{{ chain.source_ready }} / {{ stats.total }}</span>{{ integration_status('ready' if stats.total > 0 and chain.source_ready == stats.total else ('degraded' if chain.source_ready > 0 else 'not_configured'), 'Ready') }}</div>
+                            </li>
+                            <li class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Binding Validation</p>
+                                <div class="mt-2 flex items-center justify-between gap-2"><span class="text-sm font-semibold tabular-nums text-content-primary">{{ chain.binding_ready }} / {{ stats.total }}</span>{{ integration_status('ready' if stats.total > 0 and chain.binding_ready == stats.total else ('degraded' if chain.binding_ready > 0 else 'not_configured'), 'Ready') }}</div>
+                            </li>
+                            <li class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Effective Resolution</p>
+                                <div class="mt-2 flex items-center justify-between gap-2"><span class="text-sm font-semibold tabular-nums text-content-primary">{{ chain.operational }} / {{ stats.total }}</span>{{ integration_status('ready' if stats.total > 0 and chain.operational == stats.total else ('degraded' if chain.operational > 0 else 'not_configured'), 'Operational') }}</div>
+                            </li>
+                        </ol>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+
+        <div class="mt-4 flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-subtle px-4 py-3">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-content-secondary" aria-hidden="true"><i data-lucide="route" class="h-4 w-4"></i></span>
             <div>
-                <div class="flex items-center gap-2">
-                    <i data-lucide="route"
-                       class="h-4 w-4 text-kaori-primary"
-                       aria-hidden="true"></i>
-                    <h3 class="text-sm font-semibold text-content-primary">Readiness Dependency</h3>
-                </div>
-                <p class="mt-1 text-xs leading-5 text-content-muted">
-                    Validate Kubernetes first. Prometheus and Alertmanager each require both a Ready source and a Ready cluster-scoped binding before their consumers become operational.
-                </p>
+                <p class="text-xs font-semibold text-content-primary">Readiness Boundary</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Kubernetes API validation enables Inventory directly. Analytics and Alert Intelligence additionally require a ready reusable provider source and a ready cluster-scoped binding. KAORI reports the effective result without conflating these independent states.</p>
             </div>
-            <ol class="flex flex-wrap items-center gap-2 text-xs font-semibold"
-                aria-label="Kubernetes integration readiness dependency">
-                <li class="inline-flex min-h-6 items-center rounded-md border border-kaori-outline bg-kaori-soft px-2 text-kaori-primary-dark">
-                    Kubernetes Ready
-                </li>
-                <li aria-hidden="true" class="text-content-muted">
-                    <i data-lucide="chevron-right" class="h-3.5 w-3.5"></i>
-                </li>
-                <li class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-card px-2 text-content-secondary">
-                    Source Ready
-                </li>
-                <li aria-hidden="true" class="text-content-muted">
-                    <i data-lucide="chevron-right" class="h-3.5 w-3.5"></i>
-                </li>
-                <li class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-card px-2 text-content-secondary">
-                    Binding Ready
-                </li>
-                <li aria-hidden="true" class="text-content-muted">
-                    <i data-lucide="chevron-right" class="h-3.5 w-3.5"></i>
-                </li>
-                <li class="inline-flex min-h-6 items-center rounded-md border border-status-normal-border bg-status-normal-soft px-2 text-status-normal">
-                    Operational
-                </li>
-            </ol>
         </div>
     </div>
 </section>

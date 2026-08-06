@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from sqlalchemy.orm import contains_eager
+
 from app.cluster.constants import get_environment_label
 from app.integrations.binding_selectors import selector_is_configured, selector_summary
 from app.models.alertmanager import AlertmanagerInstance
@@ -251,6 +253,68 @@ def build_binding_workspace(
         'default_selector_value': str((submitted or {}).get('selector_value') or (cluster.name if cluster else '')),
         'operation_feedback': operation_feedback,
     }
+
+
+def bound_sources_for_scopes(
+    provider_types: tuple[str, ...] | list[str],
+    *,
+    scope_type: str,
+    scope_keys: tuple[str, ...] | list[str],
+) -> dict[tuple[str, str], tuple[Any | None, IntegrationBinding | None]]:
+    """Bulk-load preferred provider bindings for multiple scopes.
+
+    Registry pages use this helper to avoid repeating one binding query and one
+    provider-registry query for every Kubernetes connection row.
+    """
+    normalized_providers = tuple(dict.fromkeys(str(value) for value in provider_types if value))
+    normalized_scope_keys = tuple(dict.fromkeys(str(value) for value in scope_keys if value))
+    if not normalized_providers or not normalized_scope_keys:
+        return {}
+
+    bindings = (
+        IntegrationBinding.query.join(IntegrationInstance)
+        .options(contains_eager(IntegrationBinding.instance))
+        .filter(
+            IntegrationInstance.provider_type.in_(normalized_providers),
+            IntegrationBinding.asset_type == scope_type,
+            IntegrationBinding.asset_key.in_(normalized_scope_keys),
+            IntegrationBinding.enabled.is_(True),
+        )
+        .order_by(
+            IntegrationBinding.asset_key.asc(),
+            IntegrationInstance.provider_type.asc(),
+            IntegrationBinding.priority.asc(),
+            IntegrationBinding.id.asc(),
+        )
+        .all()
+    )
+    candidates: dict[tuple[str, str], list[IntegrationBinding]] = {}
+    provider_by_instance: dict[int, str] = {}
+    for binding in bindings:
+        provider = binding.instance.provider_type
+        provider_by_instance[binding.integration_instance_id] = provider
+        candidates.setdefault((provider, str(binding.asset_key)), []).append(binding)
+
+    source_maps = {
+        provider: {
+            instance.integration_instance_id: instance
+            for instance in _instances(provider)
+            if instance.integration_instance_id is not None
+        }
+        for provider in normalized_providers
+    }
+    resolved: dict[tuple[str, str], tuple[Any | None, IntegrationBinding | None]] = {}
+    for key, options in candidates.items():
+        options.sort(key=lambda item: (_role_rank(item.binding_role), item.priority, item.id))
+        binding = options[0]
+        provider = provider_by_instance.get(binding.integration_instance_id, key[0])
+        source = source_maps.get(provider, {}).get(binding.integration_instance_id)
+        resolved[key] = (source, binding)
+
+    for provider in normalized_providers:
+        for scope_key in normalized_scope_keys:
+            resolved.setdefault((provider, scope_key), (None, None))
+    return resolved
 
 
 def bound_source_for_scope(

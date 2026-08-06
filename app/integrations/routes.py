@@ -73,10 +73,18 @@ def runtime_overview_details(detail_key: str) -> ResponseReturnValue:
 @permission_required('settings.manage_integrations')
 def kubernetes() -> ResponseReturnValue:
     context = build_kubernetes_page(
+        query=request.args.get('q', '').strip(),
+        environment=request.args.get('environment', '').strip(),
+        readiness=request.args.get('readiness', '').strip(),
+        coverage=request.args.get('coverage', '').strip(),
         page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
     )
-    if request.headers.get('HX-Request') == 'true':
+    is_registry_partial = (
+        request.headers.get('HX-Request') == 'true'
+        and request.headers.get('HX-Target') == 'kubernetes-connection-registry'
+    )
+    if is_registry_partial:
         return render_template('integrations/kubernetes/partials/_registry.html', **context)
     return render_template('integrations/kubernetes.html', **context)
 

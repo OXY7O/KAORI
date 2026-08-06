@@ -1,0 +1,55 @@
+{#
+  KAORI Tab Style 2 — Framed Workspace Tabs.
+
+  This variant preserves the framed/raised tab treatment established by the
+  Kubernetes Integration workspace. It is intended for pages that contain
+  several operational domains inside one parent workspace surface.
+
+  The owning page supplies Alpine state through activeTab/setTab/moveTab and
+  owns the tab panels. Each tab tuple accepts:
+
+      (key, label, icon)
+      (key, label, icon, badge)
+
+  Badge element IDs are derived as: <prefix>-<key>-tab-badge so HTMX OOB
+  updates can target validation/runtime badges without page-local geometry.
+#}
+{% macro render(tabs, prefix='workspace', aria_label='Workspace Sections') -%}
+    <nav class="border-b border-outline-default bg-surface-hover px-4 pt-4 sm:px-5"
+         aria-label="{{ aria_label }}"
+         data-kaori-tab-variant="framed-workspace-v2">
+        <div class="flex min-w-max gap-2 overflow-x-auto" role="tablist" aria-label="{{ aria_label }}">
+            {% for tab in tabs %}
+                {% set tab_key = tab[0] %}
+                {% set tab_label = tab[1] %}
+                {% set tab_icon = tab[2] %}
+                {% set tab_badge = tab[3] if tab|length > 3 else none %}
+                <button type="button"
+                        role="tab"
+                        id="{{ prefix }}-tab-{{ tab_key }}"
+                        aria-controls="{{ prefix }}-panel-{{ tab_key }}"
+                        :aria-selected="activeTab === '{{ tab_key }}' ? 'true' : 'false'"
+                        :tabindex="activeTab === '{{ tab_key }}' ? '0' : '-1'"
+                        @click="setTab('{{ tab_key }}')"
+                        @keydown.arrow-right.prevent="moveTab('{{ tab_key }}', 1, '{{ prefix }}')"
+                        @keydown.arrow-left.prevent="moveTab('{{ tab_key }}', -1, '{{ prefix }}')"
+                        @keydown.home.prevent="moveTab('{{ tab_key }}', 'home', '{{ prefix }}')"
+                        @keydown.end.prevent="moveTab('{{ tab_key }}', 'end', '{{ prefix }}')"
+                        class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-inset"
+                        :class="activeTab === '{{ tab_key }}'
+                            ? 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px'
+                            : 'border-transparent text-content-muted hover:bg-surface-card hover:text-content-primary'">
+                    <i data-lucide="{{ tab_icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                    <span>{{ tab_label }}</span>
+                    {% if tab_badge is not none and tab_badge != '' %}
+                        <span id="{{ prefix }}-{{ tab_key }}-tab-badge"
+                              class="kaori-semantic-label inline-flex min-h-6 items-center rounded-md border px-2 text-xs font-semibold"
+                              :class="activeTab === '{{ tab_key }}'
+                                  ? 'border-brand-outline bg-kaori-soft text-kaori-primary'
+                                  : 'border-outline-subtle bg-surface-card text-content-muted'">{{ tab_badge }}</span>
+                    {% endif %}
+                </button>
+            {% endfor %}
+        </div>
+    </nav>
+{%- endmacro %}

@@ -77,7 +77,7 @@ The modal is the final human confirmation. It does not replace the signed receip
 
 ## Protected Secret Reveal
 
-Protected Reveal uses Tab Style 2:
+Protected Reveal uses Tab Style 3:
 
 ```text
 New Request | My Requests | Approvals

@@ -2,7 +2,7 @@
 
 ## Registered Name
 
-- Review name: **Tab Style 2 — Compact Segmented Tabs**
+- Review name: **Tab Style 3 — Compact Segmented Tabs**
 - Semantic key: `compact-segmented`
 - Shared owner: `components/segmented_tabs.html`
 
@@ -29,6 +29,6 @@ Examples:
 
 ## Usage Boundary
 
-Do not use Tab Style 2 for top-level workspace domains or four-plus peer operational sections. Those use Tab Style 1 — Integrated Workspace Tabs.
+Do not use Tab Style 3 for top-level workspace domains or four-plus peer operational sections. Those use Tab Style 1 — Integrated Workspace Tabs or Tab Style 2 — Framed Workspace Tabs according to the parent surface contract.
 
 Do not create another tab style for color, radius, icon, or spacing variation alone.

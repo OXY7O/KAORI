@@ -4,15 +4,28 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from sqlalchemy import func, select
+from sqlalchemy.orm import contains_eager
 
 from app.cluster.constants import get_environment_label
-from app.common.presentation import present_user_datetime
+from app.common.presentation import present_key_label, present_user_datetime
 from app.extensions.db import db
-from app.integrations.coverage import bound_source_for_scope, build_provider_coverage
+from app.integrations.coverage import (
+    bound_source_for_scope,
+    bound_sources_for_scopes,
+    build_provider_coverage,
+)
 from app.integrations.deletion import kubernetes_deletion_guard
+from app.integrations.kubernetes.compatibility import FEATURE_CONTRACTS
 from app.integrations.prometheus.scope import cluster_bindings_for_instance
 from app.integrations.readiness import resolve_binding_operational_status, resolve_cluster_coverage
-from app.models import AlertmanagerInstance, Cluster, PrometheusInstance, Report, ReportSchedule
+from app.models import (
+    AlertmanagerInstance,
+    Cluster,
+    ClusterInventory,
+    PrometheusInstance,
+    Report,
+    ReportSchedule,
+)
 from app.models.integration import IntegrationInstance
 from app.models.kubernetes import KubernetesConnection
 from app.models.runtime import IntegrationRuntimeObservation
@@ -181,18 +194,32 @@ def _overview_stats(
     }
 
 
-def _build_kubernetes_registry_row(connection: KubernetesConnection) -> dict[str, Any]:
+def _build_kubernetes_registry_row(
+    connection: KubernetesConnection,
+    *,
+    bound_sources: dict[tuple[str, str], tuple[Any | None, Any | None]] | None = None,
+) -> dict[str, Any]:
     cluster = connection.cluster
-    prometheus, prometheus_binding = bound_source_for_scope(
-        'prometheus',
-        scope_type='kubernetes_cluster',
-        scope_key=cluster.id,
-    )
-    alertmanager, alertmanager_binding = bound_source_for_scope(
-        'alertmanager',
-        scope_type='kubernetes_cluster',
-        scope_key=cluster.id,
-    )
+    if bound_sources is None:
+        prometheus, prometheus_binding = bound_source_for_scope(
+            'prometheus',
+            scope_type='kubernetes_cluster',
+            scope_key=cluster.id,
+        )
+        alertmanager, alertmanager_binding = bound_source_for_scope(
+            'alertmanager',
+            scope_type='kubernetes_cluster',
+            scope_key=cluster.id,
+        )
+    else:
+        prometheus, prometheus_binding = bound_sources.get(
+            ('prometheus', str(cluster.id)),
+            (None, None),
+        )
+        alertmanager, alertmanager_binding = bound_sources.get(
+            ('alertmanager', str(cluster.id)),
+            (None, None),
+        )
     metrics_operational = (
         resolve_binding_operational_status(
             source_readiness=getattr(prometheus, 'readiness_status', None),
@@ -313,11 +340,60 @@ def build_kubernetes_registry_row(cluster_id: str) -> dict[str, Any] | None:
     return _build_kubernetes_registry_row(connection)
 
 
-def build_kubernetes_page(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
-    connections = KubernetesConnection.query.join(Cluster).order_by(Cluster.created_at.asc(), Cluster.id.asc()).all()
-    rows = [_build_kubernetes_registry_row(connection) for connection in connections]
-    page_rows, pagination = _paginate(rows, page=page, per_page=per_page)
+def build_kubernetes_page(
+    *,
+    query: str = '',
+    environment: str = '',
+    readiness: str = '',
+    coverage: str = '',
+    page: int = 1,
+    per_page: int = 5,
+) -> dict[str, Any]:
+    connections = (
+        KubernetesConnection.query.join(Cluster)
+        .options(contains_eager(KubernetesConnection.cluster))
+        .order_by(Cluster.created_at.asc(), Cluster.id.asc())
+        .all()
+    )
+    bound_sources = bound_sources_for_scopes(
+        ('prometheus', 'alertmanager'),
+        scope_type='kubernetes_cluster',
+        scope_keys=[str(connection.cluster_id) for connection in connections],
+    )
+    rows = [
+        _build_kubernetes_registry_row(connection, bound_sources=bound_sources)
+        for connection in connections
+    ]
     total = len(rows)
+    normalized_query = str(query or '').strip().lower()
+    filtered_rows = rows
+    if normalized_query:
+        filtered_rows = [
+            row
+            for row in filtered_rows
+            if normalized_query
+            in ' '.join(
+                str(value or '')
+                for value in (
+                    row.get('cluster_name'),
+                    row.get('environment'),
+                    row.get('server'),
+                    row.get('version'),
+                    row.get('compatibility_profile'),
+                )
+            ).lower()
+        ]
+    if environment:
+        filtered_rows = [row for row in filtered_rows if row.get('environment') == environment]
+    if readiness:
+        filtered_rows = [row for row in filtered_rows if row.get('readiness') == readiness]
+    if coverage:
+        filtered_rows = [
+            row
+            for row in filtered_rows
+            if (row.get('coverage_summary') or {}).get('status') == coverage
+        ]
+    page_rows, pagination = _paginate(filtered_rows, page=page, per_page=per_page)
     kubernetes_ready = sum(1 for row in rows if row['readiness'] == 'ready')
     kubernetes_attention = total - kubernetes_ready
 
@@ -337,6 +413,25 @@ def build_kubernetes_page(*, page: int = 1, per_page: int = 5) -> dict[str, Any]
     return {
         'rows': page_rows,
         'pagination': pagination,
+        'selected_query': query,
+        'selected_environment': environment,
+        'selected_readiness': readiness,
+        'selected_coverage': coverage,
+        'registry_has_active_filters': bool(normalized_query or environment or readiness or coverage),
+        'environment_options': sorted({row['environment'] for row in rows if row.get('environment')}),
+        'readiness_options': [
+            {'value': 'ready', 'label': 'Ready'},
+            {'value': 'degraded', 'label': 'Degraded'},
+            {'value': 'blocked', 'label': 'Blocked'},
+            {'value': 'validation_required', 'label': 'Validation Required'},
+        ],
+        'coverage_options': [
+            {'value': 'ready', 'label': 'Operational'},
+            {'value': 'degraded', 'label': 'Partial Coverage'},
+            {'value': 'not_configured', 'label': 'Setup Required'},
+            {'value': 'blocked', 'label': 'Blocked'},
+            {'value': 'validation_required', 'label': 'Validation Required'},
+        ],
         'stats': {
             'total': total,
             'ready': kubernetes_ready,
@@ -356,8 +451,7 @@ def build_kubernetes_page(*, page: int = 1, per_page: int = 5) -> dict[str, Any]
 
 
 def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
-    from app.integrations.registry import get_integration
-    from app.integrations.runtime.presentation import runtime_state_view
+    from app.integrations.runtime.presentation import runtime_observation_state_view
     from app.integrations.runtime.repository import list_runtime_history
 
     connection = KubernetesConnection.query.filter_by(cluster_id=cluster_id).first()
@@ -366,9 +460,16 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
     cluster = connection.cluster
     discovery = connection.discovery_summary or {}
     features = discovery.get('features') or {}
+    feature_contracts = {contract.key: contract for contract in FEATURE_CONTRACTS}
     feature_rows = []
     for key, value in sorted(features.items()):
         selected = value.get('selected_api') or {}
+        contract = feature_contracts.get(key)
+        required = bool(value.get('required', contract.required if contract else True))
+        required_verbs = tuple(
+            value.get('required_verbs')
+            or (contract.required_verbs if contract else ('get', 'list'))
+        )
         feature_rows.append(
             {
                 'key': key,
@@ -382,9 +483,30 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
                 'resource': selected.get('resource') or '-',
                 'stability': selected.get('stability') or '-',
                 'message': value.get('message') or '',
+                'required': required,
+                'requirement_label': 'Required' if required else 'Optional',
+                'required_verbs': required_verbs,
+                'required_verbs_display': ', '.join(required_verbs) if required_verbs else 'None',
             }
         )
-    state = get_integration('kubernetes').adapter.get_state(connection)
+    selected_adapters = discovery.get('selected_adapters') or {}
+    latest_runtime_observation = (
+        IntegrationRuntimeObservation.query.filter_by(
+            provider='kubernetes',
+            instance_id=str(connection.id),
+        )
+        .order_by(
+            IntegrationRuntimeObservation.observed_at.desc(),
+            IntegrationRuntimeObservation.id.desc(),
+        )
+        .first()
+    )
+    runtime_state = runtime_observation_state_view(
+        latest_runtime_observation,
+        fallback_readiness=connection.readiness_status or 'validation_required',
+        fallback_compatibility_profile=connection.compatibility_profile,
+        fallback_capabilities=tuple(selected_adapters.keys()),
+    )
     capability_scope = next(
         (
             binding.capability_scope or []
@@ -403,47 +525,89 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
         scope_type='kubernetes_cluster',
         scope_key=cluster.id,
     )
+    latest_inventory = (
+        ClusterInventory.query.filter_by(cluster_id=cluster.id)
+        .order_by(ClusterInventory.collected_at.desc(), ClusterInventory.id.desc())
+        .first()
+    )
     report_count = Report.query.filter(Report.cluster_id == cluster.id).count()
     schedule_count = ReportSchedule.query.filter(ReportSchedule.cluster_id == cluster.id).count()
     deletion_guard = kubernetes_deletion_guard(
         connection_id=connection.id,
         cluster_id=cluster.id,
     )
-    source_bindings = [
-        {
-            'provider': 'Prometheus',
-            'icon': 'activity',
-            'name': prometheus_source.name if prometheus_source else 'Not bound',
-            'status': prometheus_binding.validation_status if prometheus_binding else 'not_bound',
-            'role': prometheus_binding.binding_role if prometheus_binding else None,
-        },
-        {
-            'provider': 'Alertmanager',
-            'icon': 'siren',
-            'name': alertmanager_source.name if alertmanager_source else 'Not bound',
-            'status': alertmanager_binding.validation_status if alertmanager_binding else 'not_bound',
-            'role': alertmanager_binding.binding_role if alertmanager_binding else None,
-        },
-    ]
+    source_bindings = []
+    for provider, icon, source, binding in (
+        ('Prometheus', 'activity', prometheus_source, prometheus_binding),
+        ('Alertmanager', 'siren', alertmanager_source, alertmanager_binding),
+    ):
+        source_readiness = getattr(source, 'readiness_status', None) if source else 'not_configured'
+        binding_validation = getattr(binding, 'validation_status', None) if binding else 'not_bound'
+        effective = (
+            resolve_binding_operational_status(
+                source_readiness=source_readiness,
+                binding_validation=binding_validation,
+                source_enabled=bool(getattr(source, 'enabled', True)),
+                binding_enabled=bool(getattr(binding, 'enabled', True)),
+            )
+            if source and binding
+            else {'status': 'not_configured', 'label': 'Not Configured'}
+        )
+        source_bindings.append(
+            {
+                'provider': provider,
+                'icon': icon,
+                'name': source.name if source else 'Not bound',
+                'source_readiness': source_readiness or 'validation_required',
+                'binding_validation': binding_validation or 'validation_required',
+                'effective_status': effective['status'],
+                'effective_label': effective['label'],
+                'role': binding.binding_role if binding else None,
+            }
+        )
     return {
         'connection': connection,
         'cluster': cluster,
         'canonical': connection.integration_instance,
-        'runtime_state': runtime_state_view(state),
+        'runtime_state': runtime_state,
+        'validation_state': {
+            'readiness': connection.readiness_status or 'validation_required',
+            'readiness_label': present_key_label(connection.readiness_status or 'validation_required'),
+            'message': ' '.join(
+                str(item)
+                for item in (discovery.get('readiness_reasons') or [])
+                if item
+            ) or 'Run Full Validation to refresh served API, compatibility, and effective RBAC evidence.',
+        },
         'runtime_history': list_runtime_history('kubernetes', str(connection.id), limit=5),
         'feature_rows': feature_rows,
         'blocked_features': discovery.get('blocked_features') or [],
         'legacy_features': discovery.get('legacy_features') or [],
-        'selected_adapters': discovery.get('selected_adapters') or {},
+        'optional_blocked_features': discovery.get('optional_blocked_features') or [],
+        'optional_legacy_features': discovery.get('optional_legacy_features') or [],
+        'selected_adapters': selected_adapters,
         'capability_scope': capability_scope,
         'source_bindings': source_bindings,
         'deletion_guard': deletion_guard,
+        'validated_feature_count': len(selected_adapters),
+        'operational_domain_count': len(capability_scope),
         'operational_use': {
             'node_count': int(cluster.node_count or 0),
-            'capability_count': len(capability_scope),
-            'binding_count': sum(1 for row in source_bindings if row['status'] != 'not_bound'),
+            'validated_feature_count': len(selected_adapters),
+            'operational_domain_count': len(capability_scope),
+            'binding_count': sum(
+                1 for row in source_bindings if row['binding_validation'] != 'not_bound'
+            ),
             'report_count': report_count,
             'schedule_count': schedule_count,
+            'inventory_status': 'committed' if latest_inventory else 'not_collected',
+            'inventory_status_label': 'Committed Snapshot' if latest_inventory else 'No Committed Inventory',
+            'inventory_collected_at': latest_inventory.collected_at if latest_inventory else None,
+            'inventory_collected_at_display': present_user_datetime(
+                latest_inventory.collected_at if latest_inventory else None,
+                empty='Never',
+                include_seconds=True,
+            ),
         },
     }
 

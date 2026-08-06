@@ -28,7 +28,21 @@ A new style is justified only when the content relationship or interaction model
 
 Use Tab Style 1 for operational dashboards, analytics workspaces, and similar pages where each tab is a peer perspective on the same governed context.
 
-## Tab Style 2 — Compact Segmented Tabs
+## Tab Style 2 — Framed Workspace Tabs
+
+| Property | Contract |
+|---|---|
+| Semantic key | `framed-workspace-v2` |
+| Component | `components/framed_workspace_tabs.html` |
+| References | Kubernetes Integration detail and Integration Overview |
+| Content relationship | Peer operational domains inside one explicit parent workspace |
+| Surface | Framed parent card with raised connected tabs and optional compact badges |
+| State | URL-backed with browser-history synchronization |
+| Layout | Horizontal tabs with narrow-screen overflow and roving keyboard focus |
+
+Use Tab Style 2 when the parent workspace shell is part of the information architecture and its domains benefit from compact posture or scope badges. The detailed contract lives in `FRAMED_WORKSPACE_TABS.md`.
+
+## Tab Style 3 — Compact Segmented Tabs
 
 | Property | Contract |
 |---|---|
@@ -40,7 +54,7 @@ Use Tab Style 1 for operational dashboards, analytics workspaces, and similar pa
 | State | Local by default; URL-backed when the view must survive refresh/share |
 | Layout | Horizontal segments with roving keyboard focus |
 
-Use Tab Style 2 for local view switching in a visualization, inspector, drawer, or compact component. Do not use it for top-level workspace domains or four-plus peer sections. The detailed contract lives in `SEGMENTED_TABS.md`.
+Use Tab Style 3 for local view switching in a visualization, inspector, drawer, or compact component. Do not use it for top-level workspace domains or four-plus peer sections. The detailed contract lives in `SEGMENTED_TABS.md`.
 
 ## Future Styles
 

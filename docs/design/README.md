@@ -7,17 +7,21 @@
 
 The Styling Guide selects the correct reusable component. The Design System and component documents define the detailed visual contract. Domain specifications may define content and behavior but may not override shared component geometry or tokens.
 
+Authoritative shell standards include the locked application-shell navigation contract and neutral-first dark surfaces.
+
 ## Component Contracts
 
 - `components/HERO.md`
 - `components/TYPOGRAPHY.md`
 - `components/COLOR_AND_SEMANTIC.md`
+- `components/DARK_MODE.md`
 - `components/BUTTON.md`
 - `components/TABLE_AND_LABEL.md`
 - `components/TECHNICAL_VALUE.md`
 - `components/PAGINATION.md`
 - `components/TAB_STYLES.md`
 - `components/WORKSPACE_TABS.md`
+- `components/FRAMED_WORKSPACE_TABS.md`
 - `components/SEGMENTED_TABS.md`
 - `components/VISUALIZATION_WORKSPACE.md`
 - `components/TOPOLOGY_PALETTE.md`

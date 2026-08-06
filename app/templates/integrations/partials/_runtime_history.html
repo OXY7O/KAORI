@@ -45,27 +45,27 @@
     {% if runtime_history.rows %}
         <div class="grid gap-px border-b border-outline-subtle bg-outline-subtle sm:grid-cols-4">
             <div class="bg-surface-card p-4">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Latest Health</p>
-                <div class="mt-3">{{ integration_status(runtime_history.latest_effective_status) }}</div>
-            </div>
-            <div class="bg-surface-card p-4">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Latest Score</p>
-                <p class="mt-3 text-sm font-semibold text-content-primary">{{ (runtime_history.latest_score ~ '/100') if runtime_history.latest_score is not none else 'N/A' }}</p>
-            </div>
-            <div class="bg-surface-card p-4">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Healthy Samples</p>
-                <p class="mt-3 text-sm font-semibold text-content-primary">{{ runtime_history.health_counts.healthy }}</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Ready Samples</p>
+                <p class="mt-3 text-sm font-semibold text-content-primary">{{ runtime_history.posture_counts.ready }}</p>
             </div>
             <div class="bg-surface-card p-4">
                 <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Attention Samples</p>
-                <p class="mt-3 text-sm font-semibold text-content-primary">{{ runtime_history.health_counts.degraded + runtime_history.health_counts.unhealthy }}</p>
+                <p class="mt-3 text-sm font-semibold text-content-primary">{{ runtime_history.posture_counts.attention }}</p>
+            </div>
+            <div class="bg-surface-card p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Blocked Samples</p>
+                <p class="mt-3 text-sm font-semibold text-content-primary">{{ runtime_history.posture_counts.blocked }}</p>
+            </div>
+            <div class="bg-surface-card p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Not Observed</p>
+                <p class="mt-3 text-sm font-semibold text-content-primary">{{ runtime_history.posture_counts.not_observed }}</p>
             </div>
         </div>
         <div class="divide-y divide-outline-subtle">
             {% for row in runtime_history.rows %}
                 {% set health_tone = row.effective_status %}
                 <details id="{{ row.detail_id }}" class="group bg-surface-card">
-                    <summary class="grid cursor-pointer list-none gap-3 px-5 py-4 transition hover:bg-surface-hover sm:px-6 lg:grid-cols-5 lg:items-center [&::-webkit-details-marker]:hidden">
+                    <summary class="grid cursor-pointer list-none gap-3 px-5 py-4 transition hover:bg-kaori-mist sm:px-6 lg:grid-cols-5 lg:items-center [&::-webkit-details-marker]:hidden">
                         <div class="min-w-0">
                             <div class="flex items-center gap-2">
                                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="activity" class="h-4 w-4"></i></span>
@@ -113,9 +113,9 @@
                             </div>
                         </div>
                         {% if row.message %}
-                            <section class="rounded-xl border border-brand-outline bg-kaori-soft p-4">
+                            <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                                 <div class="flex items-start gap-3">
-                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary"><i data-lucide="message-square-text" class="h-4 w-4"></i></span>
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-content-secondary"><i data-lucide="message-square-text" class="h-4 w-4"></i></span>
                                     <div>
                                         <p class="text-sm font-semibold text-content-primary">Health Detail</p>
                                         <p class="mt-1 text-sm leading-6 text-content-secondary">{{ row.message }}</p>

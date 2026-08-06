@@ -145,21 +145,14 @@
     "app/templates/integrations/bindings/partials/_workspace.html": {
       "semantic_border_utilities": 4
     },
-    "app/templates/integrations/kubernetes/detail.html": {
-      "page_local_workspace_tablists": 1
-    },
     "app/templates/integrations/kubernetes/partials/_capability_workspace.html": {
       "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 6
+      "semantic_border_utilities": 5
     },
     "app/templates/integrations/kubernetes/partials/_connection_contract.html": {
-      "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 1
+      "copied_standard_surface_shells": 1
     },
     "app/templates/integrations/kubernetes/partials/_delete_modal.html": {
-      "semantic_border_utilities": 1
-    },
-    "app/templates/integrations/kubernetes/partials/_integration_coverage.html": {
       "semantic_border_utilities": 1
     },
     "app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html": {
@@ -168,7 +161,6 @@
     },
     "app/templates/integrations/kubernetes/partials/_minimum_validation_rbac.html": {
       "copied_standard_surface_shells": 1,
-      "raw_palette_utilities": 2,
       "semantic_border_utilities": 1
     },
     "app/templates/integrations/kubernetes/partials/_registry_detail_content.html": {
@@ -178,10 +170,6 @@
     "app/templates/integrations/kubernetes/partials/_runtime_workspace.html": {
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 4
-    },
-    "app/templates/integrations/overview.html": {
-      "copied_standard_surface_shells": 2,
-      "semantic_border_utilities": 1
     },
     "app/templates/integrations/partials/_runtime_history.html": {
       "copied_standard_surface_shells": 1,

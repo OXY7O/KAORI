@@ -10,8 +10,9 @@ def read(relative: str) -> str:
 def test_overview_uses_canonical_accessible_workspace_tabs() -> None:
     overview = read('app/templates/integrations/overview.html')
 
-    assert 'components/workspace_tabs.html' in overview
-    assert 'workspace_tabs.render(' in overview
+    assert 'components/framed_workspace_tabs.html' in overview
+    assert 'framed_workspace_tabs.render(' in overview
+    assert "data-kaori-tab-variant=\"framed-workspace-v2\"" in read('app/templates/components/framed_workspace_tabs.html')
     assert "prefix='integration-overview'" in overview
     assert "allowedTabs: ['catalog', 'runtime', 'coverage']" in overview
     assert 'moveTab(currentTab, direction, prefix)' in overview

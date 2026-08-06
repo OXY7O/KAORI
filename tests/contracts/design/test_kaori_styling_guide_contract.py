@@ -243,22 +243,29 @@ def test_inventory_overview_components_and_pattern_are_documented() -> None:
     assert 'Cluster | Connection | Total Objects | Last Snapshot | Inventory Signals | Details' in pattern
 
 
-def test_visualization_workspace_and_tab_style_two_are_documented() -> None:
+def test_visualization_workspace_and_tab_style_registry_are_documented() -> None:
     guide = _read('docs/design/KAORI_STYLING_GUIDE.md')
     design_readme = _read('docs/design/README.md')
     registry = _read('docs/design/components/TAB_STYLES.md')
     visualization = _read('docs/design/components/VISUALIZATION_WORKSPACE.md')
+    framed = _read('docs/design/components/FRAMED_WORKSPACE_TABS.md')
     segmented = _read('docs/design/components/SEGMENTED_TABS.md')
     palette = _read('docs/design/components/TOPOLOGY_PALETTE.md')
 
-    assert 'Tab Style 2 — Compact Segmented Tabs' in guide
+    assert 'Tab Style 2 — Framed Workspace Tabs' in guide
+    assert 'Tab Style 3 — Compact Segmented Tabs' in guide
     assert 'Visualization Workspace Style 1 — Adaptive Explorer' in guide
+    assert 'components/FRAMED_WORKSPACE_TABS.md' in design_readme
     assert 'components/SEGMENTED_TABS.md' in design_readme
     assert 'components/VISUALIZATION_WORKSPACE.md' in design_readme
     assert 'components/TOPOLOGY_PALETTE.md' in design_readme
     assert 'patterns/KUBERNETES_TOPOLOGY.md' in design_readme
-    assert 'Tab Style 2 — Compact Segmented Tabs' in registry
+    assert 'Tab Style 2 — Framed Workspace Tabs' in registry
+    assert '`framed-workspace-v2`' in registry
+    assert 'Tab Style 3 — Compact Segmented Tabs' in registry
     assert '`compact-segmented`' in registry
+    assert 'framed-workspace-v2' in framed
+    assert 'Left/Right/Home/End' in framed
     assert 'adaptive-explorer' in visualization
     assert 'Resource List' in visualization
     assert 'Left/Right/Home/End' in segmented

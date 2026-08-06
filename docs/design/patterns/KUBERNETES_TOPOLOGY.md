@@ -9,7 +9,7 @@ Visualization Workspace Style 1 — Adaptive Explorer
 ├── Filter Bar
 ├── Local Status / Warning Region
 ├── Canvas Toolbar
-│   ├── Tab Style 2: Graph / Resource List
+│   ├── Tab Style 3: Graph / Resource List
 │   ├── Controls
 │   ├── Details
 │   ├── Fit
@@ -18,7 +18,7 @@ Visualization Workspace Style 1 — Adaptive Explorer
 ├── Display Controls
 ├── Graph or Accessible Resource List
 └── Topology Inspector
-    └── Tab Style 2: Details / Relationships
+    └── Tab Style 3: Details / Relationships
 ```
 
 ## Information Ownership

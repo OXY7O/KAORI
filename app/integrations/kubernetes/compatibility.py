@@ -54,7 +54,7 @@ FEATURE_CONTRACTS: tuple[FeatureContract, ...] = (
     FeatureContract('inventory.pods', (ApiCandidate('', 'v1', 'pods'),)),
     FeatureContract('inventory.services', (ApiCandidate('', 'v1', 'services'),)),
     FeatureContract('inventory.configmaps', (ApiCandidate('', 'v1', 'configmaps'),)),
-    FeatureContract('inventory.secrets', (ApiCandidate('', 'v1', 'secrets'),)),
+    FeatureContract('inventory.secrets', (ApiCandidate('', 'v1', 'secrets'),), required=False),
     FeatureContract('inventory.resourcequotas', (ApiCandidate('', 'v1', 'resourcequotas'),)),
     FeatureContract('inventory.deployments', (ApiCandidate('apps', 'v1', 'deployments'),)),
     FeatureContract('inventory.statefulsets', (ApiCandidate('apps', 'v1', 'statefulsets'),)),
@@ -98,6 +98,16 @@ class KubernetesDiscovery:
         required = [value for key, value in features.items() if self._contract(key).required]
         blocked = [value for value in required if value['status'] == 'blocked']
         legacy = [value for value in required if value['status'] == 'legacy']
+        optional_blocked = [
+            key
+            for key, value in features.items()
+            if not self._contract(key).required and value['status'] == 'blocked'
+        ]
+        optional_legacy = [
+            key
+            for key, value in features.items()
+            if not self._contract(key).required and value['status'] == 'legacy'
+        ]
 
         if blocked:
             compatibility_status = 'capability_mismatch'
@@ -115,8 +125,18 @@ class KubernetesDiscovery:
             'readiness_status': readiness_status,
             'features': features,
             'selected_adapters': selected_adapters,
-            'blocked_features': sorted(key for key, value in features.items() if value['status'] == 'blocked'),
-            'legacy_features': sorted(key for key, value in features.items() if value['status'] == 'legacy'),
+            'blocked_features': sorted(
+                key
+                for key, value in features.items()
+                if self._contract(key).required and value['status'] == 'blocked'
+            ),
+            'legacy_features': sorted(
+                key
+                for key, value in features.items()
+                if self._contract(key).required and value['status'] == 'legacy'
+            ),
+            'optional_blocked_features': sorted(optional_blocked),
+            'optional_legacy_features': sorted(optional_legacy),
         }
 
     def _evaluate_contract(self, contract: FeatureContract) -> dict[str, Any]:
@@ -145,6 +165,8 @@ class KubernetesDiscovery:
                 # failure, not a reason to try an older API and bypass the intended RBAC.
                 return {
                     'status': 'blocked',
+                    'required': contract.required,
+                    'required_verbs': list(contract.required_verbs),
                     'selected_api': None,
                     'observed': observed,
                     'message': 'The API is served, but the kubeconfig lacks required access: '
@@ -154,6 +176,8 @@ class KubernetesDiscovery:
             status = 'legacy' if candidate.stability == 'legacy' else 'ready'
             return {
                 'status': status,
+                'required': contract.required,
+                'required_verbs': list(contract.required_verbs),
                 'selected_api': {
                     'group': candidate.group,
                     'version': candidate.version,
@@ -170,6 +194,8 @@ class KubernetesDiscovery:
 
         return {
             'status': 'blocked',
+            'required': contract.required,
+            'required_verbs': list(contract.required_verbs),
             'selected_api': None,
             'observed': observed,
             'message': 'No supported API candidate with the required verbs is available.',

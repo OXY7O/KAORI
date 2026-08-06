@@ -1,13 +1,64 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% block title %}{{ cluster.name }} · Kubernetes Integration · KAORI{% endblock %}
 {% block dashboard_content %}
-    {% set readiness = runtime_state.readiness or 'validation_required' %}
+    {% set readiness = validation_state.readiness or 'validation_required' %}
     {% set source_posture = 'Ready' if readiness == 'ready' else ('Attention' if readiness in ['degraded', 'blocked'] else 'Configured') %}
+    {% set kubernetes_tabs = [
+        ('configuration', 'Configuration', 'settings-2', cluster.environment|environment_name),
+        ('validation', 'Validation & Capabilities', 'scan-search', readiness|replace('_', ' ')|title),
+        ('runtime', 'Runtime & History', 'activity', runtime_state.health_status_label),
+        ('inventory', 'Inventory & Lifecycle', 'database', operational_domain_count ~ ' Domains')
+    ] %}
     <div class="kaori-integration-semantic space-y-6"
-         x-data="{ tabs: ['configuration', 'validation', 'runtime', 'inventory'], activeTab: (() => { const queryTab = new URLSearchParams(window.location.search).get('tab'); const hashTab = window.location.hash.replace('#', ''); return ['configuration', 'validation', 'runtime', 'inventory'].includes(queryTab) ? queryTab : (['configuration', 'validation', 'runtime', 'inventory'].includes(hashTab) ? hashTab : 'configuration'); })(), deleteModal: false, deleteUrl: '', deleteName: '', setTab(tab, moveToWorkspace = false) { this.activeTab = tab; const nextUrl = new URL(window.location.href); nextUrl.searchParams.set('tab', tab); nextUrl.hash = tab; window.history.replaceState(null, '', nextUrl); if (moveToWorkspace) { this.$nextTick(() => document.getElementById('kubernetes-detail-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); } }, openDelete(url, name) { this.deleteUrl = url; this.deleteName = name; this.deleteModal = true; } }"
-         x-on:hashchange.window="activeTab = ['configuration', 'validation', 'runtime', 'inventory'].includes(window.location.hash.replace('#', '')) ? window.location.hash.replace('#', '') : 'configuration'">
+         x-data="{
+             tabs: ['configuration', 'validation', 'runtime', 'inventory'],
+             activeTab: (() => {
+                 const url = new URL(window.location.href);
+                 const queryTab = url.searchParams.get('tab');
+                 const hashTab = url.hash.replace('#', '');
+                 return ['configuration', 'validation', 'runtime', 'inventory'].includes(queryTab)
+                     ? queryTab
+                     : (['configuration', 'validation', 'runtime', 'inventory'].includes(hashTab) ? hashTab : 'configuration');
+             })(),
+             deleteModal: false,
+             deleteUrl: '',
+             deleteName: '',
+             setTab(tab, moveToWorkspace = false) {
+                 if (!this.tabs.includes(tab)) return;
+                 this.activeTab = tab;
+                 const nextUrl = new URL(window.location.href);
+                 nextUrl.searchParams.set('tab', tab);
+                 nextUrl.hash = tab;
+                 window.history.replaceState({}, '', nextUrl);
+                 this.$nextTick(() => {
+                     if (moveToWorkspace) document.getElementById('kubernetes-detail-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                     if (window.renderKaoriIcons) window.renderKaoriIcons();
+                     else if (window.lucide) window.lucide.createIcons();
+                 });
+             },
+             moveTab(currentTab, direction, prefix) {
+                 const currentIndex = this.tabs.indexOf(currentTab);
+                 if (currentIndex < 0) return;
+                 let nextIndex = currentIndex;
+                 if (direction === 'home') nextIndex = 0;
+                 else if (direction === 'end') nextIndex = this.tabs.length - 1;
+                 else nextIndex = (currentIndex + direction + this.tabs.length) % this.tabs.length;
+                 const nextTab = this.tabs[nextIndex];
+                 this.setTab(nextTab);
+                 this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus());
+             },
+             syncTabFromLocation() {
+                 const url = new URL(window.location.href);
+                 const candidate = url.searchParams.get('tab') || url.hash.replace('#', '');
+                 this.activeTab = this.tabs.includes(candidate) ? candidate : 'configuration';
+             },
+             openDelete(url, name) { this.deleteUrl = url; this.deleteName = name; this.deleteModal = true; }
+         }"
+         x-on:hashchange.window="syncTabFromLocation()"
+         x-on:popstate.window="syncTabFromLocation()">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -16,7 +67,7 @@
                         <p class="mt-2 {{ page_hero.description_classes() }}">Manage the connection contract, capability evidence, runtime health, and governed Kubernetes lifecycle.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('shield-check', readiness|replace('_', ' ') |title) }}
-                            {{ page_hero.meta_label('layers-3', (runtime_state.capability_count|string) ~ ' Capabilities') }}
+                            {{ page_hero.meta_label('layers-3', (validated_feature_count|string) ~ ' Validated Features') }}
                             {{ page_hero.meta_label('network', cluster.environment|environment_name) }}
                         </div>
                     {% endcall %}
@@ -43,24 +94,34 @@
                             <div class="{{ page_hero.context_metric_card_classes() }}">
                                 <div class="flex items-center gap-2 text-brand-foreground">
                                     <i data-lucide="layers-3" class="h-3.5 w-3.5"></i>
-                                    <p class="text-xs font-semibold">Capabilities</p>
+                                    <p class="text-xs font-semibold">Validated Features</p>
                                 </div>
-                                <p class="mt-1.5 text-xl font-semibold leading-none text-brand-foreground">{{ runtime_state.capability_count }}</p>
-                                <p class="{{ page_hero.context_metric_helper_classes() }}">Served APIs and access evidence</p>
+                                <p class="mt-1.5 text-xl font-semibold leading-none text-brand-foreground">{{ validated_feature_count }}</p>
+                                <p class="{{ page_hero.context_metric_helper_classes() }}">Selected API and RBAC evidence</p>
                             </div>
                         </div>
                         <div class="{{ page_hero.context_actions_classes() }}">
-                            <button type="button"
-                                    @click="setTab('validation', true)"
-                                    class="{{ page_hero.context_action_classes() }}">
-                                <i data-lucide="scan-line" class="h-4 w-4"></i>
-                                Review Validation
-                            </button>
-                            <a href="{{ url_for('integrations.kubernetes') }}"
-                               class="{{ page_hero.context_action_classes() }}">
-                                <i data-lucide="arrow-left" class="h-4 w-4"></i>
-                                Back to Registry
-                            </a>
+                            {% if current_user.has_permission('clusters.sync') %}
+                                <button type="button"
+                                        @click="setTab('validation', true)"
+                                        class="{{ page_hero.context_action_classes() }}">
+                                    <i data-lucide="scan-line" class="h-4 w-4" aria-hidden="true"></i>
+                                    Review Validation
+                                </button>
+                            {% endif %}
+                            {% if current_user.has_permission('settings.manage_integrations') %}
+                                <a href="{{ url_for('integrations.kubernetes') }}"
+                                   class="{{ page_hero.context_action_classes() }}">
+                                    <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
+                                    Back to Registry
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('cluster.list_clusters') }}"
+                                   class="{{ page_hero.context_action_classes() }}">
+                                    <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
+                                    Back to Clusters
+                                </a>
+                            {% endif %}
                         </div>
                     </div>
                 </aside>
@@ -68,32 +129,11 @@
         </section>
         <section id="kubernetes-detail-tabs"
                  class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
-            <nav class="border-b border-outline-default bg-surface-hover px-4 pt-4 sm:px-5"
-                 aria-label="Kubernetes connection domains">
-                <div class="flex gap-2 overflow-x-auto" role="tablist">
-                    {% for tab_key, tab_label, tab_icon, tab_badge in [
-                        ('configuration', 'Configuration', 'settings-2', cluster.environment|environment_name),
-                        ('validation', 'Validation & Capabilities', 'scan-search', readiness|replace('_', ' ')|title),
-                        ('runtime', 'Runtime & History', 'activity', runtime_state.health_status_label),
-                        ('inventory', 'Inventory & Lifecycle', 'database', (capability_scope|length|string) ~ ' Scopes')
-                        ] %}
-                        <button type="button"
-                                role="tab"
-                                id="kubernetes-tab-{{ tab_key }}"
-                                aria-controls="kubernetes-panel-{{ tab_key }}"
-                                :aria-selected="activeTab === '{{ tab_key }}' ? 'true' : 'false'"
-                                @click="setTab('{{ tab_key }}')"
-                                class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition"
-                                :class="activeTab === '{{ tab_key }}' ? 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px' : 'border-transparent text-content-muted hover:bg-kaori-soft hover:text-kaori-primary'">
-                            <i data-lucide="{{ tab_icon }}" class="h-4 w-4"></i>
-                            <span>{{ tab_label }}</span>
-                            <span {% if tab_key in ['validation', 'runtime'] %}id="kubernetes-{{ tab_key }}-tab-badge"{% endif %}
-                                  class="kaori-semantic-label rounded-md border px-2 py-0.5 text-xs font-semibold"
-                                  :class="activeTab === '{{ tab_key }}' ? 'border-brand-outline bg-kaori-soft text-kaori-primary' : 'border-outline-subtle bg-surface-card text-content-muted'">{{ tab_badge }}</span>
-                        </button>
-                    {% endfor %}
-                </div>
-            </nav>
+            {{ framed_workspace_tabs.render(
+                kubernetes_tabs,
+                prefix='kubernetes',
+                aria_label='Kubernetes Connection Domains'
+            ) }}
             <div class="p-4 sm:p-5 lg:p-6">
                 <div id="kubernetes-panel-configuration"
                      role="tabpanel"

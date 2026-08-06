@@ -5,7 +5,7 @@
 Approved package:
 
 - A1 — Visualization Workspace Style 1: Adaptive Explorer;
-- B — Tab Style 2: Compact Segmented Tabs;
+- B — Tab Style 3: Compact Segmented Tabs;
 - C1 — Graph plus accessible Resource List;
 - D1 — Tokenized five-domain topology palette.
 
@@ -35,7 +35,7 @@ Approved package:
 
 At `2xl`, controls, graph/list, and inspector are persistent. Below `2xl`, the canvas remains primary while Controls and Details use adaptive drawers.
 
-Tab Style 2 switches Graph/Resource List and Details/Relationships. Resource List, search, JSON export, and payload-based detail inspection remain available if Cytoscape is unavailable.
+Tab Style 3 switches Graph/Resource List and Details/Relationships. Resource List, search, JSON export, and payload-based detail inspection remain available if Cytoscape is unavailable.
 
 ## Performance Contract
 

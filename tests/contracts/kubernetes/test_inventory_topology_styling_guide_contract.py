@@ -24,13 +24,13 @@ def test_topology_uses_the_adaptive_visualization_workspace() -> None:
     assert 'components/loading_bar.html' in component
 
 
-def test_topology_registers_compact_segmented_tab_style() -> None:
+def test_topology_registers_compact_segmented_tab_style_three() -> None:
     workspace = _read('app/templates/inventory/topology/partials/_workspace.html')
     inspector = _read('app/templates/inventory/topology/partials/_inspector_templates.html')
     component = _read('app/templates/components/segmented_tabs.html')
     registry = _read('docs/design/components/TAB_STYLES.md')
 
-    assert 'Tab Style 2 — Compact Segmented Tabs' in registry
+    assert 'Tab Style 3 — Compact Segmented Tabs' in registry
     assert '`compact-segmented`' in registry
     assert 'data-kaori-tab-variant="compact-segmented"' in component
     assert "[('graph', 'Graph', 'share-2'), ('list', 'Resource List', 'list-tree')]" in workspace
@@ -144,7 +144,7 @@ def test_topology_reference_pattern_is_documented() -> None:
     inventory_readme = _read('app/inventory/README.md')
 
     assert 'Visualization Workspace Style 1 — Adaptive Explorer' in pattern
-    assert 'Tab Style 2: Graph / Resource List' in pattern
+    assert 'Tab Style 3: Graph / Resource List' in pattern
     assert 'Renderer failure must not remove access' in pattern or 'Renderer errors preserve Resource List access' in pattern
     assert 'Approved package' in audit
     assert 'Kubernetes Topology Reference Pattern' in inventory_readme

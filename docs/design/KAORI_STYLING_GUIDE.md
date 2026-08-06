@@ -47,7 +47,8 @@ Review the baseline diff before committing. A lower count is expected; moving de
 | Pagination | `components/PAGINATION.md` | `components/pagination.html` |
 | Tab style registry | `components/TAB_STYLES.md` | Approved semantic tab components |
 | Tab Style 1 — Integrated Workspace Tabs | `components/WORKSPACE_TABS.md` | `components/workspace_tabs.html` |
-| Tab Style 2 — Compact Segmented Tabs | `components/SEGMENTED_TABS.md` | `components/segmented_tabs.html` |
+| Tab Style 2 — Framed Workspace Tabs | `components/FRAMED_WORKSPACE_TABS.md` | `components/framed_workspace_tabs.html` |
+| Tab Style 3 — Compact Segmented Tabs | `components/SEGMENTED_TABS.md` | `components/segmented_tabs.html` |
 | Visualization Workspace Style 1 | `components/VISUALIZATION_WORKSPACE.md` | `components/visualization_workspace.html` |
 | Topology visualization palette | `components/TOPOLOGY_PALETTE.md` | `frontend/styles.css` tokens |
 | Operational section card | `components/OPERATIONAL_SECTION_CARD.md` | `components/operational_section_card.html` |
@@ -289,7 +290,11 @@ Required behavior:
 
 Tabs switch peer content. They do not hide blockers, required form fields, errors, or a primary flow. New tab styles require a distinct information architecture, a semantic key, one shared component owner, and registration in `TAB_STYLES.md`; visual variation alone is insufficient.
 
-### Tab Style 2 — Compact Segmented Tabs
+### Tab Style 2 — Framed Workspace Tabs
+
+Use `components/framed_workspace_tabs.html` (`framed-workspace-v2`) for peer operational domains inside one explicit parent workspace surface. The shared component owns the raised connected tabs, optional semantic badges, ARIA linkage, and keyboard hooks. The owning controller stores the active tab in the URL and synchronizes browser history.
+
+### Tab Style 3 — Compact Segmented Tabs
 
 Use `components/segmented_tabs.html` (`compact-segmented`) for two or three local mutually exclusive views inside one component, inspector, drawer, or visualization toolbar. It is not a top-level workspace navigation style. The owning controller provides Left/Right/Home/End keyboard behavior and may persist the selected view in the URL when sharing or refresh continuity is useful.
 
@@ -553,7 +558,7 @@ Review one main page at a time using this sequence:
 - [ ] Hero geometry and content limits are unchanged.
 - [ ] Pagination defaults to 5 with 5/10/25/50 options.
 - [ ] Workspace tabs use the shared component and preserve URL/HTMX state.
-- [ ] Local two/three-view switches use Tab Style 2 rather than page-local segmented geometry.
+- [ ] Framed multi-domain workspaces use Tab Style 2; local two/three-view switches use Tab Style 3 rather than page-local segmented geometry.
 - [ ] Dense visualization pages use the Adaptive Explorer owner and provide an accessible Resource List fallback.
 - [ ] Visualization colors come from documented CSS tokens; templates and JavaScript contain no raw palette values.
 - [ ] Repeated operational sections use `operational_section_card.html`.
@@ -734,7 +739,7 @@ ConfigMap and Secret Delete require the canonical final destructive confirmation
 
 ### Protected Reveal
 
-Use Tab Style 2 for `New Request`, `My Requests`, and `Approvals`. Only the active registry panel may poll. Numeric pagination owns its endpoint, filters, HTMX target, and loading boundary.
+Use Tab Style 3 for `New Request`, `My Requests`, and `Approvals`. Only the active registry panel may poll. Numeric pagination owns its endpoint, filters, HTMX target, and loading boundary.
 
 ### Inventory modal technical text
 

@@ -84,14 +84,16 @@
         </div>
         <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <p class="text-xs leading-5 text-content-secondary">Configuration changes reset readiness until worker validation confirms the updated contract.</p>
-            <a href="{{ url_for('cluster.edit_cluster', cluster_id=cluster.id) }}"
-               class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover"><i data-lucide="settings-2" class="h-4 w-4"></i>Configure Connection</a>
+            {% if current_user.has_permission('clusters.manage') %}
+                <a href="{{ url_for('cluster.edit_cluster', cluster_id=cluster.id) }}"
+                   class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover"><i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>Configure Connection</a>
+            {% endif %}
         </footer>
     </section>
     <aside class="space-y-4 xl:sticky xl:top-5 xl:col-span-4 xl:self-start">
         {% set operational_flow_items = [('Configure Connection', 'Set identity, environment, kubeconfig ownership, and TLS policy.'), ('Test Connection', 'Confirm the submitted Kubernetes API endpoint, credentials, and TLS policy before saving connection changes.'), ('Run Full Validation', 'Discover served APIs, effective RBAC, stable adapters, lifecycle posture, and fallback requirements.'), ('Refresh and Synchronize', 'Record runtime evidence and update normalized Kubernetes inventory.')] %}
         {{ info_flow.render('Operational Flow', 'How this connection becomes eligible for KAORI operations.', operational_flow_items, icon='workflow', note='A healthy API connection can still be Degraded when the Kubernetes version lifecycle, API fallback, or RBAC contract requires attention.', open_by_default=true) }}
-        <div class="rounded-xl border border-status-info-border bg-status-info-soft p-4">
+        <div class="rounded-xl border border-outline-subtle bg-surface-card p-4">
             <div class="flex items-start gap-3">
                 <i data-lucide="landmark"
                    class="mt-0.5 h-4 w-4 shrink-0 text-status-info-text"></i>

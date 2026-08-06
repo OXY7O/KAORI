@@ -1,13 +1,13 @@
 {% extends "layouts/app.html" %}
-{% import "components/workspace_tabs.html" as workspace_tabs %}
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% block title %}Integrations · KAORI{% endblock %}
 {% block dashboard_content %}
     {% set integration_tabs = [
-        ('catalog', 'Provider Catalog', 'package-search'),
-        ('runtime', 'Runtime Overview', 'activity'),
-        ('coverage', 'Domain Coverage', 'layout-grid')
+        ('catalog', 'Provider Catalog', 'package-search', available_provider_count ~ ' Available'),
+        ('runtime', 'Runtime Overview', 'activity', runtime_global_stats.total ~ ' Targets'),
+        ('coverage', 'Domain Coverage', 'layout-grid', coverage_stats.available_domains ~ ' Active')
     ] %}
     <div class="kaori-integration-semantic space-y-6"
          x-data="{
@@ -43,7 +43,7 @@
         {% set description = "Connect infrastructure providers to KAORI through reusable connection, compatibility, runtime, and binding contracts." %}
         {% include 'integrations/partials/_hero.html' %}
 
-        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+        <section class="{{ integration_ui.section_shell_classes() }}"
                  aria-labelledby="integration-portfolio-title">
             <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -87,14 +87,15 @@
             </div>
         </section>
 
-        <div id="integration-workspace" class="space-y-5 scroll-mt-4">
-            {{ workspace_tabs.render(
+        <section id="integration-workspace"
+                 class="scroll-mt-4 {{ integration_ui.section_shell_classes() }}">
+            {{ framed_workspace_tabs.render(
                 integration_tabs,
                 prefix='integration-overview',
                 aria_label='Integration Overview Sections'
             ) }}
-
-            <div id="integration-overview-panel-catalog"
+            <div class="p-4 sm:p-5 lg:p-6">
+                <div id="integration-overview-panel-catalog"
                  role="tabpanel"
                  aria-labelledby="integration-overview-tab-catalog"
                  x-cloak
@@ -102,7 +103,7 @@
                  x-bind:hidden="activeTab !== 'catalog'"
                  hidden>
                 <section id="provider-catalog"
-                         class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+                         class="{{ integration_ui.section_shell_classes() }}"
                          aria-labelledby="provider-catalog-title">
                     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -200,7 +201,7 @@
                  hidden>
                 {% set operational_domains = coverage|selectattr('lifecycle', 'equalto', 'available')|list %}
                 {% set planned_domains = coverage|rejectattr('lifecycle', 'equalto', 'available')|list %}
-                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+                <section class="{{ integration_ui.section_shell_classes() }}"
                          aria-labelledby="coverage-summary-title">
                     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -348,7 +349,8 @@
                         </div>
                     </div>
                 </section>
+                </div>
             </div>
-        </div>
+        </section>
     </div>
 {% endblock %}

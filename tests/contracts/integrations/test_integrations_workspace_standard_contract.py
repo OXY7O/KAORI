@@ -79,8 +79,9 @@ def test_runtime_history_has_one_direct_shared_component() -> None:
     assert not exists('app/templates/integrations/kubernetes/partials/_runtime_history.html')
     assert "'integrations/partials/_runtime_history.html'" in routes
     assert 'integrations/components/_semantic_status.html' in shared
-    assert "href_endpoint='integrations.kubernetes_detail'" in shared
-    assert "endpoint='integrations.kubernetes_runtime_history'" in shared
+    assert 'href_endpoint=runtime_history_detail_endpoint_name' in shared
+    assert 'endpoint=runtime_history_endpoint_name' in shared
+    assert 'runtime_history_route_args_value' in shared
 
 
 def test_dead_binding_presentation_is_removed() -> None:

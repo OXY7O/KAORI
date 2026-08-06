@@ -73,6 +73,7 @@ class KubernetesRuntimeAdapter:
         )
         blocked = tuple(discovery.get('blocked_features') or ())
         legacy = tuple(discovery.get('legacy_features') or ())
+        optional_blocked = tuple(discovery.get('optional_blocked_features') or ())
         lifecycle = str(discovery.get('lifecycle_status') or 'unknown')
         lifecycle_policy = kubernetes_lifecycle_policy(connection.detected_version)
         readiness_reasons = tuple(str(item) for item in (discovery.get('readiness_reasons') or ()) if item)
@@ -176,6 +177,7 @@ class KubernetesRuntimeAdapter:
                     'readiness_reasons': list(readiness_reasons),
                     'blocked_features': list(blocked),
                     'legacy_features': list(legacy),
+                    'optional_blocked_features': list(optional_blocked),
                     'selected_adapters': selected_adapters,
                 },
             ),

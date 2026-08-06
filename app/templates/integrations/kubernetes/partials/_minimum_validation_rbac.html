@@ -1,24 +1,24 @@
 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
     <header class="border-b border-outline-subtle bg-surface-hover px-4 py-3">
         <div class="flex items-start gap-3">
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-content-secondary" aria-hidden="true"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
             <div>
-                <p class="text-sm font-semibold text-content-primary">Minimum Validation RBAC Example</p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Read-only baseline for Kubernetes discovery, inventory evidence, and effective access validation.</p>
+                <p class="text-sm font-semibold text-content-primary">Minimum Validation RBAC Examples</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Keep baseline discovery separate from optional access to sensitive Kubernetes resources.</p>
             </div>
         </div>
     </header>
     <details class="group">
-        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 transition hover:bg-surface-hover [&::-webkit-details-marker]:hidden">
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 transition hover:bg-kaori-mist [&::-webkit-details-marker]:hidden">
             <div>
-                <p class="text-xs font-semibold text-content-primary">ClusterRole And ClusterRoleBinding</p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Apply to the same service-account identity configured in this connection.</p>
+                <p class="text-xs font-semibold text-content-primary">Validation Baseline · ClusterRole And ClusterRoleBinding</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Read-only discovery and inventory metadata without Kubernetes Secret access.</p>
             </div>
-            <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 text-content-muted transition group-open:rotate-180"></i>
+            <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 text-content-muted transition group-open:rotate-180" aria-hidden="true"></i>
         </summary>
-        <div class="border-t border-outline-subtle bg-surface-hover p-3">
-            <div class="overflow-x-auto rounded-lg border border-outline-default bg-slate-950 p-4">
-                <pre class="min-w-max text-xs leading-5 text-slate-100"><code>apiVersion: v1
+        <div class="border-t border-outline-subtle bg-surface-subtle p-3">
+            <div class="overflow-x-auto rounded-lg border border-outline-default bg-content-primary p-4">
+                <pre class="min-w-max text-xs leading-5 text-surface-card"><code>apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: kaori
@@ -35,7 +35,7 @@ rules:
     resources: ["selfsubjectaccessreviews"]
     verbs: ["create"]
   - apiGroups: [""]
-    resources: ["nodes", "namespaces", "pods", "services", "endpoints", "persistentvolumes", "persistentvolumeclaims", "resourcequotas", "configmaps", "secrets"]
+    resources: ["nodes", "namespaces", "pods", "services", "endpoints", "persistentvolumes", "persistentvolumeclaims", "resourcequotas", "configmaps"]
     verbs: ["get", "list"]
   - apiGroups: ["apps"]
     resources: ["deployments", "statefulsets", "daemonsets", "replicasets"]
@@ -66,9 +66,49 @@ subjects:
     name: kaori
     namespace: kaori-system</code></pre>
             </div>
+            <div class="mt-3 rounded-lg border border-outline-subtle bg-surface-card p-3">
+                <p class="text-xs font-semibold text-content-primary">Baseline Boundary</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">This baseline intentionally excludes Secrets and write verbs. It supports discovery, normalized inventory, compatibility validation, and effective read-access checks.</p>
+            </div>
+        </div>
+    </details>
+    <details class="group border-t border-outline-subtle">
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 transition hover:bg-kaori-mist [&::-webkit-details-marker]:hidden">
+            <div>
+                <p class="text-xs font-semibold text-content-primary">Optional Governance Secret Reader · Namespace Scope</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Add only for namespaces included in TLS Governance or approved Secret metadata workflows.</p>
+            </div>
+            <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 text-content-muted transition group-open:rotate-180" aria-hidden="true"></i>
+        </summary>
+        <div class="border-t border-outline-subtle bg-surface-subtle p-3">
+            <div class="overflow-x-auto rounded-lg border border-outline-default bg-content-primary p-4">
+                <pre class="min-w-max text-xs leading-5 text-surface-card"><code>apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kaori-governance-secret-reader
+  namespace: &lt;approved-namespace&gt;
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kaori-governance-secret-reader
+  namespace: &lt;approved-namespace&gt;
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kaori-governance-secret-reader
+subjects:
+  - kind: ServiceAccount
+    name: kaori
+    namespace: kaori-system</code></pre>
+            </div>
             <div class="mt-3 rounded-lg border border-status-warning-border bg-status-warning-soft p-3">
-                <p class="text-xs font-semibold text-status-warning-text">Security Boundary</p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">This role is read-only. Secret values and write operations require separate namespace-scoped permissions and KAORI guardrails.</p>
+                <p class="text-xs font-semibold text-status-warning-text">Sensitive Permission</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Kubernetes get/list permission on Secrets can expose Secret data returned by the API. Grant this Role only in explicitly approved namespaces and keep KAORI allow-list, protected-secret, reveal, and Activity Audit guardrails enabled.</p>
             </div>
         </div>
     </details>

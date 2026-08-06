@@ -131,6 +131,12 @@ def test_cluster_connection(
             readiness_reasons.append(
                 'Required capabilities are blocked for: ' + ', '.join(discovery['blocked_features']) + '.'
             )
+        if discovery.get('optional_blocked_features'):
+            readiness_reasons.append(
+                'Optional capability access is unavailable for: '
+                + ', '.join(discovery['optional_blocked_features'])
+                + '. Core Kubernetes readiness is unaffected until that optional workflow is enabled.'
+            )
         if compatibility.readiness == 'blocked':
             readiness_reasons.append(compatibility.message)
 
