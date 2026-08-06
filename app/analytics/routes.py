@@ -9,10 +9,7 @@ from app.analytics.alerts.routes import (
     anomalies_table,
 )
 from app.analytics.capacity.routes import capacity
-from app.analytics.forecast.routes import (
-    forecast,
-    forecast_section,
-)
+from app.analytics.forecast.routes import forecast
 from app.analytics.overview.sections import get_overview_section
 from app.analytics.overview.service import get_analytics_overview, get_analytics_overview_section
 from app.analytics.materialization.presentation import materialization_progress_context
@@ -402,15 +399,6 @@ analytics_bp.add_url_rule(
     '/forecast',
     endpoint='forecast',
     view_func=forecast,
-    methods=[
-        'GET',
-    ],
-)
-
-analytics_bp.add_url_rule(
-    '/forecast/section',
-    endpoint='forecast_section',
-    view_func=forecast_section,
     methods=[
         'GET',
     ],

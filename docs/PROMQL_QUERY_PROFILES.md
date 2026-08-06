@@ -84,3 +84,9 @@ Workload Analytics uses the `kubernetes-v1` query family with these invariants:
 - selected-window peak templates preserve the same active-Pod and duplicate-series boundary inside the subquery.
 
 Consumers must not flatten multiple ResourceQuota objects into one namespace/resource map. Query-profile label validation requires ResourceQuota object identity and active-Pod phase labels.
+
+## Forecast Analytics boundary
+
+Forecast query profiles use the longest supported history declaration (`required_history='90d'`). CPU, memory, and Pod demand are joined to Pod node identity, restricted to Ready workers, and exclude both `control-plane` and legacy `master` roles. Container and Pod gauges are normalized with `max by` over canonical identities before summation. Active Pod demand includes `Pending|Running`.
+
+Storage Forecast uses `kubelet_volume_stats_used_bytes` divided by `kubelet_volume_stats_capacity_bytes`. Duplicate scrape samples are normalized with `max by(namespace,persistentvolumeclaim)` before aggregation. Namespace variants filter both usage and capacity to the selected Namespace. Forecast capability validation covers CPU, memory, Pods, and Storage inputs.

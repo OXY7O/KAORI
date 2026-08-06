@@ -4,19 +4,8 @@
 {% set summary = forecast_payload.summary %}
 {% set highest_percent = summary.highest_projected_percent %}
 {% set nearest = summary.nearest_critical|default({}, true) %}
-{% if summary.critical_count|default(0) > 0 %}
-    {% set posture_label = 'Critical Projection' %}
-    {% set posture_tone = 'critical' %}
-{% elif summary.warning_count|default(0) > 0 %}
-    {% set posture_label = 'Capacity Watch' %}
-    {% set posture_tone = 'warning' %}
-{% elif forecast_payload.has_data %}
-    {% set posture_label = 'Within Capacity' %}
-    {% set posture_tone = 'normal' %}
-{% else %}
-    {% set posture_label = 'Evidence Unavailable' %}
-    {% set posture_tone = 'unknown' %}
-{% endif %}
+{% set posture_label = summary.posture_label|default('Evidence Unavailable', true) %}
+{% set posture_tone = summary.posture_tone|default('unknown', true) %}
 {% call analytics_workspace.overview(
     'Forecast Overview',
     'Projected capacity posture, available forecast evidence, and the operating boundary used by every resource tab.',
@@ -54,7 +43,7 @@
                             {{ table_label.status_label(posture_label, tone=posture_tone, size='compact') }}
                         </div>
                         <p class="{{ analysis_surface.section_description_classes() }}">
-                            {{ summary.forecasted_resources|default(0) }} of {{ summary.total_resources|default(0) }} resources have valid projections; {{ summary.unavailable_resources|default(0) }} are unavailable.
+                            {{ summary.forecasted_resources|default(0) }} of {{ summary.total_resources|default(0) }} resources have projections; {{ summary.limited_resources|default(0) }} have Low Historical Signal Quality and {{ summary.unavailable_resources|default(0) }} are unavailable.
                         </p>
                     </div>
                 </div>

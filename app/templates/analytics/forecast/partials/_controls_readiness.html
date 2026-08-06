@@ -23,7 +23,7 @@
         <div class="grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle xl:grid-cols-2">
             {% call analytics_workspace.control_group(
                 'Scope',
-                'CPU, memory, and pod demand use cluster worker capacity. Storage uses claim capacity when a namespace is selected.',
+                'CPU, memory, and active Pod demand use Ready-worker allocatable capacity. Storage uses observed mounted-volume capacity for the selected scope.',
                 'forecast-scope-controls',
                 columns='sm:grid-cols-2'
             ) %}

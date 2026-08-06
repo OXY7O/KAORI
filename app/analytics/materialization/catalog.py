@@ -225,7 +225,15 @@ FORECAST_DATASET = AnalyticsDataset(
     stale_grace_minutes=4320,
     snapshot_parameter_keys=('history_window', 'namespace'),
     required_binding_capabilities=('metrics', 'forecast'),
-    required_capabilities=('range_query', 'long_term_history', 'capacity_metrics'),
+    required_capabilities=(
+        'instant_query',
+        'range_query',
+        'long_term_history',
+        'kubernetes_identity',
+        'workload_metrics',
+        'capacity_metrics',
+        'pvc_usage',
+    ),
     execution_priority=100,
     task_budget_seconds=600,
 )

@@ -1,9 +1,16 @@
 # Analytics Resource Forecast Standard
 
 Status: Canonical KAORI Analytics domain contract
+Updated: 2026-08-06
 
 Implementation:
 
+- `app/analytics/forecast/contracts.py`
+- `app/analytics/forecast/calculation.py`
+- `app/analytics/forecast/presentation.py`
+- `app/analytics/forecast/resource.py`
+- `app/analytics/forecast/service.py`
+- `app/analytics/forecast/routes.py`
 - `app/templates/analytics/forecast/index.html`
 - `app/templates/analytics/forecast/partials/_controls_readiness.html`
 - `app/templates/analytics/forecast/partials/_overview_methodology.html`
@@ -13,100 +20,171 @@ Implementation:
 
 ## Purpose
 
-Resource Forecast turns committed daily Prometheus history into capacity-planning evidence for CPU, memory, storage, and pods. It is an early planning signal, not an authoritative capacity commitment.
+Resource Forecast converts committed Prometheus history into capacity-planning evidence for CPU, memory, storage, and active Pods. It is a planning signal. It does not authorize autonomous remediation or replace live-state verification before a capacity decision.
+
+## Evidence Boundary
+
+CPU, memory, and Pods use one Ready-worker boundary:
+
+- exclude `control-plane` and legacy `master` roles;
+- include only nodes with `Ready=true`;
+- compare workload demand with Ready-worker allocatable capacity;
+- normalize duplicate container, Pod, and node series before aggregation;
+- count active Pods in `Pending|Running`.
+
+Storage uses mounted-volume evidence:
+
+- usage: `kubelet_volume_stats_used_bytes`;
+- denominator: `kubelet_volume_stats_capacity_bytes`;
+- duplicate series: `max by(namespace,persistentvolumeclaim)` before summation;
+- terminology: Observed Volume Capacity, never requested claim capacity.
+
+Namespace forecasts retain the same denominator contract. Namespace CPU, memory, and Pod demand are compared with cluster Ready-worker allocatable capacity. Namespace PVC usage is compared with Namespace Observed Volume Capacity.
+
+## Materialization Identity
+
+The committed dataset key is `analytics.forecast`.
+
+Provider-query dimensions:
+
+- `cluster_id`;
+- `history_window`;
+- `namespace` when selected.
+
+Presentation-only dimensions:
+
+- `forecast_horizon`;
+- `method`;
+- `tab`.
+
+Presentation-only dimensions re-project committed history locally and must not create new worker jobs or snapshot fingerprints. Supported history windows are `7d`, `30d`, and `90d`. Query profiles therefore declare `required_history='90d'` so the longest supported window is validated.
+
+## Forecast Models
+
+Canonical models:
+
+- **Holt-Winters** — default; evaluates level, trend, and weekly additive seasonality.
+- **Linear Trend** — simple comparison baseline.
+- **Conservative Trend** — preserves the Holt-Winters seasonal shape and applies a 15% uplift only to positive projected growth.
+
+The removed Moving Average implementation must not return as an alias or compatibility wrapper.
+
+## Status and Threshold Semantics
+
+Canonical thresholds:
+
+- Normal: below 75%.
+- Warning: 75% to 89.9%.
+- Critical: 90% or above.
+
+Resource status is based on the **highest projected point inside the selected horizon**, not only the endpoint. The endpoint remains visible as supporting evidence.
+
+Threshold ETA is derived by walking the actual projected points from the latest historical observation. It is bounded by the selected horizon:
+
+- `Reached` when the latest observation already crosses the threshold;
+- `N days` when a projected point crosses within the horizon;
+- `Beyond <horizon>d horizon` when no crossing occurs inside the selected horizon;
+- `N/A` when evidence or capacity is unavailable.
+
+Do not extrapolate an unbounded ETA from a linear slope and present it as part of the selected horizon.
+
+## Signal Quality and Posture
+
+Historical Signal Quality evaluates sample count, date completeness, and variation. It is not model confidence or a claim of forecast accuracy.
+
+Planning-ready signal quality:
+
+- High;
+- Medium.
+
+Low signal quality is **Limited Evidence**, even when the projected percentage is below the warning threshold. Aggregate posture states:
+
+- Critical Projection;
+- Capacity Watch;
+- Limited Evidence;
+- Within Capacity;
+- Evidence Unavailable.
+
+`Within Capacity` requires all four resources to be available and planning-ready, with no warning or critical projection.
+
+## Unavailable Evidence
+
+A resource forecast requires at least two daily samples and a positive capacity baseline. When unavailable:
+
+- status is Unknown;
+- values display `N/A`;
+- progress is suppressed;
+- threshold ETA displays `N/A`;
+- the chart is replaced by an evidence-restoration state;
+- the resource is excluded from highest-projection and warning/critical counts.
+
+Missing observations remain `null` in charts. They must not be converted to zero, Normal, Stable, or Healthy.
 
 ## Workspace Composition
 
-1. Shared KAORI hero with exactly two context metrics and one bottom notice.
+1. Shared KAORI hero with posture and scoped context.
 2. Forecast Controls & Data Readiness.
 3. Forecast Overview outside the tabs.
-4. Resource tabs for CPU, Memory, Storage, Pods, Trend Analysis, and Recommendations.
-5. Bright primary metrics, capacity projection, charts, and resource outlook.
-6. Darker interpretation and recommended-action regions.
+4. CPU, Memory, Storage, Pods, Trend Analysis, and Recommendations tabs.
+5. Bright evidence surfaces for metrics and charts.
+6. Darker guidance surfaces for interpretation and accountable action.
 
-Capacity remains the reference composition. Forecast may use domain-specific charts and threshold timing, but it does not reconstruct shell, metric, or interpretation geometry.
-
-## Scope and Projection Configuration
-
-The controls use two logical groups inside one shared controls shell:
+The controls contain:
 
 - Scope: Cluster and Namespace.
 - Projection Configuration: Model, History Window, and Forecast Horizon.
 
-Resource navigation is owned by the workspace tabs. Do not add a Resource Focus selector that duplicates tab navigation.
+Resource navigation belongs to tabs. Do not add a Resource Focus selector that duplicates tab navigation.
 
-Namespace semantics are explicit:
+## Interactive Chart
 
-- CPU, Memory, and Pods: Namespace Demand vs Cluster Capacity.
-- Storage: Namespace PVC Usage vs Namespace Claim Capacity.
+The combined chart uses the union of timestamps from every resource. Each series maps values to that common axis and preserves absent observations as `null`.
 
-Every resource panel names its scope, comparison, and capacity baseline.
+Required behavior:
 
-## Forecast Models
+- historical line: solid;
+- projection line: dashed;
+- warning and critical lines: semantic token colors;
+- y-axis: dynamic `suggestedMax`, never a fixed 100% ceiling;
+- native Chart.js legend: disabled;
+- visible textual legend: mandatory;
+- initialization only after the tab is visible and measurable;
+- `ResizeObserver` and HTMX lifecycle support.
 
-Canonical model set:
+Chart payload is held in a non-executable `<template data-kaori-json-payload>`. Do not add an inline executable script or page-local color palette.
 
-- Holt-Winters — default. Evaluates level, trend, and weekly additive seasonality.
-- Linear Trend — simple comparison baseline.
-- Conservative Trend — applies a planning buffer to positive Holt-Winters growth.
+## Route Boundary
 
-The removed Moving Average implementation must not return as a compatibility alias.
+`/analytics/forecast` is the only Forecast workspace route. The removed `/analytics/forecast/section` fragment endpoint had no active consumer and must not return.
 
-## Factual Terminology
+The full page may be replaced through standard HTMX navigation, but Forecast does not maintain a duplicate page-specific fragment route.
 
-Use:
+## Code Ownership
 
-- Latest Daily Average, not Current Usage.
-- Weekly Trend, not Growth Rate.
-- Historical Signal Quality, not Forecast Confidence.
-- Projected Horizon Value.
+- `contracts.py` — options, thresholds, resource definitions, value objects.
+- `calculation.py` — model calculation, quality, ETA, posture, chart payload.
+- `service.py` — Prometheus orchestration and committed snapshot construction.
+- `resource.py` — resource evidence, status, ETA, and serialization.
+- `presentation.py` — snapshot adapter and local model/horizon/tab projection.
+- `routes.py` — full-page materialized transport boundary.
+- Jinja — rendering only.
 
-Historical Signal Quality evaluates sample count, completeness, and stability. It does not claim forecast accuracy or backtested model confidence.
+Do not move domain thresholds, forecast status, ETA, or chart alignment logic back into Jinja.
 
-## Unavailable Evidence
+## Reports
 
-A forecast requires at least two daily samples and a non-zero capacity baseline. When unavailable:
-
-- status is Unknown;
-- values display N/A;
-- progress is suppressed;
-- threshold ETA displays N/A;
-- the chart is replaced by an evidence-restoration state;
-- unavailable resources are excluded from highest projection and warning/critical counts.
-
-## Interactive Forecast Chart
-
-Full Forecast pages use `analytics/components/_interactive_forecast_chart.html` and `analytics_forecast_chart.js`.
-
-Canonical mapping:
-
-- CPU: Info Blue.
-- Memory: KAORI Violet.
-- Storage: Normal Green.
-- Pods: Warning Amber.
-
-Historical lines are solid. Projection lines are dashed. Warning and Critical thresholds use semantic token colors. JavaScript resolves CSS variables and must not own page-local hex palettes.
-
-The chart initializes only after its tab is visible and measurable. Required lifecycle:
-
-- `kaori:analytics-tab-visible`;
-- double animation frame;
-- non-zero container dimensions;
-- bounded retry;
-- `ResizeObserver`;
-- HTMX load, swap, and settle support.
-
-The native Chart.js legend is disabled. A visible textual legend is mandatory.
+Forecast report payload and PDF publication consume the same committed evidence and canonical 75%/90% thresholds. Report exposure status uses peak projected percentage. Data cut-off must come from the committed snapshot timestamp. Missing resource evidence remains explicitly Not Available.
 
 ## Recommendation Routing
 
-Recommendations deep-link to the owning resource tab or Trend Analysis. Links preserve Namespace, Model, History Window, and Forecast Horizon. Missing evidence routes to the affected resource tab.
+Recommendations deep-link to the owning resource tab or Trend Analysis. Links preserve Cluster, Namespace, Model, History Window, and Forecast Horizon. Low signal quality routes to evidence validation before capacity commitment.
 
 ## Direct Cutover
 
-The following legacy assets are removed:
+Removed legacy surfaces:
 
-- `app/static/js/analytics_forecast.js`
-- `app/templates/analytics/forecast/partials/_methodology.html`
+- `app/static/js/analytics_forecast.js`;
+- `app/templates/analytics/forecast/partials/_methodology.html`;
+- `/analytics/forecast/section` and endpoint `analytics.forecast_section`.
 
-Do not add wrappers, fallback asset imports, Resource Focus aliases, Moving Average aliases, or confidence-field aliases.
+Do not add wrappers, fallback imports, Resource Focus aliases, Moving Average aliases, confidence-field aliases, or a duplicate Forecast fragment route.

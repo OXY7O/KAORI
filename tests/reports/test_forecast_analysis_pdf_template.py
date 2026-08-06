@@ -58,6 +58,7 @@ def _item(
         'latest_daily_average_percent': current,
         'projected_value': projected,
         'projected_percent': projected,
+        'peak_projected_percent': max(projected, (current + projected) / 2),
         'signal_quality': confidence,
         'signal_quality_reason': 'Committed history is complete enough for planning review.',
         'warning_eta': {'label': warning_eta, 'days': 204 if warning_eta == '204 days' else None, 'date': None},
@@ -133,7 +134,7 @@ def _payload(*, include_storage: bool = False) -> dict[str, object]:
             },
             {
                 'source': 'Threshold Policy',
-                'freshness': '70% / 85%',
+                'freshness': '75% / 90%',
                 'last_collected': 'Configuration',
             },
         ],

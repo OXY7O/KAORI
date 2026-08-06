@@ -1250,7 +1250,7 @@ def build_forecast_actionable_recommendations(
         resource_label = str(item.get('label') or resource_key.upper() or 'Resource')
         href = _forecast_review_href(payload, resource_key if resource_key in {'cpu', 'memory', 'storage', 'pods'} else 'trend')
         has_data = bool(item.get('has_data'))
-        projected_percent = get_numeric_value(item.get('projected_percent', 0))
+        projected_percent = get_numeric_value(item.get('peak_projected_percent', item.get('projected_percent', 0)))
         latest_daily_average_percent = get_numeric_value(item.get('latest_daily_average_percent', 0))
         weekly_trend = get_numeric_value(item.get('weekly_trend', 0))
         signal_quality = str(item.get('signal_quality') or 'Unavailable')
@@ -1289,7 +1289,7 @@ def build_forecast_actionable_recommendations(
                 build_recommendation(
                     title=f'Review projected {resource_label.lower()} critical threshold',
                     description=(
-                        f'{resource_label} is projected to reach {projected_percent:.2f}% within {forecast_horizon}. '
+                        f'{resource_label} has a peak projection of {projected_percent:.2f}% within {forecast_horizon}. '
                         f'The latest daily average is {latest_daily_average_percent:.2f}% of the documented baseline. '
                         f'Critical ETA: {critical_eta_label}. Validate growth assumptions and capacity expansion options.'
                     ),
@@ -1309,7 +1309,7 @@ def build_forecast_actionable_recommendations(
                 build_recommendation(
                     title=f'Review projected {resource_label.lower()} warning threshold',
                     description=(
-                        f'{resource_label} is projected to reach {projected_percent:.2f}% within {forecast_horizon}. '
+                        f'{resource_label} has a peak projection of {projected_percent:.2f}% within {forecast_horizon}. '
                         f'The latest daily average is {latest_daily_average_percent:.2f}% of the documented baseline. '
                         f'Warning ETA: {warning_eta_label}. Review demand growth and capacity headroom.'
                     ),
@@ -1328,7 +1328,7 @@ def build_forecast_actionable_recommendations(
                 build_recommendation(
                     title=f'Validate {resource_label.lower()} weekly trend',
                     description=(
-                        f'{resource_label} has a positive weekly trend and is projected to reach {projected_percent:.2f}%. '
+                        f'{resource_label} has a positive weekly trend and has a peak projection of {projected_percent:.2f}%. '
                         'Confirm whether the signal is caused by expected workload growth, recent deployments, or abnormal demand drift.'
                     ),
                     priority='Warning' if projected_percent >= FORECAST_WARNING_THRESHOLD else 'Info',
@@ -1360,50 +1360,9 @@ def build_forecast_actionable_recommendations(
                 )
             )
 
-    nearest_critical = summary.get('nearest_critical', {})
-    nearest_warning = summary.get('nearest_warning', {})
-    if not isinstance(nearest_critical, dict):
-        nearest_critical = {}
-    if not isinstance(nearest_warning, dict):
-        nearest_warning = {}
-    critical_days = nearest_critical.get('days')
-    warning_days = nearest_warning.get('days')
-    trend_href = _forecast_review_href(payload, 'trend')
-
-    if isinstance(critical_days, int | float) and critical_days <= 30:
-        recommendations.append(
-            build_recommendation(
-                title='Prioritize Nearest Critical Forecast Breach',
-                description=(
-                    f'{nearest_critical.get("resource", "A resource")} is projected to reach the critical threshold in '
-                    f'{nearest_critical.get("label", f"{int(critical_days)} days")}. Create a capacity action plan before the projected date.'
-                ),
-                priority='Critical',
-                source='forecast_eta',
-                source_label='Forecast Threshold ETA',
-                resource='forecast',
-                action_type='forecast_review',
-                href=trend_href,
-                icon='calendar-clock',
-            )
-        )
-    elif isinstance(warning_days, int | float) and warning_days <= 30:
-        recommendations.append(
-            build_recommendation(
-                title='Review Nearest Forecast Warning Breach',
-                description=(
-                    f'{nearest_warning.get("resource", "A resource")} is projected to reach the warning threshold in '
-                    f'{nearest_warning.get("label", f"{int(warning_days)} days")}. Review whether the trend is expected and prepare capacity adjustments.'
-                ),
-                priority='Warning',
-                source='forecast_eta',
-                source_label='Forecast Threshold ETA',
-                resource='forecast',
-                action_type='forecast_review',
-                href=trend_href,
-                icon='calendar-clock',
-            )
-        )
+    eta_recommendation = _build_forecast_eta_recommendation(payload, summary)
+    if eta_recommendation:
+        recommendations.append(eta_recommendation)
 
     recommendations = deduplicate_recommendations(recommendations)
     if recommendations:
@@ -1429,6 +1388,40 @@ def build_forecast_actionable_recommendations(
             icon='sigma', is_actionable=False,
         ),
     ]
+
+
+def _build_forecast_eta_recommendation(
+    payload: dict[str, Any],
+    summary: dict[str, Any],
+) -> dict[str, Any] | None:
+    nearest_critical = summary.get('nearest_critical', {})
+    nearest_warning = summary.get('nearest_warning', {})
+    nearest_critical = nearest_critical if isinstance(nearest_critical, dict) else {}
+    nearest_warning = nearest_warning if isinstance(nearest_warning, dict) else {}
+    critical_days = nearest_critical.get('days')
+    warning_days = nearest_warning.get('days')
+    href = _forecast_review_href(payload, 'trend')
+    if isinstance(critical_days, int | float) and critical_days <= 30:
+        return build_recommendation(
+            title='Prioritize Nearest Critical Forecast Breach',
+            description=(
+                f'{nearest_critical.get("resource", "A resource")} is projected to reach the critical threshold in '
+                f'{nearest_critical.get("label", f"{int(critical_days)} days")}. Create a capacity action plan before the projected date.'
+            ),
+            priority='Critical', source='forecast_eta', source_label='Forecast Threshold ETA',
+            resource='forecast', action_type='forecast_review', href=href, icon='calendar-clock',
+        )
+    if isinstance(warning_days, int | float) and warning_days <= 30:
+        return build_recommendation(
+            title='Review Nearest Forecast Warning Breach',
+            description=(
+                f'{nearest_warning.get("resource", "A resource")} is projected to reach the warning threshold in '
+                f'{nearest_warning.get("label", f"{int(warning_days)} days")}. Review whether the trend is expected and prepare capacity adjustments.'
+            ),
+            priority='Warning', source='forecast_eta', source_label='Forecast Threshold ETA',
+            resource='forecast', action_type='forecast_review', href=href, icon='calendar-clock',
+        )
+    return None
 
 
 def _as_list(value: Any) -> list[Any]:

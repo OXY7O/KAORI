@@ -66,13 +66,21 @@ def test_forecast_direct_cutover_removes_legacy_assets_and_methodology() -> None
     assert not (ROOT / 'app/static/js/analytics_forecast.js').exists()
     assert not (ROOT / 'app/templates/analytics/forecast/partials/_methodology.html').exists()
     service = read('app/analytics/forecast/service.py')
+    contracts = read('app/analytics/forecast/contracts.py')
+    calculation = read('app/analytics/forecast/calculation.py')
+    presentation = read('app/analytics/forecast/presentation.py')
+    routes = read('app/analytics/forecast/routes.py')
+    analytics_routes = read('app/analytics/routes.py')
     assert 'RESOURCE_OPTIONS' not in service
     assert 'moving_average' not in service
-    assert "'value': 'holt_winters'" in service
-    assert "method: str = 'holt_winters'" in service
-    assert "'signal_quality'" in service
-    assert "'latest_daily_average'" in service
-    assert "'confidence':" not in service
+    assert "'value': 'holt_winters'" in contracts
+    assert "method: str = 'holt_winters'" in calculation
+    assert "'signal_quality'" in calculation
+    assert "'latest_daily_average'" in calculation
+    assert "'confidence':" not in calculation
+    assert 'def present_forecast_materialized_context(' in presentation
+    assert 'def forecast_section(' not in routes
+    assert "'/forecast/section'" not in analytics_routes
 
 
 def test_forecast_templates_have_no_page_local_arbitrary_microcopy() -> None:

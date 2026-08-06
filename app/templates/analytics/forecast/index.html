@@ -6,15 +6,8 @@
         {% set selected_cluster_name = cluster.name if cluster else 'No Cluster Selected' %}
         {% set summary = forecast_payload.summary %}
         {% set recommendation_count = forecast_payload.recommendation_count|default(0) %}
-        {% if summary.critical_count|default(0) > 0 %}
-            {% set posture_status = 'Critical' %}{% set posture_tone = 'critical' %}
-        {% elif summary.warning_count|default(0) > 0 %}
-            {% set posture_status = 'Watch' %}{% set posture_tone = 'warning' %}
-        {% elif forecast_payload.has_data %}
-            {% set posture_status = 'Healthy' %}{% set posture_tone = 'normal' %}
-        {% else %}
-            {% set posture_status = 'Unknown' %}{% set posture_tone = 'unknown' %}
-        {% endif %}
+        {% set posture_status = summary.posture_label|default('Evidence Unavailable', true) %}
+        {% set posture_tone = summary.posture_tone|default('unknown', true) %}
         {% set highest_projection = (summary.highest_projected_percent ~ '%') if summary.highest_projected_percent is not none else 'N/A' %}
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">

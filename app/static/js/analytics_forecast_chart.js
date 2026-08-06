@@ -25,7 +25,8 @@
         const node = document.getElementById(id);
         if (!node) return null;
         try {
-            return JSON.parse(node.textContent || '{}');
+            const content = node.content?.textContent ?? node.textContent ?? '{}';
+            return JSON.parse(content);
         } catch {
             return null;
         }
@@ -81,7 +82,8 @@
                 tension: 0.3,
                 pointRadius: 0,
                 pointHoverRadius: 3,
-                fill: false
+                fill: false,
+                spanGaps: false
             },
             {
                 label: `${dataset.label} Projection`,
@@ -93,12 +95,13 @@
                 tension: 0.3,
                 pointRadius: 0,
                 pointHoverRadius: 3,
-                fill: false
+                fill: false,
+                spanGaps: false
             }
         ];
     }
 
-    function chartOptions(colors, maxTicks = 9) {
+    function chartOptions(colors, maxTicks = 9, suggestedMax = 100) {
         return {
             responsive: true,
             maintainAspectRatio: false,
@@ -119,7 +122,7 @@
             scales: {
                 y: {
                     beginAtZero: true,
-                    suggestedMax: 100,
+                    suggestedMax,
                     grid: { color: colors.grid, drawBorder: false },
                     ticks: {
                         color: colors.text,
@@ -143,7 +146,7 @@
         if (mode === 'combined') {
             const available = Array.isArray(payload?.datasets) ? payload.datasets : [];
             if (!available.length) return null;
-            labels = available[0].labels || [];
+            labels = payload?.labels || available[0].labels || [];
             available.forEach((dataset) => datasets.push(...resourceSeries(dataset, colors)));
         } else {
             const dataset = resourceDataset(payload, canvas.dataset.resourceKey || '');
@@ -157,10 +160,19 @@
             thresholdDataset(`Critical ${payload.critical_threshold}%`, payload.critical_threshold, labels, colors.critical, [2, 4])
         );
 
+        const observedMaximum = datasets.reduce((maximum, dataset) => {
+            const values = Array.isArray(dataset.data) ? dataset.data : [];
+            return values.reduce((current, value) => {
+                const numeric = Number(value);
+                return Number.isFinite(numeric) ? Math.max(current, numeric) : current;
+            }, maximum);
+        }, Number(payload?.critical_threshold) || 100);
+        const suggestedMax = Math.max(100, Math.ceil(observedMaximum / 10) * 10);
+
         return {
             type: 'line',
             data: { labels, datasets },
-            options: chartOptions(colors, mode === 'combined' ? 10 : 8)
+            options: chartOptions(colors, mode === 'combined' ? 10 : 8, suggestedMax)
         };
     }
 

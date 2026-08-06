@@ -48,8 +48,8 @@
             <span class="truncate whitespace-nowrap">Workload Analysis</span>
         </a>
         <a href="{{ url_for('analytics.forecast') }}"
-           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint in ['analytics.forecast', 'analytics.forecast_section'] else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
-            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint in ['analytics.forecast', 'analytics.forecast_section'] else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint in ['analytics.forecast'] else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint in ['analytics.forecast'] else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
             <i data-lucide="line-chart" class="h-3.5 w-3.5"></i>
             <span class="truncate whitespace-nowrap">Resource Forecast</span>
         </a>

@@ -773,7 +773,7 @@ def _get_forecast_snapshot(*, cluster_id: str, time_range: str) -> dict[str, Any
         return default
 
     raw = _call_optional_snapshot(
-        module_path='app.analytics.forecast.service',
+        module_path='app.analytics.forecast.presentation',
         function_names=[
             'get_forecast_snapshot',
             'get_forecast_overview_snapshot',

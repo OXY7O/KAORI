@@ -6,7 +6,7 @@ from pathlib import Path
 def test_all_analytics_presenters_remain_importable() -> None:
     from app.analytics.alerts.application import present_alerts_materialized_context
     from app.analytics.capacity.presentation import present_capacity_context
-    from app.analytics.forecast.service import present_forecast_materialized_context
+    from app.analytics.forecast.presentation import present_forecast_materialized_context
     from app.analytics.storage.presentation import present_storage_materialized_context
     from app.analytics.top_consumers.service import present_top_consumers_materialized_context
     from app.analytics.workload.presentation import present_workload_materialized_context

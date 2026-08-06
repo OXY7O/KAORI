@@ -616,7 +616,7 @@ Capacity is a cluster-level Ready-worker fleet analysis. CPU, memory, and pods s
 
 ## Resource Forecast Presentation and Semantics
 
-Resource Forecast uses Holt-Winters as the default model, with Linear Trend and Conservative Trend as explicit alternatives. The page does not expose a Resource Focus selector; CPU, Memory, Storage, Pods, Trend Analysis, and Recommendations are canonical tabs. Forecast evidence is labeled Latest Daily Average, Projected Horizon Value, Weekly Trend, and Historical Signal Quality. Signal Quality describes historical completeness and stability rather than forecast accuracy. Namespace CPU, Memory, and Pods are compared with cluster worker capacity; namespace Storage is compared with namespace PVC claim capacity. Unavailable evidence renders Unknown/N/A and is excluded from projected posture counts. The full page uses the tokenized interactive chart component and tab-visible lifecycle.
+Resource Forecast uses Holt-Winters as the default model, with Linear Trend and Conservative Trend as explicit alternatives. The page does not expose a Resource Focus selector; CPU, Memory, Storage, Pods, Trend Analysis, and Recommendations are canonical tabs. Forecast evidence is labeled Latest Daily Average, Projected Horizon Value, Weekly Trend, and Historical Signal Quality. Signal Quality describes historical completeness and stability rather than forecast accuracy. Namespace CPU, Memory, and active Pods are compared with Ready-worker allocatable capacity; namespace Storage is compared with observed mounted-volume capacity. Unavailable evidence renders Unknown/N/A and is excluded from projected posture counts. The full page uses the tokenized interactive chart component and tab-visible lifecycle.
 
 
 ## Top Consumers presentation and snapshot contract
@@ -631,3 +631,11 @@ The `analytics.alerts` workspace uses `/analytics/alerts` with canonical tab sta
 ## Canonical Prometheus Readiness
 
 All Prometheus-backed Analytics workspaces normalize provider observations through `app.analytics.common.presentation.present_prometheus_status` and render `analytics/components/_prometheus_status.html`. The card owns canonical Query Ready, Query Degraded, Unavailable, Not Configured, and Waiting for Cluster states plus Response and Checked At. Checked At always comes from the provider observation `last_checked_at`; materialization timestamps remain owned by Latest Data Snapshot.
+
+## Resource Forecast runtime contract
+
+Resource Forecast follows `docs/design/components/ANALYTICS_RESOURCE_FORECAST.md` and the runtime audit in `docs/design/audits/KAORI_ANALYTICS_FORECAST_AUDIT_2026_08.md`. The committed `analytics.forecast` snapshot is keyed by Cluster, History Window, and optional Namespace. Forecast Horizon, Model, and active Tab are local presentation state and never create additional worker queries.
+
+CPU, memory, and active-Pod demand are scoped to Ready worker nodes and exclude `control-plane|master`. Duplicate container, Pod, node, and PVC series are normalized before aggregation. Storage compares PVC usage with observed mounted-volume capacity. Resource status uses the highest projected point inside the selected horizon; threshold ETA walks projected points from the latest observation and is bounded by that horizon. Low signal quality is Limited Evidence, never Healthy.
+
+Forecast ownership is split across `contracts.py`, `calculation.py`, `resource.py`, `service.py`, `presentation.py`, and `routes.py`. `/analytics/forecast` is the only workspace route; the unused `/forecast/section` compatibility surface is removed. The chart aligns all resources to one timestamp axis and preserves missing observations as null.

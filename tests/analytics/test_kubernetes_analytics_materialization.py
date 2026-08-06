@@ -7,6 +7,7 @@ from flask import Flask
 
 from app.analytics import tasks
 from app.analytics.common import context as common_context
+from app.analytics.forecast import presentation as forecast_presentation
 from app.analytics.forecast import service as forecast_service
 from app.analytics.materialization import requests as materialization_requests
 from app.analytics.materialization.catalog import canonical_parameters, get_dataset
@@ -70,10 +71,12 @@ def test_snapshot_parameters_exclude_view_only_filters() -> None:
             'forecast_horizon': '365d',
             'resource': 'memory',
             'method': 'conservative',
+            'namespace': 'payments',
         },
     ) == {
         'cluster_id': 'cluster-1',
         'history_window': '30d',
+        'namespace': 'payments',
     }
 
 
@@ -207,9 +210,9 @@ def test_overview_persisted_readiness_does_not_build_prometheus_client(monkeypat
 
 
 def test_forecast_selectors_reproject_committed_history_locally(monkeypatch) -> None:
-    monkeypatch.setattr(forecast_service, 'build_forecast_actionable_recommendations', lambda _payload: [])
-    monkeypatch.setattr(forecast_service, 'format_recommendation_cards', lambda *_args, **_kwargs: [])
-    monkeypatch.setattr(forecast_service, 'count_actionable_recommendations', lambda _items: 0)
+    monkeypatch.setattr(forecast_presentation, 'build_forecast_actionable_recommendations', lambda _payload: [])
+    monkeypatch.setattr(forecast_presentation, 'format_recommendation_cards', lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(forecast_presentation, 'count_actionable_recommendations', lambda _items: 0)
 
     context = {
         'namespace_options': [],
@@ -230,7 +233,7 @@ def test_forecast_selectors_reproject_committed_history_locally(monkeypatch) -> 
         },
     }
 
-    result = forecast_service.present_forecast_materialized_context(
+    result = forecast_presentation.present_forecast_materialized_context(
         context,
         {
             'history_window': '30d',

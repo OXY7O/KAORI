@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.analytics.forecast.service import present_forecast_materialized_context
+from app.analytics.forecast.presentation import present_forecast_materialized_context
 from app.cluster.constants import get_environment_label
 from app.models.report import Report
 from app.reports.export.payloads.common import get_report_selected_cluster, report_payload_error
@@ -98,11 +98,8 @@ def _read_committed_context(
         context = result.context or {}
         if not isinstance(context, dict):
             return {}, None
-        collected_at = (
-            getattr(result, 'completed_at', None)
-            or getattr(result, 'generated_at', None)
-            or getattr(result, 'updated_at', None)
-        )
+        snapshot = getattr(result, 'snapshot', None)
+        collected_at = getattr(snapshot, 'generated_at', None)
         return context, collected_at
     except Exception:
         # Missing or stale committed evidence is a reportable state. The PDF is
@@ -165,7 +162,7 @@ def _source_evidence(
         },
         {
             'source': 'Threshold Policy',
-            'freshness': '70% / 85%',
+            'freshness': '75% / 90%',
             'last_collected': 'Configuration',
         },
     ]

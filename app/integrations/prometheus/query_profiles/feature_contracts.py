@@ -138,6 +138,22 @@ FEATURE_CONTRACTS: tuple[FeatureContract, ...] = (
         'Current memory usage and capacity queries execute successfully before range-history validation.',
     ),
     FeatureContract(
+        'forecast.pods',
+        'Forecast Analytics',
+        'Pod Forecast Input Contract',
+        ('analytics.forecast.queries.POD_USAGE_QUERY', 'analytics.forecast.queries.POD_WORKER_CAPACITY_QUERY'),
+        'Active Pending or Running Pod demand and Ready-worker Pod capacity queries execute successfully before range-history validation.',
+        allow_empty=True,
+    ),
+    FeatureContract(
+        'forecast.storage',
+        'Forecast Analytics',
+        'Storage Forecast Input Contract',
+        ('analytics.forecast.queries.STORAGE_USAGE_QUERY', 'analytics.forecast.queries.STORAGE_CAPACITY_QUERY'),
+        'Observed PVC usage and observed mounted-volume capacity queries execute successfully before range-history validation.',
+        allow_empty=True,
+    ),
+    FeatureContract(
         'top.cpu',
         'Top Consumers',
         'Top CPU Consumers Contract',

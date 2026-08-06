@@ -32,7 +32,7 @@
         initial_tab,
         allowed_tabs
     ) %}
-        <script id="forecast-chart-data" type="application/json">{{ forecast_payload.chart|default({}, true)|tojson }}</script>
+        <template id="forecast-chart-data" data-kaori-json-payload>{{ forecast_payload.chart|default({}, true)|tojson }}</template>
 
         {% for resource_key, resource_label, resource_icon in resource_tabs[:4] %}
             {% set resource = namespace(item=none) %}
@@ -46,7 +46,7 @@
                  {% if resource_key != initial_tab %}hidden x-cloak{% endif %}>
                 {% if resource.item %}
                     {% set item = resource.item %}
-                    {% set tone = item.status if item.status in ['critical', 'warning', 'normal', 'unknown'] else 'unknown' %}
+                    {% set tone = item.status_tone if item.status_tone in ['critical', 'warning', 'normal', 'unknown'] else 'unknown' %}
                     <div class="space-y-5">
                         <header class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                             <div class="flex min-w-0 items-start gap-3">
@@ -98,11 +98,11 @@
                                 </header>
                                 <div class="space-y-4 p-4">
                                     <div>
-                                        <p class="{{ analysis_surface.metric_label_classes() }}">Projected Utilization</p>
-                                        <p class="mt-1 text-3xl font-bold {{ 'text-content-primary' if item.projected_percent is not none else analysis_surface.unavailable_value_classes() }}">{{ (item.projected_percent ~ '%') if item.projected_percent is not none else 'N/A' }}</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.projected_display }} of {{ item.capacity_display }} · {{ item.capacity_label }}</p>
-                                        {% if item.projected_percent is not none %}
-                                            {{ progress_bar.semantic_bar(item.projected_percent, tone, track_classes='mt-4 h-2 overflow-hidden rounded-full bg-surface-hover', label=item.label ~ ' projected utilization status') }}
+                                        <p class="{{ analysis_surface.metric_label_classes() }}">Peak Projected Utilization</p>
+                                        <p class="mt-1 text-3xl font-bold {{ 'text-content-primary' if item.projected_percent is not none else analysis_surface.unavailable_value_classes() }}">{{ (item.peak_projected_percent ~ '%') if item.peak_projected_percent is not none else 'N/A' }}</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.peak_projected_display }} peak of {{ item.capacity_display }} · horizon endpoint {{ item.projected_display }} · {{ item.capacity_label }}</p>
+                                        {% if item.peak_projected_percent is not none %}
+                                            {{ progress_bar.semantic_bar(item.peak_projected_percent, tone, track_classes='mt-4 h-2 overflow-hidden rounded-full bg-surface-hover', label=item.label ~ ' projected utilization status') }}
                                         {% endif %}
                                     </div>
                                     <dl class="grid grid-cols-2 divide-x divide-outline-subtle border-t border-outline-subtle pt-3">
@@ -136,8 +136,8 @@
                             {% endif %}
                         </div>
 
-                        {% set forecast_action_headline = 'Expand Capacity Or Reduce Demand Before The Critical ETA' if tone == 'critical' else ('Plan Remediation Before The Warning ETA' if tone == 'warning' else ('Restore Forecast Evidence Before Deciding' if tone == 'unknown' else 'Continue Monitoring Forecast Direction')) %}
-                        {% set forecast_action_body = 'Prioritize capacity expansion or workload reduction before the Critical ETA and validate the projection after the next committed snapshot.' if tone == 'critical' else ('Review growth drivers and schedule remediation before the Warning ETA.' if tone == 'warning' else ('Restore history or capacity evidence before making a forecast-based capacity decision.' if tone == 'unknown' else 'Continue monitoring. No immediate capacity change is required unless trend or threshold timing worsens.')) %}
+                        {% set forecast_action_headline = 'Validate Historical Evidence Before Capacity Commitment' if item.has_data and not item.planning_ready else ('Expand Capacity Or Reduce Demand Before The Critical ETA' if tone == 'critical' else ('Plan Remediation Before The Warning ETA' if tone == 'warning' else ('Restore Forecast Evidence Before Deciding' if tone == 'unknown' else 'Continue Monitoring Forecast Direction'))) %}
+                        {% set forecast_action_body = 'Use a longer history window or restore missing daily observations. Low Historical Signal Quality is suitable for monitoring but not for an authoritative capacity commitment.' if item.has_data and not item.planning_ready else ('Prioritize capacity expansion or workload reduction before the Critical ETA and validate the projection after the next committed snapshot.' if tone == 'critical' else ('Review growth drivers and schedule remediation before the Warning ETA.' if tone == 'warning' else ('Restore history or capacity evidence before making a forecast-based capacity decision.' if tone == 'unknown' else 'Continue monitoring. No immediate capacity change is required unless trend or threshold timing worsens.'))) %}
                         <div class="{{ analysis_surface.interpretation_grid_classes() }}">
                             {{ analysis_surface.interpretation_callout(
                                 'How To Read',
@@ -228,7 +228,7 @@
                     {{ analysis_surface.interpretation_callout(
                         'How To Read',
                         'Compare Slope And Threshold Timing Within Each Scope',
-                        "Compare the slope and threshold timing across resources, but retain each panel's scope boundary. Namespace CPU, memory, and pods are demand shares against cluster capacity; namespace storage uses namespace claim capacity.",
+                        "Compare the slope and threshold timing across resources, but retain each panel's scope boundary. Namespace CPU, memory, and pods are demand shares against cluster capacity; namespace storage uses observed namespace volume capacity.",
                         icon='chart-no-axes-combined'
                     ) }}
                     {{ analysis_surface.interpretation_callout(
