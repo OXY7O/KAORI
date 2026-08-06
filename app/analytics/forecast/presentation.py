@@ -21,10 +21,12 @@ from app.analytics.forecast.calculation import (
     _parse_days,
 )
 from app.analytics.forecast.contracts import (
+    CRITICAL_THRESHOLD,
     FORECAST_HORIZON_OPTIONS,
     FORECAST_METHOD_OPTIONS,
     FORECAST_TABS,
     HISTORY_WINDOW_OPTIONS,
+    WARNING_THRESHOLD,
     ForecastPoint,
     ForecastResourceDefinition,
 )

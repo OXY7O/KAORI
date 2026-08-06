@@ -26,6 +26,23 @@ def test_forecast_modules_have_explicit_runtime_ownership() -> None:
     assert 'CRITICAL_THRESHOLD = 90.0' in contracts
 
 
+def test_forecast_empty_payload_imports_canonical_thresholds() -> None:
+    presentation = read('app/analytics/forecast/presentation.py')
+    import_block = presentation.split(
+        'from app.analytics.forecast.contracts import (',
+        1,
+    )[1].split(')', 1)[0]
+    empty_payload_block = presentation.split(
+        'def _empty_payload(',
+        1,
+    )[1].split('def get_forecast_snapshot', 1)[0]
+
+    assert 'WARNING_THRESHOLD' in import_block
+    assert 'CRITICAL_THRESHOLD' in import_block
+    assert "'warning_threshold': WARNING_THRESHOLD" in empty_payload_block
+    assert "'critical_threshold': CRITICAL_THRESHOLD" in empty_payload_block
+
+
 def test_forecast_snapshot_identity_excludes_local_projection_controls() -> None:
     routes = read('app/analytics/forecast/routes.py')
     catalog = read('app/analytics/materialization/catalog.py')
