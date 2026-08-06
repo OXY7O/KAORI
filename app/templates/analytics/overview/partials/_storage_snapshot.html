@@ -10,7 +10,7 @@
 {% set storage_tone = table_label.semantic_tone(storage.tone or storage.status)|trim %}
 {% set pressure_available = storage.pressure_available|default(false) %}
 {% set used_percent = storage.used_percent|float if pressure_available else none %}
-{% set bar_class = 'bg-status-critical' if pressure_available and used_percent > 90 else ('bg-status-warning' if pressure_available and used_percent >= 75 else 'bg-kaori-primary') %}
+{% set pressure_tone = progress_bar.pressure_tone(used_percent, pressure_available)|trim %}
 <section data-analytics-overview-panel="storage" class="{{ overview_surface.snapshot_shell_classes() }}">
     <header class="{{ overview_surface.snapshot_header_classes() }}">
         <div class="flex min-w-0 items-start gap-3">
@@ -41,7 +41,7 @@
         {% for metric in storage_metrics %}
             <article class="{{ overview_surface.metric_cell_classes() }}">
                 <div class="flex items-center justify-between gap-3">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {% if metric.label == 'PVC Risk Count' and storage.pvc_risk_count > 0 %}bg-status-critical-soft text-status-critical{% else %}bg-kaori-soft text-kaori-primary{% endif %}">
+                    <span class="{{ overview_surface.metric_icon_classes() }}">
                         <i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i>
                     </span>
                     {% if metric.label == 'PVC Risk Count' %}
@@ -64,7 +64,7 @@
                     </div>
                     <span class="text-xl font-semibold {{ 'text-content-primary' if pressure_available else overview_surface.unavailable_value_classes() }}">{{ storage.used_percent ~ '%' if pressure_available else 'N/A' }}</span>
                 </div>
-                {% if pressure_available %}{{ progress_bar.bar(used_percent, track_classes='mt-4 h-3 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full transition-all duration-500 ' ~ bar_class, label='PVC Volume Utilization') }}{% else %}<div class="mt-4 rounded-md border border-dashed border-outline-strong bg-surface-hover px-3 py-2 text-xs text-content-muted">Observed PVC capacity and usage evidence is unavailable.</div>{% endif %}
+                {% if pressure_available %}{{ progress_bar.semantic_bar(used_percent, pressure_tone, track_classes='mt-4 h-3 overflow-hidden rounded-full bg-surface-hover', label='PVC Volume Utilization') }}{% else %}<div class="mt-4 rounded-md border border-dashed border-outline-strong bg-surface-hover px-3 py-2 text-xs text-content-muted">Observed PVC capacity and usage evidence is unavailable.</div>{% endif %}
                 <div class="mt-3 grid gap-3 sm:grid-cols-2">
                     <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
                         <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Used Capacity</p>
@@ -72,7 +72,7 @@
                     </div>
                     <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
                         <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Free Capacity</p>
-                        <p class="mt-1 text-sm font-semibold text-status-normal">{{ storage.free_percent ~ '%' if pressure_available else 'N/A' }}</p>
+                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ storage.free_percent ~ '%' if pressure_available else 'N/A' }}</p>
                     </div>
                 </div>
             </article>
@@ -134,16 +134,14 @@
                     'Review Free Capacity Before Namespace Growth',
                     'Track remaining free capacity, PVC risk count, and namespace growth before storage exhaustion or expansion is required.',
                     icon='triangle-alert',
-                    tone='warning',
-                    extra='border-t border-outline-subtle lg:border-t-0'
+                    tone='warning'
                 ) }}
                 {{ overview_surface.interpretation_callout(
                     'Top Namespace',
                     storage.top_namespace,
                     'This namespace currently represents the highest persistent storage risk concentration in the committed snapshot.',
                     icon='folders',
-                    tone='warning',
-                    extra='border-t border-outline-subtle lg:border-t-0'
+                    tone='warning'
                 ) }}
             {% else %}
                 {{ overview_surface.interpretation_callout(
@@ -151,16 +149,14 @@
                     'Continue Monitoring Namespace Storage Growth',
                     'Current storage posture is healthy. Monitor free capacity and namespace demand so expansion can be planned before utilization accelerates.',
                     icon='circle-check',
-                    tone='normal',
-                    extra='border-t border-outline-subtle lg:border-t-0'
+                    tone='normal'
                 ) }}
                 {{ overview_surface.interpretation_callout(
                     'Top Namespace',
                     storage.top_namespace,
                     'This namespace currently has the highest observed storage footprint in the committed snapshot.',
                     icon='folders',
-                    tone='normal',
-                    extra='border-t border-outline-subtle lg:border-t-0'
+                    tone='normal'
                 ) }}
             {% endif %}
         </div>

@@ -14,7 +14,10 @@ def test_analysis_surface_owns_guidance_callout_geometry_and_tones():
     assert 'macro interpretation_content' in surface
     assert 'macro interpretation_callout' in surface
     assert 'table_label.semantic_tone' in surface
-    assert 'table_label.tone_surface_classes' in surface
+    assert 'semantic_icon_classes' in surface
+    assert 'table_label.tone_icon_classes' in surface
+    assert 'table_label.tone_surface_classes(resolved_tone)' not in surface
+    assert 'table_label.tone_dot_classes(resolved_tone)' not in surface
     assert 'compact=false' in surface
 
 

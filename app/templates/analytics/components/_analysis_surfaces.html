@@ -1,13 +1,14 @@
 {% import "components/table_label.html" as table_label %}
 {#
-  KAORI Analytics analysis presentation primitives.
+  KAORI Analytics presentation primitives.
 
-  Capacity is the reference composition for analytics snapshot and detail pages:
-  - one calm shell,
-  - one compact header,
-  - one peer metric strip when applicable,
-  - bright evidence/context regions,
-  - darker interpretation, decision, or recommended-action regions.
+  Visual hierarchy:
+  - neutral surfaces carry structure and evidence,
+  - violet identifies KAORI sections, navigation, and actions,
+  - semantic colors are reserved for compact status labels, status icons,
+    and quantitative status bars,
+  - interpretation guidance uses one calm shared layout without colored
+    card accents or semantic headline colors.
 #}
 {% macro snapshot_shell_classes() -%}
     overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm
@@ -19,6 +20,15 @@
 
 {% macro snapshot_header_icon_classes() -%}
     flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary
+{%- endmacro %}
+
+{% macro metric_icon_classes() -%}
+    flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-muted text-content-secondary
+{%- endmacro %}
+
+{% macro semantic_icon_classes(tone='unknown', size='default') -%}
+    {% set resolved_tone = table_label.semantic_tone(tone)|trim %}
+    flex {{ 'h-7 w-7 rounded-md' if size == 'compact' else 'h-8 w-8 rounded-lg' }} shrink-0 items-center justify-center border border-outline-subtle bg-surface-card {{ table_label.tone_icon_classes(resolved_tone)|trim }}
 {%- endmacro %}
 
 {% macro metric_grid_classes(columns=4) -%}
@@ -50,16 +60,16 @@
     overflow-hidden rounded-lg border border-outline-subtle bg-surface-card {{ extra }}
 {%- endmacro %}
 
-{% macro attention_strip_classes() -%}
-    flex items-start gap-3 border-t border-outline-subtle bg-surface-hover px-4 py-3
+{% macro attention_strip_classes(tone=none) -%}
+    flex flex-col gap-3 border-t border-outline-subtle bg-surface-muted px-4 py-3 sm:flex-row sm:items-start sm:justify-between
 {%- endmacro %}
 
-{% macro interpretation_grid_classes(extra='') -%}
-    grid border-t border-outline-subtle bg-surface-hover lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle {{ extra }}
+{% macro interpretation_grid_classes(extra='', cards=false) -%}
+    grid divide-y divide-outline-subtle border-t border-outline-subtle bg-surface-muted lg:grid-cols-2 lg:divide-x lg:divide-y-0 {{ extra }}
 {%- endmacro %}
 
 {% macro interpretation_panel_classes(extra='') -%}
-    bg-surface-hover {{ extra }}
+    bg-surface-muted {{ extra }}
 {%- endmacro %}
 
 {% macro context_panel_classes(extra='') -%}
@@ -71,24 +81,23 @@
 {%- endmacro %}
 
 {% macro empty_evidence_classes(extra='') -%}
-    rounded-lg border border-dashed border-outline-strong bg-kaori-mist/25 {{ extra }}
+    rounded-lg border border-dashed border-outline-strong bg-surface-muted {{ extra }}
 {%- endmacro %}
 
 {% macro guidance_card_classes(extra='') -%}
-    rounded-lg border border-outline-subtle bg-surface-hover {{ extra }}
+    rounded-lg border border-outline-subtle bg-surface-muted {{ extra }}
 {%- endmacro %}
 
 {% macro nested_evidence_card_classes(extra='') -%}
     rounded-lg border border-outline-subtle bg-surface-card {{ extra }}
 {%- endmacro %}
 
-
 {% macro unavailable_value_classes() -%}
     text-content-disabled
 {%- endmacro %}
 
 {% macro review_path_grid_classes(extra='') -%}
-    grid gap-3 bg-surface-hover p-4 sm:grid-cols-2 {{ extra }}
+    grid gap-3 bg-surface-muted p-4 sm:grid-cols-2 {{ extra }}
 {%- endmacro %}
 
 {% macro compact_scope_grid_classes(columns=3) -%}
@@ -100,30 +109,33 @@
 {%- endmacro %}
 
 {% macro record_guidance_classes(extra='') -%}
-    rounded-lg border border-outline-subtle bg-surface-hover px-4 py-4 {{ extra }}
+    rounded-lg border border-outline-subtle bg-surface-muted px-4 py-4 {{ extra }}
 {%- endmacro %}
-
 
 {% macro interpretation_content(label, headline, body, icon='info', tone='info', compact=false) -%}
     {% set resolved_tone = table_label.semantic_tone(tone)|trim %}
-    {% set icon_classes = table_label.tone_surface_classes(resolved_tone)|trim %}
-    {% set headline_classes = table_label.tone_icon_classes(resolved_tone)|trim if resolved_tone in ['critical', 'warning', 'normal'] else 'text-content-primary' %}
     <div class="flex items-start gap-3">
-        <span class="flex {{ 'h-7 w-7 rounded-md' if compact else 'h-8 w-8 rounded-lg' }} shrink-0 items-center justify-center {{ icon_classes }}">
+        <span class="{{ semantic_icon_classes(resolved_tone, 'compact' if compact else 'default') }}">
             <i data-lucide="{{ icon }}" class="{{ 'h-3.5 w-3.5' if compact else 'h-4 w-4' }}"></i>
         </span>
         <div class="min-w-0">
             <p class="{{ metric_label_classes() }}">{{ label }}</p>
-            {% if headline %}<p class="mt-1 text-sm font-semibold {{ headline_classes }}">{{ headline }}</p>{% endif %}
+            {% if headline %}<p class="mt-1 text-sm font-semibold leading-5 text-content-primary">{{ headline }}</p>{% endif %}
             <p class="mt-1 text-xs leading-5 text-content-muted">{{ body }}</p>
         </div>
     </div>
 {%- endmacro %}
 
-{% macro interpretation_callout(label, headline, body, icon='info', tone='info', extra='', compact=false) -%}
-    <article class="{{ 'px-3 py-3' if compact else 'px-4 py-4 sm:px-5' }} {{ extra }}">
-        {{ interpretation_content(label, headline, body, icon, tone, compact) }}
-    </article>
+{% macro interpretation_callout(label, headline, body, icon='info', tone='info', extra='', compact=false, card=false) -%}
+    {% if card and not compact %}
+        <article class="rounded-lg border border-outline-subtle bg-surface-card px-4 py-4 sm:px-5 {{ extra }}">
+            {{ interpretation_content(label, headline, body, icon, tone, compact) }}
+        </article>
+    {% else %}
+        <article class="{{ 'px-3 py-3' if compact else 'px-4 py-4 sm:px-5' }} {{ extra }}">
+            {{ interpretation_content(label, headline, body, icon, tone, compact) }}
+        </article>
+    {% endif %}
 {%- endmacro %}
 
 {% macro snapshot_unavailable(panel, title, description, icon='database-zap') -%}
@@ -140,9 +152,9 @@
         </div>
     </header>
     <div class="p-4 sm:p-5">
-        <div class="min-h-[180px] rounded-lg border border-dashed border-outline-strong bg-kaori-mist/25 flex flex-col items-center justify-center px-6 py-10 text-center"
+        <div class="flex min-h-[180px] flex-col items-center justify-center rounded-lg border border-dashed border-outline-strong bg-surface-muted px-6 py-10 text-center"
              data-kaori-empty-state>
-            <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
+            <span class="flex h-12 w-12 items-center justify-center rounded-xl border border-outline-subtle bg-surface-card text-content-secondary" aria-hidden="true">
                 <i data-lucide="{{ icon }}" class="h-6 w-6"></i>
             </span>
             <div class="mt-4">{{ table_label.status_label('Snapshot Unavailable', 'unknown') }}</div>

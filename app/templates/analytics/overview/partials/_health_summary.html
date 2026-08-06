@@ -93,14 +93,17 @@
                         ) }}
                     </div>
                     {% if issue_count %}
-                        <div class="{{ overview_surface.attention_strip_classes() }}">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-status-warning-soft text-status-warning">
-                                <i data-lucide="triangle-alert" class="h-4 w-4"></i>
-                            </span>
-                            <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">{{ issue_count }} Dataset{{ '' if issue_count == 1 else 's' }} Need Attention</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ snapshot.description|default('Review stale, pending, or failed worker datasets before relying on cross-domain conclusions.') }}</p>
+                        <div class="{{ overview_surface.attention_strip_classes('warning') }}">
+                            <div class="flex min-w-0 items-start gap-3">
+                                <span class="{{ overview_surface.semantic_icon_classes('warning') }}">
+                                    <i data-lucide="triangle-alert" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">{{ issue_count }} Dataset{{ '' if issue_count == 1 else 's' }} Need Attention</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ snapshot.description|default('Review stale, pending, or failed worker datasets before relying on cross-domain conclusions.') }}</p>
+                                </div>
                             </div>
+                            <div class="shrink-0 sm:pt-1">{{ table_label.status_label('Refresh Required', 'warning', size='compact') }}</div>
                         </div>
                     {% endif %}
                 </div>
@@ -133,19 +136,18 @@
             </div>
         </header>
 
-        <div class="grid grid-cols-1 divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-y-0 xl:grid-cols-3 2xl:grid-cols-6">
+        <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 lg:grid-cols-3">
             {% for item in health_signals %}
                 {% set semantic_tone = table_label.semantic_tone(item.tone or item.status)|trim %}
-                {% set icon_class = table_label.tone_surface_classes(semantic_tone)|trim %}
-                <article class="min-w-0 px-4 py-4 sm:border-b sm:border-r sm:border-outline-subtle xl:px-5 2xl:border-b-0">
-                    <div class="flex items-center justify-between gap-3">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ icon_class }}">
+                <article class="min-w-0 bg-surface-card px-4 py-4 sm:px-5">
+                    <div class="flex items-start justify-between gap-3">
+                        <span class="{{ overview_surface.semantic_icon_classes(semantic_tone) }}">
                             <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
                         </span>
                         {{ table_label.status_label(item.status|replace('_', ' ')|title, semantic_tone, size='compact') }}
                     </div>
-                    <p class="mt-3 text-xs font-semibold uppercase tracking-wider text-content-muted">{{ item.label }}</p>
-                    <p class="mt-1.5 break-words text-lg font-semibold text-content-primary">{{ item.value }}</p>
+                    <p class="mt-3 {{ overview_surface.metric_label_classes() }}">{{ item.label }}</p>
+                    <p class="mt-1.5 break-words text-lg font-semibold leading-6 text-content-primary">{{ item.value }}</p>
                     <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.description }}</p>
                 </article>
             {% endfor %}
@@ -190,7 +192,7 @@
                 'Start With Risk, Then Validate Capacity And Ownership',
                 'Review Alerts, Capacity, Forecast, Workloads, and Storage tabs in that order when multiple domains require attention.',
                 icon='scan-search',
-                extra='border-t border-outline-subtle lg:border-t-0'
+                tone='maintenance'
             ) }}
         </div>
     </section>

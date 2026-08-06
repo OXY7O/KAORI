@@ -1,6 +1,8 @@
 from pathlib import Path
 
 STATUS_FILES = [
+    'app/templates/analytics/overview/partials/_resource_snapshot.html',
+    'app/templates/analytics/overview/partials/_storage_snapshot.html',
     'app/templates/analytics/components/_resource_pressure_lane.html',
     'app/templates/analytics/utilization/partials/_overview.html',
     'app/templates/analytics/utilization/partials/_trend.html',

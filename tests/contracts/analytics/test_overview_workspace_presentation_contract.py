@@ -48,7 +48,7 @@ def test_operational_health_summary_has_separate_vertical_rhythm() -> None:
     assert 'class="space-y-6"' in source
     assert 'Operational Health Summary' in source
     assert '6 Health Signals' in source
-    assert 'divide-y divide-outline-subtle' in source
+    assert 'grid gap-px bg-outline-subtle sm:grid-cols-2 lg:grid-cols-3' in source
     assert 'Operational Reading' in source
     assert 'Recommended Review Path' in source
 
@@ -101,7 +101,7 @@ def test_overview_domain_snapshots_are_informative_and_compact() -> None:
         'partials/_workload_snapshot.html': (
             'Resource Governance Signals',
             'Request Coverage',
-            'Limit Coverage',
+            'Limit Policy',
             'Recommended Action',
         ),
         'partials/_storage_snapshot.html': (
@@ -239,10 +239,10 @@ def test_overview_readiness_and_interpretation_surface_hierarchy_is_canonical() 
 
     assert 'analytics_workspace.prometheus_card(payload.prometheus)' in health
     assert 'analytics_workspace.snapshot_card(' in health
-    assert 'overview_surface.attention_strip_classes()' in health
+    assert "overview_surface.attention_strip_classes('warning')" in health
     assert 'overview_surface.interpretation_grid_classes()' in health
     assert 'bg-surface-card' in surfaces
-    assert 'bg-surface-hover' in surfaces
+    assert 'bg-surface-muted' in surfaces
     assert "overview_surface.context_panel_classes('border-t border-outline-subtle px-4 py-4 sm:px-5 xl:col-span-4" in resource
     assert 'overview_surface.interpretation_grid_classes()' in resource
     assert 'overview_surface.interpretation_grid_classes()' in capacity
@@ -321,6 +321,8 @@ def test_capacity_is_the_shared_overview_snapshot_style_baseline() -> None:
         'macro snapshot_header_classes',
         'macro snapshot_header_icon_classes',
         'macro metric_grid_classes',
+        'macro metric_icon_classes',
+        'macro semantic_icon_classes',
         'macro metric_cell_classes',
         'macro ranked_item_classes',
         'macro guidance_card_classes',

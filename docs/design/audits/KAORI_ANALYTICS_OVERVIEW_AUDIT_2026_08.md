@@ -139,3 +139,30 @@ baseline cycles outside this change. No new cycle, boundary exception, or debt
 baseline entry was added for Analytics Overview. Module reachability now reports
 only `app/knowledge/remediation_workflow.py` and `app/users/identity.py`, both
 outside this audit scope.
+
+## Neutral visual hierarchy redesign — 2026-08-06
+
+Analytics Overview was redesigned after light- and dark-mode review found that semantic card fills, colored icon tiles, accent bars, and colored headlines competed for attention.
+
+Final decisions:
+
+- panel and evidence surfaces remain neutral;
+- KAORI Violet is limited to section identity, metadata, navigation, and actions;
+- semantic colors are limited to compact status labels, icon glyphs, and quantitative status bars;
+- Operational Health Summary uses a readable three-column grid rather than six narrow cards;
+- health cards no longer use colored top accents or semantic surface fills;
+- dataset-attention feedback uses a neutral strip with a compact Warning badge;
+- How To Read, What To Do, Operational Reading, Recommended Action, Operational Triage, and similar guidance use one shared neutral interpretation layout;
+- semantic headlines and separate accent-card variants were removed;
+- Resource and Storage pressure bars continue to follow the resolved status color;
+- Overview metric icons use neutral tiles; status remains visible through badges and bars;
+- the same shared guidance primitives now apply across all Kubernetes Analytics pages.
+
+This redesign changes presentation only. Evidence calculations, materialization dimensions, status thresholds, routing, and recommendation logic are unchanged.
+
+Regression ownership:
+
+- `tests/contracts/analytics/test_overview_semantic_visual_hierarchy_contract.py`
+- `tests/contracts/analytics/test_analytics_guidance_callout_standard_contract.py`
+- `tests/contracts/analytics/test_semantic_status_bar_contract.py`
+- `tests/contracts/analytics/test_overview_workspace_presentation_contract.py`

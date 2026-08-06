@@ -38,15 +38,9 @@
     ] %}
     <div class="{{ overview_surface.metric_grid_classes(5) }}">
         {% for metric in metrics %}
-            {% set icon_class = {
-                'critical': 'bg-status-critical-soft text-status-critical',
-                'warning': 'bg-status-warning-soft text-status-warning',
-                'pending': 'bg-status-pending-soft text-status-pending',
-                'maintenance': 'bg-status-maintenance-soft text-status-maintenance'
-            }.get(metric.tone, 'bg-kaori-soft text-kaori-primary') %}
             <article class="{{ overview_surface.metric_cell_classes() }}">
                 <div class="flex items-center justify-between gap-3">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ icon_class }}"><i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i></span>
+                    <span class="{{ overview_surface.metric_icon_classes() }}"><i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i></span>
                     <span class="text-xl font-semibold text-content-primary">{{ metric.value }}</span>
                 </div>
                 <p class="mt-3 text-xs font-semibold uppercase tracking-wider text-content-muted">{{ metric.label }}</p>
@@ -66,17 +60,17 @@
             <div class="mt-4 divide-y divide-outline-subtle border-y border-outline-subtle">
                 <div class="flex items-start justify-between gap-4 py-3">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-critical-soft text-status-critical"><i data-lucide="siren" class="h-4 w-4"></i></span>
+                        <span class="{{ overview_surface.semantic_icon_classes('critical') }}"><i data-lucide="siren" class="h-4 w-4"></i></span>
                         <div><p class="text-sm font-semibold text-content-primary">Immediate Review</p><p class="mt-1 text-xs leading-5 text-content-muted">Investigate critical and firing alerts before optimization or planned change work.</p></div>
                     </div>
-                    <span class="shrink-0 text-lg font-semibold text-status-critical">{{ immediate_count }}</span>
+                    <span class="shrink-0">{{ table_label.status_label(immediate_count, 'critical', size='compact') }}</span>
                 </div>
                 <div class="flex items-start justify-between gap-4 py-3">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning"><i data-lucide="calendar-clock" class="h-4 w-4"></i></span>
+                        <span class="{{ overview_surface.semantic_icon_classes('warning') }}"><i data-lucide="calendar-clock" class="h-4 w-4"></i></span>
                         <div><p class="text-sm font-semibold text-content-primary">Planned Follow-Up</p><p class="mt-1 text-xs leading-5 text-content-muted">Group warning and pending alerts into the next operational review.</p></div>
                     </div>
-                    <span class="shrink-0 text-lg font-semibold text-status-warning">{{ follow_up_count }}</span>
+                    <span class="shrink-0">{{ table_label.status_label(follow_up_count, 'warning', size='compact') }}</span>
                 </div>
             </div>
         </article>
@@ -87,10 +81,10 @@
                     <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Anomaly Context</p>
                     <p class="mt-1 text-sm font-semibold text-content-primary">Highest Severity: {{ alerts.highest_severity|replace('_', ' ')|title }}</p>
                 </div>
-                {{ table_label.status_label(alerts.recent_anomalies ~ ' Candidates', 'maintenance', size='compact') }}
+                {{ table_label.metadata_label(alerts.recent_anomalies ~ ' Candidates', 'radar', size='compact') }}
             </div>
             <p class="mt-2 text-xs leading-5 text-content-muted">{{ alerts.highest_severity_description }}</p>
-            <div class="mt-4 overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
+            <div class="mt-4 overflow-hidden rounded-lg border border-outline-subtle bg-surface-muted">
                 {% if immediate_count > 0 %}
                     {{ overview_surface.interpretation_callout(
                         'Recommended Action',
