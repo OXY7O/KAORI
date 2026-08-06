@@ -185,6 +185,14 @@ FEATURE_CONTRACTS: tuple[FeatureContract, ...] = (
         'The exact anomaly query executes successfully. Empty means no anomaly is currently observed.',
         allow_empty=True,
     ),
+    FeatureContract(
+        'alerts.readiness_anomaly',
+        'Alerts & Anomalies',
+        'Pod Readiness Anomaly Contract',
+        ('analytics.alerts.queries.POD_NOT_READY_ANOMALY_QUERY',),
+        'The exact readiness-anomaly query executes successfully. Empty means no active Pod readiness anomaly is observed.',
+        allow_empty=True,
+    ),
 )
 
 

@@ -248,7 +248,7 @@ class AlertResourceLinks(TypedDict):
 
 
 class AlertSignalPriority(TypedDict):
-    level: Literal['critical', 'warning', 'normal']
+    level: Literal['critical', 'warning', 'normal', 'unknown']
     label: str
     description: str
     icon: str
@@ -276,6 +276,7 @@ class AlertSelectedClusterSignalOverview(TypedDict):
     fallback_used: bool
     fallback_reason: str | None
     connected: bool
+    evidence_complete: bool
     active_alerts: int
     critical_alerts: int
     warning_alerts: int
@@ -341,9 +342,28 @@ class AlertsSnapshot(TypedDict):
     priority: AlertSignalPriority
     insight: AlertSignalInsight
     recommendation_count: int
+    evidence_complete: bool
+    anomaly_evidence_partial: bool
+    status: str
+    tone: str
 
 
 AlertLoadResult: TypeAlias = tuple[list[NormalizedAlert], AlertSourceStatus]
+
+
+@dataclass(frozen=True, slots=True)
+class AlertsSelection:
+    cluster_id: str | None = None
+    source: str | None = 'auto'
+    severity: str | None = 'all'
+    status: str | None = 'all'
+    namespace: str | None = ''
+    search: str | None = ''
+    alerts_page: str | int | None = 1
+    anomalies_page: str | int | None = 1
+    alerts_per_page: str | int | None = DEFAULT_PER_PAGE
+    anomalies_per_page: str | int | None = DEFAULT_PER_PAGE
+    preserve_namespace: bool = False
 
 
 @dataclass(frozen=True)

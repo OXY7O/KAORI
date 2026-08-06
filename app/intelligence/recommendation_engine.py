@@ -1490,6 +1490,13 @@ def build_alerts_actionable_recommendations(
     if not isinstance(signal_overview, dict):
         signal_overview = {}
 
+    anomaly_source_status = payload.get('anomaly_source_status')
+    if not isinstance(anomaly_source_status, dict):
+        anomaly_source_status = {}
+    collection_warnings = payload.get('collection_warnings')
+    if not isinstance(collection_warnings, list):
+        collection_warnings = []
+
     active_alerts = [
         item
         for item in alerts
@@ -1515,6 +1522,29 @@ def build_alerts_actionable_recommendations(
                 action_type='source_health',
                 href='/analytics/alerts?tab=readiness',
                 icon='circle-alert',
+            )
+        )
+
+    anomaly_evidence_incomplete = (
+        bool(anomaly_source_status.get('partial', False))
+        or not bool(anomaly_source_status.get('connected', False))
+        or bool(collection_warnings)
+    )
+    if bool(source_status.get('connected', False)) and anomaly_evidence_incomplete:
+        recommendations.append(
+            build_recommendation(
+                title='Restore Complete Anomaly Evidence',
+                description=(
+                    'Alert-source evidence is connected, but one or more Prometheus restart or readiness '
+                    'signal families are incomplete. Restore the missing query evidence before confirming '
+                    'a stable alert posture.'
+                ),
+                priority='Warning',
+                source='alerts_anomaly_evidence',
+                resource='alerts',
+                action_type='source_health',
+                href='/analytics/alerts?tab=readiness',
+                icon='circle-help',
             )
         )
 

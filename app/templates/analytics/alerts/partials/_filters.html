@@ -39,7 +39,7 @@
         <div class="grid gap-4 sm:grid-cols-2">
             <label class="block min-w-0">
                 <span class="{{ analytics_workspace.control_label_classes() }}">Cluster</span>
-                <select id="alerts-cluster-select" name="cluster_id" data-kaori-reset-fields="page=1" class="{{ analytics_workspace.control_select_classes() }}">
+                <select id="alerts-cluster-select" name="cluster_id" data-kaori-reset-fields="alerts_page=1,anomalies_page=1" class="{{ analytics_workspace.control_select_classes() }}">
                     {% for cluster in clusters %}<option value="{{ cluster.id }}" {% if selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>{% endfor %}
                 </select>
             </label>

@@ -42,6 +42,27 @@ Source Readiness describes current Alertmanager or Prometheus connectivity. Comm
 
 Prometheus fallback may provide alert records while Alertmanager-specific routing, silence, and inhibition evidence remains limited. The page must state this limitation explicitly.
 
+## Snapshot and Presentation Dimensions
+
+The committed `analytics.alerts` dataset is keyed only by `cluster_id` and `source`. Severity, status, Namespace, search, active tab, alerts pagination, and anomalies pagination are local presentation state. These controls must never generate additional worker snapshots.
+
+The full committed record set owns page posture, source health, incident readiness, and recommendations. Local filters only change record tables and their local result summary; filtering out a critical alert must not rewrite the global posture to Healthy. Incomplete anomaly evidence must generate a recovery recommendation; it cannot produce the Normal no-action baseline.
+
+
+## Normalization and Deduplication
+
+- Alertmanager fingerprint is the preferred stable identity when present.
+- Prometheus HA replica labels such as `__replica__` and `prometheus_replica` are excluded from fallback identity.
+- Severity aliases such as `P1`, `page`, `error`, and `fatal` normalize to Critical; `P2` and `warn` normalize to Warning.
+- Namespace filters use exact normalized equality rather than substring matching.
+- Duplicate anomaly candidates use signal name, Namespace, and target identity, retaining the strongest observation.
+
+## Anomaly Query Boundary
+
+Restart and readiness anomaly queries execute independently. A failure in one query family must not erase successful evidence from the other. The source-status payload exposes available and failed query families and marks the result partial.
+
+Both anomaly families are limited to active Pods in `Pending|Running`. Restart counters are normalized with `max by(namespace,pod,container)` before Pod aggregation so duplicate kube-state-metrics scrape targets do not inflate the signal.
+
 ## Semantic Status Ownership
 
 Domain payloads provide semantic levels such as `healthy`, `fallback`, `degraded`, `available`, `limited`, `ready`, `partial`, `weak`, `watch`, and `incident_risk`. Templates normalize these through `table_label.semantic_tone(...)`.
@@ -51,6 +72,8 @@ Domain services do not emit CSS classes. Visual geometry and color remain owned 
 ## Alerts and Anomalies Record Collection
 
 Alerts and Anomalies use the shared Evidence Record Collection and shared Record Pagination.
+
+The two collections use independent page state: `alerts_page`/`alerts_per_page` and `anomalies_page`/`anomalies_per_page`. Fragment routes require HTMX, use `Cache-Control: no-store`, vary on `HX-Request`, and push the canonical full-page URL. Direct navigation to a fragment redirects to `/analytics/alerts` with the corresponding tab.
 
 - Normal links resolve to `/analytics/alerts` with the canonical `tab` parameter.
 - HTMX requests use the owning partial endpoint.
@@ -68,6 +91,12 @@ Silence and inhibition evidence must not be interpreted as automatically good or
 ## Progress and Severity
 
 Readiness and ownership progress fills remain KAORI Violet. Alert severity belongs to semantic badges, icons, and copy. Do not recolor progress bars red or amber unless a separate visualization contract is approved.
+
+## Report and Overview Consumers
+
+The Alerts & Anomalies report reads the committed `analytics.alerts` snapshot and never performs live provider calls during rendering. When committed evidence is unavailable, the report renders an explicit unavailable evidence boundary.
+
+Analytics Overview consumes the snapshot evidence-completeness fields. It may show Stable only when alert-source and anomaly evidence are complete and no active signal requires review.
 
 ## Canonical Navigation
 

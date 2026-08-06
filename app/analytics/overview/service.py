@@ -858,6 +858,9 @@ def _get_alerts_snapshot(*, cluster_id: str) -> dict[str, Any]:
 
     risk_count = firing_alerts + critical_alerts + warning_alerts + pending_alerts
     risk_meta = classify_count_risk(risk_count)
+    evidence_complete = bool(raw.get('evidence_complete', source_connected))
+    status = str(raw.get('status') or risk_meta['label'])
+    tone = str(raw.get('tone') or risk_meta['tone'])
 
     return {
         'available': True,
@@ -870,8 +873,10 @@ def _get_alerts_snapshot(*, cluster_id: str) -> dict[str, Any]:
         'highest_severity_description': (
             raw.get('highest_severity_description') or 'No active critical alert detected.'
         ),
-        'status': risk_meta['label'],
-        'tone': risk_meta['tone'],
+        'status': status,
+        'tone': tone,
+        'evidence_complete': evidence_complete,
+        'anomaly_evidence_partial': bool(raw.get('anomaly_evidence_partial', False)),
         'href': '/analytics/alerts?tab=alerts',
         'source_connected': source_connected,
         'recommendation_count': _get_snapshot_recommendation_count(

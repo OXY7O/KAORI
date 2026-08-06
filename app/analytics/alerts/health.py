@@ -15,6 +15,19 @@ from app.models import Cluster
 from app.prometheus.repository import resolve_instance_for_cluster
 
 
+def is_alert_evidence_complete(
+    *,
+    source_status: AlertSourceStatus,
+    anomaly_source_status: dict[str, Any] | None,
+) -> bool:
+    anomaly_status = anomaly_source_status or {}
+    return (
+        bool(source_status.get('connected', False))
+        and bool(anomaly_status.get('connected', False))
+        and not bool(anomaly_status.get('partial', False))
+    )
+
+
 def build_summary(
     *,
     alerts: list[NormalizedAlert],
@@ -71,6 +84,7 @@ def build_prometheus_status(
     *,
     cluster: Cluster | None,
     source_status: AlertSourceStatus,
+    anomaly_source_status: dict[str, Any] | None = None,
 ) -> AlertIntegrationStatus:
     if cluster is None:
         return {
@@ -96,24 +110,25 @@ def build_prometheus_status(
             'response_time_ms': None,
         }
 
-    connected = source_status.get(
-        'resolved_source',
-    ) == 'prometheus' and source_status.get(
-        'connected',
+    anomaly_status = anomaly_source_status or {}
+    resolved_alert_source = (
+        source_status.get('resolved_source') == 'prometheus'
+        and bool(source_status.get('connected'))
+    )
+    anomaly_connected = bool(anomaly_status.get('connected'))
+    connected = resolved_alert_source or anomaly_connected
+    response_time_ms = (
+        source_status.get('response_time_ms')
+        if resolved_alert_source
+        else anomaly_status.get('response_time_ms')
     )
 
     return {
         'configured': True,
-        'connected': bool(
-            connected,
-        ),
+        'connected': connected,
         'label': 'Prometheus Connected' if connected else 'Prometheus Configured',
         'status': 'connected' if connected else 'configured',
-        'response_time_ms': source_status.get(
-            'response_time_ms',
-        )
-        if connected
-        else None,
+        'response_time_ms': response_time_ms if connected else None,
     }
 
 
@@ -187,11 +202,13 @@ def build_integration_status(
     *,
     cluster: Cluster | None,
     source_status: AlertSourceStatus,
+    anomaly_source_status: dict[str, Any] | None = None,
 ) -> AlertIntegrationStatusMap:
     return {
         'prometheus': build_prometheus_status(
             cluster=cluster,
             source_status=source_status,
+            anomaly_source_status=anomaly_source_status,
         ),
         'alertmanager': build_alertmanager_integration_status(
             cluster=cluster,
@@ -332,11 +349,11 @@ def build_source_health(
             else 'Alertmanager is not connected for the selected cluster.',
         },
         {
-            'label': 'Prometheus fallback connected',
+            'label': 'Prometheus evidence connected',
             'status': 'pass' if prometheus_connected else ('warning' if prometheus_configured else 'fail'),
-            'description': 'Prometheus ALERTS fallback is connected.'
+            'description': 'Prometheus alert or anomaly evidence is connected.'
             if prometheus_connected
-            else 'Prometheus fallback is not currently connected.',
+            else 'Prometheus alert and anomaly evidence is not currently connected.',
         },
         {
             'label': 'Fallback mode active',

@@ -6,12 +6,11 @@ from time import perf_counter
 from typing import Any
 
 from app.alertmanager.service import get_alertmanager_alerts, get_alertmanager_status
-from app.analytics.alerts.contracts import AlertLoadResult, AlertSourceStatus, NormalizedAlert
-from app.analytics.alerts.metrics import get_metric_labels
-from app.analytics.alerts.ownership import (
-    extract_alert_contact_from_payload,
-    extract_alert_owner_from_payload,
-    extract_alert_runbook_from_payload,
+from app.analytics.alerts.contracts import AlertLoadResult, AlertSourceStatus
+from app.analytics.alerts.records import (
+    deduplicate_alerts,
+    normalize_alertmanager_item,
+    normalize_prometheus_alert,
 )
 from app.analytics.alerts.source_messages import (
     friendly_alert_fallback_reason,
@@ -21,6 +20,7 @@ from app.analytics.alerts.source_messages import (
 from app.integrations.prometheus.exceptions import PrometheusError
 from app.integrations.prometheus.query_profiles import get_query_expression
 from app.models import Cluster
+from app.prometheus.repository import resolve_instance_for_cluster
 from app.prometheus.service import PrometheusService
 
 logger = logging.getLogger(__name__)
@@ -49,368 +49,6 @@ def build_empty_source_status(
     }
 
 
-def format_alert_datetime(
-    value: Any,
-) -> str:
-    if value is None:
-        return '-'
-
-    text_value = str(
-        value,
-    ).strip()
-
-    if not text_value or text_value == '-':
-        return '-'
-
-    try:
-        normalized_value = text_value.replace(
-            'Z',
-            '+00:00',
-        )
-
-        parsed_value = datetime.fromisoformat(
-            normalized_value,
-        )
-
-        return parsed_value.strftime(
-            '%Y-%m-%d %H:%M',
-        )
-    except ValueError:
-        return text_value[:16]
-
-
-def normalize_alertmanager_item(
-    item: dict[str, Any],
-) -> NormalizedAlert:
-    labels = item.get(
-        'labels',
-        {},
-    )
-
-    if not isinstance(
-        labels,
-        dict,
-    ):
-        labels = {}
-
-    annotations = item.get(
-        'annotations',
-        {},
-    )
-
-    if not isinstance(
-        annotations,
-        dict,
-    ):
-        annotations = {}
-
-    status_payload = item.get(
-        'status',
-        {},
-    )
-
-    if not isinstance(
-        status_payload,
-        dict,
-    ):
-        status_payload = {}
-
-    starts_at = item.get(
-        'starts_at',
-    ) or item.get(
-        'startsAt',
-    )
-
-    ends_at = item.get(
-        'ends_at',
-    ) or item.get(
-        'endsAt',
-    )
-
-    alert_name = (
-        item.get(
-            'alertname',
-        )
-        or labels.get(
-            'alertname',
-        )
-        or item.get(
-            'name',
-        )
-        or 'Unknown Alert'
-    )
-
-    severity = (
-        item.get(
-            'severity',
-        )
-        or labels.get(
-            'severity',
-        )
-        or 'none'
-    )
-
-    status = (
-        item.get(
-            'status',
-        )
-        if isinstance(
-            item.get(
-                'status',
-            ),
-            str,
-        )
-        else status_payload.get(
-            'state',
-            'active',
-        )
-    )
-
-    namespace = (
-        item.get(
-            'namespace',
-        )
-        or labels.get(
-            'namespace',
-        )
-        or '-'
-    )
-
-    target = (
-        item.get(
-            'pod',
-        )
-        or labels.get(
-            'pod',
-        )
-        or labels.get(
-            'node',
-        )
-        or labels.get(
-            'instance',
-        )
-        or labels.get(
-            'job',
-        )
-        or '-'
-    )
-
-    summary = (
-        item.get(
-            'summary',
-        )
-        or annotations.get(
-            'summary',
-        )
-        or annotations.get(
-            'message',
-        )
-        or '-'
-    )
-
-    description = (
-        item.get(
-            'description',
-        )
-        or annotations.get(
-            'description',
-        )
-        or summary
-    )
-
-    return {
-        'name': alert_name,
-        'severity': str(
-            severity or 'none',
-        ).lower(),
-        'status': str(
-            status or 'active',
-        ).lower(),
-        'namespace': namespace,
-        'target': target,
-        'source': 'Alertmanager',
-        'summary': summary,
-        'description': description,
-        'starts_at': starts_at or '-',
-        'starts_at_display': format_alert_datetime(
-            starts_at,
-        ),
-        'ends_at': ends_at or '-',
-        'ends_at_display': format_alert_datetime(
-            ends_at,
-        ),
-        'labels': labels,
-        'annotations': annotations,
-        'generator_url': item.get(
-            'generatorURL',
-        )
-        or item.get(
-            'generator_url',
-        )
-        or '',
-        'fingerprint': item.get(
-            'fingerprint',
-            '',
-        ),
-        'receiver': item.get(
-            'receiver',
-            '-',
-        ),
-        'owner': extract_alert_owner_from_payload(
-            labels=labels,
-            annotations=annotations,
-            fallback_namespace=namespace,
-        ),
-        'runbook_url': extract_alert_runbook_from_payload(
-            annotations=annotations,
-        ),
-        'contact': extract_alert_contact_from_payload(
-            labels=labels,
-            annotations=annotations,
-        ),
-        'silenced': bool(
-            item.get(
-                'silenced',
-                False,
-            )
-        )
-        or bool(
-            status_payload.get(
-                'silencedBy',
-                [],
-            )
-        ),
-        'inhibited': bool(
-            item.get(
-                'inhibited',
-                False,
-            )
-        )
-        or bool(
-            status_payload.get(
-                'inhibitedBy',
-                [],
-            )
-        ),
-        'silenced_by': item.get(
-            'silenced_by',
-            status_payload.get(
-                'silencedBy',
-                [],
-            ),
-        ),
-        'inhibited_by': item.get(
-            'inhibited_by',
-            status_payload.get(
-                'inhibitedBy',
-                [],
-            ),
-        ),
-    }
-
-
-def normalize_prometheus_alert(
-    item: dict[str, Any],
-) -> NormalizedAlert:
-    metric = get_metric_labels(
-        item,
-    )
-
-    alert_value = '-'
-
-    value = item.get(
-        'value',
-        [],
-    )
-
-    if (
-        isinstance(
-            value,
-            list,
-        )
-        and len(
-            value,
-        )
-        >= 2
-    ):
-        alert_value = str(
-            value[1],
-        )
-
-    alert_name = metric.get(
-        'alertname',
-        'Unknown Alert',
-    )
-
-    severity = metric.get(
-        'severity',
-        'none',
-    )
-
-    status = metric.get(
-        'alertstate',
-        'firing',
-    )
-
-    namespace = metric.get(
-        'namespace',
-        '-',
-    )
-
-    target = (
-        metric.get(
-            'pod',
-        )
-        or metric.get(
-            'node',
-        )
-        or metric.get(
-            'instance',
-        )
-        or metric.get(
-            'job',
-        )
-        or '-'
-    )
-
-    return {
-        'name': alert_name,
-        'severity': str(
-            severity or 'none',
-        ).lower(),
-        'status': str(
-            status or 'firing',
-        ).lower(),
-        'namespace': namespace,
-        'target': target,
-        'source': 'Prometheus',
-        'summary': metric.get(
-            'alertname',
-            alert_name,
-        ),
-        'description': 'Alert loaded from Prometheus ALERTS metric.',
-        'starts_at': '-',
-        'starts_at_display': '-',
-        'ends_at': '-',
-        'ends_at_display': '-',
-        'labels': metric,
-        'annotations': {},
-        'owner': extract_alert_owner_from_payload(
-            labels=metric,
-            annotations={},
-            fallback_namespace=namespace,
-        ),
-        'runbook_url': '',
-        'contact': extract_alert_contact_from_payload(
-            labels=metric,
-            annotations={},
-        ),
-        'generator_url': '',
-        'fingerprint': '',
-        'value': alert_value,
-    }
-
-
 def load_alertmanager_alerts(
     *,
     cluster: Cluster,
@@ -424,19 +62,11 @@ def load_alertmanager_alerts(
 
         elapsed_ms = int((perf_counter() - started_at) * 1000)
 
-        alerts = [
-            normalize_alertmanager_item(
-                item,
-            )
-            for item in result.get(
-                'alerts',
-                [],
-            )
-            if isinstance(
-                item,
-                dict,
-            )
-        ]
+        alerts = deduplicate_alerts(
+            normalize_alertmanager_item(item)
+            for item in result.get('alerts', [])
+            if isinstance(item, dict)
+        )
 
         status = get_alertmanager_status(
             cluster_id=cluster.id,
@@ -516,43 +146,22 @@ def load_prometheus_alerts(
     *,
     cluster: Cluster,
 ) -> AlertLoadResult:
+    started_at = perf_counter()
+    configured = resolve_instance_for_cluster(cluster.id) is not None
     try:
-        service = PrometheusService(
-            cluster,
-        )
+        service = PrometheusService(cluster)
+        result = service.instant_query(PROMETHEUS_ALERTS_QUERY)
+        elapsed_ms = max(int((perf_counter() - started_at) * 1000), 0)
 
-        started_at = perf_counter()
-
-        result = service.instant_query(
-            PROMETHEUS_ALERTS_QUERY,
-        )
-
-        elapsed_ms = int((perf_counter() - started_at) * 1000)
-
-        raw_items = result.get(
-            'data',
-            {},
-        ).get(
-            'result',
-            [],
-        )
-
-        if not isinstance(
-            raw_items,
-            list,
-        ):
+        raw_items = result.get('data', {}).get('result', [])
+        if not isinstance(raw_items, list):
             raw_items = []
 
-        alerts = [
-            normalize_prometheus_alert(
-                item,
-            )
+        alerts = deduplicate_alerts(
+            normalize_prometheus_alert(item)
             for item in raw_items
-            if isinstance(
-                item,
-                dict,
-            )
-        ]
+            if isinstance(item, dict)
+        )
 
         return alerts, {
             'source': 'prometheus',
@@ -565,40 +174,40 @@ def load_prometheus_alerts(
             'fallback_reason': None,
             'error': None,
             'response_time_ms': elapsed_ms,
-            'last_checked_at': datetime.now(
-                UTC,
-            ),
+            'last_checked_at': datetime.now(UTC),
         }
 
     except PrometheusError as exc:
+        elapsed_ms = max(int((perf_counter() - started_at) * 1000), 0)
         logger.warning('Prometheus alert loading failed for cluster %s: %s', cluster.id, exc)
         return [], {
             'source': 'prometheus',
             'selected_source': 'prometheus',
             'resolved_source': 'none',
-            'label': 'Prometheus Unavailable',
-            'configured': False,
+            'label': 'Prometheus Unavailable' if configured else 'Prometheus Not Configured',
+            'configured': configured,
             'connected': False,
             'fallback_used': False,
             'fallback_reason': None,
             'error': friendly_alert_source_error(exc, source_label='Prometheus'),
-            'response_time_ms': None,
-            'last_checked_at': None,
+            'response_time_ms': elapsed_ms,
+            'last_checked_at': datetime.now(UTC),
         }
     except Exception as exc:
+        elapsed_ms = max(int((perf_counter() - started_at) * 1000), 0)
         logger.exception('Unexpected Prometheus alert loading failure for cluster %s.', cluster.id)
         return [], {
             'source': 'prometheus',
             'selected_source': 'prometheus',
             'resolved_source': 'none',
             'label': 'Prometheus Error',
-            'configured': True,
+            'configured': configured,
             'connected': False,
             'fallback_used': False,
             'fallback_reason': None,
             'error': friendly_alert_source_error(exc, source_label='Prometheus'),
-            'response_time_ms': None,
-            'last_checked_at': None,
+            'response_time_ms': elapsed_ms,
+            'last_checked_at': datetime.now(UTC),
         }
 
 
@@ -735,100 +344,3 @@ def load_alerts_by_source(
             UTC,
         ),
     }
-
-
-def filter_items(
-    items: list[NormalizedAlert],
-    *,
-    severity: str,
-    status: str,
-    namespace: str,
-    search: str,
-) -> list[NormalizedAlert]:
-    filtered = items
-
-    if severity != 'all':
-        filtered = [
-            item
-            for item in filtered
-            if str(
-                item.get(
-                    'severity',
-                    '',
-                )
-            ).lower()
-            == severity
-        ]
-
-    if status != 'all':
-        filtered = [
-            item
-            for item in filtered
-            if str(
-                item.get(
-                    'status',
-                    '',
-                )
-            ).lower()
-            == status
-        ]
-
-    if namespace:
-        namespace_query = namespace.lower()
-
-        filtered = [
-            item
-            for item in filtered
-            if namespace_query
-            in str(
-                item.get(
-                    'namespace',
-                    '',
-                )
-            ).lower()
-        ]
-
-    if search:
-        search_query = search.lower()
-
-        filtered = [
-            item
-            for item in filtered
-            if search_query
-            in ' '.join(
-                [
-                    str(
-                        item.get(
-                            'name',
-                            '',
-                        )
-                    ),
-                    str(
-                        item.get(
-                            'namespace',
-                            '',
-                        )
-                    ),
-                    str(
-                        item.get(
-                            'target',
-                            '',
-                        )
-                    ),
-                    str(
-                        item.get(
-                            'summary',
-                            '',
-                        )
-                    ),
-                    str(
-                        item.get(
-                            'description',
-                            '',
-                        )
-                    ),
-                ]
-            ).lower()
-        ]
-
-    return filtered

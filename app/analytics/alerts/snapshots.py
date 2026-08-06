@@ -8,6 +8,7 @@ from app.analytics.alerts.contracts import (
     AlertsSnapshot,
     NormalizedAlert,
 )
+from app.analytics.alerts.health import is_alert_evidence_complete
 from app.analytics.alerts.inhibition import build_inhibition_summary
 from app.analytics.alerts.ownership import build_empty_ownership_summary
 from app.analytics.alerts.readiness import build_empty_incident_readiness
@@ -39,6 +40,21 @@ def get_alerts_snapshot(
     warning_alerts = _count_alerts_by_severity(alerts=alerts, severity='warning')
     highest_alert = _get_highest_severity_alert(alerts)
     recommendations = context.get('actionable_recommendations') or []
+    anomaly_source_status = context.get('anomaly_source_status') or {}
+    source_connected = bool(source_status.get('connected', False))
+    anomaly_evidence_partial = bool(anomaly_source_status.get('partial', False))
+    evidence_complete = is_alert_evidence_complete(
+        source_status=source_status,
+        anomaly_source_status=anomaly_source_status,
+    )
+    status, tone = _snapshot_posture(
+        critical_alerts=critical_alerts,
+        warning_alerts=warning_alerts,
+        firing_alerts=firing_alerts,
+        pending_alerts=pending_alerts,
+        anomalies=anomalies,
+        evidence_complete=evidence_complete,
+    )
     return {
         'firing_alerts': firing_alerts,
         'pending_alerts': pending_alerts,
@@ -49,17 +65,21 @@ def get_alerts_snapshot(
             critical_alerts=critical_alerts,
             warning_alerts=warning_alerts,
             anomalies=anomalies,
+            source_connected=source_connected,
+            evidence_complete=evidence_complete,
         ),
         'highest_severity_description': _resolve_highest_severity_description(
             highest_alert=highest_alert,
             anomalies=anomalies,
             signal_overview=signal_overview,
+            source_connected=source_connected,
+            evidence_complete=evidence_complete,
         ),
         'source': source_status.get('resolved_source', 'none'),
         'resolved_source': source_status.get('resolved_source', 'none'),
         'fallback_used': bool(source_status.get('fallback_used', False)),
         'fallback_reason': source_status.get('fallback_reason'),
-        'source_connected': bool(source_status.get('connected', False)),
+        'source_connected': source_connected,
         'source_health': context.get('source_health') or {},
         'routing_summary': context.get('routing_summary') or build_empty_routing_summary(),
         'silence_summary': context.get('silence_summary') or build_empty_silence_summary(),
@@ -73,7 +93,29 @@ def get_alerts_snapshot(
         'recommendation_count': count_actionable_recommendations(
             recommendations if isinstance(recommendations, list) else []
         ),
+        'evidence_complete': evidence_complete,
+        'anomaly_evidence_partial': anomaly_evidence_partial,
+        'status': status,
+        'tone': tone,
     }
+
+def _snapshot_posture(
+    *,
+    critical_alerts: int,
+    warning_alerts: int,
+    firing_alerts: int,
+    pending_alerts: int,
+    anomalies: list[dict[str, Any]],
+    evidence_complete: bool,
+) -> tuple[str, str]:
+    if critical_alerts > 0:
+        return 'Critical Review', 'critical'
+    if firing_alerts > 0 or warning_alerts > 0 or pending_alerts > 0 or anomalies:
+        return 'Review Required', 'warning'
+    if not evidence_complete:
+        return 'Limited Evidence', 'unknown'
+    return 'Stable', 'normal'
+
 
 def _empty_source_status() -> AlertSourceStatus:
     """Return a complete unavailable-source contract for empty snapshots."""
@@ -166,6 +208,8 @@ def _resolve_highest_severity(
     critical_alerts: int,
     warning_alerts: int,
     anomalies: list[dict[str, Any]],
+    source_connected: bool,
+    evidence_complete: bool,
 ) -> str:
     if critical_alerts > 0:
         return 'Critical'
@@ -175,8 +219,11 @@ def _resolve_highest_severity(
 
     if anomalies:
         return 'Anomaly'
-
-    return '-'
+    if not source_connected:
+        return 'Unknown'
+    if not evidence_complete:
+        return 'Limited Evidence'
+    return 'Normal'
 
 
 def _resolve_highest_severity_description(
@@ -184,6 +231,8 @@ def _resolve_highest_severity_description(
     highest_alert: NormalizedAlert | None,
     anomalies: list[dict[str, Any]],
     signal_overview: AlertSelectedClusterSignalOverview,
+    source_connected: bool,
+    evidence_complete: bool,
 ) -> str:
     if highest_alert is not None:
         description = str(
@@ -225,6 +274,11 @@ def _resolve_highest_severity_description(
         if description:
             return description
 
+    if not source_connected:
+        return 'Committed alert-source evidence is unavailable.'
+    if not evidence_complete:
+        return 'Alert evidence is available, but one or more anomaly signal families are incomplete.'
+
     priority = signal_overview.get(
         'priority',
         {},
@@ -244,4 +298,4 @@ def _resolve_highest_severity_description(
         if priority_description:
             return priority_description
 
-    return 'No active critical alert detected.'
+    return 'No active alert or anomaly signal requires escalation.'

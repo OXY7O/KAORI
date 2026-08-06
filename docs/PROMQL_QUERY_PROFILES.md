@@ -62,6 +62,12 @@ Current queries use the kube-state-metrics v2 resource/unit metric shape. Legacy
 5. Run metadata validation and full query execution against each supported estate profile.
 6. Update this document and the compatibility matrix.
 
+## Alerts & Anomalies Query Contract
+
+The Alerts query family is defined in `query_profiles/alerts_v1.py` and registered under stable `analytics.alerts.queries.*` keys in the Kubernetes v1 profile. Active alerts include `pending|firing`. Restart and readiness anomalies only evaluate Pods in `Pending|Running`. Restart counters are normalized with `max by(namespace,pod,container)` before Pod aggregation, and readiness is normalized by `namespace,pod`.
+
+Restart and readiness are separate feature contracts. Runtime collection executes them independently and reports partial evidence when only one family succeeds. Query-profile consumers must not embed replacement PromQL in routes, services, reports, or templates.
+
 ## Capacity Ready-Worker Query Contract
 
 Capacity query definitions use the `analytics.capacity.queries.WORKER_*` family only. Every schedulable CPU, memory, pod, request, limit, current-usage, and peak-usage expression excludes `control-plane|master` roles and intersects the remaining series with `kube_node_status_condition{condition="Ready",status="true"} == 1`. Request and limit metrics must expose `namespace`, `node`, `pod`, `resource`, and `unit`; without the node label KAORI cannot enforce the worker boundary and the capability remains incomplete.

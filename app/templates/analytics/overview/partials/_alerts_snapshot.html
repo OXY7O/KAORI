@@ -8,7 +8,7 @@
 {% set alerts = payload.alerts_snapshot %}
 {% set immediate_count = alerts.critical_alerts + alerts.firing_alerts %}
 {% set follow_up_count = alerts.warning_alerts + alerts.pending_alerts %}
-{% set alert_tone = 'critical' if alerts.critical_alerts > 0 else ('warning' if alerts.firing_alerts > 0 or alerts.warning_alerts > 0 or alerts.pending_alerts > 0 else 'normal') %}
+{% set alert_tone = alerts.tone|default('unknown') %}
 <section data-analytics-overview-panel="alerts" class="{{ overview_surface.snapshot_shell_classes() }}">
     <header class="{{ overview_surface.snapshot_header_classes() }}">
         <div class="flex min-w-0 items-start gap-3">
@@ -18,7 +18,7 @@
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                     <h2 class="text-base font-semibold text-content-primary">Alerts &amp; Anomalies Snapshot</h2>
-                    {{ table_label.status_label('Critical Review' if alert_tone == 'critical' else ('Review Required' if alert_tone == 'warning' else 'Stable'), alert_tone) }}
+                    {{ table_label.status_label(alerts.status|default('Unknown'), alert_tone) }}
                 </div>
                 <p class="mt-1 text-xs leading-5 text-content-muted">Active alert pressure, severity distribution, and recent anomaly candidates.</p>
             </div>
@@ -105,6 +105,14 @@
                         'Correlate Anomaly Candidates Before Escalation',
                         'Correlate anomaly candidates with workload, traffic, and deployment changes before escalating them as incidents.',
                         icon='search-code',
+                        tone='warning'
+                    ) }}
+                {% elif not alerts.evidence_complete|default(false) %}
+                    {{ overview_surface.interpretation_callout(
+                        'Recommended Action',
+                        'Restore Complete Signal Evidence',
+                        'Refresh Alertmanager and Prometheus anomaly evidence before treating the absence of active signals as a stable condition.',
+                        icon='circle-help',
                         tone='warning'
                     ) }}
                 {% else %}

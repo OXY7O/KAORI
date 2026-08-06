@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from app.integrations.prometheus.query_profiles import alerts_v1
 from app.integrations.prometheus.query_profiles.forecast_v1 import FORECAST_QUERIES
 from app.integrations.prometheus.query_profiles.types import QueryDefinition
 
@@ -296,10 +297,10 @@ QUERIES: dict[str, QueryDefinition] = {
     ),
     'analytics.alerts.queries.PROMETHEUS_ALERTS_QUERY': QueryDefinition(
         key='analytics.alerts.queries.PROMETHEUS_ALERTS_QUERY',
-        expression='ALERTS',
+        expression=alerts_v1.PROMETHEUS_ALERTS_QUERY,
         domain='app.analytics.alerts',
         required_metrics=('ALERTS',),
-        required_labels=(),
+        required_labels=(('ALERTS', ('alertstate',)),),
     ),
     'analytics.alerts.queries.PROMETHEUS_FIRING_ALERTS_QUERY': QueryDefinition(
         key='analytics.alerts.queries.PROMETHEUS_FIRING_ALERTS_QUERY',
@@ -310,17 +311,20 @@ QUERIES: dict[str, QueryDefinition] = {
     ),
     'analytics.alerts.queries.POD_RESTART_ANOMALY_QUERY': QueryDefinition(
         key='analytics.alerts.queries.POD_RESTART_ANOMALY_QUERY',
-        expression='sum by (namespace, pod) (\n  increase(kube_pod_container_status_restarts_total[15m])\n)',
+        expression=alerts_v1.POD_RESTART_ANOMALY_QUERY,
         domain='app.analytics.alerts',
-        required_metrics=('kube_pod_container_status_restarts_total',),
-        required_labels=(),
+        required_metrics=('kube_pod_container_status_restarts_total', 'kube_pod_status_phase'),
+        required_labels=(
+            ('kube_pod_container_status_restarts_total', ('namespace', 'pod', 'container')),
+            ('kube_pod_status_phase', ('namespace', 'pod', 'phase')),
+        ),
     ),
     'analytics.alerts.queries.POD_NOT_READY_ANOMALY_QUERY': QueryDefinition(
         key='analytics.alerts.queries.POD_NOT_READY_ANOMALY_QUERY',
-        expression='kube_pod_status_ready{condition="false"}',
+        expression=alerts_v1.POD_NOT_READY_ANOMALY_QUERY,
         domain='app.analytics.alerts',
-        required_metrics=('kube_pod_status_ready',),
-        required_labels=(('kube_pod_status_ready', ('condition',)),),
+        required_metrics=('kube_pod_status_ready', 'kube_pod_status_phase'),
+        required_labels=(('kube_pod_status_ready', ('condition', 'namespace', 'pod')), _POD_PHASE_LABEL),
     ),
     'analytics.alerts.queries.CPU_SPIKE_QUERY': QueryDefinition(
         key='analytics.alerts.queries.CPU_SPIKE_QUERY',

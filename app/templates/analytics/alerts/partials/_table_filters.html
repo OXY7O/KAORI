@@ -21,7 +21,7 @@
     {% else %}
         <input type="hidden" name="alerts_per_page" value="{{ selected_alerts_per_page }}">
     {% endif %}
-    <input type="hidden" name="page" value="1">
+    <input type="hidden" name="{{ 'alerts_page' if is_alert_table else 'anomalies_page' }}" value="1">
 
     <label class="block min-w-0">
         <span class="{{ analytics_workspace.control_label_classes() }}">Severity</span>

@@ -40,11 +40,13 @@
             'namespace': selected_namespace,
             'search': selected_search,
             'tab': 'alerts',
+            'alerts_page': selected_alerts_page,
+            'anomalies_page': selected_anomalies_page,
             'alerts_per_page': selected_alerts_per_page,
             'anomalies_per_page': selected_anomalies_per_page
         } %}
         <div class="px-4 pb-4 sm:px-5">
-            {{ record_pagination.render(alerts_pagination, 'page', 'alerts_per_page', 'alerts-table-container', 'alerts-table-filter-form', 'alerts-table-loading-indicator', 'analytics.alerts_table', 'analytics.alerts', pagination_query, 'Alerts') }}
+            {{ record_pagination.render(alerts_pagination, 'alerts_page', 'alerts_per_page', 'alerts-table-container', 'alerts-table-filter-form', 'alerts-table-loading-indicator', 'analytics.alerts_table', 'analytics.alerts', pagination_query, 'Alerts') }}
         </div>
     </div>
 {% endcall %}

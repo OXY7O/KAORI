@@ -10,7 +10,6 @@
     "app/alertmanager/notifications.py::record_instance_activity": 9,
     "app/alertmanager/presentation.py::build_inventory_context": 12,
     "app/alertmanager/resolver.py::_decision_reason": 11,
-    "app/analytics/alerts/application.py::get_alerts_context": 9,
     "app/analytics/overview/schema.py::build_metric_card": 9,
     "app/analytics/overview/service.py::_build_actionable_items_from_count": 9,
     "app/governance/tls_certificates/service.py::_new_tls_update_event": 11,
@@ -43,7 +42,6 @@
   "function_branch_limits": {
     "app/alertmanager/presentation.py::build_instance_context": 32,
     "app/analytics/alerts/silences.py::build_silence_summary": 35,
-    "app/analytics/alerts/sources.py::normalize_alertmanager_item": 32,
     "app/common/integration_errors.py::describe_integration_failure": 35,
     "app/integrations/coverage.py::build_provider_coverage": 50,
     "app/integrations/kubernetes/adapter.py::KubernetesRuntimeAdapter.get_state": 58,
@@ -62,14 +60,12 @@
     "app/prometheus/service.py::test_prometheus_form_connection": 31
   },
   "function_line_limits": {
-    "app/analytics/alerts/application.py::get_alerts_context": 243,
     "app/analytics/alerts/health.py::build_source_health": 169,
     "app/analytics/alerts/inhibition.py::build_inhibition_summary": 175,
     "app/analytics/alerts/ownership.py::build_ownership_summary": 220,
     "app/analytics/alerts/readiness.py::build_incident_readiness": 202,
     "app/analytics/alerts/signals.py::build_selected_cluster_signal_overview": 289,
     "app/analytics/alerts/silences.py::build_silence_summary": 220,
-    "app/analytics/alerts/sources.py::normalize_alertmanager_item": 228,
     "app/analytics/common/context.py::build_analysis_utilization_context": 164,
     "app/cluster/routes.py::add_cluster": 181,
     "app/common/integration_errors.py::describe_integration_failure": 192,
@@ -80,13 +76,11 @@
     "app/intelligence/recommendation_engine.py::build_workload_actionable_recommendations": 357,
     "app/notifications/event_catalog.py::build_event_context": 177,
     "app/notifications/metadata.py::metadata_items": 179,
-    "app/reports/export/payloads/alerts.py::get_report_alerts_anomalies_payload": 183,
     "app/reports/storage/service.py::build_report_cleanup_dry_run": 169,
     "app/retention/service.py::_execute_archive": 166
   },
   "module_line_limits": {
     "app/alertmanager/routes.py": 977,
-    "app/analytics/alerts/sources.py": 812,
     "app/analytics/overview/service.py": 1943,
     "app/analytics/utilization/service.py": 1172,
     "app/cluster/routes.py": 998,

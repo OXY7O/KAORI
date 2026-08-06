@@ -170,9 +170,12 @@ def test_optional_alert_anomaly_failures_are_visible_as_partial_data() -> None:
     filters = _read('app/templates/analytics/alerts/partials/_filters.html')
 
     assert '-> tuple[list[dict[str, Any]], dict[str, Any]]' in anomalies
-    assert "'partial': True" in anomalies
+    assert "partial = bool(errors)" in anomalies
+    assert "'available_queries': available_queries" in anomalies
+    assert "'failed_queries': sorted(errors)" in anomalies
     assert 'collection_warnings' in application
-    assert 'Prometheus Anomaly Candidates Are Unavailable' in application
+    assert 'Prometheus Anomaly Evidence Is Partial' in application
+    assert 'Prometheus Anomaly Evidence Is Unavailable' in application
     assert 'collection_warnings|default([])' in filters
     assert 'Source Evidence Incomplete' in filters
 

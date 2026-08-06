@@ -69,12 +69,75 @@ def build_bar_units(
     )
 
 
+
+def _signal_priority(
+    *,
+    source_connected: bool,
+    evidence_complete: bool,
+    critical_alerts: int,
+    warning_alerts: int,
+    anomaly_count: int,
+) -> AlertSignalPriority:
+    if not source_connected:
+        return {
+            'level': 'unknown',
+            'label': 'Unknown',
+            'description': 'Committed alert-source evidence is unavailable for this cluster.',
+            'icon': 'circle-help',
+        }
+    if critical_alerts > 0:
+        return {
+            'level': 'critical',
+            'label': 'Critical',
+            'description': 'Critical alert signals are active. Prioritize immediate inspection.',
+            'icon': 'circle-alert',
+        }
+    if warning_alerts > 0 or anomaly_count > 0:
+        return {
+            'level': 'warning',
+            'label': 'Warning',
+            'description': 'Warning alerts or anomaly candidates were detected. Review affected workloads.',
+            'icon': 'alert-triangle',
+        }
+    if not evidence_complete:
+        return {
+            'level': 'unknown',
+            'label': 'Limited Evidence',
+            'description': 'Alert evidence is available, but one or more anomaly signal families are incomplete.',
+            'icon': 'circle-help',
+        }
+    return {
+        'level': 'normal',
+        'label': 'Normal',
+        'description': 'No active alert or anomaly signal detected for this cluster.',
+        'icon': 'shield-check',
+    }
+
+
+def _signal_action_hint(
+    *,
+    critical_alerts: int,
+    warning_alerts: int,
+    anomaly_count: int,
+    evidence_complete: bool,
+) -> str:
+    if critical_alerts > 0:
+        return 'Inspect critical alert labels, affected target, and runbook first.'
+    if warning_alerts > 0:
+        return 'Review warning alerts and validate whether workload behavior is expected.'
+    if anomaly_count > 0:
+        return 'Inspect restart and readiness anomaly candidates from Prometheus metrics.'
+    if not evidence_complete:
+        return 'Restore complete anomaly evidence before confirming a stable signal posture.'
+    return 'No immediate inspection is required.'
+
 def build_selected_cluster_signal_overview(
     *,
     cluster: Cluster | None,
     alerts: list[NormalizedAlert],
     anomalies: list[dict[str, Any]],
     source_status: AlertSourceStatus,
+    evidence_complete: bool,
 ) -> AlertSelectedClusterSignalOverview:
     if cluster is None:
         return {
@@ -84,6 +147,7 @@ def build_selected_cluster_signal_overview(
             'fallback_used': False,
             'fallback_reason': None,
             'connected': False,
+            'evidence_complete': False,
             'active_alerts': 0,
             'critical_alerts': 0,
             'warning_alerts': 0,
@@ -95,10 +159,10 @@ def build_selected_cluster_signal_overview(
             'not_ready_anomalies': 0,
             'total_signals': 0,
             'priority': {
-                'level': 'normal',
-                'label': 'Normal',
-                'description': 'No active alert or anomaly signal detected.',
-                'icon': 'shield-check',
+                'level': 'unknown',
+                'label': 'Unknown',
+                'description': 'Select a cluster before evaluating alert and anomaly signals.',
+                'icon': 'circle-help',
             },
             'insight': {
                 'dominant_signal': 'No signal',
@@ -197,28 +261,14 @@ def build_selected_cluster_signal_overview(
 
     total_signals = active_alerts + anomaly_count
 
-    priority: AlertSignalPriority
-    if critical_alerts > 0:
-        priority = {
-            'level': 'critical',
-            'label': 'Critical',
-            'description': 'Critical alert signals are active. Prioritize immediate inspection.',
-            'icon': 'circle-alert',
-        }
-    elif warning_alerts > 0 or anomaly_count > 0:
-        priority = {
-            'level': 'warning',
-            'label': 'Warning',
-            'description': 'Warning alerts or anomaly candidates were detected. Review affected workloads.',
-            'icon': 'alert-triangle',
-        }
-    else:
-        priority = {
-            'level': 'normal',
-            'label': 'Normal',
-            'description': 'No active alert or anomaly signal detected for this cluster.',
-            'icon': 'shield-check',
-        }
+    source_connected = bool(source_status.get('connected'))
+    priority = _signal_priority(
+        source_connected=source_connected,
+        evidence_complete=evidence_complete,
+        critical_alerts=critical_alerts,
+        warning_alerts=warning_alerts,
+        anomaly_count=anomaly_count,
+    )
 
     signal_candidates = [
         {
@@ -270,14 +320,12 @@ def build_selected_cluster_signal_overview(
         ),
     )
 
-    if critical_alerts > 0:
-        action_hint = 'Inspect critical alert labels, affected target, and runbook first.'
-    elif warning_alerts > 0:
-        action_hint = 'Review warning alerts and validate whether workload behavior is expected.'
-    elif anomaly_count > 0:
-        action_hint = 'Inspect restart and readiness anomaly candidates from Prometheus metrics.'
-    else:
-        action_hint = 'No immediate inspection is required.'
+    action_hint = _signal_action_hint(
+        critical_alerts=critical_alerts,
+        warning_alerts=warning_alerts,
+        anomaly_count=anomaly_count,
+        evidence_complete=evidence_complete,
+    )
 
     max_value = max(
         active_alerts,
@@ -304,11 +352,8 @@ def build_selected_cluster_signal_overview(
             'fallback_reason',
             None,
         ),
-        'connected': bool(
-            source_status.get(
-                'connected',
-            )
-        ),
+        'connected': source_connected,
+        'evidence_complete': evidence_complete,
         'active_alerts': active_alerts,
         'critical_alerts': critical_alerts,
         'warning_alerts': warning_alerts,

@@ -253,183 +253,112 @@ Storage Analysis uses mixed but explicit scope ownership: Cluster and Namespace 
 
 ## Purpose and boundary
 
-`app/analytics/alerts` is the Kubernetes-specific alert analytics and
-enrichment workspace.
+`app/analytics/alerts` owns Kubernetes alert and anomaly interpretation. Alertmanager
+remains authoritative for routing, grouping, receivers, silences, inhibition, and
+notification delivery. Prometheus supplies active-alert fallback and optional
+restart/readiness anomaly evidence. KAORI reads those sources in the Analytics
+worker, commits `analytics.alerts`, and serves web and report consumers from the
+committed generation.
 
-Its purpose is to bring alerts already captured by Alertmanager into KAORI for:
-
-- centralized visibility across multiple Kubernetes Alertmanager bindings;
-- Kubernetes resource enrichment;
-- source-health and fallback analysis;
-- alert grouping and routing posture;
-- silence and inhibition interpretation;
-- ownership, runbook, and contact enrichment;
-- incident-readiness scoring;
-- Prometheus-derived Kubernetes anomaly signals; and
-- downstream recommendations and operational context.
-
-Alertmanager remains authoritative for alert routing and notification behavior.
-This workspace does not replace Alertmanager. It interprets and enriches provider
-data for Kubernetes operations.
-
-This workspace is Kubernetes only. Future Server, HCI, or Storage alert analytics
-must live in their own asset bounded context. They may reuse the provider-neutral
-`app/alertmanager` adapter and later share proven canonical alert contracts, but
-they must not add asset-specific branches to this package.
-
-## Data flow
+Local UI controls never change snapshot identity. The canonical snapshot dimensions
+are only:
 
 ```text
-Analytics worker resolves Alertmanager and Prometheus source contracts
-        ↓
-Retrieve Alertmanager alerts, silences, and Prometheus anomaly series
-        ↓
-Normalize and enrich Kubernetes identity, ownership, runbook, and contact data
-        ↓
-Commit `analytics.alerts` and `dashboard.kubernetes.alerts` snapshots
-        ↓
-Web request reads the committed generation
-        ↓
-Filter and paginate operator-facing views locally
-        ↓
-Render Alerts & Anomalies, dashboard sections, and report inputs
+cluster_id
+source = auto | alertmanager | prometheus
 ```
 
-## Files inside `app/analytics/alerts`
+Severity, status, Namespace, search, active tab, alerts page, anomalies page, and
+each table's page size are presentation-only state.
 
-| File | Responsibility | Review |
-|---|---|---|
-| PromQL query usage | `service.py` resolves stable query keys directly from `app.integrations.prometheus.query_profiles`; the alerts workspace does not own a duplicate query-export module. | Keep raw PromQL and version selection in the canonical provider query-profile catalog. |
-| `routes.py` | Converts query-string filters into the alerts workspace context, enforces `analytics.view`, renders the full page, and renders HTMX alert/anomaly table partials or dependency blockers. | Approximately 89 lines and appropriately thin. `_context_from_request()` may later move to a typed request-parameter object, but no urgent split is required. |
-| `service.py` | Currently owns pagination, cluster and namespace selection, Alertmanager and Prometheus loading, source fallback, payload normalization, filtering, anomaly generation, source health, routing summaries, silence matching, inhibition summaries, ownership enrichment, incident readiness, signal overview, full page context, and dashboard/report snapshots. | Approximately 4,648 lines, 69 functions, and several 170–288-line functions. This is a critical refactor target. It contains many cohesive subdomains that should be independently testable. |
-
-The folder currently has no `__init__.py`. Imports work through Python namespace
-package behavior, but package-marker conventions are inconsistent across
-analytics workspaces. Standardize package markers during the dedicated package
-migration rather than changing only one folder now.
-
-## `service.py` refactor assessment
-
-### Why it must be split
-
-The problem is not only the number of lines. The file has multiple reasons to
-change:
-
-- filter or pagination behavior;
-- Alertmanager payload schema changes;
-- Prometheus query/result changes;
-- routing/grouping presentation changes;
-- silence matcher semantics;
-- inhibition rules;
-- ownership enrichment conventions;
-- incident-readiness scoring;
-- cluster signal overview presentation; and
-- page/snapshot orchestration.
-
-A change in any of those areas requires navigating and retesting one very large
-module. Several functions exceed 170 lines, and
-`build_selected_cluster_signal_overview()` is approximately 288 lines. This
-reduces readability, makes isolated tests difficult, and encourages hidden
-coupling through loosely typed dictionaries.
-
-### Recommended target structure
-
-After the package moves to `app/kubernetes/analytics/alerts`, use a structure
-similar to:
+## Canonical runtime flow
 
 ```text
-app/kubernetes/analytics/alerts/
-├── __init__.py
-├── routes.py
-├── optional domain contracts
-├── params.py                 # typed request/filter normalization
-├── pagination.py             # AlertsPagination and page slicing
-├── models.py                 # typed internal alert/silence summary contracts
-├── sources/
-│   ├── alertmanager.py       # Alertmanager reads and source status
-│   └── prometheus.py         # Prometheus alerts and anomaly metric reads
-├── normalization/
-│   ├── alertmanager.py       # provider payload -> canonical alert
-│   ├── prometheus.py         # Prometheus payload -> canonical alert
-│   └── kubernetes.py         # resource/namespace/workload enrichment
-├── anomalies.py              # restart/not-ready anomaly construction
-├── routing.py                # receiver/group/routing summaries
-├── silences.py               # matcher parsing, matching, and summary
-├── inhibition.py             # inhibition interpretation
-├── ownership.py              # owner/runbook/contact enrichment
-├── readiness.py              # incident-readiness scoring
-├── signals.py                # cluster and selected-cluster signal overview
-├── snapshots.py              # dashboard/report snapshot contracts
-└── service.py                # application orchestration and policy boundary
+Analytics worker
+    ↓
+Resolve Alertmanager and Prometheus bindings
+    ↓
+Collect active alerts and independent restart/readiness anomaly queries
+    ↓
+Normalize severity, status, Kubernetes identity, and ownership metadata
+    ↓
+Deduplicate HA replica and duplicate-scrape records
+    ↓
+Commit analytics.alerts for Cluster + Source
+    ↓
+Web/report readers load the committed snapshot
+    ↓
+Apply exact Namespace filter and independent local pagination
 ```
 
-The target `service.py` should coordinate these modules and expose stable public
-entry points such as:
+The report payload must not contact Alertmanager or Prometheus during report
+rendering. Missing committed evidence produces an explicit unavailable report
+context instead of synthetic zeroes.
+
+## Canonical module ownership
+
+| Module | Ownership |
+|---|---|
+| `application.py` | Worker orchestration, committed-context presentation, global posture, and operational composition. |
+| `contracts.py` | Typed selection, pagination, source, normalized-record, and snapshot contracts. |
+| `records.py` | Severity/status normalization, provider payload normalization, HA deduplication, and exact local filters. |
+| `sources.py` | Alertmanager/Prometheus source reads, fallback policy, source status, and controlled provider errors. |
+| `anomalies.py` | Independent restart/readiness collection, anomaly normalization, deduplication, and partial-evidence status. |
+| `health.py` | Integration status, source health, and page summary semantics. |
+| `routing.py`, `silences.py`, `inhibition.py` | Alertmanager routing and suppression interpretation. |
+| `ownership.py`, `readiness.py` | Owner/runbook/contact evidence and incident-readiness scoring. |
+| `signals.py` | Cluster signal overview and resource navigation. |
+| `snapshots.py` | Analytics Overview projection and evidence-completeness posture. |
+| `routes.py` | Full-page and HTMX-only transport boundary. |
+
+PromQL is registered in
+`app/integrations/prometheus/query_profiles/kubernetes_v1.py`; the expression
+family is owned by `query_profiles/alerts_v1.py`. Domain modules do not embed
+raw PromQL.
+
+## Evidence semantics
+
+Alert-source evidence and anomaly evidence are independent:
+
+- Alertmanager may be connected while one Prometheus anomaly query fails.
+- Prometheus fallback may provide alerts while Alertmanager routing and suppression
+  evidence remains unavailable.
+- Restart and readiness anomaly queries fail independently; one successful family
+  remains visible when the other fails.
+- `Healthy` or `Stable` requires connected alert evidence and complete anomaly
+  evidence with no active signal requiring review.
+- Partial or missing evidence is `Limited Evidence` or `Unknown`, never zero,
+  Normal, or Healthy.
+
+Prometheus anomaly queries only evaluate Pods in `Pending|Running`. Restart gauges
+are normalized by `namespace,pod,container` before Pod aggregation. Alert records
+prefer Alertmanager fingerprint identity and otherwise ignore Prometheus HA replica
+labels when constructing canonical identity.
+
+## Transport and table state
+
+`/analytics/alerts` is the only full-page route. Alerts and Anomalies table endpoints
+are fragment transports and require `HX-Request: true`; direct navigation redirects
+to the canonical full page. Fragment responses are `no-store`, vary on `HX-Request`,
+and push the full-page URL.
+
+Alerts and Anomalies own independent pagination:
 
 ```text
-get_alerts_context(...)
-get_alerts_snapshot(...)
-load_alerts_by_source(...)
+alerts_page / alerts_per_page
+anomalies_page / anomalies_per_page
 ```
 
-Consumers should not import internal normalizers or summary builders directly.
+Changing one collection must not reset or silently reuse the other collection's
+page. Namespace matching is exact rather than substring-based.
 
-## Recommended refactor sequence for alerts
+## Cross-asset rule
 
-1. Freeze current behavior with characterization tests for Alertmanager and
-   Prometheus source selection, filters, pagination, silence matching, routing,
-   ownership, and snapshots.
-2. Introduce typed internal contracts for normalized alerts, source status,
-   pagination, and summaries. Preserve dictionary conversion at the template
-   boundary initially.
-3. Extract pagination and request-parameter normalization; these are low-risk and
-   have few external dependencies.
-4. Extract source readers and source fallback logic.
-5. Extract Alertmanager and Prometheus normalizers, then move Kubernetes resource
-   enrichment into its own module.
-6. Extract routing, silences, inhibition, ownership, and readiness one at a time,
-   each with focused tests.
-7. Extract signal overview and snapshot builders.
-8. Keep `service.py` as the public application boundary. Each entry point must own request policy, dependency composition, and result contracts; it must never become a pure pass-through module.
-9. Move the package to `app/kubernetes/analytics/alerts` only after module
-   boundaries and tests are stable.
-
-Do not perform a mechanical 4,600-line move and a logical split in the same
-commit. First establish module contracts, then migrate the package path.
-
-## Cross-asset alert rules
-
-- `app/alertmanager` owns provider/API integration and can be reused by multiple
-  asset domains.
-- Kubernetes alert enrichment belongs only in Kubernetes analytics.
-- Server alert enrichment belongs in Server analytics.
-- HCI alert enrichment belongs in HCI analytics.
-- Storage alert enrichment belongs in the future Storage asset domain, not in
-  the existing artifact-storage backend package.
-- Cross-asset alert correlation, if introduced, should consume canonical alert
-  records from each asset domain rather than importing asset-specific services.
-- Provider integrations remain authoritative live sources; KAORI stores only the
-  normalized history required for correlation, trends, reporting, and
-  intelligence.
-
-## Package migration plan
-
-A safe migration from `app.analytics` to `app.kubernetes.analytics` should be a
-separate technical initiative:
-
-1. Add complete tests for blueprint registration, lazy overview imports,
-   dashboard consumers, report consumers, and query-profile audit domains.
-2. Create `app/kubernetes/analytics` and move one workspace at a time.
-3. Update all internal imports and blueprint registration in the same cutover; do
-   not leave re-export modules under `app/analytics`.
-4. Keep public URLs stable only when they remain the canonical product contract;
-   do not retain duplicate endpoint aliases.
-5. Move templates from `templates/analytics` to
-   `templates/kubernetes/analytics` in the same controlled change.
-6. Update versioned Prometheus query-profile domain keys and any persisted audit
-   references in an explicit migration.
-7. Add CI assertions that the retired package paths and endpoint names do not
-   return after the cutover.
+Provider-neutral Alertmanager API behavior remains under `app/alertmanager`.
+Kubernetes identity and workload interpretation remain in this package. Future
+Server, HCI, or Storage alert analytics must consume provider-neutral records and
+own their asset-specific enrichment separately; they must not add asset branches
+to the Kubernetes workspace.
 
 ## Refactor priority across the current analytics package
 
