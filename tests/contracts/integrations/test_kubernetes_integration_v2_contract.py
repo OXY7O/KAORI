@@ -123,25 +123,29 @@ def test_inventory_freshness_and_capability_dimensions_are_explicit() -> None:
     assert 'Validated Features' in detail
 
 
-def test_kubernetes_coverage_uses_operational_lanes_instead_of_another_table() -> None:
+def test_kubernetes_coverage_uses_compact_operational_path_cards() -> None:
     coverage = read('app/templates/integrations/kubernetes/partials/_integration_coverage.html')
 
-    assert 'Operational Coverage Lanes' in coverage
-    assert 'data-kaori-operational-coverage-lanes' in coverage
-    assert 'data-kaori-coverage-lane' in coverage
+    assert 'Operational Readiness Paths' in coverage
+    assert 'data-kaori-operational-readiness-paths' in coverage
+    assert 'data-kaori-operational-path-card' in coverage
+    assert 'data-kaori-readiness-step' in coverage
     assert 'Kubernetes Inventory' in coverage
     assert 'Kubernetes Analytics' in coverage
     assert 'Alert Intelligence' in coverage
     assert "'provider': 'Prometheus'" in coverage
     assert "'provider': 'Alertmanager'" in coverage
-    assert 'Prometheus Source' in coverage
-    assert 'Alertmanager Source' in coverage
+    assert 'Evidence Path' in coverage
     assert 'Cluster Binding' in coverage
     assert 'Effective Consumer' in coverage
     assert 'View Evidence' in coverage
     assert 'x-show="evidenceOpen"' in coverage
-    assert 'data-lucide="arrow-right"' in coverage
     assert 'Provider Resolution Boundary' in coverage
+    assert 'xl:grid-cols-3' in coverage
+    assert 'items-start' in coverage
+    assert 'data-lucide="arrow-right"' not in coverage
+    assert 'Operational Coverage Lanes' not in coverage
+    assert 'data-kaori-operational-coverage-lanes' not in coverage
     assert 'KAORI Consumer' not in coverage
     assert 'Operational Provider Coverage' not in coverage
     assert 'data-kaori-provider-coverage' not in coverage
