@@ -15,7 +15,7 @@ from app.analytics.utilization.materialization import (
     get_utilization_trend_context,
 )
 from app.analytics.workload.service import get_workload_analysis_context
-from app.dashboards.kubernetes.snapshot_builder import build_dashboard_alerts_context
+from app.analytics.materialization.dashboard_alerts import build_dashboard_alerts_context
 
 ContextBuilder = Callable[[Mapping[str, Any]], dict[str, Any]]
 
