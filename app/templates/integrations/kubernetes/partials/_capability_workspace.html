@@ -65,12 +65,12 @@
     {% endif %}
 
     <div class="p-5 sm:p-6">
-        <section class="overflow-hidden rounded-xl border border-kaori-primary/20 bg-surface-card shadow-sm" data-kaori-capability-overview data-kaori-violet-command-strip>
+        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm" data-kaori-capability-overview data-kaori-neutral-command-strip>
             <div class="grid gap-px bg-outline-subtle xl:grid-cols-[minmax(24rem,1.35fr)_repeat(3,minmax(11rem,0.55fr))]">
-                <div class="bg-kaori-soft p-5 sm:p-6">
+                <div class="bg-surface-subtle p-5 sm:p-6">
                     <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
                         <div class="flex min-w-0 items-start gap-3.5">
-                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-kaori-primary/20 bg-surface-card text-kaori-primary shadow-sm" aria-hidden="true">
+                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm" aria-hidden="true">
                                 <i data-lucide="badge-check" class="h-5 w-5"></i>
                             </span>
                             <div class="min-w-0">
@@ -81,19 +81,19 @@
                         {{ integration_status(validation_state.readiness, validation_state.readiness_label) }}
                     </div>
 
-                    <div class="mt-5 rounded-lg border border-kaori-primary/15 bg-surface-card/80 p-3.5">
+                    <div class="mt-5 rounded-lg border border-outline-subtle bg-surface-card p-3.5">
                         <div class="flex items-center justify-between gap-4">
                             <div>
                                 <p class="text-xs font-semibold text-content-secondary">Validated capability coverage</p>
                                 <p class="mt-1 text-sm font-semibold text-content-primary">{{ validated_feature_count }} of {{ capability_total }} capability contracts</p>
                             </div>
-                            <span class="text-lg font-semibold tabular-nums text-kaori-dark">{{ capability_readiness_percent|round|int }}%</span>
+                            <span class="text-lg font-semibold tabular-nums text-content-primary">{{ capability_readiness_percent|round|int }}%</span>
                         </div>
-                        <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-kaori-primary/10" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ capability_readiness_percent|round|int }}">
-                            <div class="h-full rounded-full bg-kaori-primary transition-all" style="width: {{ capability_readiness_percent }}%"></div>
+                        <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-hover" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ capability_readiness_percent|round|int }}">
+                            <div class="h-full rounded-full bg-content-primary transition-all" style="width: {{ capability_readiness_percent }}%"></div>
                         </div>
                         <div class="mt-3 flex flex-wrap items-center gap-2">
-                            <span class="inline-flex min-h-7 items-center rounded-md border border-kaori-primary/15 bg-kaori-soft px-2.5 text-xs font-semibold text-kaori-dark">Profile · {{ runtime_state.compatibility_profile or 'Validation Required' }}</span>
+                            <span class="inline-flex min-h-7 items-center rounded-md border border-outline-subtle bg-surface-subtle px-2.5 text-xs font-semibold text-content-primary">Profile · {{ runtime_state.compatibility_profile or 'Validation Required' }}</span>
                             <span class="inline-flex min-h-7 items-center rounded-md border border-outline-subtle bg-surface-card px-2.5 text-xs font-semibold text-content-secondary">{{ capability_counts.required }} required</span>
                             <span class="inline-flex min-h-7 items-center rounded-md border border-outline-subtle bg-surface-card px-2.5 text-xs font-semibold text-content-secondary">{{ capability_counts.optional }} optional</span>
                         </div>
@@ -108,7 +108,7 @@
                 {% for icon, label, value, description in overview_metrics %}
                     <div class="bg-surface-card p-5 sm:p-6">
                         <div class="flex items-start justify-between gap-3">
-                            <span class="flex h-9 w-9 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                            <span class="flex h-9 w-9 items-center justify-center rounded-lg border border-outline-subtle bg-surface-subtle text-content-secondary" aria-hidden="true">
                                 <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                             </span>
                             <span class="text-2xl font-semibold tabular-nums text-content-primary">{{ value }}</span>
@@ -163,7 +163,7 @@
                      }">
                 <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-start lg:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-kaori-primary/15 bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-outline-subtle bg-surface-subtle text-content-secondary" aria-hidden="true">
                             <i data-lucide="blocks" class="h-5 w-5"></i>
                         </span>
                         <div>
@@ -171,27 +171,27 @@
                             <p class="mt-1 text-sm leading-6 text-content-secondary">Inspect the selected API contract, requirement level, and effective validation evidence for each Kubernetes capability.</p>
                         </div>
                     </div>
-                    <span class="inline-flex min-h-7 shrink-0 items-center rounded-md border border-kaori-primary/15 bg-kaori-soft px-2.5 text-xs font-semibold text-kaori-dark">
+                    <span class="inline-flex min-h-7 shrink-0 items-center rounded-md border border-outline-subtle bg-surface-subtle px-2.5 text-xs font-semibold text-content-primary">
                         {{ feature_rows|length }} capability contracts
                     </span>
                 </header>
 
-                <div class="overflow-x-auto border-b border-kaori-primary/15 bg-kaori-soft" data-kaori-capability-filters>
+                <div class="overflow-x-auto border-b border-outline-subtle bg-surface-subtle" data-kaori-capability-filters>
                     <div class="grid min-w-[760px] grid-cols-[minmax(18rem,1fr)_minmax(12rem,0.45fr)_minmax(12rem,0.45fr)] gap-3 p-4">
                         <label class="block">
                             <span class="mb-1.5 block text-xs font-semibold text-content-secondary">Search Capability</span>
                             <span class="relative block">
-                                <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-kaori-primary" aria-hidden="true"></i>
+                                <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-secondary" aria-hidden="true"></i>
                                 <input type="search"
                                        x-model.debounce.150ms="query"
                                        placeholder="Search feature, resource, or API..."
-                                       class="h-10 w-full rounded-lg border border-kaori-primary/20 bg-surface-card pl-9 pr-3 text-sm text-content-primary outline-none transition placeholder:text-content-muted focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/15">
+                                       class="h-10 w-full rounded-lg border border-outline-default bg-surface-card pl-9 pr-3 text-sm text-content-primary outline-none transition placeholder:text-content-muted focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                             </span>
                         </label>
                         <label class="block">
                             <span class="mb-1.5 block text-xs font-semibold text-content-secondary">Requirement</span>
                             <select x-model="requirement"
-                                    class="h-10 w-full rounded-lg border border-kaori-primary/20 bg-surface-card px-3 text-sm text-content-primary outline-none transition focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/15">
+                                    class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                                 <option value="all">All Requirements</option>
                                 <option value="required">Required</option>
                                 <option value="optional">Optional</option>
@@ -200,7 +200,7 @@
                         <label class="block">
                             <span class="mb-1.5 block text-xs font-semibold text-content-secondary">Validation Status</span>
                             <select x-model="status"
-                                    class="h-10 w-full rounded-lg border border-kaori-primary/20 bg-surface-card px-3 text-sm text-content-primary outline-none transition focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/15">
+                                    class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                                 <option value="all">All Statuses</option>
                                 <option value="ready">Ready</option>
                                 <option value="legacy">Legacy Fallback</option>
@@ -214,16 +214,16 @@
                 {% for row in feature_rows %}
                     {% set tone = 'ready' if row.status == 'ready' else ('degraded' if row.status == 'legacy' else 'blocked') %}
                     {% set requirement_key = 'required' if row.required else 'optional' %}
-                    <details class="group overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm transition hover:border-kaori-primary/20 open:border-kaori-primary/25 open:shadow-md open:lg:col-span-2"
+                    <details class="group overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm transition hover:border-outline-default open:border-outline-default open:shadow-md open:lg:col-span-2"
                              data-kaori-capability-record
                              data-search="{{ (row.key ~ ' ' ~ row.resource ~ ' ' ~ row.api_version ~ ' ' ~ row.requirement_label)|lower|e }}"
                              data-requirement="{{ requirement_key }}"
                              data-status="{{ row.status }}"
                              x-show="matches($el)">
-                        <summary class="cursor-pointer list-none p-4 transition hover:bg-kaori-mist group-open:bg-kaori-soft [&::-webkit-details-marker]:hidden">
+                        <summary class="cursor-pointer list-none p-4 transition hover:bg-kaori-mist group-open:bg-surface-subtle [&::-webkit-details-marker]:hidden">
                             <div class="flex min-w-0 items-start justify-between gap-3">
                                 <div class="flex min-w-0 items-start gap-3">
-                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-kaori-primary/15 bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-outline-subtle bg-surface-subtle text-content-secondary" aria-hidden="true">
                                         <i data-lucide="{{ 'box' if row.required else 'shield' }}" class="h-4 w-4"></i>
                                     </span>
                                     <div class="min-w-0">
@@ -231,21 +231,21 @@
                                         <p class="mt-1 truncate text-xs text-content-secondary" title="{{ row.resource }}">Resource · {{ row.resource }}</p>
                                     </div>
                                 </div>
-                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-content-muted transition group-open:border-kaori-primary/20 group-open:text-kaori-primary">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-content-muted transition group-open:border-outline-default group-open:text-content-secondary">
                                     <i data-lucide="chevron-down" class="h-4 w-4 transition group-open:rotate-180" aria-hidden="true"></i>
                                 </span>
                             </div>
                             <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-outline-subtle pt-3">
-                                <span class="inline-flex min-h-7 max-w-full items-center truncate rounded-md border border-kaori-primary/15 bg-kaori-soft px-2.5 text-xs font-semibold text-kaori-dark" title="{{ row.api_version }}">API · {{ row.api_version }}</span>
+                                <span class="inline-flex min-h-7 max-w-full items-center truncate rounded-md border border-outline-subtle bg-surface-subtle px-2.5 text-xs font-semibold text-content-primary" title="{{ row.api_version }}">API · {{ row.api_version }}</span>
                                 <span class="inline-flex min-h-7 items-center rounded-md border border-outline-subtle bg-surface-card px-2.5 text-xs font-semibold text-content-secondary">{{ row.requirement_label }}</span>
                                 <span class="ml-auto">{{ integration_status(tone, 'Ready' if row.status == 'ready' else ('Legacy Fallback' if row.status == 'legacy' else 'Blocked')) }}</span>
                             </div>
                         </summary>
 
-                        <div class="border-t border-kaori-primary/15 bg-surface-subtle p-4 sm:p-5" data-kaori-capability-expanded-evidence>
+                        <div class="border-t border-outline-subtle bg-surface-subtle p-4 sm:p-5" data-kaori-capability-expanded-evidence>
                             {% if row.message %}
-                                <div class="flex items-start gap-3 rounded-lg border border-kaori-primary/15 bg-kaori-soft p-4">
-                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-surface-card text-kaori-primary" aria-hidden="true">
+                                <div class="flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-subtle p-4">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-content-secondary" aria-hidden="true">
                                         <i data-lucide="file-check-2" class="h-4 w-4"></i>
                                     </span>
                                     <div>
@@ -324,7 +324,7 @@
 
                             <div class="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)] xl:items-start">
                                 <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
-                                    <header class="border-b border-kaori-primary/15 bg-kaori-soft px-4 py-3">
+                                    <header class="border-b border-outline-subtle bg-surface-subtle px-4 py-3">
                                         <p class="text-sm font-semibold text-content-primary">Technical Checks</p>
                                         <p class="mt-1 text-xs leading-5 text-content-secondary">Inspect and copy the exact Kubernetes discovery, RBAC, and bounded-read script.</p>
                                     </header>
@@ -365,13 +365,13 @@
             </div>
             </section>
 
-            <aside class="self-start overflow-hidden rounded-xl border border-kaori-primary/20 bg-surface-card shadow-sm xl:sticky xl:top-4"
+            <aside class="self-start overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:sticky xl:top-4"
                    data-kaori-capability-side-panel
-                   data-kaori-violet-command-center>
-                <header class="border-b border-kaori-primary/15 bg-kaori-soft p-5">
+                   data-kaori-neutral-command-center>
+                <header class="border-b border-outline-subtle bg-surface-subtle p-5">
                     <div class="flex items-start justify-between gap-3">
                         <div class="flex min-w-0 items-start gap-3">
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-kaori-primary/20 bg-surface-card text-kaori-primary shadow-sm" aria-hidden="true">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm" aria-hidden="true">
                                 <i data-lucide="gauge" class="h-5 w-5"></i>
                             </span>
                             <div class="min-w-0">
@@ -382,16 +382,16 @@
                         {{ integration_status(validation_state.readiness, validation_state.readiness_label) }}
                     </div>
 
-                    <div class="mt-5 rounded-xl border border-kaori-primary/15 bg-surface-card p-4" data-kaori-readiness-score>
+                    <div class="mt-5 rounded-xl border border-outline-subtle bg-surface-card p-4" data-kaori-readiness-score>
                         <div class="flex items-end justify-between gap-4">
                             <div>
                                 <p class="text-xs font-semibold text-content-secondary">Capability readiness</p>
-                                <p class="mt-1 text-3xl font-semibold tabular-nums text-kaori-dark">{{ capability_readiness_percent|round|int }}%</p>
+                                <p class="mt-1 text-3xl font-semibold tabular-nums text-content-primary">{{ capability_readiness_percent|round|int }}%</p>
                             </div>
                             <p class="text-right text-xs leading-5 text-content-secondary">{{ validated_feature_count }} validated<br>of {{ capability_total }} discovered</p>
                         </div>
-                        <div class="mt-3 h-2 overflow-hidden rounded-full bg-kaori-primary/10" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ capability_readiness_percent|round|int }}">
-                            <div class="h-full rounded-full bg-kaori-primary" style="width: {{ capability_readiness_percent }}%"></div>
+                        <div class="mt-3 h-2 overflow-hidden rounded-full bg-surface-hover" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ capability_readiness_percent|round|int }}">
+                            <div class="h-full rounded-full bg-content-primary" style="width: {{ capability_readiness_percent }}%"></div>
                         </div>
                     </div>
                 </header>
@@ -411,7 +411,7 @@
                         {% for icon, label, value, total in posture_rows %}
                             <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
                                 <div class="flex items-center justify-between gap-2">
-                                    <span class="flex h-8 w-8 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                    <span class="flex h-8 w-8 items-center justify-center rounded-lg border border-outline-subtle bg-surface-subtle text-content-secondary" aria-hidden="true">
                                         <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                                     </span>
                                     <dd class="text-sm font-semibold tabular-nums text-content-primary">{{ value }} / {{ total }}</dd>
@@ -433,7 +433,7 @@
                         {% for icon, label, description, state, state_label in eligibility_rows %}
                             <div class="flex items-center justify-between gap-3 p-3">
                                 <div class="flex min-w-0 items-center gap-3">
-                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-subtle text-content-secondary" aria-hidden="true">
                                         <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                                     </span>
                                     <div class="min-w-0">
@@ -447,9 +447,9 @@
                     </div>
                 </section>
 
-                <section class="border-b border-kaori-primary/15 bg-kaori-soft p-4" aria-labelledby="review-focus-title">
+                <section class="border-b border-outline-subtle bg-surface-subtle p-4" aria-labelledby="review-focus-title">
                     <div class="flex items-start gap-3">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/20 bg-surface-card text-kaori-primary" aria-hidden="true">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-secondary" aria-hidden="true">
                             <i data-lucide="crosshair" class="h-4 w-4"></i>
                         </span>
                         <div>
@@ -472,7 +472,7 @@
                 <details class="group" data-kaori-validation-operating-boundary>
                     <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden">
                         <div class="flex items-center gap-3">
-                            <span class="flex h-9 w-9 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                            <span class="flex h-9 w-9 items-center justify-center rounded-lg border border-outline-subtle bg-surface-subtle text-content-secondary" aria-hidden="true">
                                 <i data-lucide="route" class="h-4 w-4"></i>
                             </span>
                             <div>
@@ -491,7 +491,7 @@
                     <ol class="space-y-3 border-t border-outline-subtle bg-surface-subtle p-4">
                         {% for number, title, description in validation_steps %}
                             <li class="grid grid-cols-[2rem_minmax(0,1fr)] gap-3">
-                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-kaori-primary/20 bg-kaori-soft text-xs font-semibold text-kaori-dark">{{ number }}</span>
+                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-outline-subtle bg-surface-subtle text-xs font-semibold text-content-primary">{{ number }}</span>
                                 <div class="pb-3 {% if not loop.last %}border-b border-outline-subtle{% endif %}">
                                     <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
                                     <p class="mt-0.5 text-xs leading-5 text-content-secondary">{{ description }}</p>

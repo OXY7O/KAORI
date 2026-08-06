@@ -200,13 +200,15 @@ def test_capability_workspace_uses_modern_explorer_and_consistent_typography() -
     assert 'open:lg:col-span-2' in capability
     assert 'data-kaori-capability-side-panel' in capability
     assert 'Validation Control Panel' in capability
-    assert 'data-kaori-violet-command-strip' in capability
-    assert 'data-kaori-violet-command-center' in capability
+    assert 'data-kaori-neutral-command-strip' in capability
+    assert 'data-kaori-neutral-command-center' in capability
     assert 'data-kaori-readiness-score' in capability
     assert 'data-kaori-capability-posture-grid' in capability
-    assert 'bg-kaori-soft' in capability
-    assert 'text-kaori-primary' in capability
-    assert 'border-kaori-primary/20' in capability
+    assert 'bg-kaori-soft' not in capability
+    assert 'text-kaori-primary' not in capability
+    assert 'border-kaori-primary/' not in capability
+    assert 'bg-surface-subtle' in capability
+    assert 'border-outline-default' in capability
     assert 'Capability readiness' in capability
     assert 'Capability Posture' in capability
     assert 'Downstream Eligibility' in capability
@@ -250,7 +252,7 @@ def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
     assert 'Capability Explorer' in capability
     assert 'data-kaori-capability-filters' in capability
     assert 'data-kaori-capability-record' in capability
-    assert 'Validation Operating Boundary' in capability
+    assert 'Validation Workflow' in capability
     assert 'data-kaori-validation-operating-boundary' in capability
     assert 'font-mono' not in capability
     assert 'lg:grid-cols-[minmax(15rem,1.3fr)' not in capability
@@ -259,38 +261,36 @@ def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
     assert 'Lifecycle Boundary' in inventory
     assert 'Runtime Operating Model' in runtime
     assert 'Diagnostic Evidence' in runtime
-    assert 'components/table.html' in runtime
+    assert 'data-kaori-runtime-diagnostic-list' in runtime
+    assert 'data-kaori-runtime-diagnostic-row' in runtime
+    assert 'components/table.html' not in runtime
 
 
-def test_kubernetes_runtime_and_inventory_tabs_use_shared_kaori_violet_workspace_language() -> None:
-    primitives = read('app/templates/integrations/components/_violet_workspace.html')
+def test_kubernetes_runtime_is_neutral_while_inventory_retains_optional_violet_language() -> None:
     detail = read('app/templates/integrations/kubernetes/detail.html')
     runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
     inventory = read('app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html')
     history = read('app/templates/integrations/partials/_runtime_history.html')
 
-    for token in (
-        'border-kaori-primary/20',
-        'bg-kaori-soft',
-        'text-kaori-primary',
-        'command_center_classes',
-    ):
-        assert token in primitives
+    assert 'data-kaori-runtime-workspace-v4' in runtime
+    assert 'data-kaori-neutral-runtime-workspace' in runtime
+    assert 'data-kaori-runtime-snapshot' in runtime
+    assert 'data-kaori-runtime-layout' in runtime
+    assert 'data-kaori-runtime-control-panel' in runtime
+    assert 'Runtime Control Panel' in runtime
+    assert 'Current Operational Focus' in runtime
+    assert 'Observation Boundary' in runtime
+    assert 'integrations/components/_violet_workspace.html' not in runtime
+    assert 'data-kaori-violet-runtime-workspace' not in runtime
+    assert 'bg-kaori-soft' not in runtime
+    assert 'text-kaori-primary' not in runtime
+    assert 'border-kaori-primary/' not in runtime
+    assert "runtime_history_variant='violet-v2'" not in detail
+    assert "runtime_history_variant='violet-v2'" not in runtime
 
-    assert 'data-kaori-violet-runtime-workspace' in runtime
-    assert 'data-kaori-runtime-command-center' in runtime
     assert 'data-kaori-violet-inventory-workspace' in inventory
     assert 'data-kaori-inventory-command-center' in inventory
-    for template in (runtime, inventory):
-        assert 'integrations/components/_violet_workspace.html' in template
-        assert 'font-sans' in template
-        assert 'bg-kaori-soft' in template
-        assert 'text-kaori-primary' in template
-        assert '2xl:grid-cols-[minmax(0,1fr)_28rem]' in template
-
-    assert "runtime_history_variant='violet-v2'" in detail
-    assert "runtime_history_variant='violet-v2'" in runtime
-    assert 'data-kaori-runtime-history-violet-v2' in history
+    assert 'integrations/components/_violet_workspace.html' in inventory
     assert 'runtime_history_is_violet' in history
 
 
