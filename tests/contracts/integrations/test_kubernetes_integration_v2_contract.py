@@ -127,6 +127,7 @@ def test_kubernetes_coverage_uses_compact_operational_path_cards() -> None:
     coverage = read('app/templates/integrations/kubernetes/partials/_integration_coverage.html')
 
     assert 'Operational Readiness Paths' in coverage
+    assert 'data-kaori-coverage-summary' in coverage
     assert 'data-kaori-operational-readiness-paths' in coverage
     assert 'data-kaori-operational-path-card' in coverage
     assert 'data-kaori-readiness-step' in coverage
@@ -135,14 +136,19 @@ def test_kubernetes_coverage_uses_compact_operational_path_cards() -> None:
     assert 'Alert Intelligence' in coverage
     assert "'provider': 'Prometheus'" in coverage
     assert "'provider': 'Alertmanager'" in coverage
-    assert 'Evidence Path' in coverage
+    assert 'Direct Cluster Authority' in coverage
     assert 'Cluster Binding' in coverage
     assert 'Effective Consumer' in coverage
     assert 'View Evidence' in coverage
-    assert 'x-show="evidenceOpen"' in coverage
+    assert 'x-data="{ openPath: null }"' in coverage
+    assert 'x-show="openPath ===' in coverage
+    assert 'x-show="evidenceOpen"' not in coverage
     assert 'Provider Resolution Boundary' in coverage
-    assert 'xl:grid-cols-3' in coverage
+    assert 'xl:grid-cols-2' in coverage
+    assert 'xl:col-span-2' in coverage
     assert 'items-start' in coverage
+    assert "{% if not path.direct %}" in coverage
+    assert 'compact_state(' in coverage
     assert 'data-lucide="arrow-right"' not in coverage
     assert 'Operational Coverage Lanes' not in coverage
     assert 'data-kaori-operational-coverage-lanes' not in coverage
@@ -329,16 +335,14 @@ def test_kubernetes_integration_overview_uses_controlled_kaori_icon_palette() ->
     provider_registry = read('app/templates/integrations/components/_provider_registry.html')
 
     assert 'data-kaori-kubernetes-integration-icon-palette' in page
-    assert "'tone': 'brand'" in coverage
-    assert "'tone': 'info'" in coverage
-    assert "'tone': 'warning'" in coverage
-    assert "'provider_tone': 'info'" in coverage
-    assert "'provider_tone': 'warning'" in coverage
     assert "palette_icon('workflow', 'brand'" in coverage
-    assert 'palette_icon(path.icon, path.tone)' in coverage
-    assert 'palette_icon_classes(path.provider_tone' in coverage
-    assert 'palette_icon_classes(effective_icon_tone' in coverage
-    assert "palette_icon('route', 'info'" in coverage
+    assert "palette_icon(path.icon, 'brand')" in coverage
+    assert "palette_icon_classes('brand'" in coverage
+    assert "palette_icon_classes('neutral'" in coverage
+    assert "palette_icon('route', 'brand'" in coverage
+    assert "'tone': 'info'" not in coverage
+    assert "'tone': 'warning'" not in coverage
+    assert "'provider_tone'" not in coverage
     assert 'data-kaori-kubernetes-registry-icon-palette' in registry
     assert "connection_icon_tone = 'success' if row.readiness == 'ready'" in registry
     assert "palette_icon('server-cog', connection_icon_tone)" in registry
