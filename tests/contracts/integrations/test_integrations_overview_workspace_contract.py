@@ -128,7 +128,7 @@ def test_zero_capability_attention_has_human_readable_copy() -> None:
     assert "f'{attention} items need attention'" not in service
 
 
-def test_integration_overview_uses_controlled_kaori_icon_palette() -> None:
+def test_integration_overview_uses_violet_identity_icons_and_semantic_status_badges() -> None:
     workspace = read('app/templates/integrations/components/_workspace.html')
     overview = read('app/templates/integrations/overview.html')
     runtime = read('app/templates/integrations/partials/_runtime_overview.html')
@@ -136,17 +136,27 @@ def test_integration_overview_uses_controlled_kaori_icon_palette() -> None:
     assert 'macro palette_icon_classes' in workspace
     assert 'macro palette_icon(' in workspace
     assert 'border-brand-outline bg-kaori-soft text-kaori-primary' in workspace
-    assert 'bg-status-normal-soft text-status-normal-text' in workspace
-    assert 'bg-status-info-soft text-status-info-text' in workspace
-    assert 'bg-status-warning-soft text-status-warning-text' in workspace
-    assert 'bg-status-critical-soft text-status-critical-text' in workspace
-    assert 'data-kaori-integration-overview-icon-palette' in overview
-    assert "metric_card('Ready for Use'" in overview and "'success')" in overview
-    assert "metric_card('Validation Required'" in overview and "'warning')" in overview
-    assert "provider_icon_tone = 'brand' if item.key == 'kubernetes'" in overview
-    assert "item.key == 'prometheus'" in overview
-    assert "item.key == 'alertmanager'" in overview
-    assert 'data-kaori-runtime-overview-icon-palette' in runtime
-    assert "provider_icon_tone = 'brand' if row.provider == 'kubernetes'" in runtime
-    assert "('Healthy', runtime_stats.healthy" in runtime and "'success')" in runtime
-    assert "('Unhealthy', runtime_stats.unhealthy" in runtime and "'critical')" in runtime
+    assert 'data-kaori-integration-overview-violet-icons' in overview
+    assert 'data-kaori-runtime-overview-violet-icons' in runtime
+
+    # Identity and navigation icons stay in the KAORI violet family.
+    assert "palette_icon(item.icon, 'brand', size='lg')" in overview
+    assert "palette_icon(item.icon, 'brand')" in overview
+    assert "palette_icon('layout-grid', 'brand', size='lg')" in overview
+    assert "palette_icon('shield-check', 'brand', size='sm')" in overview
+    assert "palette_icon(row.provider_icon, 'brand', size='lg', rounded='md')" in runtime
+    assert 'provider_icon_tone' not in overview
+    assert 'provider_icon_tone' not in runtime
+    assert 'domain_icon_tone' not in overview
+
+    # Summary cards use violet identity icons; condition meaning remains in semantic labels.
+    assert "metric_card('Ready for Use'" in overview and "'badge-check', 'brand')" in overview
+    assert "metric_card('Validation Required'" in overview and "'scan-search', 'brand')" in overview
+    assert "metric_card('Not Configured'" in overview and "'circle-dashed', 'brand')" in overview
+    for label in ('Healthy', 'Degraded', 'Unhealthy', 'Not Observed', 'Capability Attention'):
+        assert f"('{label}', runtime_stats." in runtime
+    assert runtime.count("'brand')") >= 5
+
+    # Semantic status adapter remains responsible for ready/warning/error meaning.
+    assert 'integration_status(' in overview
+    assert 'integration_status(row.health_status)' in runtime
