@@ -81,6 +81,14 @@ def test_operational_toast_is_the_only_canonical_feedback_surface() -> None:
     assert 'def pop_operational_feedback' not in notification_service
     assert 'maximumVisibleToasts = 4' in toast_js
     assert 'mouseenter' in toast_js and 'focusin' in toast_js
+    assert 'border border-outline-default bg-surface-elevated' in toast
+    assert 'absolute inset-y-0 left-0 w-1' not in toast
+    assert 'tone_dot_classes(resolved_tone)' not in toast
+    assert 'data-operational-toast-timer' in toast
+    assert 'mt-3 h-1 w-24 overflow-hidden rounded-full bg-surface-hover' in toast
+    assert 'h-full w-full rounded-full bg-kaori-primary' in toast
+    assert 'w-1.5 shrink-0 bg-kaori-primary' not in progress
+    assert 'border border-outline-default bg-surface-elevated' in progress
 
 
 def test_legacy_configmap_and_feedback_wrappers_are_removed() -> None:
