@@ -187,12 +187,19 @@ def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
     inventory = read('app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html')
     runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
 
+    assert 'data-kaori-connection-contract-v2' in connection
+    assert 'data-kaori-connection-summary' in connection
+    assert 'data-kaori-connection-evidence' in connection
+    assert 'data-kaori-operational-context' in connection
     assert 'Connection Summary' in connection
     assert 'Connection Evidence' in connection
+    assert 'Operational Boundary' in connection
     assert 'Operational Flow' in connection
-    assert 'rounded-xl border border-outline-subtle bg-surface-card p-4' in connection
-    assert 'xl:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.8fr)]' in connection
-    assert "_minimum_validation_rbac.html" in connection
+    assert 'xl:grid-cols-[minmax(20rem,0.8fr)_minmax(0,1.2fr)]' in connection
+    assert 'lg:grid-cols-[minmax(20rem,1.4fr)_repeat(3,minmax(12rem,0.75fr))]' in connection
+    assert '_minimum_validation_rbac.html' in connection
+    assert 'font-mono' not in connection
+    assert 'xl:grid-cols-[minmax(0,1.45fr)_minmax(20rem,0.55fr)]' not in connection
     assert 'Kubernetes API Capability Detail' in capability
     assert 'Validation Operating Boundary' in capability
     assert 'lg:grid-cols-[minmax(15rem,1.3fr)' in capability
