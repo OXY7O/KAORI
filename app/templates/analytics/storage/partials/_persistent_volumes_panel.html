@@ -9,10 +9,15 @@
 <div id="persistent-volumes-panel" class="space-y-5">
     <header class="border-b border-outline-subtle pb-5">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div class="flex items-start gap-3"><span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="database" class="h-5 w-5"></i></span><div><h3 class="text-lg font-semibold text-content-primary">Persistent Volumes</h3><p class="mt-1 text-sm leading-6 text-content-muted">Review cluster provisioned capacity, claim binding, storage class, reclaim policy, lifecycle state, and volume-level risk.</p></div></div>
+            <div class="flex items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="database" class="h-5 w-5"></i></span>
+                <div>
+                    <h3 class="text-lg font-semibold text-content-primary">Persistent Volumes</h3>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">Review cluster provisioned capacity, claim binding, storage class, reclaim policy, lifecycle state, and volume-level risk.</p>
+                </div>
+            </div>
             {{ table_label.metadata_label('Scope: Cluster', 'globe-2') }}
         </div>
-        {{ loading_bar.render(panel_indicator, label='Refreshing Persistent Volumes') }}
     </header>
 
     <section class="{{ analysis_surface.evidence_shell_classes() }}">
@@ -23,69 +28,114 @@
                 ('Requested Claims', pv.requested_claim_capacity, 'Requested across all namespaces', 'hard-drive-upload'),
                 ('Observed Claim Usage', pv.observed_claim_usage, 'Observed across all namespaces', 'hard-drive-download')
             ] %}
-            {% for label, value, helper, icon in metrics %}<article class="{{ analysis_surface.metric_cell_classes() }}"><div class="flex items-center gap-2.5"><span class="{{ analysis_surface.resource_icon_classes(label) }}"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p></div><p class="mt-3 break-words text-xl font-semibold tabular-nums {{ 'text-content-primary' if value != 'N/A' else analysis_surface.unavailable_value_classes() }}">{{ value }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p></article>{% endfor %}
+            {% for label, value, helper, icon in metrics %}
+                <article class="{{ analysis_surface.metric_cell_classes() }}">
+                    <div class="flex items-center gap-2.5">
+                        <span class="{{ analysis_surface.resource_icon_classes(label) }}"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                        <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                    </div>
+                    <p class="mt-3 break-words text-xl font-semibold tabular-nums {{ 'text-content-primary' if value != 'N/A' else analysis_surface.unavailable_value_classes() }}">{{ value }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                </article>
+            {% endfor %}
         </div>
     </section>
 
-    {% call record_filter.form(
-        'persistent-volumes-filter-form',
-        url_for('analytics.storage'),
-        url_for('analytics.storage_persistent_summary'),
-        '#persistent-volumes-panel',
-        '#' ~ panel_indicator,
-        "change[event.target.matches('select')] delay:120ms, keyup[event.target.name === 'pv_search'] changed delay:450ms, search[event.target.name === 'pv_search']"
-    ) %}
-        <input type="hidden" name="cluster_id" value="{{ cluster.id if cluster else '' }}">
-        <input type="hidden" name="namespace" value="{{ selected_namespace }}">
-        <input type="hidden" name="tab" value="pv">
-        <input type="hidden" name="pv_page" value="1">
-        {{ record_filter.search('pv_search', selected_pv_search, 'Search PV or claim...', 'Search PV') }}
-        {{ record_filter.select('pv_status', selected_pv_status, storage_summary.persistent_storage.pv_status_options, 'All Status', 'PV Status') }}
-        {{ record_filter.select('pv_storage_class', selected_pv_storage_class, storage_summary.persistent_storage.pv_storage_class_options, 'All StorageClass', 'PV Storage Class') }}
-    {% endcall %}
+    <section class="{{ analysis_surface.snapshot_shell_classes() }}" data-kaori-storage-record-card="pv">
+        <header class="{{ analysis_surface.snapshot_header_classes() }}">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-filter" class="h-4 w-4"></i></span>
+                <div class="min-w-0">
+                    <h3 class="text-base font-semibold text-content-primary">Persistent Volume Records</h3>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Filter and inspect volume identity, claim binding, provisioned capacity, storage policy, lifecycle, and risk in one Inventory-aligned record card.</p>
+                </div>
+            </div>
+            {{ loading_bar.render(panel_indicator, label='Refreshing Persistent Volumes') }}
+        </header>
 
-    {% call evidence_list.shell('Persistent Volume Records') %}
-        {% call evidence_list.header() %}
-            {{ evidence_list.header_cell('PV & Claim', 4) }}
-            {{ evidence_list.header_cell('Binding & Capacity', 3) }}
-            {{ evidence_list.header_cell('Storage Policy', 3) }}
-            {{ evidence_list.header_cell('Risk', 2, 'right') }}
+        {% call record_filter.form(
+            'persistent-volumes-filter-form',
+            url_for('analytics.storage'),
+            url_for('analytics.storage_persistent_summary'),
+            '#persistent-volumes-panel',
+            '#' ~ panel_indicator,
+            "change[event.target.matches('select')] delay:120ms, keyup[event.target.name === 'pv_search'] changed delay:450ms, search[event.target.name === 'pv_search']"
+        ) %}
+            <input type="hidden" name="cluster_id" value="{{ cluster.id if cluster else '' }}">
+            <input type="hidden" name="namespace" value="{{ selected_namespace }}">
+            <input type="hidden" name="tab" value="pv">
+            <input type="hidden" name="pv_page" value="1">
+            <input type="hidden" name="pv_per_page" value="{{ storage_summary.persistent_storage.pv_pagination.per_page|default(5) }}">
+            {{ record_filter.search('pv_search', selected_pv_search, 'Search PV or claim...', 'Search PV') }}
+            {{ record_filter.select('pv_status', selected_pv_status, storage_summary.persistent_storage.pv_status_options, 'All Status', 'PV Status') }}
+            {{ record_filter.select('pv_storage_class', selected_pv_storage_class, storage_summary.persistent_storage.pv_storage_class_options, 'All StorageClass', 'PV Storage Class') }}
         {% endcall %}
-        <div class="divide-y divide-outline-subtle">
-            {% for row in storage_summary.persistent_storage.pv_rows %}
-                {% call evidence_list.row() %}
-                    {% call evidence_list.cell(4) %}{{ evidence_list.identity('database', row.name, 'Claim: ' ~ row.claim) }}{% endcall %}
-                    {% call evidence_list.cell(3) %}{{ evidence_list.mobile_label('Binding & Capacity') }}<div class="flex flex-wrap gap-2">{{ table_label.status_label(row.status, row.status_tone|default('unknown'), size='compact') }}{{ table_label.metadata_label(row.storage_class, 'layers', wrap=true, size='compact') }}</div><p class="mt-2 text-sm font-semibold {{ 'text-content-primary' if row.evidence_available else analysis_surface.unavailable_value_classes() }}">{{ row.capacity }}</p>{% endcall %}
-                    {% call evidence_list.cell(3) %}{{ evidence_list.mobile_label('Storage Policy') }}<p class="{{ analysis_surface.metric_label_classes() }}">Reclaim Policy</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ row.reclaim_policy }}</p>{% endcall %}
-                    {% call evidence_list.cell(2, 'right') %}{{ evidence_list.mobile_label('Risk') }}{{ table_label.status_label(row.risk.label|default('Unknown'), row.risk.tone|default('unknown'), size='compact') }}{% endcall %}
-                {% endcall %}
-            {% else %}
-                {% if pv.inventory_evidence_available %}{{ evidence_list.empty('No PV Records Found', 'No volumes matched the current local filters.', 'database') }}{% else %}{{ evidence_list.empty('PV Evidence Unavailable', 'Committed PV inventory evidence is not available for the selected cluster.', 'database') }}{% endif %}
-            {% endfor %}
-        </div>
-    {% endcall %}
-    {% set pv_pagination = storage_summary.persistent_storage.pv_pagination %}
-    {% set pv_pagination_query = {
-        'cluster_id': cluster.id if cluster else '',
-        'namespace': selected_namespace,
-        'tab': 'pv',
-        'pv_search': selected_pv_search,
-        'pv_status': selected_pv_status,
-        'pv_storage_class': selected_pv_storage_class,
-        'pv_per_page': pv_pagination.per_page|default(5)
-    } %}
-    {{ record_pagination.render(
-        pv_pagination,
-        'pv_page',
-        'pv_per_page',
-        'persistent-volumes-panel',
-        'persistent-volumes-filter-form',
-        'persistent-volumes-loading-indicator',
-        'analytics.storage_persistent_summary',
-        'analytics.storage',
-        pv_pagination_query,
-        'Volumes'
-    ) }}
+
+        {% call evidence_list.shell('Persistent Volume Records', embedded=true) %}
+            {% call evidence_list.header() %}
+                {{ evidence_list.header_cell('PV & Claim', 4) }}
+                {{ evidence_list.header_cell('Binding & Capacity', 3) }}
+                {{ evidence_list.header_cell('Storage Policy', 3) }}
+                {{ evidence_list.header_cell('Risk', 2, 'right') }}
+            {% endcall %}
+            <div class="divide-y divide-outline-subtle">
+                {% for row in storage_summary.persistent_storage.pv_rows %}
+                    {% call evidence_list.row() %}
+                        {% call evidence_list.cell(4) %}
+                            {{ evidence_list.identity('database', row.name, 'Claim: ' ~ row.claim) }}
+                        {% endcall %}
+                        {% call evidence_list.cell(3) %}
+                            {{ evidence_list.mobile_label('Binding & Capacity') }}
+                            <div class="flex flex-wrap gap-2">
+                                {{ table_label.status_label(row.status, row.status_tone|default('unknown'), size='compact') }}
+                                {{ table_label.metadata_label(row.storage_class, 'layers', wrap=true, size='compact') }}
+                            </div>
+                            <p class="mt-2 text-sm font-semibold {{ 'text-content-primary' if row.evidence_available else analysis_surface.unavailable_value_classes() }}">{{ row.capacity }}</p>
+                        {% endcall %}
+                        {% call evidence_list.cell(3) %}
+                            {{ evidence_list.mobile_label('Storage Policy') }}
+                            <p class="{{ analysis_surface.metric_label_classes() }}">Reclaim Policy</p>
+                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ row.reclaim_policy }}</p>
+                        {% endcall %}
+                        {% call evidence_list.cell(2, 'right') %}
+                            {{ evidence_list.mobile_label('Risk') }}
+                            {{ table_label.status_label(row.risk.label|default('Unknown'), row.risk.tone|default('unknown'), size='compact') }}
+                        {% endcall %}
+                    {% endcall %}
+                {% else %}
+                    {% if pv.inventory_evidence_available %}
+                        {{ evidence_list.empty('No PV Records Found', 'No volumes matched the current local filters.', 'database') }}
+                    {% else %}
+                        {{ evidence_list.empty('PV Evidence Unavailable', 'Committed PV inventory evidence is not available for the selected cluster.', 'database') }}
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% endcall %}
+
+        {% set pv_pagination = storage_summary.persistent_storage.pv_pagination %}
+        {% set pv_pagination_query = {
+            'cluster_id': cluster.id if cluster else '',
+            'namespace': selected_namespace,
+            'tab': 'pv',
+            'pv_search': selected_pv_search,
+            'pv_status': selected_pv_status,
+            'pv_storage_class': selected_pv_storage_class,
+            'pv_per_page': pv_pagination.per_page|default(5)
+        } %}
+        {{ record_pagination.render(
+            pv_pagination,
+            'pv_page',
+            'pv_per_page',
+            'persistent-volumes-panel',
+            'persistent-volumes-filter-form',
+            'persistent-volumes-loading-indicator',
+            'analytics.storage_persistent_summary',
+            'analytics.storage',
+            pv_pagination_query,
+            'Volumes',
+            embedded=true
+        ) }}
+    </section>
 
     <section class="{{ analysis_surface.record_guidance_classes() }}">
         {{ analysis_surface.interpretation_callout(
@@ -93,7 +143,7 @@
             'Validate Ownership And Reclaim Policy Before Cleanup',
             'Validate claim ownership and reclaim policy before deleting, reusing, or cleaning up Released and Available volumes. A reclaim policy is factual configuration, not a healthy or unhealthy state by itself.',
             icon='shield-check',
-                role='brand',
+            role='brand',
             compact=true
         ) }}
     </section>

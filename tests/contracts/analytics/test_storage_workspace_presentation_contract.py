@@ -41,7 +41,7 @@ def test_storage_uses_canonical_tab_and_mixed_scope_ownership() -> None:
     assert "parameters=_snapshot_parameters()" in routes
     assert "return {'cluster_id': cluster_id}" in routes
     assert 'name="namespace"' in controls
-    assert 'name="storage_node"' in filesystem
+    assert "record_filter.select('storage_node'" in filesystem
     assert 'Node is local to the Filesystem tab' in contract
     assert 'PVC evidence follows Namespace' in contract
     assert 'PV evidence remains cluster-scoped' in contract
@@ -57,7 +57,7 @@ def test_storage_primary_evidence_and_operational_reading_use_neutral_cards() ->
     assert 'analysis_surface.evidence_shell_classes()' in overview
     assert 'analysis_surface.guidance_card_classes()' in overview
     assert 'data-kaori-operational-reading' in overview
-    assert 'md:grid-cols-3 md:divide-x md:divide-y-0' in overview
+    assert 'analysis_surface.guidance_fact_grid_classes(3)' in overview
     assert 'Keep Node, Namespace, And Cluster Storage Evidence Separate' in overview
     assert 'resource_pressure_lane.render(' in capacity
     assert 'analysis_surface.interpretation_grid_classes()' in capacity
@@ -74,9 +74,19 @@ def test_storage_record_panels_use_shared_filter_and_record_components() -> None
     record_component = read('app/templates/analytics/components/_evidence_record_list.html')
     filter_component = read('app/templates/analytics/components/_record_filter_bar.html')
 
-    assert 'evidence_list.shell(' in filesystem
-    assert 'record_filter.form(' in pvc
-    assert 'record_filter.form(' in pv
+    for source, record_key in (
+        (filesystem, 'filesystem'),
+        (pvc, 'pvc'),
+        (pv, 'pv'),
+    ):
+        assert 'record_filter.form(' in source
+        assert 'evidence_list.shell(' in source
+        assert 'embedded=true' in source
+        assert f'data-kaori-storage-record-card="{record_key}"' in source
+
+    assert 'Node Filesystem Records' in filesystem
+    assert 'Persistent Volume Claim Records' in pvc
+    assert 'Persistent Volume Records' in pv
     assert 'macro header_cell' in record_component
     assert 'macro mobile_label' in record_component
     assert 'macro form' in filter_component
