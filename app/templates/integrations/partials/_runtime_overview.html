@@ -5,14 +5,12 @@
 {% import "integrations/components/_provider_registry.html" as provider_registry %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 <section id="integration-runtime-overview"
-         class="{{ integration_ui.section_shell_classes() }}">
+         class="{{ integration_ui.section_shell_classes() }}"
+         data-kaori-runtime-overview-icon-palette>
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                      aria-hidden="true">
-                    <i data-lucide="activity" class="h-5 w-5"></i>
-                </span>
+                {{ integration_ui.palette_icon('activity', 'brand', size='lg') }}
                 <div class="min-w-0">
                     <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Runtime Overview</p>
                     <h2 class="mt-0.5 text-base font-semibold text-content-primary">Integration Health and Capability Posture</h2>
@@ -36,8 +34,7 @@
 
     {% if not runtime_has_targets %}
         <div class="px-5 py-12 text-center sm:px-8">
-            <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
-                  aria-hidden="true">
+            <span class="mx-auto {{ integration_ui.palette_icon_classes('brand', size='xl', rounded='xl') }}" aria-hidden="true" data-kaori-palette-icon="brand">
                 <i data-lucide="plug-zap" class="h-5 w-5"></i>
             </span>
             <h3 class="mt-4 text-base font-semibold text-content-primary">No Runtime Targets Yet</h3>
@@ -45,14 +42,14 @@
         </div>
     {% else %}
         <div class="{{ integration_ui.metric_grid_classes(5) }} border-b border-outline-subtle">
-            {% for label, value, helper, icon in [
-                ('Healthy', runtime_stats.healthy, 'Latest observation is healthy', 'circle-check'),
-                ('Degraded', runtime_stats.degraded, 'Runtime review is recommended', 'triangle-alert'),
-                ('Unhealthy', runtime_stats.unhealthy, 'Runtime intervention is required', 'circle-x'),
-                ('Not Observed', runtime_stats.not_observed, 'No persisted runtime observation', 'circle-help'),
-                ('Capability Attention', runtime_stats.capability_attention, 'Targets requiring capability review', 'puzzle')
+            {% for label, value, helper, icon, tone in [
+                ('Healthy', runtime_stats.healthy, 'Latest observation is healthy', 'circle-check', 'success'),
+                ('Degraded', runtime_stats.degraded, 'Runtime review is recommended', 'triangle-alert', 'warning'),
+                ('Unhealthy', runtime_stats.unhealthy, 'Runtime intervention is required', 'circle-x', 'critical'),
+                ('Not Observed', runtime_stats.not_observed, 'No persisted runtime observation', 'circle-help', 'neutral'),
+                ('Capability Attention', runtime_stats.capability_attention, 'Targets requiring capability review', 'puzzle', 'info')
             ] %}
-                {{ integration_ui.metric_card(label, value, helper, icon) }}
+                {{ integration_ui.metric_card(label, value, helper, icon, tone) }}
             {% endfor %}
         </div>
 
@@ -118,7 +115,14 @@
                         {% set detail_row_id = detail_target_id ~ '-row' %}
                         <tr class="{{ table_ui.row_classes() }}">
                             <td class="{{ table_ui.cell_classes() }}">
-                                {{ table_ui.title_cell(row.instance_name, row.provider_label ~ ' · ' ~ row.endpoint_product ~ ' · ' ~ row.scope_label, row.provider_icon) }}
+                                {% set provider_icon_tone = 'brand' if row.provider == 'kubernetes' else ('info' if row.provider == 'prometheus' else ('warning' if row.provider == 'alertmanager' else 'neutral')) %}
+                                <div class="flex min-w-0 items-center gap-2.5">
+                                    {{ integration_ui.palette_icon(row.provider_icon, provider_icon_tone, size='lg', rounded='md') }}
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-semibold text-content-primary" title="{{ row.instance_name }}">{{ row.instance_name }}</p>
+                                        <p class="mt-0.5 truncate text-xs text-content-muted" title="{{ row.provider_label }} · {{ row.endpoint_product }} · {{ row.scope_label }}">{{ row.provider_label }} · {{ row.endpoint_product }} · {{ row.scope_label }}</p>
+                                    </div>
+                                </div>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
                                 {{ integration_status(row.health_status) }}

@@ -4,7 +4,8 @@
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% import "components/details/_expandable_row.html" as expandable %}
 <section id="kubernetes-connection-registry"
-         class="{{ integration_ui.section_shell_classes() }}">
+         class="{{ integration_ui.section_shell_classes() }}"
+         data-kaori-kubernetes-registry-icon-palette>
     {{ provider_registry.registry_header(
         'Kubernetes Connection Registry',
         'Manage reusable Kubernetes API connections and their downstream operational coverage.',
@@ -76,8 +77,9 @@
                 <tbody class="{{ table_ui.body_classes() }}">
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }}">
+                            {% set connection_icon_tone = 'success' if row.readiness == 'ready' else ('warning' if row.readiness in ['degraded', 'validation_required'] else 'neutral') %}
                             <div class="flex min-w-[16rem] items-start gap-3">
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-content-secondary" aria-hidden="true"><i data-lucide="server-cog" class="h-4 w-4"></i></span>
+                                {{ integration_ui.palette_icon('server-cog', connection_icon_tone) }}
                                 <div class="min-w-0">
                                     <p class="truncate text-sm font-semibold text-content-primary" title="{{ row.cluster_name }}">{{ row.cluster_name }}</p>
                                     <p class="mt-1 truncate text-xs text-content-muted" title="{{ row.server }}">{{ row.environment }} · {{ row.server }}</p>

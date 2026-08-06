@@ -60,7 +60,7 @@ def test_runtime_records_use_inventory_table_and_expandable_details() -> None:
 
     assert 'components/table.html' in runtime
     assert "table_ui.table_classes('min-w-[78rem]')" in runtime
-    assert 'table_ui.title_cell(' in runtime
+    assert 'integration_ui.palette_icon(row.provider_icon, provider_icon_tone' in runtime
     assert 'table_ui.row_classes()' in runtime
     assert 'components/details/_expandable_row.html' in runtime
     assert 'expandable_row.toggle_button(' in runtime
@@ -126,3 +126,27 @@ def test_zero_capability_attention_has_human_readable_copy() -> None:
     assert "return 'No Capability Attention'" in service
     assert "f'{count} Items Need Attention'" in service
     assert "f'{attention} items need attention'" not in service
+
+
+def test_integration_overview_uses_controlled_kaori_icon_palette() -> None:
+    workspace = read('app/templates/integrations/components/_workspace.html')
+    overview = read('app/templates/integrations/overview.html')
+    runtime = read('app/templates/integrations/partials/_runtime_overview.html')
+
+    assert 'macro palette_icon_classes' in workspace
+    assert 'macro palette_icon(' in workspace
+    assert 'border-brand-outline bg-kaori-soft text-kaori-primary' in workspace
+    assert 'bg-status-normal-soft text-status-normal-text' in workspace
+    assert 'bg-status-info-soft text-status-info-text' in workspace
+    assert 'bg-status-warning-soft text-status-warning-text' in workspace
+    assert 'bg-status-critical-soft text-status-critical-text' in workspace
+    assert 'data-kaori-integration-overview-icon-palette' in overview
+    assert "metric_card('Ready for Use'" in overview and "'success')" in overview
+    assert "metric_card('Validation Required'" in overview and "'warning')" in overview
+    assert "provider_icon_tone = 'brand' if item.key == 'kubernetes'" in overview
+    assert "item.key == 'prometheus'" in overview
+    assert "item.key == 'alertmanager'" in overview
+    assert 'data-kaori-runtime-overview-icon-palette' in runtime
+    assert "provider_icon_tone = 'brand' if row.provider == 'kubernetes'" in runtime
+    assert "('Healthy', runtime_stats.healthy" in runtime and "'success')" in runtime
+    assert "('Unhealthy', runtime_stats.unhealthy" in runtime and "'critical')" in runtime

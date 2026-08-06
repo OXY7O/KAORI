@@ -321,3 +321,26 @@ def test_kubernetes_registry_bulk_loads_provider_bindings() -> None:
     assert "('prometheus', 'alertmanager')" in service
     assert 'contains_eager(KubernetesConnection.cluster)' in service
     assert '_build_kubernetes_registry_row(connection, bound_sources=bound_sources)' in service
+
+
+def test_kubernetes_integration_overview_uses_controlled_kaori_icon_palette() -> None:
+    page = read('app/templates/integrations/kubernetes.html')
+    coverage = read('app/templates/integrations/kubernetes/partials/_integration_coverage.html')
+    registry = read('app/templates/integrations/kubernetes/partials/_registry.html')
+    provider_registry = read('app/templates/integrations/components/_provider_registry.html')
+
+    assert 'data-kaori-kubernetes-integration-icon-palette' in page
+    assert "'tone': 'brand'" in coverage
+    assert "'tone': 'info'" in coverage
+    assert "'tone': 'warning'" in coverage
+    assert "'provider_tone': 'info'" in coverage
+    assert "'provider_tone': 'warning'" in coverage
+    assert "palette_icon('workflow', 'brand'" in coverage
+    assert 'palette_icon(path.icon, path.tone)' in coverage
+    assert 'palette_icon_classes(path.provider_tone' in coverage
+    assert 'palette_icon_classes(effective_icon_tone' in coverage
+    assert "palette_icon('route', 'info'" in coverage
+    assert 'data-kaori-kubernetes-registry-icon-palette' in registry
+    assert "connection_icon_tone = 'success' if row.readiness == 'ready'" in registry
+    assert "palette_icon('server-cog', connection_icon_tone)" in registry
+    assert "registry_header(title, description, icon, loading_id, title_id=None, tone='brand')" in provider_registry

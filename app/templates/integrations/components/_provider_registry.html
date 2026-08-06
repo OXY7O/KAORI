@@ -2,12 +2,10 @@
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 
-{% macro registry_header(title, description, icon, loading_id, title_id=None) -%}
+{% macro registry_header(title, description, icon, loading_id, title_id=None, tone='brand') -%}
 <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
     <div class="flex items-start gap-3">
-        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
-            <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
-        </span>
+        {{ integration_ui.palette_icon(icon, tone, size='lg', rounded='xl') }}
         <div class="min-w-0">
             <h2{% if title_id %} id="{{ title_id }}"{% endif %} class="text-lg font-semibold text-content-primary">{{ title }}</h2>
             <p class="mt-1 text-sm leading-6 text-content-secondary">{{ description }}</p>

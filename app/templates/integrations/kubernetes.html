@@ -10,6 +10,7 @@
             else ('Attention' if stats.total > 0 else 'Not Configured')
         ) %}
     <div class="kaori-integration-semantic space-y-6"
+         data-kaori-kubernetes-integration-icon-palette
          x-data="{ deleteModal: false, deleteUrl: '', deleteName: '', openDelete(url, name) { this.deleteUrl = url; this.deleteName = name; this.deleteModal = true; } }">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
