@@ -123,17 +123,22 @@ def test_inventory_freshness_and_capability_dimensions_are_explicit() -> None:
     assert 'Validated Features' in detail
 
 
-def test_kubernetes_coverage_uses_dependency_chains_without_fixed_height_cards() -> None:
+def test_kubernetes_coverage_names_provider_paths_without_fixed_height_cards() -> None:
     coverage = read('app/templates/integrations/kubernetes/partials/_integration_coverage.html')
 
-    assert 'Operational Dependency Matrix' in coverage
-    assert 'data-kaori-dependency-matrix' in coverage
+    assert 'Operational Provider Coverage' in coverage
+    assert 'data-kaori-provider-coverage' in coverage
+    assert 'Kubernetes Inventory' in coverage
     assert 'Kubernetes Analytics' in coverage
     assert 'Alert Intelligence' in coverage
-    assert 'Kubernetes API' in coverage
-    assert 'Reusable Source' in coverage
-    assert 'Binding Validation' in coverage
-    assert 'Effective Resolution' in coverage
+    assert "'provider': 'Prometheus'" in coverage
+    assert "'provider': 'Alertmanager'" in coverage
+    assert 'Required Provider' in coverage
+    assert 'Provider Evidence' in coverage
+    assert 'Source</span>' in coverage
+    assert 'Binding</span>' in coverage
+    assert 'Effective Readiness' in coverage
+    assert 'Provider Resolution Boundary' in coverage
     assert 'min-h-[260px]' not in coverage
     assert 'bg-kaori-soft' not in coverage
 
@@ -154,7 +159,6 @@ def test_secret_capability_is_optional_and_kept_out_of_baseline_readiness() -> N
     assert '{{ validation_state.readiness_label }}</span>' in capability
 
 
-
 def test_minimum_validation_rbac_uses_copy_friendly_modal() -> None:
     rbac = read('app/templates/integrations/kubernetes/partials/_minimum_validation_rbac.html')
 
@@ -166,14 +170,18 @@ def test_minimum_validation_rbac_uses_copy_friendly_modal() -> None:
     assert '<details' not in rbac
 
 
+
 def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
     connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
     capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
     inventory = read('app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html')
     runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
 
+    assert 'Connection Summary' in connection
     assert 'Connection Evidence' in connection
     assert 'Operational Flow' in connection
+    assert 'rounded-xl border border-outline-subtle bg-surface-card p-4' in connection
+    assert 'xl:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.8fr)]' in connection
     assert "_minimum_validation_rbac.html" in connection
     assert 'Kubernetes API Capability Detail' in capability
     assert 'Validation Operating Boundary' in capability
