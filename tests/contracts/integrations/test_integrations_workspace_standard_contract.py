@@ -36,6 +36,7 @@ def test_provider_registries_share_geometry_loading_and_pagination() -> None:
     assert 'components/loading_bar.html' in shared
     assert 'hx-push-url="true"' in shared
     assert 'href_endpoint=endpoint' in shared
+    assert '>Rows</span>' in shared
 
     for template in (prometheus, alertmanager):
         assert 'integrations/components/_provider_registry.html' in template
@@ -62,7 +63,11 @@ def test_runtime_overview_uses_inventory_table_and_shared_controls() -> None:
     assert 'table_ui.inventory_filter_bar_classes()' in runtime
     assert 'table_ui.table_classes(' in runtime
     assert 'table_ui.row_classes()' in runtime
-    assert 'resource_detail_modal.detail_button(' in runtime
+    assert 'components/details/_expandable_row.html' in runtime
+    assert 'expandable_row.toggle_button(' in runtime
+    assert 'expandable_row.detail_row(' in runtime
+    assert 'hx-trigger="change delay:100ms"' in runtime
+    assert 'Apply Filters' not in runtime
     assert 'provider_registry.pagination_footer(' in runtime
     assert 'components/loading_bar.html' in runtime
 

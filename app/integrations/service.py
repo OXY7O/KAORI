@@ -88,17 +88,19 @@ def build_integrations_overview(
         prometheus_instances=prometheus_instances,
         alertmanager_instances=alertmanager_instances,
     )
+    coverage = _coverage(
+        kubernetes_connections=kubernetes_connections,
+        prometheus_instances=prometheus_instances,
+        alertmanager_instances=alertmanager_instances,
+    )
     return {
         'stats': stats,
         'catalog': catalog,
         'available_provider_count': sum(1 for item in catalog if item['availability'] == 'available'),
         'planned_provider_count': sum(1 for item in catalog if item['availability'] != 'available'),
         'active_tab': tab if tab in {'catalog', 'runtime', 'coverage'} else 'catalog',
-        'coverage': _coverage(
-            kubernetes_connections=kubernetes_connections,
-            prometheus_instances=prometheus_instances,
-            alertmanager_instances=alertmanager_instances,
-        ),
+        'coverage': coverage,
+        'coverage_stats': _coverage_stats(coverage),
         'runtime_rows': page_rows,
         'runtime_stats': runtime_stats,
         'runtime_global_stats': runtime_global_stats,
@@ -602,10 +604,11 @@ def _coverage(
     alertmanager_instances: list[AlertmanagerInstance],
 ) -> list[dict[str, Any]]:
     observability_instances = [*prometheus_instances, *alertmanager_instances]
-    return [
+    rows = [
         {
             'key': 'compute',
             'label': 'Compute & Infrastructure',
+            'description': 'Kubernetes cluster connectivity, inventory, and control-plane integration.',
             'icon': 'boxes',
             'providers': 'Kubernetes',
             'configured': len(kubernetes_connections),
@@ -616,6 +619,7 @@ def _coverage(
         {
             'key': 'observability',
             'label': 'Observability',
+            'description': 'Metrics, alert routing, runtime validation, and capability evidence.',
             'icon': 'activity',
             'providers': 'Prometheus · Alertmanager',
             'configured': sum(1 for item in observability_instances if item.endpoint),
@@ -626,6 +630,7 @@ def _coverage(
         {
             'key': 'storage',
             'label': 'Storage',
+            'description': 'Object storage destinations for reports, archives, and evidence retention.',
             'icon': 'database',
             'providers': 'S3-compatible Storage',
             'configured': 0,
@@ -636,6 +641,7 @@ def _coverage(
         {
             'key': 'security',
             'label': 'Security',
+            'description': 'External secrets authority and controlled credential consumption.',
             'icon': 'shield-check',
             'providers': 'Vault · OpenBao',
             'configured': 0,
@@ -644,6 +650,25 @@ def _coverage(
             'lifecycle': 'planned',
         },
     ]
+    for row in rows:
+        if row['lifecycle'] == 'available':
+            row['attention'] = max(row['total'] - row['ready'], 0)
+            row['readiness_percent'] = round((row['ready'] / row['total']) * 100, 1) if row['total'] else 0.0
+        else:
+            row['attention'] = 0
+            row['readiness_percent'] = 0.0
+    return rows
+
+
+def _coverage_stats(rows: list[dict[str, Any]]) -> dict[str, int]:
+    available = [row for row in rows if row['lifecycle'] == 'available']
+    return {
+        'available_domains': len(available),
+        'planned_domains': sum(1 for row in rows if row['lifecycle'] != 'available'),
+        'configured_targets': sum(row['configured'] for row in available),
+        'ready_targets': sum(row['ready'] for row in available),
+        'attention_targets': sum(row['attention'] for row in available),
+    }
 
 
 def _catalog(

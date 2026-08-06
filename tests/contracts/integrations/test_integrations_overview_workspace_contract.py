@@ -42,7 +42,17 @@ def test_runtime_observation_lookup_is_latest_per_target_in_database() -> None:
     assert 'IntegrationRuntimeObservation.query.order_by(' not in service
 
 
-def test_runtime_records_use_inventory_table_and_context_modal() -> None:
+def test_runtime_filters_auto_refresh_in_one_row_without_action_buttons() -> None:
+    runtime = read('app/templates/integrations/partials/_runtime_overview.html')
+
+    assert 'hx-trigger="change delay:100ms"' in runtime
+    assert 'class="grid gap-4 md:grid-cols-3 md:items-end"' in runtime
+    assert runtime.count('table_ui.filter_select_classes()') == 3
+    assert 'Apply Filters' not in runtime
+    assert '>Reset<' not in runtime
+
+
+def test_runtime_records_use_inventory_table_and_expandable_details() -> None:
     runtime = read('app/templates/integrations/partials/_runtime_overview.html')
     detail = read('app/templates/integrations/partials/_runtime_detail_content.html')
     overview = read('app/templates/integrations/overview.html')
@@ -51,13 +61,28 @@ def test_runtime_records_use_inventory_table_and_context_modal() -> None:
     assert "table_ui.table_classes('min-w-[78rem]')" in runtime
     assert 'table_ui.title_cell(' in runtime
     assert 'table_ui.row_classes()' in runtime
-    assert "label='View More'" in runtime
-    assert 'row.message' not in runtime
-    assert "url_for('integrations.runtime_overview_details'" in runtime
-    assert "resource_detail_modal.host(" in overview
-    assert 'data-kaori-detail-variant="full-workspace-modal"' in detail
-    assert 'Runtime and Readiness Remain Independent' in detail
-    assert 'Runtime Diagnostic' in detail
+    assert 'components/details/_expandable_row.html' in runtime
+    assert 'expandable_row.toggle_button(' in runtime
+    assert "open_label='View More'" in runtime
+    assert 'expandable_row.detail_row(' in runtime
+    assert 'resource_detail_modal' not in runtime
+    assert 'resource_detail_modal' not in overview
+    assert 'data-kaori-detail-variant="inline-expansion"' in detail
+    assert 'Runtime Evidence' in detail
+    assert 'Connection & Validation' in detail
+    assert 'Capability & Diagnostic' in detail
+
+
+def test_runtime_footer_uses_standard_showing_and_rows_copy() -> None:
+    runtime = read('app/templates/integrations/partials/_runtime_overview.html')
+    registry = read('app/templates/integrations/components/_provider_registry.html')
+
+    assert "item_label='integration targets'" in runtime
+    assert 'provider_registry.pagination_footer(' in runtime
+    assert '>Rows</span>' in registry
+    assert 'pagination.start_item' in registry
+    assert 'pagination.end_item' in registry
+    assert 'pagination.total_items' in registry
 
 
 def test_runtime_htmx_route_is_limited_to_its_own_target() -> None:
@@ -68,7 +93,7 @@ def test_runtime_htmx_route_is_limited_to_its_own_target() -> None:
     assert "@integrations_bp.get('/runtime/<string:detail_key>/details')" in routes
 
 
-def test_portfolio_and_domain_coverage_use_explicit_neutral_semantics() -> None:
+def test_portfolio_and_domain_coverage_use_neutral_card_semantics() -> None:
     overview = read('app/templates/integrations/overview.html')
     service = read('app/integrations/service.py')
 
@@ -76,10 +101,17 @@ def test_portfolio_and_domain_coverage_use_explicit_neutral_semantics() -> None:
         assert label in overview
     assert 'Connection and Authority Boundary' in overview
     assert 'Integration Portfolio Overview' not in overview
-    assert 'bg-surface-hover p-4' not in overview
-    assert "table_ui.table_classes('min-w-[56rem]')" in overview
+    assert 'Integration Domain Coverage' in overview
+    assert 'Provider Ownership' in overview
+    assert 'Operational readiness' in overview
+    assert 'Roadmap Boundary' in overview
+    assert 'coverage_stats.available_domains' in overview
+    assert "table_ui.table_classes('min-w-[56rem]')" not in overview
+    assert "'description': 'Metrics, alert routing, runtime validation, and capability evidence.'" in service
     assert "'providers': 'Prometheus · Alertmanager'" in service
     assert "'providers': 'Vault · OpenBao'" in service
+    assert "'readiness_percent'" in service
+    assert "'attention_targets'" in service
 
 
 def test_zero_capability_attention_has_human_readable_copy() -> None:

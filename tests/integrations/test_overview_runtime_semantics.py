@@ -2,6 +2,7 @@ from types import SimpleNamespace
 
 from app.integrations.service import (
     _capability_attention_display,
+    _coverage_stats,
     _overview_stats,
     _runtime_scope_label,
     _runtime_stats,
@@ -65,4 +66,35 @@ def test_portfolio_stats_separate_validation_and_missing_configuration() -> None
         'not_configured': 1,
         'attention': 3,
         'blocked': 1,
+    }
+
+
+def test_coverage_stats_separate_available_and_planned_domains() -> None:
+    rows = [
+        {
+            'lifecycle': 'available',
+            'configured': 3,
+            'ready': 2,
+            'attention': 1,
+        },
+        {
+            'lifecycle': 'available',
+            'configured': 2,
+            'ready': 1,
+            'attention': 2,
+        },
+        {
+            'lifecycle': 'planned',
+            'configured': 0,
+            'ready': 0,
+            'attention': 0,
+        },
+    ]
+
+    assert _coverage_stats(rows) == {
+        'available_domains': 2,
+        'planned_domains': 1,
+        'configured_targets': 5,
+        'ready_targets': 3,
+        'attention_targets': 3,
     }

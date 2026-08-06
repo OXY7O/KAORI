@@ -1,5 +1,5 @@
+{% import "components/details/_expandable_row.html" as expandable_row %}
 {% import "components/loading_bar.html" as loading_bar %}
-{% import "components/resource_detail_modal.html" as resource_detail_modal %}
 {% import "components/table.html" as table_ui %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "integrations/components/_provider_registry.html" as provider_registry %}
@@ -62,8 +62,9 @@
                   hx-swap="outerHTML"
                   hx-indicator="#integration-runtime-loading"
                   hx-push-url="true"
+                  hx-trigger="change delay:100ms"
                   aria-label="Integration runtime filters"
-                  class="grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] xl:items-end">
+                  class="grid gap-4 md:grid-cols-3 md:items-end">
                 <input type="hidden" name="tab" value="runtime" />
                 <input type="hidden" name="page" value="1" />
                 <input type="hidden" name="per_page" value="{{ runtime_pagination.per_page }}" />
@@ -94,17 +95,6 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="flex items-end gap-2">
-                    <button type="submit"
-                            class="inline-flex min-h-10 items-center justify-center rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover">Apply Filters</button>
-                    <a href="{{ url_for('integrations.overview', tab='runtime') }}"
-                       hx-get="{{ url_for('integrations.overview', tab='runtime') }}"
-                       hx-target="#integration-runtime-overview"
-                       hx-swap="outerHTML"
-                       hx-indicator="#integration-runtime-loading"
-                       hx-push-url="true"
-                       class="inline-flex min-h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:bg-surface-hover">Reset</a>
-                </div>
             </form>
         </div>
 
@@ -118,11 +108,14 @@
                         <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[11rem]">Readiness</th>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Capability</th>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[13rem]">Last Observation</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes(true) }}">Details</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes(true) }}">Action</th>
                     </tr>
                 </thead>
                 <tbody class="{{ table_ui.body_classes() }}">
                     {% for row in runtime_rows %}
+                        {% set detail_token = row.provider ~ '-' ~ row.instance_id %}
+                        {% set detail_target_id = 'integration-runtime-detail-' ~ detail_token %}
+                        {% set detail_row_id = detail_target_id ~ '-row' %}
                         <tr class="{{ table_ui.row_classes() }}">
                             <td class="{{ table_ui.cell_classes() }}">
                                 {{ table_ui.title_cell(row.instance_name, row.provider_label ~ ' · ' ~ row.endpoint_product ~ ' · ' ~ row.scope_label, row.provider_icon) }}
@@ -148,22 +141,30 @@
                                 <p class="mt-1 text-xs text-content-muted">{{ row.latency_display or 'Latency unavailable' }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes(true) }}">
-                                {{ resource_detail_modal.detail_button(
-                                    row.detail_key,
+                                {{ expandable_row.toggle_button(
+                                    'integration-runtime-overview',
+                                    detail_token,
                                     url_for('integrations.runtime_overview_details', detail_key=row.detail_key),
-                                    row.instance_name,
-                                    'Integration Runtime',
-                                    label='View More',
-                                    icon='panel-top-open'
+                                    detail_target_id,
+                                    detail_row_id,
+                                    class_name='whitespace-nowrap',
+                                    open_label='View More',
+                                    close_label='Hide Details'
                                 ) }}
                             </td>
                         </tr>
+                        {{ expandable_row.detail_row(
+                            detail_row_id,
+                            detail_target_id,
+                            6,
+                            content_classes='w-full min-w-0'
+                        ) }}
                     {% else %}
                         <tr>
                             <td colspan="6" class="p-0">
                                 {% set empty_state_icon = 'search-x' %}
                                 {% set empty_state_title = 'No Runtime Targets Match These Filters' %}
-                                {% set empty_state_description = 'Reset or adjust the active provider, health, and readiness filters.' %}
+                                {% set empty_state_description = 'Change one of the provider, health, or readiness filters to expand the result set.' %}
                                 {% set empty_state_min_height = 'min-h-[190px]' %}
                                 {% include 'components/states/_empty_state.html' %}
                             </td>

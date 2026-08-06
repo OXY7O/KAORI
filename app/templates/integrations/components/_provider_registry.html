@@ -55,7 +55,9 @@
 <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs sm:px-6 lg:flex-row lg:items-center lg:justify-between">
     <div class="flex flex-wrap items-center gap-3 text-content-muted">
         <span>Showing <strong class="font-semibold text-content-primary">{{ pagination.start_item }}–{{ pagination.end_item }}</strong> of <strong class="font-semibold text-content-primary">{{ pagination.total_items }}</strong> {{ item_label }}</span>
-        <form method="get" action="{{ url_for(endpoint) }}" hx-get="{{ url_for(endpoint) }}" hx-target="{{ target }}" hx-swap="{{ swap }}" hx-indicator="{{ indicator }}" hx-push-url="true" class="inline-flex items-center">
+        <div class="inline-flex items-center gap-2">
+            <span class="font-semibold text-content-secondary">Rows</span>
+            <form method="get" action="{{ url_for(endpoint) }}" hx-get="{{ url_for(endpoint) }}" hx-target="{{ target }}" hx-swap="{{ swap }}" hx-indicator="{{ indicator }}" hx-push-url="true" class="inline-flex items-center">
             <input type="hidden" name="{{ page_param }}" value="1">
             {% for name, value in query_params.items() %}
                 {% if name not in [page_param, per_page_param] %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endif %}
@@ -63,7 +65,8 @@
             <select name="{{ per_page_param }}" aria-label="{{ item_label|title }} per page" data-kaori-auto-submit class="{{ pagination_ui.page_size_classes() }}">
                 {% for option in pagination.allowed_per_page %}<option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}
             </select>
-        </form>
+            </form>
+        </div>
     </div>
     <nav class="flex flex-wrap items-center gap-2" aria-label="{{ item_label|title }} pagination">
         {% set args = query_params.copy() %}

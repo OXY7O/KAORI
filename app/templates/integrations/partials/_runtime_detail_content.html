@@ -1,4 +1,3 @@
-{% import "components/details/_detail_content.html" as detail_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% if detail.provider == 'kubernetes' %}
     {% set workspace_url = url_for('integrations.kubernetes_detail', cluster_id=detail.cluster_id) %}
@@ -10,18 +9,19 @@
     {% set workspace_url = url_for('alertmanager.instance_detail', instance_id=detail.instance_id) %}
     {% set workspace_label = 'Open Alertmanager Integration' %}
 {% endif %}
-<div data-kaori-detail-variant="full-workspace-modal"
-     data-kaori-detail-density="adaptive-stacks"
-     class="{{ detail_ui.expanded_workspace_outer_classes() }}">
-    <div class="{{ detail_ui.expanded_workspace_shell_classes() }}">
-        <header data-resource-detail-header class="{{ detail_ui.expanded_workspace_header_classes() }}">
+<div data-kaori-detail-variant="inline-expansion"
+     class="bg-surface-page px-4 py-4 sm:px-5">
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+             aria-label="{{ detail.instance_name }} runtime details">
+        <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ detail_ui.expanded_workspace_icon_classes() }}" aria-hidden="true">
-                    <i data-lucide="{{ detail.provider_icon }}" class="h-5 w-5"></i>
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="{{ detail.provider_icon }}" class="h-4 w-4"></i>
                 </span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                        <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ detail.instance_name }}</h3>
+                        <h3 class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ detail.instance_name }}</h3>
                         {{ integration_status(detail.health_status) }}
                         {{ integration_status(detail.readiness) }}
                     </div>
@@ -29,64 +29,79 @@
                 </div>
             </div>
             <a href="{{ workspace_url }}"
-               class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover">
+               class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark">
                 {{ workspace_label }}
                 <i data-lucide="arrow-up-right" class="h-4 w-4" aria-hidden="true"></i>
             </a>
         </header>
 
-        <div data-resource-detail-summary class="grid gap-3 border-b border-outline-subtle bg-surface-card p-4 sm:grid-cols-2 xl:grid-cols-4">
-            {{ detail_ui.summary_metric('Runtime Health', detail.health_status|replace('_', ' ')|title, 'Latest persisted runtime observation.', 'activity', 'normal' if detail.health_status == 'healthy' else ('critical' if detail.health_status == 'unhealthy' else ('warning' if detail.health_status == 'degraded' else 'unknown'))) }}
-            {{ detail_ui.summary_metric('Readiness', detail.readiness|replace('_', ' ')|title, 'Validation and operational readiness.', 'badge-check', 'normal' if detail.readiness == 'ready' else ('critical' if detail.readiness == 'blocked' else 'warning')) }}
-            {{ detail_ui.summary_metric('Last Observation', detail.observed_at_display, detail.latency_display or 'Latency unavailable.', 'clock-3', 'brand') }}
-            {{ detail_ui.summary_metric('Capability Attention', detail.capability_attention, detail.capability_attention_display, 'puzzle', 'warning' if detail.capability_attention else 'normal') }}
+        <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+            {% for label, value, helper in [
+                ('Runtime Health', detail.health_status|replace('_', ' ')|title, (detail.health_score ~ '/100 health score') if detail.health_score is not none else 'No persisted score'),
+                ('Last Observation', detail.observed_at_display, detail.latency_display or 'Latency unavailable'),
+                ('Validation Readiness', detail.readiness|replace('_', ' ')|title, 'Connection · ' ~ (detail.connection_status|replace('_', ' ')|title)),
+                ('Capability Attention', detail.capability_attention, detail.capability_attention_display)
+            ] %}
+                <article class="bg-surface-card px-4 py-3">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
+                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ value }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</p>
+                </article>
+            {% endfor %}
         </div>
 
-        <div class="grid items-stretch gap-4 p-5 md:grid-cols-2">
-            {% call detail_ui.detail_card('Runtime Observation', 'activity') %}
-                {{ detail_ui.detail_row('Health State', detail.health_status|replace('_', ' ')|title) }}
-                {{ detail_ui.detail_row('Health Score', (detail.health_score ~ '/100') if detail.health_score is not none else 'Not Observed') }}
-                {{ detail_ui.detail_row('Observed At', detail.observed_at_display) }}
-                {{ detail_ui.detail_row('Response Latency', detail.latency_display or 'Not Observed') }}
-            {% endcall %}
+        <div class="grid gap-4 p-4 lg:grid-cols-3">
+            <section class="rounded-lg border border-outline-subtle bg-surface-card p-4">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="activity" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                    <h4 class="text-sm font-semibold text-content-primary">Runtime Evidence</h4>
+                </div>
+                <dl class="mt-3 space-y-2 text-xs">
+                    <div class="flex items-start justify-between gap-3"><dt class="text-content-muted">Health State</dt><dd class="text-right font-semibold text-content-primary">{{ detail.health_status|replace('_', ' ')|title }}</dd></div>
+                    <div class="flex items-start justify-between gap-3"><dt class="text-content-muted">Health Score</dt><dd class="text-right font-semibold text-content-primary">{{ (detail.health_score ~ '/100') if detail.health_score is not none else 'Not Observed' }}</dd></div>
+                    <div class="flex items-start justify-between gap-3"><dt class="text-content-muted">Observed At</dt><dd class="text-right font-semibold text-content-primary">{{ detail.observed_at_display }}</dd></div>
+                    <div class="flex items-start justify-between gap-3"><dt class="text-content-muted">Latency</dt><dd class="text-right font-semibold text-content-primary">{{ detail.latency_display or 'Not Observed' }}</dd></div>
+                </dl>
+            </section>
 
-            {% call detail_ui.detail_card('Connection & Validation', 'plug-zap') %}
-                {{ detail_ui.detail_row('Provider', detail.provider_label) }}
-                {{ detail_ui.detail_row('Product', detail.endpoint_product) }}
-                {{ detail_ui.detail_row('Connection State', detail.connection_status|replace('_', ' ')|title) }}
-                {{ detail_ui.detail_row('Validation Readiness', detail.readiness|replace('_', ' ')|title) }}
-                {{ detail_ui.detail_row('Last Validation', detail.validation_at_display) }}
-            {% endcall %}
+            <section class="rounded-lg border border-outline-subtle bg-surface-card p-4">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="plug-zap" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                    <h4 class="text-sm font-semibold text-content-primary">Connection & Validation</h4>
+                </div>
+                <dl class="mt-3 space-y-2 text-xs">
+                    <div class="flex items-start justify-between gap-3"><dt class="text-content-muted">Provider</dt><dd class="text-right font-semibold text-content-primary">{{ detail.provider_label }}</dd></div>
+                    <div class="flex items-start justify-between gap-3"><dt class="text-content-muted">Product</dt><dd class="text-right font-semibold text-content-primary">{{ detail.endpoint_product }}</dd></div>
+                    <div class="flex items-start justify-between gap-3"><dt class="text-content-muted">Connection</dt><dd class="text-right font-semibold text-content-primary">{{ detail.connection_status|replace('_', ' ')|title }}</dd></div>
+                    <div class="flex items-start justify-between gap-3"><dt class="text-content-muted">Last Validation</dt><dd class="text-right font-semibold text-content-primary">{{ detail.validation_at_display }}</dd></div>
+                </dl>
+            </section>
 
-            {% call detail_ui.detail_card('Capability Profile', 'puzzle') %}
-                {{ detail_ui.detail_row('Compatibility Profile', detail.capability_profile or 'Not Observed') }}
-                {{ detail_ui.detail_row('Attention Items', detail.capability_attention) }}
-                {{ detail_ui.detail_row('Capability Posture', detail.capability_attention_display) }}
-                <p class="mt-3 text-xs leading-5 text-content-muted">Capability readiness is evaluated separately from runtime health so a connected target is not automatically classified as healthy.</p>
-            {% endcall %}
-
-            {% call detail_ui.detail_card('Runtime Diagnostic', 'message-square-warning') %}
-                {% if detail.message %}
-                    <p class="break-words text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ detail.message }}</p>
-                {% else %}
-                    <p class="text-sm leading-6 text-content-muted">No runtime or validation diagnostic message is currently persisted for this target.</p>
-                {% endif %}
-            {% endcall %}
+            <section class="rounded-lg border border-outline-subtle bg-surface-card p-4">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="puzzle" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                    <h4 class="text-sm font-semibold text-content-primary">Capability & Diagnostic</h4>
+                </div>
+                <dl class="mt-3 space-y-2 text-xs">
+                    <div class="flex items-start justify-between gap-3"><dt class="text-content-muted">Profile</dt><dd class="text-right font-semibold text-content-primary">{{ detail.capability_profile or 'Not Observed' }}</dd></div>
+                    <div class="flex items-start justify-between gap-3"><dt class="text-content-muted">Attention</dt><dd class="text-right font-semibold text-content-primary">{{ detail.capability_attention_display }}</dd></div>
+                </dl>
+                <div class="mt-3 border-t border-outline-subtle pt-3">
+                    <p class="text-xs font-semibold text-content-primary">Diagnostic</p>
+                    <p class="mt-1 break-words text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ detail.message or 'No runtime or validation diagnostic message is currently persisted for this target.' }}</p>
+                </div>
+            </section>
         </div>
 
-        <section class="border-t border-outline-subtle bg-surface-elevated p-5" aria-label="Integration Runtime Boundary">
-            <div class="grid gap-3 lg:grid-cols-2">
-                <div class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Evidence Boundary</p>
-                    <h4 class="mt-1 text-sm font-semibold text-content-primary">Runtime and Readiness Remain Independent</h4>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Runtime health comes only from a persisted observation. Connection state and validation readiness remain supporting evidence and do not substitute for runtime observation.</p>
-                </div>
-                <div class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Recommended Action</p>
-                    <h4 class="mt-1 text-sm font-semibold text-content-primary">{{ 'Review Runtime Diagnostics' if detail.health_status in ['unhealthy', 'degraded'] else ('Run Runtime Refresh' if detail.health_status == 'not_observed' else 'Maintain Current Validation Cadence') }}</h4>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ 'Open the provider workspace and validate endpoint, TLS, authentication, and capability evidence.' if detail.health_status != 'healthy' else 'No immediate runtime intervention is required; continue scheduled observation and capability validation.' }}</p>
-                </div>
+        <footer class="grid gap-3 border-t border-outline-subtle bg-surface-elevated px-4 py-3 lg:grid-cols-2">
+            <div>
+                <p class="text-xs font-semibold text-content-primary">Evidence Boundary</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Runtime health comes only from a persisted observation. Connection and validation state remain independent supporting evidence.</p>
             </div>
-        </section>
-    </div>
+            <div>
+                <p class="text-xs font-semibold text-content-primary">Recommended Action</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ 'Review the provider workspace, endpoint, TLS, authentication, and capability evidence.' if detail.health_status != 'healthy' else 'No immediate intervention is required; maintain the current observation and validation cadence.' }}</p>
+            </div>
+        </footer>
+    </section>
 </div>

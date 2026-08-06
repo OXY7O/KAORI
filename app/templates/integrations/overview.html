@@ -1,16 +1,9 @@
 {% extends "layouts/app.html" %}
-{% import "components/resource_detail_modal.html" as resource_detail_modal %}
-{% import "components/table.html" as table_ui %}
 {% import "components/workspace_tabs.html" as workspace_tabs %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% block title %}Integrations · KAORI{% endblock %}
 {% block dashboard_content %}
-    {{ resource_detail_modal.host(
-        'Integration Runtime',
-        url_for('integrations.runtime_overview_details', detail_key='0'),
-        'Runtime details come from the latest persisted observation and validation state.'
-    ) }}
     {% set integration_tabs = [
         ('catalog', 'Provider Catalog', 'package-search'),
         ('runtime', 'Runtime Overview', 'activity'),
@@ -208,59 +201,100 @@
                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
                          aria-labelledby="coverage-summary-title">
                     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-                        <div class="flex min-w-0 items-start gap-3">
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                  aria-hidden="true"><i data-lucide="layout-grid" class="h-5 w-5"></i></span>
-                            <div class="min-w-0">
-                                <h2 id="coverage-summary-title"
-                                    class="text-base font-semibold text-content-primary">Integration Domain Coverage</h2>
-                                <p class="mt-1 text-sm leading-6 text-content-secondary">Map infrastructure domains to their provider ownership, configured targets, readiness, and lifecycle.</p>
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div class="flex min-w-0 items-start gap-3">
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true"><i data-lucide="layout-grid" class="h-5 w-5"></i></span>
+                                <div class="min-w-0">
+                                    <h2 id="coverage-summary-title"
+                                        class="text-base font-semibold text-content-primary">Integration Domain Coverage</h2>
+                                    <p class="mt-1 text-sm leading-6 text-content-secondary">Review provider ownership, target readiness, and roadmap boundaries by infrastructure domain.</p>
+                                </div>
                             </div>
+                            <span class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-card px-2 text-xs font-semibold text-content-secondary">{{ coverage_stats.available_domains }} available · {{ coverage_stats.planned_domains }} planned</span>
                         </div>
                     </header>
-                    <div class="overflow-x-auto">
-                        <table class="{{ table_ui.table_classes('min-w-[56rem]') }}">
-                            <caption class="sr-only">Integration domain and provider coverage.</caption>
-                            <thead class="{{ table_ui.head_classes() }}">
-                                <tr>
-                                    <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Domain</th>
-                                    <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[18rem]">Providers</th>
-                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Configured</th>
-                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Ready</th>
-                                    <th scope="col" class="{{ table_ui.header_cell_classes(true) }}">Lifecycle</th>
-                                </tr>
-                            </thead>
-                            <tbody class="{{ table_ui.body_classes() }}">
-                                {% for item in coverage %}
-                                    <tr class="{{ table_ui.row_classes() }}">
-                                        <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(item.label, 'Infrastructure integration domain', item.icon) }}</td>
-                                        <td class="{{ table_ui.cell_classes() }}">
-                                            <p class="text-sm font-semibold text-content-primary">{{ item.providers }}</p>
-                                            <p class="mt-1 text-xs text-content-muted">{{ 'Provider workspaces available' if item.lifecycle == 'available' else 'Roadmap capability' }}</p>
-                                        </td>
-                                        <td class="{{ table_ui.cell_classes() }}">
-                                            <p class="text-sm font-semibold tabular-nums text-content-primary">{{ item.configured }}</p>
-                                            <p class="mt-1 text-xs text-content-muted">of {{ item.total }} registered</p>
-                                        </td>
-                                        <td class="{{ table_ui.cell_classes() }}">
-                                            {% if item.lifecycle == 'available' %}
-                                                <p class="text-sm font-semibold tabular-nums text-content-primary">{{ item.ready }} of {{ item.total }}</p>
-                                                <p class="mt-1 text-xs text-content-muted">Validated targets</p>
-                                            {% else %}
-                                                <span class="text-sm font-semibold text-content-muted">Not Applicable</span>
-                                            {% endif %}
-                                        </td>
-                                        <td class="{{ table_ui.cell_classes(true) }}">
-                                            {% if item.lifecycle == 'available' %}
-                                                {{ integration_status('ready', 'Available') }}
-                                            {% else %}
-                                                <span class="inline-flex min-h-6 items-center rounded-md bg-status-unknown-soft px-2 text-xs font-semibold text-status-unknown-text">Planned</span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+
+                    <div class="grid gap-px border-b border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+                        {% for label, value, helper in [
+                            ('Available Domains', coverage_stats.available_domains, 'Provider workspaces are active'),
+                            ('Configured Targets', coverage_stats.configured_targets, 'Usable provider configurations'),
+                            ('Ready Targets', coverage_stats.ready_targets, 'Validated for operational use'),
+                            ('Needs Review', coverage_stats.attention_targets, 'Not ready or not configured')
+                        ] %}
+                            <article class="bg-surface-card px-5 py-4">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
+                                <p class="mt-2 text-2xl font-semibold tabular-nums text-content-primary">{{ value }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</p>
+                            </article>
+                        {% endfor %}
+                    </div>
+
+                    <div class="grid gap-4 p-5 sm:p-6 lg:grid-cols-2">
+                        {% for item in coverage %}
+                            <article class="flex min-w-0 flex-col rounded-xl border border-outline-subtle bg-surface-card p-5">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="flex min-w-0 items-start gap-3">
+                                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                              aria-hidden="true">
+                                            <i data-lucide="{{ item.icon }}" class="h-5 w-5"></i>
+                                        </span>
+                                        <div class="min-w-0">
+                                            <h3 class="text-sm font-semibold text-content-primary">{{ item.label }}</h3>
+                                            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.description }}</p>
+                                        </div>
+                                    </div>
+                                    {% if item.lifecycle == 'available' %}
+                                        {{ integration_status('ready', 'Available') }}
+                                    {% else %}
+                                        <span class="inline-flex min-h-6 shrink-0 items-center rounded-md bg-status-unknown-soft px-2 text-xs font-semibold text-status-unknown-text">Planned</span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3">
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Provider Ownership</p>
+                                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ item.providers }}</p>
+                                </div>
+
+                                {% if item.lifecycle == 'available' %}
+                                    <div class="mt-4 grid grid-cols-3 gap-3">
+                                        <div>
+                                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Configured</p>
+                                            <p class="mt-1 text-lg font-semibold tabular-nums text-content-primary">{{ item.configured }}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Ready</p>
+                                            <p class="mt-1 text-lg font-semibold tabular-nums text-content-primary">{{ item.ready }}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Review</p>
+                                            <p class="mt-1 text-lg font-semibold tabular-nums text-content-primary">{{ item.attention }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 border-t border-outline-subtle pt-4">
+                                        <div class="flex items-center justify-between gap-3 text-xs">
+                                            <span class="font-semibold text-content-secondary">Operational readiness</span>
+                                            <span class="font-semibold tabular-nums text-content-primary">{{ item.ready }} of {{ item.total }} targets</span>
+                                        </div>
+                                        <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-hover"
+                                             role="progressbar"
+                                             aria-label="{{ item.label }} readiness"
+                                             aria-valuemin="0"
+                                             aria-valuemax="100"
+                                             aria-valuenow="{{ item.readiness_percent }}">
+                                            <div class="h-full rounded-full bg-kaori-primary" style="width: {{ item.readiness_percent }}%"></div>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <div class="mt-4 flex flex-1 items-end">
+                                        <div class="w-full border-t border-outline-subtle pt-4">
+                                            <p class="text-xs font-semibold text-content-primary">Roadmap Boundary</p>
+                                            <p class="mt-1 text-xs leading-5 text-content-secondary">This domain is visible for architecture planning but has no configurable provider workspace or readiness evidence yet.</p>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </article>
+                        {% endfor %}
                     </div>
                 </section>
             </div>
