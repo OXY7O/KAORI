@@ -42,7 +42,7 @@
                      role="dialog"
                      aria-modal="true"
                      aria-labelledby="minimum-validation-rbac-title"
-                     class="flex max-h-[calc(100dvh-1rem)] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-2xl sm:max-h-[calc(100dvh-2rem)]">
+                     class="flex max-h-[calc(100dvh-1rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-2xl sm:max-h-[calc(100dvh-2rem)]">
                 <header class="flex shrink-0 items-start justify-between gap-4 border-b border-outline-subtle px-4 py-4 sm:px-6">
                     <div class="flex min-w-0 items-start gap-3">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-brand-outline bg-kaori-soft text-kaori-primary dark:text-kaori-accent" aria-hidden="true">
@@ -60,19 +60,41 @@
                 </header>
 
                 <div class="min-h-0 flex-1 overflow-y-auto bg-surface-page p-4 sm:p-6">
-                    <div class="grid gap-4 xl:grid-cols-2">
+                    <div class="space-y-5" data-kaori-rbac-modal-vertical>
                         <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
-                            <header class="flex items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3.5">
-                                <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-content-primary">Baseline Validation Reader</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-secondary">ClusterRole + ClusterRoleBinding. No Secret permission is included.</p>
+                            <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary dark:text-kaori-accent" aria-hidden="true">
+                                        <i data-lucide="shield-check" class="h-4 w-4"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <p class="text-sm font-semibold text-content-primary">Baseline Validation Reader</p>
+                                            <span class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-status-normal-soft px-2 text-xs font-semibold text-status-normal-text">Recommended Baseline</span>
+                                        </div>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">Cluster-wide read-only discovery and authorization evidence. Secret permission is intentionally excluded.</p>
+                                    </div>
                                 </div>
-                                <button type="button" @click="copyText('baselineRbac', 'baseline')" class="inline-flex h-9 shrink-0 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:bg-kaori-soft hover:text-kaori-primary">
+                                <button type="button" @click="copyText('baselineRbac', 'baseline')" class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                     <i data-lucide="copy" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                     <span x-text="copied === 'baseline' ? 'Copied' : 'Copy Baseline YAML'">Copy Baseline YAML</span>
                                 </button>
                             </header>
-                            <div class="overflow-x-auto bg-kaori-primary-dark p-4">
+                            <div class="grid gap-px bg-outline-subtle sm:grid-cols-3">
+                                <div class="bg-surface-card px-4 py-3">
+                                    <p class="text-xs font-semibold text-content-muted">Scope</p>
+                                    <p class="mt-1 text-xs font-medium text-content-primary">Cluster-wide discovery</p>
+                                </div>
+                                <div class="bg-surface-card px-4 py-3">
+                                    <p class="text-xs font-semibold text-content-muted">Permission Model</p>
+                                    <p class="mt-1 text-xs font-medium text-content-primary">Read-only + SelfSubjectAccessReview</p>
+                                </div>
+                                <div class="bg-surface-card px-4 py-3">
+                                    <p class="text-xs font-semibold text-content-muted">Sensitive Resources</p>
+                                    <p class="mt-1 text-xs font-medium text-content-primary">Secrets excluded</p>
+                                </div>
+                            </div>
+                            <div class="max-h-[26rem] overflow-auto bg-kaori-primary-dark p-4">
                                 <pre x-ref="baselineRbac" class="min-w-max whitespace-pre text-xs leading-5 text-brand-foreground"><code>apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -124,17 +146,39 @@ subjects:
                         </section>
 
                         <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
-                            <header class="flex items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3.5">
-                                <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-content-primary">Optional Governance Secret Reader</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Namespace-scoped Role + RoleBinding. Add only for an approved Secret governance boundary.</p>
+                            <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-status-warning/20 bg-status-warning-soft text-status-warning-text" aria-hidden="true">
+                                        <i data-lucide="key-round" class="h-4 w-4"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <p class="text-sm font-semibold text-content-primary">Optional Governance Secret Reader</p>
+                                            <span class="inline-flex min-h-6 items-center rounded-md border border-status-warning/20 bg-status-warning-soft px-2 text-xs font-semibold text-status-warning-text">Optional Sensitive Access</span>
+                                        </div>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">Namespace-scoped access only for an explicitly approved Secret governance boundary. Do not merge this permission into the baseline reader.</p>
+                                    </div>
                                 </div>
-                                <button type="button" @click="copyText('secretRbac', 'secret')" class="inline-flex h-9 shrink-0 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:bg-kaori-soft hover:text-kaori-primary">
+                                <button type="button" @click="copyText('secretRbac', 'secret')" class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                                     <i data-lucide="copy" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                     <span x-text="copied === 'secret' ? 'Copied' : 'Copy Secret Reader YAML'">Copy Secret Reader YAML</span>
                                 </button>
                             </header>
-                            <div class="overflow-x-auto bg-kaori-primary-dark p-4">
+                            <div class="grid gap-px bg-outline-subtle sm:grid-cols-3">
+                                <div class="bg-surface-card px-4 py-3">
+                                    <p class="text-xs font-semibold text-content-muted">Scope</p>
+                                    <p class="mt-1 text-xs font-medium text-content-primary">Approved namespace only</p>
+                                </div>
+                                <div class="bg-surface-card px-4 py-3">
+                                    <p class="text-xs font-semibold text-content-muted">Permission Model</p>
+                                    <p class="mt-1 text-xs font-medium text-content-primary">Role + RoleBinding</p>
+                                </div>
+                                <div class="bg-surface-card px-4 py-3">
+                                    <p class="text-xs font-semibold text-content-muted">Approval Boundary</p>
+                                    <p class="mt-1 text-xs font-medium text-content-primary">Explicit governance approval</p>
+                                </div>
+                            </div>
+                            <div class="max-h-[22rem] overflow-auto bg-kaori-primary-dark p-4">
                                 <pre x-ref="secretRbac" class="min-w-max whitespace-pre text-xs leading-5 text-brand-foreground"><code>apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -160,8 +204,13 @@ subjects:
     namespace: kaori-system</code></pre>
                             </div>
                             <div class="border-t border-outline-subtle bg-status-warning-soft px-4 py-3">
-                                <p class="text-xs font-semibold text-status-warning-text">Sensitive Access Boundary</p>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Secret read permission can expose Secret data. Keep it namespace-scoped, explicitly approved, and governed by KAORI operation guardrails.</p>
+                                <div class="flex items-start gap-3">
+                                    <i data-lucide="triangle-alert" class="mt-0.5 h-4 w-4 shrink-0 text-status-warning-text" aria-hidden="true"></i>
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-semibold text-status-warning-text">Sensitive Access Boundary</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">Secret read permission can expose Secret data. Keep it namespace-scoped, explicitly approved, and governed by KAORI operation guardrails.</p>
+                                    </div>
+                                </div>
                             </div>
                         </section>
                     </div>

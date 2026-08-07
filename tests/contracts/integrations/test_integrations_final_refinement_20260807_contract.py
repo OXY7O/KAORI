@@ -16,6 +16,12 @@ def test_minimum_validation_rbac_remains_modal() -> None:
     assert 'x-teleport="body"' in source
     assert 'role="dialog"' in source
     assert 'aria-modal="true"' in source
+    assert 'data-kaori-rbac-modal-vertical' in source
+    assert 'max-w-5xl' in source
+    assert 'space-y-5' in source
+    assert 'max-h-[26rem]' in source
+    assert 'max-h-[22rem]' in source
+    assert 'xl:grid-cols-2' not in source
     assert "<details" not in source
 
 
