@@ -186,10 +186,11 @@ def test_minimum_validation_rbac_uses_copy_friendly_modal() -> None:
     assert '<details' not in rbac
 
 
-def test_capability_workspace_uses_registry_inspector_and_consistent_typography() -> None:
+def test_capability_workspace_uses_registry_modal_and_consistent_typography() -> None:
     capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
+    modal = read('app/templates/integrations/components/_record_detail_modal.html')
 
-    assert 'data-kaori-capability-workspace-v7' in capability
+    assert 'data-kaori-capability-workspace-v8' in capability
     assert 'data-kaori-capability-overview' in capability
     assert 'data-kaori-capability-explorer' in capability
     assert 'data-kaori-capability-matrix' in capability
@@ -202,17 +203,25 @@ def test_capability_workspace_uses_registry_inspector_and_consistent_typography(
     assert 'x-model.debounce.150ms="query"' in capability
     assert 'x-show="matches($el)"' in capability
     assert 'data-kaori-capability-layout' in capability
-    assert 'xl:grid-cols-[minmax(0,1fr)_26rem]' in capability
-    assert '2xl:grid-cols-[minmax(0,1fr)_28rem]' in capability
+    assert 'xl:grid-cols-[minmax(0,1fr)_22rem]' in capability
+    assert '2xl:grid-cols-[minmax(0,1fr)_24rem]' in capability
     assert 'data-kaori-capability-side-panel' in capability
-    assert 'data-kaori-capability-inspector-panel' in capability
-    assert 'Capability Inspector' in capability
     assert 'data-kaori-capability-view-more' in capability
     assert 'View More' in capability
-    assert 'x-ref="inspector"' in capability
-    assert 'data-kaori-capability-inspector-content' in capability
+    assert 'detailOpen: false' in capability
+    assert 'selectedDetail: null' in capability
+    assert 'openDetail(key)' in capability
+    assert "@click='openDetail({{ row.key|tojson }})'" in capability
+    assert 'record_detail_modal.render(' in capability
+    assert 'data-kaori-capability-modal-content' in capability
+    assert 'Kubernetes Capability Evidence' in capability
+    assert 'Capability Contract' in capability
+    assert 'Validation Evidence' in capability
+    assert 'Operational Impact' in capability
+    assert 'Recommended Action' in capability
+    assert 'Technical Verification' in capability
     assert 'data-kaori-capability-technical-check' in capability
-    assert 'Open the copy-ready discovery and RBAC script.' in capability
+    assert 'data-kaori-capability-evidence-boundary' in capability
     assert 'data-kaori-capability-decision-panel' in capability
     assert 'Validation Decision' in capability
     assert 'data-kaori-readiness-score' in capability
@@ -227,9 +236,20 @@ def test_capability_workspace_uses_registry_inspector_and_consistent_typography(
     assert 'font-sans' in capability
     assert 'font-mono' not in capability
     assert 'uppercase tracking-wide' not in capability
-    assert 'data-kaori-capability-expanded-evidence' not in capability
-    assert '<details class="group bg-surface-card"' not in capability
-    assert 'Validation Decision Center' not in capability
+    assert 'data-kaori-capability-inspector-panel' not in capability
+    assert 'Capability Inspector' not in capability
+    assert 'x-ref="inspector"' not in capability
+    assert 'data-kaori-capability-inspector-content' not in capability
+    assert 'Viewing' not in capability
+
+    assert 'x-teleport="body"' in modal
+    assert 'role="dialog"' in modal
+    assert 'aria-modal="true"' in modal
+    assert 'detailOpen && selectedDetail ===' in modal
+    assert '@keydown.escape.window' in modal
+    assert 'max-w-6xl' in modal
+    assert 'Close' in modal
+
 
 def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
     connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
@@ -384,7 +404,6 @@ def test_kubernetes_integration_uses_canonical_compact_label_roles() -> None:
     assert "display='text'" in capability
     assert "display='indicator'" in capability
 
-    assert 'components/table_label.html' in runtime
     assert "metadata_label((runtime_state.diagnostics|length) ~ ' checks')" in runtime
     assert "display='text'" in runtime
     assert "display='indicator'" in runtime
