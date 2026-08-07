@@ -12,30 +12,30 @@
 {% set full_page_url = url_for('analytics.workload', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, time_range=selected_time_range, tab='quotas') %}
 {% set partial_url = url_for('analytics.workload_tenant_quota') %}
 <section id="tenant-quota-analysis" class="space-y-5">
-    <section class="{{ analysis_surface.snapshot_shell_classes() }}">
-        <header class="{{ analysis_surface.snapshot_header_classes() }}">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="badge-gauge" class="h-4 w-4"></i></span>
-                <div class="min-w-0">
-                    <p class="{{ analysis_surface.metric_label_classes() }}">Quota Governance</p>
-                    <h2 class="mt-1 text-lg font-semibold text-content-primary">Tenant Quota Analysis</h2>
-                    <p class="mt-1 text-sm leading-6 text-content-muted">Review ResourceQuota coverage, pressure ownership, runtime demand, and governance risk for the top-level active scope.</p>
-                </div>
+    <header class="border-b border-outline-subtle pb-5">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="badge-gauge" class="h-5 w-5"></i></span>
+            <div class="min-w-0">
+                <h3 class="text-lg font-semibold text-content-primary">Tenant Quota Analysis</h3>
+                <p class="mt-1 text-sm leading-6 text-content-muted">Review ResourceQuota coverage, pressure ownership, runtime demand, and governance risk for the top-level active scope.</p>
             </div>
-        </header>
+        </div>
+    </header>
+
+    <section class="{{ analysis_surface.evidence_shell_classes() }}">
         <div class="{{ analysis_surface.metric_grid_classes(4) }}">
-                {% for card in tenant_quota_summary.summary_cards %}
-                    <article class="{{ analysis_surface.metric_cell_classes() }}">
-                        <div class="flex min-w-0 items-start gap-3">
-                            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="{{ card.icon }}" class="h-4 w-4"></i></span>
-                            <div class="min-w-0">
-                                <p class="{{ analysis_surface.metric_label_classes() }}">{{ card.label }}</p>
-                                <p class="mt-1 text-xl font-semibold text-content-primary">{{ card.value }}</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ card.caption }}</p>
-                            </div>
+            {% for card in tenant_quota_summary.summary_cards %}
+                <article class="{{ analysis_surface.metric_cell_classes() }}">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="{{ card.icon }}" class="h-4 w-4"></i></span>
+                        <div class="min-w-0">
+                            <p class="{{ analysis_surface.metric_label_classes() }}">{{ card.label }}</p>
+                            <p class="mt-1 text-xl font-semibold text-content-primary">{{ card.value }}</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ card.caption }}</p>
                         </div>
-                    </article>
-                {% endfor %}
+                    </div>
+                </article>
+            {% endfor %}
         </div>
     </section>
 

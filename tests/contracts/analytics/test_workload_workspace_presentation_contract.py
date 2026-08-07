@@ -70,8 +70,12 @@ def test_workload_sections_use_inventory_aligned_overview_and_record_cards() -> 
     assert 'analytics/components/_record_filter_bar.html' in tenant
     assert 'analytics/components/_evidence_record_list.html' in mapping
     assert 'analytics/components/_record_filter_bar.html' in mapping
-    assert tenant.count('analysis_surface.snapshot_shell_classes') >= 2
-    assert mapping.count('analysis_surface.snapshot_shell_classes') >= 2
+    assert tenant.count('analysis_surface.snapshot_shell_classes') >= 1
+    assert mapping.count('analysis_surface.snapshot_shell_classes') >= 1
+    assert 'border-b border-outline-subtle pb-5' in tenant
+    assert 'border-b border-outline-subtle pb-5' in mapping
+    assert 'analysis_surface.evidence_shell_classes()' in tenant
+    assert 'analysis_surface.evidence_shell_classes()' in mapping
     assert "evidence_list.shell('Tenant Quota Records', embedded=true)" in tenant
     assert "evidence_list.shell('Workload Resource Mapping Records', embedded=true)" in mapping
     assert 'embedded=true' in tenant
@@ -86,15 +90,27 @@ def test_workload_sections_use_inventory_aligned_overview_and_record_cards() -> 
     assert 'card=true' in mapping
     assert 'record_detail_modal.render' in tenant
     assert 'record_detail_modal.render' in mapping
-    assert 'detached=true' in page
+    assert 'detached=true' not in page
+    assert "['quotas', 'mapping', 'recommendations']" in page
 
     recommendations = read('app/templates/analytics/workload/partials/_recommendations.html')
-    assert 'analysis_surface.snapshot_shell_classes()' in recommendations
-    assert 'analysis_surface.snapshot_header_classes()' in recommendations
+    assert 'analysis_surface.evidence_shell_classes()' in recommendations
+    assert 'analysis_surface.snapshot_shell_classes()' not in recommendations
+    assert 'analysis_surface.snapshot_header_classes()' not in recommendations
     assert 'bg-surface-card px-4 py-4 sm:px-5' in recommendations
-    assert 'bg-surface-hover' in recommendations
-    assert 'analysis_surface.evidence_shell_classes()' not in recommendations
     assert 'overflow-hidden rounded-lg border border-outline-subtle' not in recommendations
+
+
+def test_workload_workspace_matches_storage_integrated_tabbed_composition() -> None:
+    workload = read('app/templates/analytics/workload/index.html')
+    storage = read('app/templates/analytics/storage/partials/_storage_section.html')
+
+    assert 'analytics_workspace.tabbed(' in workload
+    assert 'analytics_workspace.tabbed(' in storage
+    assert 'detached=true' not in workload
+    assert "'Workload Analysis Workspace'" in workload
+    assert "'Storage Analysis Workspace'" in storage
+    assert "['quotas', 'mapping', 'recommendations']" in workload
 
 
 def test_workload_summary_is_top_level_scope_owned() -> None:

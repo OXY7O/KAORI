@@ -23,7 +23,7 @@ Workload Analysis combines Namespace ResourceQuota governance with active worklo
 Hero
 Controls & Data Readiness
 Quick Workload Overview
-Tabbed Detailed Workspace
+Integrated Tabbed Detailed Workspace
 ├── Tenant Quota Analysis
 ├── Workload Resource Mapping
 └── Workload Recommendations
@@ -209,7 +209,8 @@ Cluster, Namespace, Time Range, active tab, local filters, and 5/10/25/50 page-s
 - Summary metrics, scope context, quota evidence, workload records, and expanded CPU/Memory evidence use bright surfaces.
 - Operational Reading, Recommended Action, and interpretation guidance use the darker Analytics guidance surface.
 - Semantic status is carried by shared labels, not by tinting entire rows.
-- The detached Workload Recommendations tab owns one complete shared Analytics snapshot surface: header, recommendation rows, and pagination remain inside the same bordered card. Recommendation rows own `bg-surface-card`, while pagination uses the shared hover surface, so the workspace never appears visually split or clipped.
+- Workload uses the same integrated workspace composition as Storage Analysis: the workspace header, tabs, and active panel share one `analysis_workspace.tabbed(...)` surface. Active panel content is rendered inside the workspace body rather than as a detached sibling card.
+- Tenant Quota Analysis and Workload Resource Mapping use a plain panel heading followed by shared evidence/record surfaces, matching the Storage Analysis panel hierarchy. Workload Recommendations uses the shared evidence shell for recommendation rows and pager, so no second top-level snapshot card competes with the workspace shell.
 - Missing values render `N/A`, use Unknown semantics, and suppress progress bars.
 
 ## Recommendation Destinations
