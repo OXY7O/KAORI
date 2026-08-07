@@ -1,9 +1,11 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "analytics/components/_record_detail_modal.html" as record_detail_modal %}
 {% import "components/table.html" as table_ui %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/table_label.html" as table_label %}
 {% set severity_tone = 'critical' if anomaly.severity == 'critical' else ('warning' if anomaly.severity == 'warning' else ('info' if anomaly.severity == 'info' else 'unknown')) %}
-<div x-data="{ expanded: false }" @kaori:alerts-collapse.window="expanded = false">
+{% set modal_id = row_key ~ '-modal' %}
+<div x-data="{ detailOpen: false }" @kaori:alerts-collapse.window="detailOpen = false">
     <div class="grid gap-4 px-4 py-4 lg:grid-cols-12 lg:items-center">
         <div class="min-w-0 lg:col-span-4">
             <div class="flex min-w-0 items-start gap-3">
@@ -35,97 +37,91 @@
 
         <div class="flex lg:col-span-2 lg:justify-end">
             <button type="button"
-                    @click="expanded = !expanded"
-                    :aria-expanded="expanded ? 'true' : 'false'"
-                    aria-controls="{{ row_key }}-details"
+                    @click="detailOpen = true"
+                    aria-haspopup="dialog"
+                    :aria-expanded="detailOpen ? 'true' : 'false'"
+                    aria-controls="{{ modal_id }}"
                     class="{{ table_ui.action_classes() }} w-full shrink-0 sm:w-auto">
-                <i data-lucide="chevron-down" class="h-4 w-4 transition" :class="{ 'rotate-180': expanded }"></i>
-                <span x-text="expanded ? 'Hide Evidence' : 'View Evidence'">View Evidence</span>
+                <i data-lucide="panel-top-open" class="h-4 w-4"></i>
+                <span>View More</span>
             </button>
         </div>
     </div>
 
-    <div id="{{ row_key }}-details"
-         x-show="expanded"
-         x-bind:hidden="!expanded"
-         hidden
-         x-cloak
-         class="border-t border-outline-subtle bg-kaori-mist/25 px-4 py-5">
-        <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
-            <header class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-start lg:justify-between">
-                <div class="flex min-w-0 items-start gap-3">
-                    <span class="{{ analysis_surface.snapshot_header_icon_classes() }}">
-                        <i data-lucide="radar" class="h-5 w-5"></i>
-                    </span>
-                    <div class="min-w-0">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <h3 class="break-words text-base font-semibold text-content-primary">{{ anomaly.name }}</h3>
-                            {{ table_label.status_label(anomaly.severity|title, tone=severity_tone, size='compact') }}
-                            {{ table_label.metadata_label(anomaly.namespace, 'box', wrap=true, size='compact') }}
-                        </div>
-                        <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">{{ anomaly.description }}</p>
-                    </div>
-                </div>
+    {% call record_detail_modal.render(
+        modal_id,
+        'Anomaly Evidence',
+        anomaly.name,
+        anomaly.description,
+        icon='radar',
+        footer_text='Anomaly evidence and review guidance come from the latest committed Alerts & Anomalies snapshot.'
+    ) %}
+        <div class="space-y-4">
+            <div class="flex flex-wrap gap-2">
+                {{ table_label.status_label(anomaly.severity|title, tone=severity_tone, size='compact') }}
+                {{ table_label.metadata_label(anomaly.namespace, 'box', wrap=true, size='compact') }}
                 {{ table_label.metadata_label(anomaly.signal, 'activity', wrap=true, size='compact') }}
-            </header>
-
-            <div class="grid lg:grid-cols-3">
-                <div class="space-y-5 p-5 lg:col-span-2">
-                    <dl class="grid gap-3 sm:grid-cols-3">
-                        {% for label, value, icon in [
-                            ('Target', anomaly.target, 'crosshair'),
-                            ('Signal', anomaly.signal, 'activity'),
-                            ('Source', anomaly.source if anomaly.source else 'Prometheus', 'database')
-                        ] %}
-                            <div class="rounded-lg border border-outline-subtle bg-surface-card p-4">
-                                <dt class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-content-muted">
-                                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>{{ label }}
-                                </dt>
-                                <dd class="mt-2 break-words [overflow-wrap:anywhere] text-sm font-semibold text-content-primary">{{ value }}</dd>
-                            </div>
-                        {% endfor %}
-                    </dl>
-
-                    <div class="{{ analysis_surface.record_guidance_classes('p-0') }}">
-                        {{ analysis_surface.interpretation_callout(
-                            'Recommended Anomaly Review',
-                            'Validate The Deviation Before Creating An Incident',
-                            'Determine whether this deviation is workload-driven, capacity-driven, or caused by source gaps. Compare recent deployments, namespace density, and node pressure before escalating.',
-                            icon='search',
-                role='brand',
-                            tone=severity_tone,
-                            compact=true
-                        ) }}
-                        <div class="flex flex-wrap gap-2 border-t border-outline-subtle px-3 py-3">
-                            {{ table_label.metadata_label('Scope: ' ~ anomaly.namespace, size='compact', wrap=true) }}
-                            {{ table_label.metadata_label('Signal: ' ~ anomaly.signal, size='compact', wrap=true) }}
-                            {{ table_label.status_label('Priority: ' ~ (anomaly.severity|title), tone=severity_tone, size='compact') }}
-                        </div>
-                    </div>
-                </div>
-
-                <aside class="border-t border-outline-subtle bg-surface-hover p-5 lg:border-l lg:border-t-0">
-                    <div class="flex items-center gap-2">
-                        <span class="{{ analysis_surface.metric_icon_classes() }}">
-                            <i data-lucide="route" class="h-4 w-4"></i>
-                        </span>
-                        <h4 class="text-sm font-semibold text-content-primary">Next Operational Action</h4>
-                    </div>
-                    <ul class="mt-4 space-y-3 text-sm leading-6 text-content-muted">
-                        <li class="flex gap-2"><span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-kaori-primary"></span><span>Verify the affected namespace, workload, and placement pattern.</span></li>
-                        <li class="flex gap-2"><span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-status-info"></span><span>Compare the anomaly with active alerts and recent utilization trends.</span></li>
-                        <li class="flex gap-2"><span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-status-warning"></span><span>Confirm source readiness so missing samples are not interpreted as workload behavior.</span></li>
-                    </ul>
-                </aside>
             </div>
 
-            <footer class="flex justify-end border-t border-outline-subtle bg-surface-hover px-5 py-4">
-                <a href="{{ url_for('analytics.workload', cluster_id=selected_cluster_id, namespace=anomaly.namespace if anomaly.namespace != '-' else '') }}"
-                   class="{{ action_button.classes('primary') }}">
-                    <i data-lucide="boxes" class="h-4 w-4"></i>
-                    Review Workload
-                </a>
-            </footer>
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                <div class="grid lg:grid-cols-3">
+                    <div class="space-y-5 p-5 lg:col-span-2">
+                        <dl class="grid gap-3 sm:grid-cols-3">
+                            {% for label, value, icon in [
+                                ('Target', anomaly.target, 'crosshair'),
+                                ('Signal', anomaly.signal, 'activity'),
+                                ('Source', anomaly.source if anomaly.source else 'Prometheus', 'database')
+                            ] %}
+                                <div class="rounded-lg border border-outline-subtle bg-surface-card p-4">
+                                    <dt class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-content-muted">
+                                        <i data-lucide="{{ icon }}" class="h-4 w-4"></i>{{ label }}
+                                    </dt>
+                                    <dd class="mt-2 break-words [overflow-wrap:anywhere] text-sm font-semibold text-content-primary">{{ value }}</dd>
+                                </div>
+                            {% endfor %}
+                        </dl>
+
+                        <div class="{{ analysis_surface.record_guidance_classes('p-0') }}">
+                            {{ analysis_surface.interpretation_callout(
+                                'Recommended Anomaly Review',
+                                'Validate The Deviation Before Creating An Incident',
+                                'Determine whether this deviation is workload-driven, capacity-driven, or caused by source gaps. Compare recent deployments, namespace density, and node pressure before escalating.',
+                                icon='search',
+                                role='brand',
+                                tone=severity_tone,
+                                compact=true
+                            ) }}
+                            <div class="flex flex-wrap gap-2 border-t border-outline-subtle px-3 py-3">
+                                {{ table_label.metadata_label('Scope: ' ~ anomaly.namespace, size='compact', wrap=true) }}
+                                {{ table_label.metadata_label('Signal: ' ~ anomaly.signal, size='compact', wrap=true) }}
+                                {{ table_label.status_label('Priority: ' ~ (anomaly.severity|title), tone=severity_tone, size='compact') }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <aside class="border-t border-outline-subtle bg-surface-hover p-5 lg:border-l lg:border-t-0">
+                        <div class="flex items-center gap-2">
+                            <span class="{{ analysis_surface.metric_icon_classes() }}">
+                                <i data-lucide="route" class="h-4 w-4"></i>
+                            </span>
+                            <h3 class="text-sm font-semibold text-content-primary">Next Operational Action</h3>
+                        </div>
+                        <ul class="mt-4 space-y-3 text-sm leading-6 text-content-muted">
+                            <li class="flex gap-2"><span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-kaori-primary"></span><span>Verify the affected namespace, workload, and placement pattern.</span></li>
+                            <li class="flex gap-2"><span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-status-info"></span><span>Compare the anomaly with active alerts and recent utilization trends.</span></li>
+                            <li class="flex gap-2"><span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-status-warning"></span><span>Confirm source readiness so missing samples are not interpreted as workload behavior.</span></li>
+                        </ul>
+                    </aside>
+                </div>
+
+                <footer class="flex justify-end border-t border-outline-subtle bg-surface-hover px-5 py-4">
+                    <a href="{{ url_for('analytics.workload', cluster_id=selected_cluster_id, namespace=anomaly.namespace if anomaly.namespace != '-' else '') }}"
+                       class="{{ action_button.classes('primary') }}">
+                        <i data-lucide="boxes" class="h-4 w-4"></i>
+                        Review Workload
+                    </a>
+                </footer>
+            </section>
         </div>
-    </div>
+    {% endcall %}
 </div>

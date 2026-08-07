@@ -79,7 +79,7 @@ The two collections use independent page state: `alerts_page`/`alerts_per_page` 
 - HTMX requests use the owning partial endpoint.
 - Filters retain Cluster, Source, Severity, State, Namespace, Search, active tab, and both page-size values.
 - Default page size is 5 with 5/10/25/50 options.
-- Expanded details are closed by default and retain a native `hidden` fallback across HTMX swaps.
+- Alert and anomaly record actions use the shared Analytics record-detail modal with the canonical `View More` label. Detail evidence must not expand inline inside either record collection.
 - Long labels and technical identifiers use controlled wrapping, not unconditional `break-all`.
 
 ## Routing, Suppression, Ownership, and Readiness
@@ -122,3 +122,4 @@ The legacy `/analytics/alerts-anomalies` route is not part of the canonical cont
 - No dark fill around primary signal records or metrics.
 - No red or amber readiness progress fill.
 - No arbitrary micro typography in Alerts templates.
+- No inline expandable Alert or Anomaly evidence rows; `View More` must open the shared Analytics modal.

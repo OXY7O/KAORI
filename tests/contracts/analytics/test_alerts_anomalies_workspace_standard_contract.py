@@ -77,15 +77,22 @@ def test_alerts_and_anomalies_use_shared_record_collection_and_pagination() -> N
     assert '(5, 10, 25, 50)' in pagination
 
 
-def test_alert_records_are_closed_by_default_and_use_controlled_wrapping() -> None:
+def test_alert_records_use_shared_view_more_modals_and_controlled_wrapping() -> None:
     alert_row = read(PARTIALS / '_alerts_table_row.html')
     anomaly_row = read(PARTIALS / '_anomalies_table_row.html')
 
     for row in (alert_row, anomaly_row):
-        assert '@kaori:alerts-collapse.window="expanded = false"' in row
-        assert 'x-bind:hidden="!expanded"' in row
-        assert 'hidden' in row
-        assert 'x-cloak' in row
+        assert 'analytics/components/_record_detail_modal.html' in row
+        assert '@kaori:alerts-collapse.window="detailOpen = false"' in row
+        assert 'record_detail_modal.render(' in row
+        assert 'aria-haspopup="dialog"' in row
+        assert '<span>View More</span>' in row
+        assert 'panel-top-open' in row
+        assert 'expanded = false' not in row
+        assert 'x-bind:hidden="!expanded"' not in row
+        assert 'View Evidence' not in row
+        assert 'Hide Evidence' not in row
+        assert 'chevron-down' not in row
         assert 'break-all' not in row
         assert 'text-[' not in row
         assert 'tracking-[' not in row

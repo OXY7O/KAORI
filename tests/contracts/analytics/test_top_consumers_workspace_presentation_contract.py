@@ -74,16 +74,24 @@ def test_top_consumers_evidence_and_progress_semantics_are_canonical() -> None:
     assert 'bg-status-warning' not in ranked
 
 
-def test_top_consumers_records_use_shared_pagination_and_safe_expandables() -> None:
+def test_top_consumers_records_use_shared_pagination_and_modal_details() -> None:
     results = read('app/templates/analytics/top_consumers/partials/_consumer_detail_results.html')
     shared = read('app/templates/analytics/components/_record_pagination.html')
 
     assert 'analytics/components/_record_pagination.html' in results
+    assert 'analytics/components/_record_detail_modal.html' in results
     assert "'analytics.top_consumers_table'" in results
     assert "'analytics.top_consumers'" in results
-    assert '@kaori:analytics-collapse-details.window="expanded = false"' in results
-    assert 'x-bind:hidden="!expanded"' in results
-    assert '\n                                 hidden\n                                 x-cloak' in results
+    assert '@kaori:analytics-collapse-details.window="detailOpen = false"' in results
+    assert 'record_detail_modal.render(' in results
+    assert 'aria-haspopup="dialog"' in results
+    assert '<span>View More</span>' in results
+    assert 'panel-top-open' in results
+    assert 'expanded = false' not in results
+    assert 'x-bind:hidden="!expanded"' not in results
+    assert 'View Details' not in results
+    assert 'Hide Details' not in results
+    assert 'chevron-down' not in results
     assert 'href_endpoint' in shared
     assert 'partial_endpoint' in shared
 

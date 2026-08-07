@@ -196,7 +196,7 @@ Consumer Records use `_evidence_record_list.html`, `_record_filter_bar.html`, an
 
 Normal links always resolve to the full page. `/analytics/top-consumers/table` is HTMX-only; direct navigation redirects to the full workspace with `tab=records`. Fragment responses are `no-store`, vary on `HX-Request`, and push the canonical full-page URL.
 
-Page size follows 5/10/25/50. Expanded records are closed by default and retain a native `hidden` fallback so HTMX swaps cannot expose all detail bodies before Alpine initialization.
+Page size follows 5/10/25/50. Consumer record actions use the shared Analytics record-detail modal and the canonical `View More` label. Record evidence must not expand inline inside the collection; the modal is teleported to `body` so table and HTMX overflow boundaries cannot clip the detail surface.
 
 ## Report Contract
 
@@ -215,3 +215,4 @@ The Top Consumers report uses `TopConsumersSelection` and the same service/domai
 - No domain-local record pagination copies.
 - No direct fragment endpoint as a normal `href`.
 - No compatibility `/top-consumers/section` route.
+- No inline expandable Consumer Record detail bodies; `View More` must open the shared Analytics modal.

@@ -1,4 +1,5 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "analytics/components/_record_detail_modal.html" as record_detail_modal %}
 {% import "analytics/components/_evidence_record_list.html" as evidence_list %}
 {% import "analytics/components/_record_pagination.html" as record_pagination %}
 {% import "components/progress_bar.html" as progress_bar %}
@@ -69,8 +70,9 @@
                     {% for row in rows %}
                         {% set identity = row.identity|default({}, true) %}
                         {% set risk = row.risk|default({}, true) %}
-                        <article x-data="{ expanded: false }"
-                                 @kaori:analytics-collapse-details.window="expanded = false">
+                        {% set modal_id = 'top-consumer-modal-' ~ pagination.page ~ '-' ~ loop.index %}
+                        <article x-data="{ detailOpen: false }"
+                                 @kaori:analytics-collapse-details.window="detailOpen = false">
                             {% call evidence_list.row() %}
                                 {% call evidence_list.cell(1) %}
                                     {{ evidence_list.mobile_label('Rank') }}
@@ -122,23 +124,27 @@
 
                                 {% call evidence_list.cell(2, 'right', 'flex lg:justify-end') %}
                                     <button type="button"
-                                            @click="expanded = !expanded"
+                                            @click="detailOpen = true"
                                             class="{{ table_ui.action_classes() }} w-full shrink-0 sm:w-auto"
-                                            :aria-expanded="expanded ? 'true' : 'false'"
-                                            aria-controls="consumer-detail-{{ loop.index }}">
-                                        <i data-lucide="chevron-down" class="h-4 w-4 transition-transform" :class="{ 'rotate-180': expanded }"></i>
-                                        <span x-text="expanded ? 'Hide Details' : 'View Details'">View Details</span>
+                                            aria-haspopup="dialog"
+                                            :aria-expanded="detailOpen ? 'true' : 'false'"
+                                            aria-controls="{{ modal_id }}">
+                                        <i data-lucide="panel-top-open" class="h-4 w-4"></i>
+                                        <span>View More</span>
                                     </button>
                                 {% endcall %}
                             {% endcall %}
 
-                            <div id="consumer-detail-{{ loop.index }}"
-                                 x-show="expanded"
-                                 x-bind:hidden="!expanded"
-                                 hidden
-                                 x-cloak
-                                 class="border-t border-outline-subtle bg-surface-hover px-4 py-5">
-                                <div class="grid gap-4 lg:grid-cols-2">
+                            {% call record_detail_modal.render(
+                                modal_id,
+                                'Top Consumer Evidence',
+                                identity.primary|default('Unknown Consumer', true),
+                                row.resource_label ~ ' · ' ~ row.current_display ~ ' · ' ~ row.contribution_display ~ ' of selected scope',
+                                icon=identity.icon|default(row.resource_icon|default('activity')),
+                                footer_text='Consumer identity, resource pressure, and contribution evidence come from the latest committed Top Consumers snapshot.'
+                            ) %}
+                                <div class="space-y-4">
+                                    <div class="grid gap-4 lg:grid-cols-2">
                                     <section class="{{ analysis_surface.nested_evidence_card_classes('overflow-hidden') }}">
                                         <header class="border-b border-outline-subtle px-4 py-3">
                                             <div class="flex flex-wrap items-center justify-between gap-2">
@@ -203,19 +209,20 @@
                                     </section>
                                 </div>
 
-                                <section class="mt-4">
-                                    {{ analysis_surface.interpretation_callout(
-                                        'Recommended Action',
-                                        row.recommendation,
-                                        'Prioritize configuration gaps and resource-specific pressure before acting on contribution share alone.',
-                                        icon='list-checks',
-                                        role='brand',
-                                        tone=risk.tone|default('unknown'),
-                                        compact=true,
-                                        card=true
-                                    ) }}
-                                </section>
-                            </div>
+                                    <section>
+                                        {{ analysis_surface.interpretation_callout(
+                                            'Recommended Action',
+                                            row.recommendation,
+                                            'Prioritize configuration gaps and resource-specific pressure before acting on contribution share alone.',
+                                            icon='list-checks',
+                                            role='brand',
+                                            tone=risk.tone|default('unknown'),
+                                            compact=true,
+                                            card=true
+                                        ) }}
+                                    </section>
+                                </div>
+                            {% endcall %}
                         </article>
                     {% endfor %}
                 </div>
