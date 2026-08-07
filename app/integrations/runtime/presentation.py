@@ -3,12 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from app.common.presentation import (
-    present_count,
-    present_key_label,
-    present_milliseconds,
-    present_user_datetime,
-)
+from app.common.presentation import present_count, present_key_label, present_milliseconds, present_user_datetime
 from app.integrations.compatibility import kubernetes_lifecycle_policy
 from app.integrations.contracts import RuntimeState
 from app.models.runtime import IntegrationRuntimeObservation
@@ -70,77 +65,6 @@ def runtime_state_view(
         'binding_label': binding.get('label'),
     }
 
-
-def runtime_observation_state_view(
-    observation: IntegrationRuntimeObservation | None,
-    *,
-    fallback_readiness: str = 'validation_required',
-    fallback_compatibility_profile: str | None = None,
-    fallback_capabilities: list[str] | tuple[str, ...] | None = None,
-) -> dict[str, object]:
-    """Present persisted runtime evidence without inferring health from connection state.
-
-    Validation readiness and discovered capabilities may be supplied as fallback
-    context, but health, score, observation time, and diagnostics are only populated
-    from an actual IntegrationRuntimeObservation.
-    """
-    fallback_capabilities = tuple(fallback_capabilities or ())
-    if observation is None:
-        return {
-            'has_observation': False,
-            'readiness': fallback_readiness or 'validation_required',
-            'readiness_label': present_key_label(fallback_readiness or 'validation_required'),
-            'health_status': 'not_observed',
-            'health_status_label': 'Not Observed',
-            'health_score': None,
-            'health_score_display': 'N/A',
-            'compatibility_profile': fallback_compatibility_profile,
-            'capability_count': len(fallback_capabilities),
-            'capability_count_display': present_count(len(fallback_capabilities), 'validated feature'),
-            'diagnostics': [],
-            'attention_factors': [],
-            'lifecycle_context': None,
-            'observed_at': None,
-            'observed_at_display': 'Never',
-            'message': 'No persisted Kubernetes runtime observation is available yet.',
-            'latency_ms': None,
-            'latency_display': 'N/A',
-        }
-
-    snapshot = observation.capability_snapshot or {}
-    metadata = snapshot.get('metadata') or {}
-    capabilities = tuple(snapshot.get('capabilities') or fallback_capabilities)
-    diagnostics = _diagnostic_rows(observation.diagnostics or [])
-    attention_factors = [
-        {
-            'key': item['key'],
-            'label': item['label'],
-            'status': item['status'],
-            'detail': item['detail'],
-        }
-        for item in diagnostics
-        if item['status'] in {'warning', 'failed', 'pending', 'unknown'}
-    ]
-    return {
-        'has_observation': True,
-        'readiness': observation.readiness or fallback_readiness or 'validation_required',
-        'readiness_label': present_key_label(observation.readiness or fallback_readiness or 'validation_required'),
-        'health_status': observation.health_status or 'not_observed',
-        'health_status_label': present_key_label(observation.health_status or 'not_observed'),
-        'health_score': observation.health_score,
-        'health_score_display': f'{observation.health_score}/100',
-        'compatibility_profile': observation.compatibility_profile or fallback_compatibility_profile,
-        'capability_count': len(capabilities),
-        'capability_count_display': present_count(len(capabilities), 'observed capability'),
-        'diagnostics': diagnostics,
-        'attention_factors': attention_factors,
-        'lifecycle_context': _kubernetes_lifecycle_context(observation.provider, metadata),
-        'observed_at': observation.observed_at,
-        'observed_at_display': present_user_datetime(observation.observed_at, empty='Not observed', include_seconds=True),
-        'message': observation.message or '',
-        'latency_ms': observation.latency_ms,
-        'latency_display': present_milliseconds(observation.latency_ms),
-    }
 
 def runtime_history_view(
     rows: list[IntegrationRuntimeObservation],
@@ -210,12 +134,7 @@ def runtime_history_view(
         )
 
     health_counts = {'healthy': 0, 'degraded': 0, 'unhealthy': 0}
-    posture_counts = {
-        'ready': 0,
-        'attention': 0,
-        'blocked': 0,
-        'not_observed': 0,
-    }
+    posture_counts = {'ready': 0, 'attention': 0, 'blocked': 0, 'not_observed': 0}
     for row in rendered_source_rows:
         if row.health_status in health_counts:
             health_counts[row.health_status] += 1
@@ -224,10 +143,10 @@ def runtime_history_view(
             posture_counts['ready'] += 1
         elif posture == 'blocked':
             posture_counts['blocked'] += 1
-        elif posture == 'not_observed':
-            posture_counts['not_observed'] += 1
-        else:
+        elif posture in {'degraded', 'validation_required'}:
             posture_counts['attention'] += 1
+        else:
+            posture_counts['not_observed'] += 1
 
     latest = rendered_source_rows[0] if rendered_source_rows else None
     return {
@@ -253,8 +172,6 @@ def _effective_runtime_posture(health_status: str | None, readiness: str | None)
         return 'blocked'
     if health == 'degraded' or ready == 'degraded':
         return 'degraded'
-    if health == 'not_observed':
-        return 'not_observed'
     if health == 'healthy' and ready == 'ready':
         return 'ready'
     return 'validation_required'

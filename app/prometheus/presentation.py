@@ -164,6 +164,9 @@ def build_instance_context(
     *,
     page: int = 1,
     per_page: int = 5,
+    history_trigger: str = '',
+    history_health: str = '',
+    history_readiness: str = '',
 ) -> dict[str, Any]:
     bindings = cluster_bindings_for_instance(instance)
     clusters = Cluster.query.order_by(Cluster.created_at.asc(), Cluster.id.asc()).all()
@@ -189,6 +192,9 @@ def build_instance_context(
         str(instance.id),
         page=page,
         per_page=per_page,
+        trigger_type=history_trigger,
+        health_status=history_health,
+        readiness=history_readiness,
     )
     capability_rows: list[dict[str, Any]] = [
         _capability_row(assessment_map.get(key, {'key': key, 'status': 'not_observed'})) for key in CAPABILITIES
@@ -231,12 +237,18 @@ def build_runtime_history_context(
     *,
     page: int = 1,
     per_page: int = 5,
+    history_trigger: str = '',
+    history_health: str = '',
+    history_readiness: str = '',
 ) -> dict[str, object]:
     rows, pagination = paginate_runtime_history(
         'prometheus',
         str(instance.id),
         page=page,
         per_page=per_page,
+        trigger_type=history_trigger,
+        health_status=history_health,
+        readiness=history_readiness,
     )
     return runtime_history_view(rows, pagination=pagination)
 

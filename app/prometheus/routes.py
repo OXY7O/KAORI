@@ -84,6 +84,9 @@ def _instance_detail_context(
     *,
     page: int = 1,
     per_page: int = 5,
+    history_trigger: str = '',
+    history_health: str = '',
+    history_readiness: str = '',
 ) -> dict:
     """Build the complete Prometheus manage-workspace context.
 
@@ -91,7 +94,14 @@ def _instance_detail_context(
     Configuration, Validation, Runtime, Scope, and lifecycle controls cannot
     drift or render with missing route dependencies.
     """
-    context = build_instance_context(instance, page=page, per_page=per_page)
+    context = build_instance_context(
+        instance,
+        page=page,
+        per_page=per_page,
+        history_trigger=history_trigger,
+        history_health=history_health,
+        history_readiness=history_readiness,
+    )
     context['delete_instance_url'] = url_for(
         'prometheus.delete_instance',
         instance_id=instance.id,
@@ -530,7 +540,17 @@ def instance_detail(instance_id: int) -> ResponseReturnValue:
 
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 5, type=int)
-    context = _instance_detail_context(instance, page=page, per_page=per_page)
+    history_trigger = request.args.get('history_trigger', '', type=str)
+    history_health = request.args.get('history_health', '', type=str)
+    history_readiness = request.args.get('history_readiness', '', type=str)
+    context = _instance_detail_context(
+        instance,
+        page=page,
+        per_page=per_page,
+        history_trigger=history_trigger,
+        history_health=history_health,
+        history_readiness=history_readiness,
+    )
     context['form'] = form
     return render_template('prometheus/instance_detail.html', **context)
 
@@ -1188,11 +1208,17 @@ def instance_runtime_history(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 5, type=int)
+    history_trigger = request.args.get('history_trigger', '', type=str)
+    history_health = request.args.get('history_health', '', type=str)
+    history_readiness = request.args.get('history_readiness', '', type=str)
     rows, pagination = paginate_runtime_history(
         'prometheus',
         str(instance.id),
         page=page,
         per_page=per_page,
+        trigger_type=history_trigger,
+        health_status=history_health,
+        readiness=history_readiness,
     )
     return render_template(
         'prometheus/partials/_runtime_history.html',

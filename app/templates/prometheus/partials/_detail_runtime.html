@@ -1,17 +1,17 @@
-{% import "components/workspace_summary_card.html" as workspace_summary_card %}
-<div class="space-y-5">
-    <section class="grid gap-4 lg:grid-cols-3"
-             aria-label="Runtime Workspace Summary">
-        {{ workspace_summary_card.render('Readiness Versus Health',
-                'Validation establishes readiness; runtime observations establish current health.',
-                icon='activity') }}
-        {{ workspace_summary_card.render('How Monitoring Works',
-                'Runtime refresh records reachability, latency, diagnostics, capability context, and health.',
-                icon='radar') }}
-        {{ workspace_summary_card.render('Resolver Correlation',
-                'Disabled, unready, capability-incomplete, or unhealthy sources can be skipped by resolution.',
-                icon='route') }}
-    </section>
+<div class="space-y-4 font-sans">
     {% include 'prometheus/partials/_runtime_panel.html' %}
-    {% include 'prometheus/partials/_runtime_history.html' %}
+    {% with
+        runtime_history_id='prometheus-runtime-history',
+        runtime_history_loading_id='prometheus-history-loading',
+        runtime_history_url=url_for('prometheus.instance_runtime_history', instance_id=instance.id),
+        runtime_history_endpoint='prometheus.instance_runtime_history',
+        runtime_history_route_args={'instance_id': instance.id},
+        runtime_history_detail_url=url_for('prometheus.instance_detail', instance_id=instance.id),
+        runtime_history_detail_endpoint='prometheus.instance_detail',
+        runtime_history_tab='runtime',
+        runtime_history_filters_enabled=true,
+        provider_label='Prometheus'
+    %}
+        {% include 'integrations/partials/_runtime_history.html' %}
+    {% endwith %}
 </div>
