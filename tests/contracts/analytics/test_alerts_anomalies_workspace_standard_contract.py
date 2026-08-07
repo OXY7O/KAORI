@@ -53,10 +53,16 @@ def test_alerts_readiness_and_overview_follow_bright_evidence_hierarchy() -> Non
     assert 'analysis_surface.readiness_shell_classes()' in filters
     assert 'Source Evidence Incomplete' in filters
     assert 'analytics/components/_analysis_surfaces.html' in overview
-    assert 'Investigation Posture' in overview
+    assert 'data-kaori-cluster-signal-overview' in overview
+    assert 'Signal Snapshot' in overview
+    assert 'Investigation Focus' in overview
     assert 'Operational Reading' in overview
-    assert '<article class="bg-surface-card px-4 py-4">' in overview
-    assert '<aside class="border-t border-outline-subtle bg-surface-hover' in overview
+    assert 'aria-label="Alert severity profile"' in overview
+    assert 'Info Alerts' in overview
+    assert 'Evidence Coverage' in overview
+    assert "xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.75fr)]" in overview
+    assert 'xl:grid-cols-6' not in overview
+    assert 'Investigation Posture' not in overview
     assert 'progress_bar' not in overview
 
 
@@ -80,6 +86,11 @@ def test_alerts_and_anomalies_use_shared_record_collection_and_pagination() -> N
 def test_alert_records_use_shared_view_more_modals_and_controlled_wrapping() -> None:
     alert_row = read(PARTIALS / '_alerts_table_row.html')
     anomaly_row = read(PARTIALS / '_anomalies_table_row.html')
+    modal = read('app/templates/analytics/components/_record_detail_modal.html')
+
+    assert 'max-w-5xl' in modal
+    assert 'max-h-[calc(100dvh-1rem)]' in modal
+    assert 'relative flex h-[calc(100dvh-1rem)]' not in modal
 
     for row in (alert_row, anomaly_row):
         assert 'analytics/components/_record_detail_modal.html' in row

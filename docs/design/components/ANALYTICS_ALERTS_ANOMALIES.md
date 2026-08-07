@@ -18,7 +18,7 @@ Alerts & Anomalies presents committed alert, anomaly, routing, suppression, owne
 
 1. Hero with page posture, Critical Alerts, Source Health, and a full-width bottom notice.
 2. Controls and Data Readiness with Cluster, Source, committed snapshot metadata, and source warnings.
-3. Cluster Signal Overview with peer metrics, Investigation Posture, and Operational Reading.
+3. Cluster Signal Overview as one integrated signal workspace: compact Signal Snapshot, alert severity profile, Investigation Focus, and a dedicated Operational Reading rail. Avoid a six-column wall of peer metrics; primary volume, severity, and investigation guidance must read as separate evidence layers.
 4. Canonical tabs: Alerts, Anomalies, Routing & Suppression, Ownership & Runbooks, Incident Readiness, Recommendations, and Operational Resources.
 5. Bright record and operational evidence.
 6. Darker interpretation, attention, suppression boundary, and recommended-action regions.
@@ -79,7 +79,7 @@ The two collections use independent page state: `alerts_page`/`alerts_per_page` 
 - HTMX requests use the owning partial endpoint.
 - Filters retain Cluster, Source, Severity, State, Namespace, Search, active tab, and both page-size values.
 - Default page size is 5 with 5/10/25/50 options.
-- Alert and anomaly record actions use the shared Analytics record-detail modal with the canonical `View More` label. Detail evidence must not expand inline inside either record collection.
+- Alert and anomaly record actions use the shared Analytics record-detail modal with the canonical `View More` label. Detail evidence must not expand inline inside either record collection. The shared modal is content-sized on desktop (`max-w-5xl`) and uses viewport height only as a maximum bound; it must never force a near-full-screen empty body when the detail content is short.
 - Long labels and technical identifiers use controlled wrapping, not unconditional `break-all`.
 
 ## Routing, Suppression, Ownership, and Readiness
@@ -123,3 +123,5 @@ The legacy `/analytics/alerts-anomalies` route is not part of the canonical cont
 - No red or amber readiness progress fill.
 - No arbitrary micro typography in Alerts templates.
 - No inline expandable Alert or Anomaly evidence rows; `View More` must open the shared Analytics modal.
+- No fixed viewport-height Analytics record modal. Content should determine modal height until the viewport-safe maximum is reached.
+- No six-column Cluster Signal Overview metric wall. Use the integrated Signal Snapshot + severity profile + Investigation Focus + Operational Reading composition.
