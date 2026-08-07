@@ -32,6 +32,8 @@ def test_validation_uses_promql_registry_and_decision_panel():
     assert 'Operational Domains' in text
     assert 'View More' in text
     assert 'data-kaori-prometheus-validation-details' in text
+    assert 'lg:grid-cols-[minmax(0,1fr)_20rem]' in text
+    assert 'lg:sticky lg:top-4' in text
 
 
 def test_validation_filters_are_local_and_buttonless():
