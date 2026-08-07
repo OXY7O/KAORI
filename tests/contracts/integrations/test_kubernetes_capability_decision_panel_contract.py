@@ -62,8 +62,11 @@ def test_capability_registry_uses_kaori_pagination_and_loading_contract():
 
     assert 'components/pagination.html' in source
     assert 'components/loading_bar.html' in source
-    assert "loading_bar.render('kubernetes-capability-loading'" in source
+    assert "loading_bar.render('kubernetes-capability-loading', active=true" in source
     assert 'hx-indicator="#kubernetes-capability-loading"' in source
+    assert 'capabilityLoading:' in source
+    assert 'x-on:htmx:before-request="capabilityLoading = true"' in source
+    assert 'data-kaori-capability-loading-region' in source
     assert 'data-kaori-capability-pagination' in source
     assert 'pageSize: 5' in source
     assert '[5, 10, 25, 50]' in source

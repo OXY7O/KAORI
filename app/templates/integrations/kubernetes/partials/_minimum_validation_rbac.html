@@ -60,16 +60,15 @@
                     </button>
                 </header>
 
-                <div class="min-h-0 flex-1 overflow-y-auto bg-surface-page p-4 sm:p-6">
-                    <div class="mb-4 rounded-xl border border-outline-subtle bg-surface-card px-4 pt-1" data-kaori-rbac-modal-tabs>
-                        {{ workspace_tabs.render([
-                            ('baseline', 'Baseline Validation Reader', 'shield-check'),
-                            ('secret', 'Optional Secret Reader', 'key-round')
-                        ], prefix='minimum-rbac', aria_label='RBAC Example Type') }}
-                    </div>
+                <div class="shrink-0 bg-surface-card px-4 sm:px-6" data-kaori-rbac-modal-tabs data-kaori-rbac-tabs-integrated>
+                    {{ workspace_tabs.render([
+                        ('baseline', 'Baseline Validation Reader', 'shield-check'),
+                        ('secret', 'Optional Secret Reader', 'key-round')
+                    ], prefix='minimum-rbac', aria_label='RBAC Example Type') }}
+                </div>
 
-                    <div data-kaori-rbac-modal-tab-panels>
-                        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card" x-show="activeTab === 'baseline'" x-cloak role="tabpanel">
+                <div class="min-h-0 flex-1 overflow-y-auto bg-surface-page p-4 sm:p-6" data-kaori-rbac-modal-tab-panels>
+                        <section id="minimum-rbac-panel-baseline" aria-labelledby="minimum-rbac-tab-baseline" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card" x-show="activeTab === 'baseline'" x-cloak role="tabpanel">
                             <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
                                 <div class="flex min-w-0 items-start gap-3">
                                     <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary dark:text-kaori-accent" aria-hidden="true">
@@ -153,7 +152,7 @@ subjects:
                             </div>
                         </section>
 
-                        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card" x-show="activeTab === 'secret'" x-cloak role="tabpanel">
+                        <section id="minimum-rbac-panel-secret" aria-labelledby="minimum-rbac-tab-secret" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card" x-show="activeTab === 'secret'" x-cloak role="tabpanel">
                             <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
                                 <div class="flex min-w-0 items-start gap-3">
                                     <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-status-warning/20 bg-status-warning-soft text-status-warning-text" aria-hidden="true">
@@ -221,7 +220,6 @@ subjects:
                                 </div>
                             </div>
                         </section>
-                    </div>
                 </div>
 
                 <footer class="flex shrink-0 items-center justify-end border-t border-outline-subtle bg-surface-card px-4 py-3 sm:px-6">

@@ -17,6 +17,10 @@ def test_minimum_validation_rbac_remains_modal() -> None:
     assert 'role="dialog"' in source
     assert 'aria-modal="true"' in source
     assert 'data-kaori-rbac-modal-tabs' in source
+    assert 'data-kaori-rbac-tabs-integrated' in source
+    assert 'mb-4 rounded-xl border border-outline-subtle bg-surface-card' not in source
+    assert 'id="minimum-rbac-panel-baseline"' in source
+    assert 'id="minimum-rbac-panel-secret"' in source
     assert "activeTab: 'baseline'" in source
     assert "activeTab === 'secret'" in source
     assert 'components/workspace_tabs.html' in source

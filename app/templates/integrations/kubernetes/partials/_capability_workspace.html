@@ -33,6 +33,7 @@
          class="relative font-sans {{ integration_ui.section_shell_classes() }}"
          data-kaori-capability-native-dialogs
          x-data='{
+            capabilityLoading: {{ "true" if validation_job and validation_job.is_active else "false" }},
             query: "",
             requirement: "all",
             status: "all",
@@ -100,7 +101,9 @@
                   hx-target="#kubernetes-capability-workspace"
                   hx-swap="outerHTML"
                   hx-disabled-elt="button"
-                  hx-indicator="#kubernetes-capability-loading">
+                  hx-indicator="#kubernetes-capability-loading"
+                  x-on:htmx:before-request="capabilityLoading = true"
+                  x-on:htmx:after-request="capabilityLoading = false">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit"
                         {% if validation_job and validation_job.is_active %}disabled{% endif %}
@@ -270,7 +273,9 @@
                     </div>
                     {{ table_label.metadata_label((feature_rows|length) ~ ' Capability Contracts') }}
                 </div>
-                {{ loading_bar.render('kubernetes-capability-loading', active=validation_job and validation_job.is_active, label='Refreshing Capability Registry') }}
+                <div x-show="capabilityLoading" x-cloak data-kaori-capability-loading-region>
+                    {{ loading_bar.render('kubernetes-capability-loading', active=true, label='Refreshing Capability Registry') }}
+                </div>
             </header>
 
             <div class="{{ integration_ui.filter_region_classes() }}" data-kaori-capability-filters>
