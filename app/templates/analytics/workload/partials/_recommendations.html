@@ -13,7 +13,7 @@
                 <p class="mt-1 text-sm leading-6 text-content-muted">Prioritized quota, request, limit, QoS, and right-sizing actions for the selected workload scope.</p>
             </div>
         </div>
-        {{ table_label.metadata_label(recommendation_count|default(0) ~ ' Actionable', 'sparkles') }}
+        {{ table_label.metadata_label(recommendation_count|default(0) ~ ' Actionable') }}
     </div>
     {% if recommendation_cards %}
         <div class="overflow-hidden rounded-lg border border-outline-subtle"

@@ -45,7 +45,7 @@
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="text-base font-semibold text-content-primary">{{ title }}</h2>
                         {% if status_text %}
-                            {{ table_label.status_label(status_text, status_tone, status_icon or none) }}
+                            {{ table_label.status_label(status_text, status_tone, size='compact') }}
                         {% endif %}
                     </div>
                     <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>

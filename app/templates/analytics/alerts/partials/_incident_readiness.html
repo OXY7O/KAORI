@@ -42,7 +42,7 @@
         <section class="p-5 sm:p-6">
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div><h3 class="text-sm font-semibold text-content-primary">Readiness Checks</h3><p class="mt-1 text-xs leading-5 text-content-muted">Validate signal, routing, ownership, and suppression controls before escalation.</p></div>
-                {{ table_label.metadata_label(incident_readiness.checks|length ~ ' Checks', 'list-checks', size='compact') }}
+                {{ table_label.metadata_label(incident_readiness.checks|length ~ ' Checks', size='compact') }}
             </div>
             <div class="mt-4 grid overflow-hidden rounded-lg border border-outline-subtle sm:grid-cols-2">
                 {% for check in incident_readiness.checks %}

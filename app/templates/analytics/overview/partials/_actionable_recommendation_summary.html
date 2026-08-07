@@ -21,7 +21,7 @@
                 <p class="mt-1 text-xs leading-5 text-content-secondary">Consolidated action counts across all Kubernetes Analytics domains.</p>
             </div>
         </div>
-        {{ table_label.metadata_label((summary.total_count ~ ' Actionable') if evidence_available else 'Evidence Unavailable', 'clipboard-list', size='compact') }}
+        {{ table_label.metadata_label((summary.total_count ~ ' Actionable') if evidence_available else 'Evidence Unavailable', size='compact') }}
     </header>
 
     {% set metrics = [
@@ -47,7 +47,7 @@
                     <h3 class="text-sm font-semibold text-content-primary">Recommendation Source Queue</h3>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Review domains with the largest actionable count first.</p>
                 </div>
-                {{ table_label.metadata_label(summary.sources|length ~ ' Domains', 'layers-3', size='compact') }}
+                {{ table_label.metadata_label(summary.sources|length ~ ' Domains', size='compact') }}
             </div>
             {% if not evidence_available %}
                 <p class="mt-4 text-xs leading-5 text-content-secondary">Recommendation sources will appear after at least one committed analytics dataset is available.</p>

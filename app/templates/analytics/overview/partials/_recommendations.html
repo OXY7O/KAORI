@@ -17,7 +17,7 @@
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                     <h2 class="text-base font-semibold text-content-primary">Prioritized Actions</h2>
-                    {{ table_label.metadata_label((recommendations|length ~ ' Recommendations') if evidence_available else 'Evidence Unavailable', 'list-checks', size='compact') }}
+                    {{ table_label.metadata_label((recommendations|length ~ ' Recommendations') if evidence_available else 'Evidence Unavailable', size='compact') }}
                 </div>
                 <p class="mt-1 text-xs leading-5 text-content-secondary">Highest-priority actions from consolidated analytics evidence.</p>
             </div>

@@ -255,7 +255,7 @@
              x-bind:hidden="activeTab !== 'recommendations'"
              {% if initial_tab != 'recommendations' %}hidden x-cloak{% endif %}>
             <div class="space-y-4">
-                <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div class="flex items-start gap-3"><span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-checks" class="h-5 w-5"></i></span><div><h3 class="text-lg font-semibold text-content-primary">Forecast Recommendations</h3><p class="mt-1 text-sm leading-6 text-content-muted">Prioritized actions derived from projected utilization, threshold ETA, weekly trend, and historical signal quality.</p></div></div>{{ table_label.metadata_label(forecast_payload.recommendation_count|default(0) ~ ' Actionable', 'sparkles') }}</header>
+                <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div class="flex items-start gap-3"><span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-checks" class="h-5 w-5"></i></span><div><h3 class="text-lg font-semibold text-content-primary">Forecast Recommendations</h3><p class="mt-1 text-sm leading-6 text-content-muted">Prioritized actions derived from projected utilization, threshold ETA, weekly trend, and historical signal quality.</p></div></div>{{ table_label.metadata_label(forecast_payload.recommendation_count|default(0) ~ ' Actionable') }}</header>
                 {% if forecast_payload.recommendation_cards %}
                     <div class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-card" data-kaori-recommendation-pager data-page-size="3">
                         <div class="divide-y divide-outline-subtle">

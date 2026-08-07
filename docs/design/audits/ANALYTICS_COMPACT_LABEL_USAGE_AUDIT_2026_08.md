@@ -176,3 +176,42 @@ Integration Overview is normalized first in the accompanying patch:
 - repeated runtime table statuses use semantic-dot labels;
 - provider names and planned counts use iconless metadata labels;
 - no page-local bordered compact labels are introduced.
+
+
+## Final Refinement Resolution — 2026-08-07
+
+The outstanding compact-label follow-up is now implemented across the complete Kubernetes Analytics template tree.
+
+Final measured state:
+
+- 95 `metadata_label(...)` calls;
+- 111 `status_label(...)` calls;
+- 11 `status_indicator_label(...)` calls;
+- 0 page-local compact label bundles using `inline-flex + min-h-6 + rounded-md`;
+- 0 Analytics `status_label(...)` calls supplying a decorative Lucide icon;
+- count-only metadata is iconless;
+- dense repeated state columns use semantic-dot labels where scanning benefits.
+
+Capacity Analysis was the visible regression that triggered the final pass. The Resource Envelope pressure rows previously passed a semantic Lucide icon into `status_label(...)`, while other Capacity labels were text-first. That is now normalized: the compact status remains iconless, while the separate Operational Reading icon tile may remain semantic because it is not a compact label.
+
+The final pass also resolves the previously documented P0/P1/P2 items:
+
+- Top Consumer page-local compact badges are replaced by the canonical shared label component or removed when redundant with the resource title/icon;
+- decorative icons are removed from count-only labels in Overview, Capacity, Workload, Forecast, Storage, Utilization, and Alerts & Anomalies;
+- Alert state, Workload configuration/evidence state, Tenant quota state, and PV/PVC lifecycle state use `status_indicator_label(...)` in dense record rows;
+- duplicated resource/QoS context icons are removed where the row identity already carries the resource glyph;
+- Alertmanager matcher, grouping-key, and equal-label technical tokens remain iconless metadata.
+
+Regression guard:
+
+```bash
+python scripts/verify_analytics_compact_label_standard.py
+```
+
+The verifier is part of `scripts/quality_gate.sh` and rejects:
+
+- Lucide icons passed to ordinary Analytics `status_label(...)` calls;
+- decorative icons on count-only metadata;
+- page-local compact label markup;
+- arbitrary 10/11 px compact-label typography in Analytics templates;
+- loss of the canonical semantic-dot pattern on dense repeated state columns.

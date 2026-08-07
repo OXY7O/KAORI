@@ -8,7 +8,7 @@
 <section class="{{ analysis_surface.snapshot_shell_classes() }}">
     <header class="{{ analysis_surface.snapshot_header_classes() }}">
         <div class="flex min-w-0 items-start gap-3"><span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-checks" class="h-4 w-4"></i></span><div class="min-w-0"><h3 class="text-lg font-semibold text-content-primary">Operational Recommendations</h3><p class="mt-1 text-sm leading-6 text-content-muted">Prioritized findings from source health, active alerts, anomaly candidates, and affected resources.</p></div></div>
-        {{ table_label.metadata_label(actionable_total ~ ' Actionable', 'sparkles', size='compact') }}
+        {{ table_label.metadata_label(actionable_total ~ ' Actionable', size='compact') }}
     </header>
     {% if cards %}
         <div data-kaori-recommendation-pager data-page-size="3">

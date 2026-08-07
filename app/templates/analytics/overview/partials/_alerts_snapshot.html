@@ -55,7 +55,7 @@
                     <h3 class="text-sm font-semibold text-content-primary">Alert Triage Queue</h3>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Separate immediate service-risk signals from planned operational follow-up.</p>
                 </div>
-                {{ table_label.metadata_label((immediate_count + follow_up_count) ~ ' Signals', 'list-filter', size='compact') }}
+                {{ table_label.metadata_label((immediate_count + follow_up_count) ~ ' Signals', size='compact') }}
             </div>
             <div class="mt-4 divide-y divide-outline-subtle border-y border-outline-subtle">
                 <div class="flex items-start justify-between gap-4 py-3">
@@ -81,7 +81,7 @@
                     <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Anomaly Context</p>
                     <p class="mt-1 text-sm font-semibold text-content-primary">Highest Severity: {{ alerts.highest_severity|replace('_', ' ')|title }}</p>
                 </div>
-                {{ table_label.metadata_label(alerts.recent_anomalies ~ ' Candidates', 'radar', size='compact') }}
+                {{ table_label.metadata_label(alerts.recent_anomalies ~ ' Candidates', size='compact') }}
             </div>
             <p class="mt-2 text-xs leading-5 text-content-muted">{{ alerts.highest_severity_description }}</p>
             <div class="mt-4 overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">

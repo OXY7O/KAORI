@@ -7,7 +7,7 @@
 <section class="{{ analysis_surface.snapshot_shell_classes() }}">
     <header class="{{ analysis_surface.snapshot_header_classes() }}">
         <div class="flex min-w-0 items-start gap-3"><span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="external-link" class="h-4 w-4"></i></span><div class="min-w-0"><h3 class="text-lg font-semibold text-content-primary">Operational Resources</h3><p class="mt-1 text-sm leading-6 text-content-muted">Open investigation tools, runbook references, and escalation contacts from the active signal workflow.</p></div></div>
-        {{ table_label.metadata_label('3 Resource Boundaries', 'waypoints', size='compact') }}
+        {{ table_label.metadata_label('3 Resource Boundaries', size='compact') }}
     </header>
     <div class="divide-y divide-outline-subtle">
         {% set resources = [

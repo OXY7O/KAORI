@@ -26,7 +26,7 @@
             label='Routing Boundary'
         ) %}
             <div class="flex flex-wrap gap-2 lg:justify-end">
-                {% for item in routing_summary.grouping_keys %}{{ table_label.metadata_label(item.label ~ ' · ' ~ item.count, 'tags', wrap=true, size='compact') }}{% endfor %}
+                {% for item in routing_summary.grouping_keys %}{{ table_label.metadata_label(item.label ~ ' · ' ~ item.count, wrap=true, size='compact') }}{% endfor %}
             </div>
         {% endcall %}
     {% endif %}

@@ -123,7 +123,7 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                {{ table_label.metadata_label('6 Health Signals', 'activity') }}
+                {{ table_label.metadata_label('6 Health Signals') }}
                 {% if posture.critical > 0 %}
                     {{ table_label.status_label(posture.critical ~ ' Critical', 'critical') }}
                 {% elif posture.warning > 0 %}

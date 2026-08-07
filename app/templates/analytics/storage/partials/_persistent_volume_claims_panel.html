@@ -113,7 +113,7 @@
                         {% call evidence_list.cell(3) %}
                             {{ evidence_list.mobile_label('Binding & Storage Class') }}
                             <div class="flex flex-wrap gap-2">
-                                {{ table_label.status_label(row.status, row.status_tone|default('unknown'), size='compact') }}
+                                {{ table_label.status_indicator_label(row.status, row.status_tone|default('unknown'), size='compact') }}
                                 {{ table_label.metadata_label(row.storage_class, 'layers', wrap=true, size='compact') }}
                             </div>
                             <p class="mt-2 text-xs text-content-muted">Requested: <span class="font-semibold text-content-secondary">{{ row.requested }}</span></p>

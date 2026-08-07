@@ -175,7 +175,7 @@ def test_top_consumers_use_calm_ranked_surfaces_without_divider_noise() -> None:
     assert '2xl:grid-cols-4' not in source
     assert '<ol class="space-y-2 p-3 sm:p-4"' in source
     assert "overview_surface.ranked_item_classes('px-3 py-2.5 transition-colors hover:bg-kaori-mist')" in source
-    assert 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' in source
+    assert 'overview_surface.snapshot_shell_classes()' in source
     assert 'accent_classes' not in source
     assert 'border-violet-' not in source
     assert 'border-cyan-' not in source

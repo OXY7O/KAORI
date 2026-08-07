@@ -86,7 +86,7 @@
                     <h3 class="text-sm font-semibold text-content-primary">Resource Outlook</h3>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Latest daily averages and projected horizon values by resource.</p>
                 </div>
-                {{ table_label.metadata_label((forecast.series|length) ~ ' Series', 'chart-no-axes-combined', size='compact') }}
+                {{ table_label.metadata_label((forecast.series|length) ~ ' Series', size='compact') }}
             </div>
             {% if forecast.series %}
                 <div class="mt-4 divide-y divide-outline-subtle border-y border-outline-subtle">

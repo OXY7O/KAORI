@@ -15,7 +15,7 @@ def test_alert_signal_state_uses_separate_semantic_columns() -> None:
     assert "evidence_list.header_cell('Severity'" in table
     assert "evidence_list.header_cell('State'" in table
     assert "table_label.status_label(alert.severity|title" in main_row
-    assert "table_label.status_label(alert.status|title" in main_row
+    assert "table_label.status_indicator_label(alert.status|title" in main_row
 
 
 def test_all_target_pages_use_unified_controls_and_readiness() -> None:

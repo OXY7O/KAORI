@@ -102,7 +102,7 @@ def test_forecast_guidance_uses_white_standalone_cards() -> None:
     assert 'Forecast Operating Boundary' in overview
     assert 'analysis_surface.guidance_card_classes()' in overview
     assert 'data-kaori-forecast-boundary' in overview
-    assert 'sm:grid-cols-3 sm:divide-x sm:divide-y-0' in overview
+    assert 'analysis_surface.guidance_fact_grid_classes(3)' in overview
     assert "card=true" in overview
     assert 'Recommended Action' in section
     assert 'grid gap-4 lg:grid-cols-2' in section

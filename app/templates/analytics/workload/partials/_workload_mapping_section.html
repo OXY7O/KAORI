@@ -106,7 +106,7 @@
                             {% call evidence_list.cell(3) %}
                                 {{ evidence_list.mobile_label('Configuration & Risk') }}
                                 <div class="flex flex-wrap gap-2">
-                                    {{ table_label.status_label(row.configuration_status.label, row.configuration_status.tone, size='compact') }}
+                                    {{ table_label.status_indicator_label(row.configuration_status.label, row.configuration_status.tone, size='compact') }}
                                     {{ table_label.status_label(row.risk.label, row.risk.tone, size='compact') }}
                                 </div>
                                 <p class="mt-2 text-xs leading-5 text-content-muted">Requests: {{ row.request_coverage.label }} · Limits: {{ row.limit_coverage.label }}</p>
@@ -122,8 +122,8 @@
                             {% call evidence_list.cell(2) %}
                                 {{ evidence_list.mobile_label('Evidence & QoS') }}
                                 <div class="flex flex-wrap gap-1.5">
-                                    {{ table_label.status_label(row.metrics_coverage.label, row.metrics_coverage.tone, size='compact') }}
-                                    {{ table_label.metadata_label(row.qos.label, 'layers', size='compact') }}
+                                    {{ table_label.status_indicator_label(row.metrics_coverage.label, row.metrics_coverage.tone, size='compact') }}
+                                    {{ table_label.metadata_label(row.qos.label, size='compact') }}
                                 </div>
                                 <p class="mt-2 text-xs font-medium text-content-muted">{{ row.detail.pods|length }} Pods · Evidence narrative in View More</p>
                             {% endcall %}
@@ -158,9 +158,9 @@
                                             <p class="mt-1 text-xs leading-5 text-content-secondary">Assess whether configured boundaries fit current and selected-window demand before changing requests or limits.</p>
                                         </div>
                                         <div class="flex flex-wrap gap-1.5">
-                                            {{ table_label.status_label(row.configuration_status.label, row.configuration_status.tone, size='compact') }}
+                                            {{ table_label.status_indicator_label(row.configuration_status.label, row.configuration_status.tone, size='compact') }}
                                             {{ table_label.status_label(row.risk.label, row.risk.tone, size='compact') }}
-                                            {{ table_label.metadata_label('QoS ' ~ row.qos.label, 'layers', size='compact') }}
+                                            {{ table_label.metadata_label('QoS ' ~ row.qos.label, size='compact') }}
                                             {{ table_label.status_label('Evidence ' ~ row.metrics_coverage.label, row.metrics_coverage.tone, size='compact') }}
                                         </div>
                                     </div>
@@ -280,6 +280,7 @@
                                     icon='sparkles',
                                     role='brand',
                                     tone=row.risk.tone,
+                                    compact=true,
                                     card=true
                                 ) }}
                             </div>

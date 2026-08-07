@@ -5,7 +5,7 @@
 <div class="space-y-4">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div class="flex items-start gap-3"><span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-checks" class="h-4 w-4"></i></span><div><h3 class="text-lg font-semibold text-content-primary">Utilization Recommendations</h3><p class="mt-1 text-sm leading-6 text-content-muted">Prioritized actions derived from resource pressure, node signals, and top-consumer evidence.</p></div></div>
-        {{ table_label.metadata_label(recommendation_count|default(0) ~ ' Actionable', 'sparkles') }}
+        {{ table_label.metadata_label(recommendation_count|default(0) ~ ' Actionable') }}
     </div>
     {% if recommendation_cards %}
         <div class="{{ analysis_surface.evidence_shell_classes() }}" data-kaori-recommendation-pager data-page-size="3">

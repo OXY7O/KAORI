@@ -122,4 +122,5 @@ def test_top_consumers_overview_records_and_summary_follow_inventory_density() -
     assert 'h-1.5 w-full' not in summary
     assert 'border border-outline-default bg-surface-card p-4 shadow-sm' in summary
     assert 'border-outline-subtle bg-surface-hover text-kaori-primary' in summary
-    assert 'border-outline-subtle bg-surface-hover px-2' in summary
+    assert 'inline-flex min-h-6' not in summary
+    assert 'table_label.status_indicator_label' in summary

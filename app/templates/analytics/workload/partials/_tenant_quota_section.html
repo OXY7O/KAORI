@@ -88,7 +88,7 @@
                             {% call evidence_list.cell(3) %}
                                 {{ evidence_list.mobile_label('Quota Pressure') }}
                                 <div class="flex flex-wrap items-center gap-2">
-                                    {{ table_label.status_label(row.quota_status.label, row.quota_status.tone, size='compact') }}
+                                    {{ table_label.status_indicator_label(row.quota_status.label, row.quota_status.tone, size='compact') }}
                                     {% if row.quota_pressure_available %}
                                         {{ table_label.metadata_label(row.quota_pressure_resource, 'gauge', size='compact') }}
                                         {% if row.quota_pressure_object %}{{ table_label.metadata_label(row.quota_pressure_object, 'shield', size='compact') }}{% endif %}
@@ -148,9 +148,9 @@
                                             <p class="mt-1 text-xs leading-5 text-content-secondary">Review the most restrictive ResourceQuota boundary, observed allocation, and active-Pod demand before approving tenant changes.</p>
                                         </div>
                                         <div class="flex flex-wrap gap-1.5">
-                                            {{ table_label.status_label(row.quota_status.label, row.quota_status.tone, size='compact') }}
+                                            {{ table_label.status_indicator_label(row.quota_status.label, row.quota_status.tone, size='compact') }}
                                             {{ table_label.status_label(row.risk.label, row.risk.tone, size='compact') }}
-                                            {{ table_label.metadata_label(row.quota_object_count ~ ' Quota Objects', 'shield', size='compact') }}
+                                            {{ table_label.metadata_label(row.quota_object_count ~ ' Quota Objects', size='compact') }}
                                         </div>
                                     </div>
                                     <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
@@ -296,6 +296,7 @@
                                         icon='lightbulb',
                                         role='brand',
                                         tone=row.risk.tone,
+                                        compact=true,
                                         card=true
                                     ) }}
                                 </section>
