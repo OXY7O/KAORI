@@ -320,3 +320,10 @@ The final Integration refinement preserves the last approved KAORI workspace beh
 - Self-dismissing operational toasts initialize their countdown at `scaleX(1)` so HTMX/OOB insertion cannot render an apparently empty timer before JavaScript scheduling starts.
 
 Regression ownership is enforced in `tests/contracts/integrations/`, including `test_integrations_final_refinement_20260807_contract.py`.
+
+
+## Connection Registration Dark Mode
+
+Connection add/edit workspaces for Kubernetes, Prometheus, and Alertmanager follow the global neutral-first dark-mode contract. The canonical Hero remains the only gradient surface. Ordinary cards below the Hero use `surface-card`, `surface-muted`, or `surface-elevated`; Bright Violet is limited to primary actions, focus, links, compact icon accents, and selected metadata.
+
+The shared `related_page_card.html` is the controlled contextual exception: it remains Violet in both themes through `.kaori-brand-domain-panel`. In dark mode that class resolves to the deeper `#2F1A4F`, keeping the relationship card visibly branded without competing with the Hero or surrounding neutral operational surfaces. This rule applies globally to every Related Page Card usage, not only Integration forms. Registration flows, guide cards, validation headers, and expandable references remain neutral and use Accent Violet only for compact icons or step markers. Secondary validation/cancel controls use `components/action_button.html` so dark hover becomes solid Violet with white text instead of low-contrast Violet-on-translucent-Violet.

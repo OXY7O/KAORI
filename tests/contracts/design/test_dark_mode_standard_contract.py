@@ -30,8 +30,20 @@ def test_dark_mode_document_is_registered_as_authoritative() -> None:
     assert "locked neutral-first dark surface" in entrypoint
     assert "80% neutral operational surfaces" in standard
     assert "The only approved exception is the canonical dark Hero gradient" in standard
+    assert "Deep Violet contextual surfaces" in standard
+    assert "components/related_page_card.html" in standard
 
 
 def test_obsolete_raw_slate_topbar_is_removed() -> None:
     obsolete = ROOT / "app" / "templates" / "components" / "navigation" / "topbar.html"
     assert not obsolete.exists()
+
+
+def test_related_page_card_uses_the_global_deep_violet_context_surface() -> None:
+    component = (ROOT / "app" / "templates" / "components" / "related_page_card.html").read_text(encoding="utf-8")
+    standard = (ROOT / "docs" / "design" / "components" / "RELATED_PAGE_CARD.md").read_text(encoding="utf-8")
+
+    assert "kaori-brand-domain-panel" in component
+    assert "dark:bg-surface-card" not in component
+    assert "#2F1A4F" in standard
+    assert "do not add page-local `dark:bg-*` overrides" in standard

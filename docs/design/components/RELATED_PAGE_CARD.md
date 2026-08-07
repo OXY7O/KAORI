@@ -98,6 +98,21 @@ The shared component uses an intrinsic layout with `mt-6` before the action. Thi
 
 The card is contextual navigation, not a semantic health block. Do not use green, amber, or red as its primary surface.
 
+### Dark Mode Contract
+
+The card remains Violet in dark mode. It must **not** collapse to a neutral `surface-card`, because the Violet surface is the relationship cue for a cross-workspace handoff.
+
+Canonical surface:
+
+```text
+Light  -> .kaori-brand-domain-panel -> #5B21B6
+Dark   -> .kaori-brand-domain-panel -> #2F1A4F
+```
+
+The dark value is intentionally deeper than primary-action Violet so the card remains harmonious with `surface-page`, `surface-shell`, and `surface-card` while still reading as KAORI brand context. On-brand title/description/icon content uses `brand-foreground`, `brand-foreground-muted`, `brand-surface`, and `brand-surface-strong`.
+
+This is a global component rule. Every page that imports `components/related_page_card.html` inherits the same light/dark behavior; do not add page-local `dark:bg-*` overrides. The exception applies only to related-workspace/domain context and must not be copied to ordinary forms, tables, status cards, modals, or repeated records.
+
 ## Desktop and Mobile Placement
 
 Preferred desktop placement:

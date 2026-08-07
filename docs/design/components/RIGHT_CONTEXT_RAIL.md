@@ -49,6 +49,8 @@ Choose the component by information purpose:
 
 Do not invent a new right-side card when one of these semantic purposes already matches.
 
+Dark-mode surface ownership remains component-specific. In particular, `components/related_page_card.html` intentionally uses the global deep-Violet `.kaori-brand-domain-panel` in both themes, while Info Flow, guide/reference cards, page context, and ordinary readiness surfaces remain neutral unless their own standard explicitly says otherwise. Do not copy the Related Page Card Violet surface into unrelated rail boxes.
+
 ## Preferred Order
 
 When several boxes are required, use this order:

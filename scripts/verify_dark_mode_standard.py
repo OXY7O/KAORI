@@ -14,6 +14,7 @@ NAVBAR = ROOT / "app" / "templates" / "components" / "navigation" / "navbar.html
 SIDEBAR = ROOT / "app" / "templates" / "components" / "navigation" / "sidebar.html"
 HERO = ROOT / "app" / "templates" / "components" / "page_hero.html"
 WELCOME_GROUP = ROOT / "app" / "templates" / "components" / "welcome_capability_group.html"
+RELATED_PAGE_CARD = ROOT / "app" / "templates" / "components" / "related_page_card.html"
 WORKSPACE_CARD = ROOT / "app" / "templates" / "components" / "workspace_link_card.html"
 OBSOLETE_TOPBAR = ROOT / "app" / "templates" / "components" / "navigation" / "topbar.html"
 
@@ -33,6 +34,7 @@ DARK_TOKEN_VALUES = {
     "--kaori-outline-subtle": "#2b2535",
     "--kaori-outline-default": "#373043",
     "--kaori-outline-strong": "#4b4258",
+    "--kaori-brand-domain-panel": "#2f1a4f",
 }
 
 STYLE_TOKENS = (
@@ -68,6 +70,8 @@ DOC_TOKENS = (
     "sidebar-parent-active",
     "kaori-hero-shell",
     "The only approved exception is the canonical dark Hero gradient",
+    "Deep Violet contextual surfaces",
+    "components/related_page_card.html",
     "scripts/verify_dark_mode_standard.py",
 )
 
@@ -112,6 +116,8 @@ def _verify_contrast() -> None:
         ("primary on card", "#f5f3f7", "#1d1925", 4.5),
         ("muted on card", "#9d95a7", "#1d1925", 4.5),
         ("sidebar muted on sidebar", "#b9b1c4", "#171321", 4.5),
+        ("brand foreground on contextual Violet", "#ffffff", "#2f1a4f", 4.5),
+        ("brand muted on contextual Violet", "#ddd7e6", "#2f1a4f", 4.5),
     )
     failures = []
     for label, foreground, background, minimum in checks:
@@ -132,6 +138,7 @@ def verify() -> None:
     sidebar = _read(SIDEBAR)
     hero = _read(HERO)
     welcome_group = _read(WELCOME_GROUP)
+    related_page_card = _read(RELATED_PAGE_CARD)
     workspace_card = _read(WORKSPACE_CARD)
 
     _require_tokens(styles, STYLE_TOKENS, "dark-mode token implementation")
@@ -186,6 +193,19 @@ def verify() -> None:
         raise AssertionError("sidebar: legacy CTA-like active parent treatment remains")
 
     _require_tokens(welcome_group, ("kaori-brand-domain-panel",), "Welcome capability group")
+    _require_tokens(
+        related_page_card,
+        (
+            "kaori-brand-domain-panel",
+            "text-brand-foreground",
+            "text-brand-foreground-muted",
+            "bg-brand-surface",
+            "bg-brand-surface-strong",
+        ),
+        "Related Page Card contextual Violet surface",
+    )
+    if "dark:bg-surface-card" in related_page_card:
+        raise AssertionError("Related Page Card must remain deep Violet in dark mode, not collapse to a neutral card")
     _require_tokens(workspace_card, ("kaori-workspace-card",), "Welcome workspace card")
 
     if OBSOLETE_TOPBAR.exists():
@@ -208,8 +228,8 @@ def verify() -> None:
 
     print(
         "KAORI dark mode standard passed: neutral surface hierarchy, controlled Violet allocation, "
-        "Hero/sidebar/application-shell ownership, compiled CSS, documentation, and dead-code cleanup "
-        "match v1.0."
+        "deep-Violet contextual workspace surfaces, Hero/sidebar/application-shell ownership, compiled CSS, "
+        "documentation, and dead-code cleanup match v1.0."
     )
 
 
