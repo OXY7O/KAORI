@@ -38,6 +38,9 @@
             status: "all",
             page: 1,
             pageSize: 5,
+            validationActive: {{ 'true' if validation_job and validation_job.is_active else 'false' }},
+            registryLoading: {{ 'true' if validation_job and validation_job.is_active else 'false' }},
+            loadingTimer: null,
             rows: [
                 {% for capability_row in feature_rows %}
                 {
@@ -61,6 +64,13 @@
                 return Math.max(1, Math.ceil(this.filteredRows().length / this.pageSize));
             },
             resetPage() { this.page = 1; },
+            showRegistryLoading() {
+                this.registryLoading = true;
+                if (this.loadingTimer) window.clearTimeout(this.loadingTimer);
+                this.loadingTimer = window.setTimeout(() => {
+                    this.registryLoading = this.validationActive;
+                }, 220);
+            },
             start() {
                 return this.filteredRows().length ? ((this.page - 1) * this.pageSize) + 1 : 0;
             },
@@ -77,10 +87,12 @@
                 const end = Math.min(total, this.page + 2);
                 return Array.from({ length: end - start + 1 }, (_, offset) => start + offset);
             },
-            previous() { if (this.page > 1) this.page -= 1; },
-            next() { if (this.page < this.totalPages()) this.page += 1; }
+            previous() { if (this.page > 1) { this.page -= 1; this.showRegistryLoading(); } },
+            next() { if (this.page < this.totalPages()) { this.page += 1; this.showRegistryLoading(); } }
          }'
-         x-init='$watch("query", () => resetPage()); $watch("requirement", () => resetPage()); $watch("status", () => resetPage()); $watch("pageSize", () => resetPage())'
+         x-init='$watch("query", () => { resetPage(); showRegistryLoading(); }); $watch("requirement", () => { resetPage(); showRegistryLoading(); }); $watch("status", () => { resetPage(); showRegistryLoading(); }); $watch("pageSize", () => { resetPage(); showRegistryLoading(); })'
+         x-on:htmx:before-request="registryLoading = true"
+         x-on:htmx:response-error="registryLoading = validationActive"
          data-kaori-capability-workspace-v3
          data-kaori-capability-workspace-v4
          data-kaori-capability-workspace-v5
@@ -270,8 +282,11 @@
                     </div>
                     {{ table_label.metadata_label((feature_rows|length) ~ ' Capability Contracts') }}
                 </div>
-                <div data-kaori-capability-loading-region>
-                    {{ loading_bar.render('kubernetes-capability-loading', active=validation_job and validation_job.is_active, label='Refreshing Capability Registry') }}
+                <div data-kaori-capability-loading-region
+                     x-show="registryLoading"
+                     x-cloak
+                     aria-live="polite">
+                    {{ loading_bar.render('kubernetes-capability-loading', active=true, label='Refreshing Capability Registry') }}
                 </div>
             </header>
 
@@ -395,7 +410,7 @@
                     </button>
                     <template x-for="pageNumber in pages()" :key="pageNumber">
                         <button type="button"
-                                x-on:click="page = pageNumber"
+                                x-on:click="page = pageNumber; showRegistryLoading()"
                                 x-text="pageNumber"
                                 x-bind:aria-current="pageNumber === page ? 'page' : null"
                                 class="min-w-9"
