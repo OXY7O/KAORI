@@ -94,6 +94,8 @@ Reveal registries and bulk TLS target tables use scoped HTMX pagination with exp
 
 Bulk TLS Rotation presents certificate and private-key upload as two peer main-content cards. A compact file-processing boundary follows them. The five-step Controlled TLS Rotation Flow is rendered full width beneath the upload cards through `components/operational_flow_steps.html`, using arrows rather than a tall side column. Validation actions remain in the canonical Form Action Bar beneath the flow. Single TLS rotation reuses the same peer upload-card visual contract for `tls.crt` and `tls.key`, while retaining its sticky right-side controlled-flow panel and related governance card.
 
+TLS file chooser controls must use an explicit `type="button"` trigger plus a `hidden` native file input. Do not wrap the upload card in a `<label>` with an `sr-only` file input: browser focus restoration after the native file dialog can move the viewport and make the sticky rail appear to jump. After selection, focus returns to the visible chooser with `preventScroll: true`; the selected filename is announced through `aria-live="polite"`.
+
 
 ## ConfigMap validation evidence
 

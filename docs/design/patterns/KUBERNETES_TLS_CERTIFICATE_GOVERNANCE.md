@@ -104,6 +104,10 @@ Rotation Handoff
 
 The modal uses permission-aware rotation actions. Governance never owns the mutation form.
 
+### Rotation file-picker stability
+
+Single and bulk TLS rotation use explicit chooser buttons that invoke hidden native file inputs. The native file input must not be `sr-only` or be the focus target of an enclosing upload-card label, because returning from the operating-system file picker can scroll the document to that off-screen control. KAORI restores focus to the visible chooser with `preventScroll: true` and keeps the current viewport stable.
+
 ## Collection evidence
 
 Per cluster:

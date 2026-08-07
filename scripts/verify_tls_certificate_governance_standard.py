@@ -28,6 +28,7 @@ def main() -> int:
     table = read('app/templates/governance/tls_certificates/partials/_table.html')
     detail = read('app/templates/governance/tls_certificates/partials/_detail_content.html')
     single_rotation = read('app/templates/kubernetes_operations/secrets/tls_rotate.html')
+    bulk_rotation = read('app/templates/kubernetes_operations/secrets/tls_rotation.html')
     tls_routes = read('app/kubernetes_operations/secrets/tls_routes.py')
     readme = read('app/governance/tls_certificates/README.md')
     standard = read('docs/design/patterns/KUBERNETES_TLS_CERTIFICATE_GOVERNANCE.md')
@@ -105,6 +106,18 @@ def main() -> int:
                 f'Single TLS rotation missing canonical upload/action token: {token}', errors)
     require("TLS Certificate Validation Completed" in tls_routes,
             'TLS rotation notifications must preserve TLS acronym and Title Case.', errors)
+    for template_name, source in (
+        ('single TLS rotation', single_rotation),
+        ('bulk TLS rotation', bulk_rotation),
+    ):
+        require('type="file"' in source and 'class="hidden"' in source,
+                f'{template_name} file pickers must keep native inputs out of the scroll/focus layout.', errors)
+        require('class="sr-only"' not in source,
+                f'{template_name} must not use focusable sr-only native file inputs that can shift the viewport.', errors)
+        require('preventScroll: true' in source,
+                f'{template_name} file picker focus restoration must prevent page jumping.', errors)
+        require('@click.prevent="$refs.' in source,
+                f'{template_name} file picker must use an explicit non-submit chooser button.', errors)
 
     require('queue_transient_feedback(' in routes,
             'TLS queued acknowledgement must remain transient.', errors)
