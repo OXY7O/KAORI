@@ -88,6 +88,11 @@ def test_workload_sections_use_inventory_aligned_overview_and_record_cards() -> 
     assert 'record_detail_modal.render' in mapping
     assert 'detached=true' in page
 
+    recommendations = read('app/templates/analytics/workload/partials/_recommendations.html')
+    assert 'analysis_surface.evidence_shell_classes()' in recommendations
+    assert 'bg-surface-card px-4 py-4 sm:px-5' in recommendations
+    assert 'overflow-hidden rounded-lg border border-outline-subtle' not in recommendations
+
 
 def test_workload_summary_is_top_level_scope_owned() -> None:
     service = read('app/analytics/workload/presentation.py')

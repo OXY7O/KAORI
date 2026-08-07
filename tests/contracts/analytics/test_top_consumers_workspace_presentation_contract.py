@@ -66,8 +66,12 @@ def test_top_consumers_evidence_and_progress_semantics_are_canonical() -> None:
     assert "'label': 'Limited Evidence'" in domain
     assert "fill_classes='h-full rounded-full bg-kaori-primary'" in results
     assert "fill_classes='h-full rounded-full bg-kaori-primary'" in ranked
+    assert 'progress_bar.semantic_bar' not in results
+    assert 'progress_bar.semantic_bar' not in ranked
     assert 'bg-status-critical' not in results
     assert 'bg-status-warning' not in results
+    assert 'bg-status-critical' not in ranked
+    assert 'bg-status-warning' not in ranked
 
 
 def test_top_consumers_records_use_shared_pagination_and_safe_expandables() -> None:
