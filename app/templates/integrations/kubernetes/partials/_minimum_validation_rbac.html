@@ -1,5 +1,6 @@
+{% import "components/workspace_tabs.html" as workspace_tabs %}
 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
-         x-data="{ rbacOpen: false, copied: '', copyText(target, label) { const node = this.$refs[target]; if (!node) return; navigator.clipboard?.writeText(node.textContent.trim()).then(() => { this.copied = label; window.setTimeout(() => { if (this.copied === label) this.copied = ''; }, 1800); }); } }">
+         x-data="{ rbacOpen: false, activeTab: 'baseline', copied: '', setTab(tab) { this.activeTab = tab; }, moveTab(currentTab, direction, prefix) { const tabs = ['baseline', 'secret']; const currentIndex = tabs.indexOf(currentTab); let nextIndex = currentIndex; if (direction === 'home') nextIndex = 0; else if (direction === 'end') nextIndex = tabs.length - 1; else nextIndex = (currentIndex + direction + tabs.length) % tabs.length; this.activeTab = tabs[nextIndex]; this.$nextTick(() => document.getElementById(`${prefix}-tab-${tabs[nextIndex]}`)?.focus()); }, copyText(target, label) { const node = this.$refs[target]; if (!node) return; navigator.clipboard?.writeText(node.textContent.trim()).then(() => { this.copied = label; window.setTimeout(() => { if (this.copied === label) this.copied = ''; }, 1800); }); } }">
     <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
         <div class="flex min-w-0 items-start gap-3">
             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary dark:text-kaori-accent" aria-hidden="true">
@@ -60,8 +61,15 @@
                 </header>
 
                 <div class="min-h-0 flex-1 overflow-y-auto bg-surface-page p-4 sm:p-6">
-                    <div class="space-y-5" data-kaori-rbac-modal-vertical>
-                        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                    <div class="mb-4 rounded-xl border border-outline-subtle bg-surface-card px-4 pt-1" data-kaori-rbac-modal-tabs>
+                        {{ workspace_tabs.render([
+                            ('baseline', 'Baseline Validation Reader', 'shield-check'),
+                            ('secret', 'Optional Secret Reader', 'key-round')
+                        ], prefix='minimum-rbac', aria_label='RBAC Example Type') }}
+                    </div>
+
+                    <div data-kaori-rbac-modal-tab-panels>
+                        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card" x-show="activeTab === 'baseline'" x-cloak role="tabpanel">
                             <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
                                 <div class="flex min-w-0 items-start gap-3">
                                     <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary dark:text-kaori-accent" aria-hidden="true">
@@ -145,7 +153,7 @@ subjects:
                             </div>
                         </section>
 
-                        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card" x-show="activeTab === 'secret'" x-cloak role="tabpanel">
                             <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
                                 <div class="flex min-w-0 items-start gap-3">
                                     <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-status-warning/20 bg-status-warning-soft text-status-warning-text" aria-hidden="true">

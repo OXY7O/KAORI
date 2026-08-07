@@ -274,15 +274,17 @@ The dialog shows immutable persisted evidence only. A provider error must not be
 
 ## Provider Binding Workspace Layout
 
-Prometheus and Alertmanager place the bound-scope registry as a full-width evidence section before the consumer/decision split.
+Prometheus and Alertmanager place binding decisions and consumer resolution on full-width surfaces. Persistent decision side rails are prohibited when the same facts can be summarized horizontally.
 
 ```text
 Binding Summary
 Bound Kubernetes / Operational Scopes       ← full width
-Effective Consumer Resolution | Binding Decision
+Binding Decision                            ← horizontal full width
+Effective Consumer Resolution               ← full width
+Connection Lifecycle                        ← full width
 ```
 
-This avoids squeezing selectors, preference, validation, effective-resolution, and row actions into the main column beside a decision rail. Source Readiness, Binding Validation, and Effective Resolution remain independent states.
+This avoids squeezing selectors, preference, validation, effective-resolution, consumer evidence, and lifecycle actions beside a narrow decision rail. Source Readiness, Binding Validation, and Effective Resolution remain independent states. Candidate-level consumer evidence may remain expandable because it is genuinely deeper detail; the primary resolution row must stay readable without expansion.
 
 ## Toast Countdown Contract
 
@@ -318,8 +320,8 @@ Do not copy runtime observation modals, dialog JavaScript, semantic label geomet
 
 The final Integration refinement preserves the last approved KAORI workspace behavior and treats regressions to older inline/expanded layouts as defects.
 
-- **Minimum Validation RBAC Example** opens its complete baseline and optional Secret-reader YAML in a modal. The summary card remains compact; large RBAC manifests must not expand the manage workspace inline. Inside the modal, baseline and optional sensitive-access manifests are stacked vertically as separate full-width evidence sections; they must not be rendered side-by-side. Each manifest owns its own copy action, scope metadata, bounded code viewport, and access-boundary guidance.
-- **Kubernetes Runtime Health & Diagnostics** uses one full-width horizontal `Runtime Decision` surface above lifecycle and diagnostic evidence. It merges Runtime Posture, Current Runtime Gate, Validation Readiness, Observation Context, Primary Finding, and Next Operational Action. Do not restore a duplicate Runtime Snapshot plus sticky Runtime Decision rail. Current-page error copy is concise; detailed provider errors and remediation belong to the Recent Runtime Observations modal. Runtime health must never be inferred from connection or validation state.
+- **Minimum Validation RBAC Example** opens its complete baseline and optional Secret-reader YAML in a modal. The summary card remains compact; large RBAC manifests must not expand the manage workspace inline. Inside the modal, `Baseline Validation Reader` and `Optional Secret Reader` are separate KAORI-style tabs so only one large YAML manifest is visible at a time. Each tab owns its own copy action, scope metadata, bounded code viewport, and access-boundary guidance. Do not render both manifests side-by-side or as two long stacked code blocks.
+- **Kubernetes Runtime Health & Diagnostics** uses two full-width surfaces only: horizontal `Runtime Decision`, followed by `Runtime Evidence`. Runtime Decision merges Runtime Posture, Current Runtime Gate, Validation Readiness, Observation Context, Primary Finding, and Next Operational Action. Runtime Evidence merges the lifecycle contract and concise diagnostic rows into one evidence workspace. Do not restore Runtime Snapshot, separate Lifecycle/Diagnostic cards, or a sticky Runtime Decision rail. Current-page error copy is concise; detailed provider errors and remediation belong to the Recent Runtime Observations modal. Runtime health must never be inferred from connection or validation state.
 - Pagination nouns shown to operators use Title Case, including `Scopes` and `Connections`.
 - **Prometheus Validation & PromQL** keeps the registry compact. The `Contract` cell shows only the contract category; source owner, criteria, technical evidence, complete PromQL, impact, and recommended action belong in the shared record-detail modal opened by `View More`.
 - **Alertmanager Validation & Capability Matrix** follows the same modal-detail contract. API request evidence and remediation must not expand as an inline table row.
@@ -327,6 +329,10 @@ The final Integration refinement preserves the last approved KAORI workspace beh
 - **Kubernetes Capability Registry `View More`** uses a compact `standard` native dialog with one deliberate reading flow rather than a wall of nested cards: `Capability Decision` → `Contract Snapshot` → `Validation Evidence` → `Operational Decision` → `Verification Command`. The contract snapshot is a four-fact strip; validation evidence is a symmetric three-step row; operational impact and recommended action are peer decisions with a single governance boundary beneath them. The verification command is always visible and carries compact scope/stability/identity metadata instead of a second side panel. Do not nest another disclosure/accordion inside this modal; the modal is already the detail boundary.
 - **Kubernetes capability workspace** uses one horizontal `Kubernetes Capability Readiness` decision surface above the registry. It owns capability coverage, required-usable contracts, API stability, required blocks, the operational gate, and the next controlled action. Do not duplicate the same evidence in a second `Validation Decision` side rail. The `Capability Registry` is full-width and exposes separate `Capability`, `Resource`, `API Contract`, `Requirement`, `Status`, and `Details` columns so dense capability sets remain scan-friendly without sacrificing table width to a persistent side panel.
 - **Kubernetes Capability Registry table** uses the canonical KAORI table, filter, loading, and pagination primitives. Default page size is 5 with 5/10/25/50 choices; the footer uses `Showing x–y of z Capabilities`, numeric pages, Previous/Next controls, and local filtering resets to page 1. The full-width table uses fixed proportional columns without a forced minimum width or desktop horizontal scroll.
+
+- **PromQL Capability Registry** follows the canonical KAORI data-table contract: shared table/filter/pagination primitives, default 5 rows, 5/10/25/50 options, numeric pages, Previous/Next controls, and `Showing x–y of z Capabilities`. Filtering resets to page 1. `View More` opens a decision-first modal with Validation Result, Latest Evidence, Contract Evaluation, Technical Verification, and Next Operational Action; evidence must not be repeated across multiple modal cards.
+- **Capability Registry loading ownership** uses one visible loading bar inside the registry header and the validation form targets that exact shared indicator id. Do not maintain a second hidden header indicator with a different id.
+- **Prometheus Binding Decision** is a full-width horizontal decision surface. Resolution posture, resolver contract, metrics identity boundary, and next action must not live in a sticky right rail. `Effective Consumer Resolution` and `Connection Lifecycle` follow below at full width. Destructive deletion remains secondary to the lifecycle explanation and must be disabled with KAORI disabled-state styling while guardrails block removal.
 - **Inventory & Lifecycle workspace** uses one horizontal `Inventory & Lifecycle Decision` surface instead of a persistent right rail. Snapshot freshness, evidence coverage, retention, lifecycle gate, removal/retention boundaries, and the next lifecycle action belong in that full-width decision box. `KAORI Operational Consumers` and `Bound Observability Sources` then use the full content width below it. Do not restore the old 28–30rem sticky `Inventory Decision` side panel.
 - Self-dismissing operational toasts initialize their countdown at `scaleX(1)` so HTMX/OOB insertion cannot render an apparently empty timer before JavaScript scheduling starts.
 

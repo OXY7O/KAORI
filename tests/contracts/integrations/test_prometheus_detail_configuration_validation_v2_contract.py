@@ -46,6 +46,11 @@ def test_promql_registry_is_full_width_and_does_not_force_horizontal_scroll():
     assert '<col class="w-[43%]">' in text
     assert "table_ui.table_classes('min-w-[820px]')" not in text
     assert 'overflow-x-auto' not in text
+    assert 'components/pagination.html' in text
+    assert 'data-kaori-promql-capability-pagination' in text
+    assert 'pageSize: 5' in text
+    assert 'Showing <span' in text
+    assert '[5, 10, 25, 50]' in text
 
 
 def test_validation_filters_are_local_and_buttonless():
@@ -55,9 +60,27 @@ def test_validation_filters_are_local_and_buttonless():
     assert 'All Statuses' in text
     assert 'Apply Filters' not in text
     assert 'Reset Filters' not in text
+    assert 'table_ui.inventory_filter_bar_classes()' in text
+    assert 'table_ui.filter_input_classes()' in text
+    assert 'table_ui.filter_select_classes()' in text
 
 
 def test_prometheus_detail_alpine_shell_is_not_corrupted():
     text = DETAIL.read_text()
     assert "x-on:popstate.window=\"syncTabFromLocation()\">" in text
     assert "scrollIntoView({ behavior: 'smooth', block: 'start' })); } } }" not in text
+
+
+def test_promql_view_more_uses_decision_first_modal_content():
+    text = VALIDATION.read_text()
+    for token in (
+        'data-kaori-promql-capability-decision',
+        'Validation Result',
+        'Latest Evidence',
+        'data-kaori-promql-contract-evaluation',
+        'Contract Evaluation',
+        'data-kaori-promql-technical-verification',
+        'Next Operational Action',
+    ):
+        assert token in text
+    assert text.count('Evidence Snapshot') == 0

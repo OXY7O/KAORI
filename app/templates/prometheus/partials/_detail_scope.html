@@ -98,7 +98,7 @@
                                                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                                 <button type="submit" {% if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id %}disabled{% endif %} class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:bg-kaori-soft hover:text-kaori-primary disabled:cursor-wait disabled:opacity-60"><i data-lucide="{{ 'loader-circle' if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id else 'scan-search' }}" class="h-3.5 w-3.5{% if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id %} animate-spin{% endif %}" aria-hidden="true"></i>{{ 'Validating' if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id else 'Validate' }}</button>
                                             </form>
-                                            <button type="button" data-prometheus-delete-button data-delete-url="{{ url_for('prometheus.delete_instance_binding', instance_id=instance.id, binding_id=row.binding.id) }}" data-delete-title="Remove Scope Binding?" data-delete-name="{{ row.scope_label }}" data-delete-detail="This Prometheus connection will no longer be eligible for the selected managed cluster. Historical runtime and Activity Audit records remain available." data-delete-action-label="Remove Binding" class="inline-flex h-9 items-center justify-center rounded-lg border border-status-critical-border bg-surface-card px-2.5 text-status-critical-text transition hover:bg-status-critical-soft" aria-label="Remove {{ row.scope_label }} binding"><i data-lucide="unlink" class="h-3.5 w-3.5" aria-hidden="true"></i></button>
+                                            <button type="button" data-prometheus-delete-button data-delete-url="{{ url_for('prometheus.delete_instance_binding', instance_id=instance.id, binding_id=row.binding.id) }}" data-delete-title="Remove Scope Binding?" data-delete-name="{{ row.scope_label }}" data-delete-detail="This Prometheus connection will no longer be eligible for the selected managed cluster. Historical runtime and Activity Audit records remain available." data-delete-action-label="Remove Binding" class="inline-flex h-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-2.5 text-status-critical-text transition hover:bg-status-critical-soft" aria-label="Remove {{ row.scope_label }} binding"><i data-lucide="unlink" class="h-3.5 w-3.5" aria-hidden="true"></i></button>
                                         </div>
                                     </td>
                                 </tr>
@@ -122,113 +122,190 @@
                 </div>
     </section>
 
-    <div class="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] xl:grid-cols-[minmax(0,1fr)_24rem] 2xl:grid-cols-[minmax(0,1fr)_25rem]">
-        <div class="min-w-0 space-y-4">
-            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm" aria-labelledby="prometheus-consumer-resolution-title">
-                <header class="flex flex-col gap-2 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div class="flex min-w-0 items-start gap-3">
-                        {{ integration_ui.palette_icon('scan-search', 'brand', size='md') }}
-                        <div class="min-w-0"><h3 id="prometheus-consumer-resolution-title" class="text-sm font-semibold text-content-primary">Effective Consumer Resolution</h3><p class="mt-1 text-xs leading-5 text-content-secondary">Each analytics consumer evaluates the source, binding, preference, and its own required technical capabilities independently.</p></div>
-                    </div>
-                    {{ table_label.metadata_label(source_resolution_rows|length ~ (' scope' if source_resolution_rows|length == 1 else ' scopes')) }}
-                </header>
-
-                <div class="divide-y divide-outline-subtle">
-                    {% for scope in source_resolution_rows %}
-                        <article class="p-4 sm:p-5">
-                            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                                <div class="min-w-0"><div class="flex items-center gap-2"><p class="text-sm font-semibold text-content-primary">{{ scope.scope_label }}</p>{{ table_label.metadata_label(scope.scope_type_label) }}</div><p class="mt-1 max-w-2xl truncate text-xs text-content-muted" title="{{ scope.scope_key }}">{{ scope.scope_key }}</p></div>
-                                <p class="text-xs font-medium text-content-muted">{{ scope.consumers|length }} consumer domains</p>
-                            </div>
-                            <div class="mt-4 divide-y divide-outline-subtle rounded-lg border border-outline-subtle">
-                                {% for consumer in scope.consumers.values() %}
-                                    {% set consumer_status = 'ready' if consumer.selected_instance_id else 'blocked' %}
-                                    <details class="group">
-                                        <summary class="flex cursor-pointer list-none items-start justify-between gap-3 px-4 py-3.5 transition hover:bg-kaori-mist [&::-webkit-details-marker]:hidden">
-                                            <div class="flex min-w-0 items-start gap-3">
-                                                {{ integration_ui.palette_icon(consumer.icon, 'brand', size='sm') }}
-                                                <div class="min-w-0"><p class="text-sm font-semibold text-content-primary">{{ consumer.label }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ consumer.selected_instance_name or 'No eligible metrics source selected' }}</p></div>
-                                            </div>
-                                            <div class="flex shrink-0 items-center gap-2">{{ integration_status(consumer_status, 'Operational' if consumer.selected_instance_id else 'Unavailable', display='indicator') }}<i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition group-open:rotate-180" aria-hidden="true"></i></div>
-                                        </summary>
-                                        <div class="border-t border-outline-subtle bg-surface-subtle px-4 py-4">
-                                            <div class="grid gap-3 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
-                                                <div class="rounded-lg border border-outline-subtle bg-surface-card p-3.5"><p class="text-xs font-semibold text-content-primary">Required Capability Contract</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ consumer.required_capabilities|join(', ') }}</p></div>
-                                                <div class="space-y-2">
-                                                    {% for candidate in consumer.candidates %}
-                                                        <div class="rounded-lg border border-outline-subtle bg-surface-card p-3.5">
-                                                            <div class="flex items-start justify-between gap-3"><div class="min-w-0"><p class="text-xs font-semibold text-content-primary">{{ candidate.instance_name }}</p><p class="mt-1 text-xs text-content-muted">{{ candidate.binding_role|title }} · Priority {{ candidate.priority }}</p></div>{{ integration_status('ready' if candidate.is_selected else ('degraded' if candidate.eligible else 'blocked'), 'Selected' if candidate.is_selected else ('Eligible' if candidate.eligible else 'Skipped'), display='indicator') }}</div>
-                                                            <p class="mt-2 text-xs leading-5 text-content-secondary">{{ candidate.decision_reason }}</p>
-                                                            {% if candidate.missing_capability_labels %}<p class="mt-2 text-xs font-semibold text-status-critical-text">Missing technical capability: {{ candidate.missing_capability_labels|join(', ') }}</p>{% endif %}
-                                                            {% if candidate.missing_binding_capabilities %}<p class="mt-1 text-xs font-semibold text-status-warning-text">Binding coverage missing: {{ candidate.missing_binding_capabilities|join(', ') }}</p>{% endif %}
-                                                        </div>
-                                                    {% else %}
-                                                        <p class="rounded-lg border border-outline-subtle bg-surface-card p-3.5 text-xs leading-5 text-content-secondary">No candidate source is registered for this consumer in the selected scope.</p>
-                                                    {% endfor %}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </details>
-                                {% endfor %}
-                            </div>
-                        </article>
-                    {% else %}
-                        <div class="px-5 py-10 text-center"><p class="text-sm font-semibold text-content-primary">No Resolution Context Yet</p><p class="mt-1 text-xs leading-5 text-content-secondary">Create a cluster binding to establish consumer-specific metrics-source resolution.</p></div>
-                    {% endfor %}
+    <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+             aria-labelledby="prometheus-binding-decision-title"
+             data-kaori-binding-decision-horizontal>
+        <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                {{ integration_ui.palette_icon('waypoints', 'brand', size='md') }}
+                <div class="min-w-0">
+                    <h3 id="prometheus-binding-decision-title" class="text-sm font-semibold text-content-primary">Binding Decision</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Source readiness, binding coverage, resolver policy, metrics identity, and the next controlled action in one full-width decision surface.</p>
                 </div>
-            </section>
+            </div>
+            {{ integration_status(instance.readiness_status or 'validation_required', display='text') }}
+        </header>
 
-            <details class="group overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
-                    <div><p class="text-sm font-semibold text-content-primary">Instance Lifecycle</p><p class="mt-1 text-xs leading-5 text-content-secondary">Deletion remains governed by active bindings and provider jobs.</p></div>
-                    <div class="flex items-center gap-2">{{ integration_status('blocked' if bindings or (deletion_guard and deletion_guard.blocked) else 'ready', 'Blocked' if bindings or (deletion_guard and deletion_guard.blocked) else 'Guardrails Passed', display='text') }}<i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition group-open:rotate-180" aria-hidden="true"></i></div>
-                </summary>
-                <div class="flex flex-col gap-4 border-t border-outline-subtle bg-surface-subtle p-5 lg:flex-row lg:items-center lg:justify-between">
-                    <div class="min-w-0"><p class="text-sm font-semibold text-content-primary">Governed Deletion Boundary</p><p class="mt-1 text-xs leading-5 text-content-secondary">Remove cluster bindings and resolve active provider jobs before deleting this connection. Historical runtime, job, and Activity Audit evidence remains retained.</p></div>
-                    <button type="button" data-prometheus-delete-button data-delete-url="{{ delete_instance_url }}" data-delete-title="Delete Prometheus Instance?" data-delete-name="{{ instance.name }}" data-delete-detail="The connection identity, endpoint configuration, and stored credentials will be removed. Runtime observations, JobExecution history, and Activity Audit records remain available." data-delete-action-label="Delete Instance" {% if bindings or (deletion_guard and deletion_guard.blocked) %}disabled{% endif %} class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-status-critical-border bg-surface-card px-4 text-sm font-semibold text-status-critical-text transition hover:bg-status-critical-soft disabled:cursor-not-allowed disabled:opacity-50"><i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i>Delete Instance</button>
+        <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+            {% for label, value, helper in [
+                ('Source Readiness', (instance.readiness_status or 'validation_required')|replace('_', ' ')|title, 'Provider validation state'),
+                ('Bound Scopes', binding_rows|length, 'Managed cluster mappings'),
+                ('Validated Bindings', validated_binding_count, 'Binding checks currently Ready'),
+                ('Operational Bindings', ready_binding_count, 'Effective resolver paths')
+            ] %}
+                <div class="bg-surface-card px-4 py-4 sm:px-5">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
+                    <p class="mt-2 text-lg font-semibold tabular-nums text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</p>
                 </div>
-            </details>
+            {% endfor %}
         </div>
 
-        <aside class="self-start overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm lg:sticky lg:top-4" aria-labelledby="prometheus-binding-decision-title">
-            <header class="border-b border-outline-subtle px-4 py-3.5 xl:px-5">
-                <div class="flex items-start justify-between gap-3">
-                    <div class="flex min-w-0 items-start gap-3">{{ integration_ui.palette_icon('waypoints', 'brand', size='sm') }}<div class="min-w-0"><h3 id="prometheus-binding-decision-title" class="text-sm font-semibold text-content-primary">Binding Decision</h3><p class="mt-1 text-xs leading-5 text-content-secondary">Source eligibility, binding coverage, and resolver ownership.</p></div></div>
-                    {{ integration_status(instance.readiness_status or 'validation_required', display='text') }}
-                </div>
-            </header>
-
-            <section class="border-b border-outline-subtle px-4 py-4 xl:px-5">
-                <h4 class="text-xs font-semibold text-content-muted">Resolution Posture</h4>
-                <dl class="mt-3 divide-y divide-outline-subtle rounded-lg border border-outline-subtle">
-                    {% for label, value in [
-                        ('Source Readiness', (instance.readiness_status or 'validation_required')|replace('_', ' ')|title),
-                        ('Bound Scopes', binding_rows|length),
-                        ('Validated Bindings', validated_binding_count),
-                        ('Operational Bindings', ready_binding_count)
-                    ] %}
-                        <div class="flex items-start justify-between gap-4 px-3.5 py-2.5"><dt class="text-xs text-content-secondary">{{ label }}</dt><dd class="max-w-[58%] text-right text-xs font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</dd></div>
-                    {% endfor %}
-                </dl>
-            </section>
-
-            <section class="border-b border-outline-subtle px-4 py-4 xl:px-5">
-                <h4 class="text-sm font-semibold text-content-primary">Resolver Contract</h4>
-                <div class="mt-3 space-y-3">
-                    <div class="flex items-start gap-3">{{ integration_ui.palette_icon('git-branch', 'brand', size='xs') }}<div><p class="text-xs font-semibold text-content-primary">Role &amp; Priority</p><p class="mt-1 text-xs leading-5 text-content-secondary">Primary, secondary, and fallback roles establish preference. Lower priority values resolve first within the same role.</p></div></div>
-                    <div class="flex items-start gap-3">{{ integration_ui.palette_icon('shield-check', 'brand', size='xs') }}<div><p class="text-xs font-semibold text-content-primary">Independent Eligibility Gates</p><p class="mt-1 text-xs leading-5 text-content-secondary">Source readiness, binding validation, technical capability coverage, and current health remain separate evidence.</p></div></div>
+        <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle lg:grid-cols-3">
+            <section class="bg-surface-subtle px-4 py-4 sm:px-5">
+                <div class="flex items-start gap-3">
+                    {{ integration_ui.palette_icon('git-branch', 'brand', size='sm') }}
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-content-primary">Resolver Contract</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Primary, secondary, and fallback roles establish preference. Lower priority resolves first within the same role.</p>
+                    </div>
                 </div>
             </section>
-
-            <section class="border-b border-outline-subtle px-4 py-4 xl:px-5">
-                <div class="flex items-start gap-3">{{ integration_ui.palette_icon('scan-line', 'brand', size='sm') }}<div class="min-w-0"><h4 class="text-sm font-semibold text-content-primary">Metrics Identity Boundary</h4><p class="mt-1 text-xs leading-5 text-content-secondary">Each shared-source binding must inject a cluster identity selector so analytics cannot mix evidence between managed clusters.</p></div></div>
+            <section class="bg-surface-subtle px-4 py-4 sm:px-5">
+                <div class="flex items-start gap-3">
+                    {{ integration_ui.palette_icon('scan-line', 'brand', size='sm') }}
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-content-primary">Metrics Identity Boundary</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Shared-source bindings must inject cluster identity selectors so analytics cannot mix managed-cluster evidence.</p>
+                    </div>
+                </div>
             </section>
-
-            <section class="px-4 py-4 xl:px-5">
-                <div class="flex items-start gap-3">{{ integration_ui.palette_icon('target', 'brand', size='sm') }}<div class="min-w-0"><h4 class="text-sm font-semibold text-content-primary">Next Operational Action</h4>{% if not binding_rows %}<p class="mt-1 text-xs leading-5 text-content-secondary">Create the first cluster binding, configure its metrics identity selector, then run binding validation.</p>{% elif ready_binding_count < binding_rows|length %}<p class="mt-1 text-xs leading-5 text-content-secondary">Review bindings that are not operational. Validate selector evidence and resolve source-readiness or capability gaps before relying on them.</p>{% else %}<p class="mt-1 text-xs leading-5 text-content-secondary">All registered bindings are operational. Revalidate after selector, source-role, priority, or Prometheus label-schema changes.</p>{% endif %}</div></div>
+            <section class="bg-surface-subtle px-4 py-4 sm:px-5">
+                <div class="flex items-start gap-3">
+                    {{ integration_ui.palette_icon('target', 'brand', size='sm') }}
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-content-primary">Next Operational Action</p>
+                        {% if not binding_rows %}
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Create the first cluster binding, configure its identity selector, then run binding validation.</p>
+                        {% elif ready_binding_count < binding_rows|length %}
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Validate non-operational bindings and resolve source-readiness, selector, or capability gaps.</p>
+                        {% else %}
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">All registered bindings are operational. Revalidate after resolver or Prometheus label-schema changes.</p>
+                        {% endif %}
+                    </div>
+                </div>
             </section>
-        </aside>
-    </div>
+        </div>
+    </section>
+
+    <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+             aria-labelledby="prometheus-consumer-resolution-title"
+             data-kaori-consumer-resolution-full-width>
+        <header class="flex flex-col gap-2 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                {{ integration_ui.palette_icon('scan-search', 'brand', size='md') }}
+                <div class="min-w-0">
+                    <h3 id="prometheus-consumer-resolution-title" class="text-sm font-semibold text-content-primary">Effective Consumer Resolution</h3>
+                    <p class="mt-1 max-w-4xl text-xs leading-5 text-content-secondary">Compare which source each analytics domain resolves to. Expand a consumer only when candidate-level evidence is required.</p>
+                </div>
+            </div>
+            {{ table_label.metadata_label(source_resolution_rows|length ~ (' Scope' if source_resolution_rows|length == 1 else ' Scopes')) }}
+        </header>
+
+        <div class="divide-y divide-outline-subtle">
+            {% for scope in source_resolution_rows %}
+                <article class="p-4 sm:p-5">
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <p class="text-sm font-semibold text-content-primary">{{ scope.scope_label }}</p>
+                                {{ table_label.metadata_label(scope.scope_type_label) }}
+                            </div>
+                            <p class="mt-1 max-w-2xl truncate text-xs text-content-muted" title="{{ scope.scope_key }}">{{ scope.scope_key }}</p>
+                        </div>
+                        <p class="text-xs font-medium text-content-muted">{{ scope.consumers|length }} Consumer Domains</p>
+                    </div>
+
+                    <div class="mt-4 overflow-hidden rounded-lg border border-outline-subtle">
+                        {% for consumer in scope.consumers.values() %}
+                            {% set consumer_status = 'ready' if consumer.selected_instance_id else 'blocked' %}
+                            <details class="group border-b border-outline-subtle last:border-b-0">
+                                <summary class="grid cursor-pointer list-none gap-3 px-4 py-3.5 transition hover:bg-kaori-mist sm:grid-cols-[minmax(0,1fr)_minmax(12rem,0.7fr)_auto] sm:items-center [&::-webkit-details-marker]:hidden">
+                                    <div class="flex min-w-0 items-start gap-3">
+                                        {{ integration_ui.palette_icon(consumer.icon, 'brand', size='sm') }}
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-semibold text-content-primary">{{ consumer.label }}</p>
+                                            <p class="mt-0.5 text-xs text-content-muted">{{ consumer.required_capabilities|length }} Required Capabilit{{ 'y' if consumer.required_capabilities|length == 1 else 'ies' }}</p>
+                                        </div>
+                                    </div>
+                                    <p class="min-w-0 truncate text-xs font-medium text-content-secondary" title="{{ consumer.selected_instance_name or 'No eligible metrics source selected' }}">{{ consumer.selected_instance_name or 'No eligible metrics source selected' }}</p>
+                                    <div class="flex shrink-0 items-center justify-end gap-2">
+                                        {{ integration_status(consumer_status, 'Operational' if consumer.selected_instance_id else 'Unavailable', display='indicator') }}
+                                        <i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition group-open:rotate-180" aria-hidden="true"></i>
+                                    </div>
+                                </summary>
+                                <div class="border-t border-outline-subtle bg-surface-subtle px-4 py-4">
+                                    <div class="grid gap-3 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+                                        <div class="rounded-lg border border-outline-subtle bg-surface-card p-3.5">
+                                            <p class="text-xs font-semibold text-content-primary">Required Capability Contract</p>
+                                            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ consumer.required_capabilities|join(', ') }}</p>
+                                        </div>
+                                        <div class="space-y-2">
+                                            {% for candidate in consumer.candidates %}
+                                                <div class="rounded-lg border border-outline-subtle bg-surface-card p-3.5">
+                                                    <div class="flex items-start justify-between gap-3">
+                                                        <div class="min-w-0">
+                                                            <p class="text-xs font-semibold text-content-primary">{{ candidate.instance_name }}</p>
+                                                            <p class="mt-1 text-xs text-content-muted">{{ candidate.binding_role|title }} · Priority {{ candidate.priority }}</p>
+                                                        </div>
+                                                        {{ integration_status('ready' if candidate.is_selected else ('degraded' if candidate.eligible else 'blocked'), 'Selected' if candidate.is_selected else ('Eligible' if candidate.eligible else 'Skipped'), display='indicator') }}
+                                                    </div>
+                                                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ candidate.decision_reason }}</p>
+                                                    {% if candidate.missing_capability_labels %}<p class="mt-2 text-xs font-semibold text-status-critical-text">Missing technical capability: {{ candidate.missing_capability_labels|join(', ') }}</p>{% endif %}
+                                                    {% if candidate.missing_binding_capabilities %}<p class="mt-1 text-xs font-semibold text-status-warning-text">Binding coverage missing: {{ candidate.missing_binding_capabilities|join(', ') }}</p>{% endif %}
+                                                </div>
+                                            {% else %}
+                                                <p class="rounded-lg border border-outline-subtle bg-surface-card p-3.5 text-xs leading-5 text-content-secondary">No candidate source is registered for this consumer in the selected scope.</p>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        {% endfor %}
+                    </div>
+                </article>
+            {% else %}
+                <div class="px-5 py-10 text-center"><p class="text-sm font-semibold text-content-primary">No Resolution Context Yet</p><p class="mt-1 text-xs leading-5 text-content-secondary">Create a cluster binding to establish consumer-specific metrics-source resolution.</p></div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+             aria-labelledby="prometheus-instance-lifecycle-title"
+             data-kaori-prometheus-lifecycle-horizontal>
+        <div class="grid gap-px bg-outline-subtle lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)_auto]">
+            <div class="bg-surface-card px-5 py-4">
+                <div class="flex items-start gap-3">
+                    {{ integration_ui.palette_icon('shield-alert', 'critical' if bindings or (deletion_guard and deletion_guard.blocked) else 'normal', size='sm') }}
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h3 id="prometheus-instance-lifecycle-title" class="text-sm font-semibold text-content-primary">Connection Lifecycle</h3>
+                            {{ integration_status('blocked' if bindings or (deletion_guard and deletion_guard.blocked) else 'ready', 'Blocked' if bindings or (deletion_guard and deletion_guard.blocked) else 'Guardrails Passed', display='indicator') }}
+                        </div>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Deletion requires cluster bindings and active provider jobs to be resolved first.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-surface-card px-5 py-4">
+                <p class="text-xs font-semibold text-content-muted">Retained Evidence</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Runtime observations, JobExecution history, and Activity Audit records remain available after connection removal.</p>
+            </div>
+            <div class="flex items-center justify-end bg-surface-card px-5 py-4">
+                <button type="button"
+                        data-prometheus-delete-button
+                        data-delete-url="{{ delete_instance_url }}"
+                        data-delete-title="Delete Prometheus Instance?"
+                        data-delete-name="{{ instance.name }}"
+                        data-delete-detail="The connection identity, endpoint configuration, and stored credentials will be removed. Runtime observations, JobExecution history, and Activity Audit records remain available."
+                        data-delete-action-label="Delete Instance"
+                        {% if bindings or (deletion_guard and deletion_guard.blocked) %}disabled{% endif %}
+                        class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-status-critical-text transition hover:bg-status-critical-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:border-outline-default disabled:bg-status-disabled-soft disabled:text-status-disabled-text">
+                    <i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i>
+                    Delete Connection
+                </button>
+            </div>
+        </div>
+    </section>
 
     <dialog id="prometheus-create-binding-dialog" data-kaori-binding-dialog class="kaori-native-dialog m-auto w-[min(44rem,calc(100vw-2rem))] max-h-[calc(100vh-2rem)] overflow-hidden rounded-xl border border-outline-default bg-surface-card p-0 text-content-primary shadow-2xl ">
         <form method="post" action="{{ url_for('prometheus.add_instance_binding', instance_id=instance.id) }}" hx-post="{{ url_for('prometheus.add_instance_binding', instance_id=instance.id) }}" hx-target="#prometheus-scope-workspace" hx-swap="outerHTML" hx-indicator="#prometheus-binding-loading" class="relative flex max-h-[calc(100vh-2rem)] flex-col">

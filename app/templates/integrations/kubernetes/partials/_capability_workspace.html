@@ -92,9 +92,6 @@
         'Compatibility & Capability Matrix',
         'Validate served Kubernetes APIs, effective RBAC, stable adapters, fallbacks, and downstream eligibility.',
         icon='scan-search',
-        loading_id='kubernetes-capability-loading',
-        loading_active=validation_job and validation_job.is_active,
-        loading_label='Running Kubernetes full validation'
     ) %}
         {% if current_user.has_permission('clusters.sync') %}
             <form method="post"
@@ -273,7 +270,7 @@
                     </div>
                     {{ table_label.metadata_label((feature_rows|length) ~ ' Capability Contracts') }}
                 </div>
-                {{ loading_bar.render('kubernetes-capability-registry-loading', active=validation_job and validation_job.is_active, label='Refreshing Capability Registry') }}
+                {{ loading_bar.render('kubernetes-capability-loading', active=validation_job and validation_job.is_active, label='Refreshing Capability Registry') }}
             </header>
 
             <div class="{{ integration_ui.filter_region_classes() }}" data-kaori-capability-filters>

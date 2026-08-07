@@ -31,6 +31,12 @@ def test_prometheus_bindings_use_kaori_table_and_native_create_dialog() -> None:
     assert 'Bound Kubernetes Scopes' in template
     assert 'Effective Consumer Resolution' in template
     assert 'Binding Decision' in template
+    assert 'data-kaori-binding-decision-horizontal' in template
+    assert 'data-kaori-consumer-resolution-full-width' in template
+    assert 'data-kaori-prometheus-lifecycle-horizontal' in template
+    assert 'Delete Connection' in template
+    assert 'lg:grid-cols-[minmax(0,1fr)_22rem]' not in template
+    assert 'lg:sticky lg:top-4' not in template
     assert 'table_ui.table_classes' in template
     assert 'integration_status(row.validation_status, display=\'indicator\')' in template
     assert '<dialog id="prometheus-create-binding-dialog"' in template
