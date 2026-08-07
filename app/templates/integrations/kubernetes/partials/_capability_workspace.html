@@ -262,7 +262,8 @@
                                 <div class="lg:text-right">
                                     <button type="button"
                                             class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:border-outline-focus hover:bg-surface-subtle"
-                                            onclick="document.getElementById('capability-detail-modal-{{ loop.index }}').showModal()"
+                                            data-kaori-dialog-open
+                                            data-dialog-target="capability-detail-modal-{{ loop.index }}"
                                             aria-haspopup="dialog"
                                             aria-controls="capability-detail-modal-{{ loop.index }}"
                                             data-kaori-capability-view-more>

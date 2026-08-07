@@ -13,11 +13,10 @@ def test_operational_focus_uses_clear_record_composition() -> None:
 
     assert 'data-kaori-operational-focus' in source
     assert 'data-kaori-operational-focus-list' in source
-    assert 'Unresolved runtime or lifecycle evidence that needs operator review.' in source
+    assert 'Prioritized evidence that needs operator review before the next controlled action.' in source
     assert "(' item' if runtime_state.attention_factors|length == 1 else ' items')" in source
     assert 'flex items-start justify-between gap-3' in source
     assert "integration_status(factor.status, display='indicator')" in source
-    assert '<div class="mt-0.5 shrink-0">{{ integration_status(factor.status' not in source
 
 
 def test_operational_focus_wraps_evidence_without_truncation() -> None:

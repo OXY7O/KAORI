@@ -4,33 +4,80 @@
   const maximumVisibleToasts = 4;
   const state = new WeakMap();
 
+  const cancelTimerVisual = (current) => {
+    try {
+      current?.animation?.cancel?.();
+    } catch (_) {
+      // Ignore stale browser animation handles.
+    }
+    if (current) current.animation = null;
+  };
+
   const dismiss = (toast) => {
     if (!(toast instanceof HTMLElement) || toast.dataset.toastDismissing === 'true') return;
     toast.dataset.toastDismissing = 'true';
-    const timer = state.get(toast)?.timer;
-    if (timer) window.clearTimeout(timer);
+    const current = state.get(toast);
+    if (current?.timer) window.clearTimeout(current.timer);
+    cancelTimerVisual(current);
     toast.classList.add('opacity-0');
     window.setTimeout(() => toast.remove(), 200);
   };
 
+  const runTimerVisual = (toast, current) => {
+    const timerBar = toast.querySelector('[data-operational-toast-timer]');
+    if (!(timerBar instanceof HTMLElement)) return;
+
+    const duration = Number(current.duration || toast.dataset.autoDismissMs || 0);
+    const remaining = Math.max(0, Number(current.remaining || duration));
+    const ratio = duration > 0 ? Math.max(0, Math.min(1, remaining / duration)) : 0;
+
+    cancelTimerVisual(current);
+    timerBar.style.transformOrigin = 'left center';
+    timerBar.style.transition = 'none';
+    timerBar.style.transform = `scaleX(${ratio})`;
+
+    if (remaining <= 0) return;
+
+    if (typeof timerBar.animate === 'function') {
+      current.animation = timerBar.animate(
+        [
+          { transform: `scaleX(${ratio})` },
+          { transform: 'scaleX(0)' },
+        ],
+        {
+          duration: remaining,
+          easing: 'linear',
+          fill: 'forwards',
+        },
+      );
+      return;
+    }
+
+    // Fallback for browsers without Web Animations API. Force layout before
+    // applying the transition so HTMX/OOB inserted toasts still animate.
+    void timerBar.offsetWidth;
+    timerBar.style.transition = `transform ${remaining}ms linear`;
+    requestAnimationFrame(() => {
+      timerBar.style.transform = 'scaleX(0)';
+    });
+  };
+
   const schedule = (toast, duration) => {
     if (!(toast instanceof HTMLElement) || duration <= 0) return;
-    const current = state.get(toast) || {};
+    const current = state.get(toast) || {
+      duration,
+      remaining: duration,
+      timer: null,
+      animation: null,
+      startedAt: 0,
+    };
+
     if (current.timer) window.clearTimeout(current.timer);
-    const startedAt = performance.now();
-    const timerBar = toast.querySelector('[data-operational-toast-timer]');
-    if (timerBar instanceof HTMLElement) {
-      timerBar.style.transition = 'none';
-      timerBar.style.width = `${Math.max(0, Math.min(1, current.remaining / duration || 1)) * 100}%`;
-      requestAnimationFrame(() => {
-        timerBar.style.transition = `width ${current.remaining || duration}ms linear`;
-        timerBar.style.width = '0%';
-      });
-    }
-    const remaining = current.remaining || duration;
-    current.startedAt = startedAt;
-    current.remaining = remaining;
-    current.timer = window.setTimeout(() => dismiss(toast), remaining);
+    current.duration = duration;
+    current.remaining = Math.max(0, current.remaining || duration);
+    current.startedAt = performance.now();
+    runTimerVisual(toast, current);
+    current.timer = window.setTimeout(() => dismiss(toast), current.remaining);
     state.set(toast, current);
   };
 
@@ -40,19 +87,14 @@
     window.clearTimeout(current.timer);
     current.timer = null;
     current.remaining = Math.max(0, current.remaining - (performance.now() - current.startedAt));
-    const timerBar = toast.querySelector('[data-operational-toast-timer]');
-    if (timerBar instanceof HTMLElement) {
-      const width = getComputedStyle(timerBar).width;
-      timerBar.style.transition = 'none';
-      timerBar.style.width = width;
-    }
+    current.animation?.pause?.();
   };
 
   const resume = (toast) => {
     const current = state.get(toast);
-    if (current?.remaining > 0) schedule(toast, Number(toast.dataset.autoDismissMs || 0));
+    if (!current || current.remaining <= 0) return;
+    schedule(toast, current.duration || Number(toast.dataset.autoDismissMs || 0));
   };
-
 
   const notifyActivityCenter = (element) => {
     if (!(element instanceof HTMLElement) || element.dataset.notificationRefreshDispatched === 'true') return;
@@ -84,15 +126,20 @@
     toast.addEventListener('focusin', () => pause(toast));
     toast.addEventListener('focusout', () => resume(toast));
 
-    requestAnimationFrame(() => {
-      toast.classList.remove('opacity-0');
-    });
+    requestAnimationFrame(() => toast.classList.remove('opacity-0'));
 
     const duration = Number(toast.dataset.autoDismissMs || 0);
     if (duration > 0) {
-      state.set(toast, { remaining: duration, timer: null, startedAt: 0 });
+      state.set(toast, {
+        duration,
+        remaining: duration,
+        timer: null,
+        animation: null,
+        startedAt: 0,
+      });
       schedule(toast, duration);
     }
+
     if (toast.matches('[data-operational-notification-refresh]')) notifyActivityCenter(toast);
     enforceStackLimit();
     window.renderKaoriIcons?.();

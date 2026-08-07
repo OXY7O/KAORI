@@ -41,7 +41,7 @@
     {% if runtime_refresh_job and runtime_refresh_job.is_active %}
         <div class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-subtle px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between">
             <span class="inline-flex items-center gap-2 font-semibold text-content-primary">
-                <i data-lucide="loader-circle" class="h-3.5 w-3.5 animate-spin text-kaori-primary" aria-hidden="true"></i>
+                <i data-lucide="loader-circle" class="h-3.5 w-3.5 animate-spin text-kaori-primary dark:text-kaori-accent" aria-hidden="true"></i>
                 {{ runtime_refresh_job.title or 'Prometheus runtime refresh running' }}
             </span>
             <span>Task {{ runtime_refresh_job.task_id[:8] }} · {{ runtime_refresh_job.state_label|title }} · {{ runtime_refresh_job.elapsed_seconds }}s</span>

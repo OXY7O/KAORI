@@ -207,3 +207,94 @@ These exceptions must remain inside an owning `overflow-x-auto` region and must 
 - [ ] Every mutation has route, permission, service guardrail, Activity Audit, feedback, and exception-logging coverage.
 - [ ] Provider-specific evidence remains factual after reuse.
 - [ ] Empty, disconnected, not-observed, and validation-required states render without live provider access.
+
+## Dark Mode Brand Allocation
+
+Integration workspaces use semantic design tokens only. Brand Violet is an identity cue, not a status color.
+
+```text
+Light mode identity icon  → bg-kaori-soft + text-kaori-primary
+Dark mode identity icon   → bg-kaori-soft + text-kaori-accent
+Status / health / warning → semantic status tokens
+```
+
+Rules:
+
+- provider, section, and resource identity icons use Violet in light mode and Lavender Accent in dark mode;
+- `text-kaori-primary-dark` must not be used as a dark-mode identity treatment;
+- normal white/light surfaces use `bg-surface-card`, `bg-surface-subtle`, and outline tokens so the same template remains valid in dark mode;
+- raw `violet-*`, `purple-*`, `slate-*`, or fixed hex colors are prohibited for normal Integration content;
+- semantic Green, Amber, Red, and Slate remain reserved for operational state, never provider/category identity;
+- primary buttons may remain brand Violet in both modes because the brand token itself changes for dark mode.
+
+The repository dark-mode verifier is part of the Integration regression gate.
+
+## Single-Line Compact Label Contract
+
+Compact KAORI labels are one-line by default. The shared `components/table_label.html` macros own this behavior through `whitespace-nowrap`.
+
+Use wrapping only when the caller explicitly opts into `metadata_label(..., wrap=true)` for a genuinely long technical identifier. Do not allow compact state labels such as `Committed Snapshot`, `Guardrails Passed`, `Validation Required`, or `Not Observed` to stack word-over-word because a surrounding column is too narrow; widen/rebalance the owning layout instead.
+
+## Recent Runtime Observation Detail Contract
+
+Kubernetes, Prometheus, and Alertmanager use one shared runtime-history surface and one shared detail dialog:
+
+```text
+app/templates/integrations/partials/_runtime_history.html
+app/templates/integrations/components/_runtime_observation_modal.html
+app/static/js/native_dialogs.js
+```
+
+`View More` opens a centered native `<dialog>` in the browser top layer. Provider-local expandable runtime-history detail rows are prohibited. This prevents HTMX filter swaps from carrying stale expanded-row state and guarantees the same detail composition across all providers.
+
+The dialog shows immutable persisted evidence only:
+
+- Runtime Posture and Validation Readiness;
+- Health Score / latency / trigger;
+- Compatibility and capability snapshot;
+- Kubernetes lifecycle context when applicable;
+- diagnostic evidence and recommended action.
+
+Native dialog controls use `data-kaori-dialog-open`, `data-dialog-target`, and `data-kaori-dialog-close`. Inline `onclick`, `onchange`, and `onsubmit` handlers are prohibited in Integration templates.
+
+## Provider Binding Workspace Layout
+
+Prometheus and Alertmanager place the bound-scope registry as a full-width evidence section before the consumer/decision split.
+
+```text
+Binding Summary
+Bound Kubernetes / Operational Scopes       ← full width
+Effective Consumer Resolution | Binding Decision
+```
+
+This avoids squeezing selectors, preference, validation, effective-resolution, and row actions into the main column beside a decision rail. Source Readiness, Binding Validation, and Effective Resolution remain independent states.
+
+## Toast Countdown Contract
+
+Self-dismissing operational toasts use one compact countdown bar rather than a full-width semantic accent.
+
+Ownership:
+
+```text
+app/templates/components/operational_toast.html
+app/static/js/operational_toasts.js
+```
+
+The countdown bar:
+
+- is brand Violet and uses the dark-mode brand token in dark mode;
+- animates from full to empty with Web Animations API when available;
+- uses a forced-layout CSS transition fallback for HTMX/OOB inserted toasts;
+- pauses on hover and keyboard focus and resumes from the remaining duration;
+- is cancelled when the toast is manually dismissed;
+- does not replace semantic status labels or Activity Audit persistence.
+
+## DRY Ownership Rules
+
+Integration UI changes must prefer shared ownership in this order:
+
+1. global primitives (`components/table.html`, `components/table_label.html`);
+2. Integration adapters/components (`integrations/components/*`);
+3. provider-specific template content only when the evidence contract differs.
+
+Do not copy runtime observation modals, dialog JavaScript, semantic label geometry, provider-registry table geometry, or toast lifecycle logic into Kubernetes, Prometheus, or Alertmanager templates.

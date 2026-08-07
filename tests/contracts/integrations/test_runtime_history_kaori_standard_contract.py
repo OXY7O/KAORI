@@ -20,10 +20,9 @@ def test_runtime_history_uses_inventory_table_primitives() -> None:
     assert 'table_ui.cell_classes(action=true)' in template
     assert 'data-kaori-runtime-history-table' in template
     assert '<thead class="{{ table_ui.head_classes() }}"' in template
-    assert 'lg:grid-cols-[minmax(13rem' not in template
 
 
-def test_runtime_history_keeps_compact_context_and_expandable_detail() -> None:
+def test_runtime_history_keeps_compact_context_and_shared_modal_detail() -> None:
     template = read('app/templates/integrations/partials/_runtime_history.html')
 
     assert 'data-kaori-runtime-history-summary' in template
@@ -33,10 +32,10 @@ def test_runtime_history_keeps_compact_context_and_expandable_detail() -> None:
     assert '>Capability Context</th>' in template
     assert '>State Change</th>' in template
     assert '>Details</th>' in template
-    assert 'x-data="{ open: false }"' in template
-    assert '@click="open = !open"' in template
-    assert 'data-kaori-runtime-observation-detail' in template
-    assert "open ? 'Hide Details' : 'View More'" in template
+    assert 'data-kaori-dialog-open' in template
+    assert 'View More' in template
+    assert 'runtime_observation_modal.render(' in template
+    assert 'data-kaori-runtime-observation-detail' not in template
 
 
 def test_runtime_history_uses_inventory_pagination_contract() -> None:

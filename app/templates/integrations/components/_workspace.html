@@ -6,7 +6,7 @@ overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-
 
 {% macro palette_icon_classes(tone='brand', size='md', rounded='lg') -%}
 {% if tone == 'brand' %}
-    {% set tone_classes = 'border-brand-outline bg-kaori-soft text-kaori-primary' %}
+    {% set tone_classes = 'border-brand-outline bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent' %}
 {% elif tone in ['normal', 'success'] %}
     {% set tone_classes = 'border-status-normal-border bg-status-normal-soft text-status-normal-text' %}
 {% elif tone == 'info' %}
@@ -37,7 +37,7 @@ flex {{ size_classes }} shrink-0 items-center justify-center {{ rounded_classes 
         <div class="flex min-w-0 items-start gap-3">
             {{ palette_icon(icon, tone, size='lg') }}
             <div class="min-w-0">
-                {% if eyebrow %}<p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">{{ eyebrow }}</p>{% endif %}
+                {% if eyebrow %}<p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">{{ eyebrow }}</p>{% endif %}
                 <h2 class="{{ 'mt-0.5 ' if eyebrow else '' }}text-base font-semibold text-content-primary">{{ title }}</h2>
                 {% if description %}<p class="mt-1 text-sm leading-6 text-content-secondary">{{ description }}</p>{% endif %}
             </div>
@@ -87,7 +87,7 @@ h-10 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-3 
 {% macro interpretation_panel(title, body, icon='info') -%}
 <section class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
     <div class="flex items-start gap-3">
-        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-kaori-primary" aria-hidden="true">
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-kaori-primary dark:text-kaori-accent" aria-hidden="true">
             <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
         </span>
         <div class="min-w-0">

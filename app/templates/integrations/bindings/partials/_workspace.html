@@ -6,7 +6,7 @@
     <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm lg:col-span-8">
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
             <div class="flex items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="link-2" class="h-5 w-5"></i></span>
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="link-2" class="h-5 w-5"></i></span>
                 <div>
                     <h2 class="text-lg font-semibold text-content-primary">Bind Existing {{ provider.label }} Source</h2>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Reuse one registered connection across multiple scopes. This page creates only the governed association and isolation selector; it does not duplicate endpoint credentials.</p>
@@ -80,7 +80,7 @@
                 </div>
                 <div class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
                     <div class="flex items-start gap-3">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="fingerprint" class="h-4 w-4"></i></span>
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="fingerprint" class="h-4 w-4"></i></span>
                         <div>
                             <h3 class="text-sm font-semibold text-content-primary">{{ provider.selector_label }}</h3>
                             <p class="mt-1 text-xs leading-5 text-content-secondary">{{ provider.selector_help }}</p>
@@ -141,7 +141,7 @@
         {% else %}
             <div class="p-5 sm:p-6">
                 <div class="rounded-xl border border-outline-subtle bg-surface-hover p-6 text-center">
-                    <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="server-cog" class="h-5 w-5"></i></span>
+                    <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="server-cog" class="h-5 w-5"></i></span>
                     <p class="mt-3 text-sm font-semibold text-content-primary">No reusable {{ provider.label }} source is registered</p>
                     <p class="mx-auto mt-1 max-w-xl text-xs leading-5 text-content-secondary">Register the endpoint once. After registration, return here and bind it to this cluster instead of creating one connection per scope.</p>
                     <a href="{{ url_for(provider.register_endpoint) }}"
@@ -167,7 +167,7 @@
         </section>
         <section class="rounded-2xl border border-outline-default bg-surface-card p-5 shadow-sm">
             <div class="flex items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
                 <div>
                     <h2 class="text-sm font-semibold text-content-primary">Binding Boundary</h2>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">The binding controls eligibility and data isolation. It does not copy credentials, duplicate runtime observations, or create another provider instance.</p>

@@ -59,7 +59,7 @@
                     </div>
                     {% if current_user.has_permission('jobs.view') %}
                         <a href="{{ url_for('jobs.executions') }}"
-                           class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark">
+                           class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary dark:hover:text-kaori-accent">
                             <i data-lucide="list-checks" class="h-4 w-4" aria-hidden="true"></i>
                             Review Jobs
                         </a>

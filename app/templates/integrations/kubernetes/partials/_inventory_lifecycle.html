@@ -3,7 +3,7 @@
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 
 {% macro identity_icon(icon, size='md') -%}
-    <span class="inline-flex shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary {{ 'h-10 w-10' if size == 'lg' else 'h-9 w-9' if size == 'md' else 'h-8 w-8' }}" aria-hidden="true">
+    <span class="inline-flex shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent {{ 'h-10 w-10' if size == 'lg' else 'h-9 w-9' if size == 'md' else 'h-8 w-8' }}" aria-hidden="true">
         <i data-lucide="{{ icon }}" class="{{ 'h-5 w-5' if size == 'lg' else 'h-4 w-4' }}"></i>
     </span>
 {%- endmacro %}

@@ -66,6 +66,92 @@ def runtime_state_view(
     }
 
 
+def runtime_observation_state_view(
+    observation: IntegrationRuntimeObservation | None,
+    *,
+    fallback_readiness: str = 'validation_required',
+    fallback_compatibility_profile: str | None = None,
+    fallback_capabilities: list[str] | tuple[str, ...] | None = None,
+) -> dict[str, object]:
+    """Present persisted runtime evidence without inferring health from connection state.
+
+    Fallback values may describe validation/readiness context, but runtime health, score,
+    observation time, latency, diagnostics, and message are populated only from an
+    actual persisted runtime observation.
+    """
+    fallback_capabilities = tuple(fallback_capabilities or ())
+    if observation is None:
+        readiness = fallback_readiness or 'validation_required'
+        return {
+            'has_observation': False,
+            'readiness': readiness,
+            'readiness_label': present_key_label(readiness),
+            'health_status': 'not_observed',
+            'health_status_label': 'Not Observed',
+            'health_score': None,
+            'health_score_display': 'N/A',
+            'compatibility_profile': fallback_compatibility_profile,
+            'capability_count': len(fallback_capabilities),
+            'capability_count_display': present_count(len(fallback_capabilities), 'validated feature'),
+            'capabilities': fallback_capabilities,
+            'capability_metadata': {},
+            'diagnostics': [],
+            'factors': [],
+            'attention_factors': [],
+            'lifecycle_context': None,
+            'observed_at': None,
+            'observed_at_display': 'Never',
+            'message': 'No persisted Kubernetes runtime observation is available yet.',
+            'latency_ms': None,
+            'latency_display': 'N/A',
+        }
+
+    snapshot = observation.capability_snapshot or {}
+    metadata = snapshot.get('metadata') or {}
+    capabilities = tuple(snapshot.get('capabilities') or fallback_capabilities)
+    diagnostics = _diagnostic_rows(observation.diagnostics or [])
+    attention_factors = [
+        {
+            'key': item['key'],
+            'label': item['label'],
+            'status': item['status'],
+            'score': 0 if item['status'] == 'failed' else 70,
+            'detail': item['detail'],
+        }
+        for item in diagnostics
+        if item['status'] in {'warning', 'failed', 'pending', 'unknown'}
+    ]
+    readiness = observation.readiness or fallback_readiness or 'validation_required'
+    health_status = observation.health_status or 'not_observed'
+    return {
+        'has_observation': True,
+        'readiness': readiness,
+        'readiness_label': present_key_label(readiness),
+        'health_status': health_status,
+        'health_status_label': present_key_label(health_status),
+        'health_score': observation.health_score,
+        'health_score_display': (
+            f'{observation.health_score}/100' if observation.health_score is not None else 'N/A'
+        ),
+        'compatibility_profile': observation.compatibility_profile or fallback_compatibility_profile,
+        'capability_count': len(capabilities),
+        'capability_count_display': present_count(len(capabilities), 'observed capability'),
+        'capabilities': capabilities,
+        'capability_metadata': metadata,
+        'diagnostics': diagnostics,
+        'factors': attention_factors,
+        'attention_factors': attention_factors,
+        'lifecycle_context': _kubernetes_lifecycle_context(observation.provider, metadata),
+        'observed_at': observation.observed_at,
+        'observed_at_display': present_user_datetime(
+            observation.observed_at, empty='Not observed', include_seconds=True
+        ),
+        'message': observation.message or '',
+        'latency_ms': observation.latency_ms,
+        'latency_display': present_milliseconds(observation.latency_ms),
+    }
+
+
 def runtime_history_view(
     rows: list[IntegrationRuntimeObservation],
     *,

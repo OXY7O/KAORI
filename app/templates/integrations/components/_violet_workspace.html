@@ -7,7 +7,7 @@ overflow-hidden rounded-xl border border-kaori-primary/20 bg-surface-card shadow
 {%- endmacro %}
 
 {% macro icon_classes(size='md') -%}
-{{ 'h-11 w-11 rounded-xl' if size == 'lg' else ('h-9 w-9 rounded-lg' if size == 'sm' else 'h-10 w-10 rounded-xl') }} inline-flex shrink-0 items-center justify-center border border-kaori-primary/15 bg-kaori-soft text-kaori-primary shadow-sm
+{{ 'h-11 w-11 rounded-xl' if size == 'lg' else ('h-9 w-9 rounded-lg' if size == 'sm' else 'h-10 w-10 rounded-xl') }} inline-flex shrink-0 items-center justify-center border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent shadow-sm
 {%- endmacro %}
 
 {% macro soft_header_classes() -%}

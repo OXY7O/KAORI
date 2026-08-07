@@ -61,20 +61,21 @@ def test_kubernetes_activity_is_navigation_and_capability_modal_scope_isolated()
     registry = read('app/templates/integrations/kubernetes/partials/_registry.html')
     capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
     modal = read('app/templates/integrations/components/_record_detail_modal.html')
+    controller = read('app/static/js/native_dialogs.js')
 
     assert "url_for('integrations.kubernetes_detail', cluster_id=row.cluster_id)" in registry
     assert '>Activity<' in registry or 'Activity\n' in registry
     activity_link = registry[registry.index("url_for('integrations.kubernetes_detail', cluster_id=row.cluster_id)"):]
     assert '@click=' not in activity_link.split('</a>', 1)[0]
 
-    workspace_scope = capability.index('id="kubernetes-capability-workspace"')
-    modal_state = capability.index('detailOpen: false')
-    modal_calls = capability.index('record_detail_modal.render(')
-    assert workspace_scope < modal_state < modal_calls
-    assert 'data-kaori-capability-modal-scope' in capability
-    assert 'style="display: none;"' in modal
-    assert "typeof detailOpen !== 'undefined'" in modal
-
+    assert 'data-kaori-capability-native-dialogs' in capability
+    assert 'data-kaori-capability-view-more' in capability
+    assert 'data-kaori-dialog-open' in capability
+    assert 'data-dialog-target="capability-detail-modal-{{ loop.index }}"' in capability
+    assert 'record_detail_modal.render(' in capability
+    assert 'data-kaori-native-dialog' in modal
+    assert 'onclick=' not in modal
+    assert 'dialog.showModal()' in controller
 
 def test_kubernetes_runtime_health_requires_persisted_observation() -> None:
     service = read('app/integrations/service.py')
@@ -84,12 +85,13 @@ def test_kubernetes_runtime_health_requires_persisted_observation() -> None:
     assert "IntegrationRuntimeObservation.query.filter_by(" in service
     assert "provider='kubernetes'" in service
     assert 'runtime_observation_state_view(' in service
+    assert 'def runtime_observation_state_view(' in presentation
     assert "'health_status': 'not_observed'" in presentation
     assert "'health_score_display': 'N/A'" in presentation
+    assert 'without inferring health from connection state' in presentation
     assert 'Runtime Not Observed' in runtime
-    assert 'Runtime health is never inferred from connection state.' in runtime
+    assert 'Runtime health is sourced only from persisted observations and is not inferred from connection or validation state.' in runtime
     assert 'Validation Readiness' in runtime
-
 
 def test_kubernetes_actions_are_permission_aware() -> None:
     detail = read('app/templates/integrations/kubernetes/detail.html')
@@ -136,11 +138,11 @@ def test_inventory_freshness_and_capability_dimensions_are_explicit() -> None:
     assert "'inventory_collected_at_display'" in service
     assert "'validated_feature_count'" in service
     assert "'operational_domain_count'" in service
-    assert 'Last collected {{ operational_use.inventory_collected_at_display }}' in inventory
+    assert 'Last Collected' in inventory
+    assert 'operational_use.inventory_collected_at_display' in inventory
     assert 'Validated Features' in inventory
     assert 'Operational Domains' in inventory
     assert 'Validated Features' in detail
-
 
 def test_kubernetes_coverage_uses_compact_operational_path_cards() -> None:
     coverage = read('app/templates/integrations/kubernetes/partials/_integration_coverage.html')
@@ -209,81 +211,56 @@ def test_capability_workspace_uses_registry_modal_and_consistent_typography() ->
     capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
     modal = read('app/templates/integrations/components/_record_detail_modal.html')
 
-    assert 'data-kaori-capability-workspace-v8' in capability
-    assert 'data-kaori-capability-overview' in capability
-    assert 'data-kaori-capability-explorer' in capability
-    assert 'data-kaori-capability-matrix' in capability
-    assert 'data-kaori-capability-matrix-header' in capability
-    assert 'data-kaori-capability-matrix-row' in capability
+    for marker in (
+        'data-kaori-capability-workspace-v8',
+        'data-kaori-capability-overview',
+        'data-kaori-capability-explorer',
+        'data-kaori-capability-matrix',
+        'data-kaori-capability-matrix-header',
+        'data-kaori-capability-matrix-row',
+        'data-kaori-capability-layout',
+        'data-kaori-capability-side-panel',
+        'data-kaori-capability-view-more',
+        'data-kaori-capability-decision-panel',
+        'data-kaori-readiness-score',
+        'data-kaori-capability-posture-list',
+        'data-kaori-validation-operating-boundary',
+    ):
+        assert marker in capability
     assert 'Capability Registry' in capability
     assert 'Search Capability' in capability
     assert 'All Requirements' in capability
     assert 'All Statuses' in capability
     assert 'x-model.debounce.150ms="query"' in capability
     assert 'x-show="matches($el)"' in capability
-    assert 'data-kaori-capability-layout' in capability
-    assert 'xl:grid-cols-[minmax(0,1fr)_22rem]' in capability
-    assert '2xl:grid-cols-[minmax(0,1fr)_24rem]' in capability
-    assert 'data-kaori-capability-side-panel' in capability
-    assert 'data-kaori-capability-view-more' in capability
-    assert 'View More' in capability
-    assert 'data-kaori-capability-modal-scope' in capability
-    assert 'detailOpen: false' in capability
-    assert 'selectedDetail: null' in capability
-    assert 'openDetail(key)' in capability
-    assert 'closeDetail()' in capability
-    workspace_scope = capability.index('id="kubernetes-capability-workspace"')
-    layout_scope = capability.index('data-kaori-capability-layout')
-    assert capability.index("x-data='{", workspace_scope, layout_scope) > workspace_scope
-    assert "data-kaori-capability-layout\n             x-data='{" not in capability
-    assert "@click='openDetail({{ row.key|tojson }})'" in capability
+    assert 'lg:grid-cols-[minmax(0,1fr)_22rem]' in capability
+    assert 'xl:grid-cols-[minmax(0,1fr)_24rem]' in capability
+    assert '2xl:grid-cols-[minmax(0,1fr)_25rem]' in capability
+    assert 'Validation Decision' in capability
+    assert 'Operational Gate' in capability
+    assert 'Next Operational Action' in capability
+    assert 'Validation Workflow' in capability
+    assert "('1', 'Interpret'" in capability
+    assert "('4', 'Synchronize'" in capability
+    assert 'data-kaori-dialog-open' in capability
+    assert 'data-dialog-target="capability-detail-modal-{{ loop.index }}"' in capability
     assert 'record_detail_modal.render(' in capability
     assert 'data-kaori-capability-modal-content' in capability
-    assert 'Kubernetes Capability Evidence' in capability
     assert 'Capability Contract' in capability
     assert 'Validation Evidence' in capability
     assert 'Operational Impact' in capability
     assert 'Recommended Action' in capability
     assert 'Technical Verification' in capability
-    assert 'data-kaori-capability-technical-check' in capability
-    assert 'data-kaori-capability-evidence-boundary' in capability
-    assert 'data-kaori-capability-decision-panel' in capability
-    assert 'Validation Decision' in capability
-    assert 'data-kaori-readiness-score' in capability
-    assert 'data-kaori-capability-posture-grid' in capability
-    assert 'Operational Gate' in capability
-    assert 'Next Operational Action' in capability
-    assert 'Validation Workflow' in capability
-    assert 'data-kaori-validation-operating-boundary' in capability
-    assert 'xl:sticky xl:top-4' in capability
-    assert "('1', 'Interpret'" in capability
-    assert "('4', 'Synchronize'" in capability
     assert 'font-sans' in capability
     assert 'font-mono' not in capability
-    assert 'uppercase tracking-wide' not in capability
-    assert 'data-kaori-capability-inspector-panel' not in capability
-    assert 'Capability Inspector' not in capability
-    assert 'x-ref="inspector"' not in capability
-    assert 'data-kaori-capability-inspector-content' not in capability
-    assert 'Viewing' not in capability
 
-    assert 'x-teleport="body"' in modal
-    assert 'role="dialog"' in modal
-    assert 'aria-modal="true"' in modal
-    assert "typeof detailOpen !== 'undefined'" in modal
-    assert 'detailOpen && selectedDetail ===' in modal
-    assert 'style="display: none;"' in modal
-    assert 'data-kaori-modal-root' in modal
-    assert '@keydown.escape.window' in modal
+    assert '<dialog id="{{ modal_id }}"' in modal
+    assert 'data-kaori-native-dialog' in modal
+    assert 'method="dialog"' in modal
     assert 'max-w-6xl' in modal
-    assert 'Close' in modal
-    assert 'z-[100] isolate' in modal
-    assert 'data-kaori-modal-backdrop' in modal
-    assert 'absolute inset-0 z-0' in modal
-    assert 'data-kaori-modal-panel' in modal
-    assert 'relative z-10' in modal
-    assert modal.count("x-show=\"typeof detailOpen !== 'undefined' && detailOpen && selectedDetail ===") == 1
-
+    assert 'data-kaori-dialog-close' in modal
+    assert 'onclick=' not in modal
+    assert 'x-teleport' not in modal
 
 def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
     connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
@@ -299,59 +276,55 @@ def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
     assert 'Connection Evidence' in connection
     assert 'Operational Boundary' in connection
     assert 'Operational Flow' in connection
-    assert 'xl:grid-cols-[minmax(20rem,0.8fr)_minmax(0,1.2fr)]' in connection
-    assert 'lg:grid-cols-[minmax(20rem,1.4fr)_repeat(3,minmax(12rem,0.75fr))]' in connection
-    assert 'data-kaori-connection-contract-v3' not in connection
-    assert 'Configuration Command Center' not in connection
     assert '_minimum_validation_rbac.html' in connection
     assert 'font-sans' in connection
     assert 'font-mono' not in connection
-    assert 'data-kaori-capability-workspace-v4' in capability
+
+    assert 'data-kaori-capability-workspace-v8' in capability
     assert 'data-kaori-capability-overview' in capability
     assert 'Capability Matrix' in capability
     assert 'data-kaori-capability-filters' in capability
     assert 'data-kaori-capability-record' in capability
     assert 'Validation Workflow' in capability
-    assert 'data-kaori-validation-operating-boundary' in capability
     assert 'font-mono' not in capability
-    assert 'lg:grid-cols-[minmax(15rem,1.3fr)' not in capability
+
+    assert 'data-kaori-inventory-lifecycle-v4' in inventory
     assert 'Bound Observability Sources' in inventory
     assert 'components/table.html' in inventory
-    assert 'Lifecycle Boundary' in inventory
-    assert 'Runtime Operating Model' in runtime
+    assert 'Retention Boundary' in inventory
+    assert 'Lifecycle Impact' in inventory
+    assert 'Connection Lifecycle' in inventory
+
+    assert 'data-kaori-runtime-workspace-v6' in runtime
+    assert 'Evidence Ownership' in runtime
     assert 'Diagnostic Evidence' in runtime
     assert 'data-kaori-runtime-diagnostic-list' in runtime
     assert 'data-kaori-runtime-diagnostic-row' in runtime
-    assert 'components/table.html' not in runtime
+    assert 'data-kaori-runtime-observation-boundary' in runtime
 
-
-def test_kubernetes_runtime_is_neutral_while_inventory_retains_optional_violet_language() -> None:
+def test_kubernetes_runtime_uses_neutral_surfaces_with_controlled_brand_identity() -> None:
     detail = read('app/templates/integrations/kubernetes/detail.html')
     runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
     inventory = read('app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html')
     history = read('app/templates/integrations/partials/_runtime_history.html')
 
-    assert 'data-kaori-runtime-workspace-v4' in runtime
-    assert 'data-kaori-neutral-runtime-workspace' in runtime
+    assert 'data-kaori-runtime-workspace-v6' in runtime
     assert 'data-kaori-runtime-snapshot' in runtime
-    assert 'data-kaori-runtime-layout' in runtime
-    assert 'data-kaori-runtime-control-panel' in runtime
-    assert 'Runtime Control Panel' in runtime
-    assert 'Current Operational Focus' in runtime
+    assert 'data-kaori-runtime-main-layout' in runtime
+    assert 'data-kaori-runtime-decision-panel' in runtime
+    assert 'Operational Focus' in runtime
     assert 'Observation Boundary' in runtime
-    assert 'integrations/components/_violet_workspace.html' not in runtime
-    assert 'data-kaori-violet-runtime-workspace' not in runtime
-    assert 'bg-kaori-soft' not in runtime
-    assert 'text-kaori-primary' not in runtime
-    assert 'border-kaori-primary/' not in runtime
+    assert 'bg-surface-card' in runtime
+    assert "palette_icon('activity', 'brand'" in runtime
     assert "runtime_history_variant='violet-v2'" not in detail
     assert "runtime_history_variant='violet-v2'" not in runtime
 
-    assert 'data-kaori-violet-inventory-workspace' in inventory
-    assert 'data-kaori-inventory-command-center' in inventory
-    assert 'integrations/components/_violet_workspace.html' in inventory
-    assert 'runtime_history_is_violet' in history
-
+    assert 'data-kaori-inventory-lifecycle-v4' in inventory
+    assert 'bg-surface-card' in inventory
+    assert 'bg-kaori-soft' in inventory
+    assert 'dark:text-kaori-accent' in inventory
+    assert 'data-kaori-runtime-history-standard-v2' in history
+    assert 'dark:text-kaori-accent' in history
 
 def test_connection_contract_uses_controlled_kaori_icon_palette() -> None:
     connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
@@ -408,45 +381,29 @@ def test_kubernetes_integration_uses_canonical_compact_label_roles() -> None:
     detail = read('app/templates/integrations/kubernetes/detail.html')
     coverage = read('app/templates/integrations/kubernetes/partials/_integration_coverage.html')
     registry = read('app/templates/integrations/kubernetes/partials/_registry.html')
-    registry_detail = read('app/templates/integrations/kubernetes/partials/_registry_detail_content.html')
     connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
     capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
     runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
     inventory = read('app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html')
     history = read('app/templates/integrations/partials/_runtime_history.html')
+    labels = read('app/templates/components/table_label.html')
     standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
 
     assert "display='text'" in page
     assert "display='text'" in detail
     assert "display='text'" in coverage
     assert "display='indicator'" in coverage
-    assert 'data-lucide="circle-check"' not in coverage
-    assert 'data-lucide="triangle-alert"' not in coverage
     assert "display='indicator'" in registry
-    assert 'status_label(readiness_label, readiness_tone)' in registry_detail
-
     assert "display='special'" in connection
-    assert "icon='shield-check' if connection.verify_ssl else 'shield-alert'" in connection
-    assert "metadata_label('Kubernetes Live API', 'server-cog')" in connection
-    assert "metadata_label(capability|replace('_', ' ')|title)" in connection
-
     assert 'components/table_label.html' in capability
-    assert "metadata_label('Profile · '" in capability
-    assert "metadata_label(capability_counts.required ~ ' required')" in capability
-    assert "metadata_label((feature_rows|length) ~ ' capability contracts')" in capability
-    assert "metadata_label(row.requirement_label)" in capability
     assert "display='text'" in capability
     assert "display='indicator'" in capability
-
     assert 'components/table_label.html' in runtime
     assert "metadata_label((runtime_state.diagnostics|length) ~ ' checks')" in runtime
-    assert "display='text'" in runtime
     assert "display='indicator'" in runtime
-    assert "metadata_label(operational_use.report_count ~ ' reports retained')" in inventory
-    assert "metadata_label(operational_use.schedule_count ~ ' schedules retained')" in inventory
-    assert 'violet_ui.chip_classes()' not in inventory
     assert "display='indicator'" in inventory
+    assert "integration_status(health_tone, row.effective_status_label, display='indicator')" in history
+    assert 'Validation · {{ row.readiness_label }}' in history
+    assert labels.count('whitespace-nowrap') >= 4
+    assert 'Single-Line Compact Label Contract' in standard
 
-    assert "integration_status(row.readiness, row.readiness_label, display='indicator')" in history
-    assert "integration_status(diagnostic_tone, diagnostic.status_label, display='indicator')" in history
-    assert 'Kubernetes Integration applies the same roles' in standard

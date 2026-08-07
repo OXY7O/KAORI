@@ -34,7 +34,8 @@ def test_prometheus_bindings_use_kaori_table_and_native_create_dialog() -> None:
     assert 'table_ui.table_classes' in template
     assert 'integration_status(row.validation_status, display=\'indicator\')' in template
     assert '<dialog id="prometheus-create-binding-dialog"' in template
-    assert "showModal()" in template
+    assert 'data-kaori-dialog-open' in template
+    assert 'data-dialog-target="prometheus-create-binding-dialog"' in template
     assert 'm-auto w-[min(44rem,calc(100vw-2rem))]' in template
 
 

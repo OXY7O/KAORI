@@ -758,3 +758,10 @@ thead th {
 .kaori-hero-status-info {
     color: #6d28d9;
 }
+
+/* Shared native-dialog backdrop for Integration workspaces. The overlay follows
+ * surface tokens in both light and dark mode instead of using a fixed palette. */
+.kaori-native-dialog::backdrop {
+    background: var(--kaori-surface-overlay);
+    backdrop-filter: blur(1px);
+}

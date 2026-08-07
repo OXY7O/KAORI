@@ -6,7 +6,7 @@
         <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary shadow-sm" aria-hidden="true" data-kaori-palette-icon="brand">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary dark:text-kaori-accent shadow-sm" aria-hidden="true" data-kaori-palette-icon="brand">
                         <i data-lucide="file-key-2" class="h-5 w-5"></i>
                     </span>
                     <div class="min-w-0">
@@ -40,7 +40,7 @@
             <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card" aria-labelledby="connection-evidence-title" data-kaori-connection-evidence>
                 <header class="flex flex-col gap-2 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary" aria-hidden="true" data-kaori-palette-icon="brand">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary dark:text-kaori-accent" aria-hidden="true" data-kaori-palette-icon="brand">
                             <i data-lucide="waypoints" class="h-4 w-4"></i>
                         </span>
                         <div class="min-w-0">
@@ -54,7 +54,7 @@
                 <dl class="grid divide-y divide-outline-subtle lg:grid-cols-[minmax(20rem,1.4fr)_repeat(3,minmax(12rem,0.75fr))] lg:divide-x lg:divide-y-0">
                     <div class="min-w-0 p-4 sm:p-5">
                         <dt class="flex items-center gap-2.5 text-xs font-semibold text-content-muted">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary" aria-hidden="true" data-kaori-palette-icon="brand">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary dark:text-kaori-accent" aria-hidden="true" data-kaori-palette-icon="brand">
                                 <i data-lucide="server" class="h-4 w-4"></i>
                             </span>
                             Kubernetes API Endpoint
@@ -109,7 +109,7 @@
             <div class="grid items-start gap-4 xl:grid-cols-[minmax(20rem,0.8fr)_minmax(0,1.2fr)]" data-kaori-operational-context>
                 <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card" aria-labelledby="operational-boundary-title">
                     <header class="flex items-start gap-3 border-b border-outline-subtle px-4 py-3.5 sm:px-5">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary" aria-hidden="true" data-kaori-palette-icon="brand">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary dark:text-kaori-accent" aria-hidden="true" data-kaori-palette-icon="brand">
                             <i data-lucide="scan-search" class="h-4 w-4"></i>
                         </span>
                         <div class="min-w-0">
@@ -142,7 +142,7 @@
 
                 <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card" aria-labelledby="operational-flow-title">
                     <header class="flex items-start gap-3 border-b border-outline-subtle px-4 py-3.5 sm:px-5">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary" aria-hidden="true" data-kaori-palette-icon="brand">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary dark:text-kaori-accent" aria-hidden="true" data-kaori-palette-icon="brand">
                             <i data-lucide="workflow" class="h-4 w-4"></i>
                         </span>
                         <div class="min-w-0">
@@ -152,7 +152,7 @@
                     </header>
                     <ol class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
                         {% for title, detail, icon, icon_classes, palette in [
-                            ('Configure', 'Set identity, environment, kubeconfig ownership, and TLS policy.', 'settings-2', 'border-brand-outline bg-kaori-soft text-kaori-primary', 'brand'),
+                            ('Configure', 'Set identity, environment, kubeconfig ownership, and TLS policy.', 'settings-2', 'border-brand-outline bg-kaori-soft text-kaori-primary dark:text-kaori-accent', 'brand'),
                             ('Validate', 'Discover served APIs, effective RBAC, compatibility, and fallback requirements.', 'badge-check', 'border-outline-subtle bg-status-normal-soft text-status-normal', 'success'),
                             ('Observe', 'Persist runtime health, latency, diagnostics, and lifecycle evidence.', 'activity', 'border-outline-subtle bg-status-info-soft text-status-info', 'info'),
                             ('Synchronize', 'Commit normalized inventory and enable downstream workspaces.', 'refresh-cw', 'border-outline-subtle bg-surface-subtle text-content-secondary', 'neutral')

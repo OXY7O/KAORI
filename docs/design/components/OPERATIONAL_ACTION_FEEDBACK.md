@@ -66,7 +66,7 @@ Prometheus and Alertmanager use their canonical instance workspace:
 - Configuration
 - Validation & Capabilities
 - Runtime & History
-- Scope & Resolution
+- Bindings & Consumers
 
 Cluster compatibility routes may exist only as redirect or migration boundaries. Normal templates, dependency blockers, and action feedback must point to canonical registration, provider registry, or instance manage routes. Legacy Prometheus registry and cluster-configuration bookmarks redirect to the canonical provider landing or instance Configuration tab; they do not render a parallel management workflow.
 
@@ -83,6 +83,8 @@ Cluster compatibility routes may exist only as redirect or migration boundaries.
 - The payload contains a unique `feedback_id` and `auto_dismiss_ms`.
 - Success defaults to 8 seconds, information to 10 seconds, warning to 12 seconds, and error to persistent.
 - Hover and keyboard focus pause the timer.
+- Self-dismissing toasts render a compact Violet countdown bar. `operational_toasts.js` owns the timer and animation; templates do not implement per-toast countdown JavaScript.
+- The countdown prefers Web Animations API and falls back to a forced-layout transform transition so HTMX/OOB-inserted toasts visibly progress before disappearing.
 - The global stack keeps at most four visible toasts and deduplicates the same feedback ID.
 - Both authenticated and authentication layouts load `operational_toasts.js`; domain layouts do not own close handlers.
 - Background progress remains in Activity Center unless a domain explicitly selects toast delivery for a user-initiated synchronous result.

@@ -1,9 +1,6 @@
 {
   "description": "Per-template ceiling for style-drift review candidates. Counts are not all defects; they must not increase and should fall during page-by-page standardization.",
   "files": {
-    "app/templates/alertmanager/instance_detail.html": {
-      "page_local_workspace_tablists": 1
-    },
     "app/templates/alertmanager/instance_form.html": {
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 6
@@ -11,19 +8,8 @@
     "app/templates/alertmanager/partials/_delete_confirmation_modal.html": {
       "semantic_border_utilities": 2
     },
-    "app/templates/alertmanager/partials/_detail_configuration.html": {
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/alertmanager/partials/_detail_scope.html": {
-      "copied_standard_surface_shells": 2,
-      "semantic_border_utilities": 7
-    },
     "app/templates/alertmanager/partials/_detail_validation_content.html": {
-      "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 5
-    },
-    "app/templates/alertmanager/partials/_runtime_panel.html": {
-      "copied_standard_surface_shells": 1
+      "semantic_border_utilities": 2
     },
     "app/templates/analytics/components/_content_tabs.html": {
       "page_local_workspace_tablists": 1
@@ -145,22 +131,23 @@
     "app/templates/integrations/bindings/partials/_workspace.html": {
       "semantic_border_utilities": 4
     },
-    "app/templates/integrations/kubernetes/partials/_capability_workspace.html": {
-      "copied_standard_surface_shells": 1,
+    "app/templates/integrations/components/_runtime_observation_modal.html": {
+      "semantic_border_utilities": 2
+    },
+    "app/templates/integrations/components/_workspace.html": {
       "semantic_border_utilities": 5
     },
-    "app/templates/integrations/kubernetes/partials/_connection_contract.html": {
-      "copied_standard_surface_shells": 1
+    "app/templates/integrations/kubernetes/partials/_capability_workspace.html": {
+      "copied_standard_surface_shells": 3
     },
     "app/templates/integrations/kubernetes/partials/_delete_modal.html": {
       "semantic_border_utilities": 1
     },
     "app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html": {
-      "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 2
+      "semantic_border_utilities": 1
     },
     "app/templates/integrations/kubernetes/partials/_minimum_validation_rbac.html": {
-      "copied_standard_surface_shells": 1,
+      "page_local_workspace_tablists": 1,
       "semantic_border_utilities": 1
     },
     "app/templates/integrations/kubernetes/partials/_registry_detail_content.html": {
@@ -168,12 +155,13 @@
       "semantic_border_utilities": 3
     },
     "app/templates/integrations/kubernetes/partials/_runtime_workspace.html": {
-      "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 4
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/integrations/partials/_runtime_detail_content.html": {
+      "copied_standard_surface_shells": 1
     },
     "app/templates/integrations/partials/_runtime_history.html": {
-      "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 6
+      "copied_standard_surface_shells": 1
     },
     "app/templates/inventory/components/_summary.html": {
       "semantic_border_utilities": 5
@@ -280,9 +268,6 @@
     "app/templates/platform_operations/kubernetes/_tabs.html": {
       "page_local_workspace_tablists": 1
     },
-    "app/templates/prometheus/instance_detail.html": {
-      "page_local_workspace_tablists": 1
-    },
     "app/templates/prometheus/instance_form.html": {
       "copied_standard_surface_shells": 1
     },
@@ -294,16 +279,14 @@
       "semantic_border_utilities": 2
     },
     "app/templates/prometheus/partials/_detail_configuration.html": {
-      "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 1
+      "semantic_border_utilities": 2
     },
     "app/templates/prometheus/partials/_detail_scope.html": {
       "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 7
+      "semantic_border_utilities": 3
     },
     "app/templates/prometheus/partials/_detail_validation_content.html": {
-      "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 4
+      "semantic_border_utilities": 5
     },
     "app/templates/prometheus/partials/_runtime_panel.html": {
       "copied_standard_surface_shells": 1

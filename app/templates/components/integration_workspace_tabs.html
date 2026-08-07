@@ -64,13 +64,13 @@
                             @keydown.end.prevent="moveTab('{{ tab_key }}', 'end')"
                             class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-inset"
                             :class="activeTab === '{{ tab_key }}'
-                                ? 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px'
-                                : 'border-transparent text-content-muted hover:bg-surface-card hover:text-content-primary'">
+                                ? 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary dark:text-kaori-accent -mb-px'
+                                : 'border-transparent text-content-muted hover:bg-surface-card hover:text-content-primary dark:hover:text-kaori-accent'">
                         <i data-lucide="{{ tab_icon }}" class="h-4 w-4" aria-hidden="true"></i>
                         <span>{{ tab_label }}</span>
                         <span class="kaori-semantic-label inline-flex min-h-6 items-center rounded-md border px-2 text-xs font-semibold whitespace-nowrap"
                               :class="activeTab === '{{ tab_key }}'
-                                  ? 'border-brand-outline bg-kaori-soft text-kaori-primary'
+                                  ? 'border-brand-outline bg-kaori-soft text-kaori-primary dark:text-kaori-accent'
                                   : 'border-outline-subtle bg-surface-card text-content-muted'">{{ tab_count }}</span>
                     </button>
                 {% endfor %}
