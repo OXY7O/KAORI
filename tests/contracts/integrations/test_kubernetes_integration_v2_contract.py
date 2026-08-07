@@ -259,11 +259,17 @@ def test_capability_workspace_uses_registry_modal_and_consistent_typography() ->
     assert 'data-dialog-target="capability-detail-modal-{{ loop.index }}"' in capability
     assert 'record_detail_modal.render(' in capability
     assert 'data-kaori-capability-modal-content' in capability
-    assert 'Capability Contract' in capability
-    assert 'Validation Evidence' in capability
+    assert 'data-kaori-capability-modal-v2' in capability
+    assert 'Validation Decision' in capability
+    assert 'Contract Context' in capability
+    assert 'Validation Scope' in capability
+    assert 'Operational Guidance' in capability
     assert 'Operational Impact' in capability
     assert 'Recommended Action' in capability
-    assert 'Technical Verification' in capability
+    assert 'Governance Boundary' in capability
+    assert 'Independent Verification' in capability
+    assert 'Execution Context' in capability
+    assert 'technical_check.render(' not in capability
     assert 'font-sans' in capability
     assert 'font-mono' not in capability
 
@@ -271,6 +277,8 @@ def test_capability_workspace_uses_registry_modal_and_consistent_typography() ->
     assert 'data-kaori-native-dialog' in modal
     assert 'method="dialog"' in modal
     assert 'max-w-6xl' in modal
+    assert 'max-w-5xl' in modal
+    assert 'data-kaori-dialog-size="{{ size }}"' in modal
     assert 'data-kaori-dialog-close' in modal
     assert 'onclick=' not in modal
     assert 'x-teleport' not in modal
