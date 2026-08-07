@@ -1,6 +1,8 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table.html" as table_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
+{% import "components/action_button.html" as action_button %}
+{% import "integrations/components/_record_actions.html" as record_actions %}
 {% import "integrations/components/_runtime_observation_modal.html" as runtime_observation_modal %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set runtime_history_endpoint_name = runtime_history_endpoint|default(request.endpoint, true) %}
@@ -31,7 +33,7 @@
             <div class="flex flex-wrap items-center gap-2">
                 {% if current_user.has_permission('settings.view_data_lifecycle') %}
                     <a href="{{ url_for('settings.data_lifecycle.index', tab='policies', domain='runtime_observation') }}"
-                       class="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary dark:hover:text-kaori-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                       class="{{ action_button.classes() }}">
                         <i data-lucide="archive" class="h-4 w-4" aria-hidden="true"></i>
                         Manage Lifecycle
                     </a>
@@ -42,7 +44,7 @@
                         hx-swap="outerHTML"
                         hx-disabled-elt="this"
                         hx-indicator="#{{ runtime_history_loading_id }}"
-                        class="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary dark:hover:text-kaori-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-wait disabled:opacity-70">
+                        class="{{ action_button.classes() }} disabled:cursor-wait disabled:opacity-70">
                     <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
                     Refresh History
                 </button>
@@ -99,12 +101,29 @@
 
 
     {% if runtime_history.rows %}
-        <div class="border-b border-outline-subtle px-5 py-3 sm:px-6" data-kaori-runtime-history-summary>
-            <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-content-secondary">
-                <span>Ready <strong class="ml-1 font-semibold text-content-primary">{{ runtime_history.posture_counts.ready }}</strong></span>
-                <span>Attention <strong class="ml-1 font-semibold text-content-primary">{{ runtime_history.posture_counts.attention }}</strong></span>
-                <span>Blocked <strong class="ml-1 font-semibold text-content-primary">{{ runtime_history.posture_counts.blocked }}</strong></span>
-                <span>Not Observed <strong class="ml-1 font-semibold text-content-primary">{{ runtime_history.posture_counts.not_observed }}</strong></span>
+        <div class="border-b border-outline-subtle bg-surface-subtle px-5 py-4 sm:px-6"
+             data-kaori-runtime-history-summary
+             data-kaori-runtime-history-posture-strip-v3>
+            <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <p class="text-sm font-semibold text-content-primary">Observation Posture</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Latest persisted runtime states across the records on this page.</p>
+                </div>
+                <p class="text-xs font-medium text-content-muted">Immutable evidence · newest observation first</p>
+            </div>
+            <div class="grid overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+                {% set posture_summary = [
+                    ('ready', 'Ready', runtime_history.posture_counts.ready),
+                    ('degraded', 'Attention', runtime_history.posture_counts.attention),
+                    ('blocked', 'Blocked', runtime_history.posture_counts.blocked),
+                    ('not_observed', 'Not Observed', runtime_history.posture_counts.not_observed)
+                ] %}
+                {% for tone, label, count in posture_summary %}
+                    <div class="flex items-center justify-between gap-3 bg-surface-card px-3.5 py-3">
+                        {{ integration_status(tone, label, display='indicator') }}
+                        <span class="text-base font-semibold tabular-nums text-content-primary">{{ count }}</span>
+                    </div>
+                {% endfor %}
             </div>
         </div>
 
@@ -158,15 +177,10 @@
                                 {% endif %}
                             </td>
                             <td class="{{ table_ui.cell_classes(action=true) }}">
-                                <button type="button"
-                                        class="{{ table_ui.action_classes() }}"
-                                        data-kaori-dialog-open
-                                        data-dialog-target="{{ row.detail_id }}-dialog"
-                                        aria-haspopup="dialog"
-                                        aria-controls="{{ row.detail_id }}-dialog">
-                                    <span>View More</span>
-                                    <i data-lucide="expand" class="h-4 w-4" aria-hidden="true"></i>
-                                </button>
+                                {{ record_actions.view_more(
+                                    row.detail_id ~ '-dialog',
+                                    role='runtime-observation'
+                                ) }}
                             </td>
                         </tr>
                     </tbody>

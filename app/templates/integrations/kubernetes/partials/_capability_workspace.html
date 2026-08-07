@@ -4,6 +4,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_record_detail_modal.html" as record_detail_modal %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
+{% import "integrations/components/_record_actions.html" as record_actions %}
 
 {% set capability_counts = namespace(required=0, optional=0, ready=0, legacy=0, blocked=0) %}
 {% for capability_row in feature_rows %}
@@ -256,16 +257,10 @@
                                     <span class="mt-1 inline-flex lg:mt-0">{{ integration_status(tone, 'Ready' if row.status == 'ready' else ('Legacy Fallback' if row.status == 'legacy' else 'Blocked'), display='indicator') }}</span>
                                 </div>
                                 <div class="lg:text-right">
-                                    <button type="button"
-                                            class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:border-outline-focus hover:bg-surface-subtle"
-                                            data-kaori-dialog-open
-                                            data-dialog-target="capability-detail-modal-{{ loop.index }}"
-                                            aria-haspopup="dialog"
-                                            aria-controls="capability-detail-modal-{{ loop.index }}"
-                                            data-kaori-capability-view-more>
-                                        <i data-lucide="panel-top-open" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                        <span>View More</span>
-                                    </button>
+                                    {{ record_actions.view_more(
+                                        'capability-detail-modal-' ~ loop.index,
+                                        role='capability'
+                                    ) }}
                                 </div>
                             </div>
                         </article>

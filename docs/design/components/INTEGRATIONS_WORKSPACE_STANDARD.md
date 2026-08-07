@@ -257,15 +257,20 @@ app/static/js/native_dialogs.js
 
 `View More` opens a centered native `<dialog>` in the browser top layer. Provider-local expandable runtime-history detail rows are prohibited. This prevents HTMX filter swaps from carrying stale expanded-row state and guarantees the same detail composition across all providers.
 
-The dialog shows immutable persisted evidence only:
+The runtime-history workspace uses a compact `Observation Posture` strip before the table so Ready, Attention, Blocked, and Not Observed records can be scanned without reading every row. The strip remains a summary of persisted records, not a live provider-health inference.
 
-- Runtime Posture and Validation Readiness;
-- Health Score / latency / trigger;
-- Compatibility and capability snapshot;
-- Kubernetes lifecycle context when applicable;
-- diagnostic evidence and recommended action.
+`View More` is a shared Integration record action from `integrations/components/_record_actions.html`; Capability Registry and Recent Runtime Observations must not maintain separate button styling. Use the `panel-top-open` icon, compact `h-9` geometry, shared outline/focus behavior, and native dialog attributes.
 
-Native dialog controls use `data-kaori-dialog-open`, `data-dialog-target`, and `data-kaori-dialog-close`. Inline `onclick`, `onchange`, and `onsubmit` handlers are prohibited in Integration templates.
+The runtime observation dialog uses the shared `integrations/components/_record_detail_modal.html` with `size='standard'`. It is content-sized and decision-first rather than a full-height evidence dump. Information order is:
+
+1. `Observation Decision` — persisted Runtime Posture + Validation Readiness;
+2. `Observation Context` — observed time, trigger, health score, and latency;
+3. `Evidence Context` — compatibility contract, capability snapshot, and state change;
+4. Kubernetes lifecycle boundary when applicable;
+5. capability evidence / persisted drift when applicable;
+6. `Diagnostic Review` — provider check, status, evidence, and Recommended Action.
+
+The dialog shows immutable persisted evidence only. Do not infer live health, do not add nested disclosures, and do not restore a provider-specific standalone modal shell. Native dialog controls use `data-kaori-dialog-open`, `data-dialog-target`, and `data-kaori-dialog-close`. Inline `onclick`, `onchange`, and `onsubmit` handlers are prohibited in Integration templates.
 
 ## Provider Binding Workspace Layout
 

@@ -10,11 +10,15 @@ def read(relative_path: str) -> str:
 def test_capability_view_more_uses_native_top_layer_dialog() -> None:
     capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
     modal = read('app/templates/integrations/components/_record_detail_modal.html')
+    actions = read('app/templates/integrations/components/_record_actions.html')
 
     assert 'data-kaori-capability-native-dialogs' in capability
-    assert 'data-kaori-dialog-open' in capability
-    assert 'data-dialog-target="capability-detail-modal-{{ loop.index }}"' in capability
-    assert 'aria-haspopup="dialog"' in capability
+    assert 'record_actions.view_more(' in capability
+    assert "'capability-detail-modal-' ~ loop.index" in capability
+    assert "role='capability'" in capability
+    assert 'data-kaori-dialog-open' in actions
+    assert 'data-dialog-target="{{ dialog_target }}"' in actions
+    assert 'aria-haspopup="dialog"' in actions
     assert 'record_detail_modal.render(' in capability
 
     assert '<dialog id="{{ modal_id }}"' in modal

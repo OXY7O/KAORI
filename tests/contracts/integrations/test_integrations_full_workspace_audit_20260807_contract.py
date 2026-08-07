@@ -19,15 +19,19 @@ def test_runtime_observation_details_use_one_shared_native_dialog() -> None:
     history = read('app/templates/integrations/partials/_runtime_history.html')
     modal = read('app/templates/integrations/components/_runtime_observation_modal.html')
     controller = read('app/static/js/native_dialogs.js')
+    actions = read('app/templates/integrations/components/_record_actions.html')
     layout = read('app/templates/layouts/app.html')
 
     assert 'integrations/components/_runtime_observation_modal.html' in history
     assert 'runtime_observation_modal.render(' in history
-    assert 'data-kaori-dialog-open' in history
-    assert 'data-dialog-target="{{ row.detail_id }}-dialog"' in history
+    assert 'record_actions.view_more(' in history
+    assert "row.detail_id ~ '-dialog'" in history
+    assert 'data-kaori-dialog-open' in actions
+    assert 'data-dialog-target="{{ dialog_target }}"' in actions
     assert 'data-kaori-runtime-observation-detail' not in history
-    assert '<dialog id="{{ modal_id }}"' in modal
-    assert 'data-kaori-runtime-observation-dialog' in modal
+    assert 'record_detail_modal.render(' in modal
+    assert "size='standard'" in modal
+    assert 'data-kaori-runtime-observation-dialog-v3' in modal
     assert 'onclick=' not in history
     assert 'onclick=' not in modal
     assert "dialog.showModal()" in controller

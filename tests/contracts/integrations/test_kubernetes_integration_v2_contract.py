@@ -69,9 +69,11 @@ def test_kubernetes_activity_is_navigation_and_capability_modal_scope_isolated()
     assert '@click=' not in activity_link.split('</a>', 1)[0]
 
     assert 'data-kaori-capability-native-dialogs' in capability
-    assert 'data-kaori-capability-view-more' in capability
-    assert 'data-kaori-dialog-open' in capability
-    assert 'data-dialog-target="capability-detail-modal-{{ loop.index }}"' in capability
+    actions = read('app/templates/integrations/components/_record_actions.html')
+    assert 'record_actions.view_more(' in capability
+    assert "role='capability'" in capability
+    assert 'data-kaori-dialog-open' in actions
+    assert 'data-dialog-target="{{ dialog_target }}"' in actions
     assert 'record_detail_modal.render(' in capability
     assert 'data-kaori-native-dialog' in modal
     assert 'onclick=' not in modal
@@ -233,7 +235,6 @@ def test_capability_workspace_uses_registry_modal_and_consistent_typography() ->
         'data-kaori-capability-matrix-row',
         'data-kaori-capability-layout',
         'data-kaori-capability-side-panel',
-        'data-kaori-capability-view-more',
         'data-kaori-capability-decision-panel',
         'data-kaori-readiness-score',
         'data-kaori-capability-posture-list',
@@ -255,8 +256,8 @@ def test_capability_workspace_uses_registry_modal_and_consistent_typography() ->
     assert 'Validation Workflow' in capability
     assert "('1', 'Interpret'" in capability
     assert "('4', 'Synchronize'" in capability
-    assert 'data-kaori-dialog-open' in capability
-    assert 'data-dialog-target="capability-detail-modal-{{ loop.index }}"' in capability
+    assert 'record_actions.view_more(' in capability
+    assert "'capability-detail-modal-' ~ loop.index" in capability
     assert 'record_detail_modal.render(' in capability
     assert 'data-kaori-capability-modal-content' in capability
     assert 'data-kaori-capability-modal-v2' in capability

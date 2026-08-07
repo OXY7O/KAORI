@@ -26,14 +26,18 @@ def test_runtime_history_keeps_compact_context_and_shared_modal_detail() -> None
     template = read('app/templates/integrations/partials/_runtime_history.html')
 
     assert 'data-kaori-runtime-history-summary' in template
+    assert 'data-kaori-runtime-history-posture-strip-v3' in template
+    assert 'Observation Posture' in template
+    assert 'record_actions.view_more(' in template
+    assert "role='runtime-observation'" in template
     assert '>Observation</th>' in template
     assert '>Runtime Posture</th>' in template
     assert '>Health</th>' in template
     assert '>Capability Context</th>' in template
     assert '>State Change</th>' in template
     assert '>Details</th>' in template
-    assert 'data-kaori-dialog-open' in template
-    assert 'View More' in template
+    assert 'record_actions.view_more(' in template
+    assert "role='runtime-observation'" in template
     assert 'runtime_observation_modal.render(' in template
     assert 'data-kaori-runtime-observation-detail' not in template
 
