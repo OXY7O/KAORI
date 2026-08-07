@@ -11,9 +11,9 @@ def test_validation_decision_panel_keeps_desktop_side_rail_layout():
     source = _source()
 
     assert "data-kaori-capability-side-rail-layout" in source
-    assert "lg:grid-cols-[minmax(0,1fr)_20rem]" in source
-    assert "xl:grid-cols-[minmax(0,1fr)_21rem]" in source
-    assert "2xl:grid-cols-[minmax(0,1fr)_22rem]" in source
+    assert "lg:grid-cols-[minmax(0,1fr)_22rem]" in source
+    assert "xl:grid-cols-[minmax(0,1fr)_24rem]" in source
+    assert "2xl:grid-cols-[minmax(0,1fr)_25rem]" in source
     assert 'class="self-start lg:sticky lg:top-4"' in source
 
 
@@ -37,3 +37,12 @@ def test_validation_decision_panel_keeps_readiness_progress_and_semantics():
     assert "Operational Gate" in source
     assert "Next Operational Action" in source
     assert "Interpret → Remediate → Revalidate → Synchronize" in source
+
+
+def test_validation_decision_panel_preserves_full_workflow_copy_without_truncation():
+    source = _source()
+
+    assert 'Interpret → Remediate → Revalidate → Synchronize' in source
+    assert 'truncate text-xs text-content-secondary">Interpret → Remediate' not in source
+    assert '[overflow-wrap:anywhere]' in source
+    assert 'xl:px-5' in source
