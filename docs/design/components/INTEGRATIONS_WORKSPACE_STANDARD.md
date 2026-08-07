@@ -37,6 +37,10 @@ Responsibilities:
 
 Provider templates supply factual labels, icons, endpoint data, compatibility evidence, and actions. They do not copy shared geometry or semantic colors.
 
+### Hero Context Action Limit
+
+Integration Hero context panels follow the global KAORI Hero contract: one action is preferred and **two visible actions are the hard maximum**. A detail page may expose one contextual task action plus `Back to Registry`; it must not render a third peer action. On Kubernetes connection detail, `Review Validation` has priority when the user can run validation. `Manage Connection` is the permission-aware fallback when validation is unavailable because Configuration is already a first-class workspace tab. If neither task action is available, `Back to Registry` expands as the single full-width context action.
+
 ## Provider Registry Contract
 
 Prometheus and Alertmanager registries share:

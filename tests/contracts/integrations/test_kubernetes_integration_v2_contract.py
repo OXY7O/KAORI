@@ -102,7 +102,10 @@ def test_kubernetes_actions_are_permission_aware() -> None:
     connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
 
     assert "current_user.has_permission('clusters.sync')" in detail
-    assert "current_user.has_permission('settings.manage_integrations')" in detail
+    assert "{% elif current_user.has_permission('settings.manage_integrations') %}" in detail
+    assert "hero_has_context_action" in detail
+    assert "page_hero.context_actions_classes(2 if hero_has_context_action else 1)" in detail
+    assert detail.count('page_hero.context_action_classes()') == 3  # two mutually-exclusive task branches + registry navigation
     routes = read('app/integrations/routes.py')
     assert "@integrations_bp.get('/kubernetes')" in routes
     assert 'def kubernetes() -> ResponseReturnValue:' in routes

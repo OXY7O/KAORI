@@ -51,7 +51,8 @@
                                 <p class="{{ page_hero.context_metric_helper_classes() }}">Served APIs and access evidence</p>
                             </div>
                         </div>
-                        <div class="{{ page_hero.context_actions_classes() }}">
+                        {% set hero_has_context_action = current_user.has_permission('clusters.sync') or current_user.has_permission('settings.manage_integrations') %}
+                        <div class="{{ page_hero.context_actions_classes(2 if hero_has_context_action else 1) }}">
                             {% if current_user.has_permission('clusters.sync') %}
                                 <button type="button"
                                         @click="setTab('validation', true)"
@@ -59,8 +60,7 @@
                                     <i data-lucide="scan-line" class="h-4 w-4"></i>
                                     Review Validation
                                 </button>
-                            {% endif %}
-                            {% if current_user.has_permission('settings.manage_integrations') %}
+                            {% elif current_user.has_permission('settings.manage_integrations') %}
                                 <button type="button"
                                         @click="setTab('configuration', true)"
                                         class="{{ page_hero.context_action_classes() }}">
