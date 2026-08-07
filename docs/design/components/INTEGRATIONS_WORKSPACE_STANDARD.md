@@ -259,7 +259,7 @@ app/static/js/native_dialogs.js
 
 The runtime-history workspace uses a compact `Observation Posture` strip before the table so Ready, Attention, Blocked, and Not Observed records can be scanned without reading every row. The strip remains a summary of persisted records, not a live provider-health inference.
 
-`View More` is a shared Integration record action from `integrations/components/_record_actions.html`; Capability Registry and Recent Runtime Observations must not maintain separate button styling. Use the `panel-top-open` icon, compact `h-9` geometry, shared outline/focus behavior, and native dialog attributes.
+`View More` is a shared Integration record action from `integrations/components/_record_actions.html`; Capability Registry and Recent Runtime Observations must not maintain separate button styling. The action reuses the canonical KAORI table-action primitive (`table_ui.action_classes()`): compact rectangular geometry, neutral default surface, controlled Violet hover/focus emphasis, and a quiet trailing `chevron-right`. Avoid oversized `h-9` registry buttons, `panel-top-open` iconography, or page-local action classes.
 
 The runtime observation dialog uses the shared `integrations/components/_record_detail_modal.html` with `size='standard'`. It is content-sized and decision-first rather than a full-height evidence dump. Information order is:
 

@@ -15,9 +15,12 @@ def test_runtime_and_capability_use_one_view_more_action_contract() -> None:
     assert 'macro view_more(' in actions
     assert 'data-kaori-dialog-open' in actions
     assert 'data-dialog-target="{{ dialog_target }}"' in actions
-    assert 'panel-top-open' in actions
-    assert 'h-9' in actions
-    assert 'hover:border-outline-focus' in actions
+    assert '{% import "components/table.html" as table_ui %}' in actions
+    assert '{{ table_ui.action_classes() }}' in actions
+    assert 'data-lucide="chevron-right"' in actions
+    assert 'panel-top-open' not in actions
+    assert 'h-9' not in actions
+    assert 'data-kaori-record-action' in actions
     assert 'record_actions.view_more(' in runtime
     assert "role='runtime-observation'" in runtime
     assert 'record_actions.view_more(' in capability

@@ -19,6 +19,12 @@ def test_capability_view_more_uses_native_top_layer_dialog() -> None:
     assert 'data-kaori-dialog-open' in actions
     assert 'data-dialog-target="{{ dialog_target }}"' in actions
     assert 'aria-haspopup="dialog"' in actions
+    assert '{% import "components/table.html" as table_ui %}' in actions
+    assert '{{ table_ui.action_classes() }}' in actions
+    assert 'data-lucide="chevron-right"' in actions
+    assert 'data-lucide="panel-top-open"' not in actions
+    assert 'h-9 items-center' not in actions
+    assert 'data-kaori-record-action' in actions
     assert 'record_detail_modal.render(' in capability
 
     assert '<dialog id="{{ modal_id }}"' in modal
