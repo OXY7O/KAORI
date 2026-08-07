@@ -169,6 +169,10 @@ Source Readiness, Binding Validation, and Effective Resolution are separate evid
 
 Long selectors, source identities, and scope keys use controlled wrapping. Unexpected persistence failures must record sanitized user-facing Activity Audit evidence and preserve the original stack trace with application exception logging.
 
+## Kubernetes Operational Readiness Layout Contract
+
+`Operational Readiness Paths` uses a three-column desktop composition: Kubernetes Inventory, Kubernetes Analytics, and Alert Intelligence are peer cards in one row at `xl` width. No consumer card spans multiple desktop columns. Each card keeps its readiness path vertical inside the card so provider/source, binding, and effective-consumer evidence stays readable at one-third workspace width. The Provider Resolution Boundary remains a full-width explanatory strip below all three cards.
+
 ## Kubernetes Registry Navigation Contract
 
 Kubernetes connection detail pages return to the canonical Kubernetes Integration registry via `integrations.kubernetes`. The legacy `cluster.list_clusters` endpoint is not part of the current cluster blueprint and must not be referenced by active Integration templates. The visible action label is `Back to Registry`, matching the parent workspace and avoiding an invalid Flask URL build at render time.

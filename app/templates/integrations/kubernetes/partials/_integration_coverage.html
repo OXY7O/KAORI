@@ -73,13 +73,13 @@
         </div>
     </header>
 
-    <div class="grid items-start gap-4 p-4 sm:p-5 xl:grid-cols-2" data-kaori-operational-readiness-paths>
+    <div class="grid items-stretch gap-4 p-4 sm:p-5 xl:grid-cols-3" data-kaori-operational-readiness-paths>
         {% for path in paths %}
-            <article class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card {% if loop.last %}xl:col-span-2{% endif %}" data-kaori-operational-path-card>
-                <header class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+            <article class="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-outline-subtle bg-surface-card" data-kaori-operational-path-card>
+                <header class="px-4 py-4 sm:px-5">
                     <div class="flex min-w-0 items-start gap-3">
                         {{ integration_ui.palette_icon(path.icon, 'brand') }}
-                        <div class="min-w-0">
+                        <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
                                 <h3 class="text-sm font-semibold text-content-primary">{{ path.title }}</h3>
                                 {{ integration_status(path.status, path.label, display='indicator') }}
@@ -87,18 +87,20 @@
                             <p class="mt-2 text-xs leading-5 text-content-secondary">{{ path.description }}</p>
                         </div>
                     </div>
-                    <button type="button"
-                            @click="openPath = openPath === '{{ path.key }}' ? null : '{{ path.key }}'"
-                            :aria-expanded="(openPath === '{{ path.key }}').toString()"
-                            class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-surface-subtle hover:text-content-primary">
-                        <span>View Evidence</span>
-                        <i data-lucide="chevron-down" class="h-3.5 w-3.5 transition" :class="openPath === '{{ path.key }}' ? 'rotate-180' : ''" aria-hidden="true"></i>
-                    </button>
+                    <div class="mt-3 flex justify-end">
+                        <button type="button"
+                                @click="openPath = openPath === '{{ path.key }}' ? null : '{{ path.key }}'"
+                                :aria-expanded="(openPath === '{{ path.key }}').toString()"
+                                class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-surface-subtle hover:text-content-primary">
+                            <span>View Evidence</span>
+                            <i data-lucide="chevron-down" class="h-3.5 w-3.5 transition" :class="openPath === '{{ path.key }}' ? 'rotate-180' : ''" aria-hidden="true"></i>
+                        </button>
+                    </div>
                 </header>
 
-                <div class="border-t border-outline-subtle bg-surface-subtle px-4 py-3 sm:px-5">
-                    <ol class="grid gap-3 md:grid-cols-3 {% if not path.direct %}xl:grid-cols-4{% endif %}" aria-label="{{ path.title }} readiness path">
-                        <li class="flex min-w-0 items-start gap-2" data-kaori-readiness-step>
+                <div class="flex-1 border-t border-outline-subtle bg-surface-subtle px-4 py-3 sm:px-5">
+                    <ol class="divide-y divide-outline-subtle" aria-label="{{ path.title }} readiness path">
+                        <li class="flex min-w-0 items-start gap-3 py-3 first:pt-0 last:pb-0" data-kaori-readiness-step>
                             <span class="{{ integration_ui.palette_icon_classes('brand', size='xs', rounded='md') }}" aria-hidden="true">
                                 <i data-lucide="server" class="h-3.5 w-3.5"></i>
                             </span>
@@ -108,7 +110,7 @@
                             </div>
                         </li>
                         {% if not path.direct %}
-                            <li class="flex min-w-0 items-start gap-2" data-kaori-readiness-step>
+                            <li class="flex min-w-0 items-start gap-3 py-3 last:pb-0" data-kaori-readiness-step>
                                 <span class="{{ integration_ui.palette_icon_classes('neutral', size='xs', rounded='md') }}" aria-hidden="true">
                                     <i data-lucide="radio-tower" class="h-3.5 w-3.5"></i>
                                 </span>
@@ -117,14 +119,24 @@
                                     <p class="mt-1 text-xs leading-5 text-content-muted">Provider validation and runtime eligibility</p>
                                 </div>
                             </li>
-                            <li class="min-w-0" data-kaori-readiness-step>
-                                <p class="text-xs font-semibold text-content-primary">Cluster Binding</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Governed scope identity and validation</p>
+                            <li class="flex min-w-0 items-start gap-3 py-3 last:pb-0" data-kaori-readiness-step>
+                                <span class="{{ integration_ui.palette_icon_classes('neutral', size='xs', rounded='md') }}" aria-hidden="true">
+                                    <i data-lucide="link-2" class="h-3.5 w-3.5"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="text-xs font-semibold text-content-primary">Cluster Binding</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Governed scope identity and validation</p>
+                                </div>
                             </li>
                         {% endif %}
-                        <li class="min-w-0" data-kaori-readiness-step>
-                            <p class="text-xs font-semibold text-content-primary">Effective Consumer</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ path.title }} operational gate</p>
+                        <li class="flex min-w-0 items-start gap-3 py-3 last:pb-0" data-kaori-readiness-step>
+                            <span class="{{ integration_ui.palette_icon_classes('brand', size='xs', rounded='md') }}" aria-hidden="true">
+                                <i data-lucide="circle-check" class="h-3.5 w-3.5"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-content-primary">Effective Consumer</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ path.title }} operational gate</p>
+                            </div>
                         </li>
                     </ol>
                 </div>
@@ -142,7 +154,7 @@
             </article>
         {% endfor %}
 
-        <section class="xl:col-span-2 border-t border-outline-subtle pt-4" aria-label="Provider resolution boundary">
+        <section class="border-t border-outline-subtle pt-4 xl:col-span-3" aria-label="Provider resolution boundary">
             <div class="flex items-start gap-3">
                 {{ integration_ui.palette_icon('route', 'brand', size='sm') }}
                 <div class="min-w-0">

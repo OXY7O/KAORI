@@ -170,9 +170,13 @@ def test_kubernetes_coverage_uses_compact_operational_path_cards() -> None:
     assert 'x-show="openPath ===' in coverage
     assert 'x-show="evidenceOpen"' not in coverage
     assert 'Provider Resolution Boundary' in coverage
-    assert 'xl:grid-cols-2' in coverage
-    assert 'xl:col-span-2' in coverage
-    assert 'items-start' in coverage
+    assert 'xl:grid-cols-3' in coverage
+    assert 'xl:col-span-3' in coverage
+    assert 'items-stretch' in coverage
+    assert 'xl:grid-cols-2' not in coverage
+    assert '{% if loop.last %}xl:col-span-2{% endif %}' not in coverage
+    assert 'flex h-full min-w-0 flex-col' in coverage
+    assert 'divide-y divide-outline-subtle' in coverage
     assert "{% if not path.direct %}" in coverage
     assert 'compact_state(' in coverage
     assert 'data-lucide="arrow-right"' not in coverage
