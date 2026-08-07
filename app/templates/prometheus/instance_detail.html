@@ -46,8 +46,7 @@
              }
          }"
          x-on:hashchange.window="syncTabFromLocation()"
-         x-on:popstate.window="syncTabFromLocation()"> document.getElementById('prometheus-detail-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); } } }"
-         x-on:hashchange.window="activeTab = ['configuration', 'validation', 'runtime', 'scope'].includes(window.location.hash.replace('#', '')) ? window.location.hash.replace('#', '') : 'configuration'">
+         x-on:popstate.window="syncTabFromLocation()">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
