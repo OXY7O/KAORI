@@ -63,7 +63,7 @@
 
 {% macro status_label(text, tone='info', icon=None, size='compact') -%}
     {% set resolved_tone = semantic_tone(tone)|trim %}
-    <span class="kaori-semantic-label inline-flex min-h-6 items-center gap-1 rounded-md px-2 py-0.5 font-semibold {{ 'text-xs leading-5' if size == 'detail' else 'text-xs leading-4' }} {{ tone_surface_classes(resolved_tone) }}">
+    <span class="kaori-semantic-label inline-flex min-h-6 max-w-full items-center gap-1 rounded-md px-2 py-0.5 font-semibold whitespace-nowrap {{ 'text-xs leading-5' if size == 'detail' else 'text-xs leading-4' }} {{ tone_surface_classes(resolved_tone) }}">
         {% if icon %}
             <i data-lucide="{{ icon }}"
                class="h-3 w-3 shrink-0 {{ tone_icon_classes(resolved_tone) }}"
@@ -75,7 +75,7 @@
 
 {% macro status_indicator_label(text, tone='info', legacy_icon=None, size='compact') -%}
     {% set resolved_tone = semantic_tone(tone)|trim %}
-    <span class="kaori-semantic-label inline-flex min-h-6 items-center gap-1.5 rounded-md px-2 py-0.5 font-semibold {{ 'text-xs leading-5' if size == 'detail' else 'text-xs leading-4' }} {{ tone_surface_classes(resolved_tone) }}">
+    <span class="kaori-semantic-label inline-flex min-h-6 max-w-full items-center gap-1.5 rounded-md px-2 py-0.5 font-semibold whitespace-nowrap {{ 'text-xs leading-5' if size == 'detail' else 'text-xs leading-4' }} {{ tone_surface_classes(resolved_tone) }}">
         <span class="h-1.5 w-1.5 shrink-0 rounded-full {{ tone_dot_classes(resolved_tone) }}" aria-hidden="true"></span>
         <span>{{ text }}</span>
     </span>
@@ -83,7 +83,7 @@
 
 {% macro special_label(text, tone='info', icon='badge-info', size='compact') -%}
     {% set resolved_tone = semantic_tone(tone)|trim %}
-    <span class="kaori-special-label inline-flex min-h-6 items-center gap-1 rounded-md border px-2 py-0.5 font-semibold {{ 'text-xs leading-5' if size == 'detail' else 'text-xs leading-4' }} {{ tone_border_classes(resolved_tone) }} {{ tone_surface_classes(resolved_tone) }}">
+    <span class="kaori-special-label inline-flex min-h-6 max-w-full items-center gap-1 rounded-md border px-2 py-0.5 font-semibold whitespace-nowrap {{ 'text-xs leading-5' if size == 'detail' else 'text-xs leading-4' }} {{ tone_border_classes(resolved_tone) }} {{ tone_surface_classes(resolved_tone) }}">
         <i data-lucide="{{ icon }}"
            class="h-3 w-3 shrink-0 {{ tone_icon_classes(resolved_tone) }}"
            aria-hidden="true"></i>
@@ -98,6 +98,6 @@
                class="h-3 w-3 shrink-0 text-kaori-primary"
                aria-hidden="true"></i>
         {% endif %}
-        <span class="{{ 'break-all whitespace-normal' if wrap else '' }}">{{ text }}</span>
+        <span class="{{ 'break-all whitespace-normal' if wrap else 'whitespace-nowrap' }}">{{ text }}</span>
     </span>
 {%- endmacro %}
