@@ -91,8 +91,10 @@ def test_kubernetes_runtime_health_requires_persisted_observation() -> None:
     assert "'health_status': 'not_observed'" in presentation
     assert "'health_score_display': 'N/A'" in presentation
     assert 'without inferring health from connection state' in presentation
-    assert 'Runtime Not Observed' in runtime
-    assert 'Runtime health is sourced only from persisted observations and is not inferred from connection or validation state.' in runtime
+    assert "runtime_gate_label = 'Observation Required'" in runtime
+    assert 'Not Observed' in runtime
+    assert 'Persisted Runtime Refresh evidence' in runtime
+    assert 'Health gate only; validation remains independent.' in runtime
     assert 'Validation Readiness' in runtime
 
 def test_kubernetes_actions_are_permission_aware() -> None:
@@ -320,8 +322,9 @@ def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
     assert 'Lifecycle Impact' in inventory
     assert 'Connection Lifecycle' in inventory
 
-    assert 'data-kaori-runtime-workspace-v6' in runtime
-    assert 'Evidence Ownership' in runtime
+    assert 'data-kaori-runtime-workspace-v8' in runtime
+    assert 'data-kaori-runtime-decision-summary' in runtime
+    assert 'Primary Finding' in runtime
     assert 'Diagnostic Evidence' in runtime
     assert 'data-kaori-runtime-diagnostic-list' in runtime
     assert 'data-kaori-runtime-diagnostic-row' in runtime
@@ -333,14 +336,14 @@ def test_kubernetes_runtime_uses_neutral_surfaces_with_controlled_brand_identity
     inventory = read('app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html')
     history = read('app/templates/integrations/partials/_runtime_history.html')
 
-    assert 'data-kaori-runtime-workspace-v6' in runtime
-    assert 'data-kaori-runtime-snapshot' in runtime
+    assert 'data-kaori-runtime-workspace-v8' in runtime
     assert 'data-kaori-runtime-main-layout' in runtime
-    assert 'data-kaori-runtime-decision-panel' in runtime
-    assert 'Operational Focus' in runtime
-    assert 'Observation Boundary' in runtime
+    assert 'data-kaori-runtime-decision-summary' in runtime
+    assert 'data-kaori-runtime-primary-finding' in runtime
+    assert 'Primary Finding' in runtime
+    assert 'Evidence Boundary' in runtime
     assert 'bg-surface-card' in runtime
-    assert "palette_icon('activity', 'brand'" in runtime
+    assert "palette_icon('gauge', 'brand'" in runtime
     assert "runtime_history_variant='violet-v2'" not in detail
     assert "runtime_history_variant='violet-v2'" not in runtime
 
@@ -424,7 +427,7 @@ def test_kubernetes_integration_uses_canonical_compact_label_roles() -> None:
     assert "display='text'" in capability
     assert "display='indicator'" in capability
     assert 'components/table_label.html' in runtime
-    assert "metadata_label((runtime_state.diagnostics|length) ~ ' checks')" in runtime
+    assert "metadata_label((runtime_state.diagnostics|length) ~ ' Checks')" in runtime
     assert "display='indicator'" in runtime
     assert "display='indicator'" in inventory
     assert "integration_status(health_tone, row.effective_status_label, display='indicator')" in history

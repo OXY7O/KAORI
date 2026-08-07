@@ -8,21 +8,23 @@ def _source() -> str:
     return TEMPLATE.read_text(encoding='utf-8')
 
 
-def test_operational_focus_uses_clear_record_composition() -> None:
+def test_primary_finding_is_compact_and_nonduplicative() -> None:
     source = _source()
 
-    assert 'data-kaori-operational-focus' in source
-    assert 'data-kaori-operational-focus-list' in source
-    assert 'Prioritized evidence that needs operator review before the next controlled action.' in source
-    assert "(' item' if runtime_state.attention_factors|length == 1 else ' items')" in source
-    assert 'flex items-start justify-between gap-3' in source
-    assert "integration_status(factor.status, display='indicator')" in source
+    assert 'data-kaori-runtime-primary-finding' in source
+    assert 'Primary Finding' in source
+    assert "(' Item' if runtime_state.attention_factors|length == 1 else ' Items')" in source
+    assert '{{ runtime_state.summary }}' in source
+    finding = source.split('data-kaori-runtime-primary-finding', 1)[1].split('runtime-next-action-title', 1)[0]
+    assert 'runtime_state.message' not in finding
+    assert 'truncate' not in finding
 
 
-def test_operational_focus_wraps_evidence_without_truncation() -> None:
+def test_current_page_defers_long_diagnostic_detail_to_runtime_observation_modal() -> None:
     source = _source()
 
-    focus = source.split('data-kaori-operational-focus', 1)[1].split('runtime-next-action-title', 1)[0]
-    assert '[overflow-wrap:anywhere]' in focus
-    assert 'truncate' not in focus
-    assert 'No Current Runtime Attention' in focus
+    diagnostic = source.split('data-kaori-runtime-diagnostic-list', 1)[1].split('data-kaori-runtime-observation-boundary', 1)[0]
+    assert '{{ item.summary }}' in diagnostic
+    assert '{{ item.detail }}' not in diagnostic
+    assert '{{ item.recommendation }}' not in diagnostic
+    assert 'Detailed evidence and remediation are available from Recent Runtime Observations.' in source

@@ -29,13 +29,14 @@ def test_kubernetes_runtime_health_uses_latest_decision_workspace() -> None:
     source = read("app/templates/integrations/kubernetes/partials/_runtime_workspace.html")
 
     assert "Runtime Health & Diagnostics" in source
-    assert "data-kaori-runtime-workspace-v6" in source
-    assert "Runtime Snapshot" in source
-    assert "Persisted Runtime Posture" in source
-    assert "Diagnostic Evidence" in source
+    assert "data-kaori-runtime-workspace-v8" in source
     assert "Runtime Decision" in source
-    assert "Operational Focus" in source
-    assert "Runtime health is sourced only from persisted observations" in source
+    assert "data-kaori-runtime-decision-summary" in source
+    assert "Runtime Posture" in source
+    assert "Primary Finding" in source
+    assert "Diagnostic Evidence" in source
+    assert "runtime_state.message" not in source
+    assert "Persisted Runtime Refresh evidence" in source
 
 
 def test_integration_scope_pagination_uses_title_case_item_label() -> None:

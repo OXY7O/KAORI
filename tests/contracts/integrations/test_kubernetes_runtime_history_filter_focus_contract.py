@@ -55,16 +55,14 @@ def test_kubernetes_runtime_history_explicitly_enables_filters_in_full_and_parti
     assert 'runtime_history_filters_enabled=true' in workspace
 
 
-def test_operational_focus_uses_compact_priority_rows_instead_of_nested_cards():
+def test_runtime_primary_finding_replaces_duplicate_operational_focus_rows():
     source = _text(RUNTIME_WORKSPACE)
-    assert 'Prioritized evidence that needs operator review before the next controlled action.' in source
-    assert 'data-kaori-operational-focus-list' in source
-    assert 'border-y border-outline-subtle' in source
-    assert "factor.key == 'compatibility'" in source
-    assert 'Review the Lifecycle Contract above' in source
-    focus = source.split('data-kaori-operational-focus', 1)[1].split('Next Operational Action', 1)[0]
-    assert 'rounded-lg border border-outline-subtle bg-surface-card' not in focus
-
+    assert 'data-kaori-runtime-primary-finding' in source
+    assert 'Primary Finding' in source
+    assert '{{ runtime_state.summary }}' in source
+    assert 'Operational Focus' not in source
+    assert 'data-kaori-operational-focus-list' not in source
+    assert 'runtime_state.message' not in source
 
 def test_changed_templates_parse_as_jinja():
     env = Environment()

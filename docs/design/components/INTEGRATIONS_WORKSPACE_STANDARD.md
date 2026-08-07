@@ -263,14 +263,14 @@ The runtime-history workspace uses a compact `Observation Posture` strip before 
 
 The runtime observation dialog uses the shared `integrations/components/_record_detail_modal.html` with `size='standard'`. It is content-sized and decision-first rather than a full-height evidence dump. Information order is:
 
-1. `Observation Decision` — persisted Runtime Posture + Validation Readiness;
-2. `Observation Context` — observed time, trigger, health score, and latency;
-3. `Evidence Context` — compatibility contract, capability snapshot, and state change;
+1. `Observation Decision` — persisted Runtime Posture + Validation Readiness, without repeating the diagnostic error body;
+2. `Observation Context` — observed time, trigger, health score, latency, compatibility profile, and state change;
+3. standalone observation detail only when no diagnostic rows exist;
 4. Kubernetes lifecycle boundary when applicable;
 5. capability evidence / persisted drift when applicable;
-6. `Diagnostic Review` — provider check, status, evidence, and Recommended Action.
+6. `Diagnostic Review` — the single authoritative location for detailed provider error evidence and Recommended Action.
 
-The dialog shows immutable persisted evidence only. Do not infer live health, do not add nested disclosures, and do not restore a provider-specific standalone modal shell. Native dialog controls use `data-kaori-dialog-open`, `data-dialog-target`, and `data-kaori-dialog-close`. Inline `onclick`, `onchange`, and `onsubmit` handlers are prohibited in Integration templates.
+The dialog shows immutable persisted evidence only. A provider error must not be rendered once as an operational reading and then repeated again inside Diagnostic Review. Do not infer live health, do not add nested disclosures, and do not restore a provider-specific standalone modal shell. Native dialog controls use `data-kaori-dialog-open`, `data-dialog-target`, and `data-kaori-dialog-close`. Inline `onclick`, `onchange`, and `onsubmit` handlers are prohibited in Integration templates.
 
 ## Provider Binding Workspace Layout
 
@@ -319,7 +319,7 @@ Do not copy runtime observation modals, dialog JavaScript, semantic label geomet
 The final Integration refinement preserves the last approved KAORI workspace behavior and treats regressions to older inline/expanded layouts as defects.
 
 - **Minimum Validation RBAC Example** opens its complete baseline and optional Secret-reader YAML in a modal. The summary card remains compact; large RBAC manifests must not expand the manage workspace inline. Inside the modal, baseline and optional sensitive-access manifests are stacked vertically as separate full-width evidence sections; they must not be rendered side-by-side. Each manifest owns its own copy action, scope metadata, bounded code viewport, and access-boundary guidance.
-- **Kubernetes Runtime Health & Diagnostics** uses the persisted-observation workspace: Runtime Snapshot and Diagnostic Evidence in the main column, with Runtime Decision / Operational Focus in the sticky decision rail. Runtime health must never be inferred from connection or validation state.
+- **Kubernetes Runtime Health & Diagnostics** uses one full-width horizontal `Runtime Decision` surface above lifecycle and diagnostic evidence. It merges Runtime Posture, Current Runtime Gate, Validation Readiness, Observation Context, Primary Finding, and Next Operational Action. Do not restore a duplicate Runtime Snapshot plus sticky Runtime Decision rail. Current-page error copy is concise; detailed provider errors and remediation belong to the Recent Runtime Observations modal. Runtime health must never be inferred from connection or validation state.
 - Pagination nouns shown to operators use Title Case, including `Scopes` and `Connections`.
 - **Prometheus Validation & PromQL** keeps the registry compact. The `Contract` cell shows only the contract category; source owner, criteria, technical evidence, complete PromQL, impact, and recommended action belong in the shared record-detail modal opened by `View More`.
 - **Alertmanager Validation & Capability Matrix** follows the same modal-detail contract. API request evidence and remediation must not expand as an inline table row.

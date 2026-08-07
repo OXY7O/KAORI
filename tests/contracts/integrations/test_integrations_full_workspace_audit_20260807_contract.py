@@ -31,7 +31,7 @@ def test_runtime_observation_details_use_one_shared_native_dialog() -> None:
     assert 'data-kaori-runtime-observation-detail' not in history
     assert 'record_detail_modal.render(' in modal
     assert "size='standard'" in modal
-    assert 'data-kaori-runtime-observation-dialog-v3' in modal
+    assert 'data-kaori-runtime-observation-dialog-v4' in modal
     assert 'onclick=' not in history
     assert 'onclick=' not in modal
     assert "dialog.showModal()" in controller

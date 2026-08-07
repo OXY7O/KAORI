@@ -102,6 +102,7 @@ def runtime_observation_state_view(
             'observed_at': None,
             'observed_at_display': 'Never',
             'message': 'No persisted Kubernetes runtime observation is available yet.',
+            'summary': 'No persisted runtime observation is available yet.',
             'latency_ms': None,
             'latency_display': 'N/A',
         }
@@ -147,6 +148,7 @@ def runtime_observation_state_view(
             observation.observed_at, empty='Not observed', include_seconds=True
         ),
         'message': observation.message or '',
+        'summary': _runtime_summary(observation.message or '', diagnostics, health_status),
         'latency_ms': observation.latency_ms,
         'latency_display': present_milliseconds(observation.latency_ms),
     }
@@ -212,6 +214,8 @@ def runtime_history_view(
                 'removed_capabilities': [present_key_label(value) for value in removed_capabilities],
                 'capability_changed': bool(added_capabilities or removed_capabilities),
                 'message': row.message,
+                'summary': _runtime_summary(row.message or '', diagnostics, row.health_status or 'not_observed'),
+                'standalone_message': (row.message or '') if not diagnostics else '',
                 'diagnostics': diagnostics,
                 'diagnostic_count': len(diagnostics),
                 'lifecycle_context': lifecycle_context,
@@ -276,6 +280,7 @@ def _diagnostic_rows(items: list[object]) -> list[dict[str, object]]:
                     'status': status,
                     'status_label': present_key_label(status),
                     'detail': str(item.get('detail') or 'No diagnostic detail was recorded.'),
+                    'summary': _concise_diagnostic_summary(str(item.get('detail') or 'No diagnostic detail was recorded.')),
                     'severity': str(item.get('severity') or 'info'),
                     'recommendation': str(item.get('recommendation') or ''),
                     'duration_ms': item.get('duration_ms'),
@@ -283,6 +288,47 @@ def _diagnostic_rows(items: list[object]) -> list[dict[str, object]]:
                 }
             )
     return rows
+
+
+def _runtime_summary(message: str, diagnostics: list[dict[str, object]], health_status: str) -> str:
+    priority = {'failed': 0, 'warning': 1, 'pending': 2, 'unknown': 3, 'success': 4}
+    candidates = sorted(
+        diagnostics,
+        key=lambda item: priority.get(str(item.get('status') or 'unknown'), 5),
+    )
+    if candidates:
+        summary = str(candidates[0].get('summary') or '').strip()
+        if summary:
+            return summary
+    if message.strip():
+        return _concise_diagnostic_summary(message)
+    if health_status in {'unhealthy', 'failed'}:
+        return 'Runtime health is blocked by the latest persisted observation.'
+    if health_status in {'degraded', 'warning'}:
+        return 'Runtime evidence requires operator review.'
+    if health_status == 'healthy':
+        return 'Runtime evidence is healthy.'
+    return 'Runtime health has not been observed yet.'
+
+
+def _concise_diagnostic_summary(detail: str, *, limit: int = 132) -> str:
+    compact = ' '.join(str(detail or '').split())
+    lowered = compact.lower()
+    if 'could not resolve' in lowered and ('hostname' in lowered or 'ip address' in lowered):
+        return 'Kubernetes API hostname could not be resolved.'
+    if 'connection refused' in lowered:
+        return 'Kubernetes API connection was refused.'
+    if 'timed out' in lowered or 'timeout' in lowered:
+        return 'Kubernetes API request timed out.'
+    if 'certificate' in lowered and ('verify' in lowered or 'x509' in lowered or 'tls' in lowered):
+        return 'Kubernetes API TLS certificate validation failed.'
+    first_sentence = compact.split('. ', 1)[0].rstrip('.')
+    if not first_sentence:
+        first_sentence = compact
+    if len(first_sentence) <= limit:
+        return first_sentence + ('.' if first_sentence and not first_sentence.endswith(('.', '!', '?')) else '')
+    shortened = first_sentence[: limit - 1].rsplit(' ', 1)[0].rstrip(' ,;:-')
+    return f'{shortened}…'
 
 
 def _kubernetes_lifecycle_context(provider: str, metadata: Mapping[str, Any] | None) -> dict[str, object] | None:
