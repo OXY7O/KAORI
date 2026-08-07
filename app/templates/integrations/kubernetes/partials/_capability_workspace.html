@@ -27,27 +27,17 @@
 
 <section id="kubernetes-capability-workspace"
          class="relative font-sans {{ integration_ui.section_shell_classes() }}"
-         data-kaori-capability-modal-scope
+         data-kaori-capability-native-dialogs
          x-data='{
             query: "",
             requirement: "all",
             status: "all",
-            detailOpen: false,
-            selectedDetail: null,
             matches(element) {
                 const search = (element.dataset.search || "").toLowerCase();
                 const matchesQuery = !this.query.trim() || search.includes(this.query.trim().toLowerCase());
                 const matchesRequirement = this.requirement === "all" || element.dataset.requirement === this.requirement;
                 const matchesStatus = this.status === "all" || element.dataset.status === this.status;
                 return matchesQuery && matchesRequirement && matchesStatus;
-            },
-            openDetail(key) {
-                this.selectedDetail = key;
-                this.detailOpen = true;
-            },
-            closeDetail() {
-                this.detailOpen = false;
-                this.selectedDetail = null;
             }
          }'
          data-kaori-capability-workspace-v3
@@ -271,8 +261,8 @@
                                 <div class="lg:text-right">
                                     <button type="button"
                                             class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:border-outline-focus hover:bg-surface-subtle"
-                                            @click='openDetail({{ row.key|tojson }})'
-                                            :aria-expanded="detailOpen && selectedDetail === {{ row.key|tojson }}"
+                                            onclick="document.getElementById('capability-detail-modal-{{ loop.index }}').showModal()"
+                                            aria-haspopup="dialog"
                                             aria-controls="capability-detail-modal-{{ loop.index }}"
                                             data-kaori-capability-view-more>
                                         <i data-lucide="panel-top-open" class="h-3.5 w-3.5" aria-hidden="true"></i>
