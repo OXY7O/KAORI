@@ -37,10 +37,6 @@ Responsibilities:
 
 Provider templates supply factual labels, icons, endpoint data, compatibility evidence, and actions. They do not copy shared geometry or semantic colors.
 
-### Hero Context Action Limit
-
-Integration Hero context panels follow the global KAORI Hero contract: one action is preferred and **two visible actions are the hard maximum**. A detail page may expose one contextual task action plus `Back to Registry`; it must not render a third peer action. On Kubernetes connection detail, `Review Validation` has priority when the user can run validation. `Manage Connection` is the permission-aware fallback when validation is unavailable because Configuration is already a first-class workspace tab. If neither task action is available, `Back to Registry` expands as the single full-width context action.
-
 ## Provider Registry Contract
 
 Prometheus and Alertmanager registries share:
@@ -326,6 +322,8 @@ The final Integration refinement preserves the last approved KAORI workspace beh
 - **Kubernetes Runtime Health & Diagnostics** uses the persisted-observation workspace: Runtime Snapshot and Diagnostic Evidence in the main column, with Runtime Decision / Operational Focus in the sticky decision rail. Runtime health must never be inferred from connection or validation state.
 - Pagination nouns shown to operators use Title Case, including `Scopes` and `Connections`.
 - **Prometheus Validation & PromQL** keeps the registry compact. The `Contract` cell shows only the contract category; source owner, criteria, technical evidence, complete PromQL, impact, and recommended action belong in the shared record-detail modal opened by `View More`.
+- **Validation Decision precedes evidence.** The Prometheus validation decision is a compact full-width horizontal decision surface placed above the PromQL Capability Registry. It must not consume a persistent right rail. Retention and operational-domain detail belongs in the shared `Review Scope` modal so the decision surface remains concise.
+- **PromQL registry width is protected.** The capability registry uses the full workspace width, fixed column proportions, and no forced minimum table width; horizontal scrolling must not be introduced for the canonical desktop workspace.
 - **Alertmanager Validation & Capability Matrix** follows the same modal-detail contract. API request evidence and remediation must not expand as an inline table row.
 - `View More` for persisted runtime observations and validation/capability registries uses the shared/native dialog pattern. Inline disclosure remains allowed only for intentionally local supporting evidence that is not a registry record-detail workflow.
 - **Kubernetes Capability Registry `View More`** uses a compact `standard` native dialog with one deliberate reading flow rather than a wall of nested cards: `Capability Decision` → `Contract Snapshot` → `Validation Evidence` → `Operational Decision` → `Verification Command`. The contract snapshot is a four-fact strip; validation evidence is a symmetric three-step row; operational impact and recommended action are peer decisions with a single governance boundary beneath them. The verification command is always visible and carries compact scope/stability/identity metadata instead of a second side panel. Do not nest another disclosure/accordion inside this modal; the modal is already the detail boundary.

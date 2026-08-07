@@ -22,18 +22,30 @@ def test_configuration_keeps_endpoint_product_semantics_explicit():
     assert 'Detection Mode' in text
 
 
-def test_validation_uses_promql_registry_and_decision_panel():
+def test_validation_uses_horizontal_decision_before_full_width_registry():
     text = VALIDATION.read_text()
     assert 'Prometheus Validation & PromQL' in text
-    assert 'PromQL Capability Registry' in text
     assert 'Validation Decision' in text
-    assert 'Latest Validation Scope' in text
+    assert 'PromQL Capability Registry' in text
+    assert text.index('Validation Decision') < text.index('PromQL Capability Registry')
+    assert 'data-kaori-prometheus-validation-decision' in text
+    assert 'data-kaori-prometheus-validation-scope-modal' in text
+    assert 'Review Scope' in text
     assert 'Retention Coverage' in text
     assert 'Operational Domains' in text
     assert 'View More' in text
-    assert 'data-kaori-prometheus-validation-details' in text
-    assert 'lg:grid-cols-[minmax(0,1fr)_20rem]' in text
-    assert 'lg:sticky lg:top-4' in text
+    assert 'lg:grid-cols-[minmax(0,1fr)_20rem]' not in text
+    assert 'lg:sticky lg:top-4' not in text
+    assert 'data-kaori-prometheus-validation-details' not in text
+
+
+def test_promql_registry_is_full_width_and_does_not_force_horizontal_scroll():
+    text = VALIDATION.read_text()
+    assert 'overflow-hidden' in text
+    assert 'table-fixed' in text
+    assert '<col class="w-[43%]">' in text
+    assert "table_ui.table_classes('min-w-[820px]')" not in text
+    assert 'overflow-x-auto' not in text
 
 
 def test_validation_filters_are_local_and_buttonless():
