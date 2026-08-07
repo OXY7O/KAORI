@@ -129,12 +129,24 @@
     function openButton(button) {
         const { target, row } = resolveElements(button)
         const detailUrl = button.dataset.detailUrl || ''
-        if (!target || !row || !detailUrl) return
+        if (!target || !row) return
 
         closeGroup(button.dataset.detailGroup || 'default', button)
         row.classList.remove('hidden')
         target.dataset.open = 'true'
         setButtonState(button, true)
+
+        if (target.dataset.detailStatic === 'true') {
+            target.removeAttribute('aria-busy')
+            refreshIcons()
+            return
+        }
+
+        if (!detailUrl) {
+            closeButton(button)
+            return
+        }
+
         renderLoading(target, button)
         refreshIcons()
         loadDetail(button, target, detailUrl)
