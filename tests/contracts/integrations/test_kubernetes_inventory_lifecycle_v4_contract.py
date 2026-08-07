@@ -13,7 +13,9 @@ def test_inventory_lifecycle_uses_connected_snapshot_and_side_decision_panel():
     assert 'data-kaori-inventory-lifecycle-v4' in text
     assert 'data-kaori-inventory-snapshot-strip' in text
     assert 'data-kaori-inventory-decision' in text
-    assert 'xl:grid-cols-[minmax(0,1fr)_23rem]' in text
+    assert 'xl:grid-cols-[minmax(0,1fr)_28rem]' in text
+    assert '2xl:grid-cols-[minmax(0,1fr)_30rem]' in text
+    assert 'max-w-[64%]' in text
     assert 'Connection Lifecycle' in text
 
 
