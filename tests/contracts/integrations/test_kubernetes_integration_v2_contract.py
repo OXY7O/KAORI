@@ -157,28 +157,34 @@ def test_kubernetes_coverage_uses_compact_operational_path_cards() -> None:
     assert 'data-kaori-operational-readiness-paths' in coverage
     assert 'data-kaori-operational-path-card' in coverage
     assert 'data-kaori-readiness-step' in coverage
+    assert 'data-kaori-operational-outcome' in coverage
     assert 'Kubernetes Inventory' in coverage
     assert 'Kubernetes Analytics' in coverage
     assert 'Alert Intelligence' in coverage
-    assert "'provider': 'Prometheus'" in coverage
-    assert "'provider': 'Alertmanager'" in coverage
+    assert 'Readiness Path' in coverage
+    assert '4 Stages' in coverage
     assert 'Direct Cluster Authority' in coverage
+    assert 'Provider Resolution' in coverage
+    assert 'Prometheus Source' in coverage
+    assert 'Alertmanager Source' in coverage
     assert 'Cluster Binding' in coverage
     assert 'Effective Consumer' in coverage
-    assert 'View Evidence' in coverage
-    assert 'x-data="{ openPath: null }"' in coverage
-    assert 'x-show="openPath ===' in coverage
-    assert 'x-show="evidenceOpen"' not in coverage
+    assert 'Operational Outcome' in coverage
+    assert 'Direct Path' in coverage
     assert 'Provider Resolution Boundary' in coverage
     assert 'xl:grid-cols-3' in coverage
     assert 'xl:col-span-3' in coverage
     assert 'items-stretch' in coverage
+    assert 'flex h-full min-w-0 flex-col' in coverage
+    assert "'steps': [" in coverage
+    assert 'grid-cols-[2rem_minmax(0,1fr)_auto]' in coverage
+    assert 'View Evidence' not in coverage
+    assert 'x-data="{ openPath: null }"' not in coverage
+    assert 'x-show="openPath ===' not in coverage
+    assert '@click="openPath' not in coverage
+    assert 'chevron-down' not in coverage
     assert 'xl:grid-cols-2' not in coverage
     assert '{% if loop.last %}xl:col-span-2{% endif %}' not in coverage
-    assert 'flex h-full min-w-0 flex-col' in coverage
-    assert 'divide-y divide-outline-subtle' in coverage
-    assert "{% if not path.direct %}" in coverage
-    assert 'compact_state(' in coverage
     assert 'data-lucide="arrow-right"' not in coverage
     assert 'Operational Coverage Lanes' not in coverage
     assert 'data-kaori-operational-coverage-lanes' not in coverage
@@ -186,8 +192,6 @@ def test_kubernetes_coverage_uses_compact_operational_path_cards() -> None:
     assert 'Operational Provider Coverage' not in coverage
     assert 'data-kaori-provider-coverage' not in coverage
     assert 'min-h-[260px]' not in coverage
-    assert 'bg-kaori-soft' not in coverage
-
 
 def test_secret_capability_is_optional_and_kept_out_of_baseline_readiness() -> None:
     compatibility = read('app/integrations/kubernetes/compatibility.py')
@@ -374,7 +378,7 @@ def test_kubernetes_integration_overview_uses_controlled_kaori_icon_palette() ->
     assert "palette_icon('workflow', 'brand'" in coverage
     assert "palette_icon(path.icon, 'brand')" in coverage
     assert "palette_icon_classes('brand'" in coverage
-    assert "palette_icon_classes('neutral'" in coverage
+    assert "else 'neutral'" in coverage
     assert "palette_icon('route', 'brand'" in coverage
     assert "'tone': 'info'" not in coverage
     assert "'tone': 'warning'" not in coverage

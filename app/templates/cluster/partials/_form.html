@@ -2,6 +2,7 @@
 {% import "components/form_action_bar.html" as form_action_bar %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/table.html" as table_ui %}
+{% import "components/action_button.html" as action_button %}
 <form id="cluster-registration-form"
       method="POST"
       enctype="multipart/form-data"
@@ -15,7 +16,7 @@
     {% endif %}
     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
         <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4 sm:px-6">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
                 <i data-lucide="{{ form_icon }}" class="h-5 w-5"></i>
             </div>
             <div class="min-w-0">
@@ -45,7 +46,7 @@
         <div class="space-y-6 p-5 sm:p-6">
             <section>
                 <div class="mb-4 flex items-start gap-3">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="fingerprint" class="h-4 w-4"></i></span>
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="fingerprint" class="h-4 w-4"></i></span>
                     <div>
                         <h3 class="text-sm font-semibold text-content-primary">Connection Identity</h3>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Stable KAORI identity used by inventory, validation, bindings, runtime history, and Activity Audit.</p>
@@ -74,7 +75,7 @@
                             hx-indicator="#kubernetes-connection-test-loading"
                             hx-disabled-elt="this"
                             x-on:click="const form = $el.closest('form'); if (!form.reportValidity()) { $event.preventDefault(); $event.stopImmediatePropagation(); }"
-                            class="group inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-wait disabled:opacity-70">
+                            class="group {{ action_button.classes('secondary') }} disabled:cursor-wait disabled:opacity-70">
                         <i data-lucide="plug-zap"
                            class="h-4 w-4 group-[.htmx-request]:animate-pulse"></i>Test Connection
                     </button>
@@ -82,7 +83,7 @@
                 <div class="space-y-5 p-4 sm:p-5">
                     <label class="block">
                         <span class="mb-2 block text-sm font-semibold text-content-primary">{{ 'Kubeconfig' if form_mode == 'add' else 'Replacement Kubeconfig' }}</span>
-                        <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-4">
+                        <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-4 dark:border-brand-outline dark:bg-surface-muted">
                             {{ form.kubeconfig(class="w-full text-sm font-medium text-content-primary file:mr-3 file:rounded-md file:border-0 file:bg-kaori-primary file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-kaori-primary-hover") }}
                             <p class="mt-2 text-xs leading-5 text-content-secondary">
                                 {% if form_mode == 'add' %}
@@ -109,12 +110,12 @@
         </div>
         {% call form_action_bar.render(action_helper, aria_label='Cluster Form Actions') %}
             <a href="{{ url_for('integrations.kubernetes') }}"
-               class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">Cancel</a>
+               class="{{ action_button.classes('secondary') }}">Cancel</a>
             <button type="submit"
                     data-operation-submit
                     data-loading-label="{{ 'Registering Cluster...' if form_mode == 'add' else 'Updating cluster...' }}"
                     {% if form_mode == 'add' %}disabled x-bind:disabled="!connectionVerified" x-bind:title="connectionVerified ? 'Save this tested Kubernetes connection' : 'Run Test Connection successfully before saving'"{% endif %}
-                    class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card disabled:cursor-not-allowed disabled:bg-content-disabled disabled:opacity-70">
+                    class="{{ action_button.classes('primary') }}">
                 <i data-lucide="save" class="h-4 w-4"></i><span data-operation-submit-label>{{ submit_label }}</span>
             </button>
         {% endcall %}

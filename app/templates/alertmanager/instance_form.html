@@ -10,6 +10,7 @@
 {% import "components/form_action_bar.html" as form_action_bar %}
 {% import "components/context_guidance_card.html" as context_guidance_card %}
 {% import "components/information_guide_card.html" as information_guide_card %}
+{% import "components/action_button.html" as action_button %}
 {% block title %}{{ instance.name if instance else 'Register Alertmanager Instance' }} · KAORI{% endblock title %}
 {% block dashboard_content %}
     {% set submitted_form = draft_form if draft_form is defined else none %}
@@ -198,8 +199,8 @@
                                                     {% if selected_deployment == value %}selected{% endif %}>{{ label }}</option>
                                         {% endfor %}
                                     </select>
-                                    <div class="mt-2 rounded-lg border border-brand-outline bg-kaori-soft px-3 py-2.5">
-                                        <p class="text-xs leading-5 text-content-secondary"><span class="font-semibold text-kaori-primary">What this controls:</span> the operational ownership and deployment model recorded for this connection. It does not restrict scope bindings or capability usage.</p>
+                                    <div class="mt-2 rounded-lg border border-brand-outline bg-kaori-soft px-3 py-2.5 dark:bg-surface-muted">
+                                        <p class="text-xs leading-5 text-content-secondary"><span class="font-semibold text-kaori-primary dark:text-kaori-accent">What this controls:</span> the operational ownership and deployment model recorded for this connection. It does not restrict scope bindings or capability usage.</p>
                                     </div>
                                 </div>
                             </div>
@@ -230,7 +231,7 @@
                                             hx-indicator="#alertmanager-connection-test-loading"
                                             hx-disabled-elt="this"
                                             x-on:click="const form = $el.closest('form'); if (!form.reportValidity()) { $event.preventDefault(); $event.stopImmediatePropagation(); }"
-                                            class="group inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-wait disabled:opacity-70">
+                                            class="group {{ action_button.classes('secondary') }} disabled:cursor-wait disabled:opacity-70">
                                         <i data-lucide="plug-zap"
                                            class="h-4 w-4 group-[.htmx-request]:animate-pulse"></i>
                                         Test Connection
@@ -361,7 +362,7 @@
                                 data-operation-submit
                                 data-loading-label="{{ 'Updating instance...' if instance else 'Registering instance...' }}"
                                 {% if not instance %}disabled x-bind:disabled="!connectionVerified" x-bind:title="connectionVerified ? 'Register this verified connection' : 'Run Test Connection successfully before registering'"{% endif %}
-                                class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card disabled:cursor-not-allowed disabled:bg-content-disabled disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
+                                class="{{ action_button.classes('primary') }}">
                             <i data-lucide="save" class="h-4 w-4"></i>
                             <span data-operation-submit-label>{{ 'Update Instance' if instance else 'Register Instance' }}</span>
                         </button>
@@ -410,9 +411,9 @@
                 {% endif %}
                 {% if initial_cluster %}
                     <section class="overflow-hidden rounded-xl border border-brand-outline bg-surface-card shadow-sm">
-                        <header class="border-b border-brand-outline bg-kaori-soft px-4 py-3.5">
+                        <header class="border-b border-brand-outline bg-kaori-soft px-4 py-3.5 dark:bg-surface-muted">
                             <div class="flex items-start gap-3">
-                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary">
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary dark:text-kaori-accent">
                                     <i data-lucide="boxes" class="h-4 w-4"></i>
                                 </div>
                                 <div>
@@ -469,8 +470,8 @@
                         </div>
                     </div>
                     <div class="space-y-3">
-                        <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4">
-                            <p class="text-xs font-bold uppercase tracking-wide text-kaori-primary">Detected Profile</p>
+                        <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4 dark:bg-surface-muted">
+                            <p class="text-xs font-bold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">Detected Profile</p>
                             <p class="mt-2 font-bold text-content-primary">{{ instance.capability_profile or 'Validation required' }}</p>
                             <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI uses detected capabilities at runtime instead of hard-coded product or version assumptions.</p>
                         </div>
@@ -633,9 +634,9 @@
                     <form method="post"
                           action="{{ url_for('alertmanager.create_binding', instance_id=instance.id) }}"
                           x-data="{ scopeType: 'kubernetes_cluster' }"
-                          class="self-start space-y-4 rounded-xl border border-brand-outline bg-kaori-soft p-4">
+                          class="self-start space-y-4 rounded-xl border border-brand-outline bg-kaori-soft p-4 dark:bg-surface-muted">
                         <div>
-                            <p class="text-xs font-bold uppercase tracking-wide text-kaori-primary">Add or Update Binding</p>
+                            <p class="text-xs font-bold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">Add or Update Binding</p>
                             <p class="mt-1 text-xs leading-5 text-content-secondary">One primary source is allowed per scope; secondary and fallback sources may coexist.</p>
                         </div>
                         <label class="block text-xs font-bold text-content-primary">

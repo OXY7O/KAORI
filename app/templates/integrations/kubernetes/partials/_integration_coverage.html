@@ -11,62 +11,119 @@
         'key': 'inventory',
         'icon': 'database',
         'title': 'Kubernetes Inventory',
-        'provider': 'Kubernetes',
-        'direct': true,
         'status': 'ready' if stats.total > 0 and stats.ready == stats.total else ('degraded' if stats.ready > 0 else ('validation_required' if stats.total > 0 else 'not_configured')),
         'label': (stats.ready ~ ' / ' ~ stats.total ~ ' Ready') if stats.total > 0 else 'Not Configured',
-        'description': 'Inventory consumes the validated Kubernetes connection directly without an external observability-source binding.',
-        'evidence': [
-            ('Direct Cluster Authority', stats.ready ~ ' of ' ~ stats.total ~ ' API-ready connections'),
-            ('Validated API & RBAC', stats.ready ~ ' connections currently eligible'),
-            ('Inventory Consumer', 'Direct Kubernetes authority')
+        'description': 'Direct Kubernetes authority supplies the inventory consumer without an external observability provider.',
+        'outcome': 'Inventory Ready' if stats.total > 0 and stats.ready == stats.total else ('Inventory Partially Ready' if stats.ready > 0 else 'Inventory Requires Validation'),
+        'steps': [
+            {
+                'title': 'Direct Cluster Authority',
+                'detail': 'Kubernetes API + effective RBAC',
+                'value': (stats.ready ~ ' / ' ~ stats.total ~ ' Ready') if stats.total > 0 else 'Not Configured',
+                'mode': 'required'
+            },
+            {
+                'title': 'Provider Resolution',
+                'detail': 'No external observability provider is required',
+                'value': 'Direct Path',
+                'mode': 'direct'
+            },
+            {
+                'title': 'Cluster Binding',
+                'detail': 'No provider-to-cluster binding is required',
+                'value': 'Direct Path',
+                'mode': 'direct'
+            },
+            {
+                'title': 'Effective Consumer',
+                'detail': 'Kubernetes Inventory operational gate',
+                'value': (stats.ready ~ ' / ' ~ stats.total ~ ' Ready') if stats.total > 0 else 'Not Configured',
+                'mode': 'effective'
+            }
         ]
     },
     {
         'key': 'analytics',
         'icon': 'chart-no-axes-combined',
         'title': 'Kubernetes Analytics',
-        'provider': 'Prometheus',
-        'direct': false,
         'status': 'ready' if stats.total > 0 and stats.prometheus_operational == stats.total else ('degraded' if stats.prometheus_operational > 0 or stats.prometheus_configured > 0 else ('validation_required' if stats.total > 0 else 'not_configured')),
         'label': (stats.prometheus_operational ~ ' / ' ~ stats.total ~ ' Operational') if stats.total > 0 else 'Not Configured',
-        'description': 'Analytics requires Kubernetes readiness plus an eligible Prometheus source and validated cluster binding.',
-        'evidence': [
-            ('Kubernetes Authority', stats.ready ~ ' API-ready'),
-            ('Source Readiness', stats.prometheus_source_ready ~ ' Prometheus sources ready'),
-            ('Cluster Binding', stats.prometheus_binding_ready ~ ' bindings ready'),
-            ('Effective Consumer', stats.prometheus_operational ~ ' Analytics scopes operational')
+        'description': 'Analytics resolves Kubernetes authority through an eligible Prometheus source and validated cluster binding.',
+        'outcome': 'Analytics Operational' if stats.total > 0 and stats.prometheus_operational == stats.total else ('Analytics Partially Operational' if stats.prometheus_operational > 0 else 'Analytics Requires Resolution'),
+        'steps': [
+            {
+                'title': 'Direct Cluster Authority',
+                'detail': 'Kubernetes API + effective RBAC',
+                'value': (stats.ready ~ ' / ' ~ stats.total ~ ' Ready') if stats.total > 0 else 'Not Configured',
+                'mode': 'required'
+            },
+            {
+                'title': 'Prometheus Source',
+                'detail': 'Provider validation and runtime eligibility',
+                'value': stats.prometheus_source_ready ~ ' Ready',
+                'mode': 'provider'
+            },
+            {
+                'title': 'Cluster Binding',
+                'detail': 'Governed scope identity and validation',
+                'value': stats.prometheus_binding_ready ~ ' Ready',
+                'mode': 'binding'
+            },
+            {
+                'title': 'Effective Consumer',
+                'detail': 'Kubernetes Analytics operational gate',
+                'value': (stats.prometheus_operational ~ ' / ' ~ stats.total ~ ' Operational') if stats.total > 0 else 'Not Configured',
+                'mode': 'effective'
+            }
         ]
     },
     {
         'key': 'alerts',
         'icon': 'siren',
         'title': 'Alert Intelligence',
-        'provider': 'Alertmanager',
-        'direct': false,
         'status': 'ready' if stats.total > 0 and stats.alertmanager_operational == stats.total else ('degraded' if stats.alertmanager_operational > 0 or stats.alertmanager_configured > 0 else ('validation_required' if stats.total > 0 else 'not_configured')),
         'label': (stats.alertmanager_operational ~ ' / ' ~ stats.total ~ ' Operational') if stats.total > 0 else 'Not Configured',
-        'description': 'Alert Intelligence requires Kubernetes readiness plus an eligible Alertmanager source and validated cluster binding.',
-        'evidence': [
-            ('Kubernetes Authority', stats.ready ~ ' API-ready'),
-            ('Source Readiness', stats.alertmanager_source_ready ~ ' Alertmanager sources ready'),
-            ('Cluster Binding', stats.alertmanager_binding_ready ~ ' bindings ready'),
-            ('Effective Consumer', stats.alertmanager_operational ~ ' alert scopes operational')
+        'description': 'Alert Intelligence resolves Kubernetes authority through an eligible Alertmanager source and validated cluster binding.',
+        'outcome': 'Alert Intelligence Operational' if stats.total > 0 and stats.alertmanager_operational == stats.total else ('Alert Intelligence Partially Operational' if stats.alertmanager_operational > 0 else 'Alert Intelligence Requires Resolution'),
+        'steps': [
+            {
+                'title': 'Direct Cluster Authority',
+                'detail': 'Kubernetes API + effective RBAC',
+                'value': (stats.ready ~ ' / ' ~ stats.total ~ ' Ready') if stats.total > 0 else 'Not Configured',
+                'mode': 'required'
+            },
+            {
+                'title': 'Alertmanager Source',
+                'detail': 'Provider validation and runtime eligibility',
+                'value': stats.alertmanager_source_ready ~ ' Ready',
+                'mode': 'provider'
+            },
+            {
+                'title': 'Cluster Binding',
+                'detail': 'Governed scope identity and validation',
+                'value': stats.alertmanager_binding_ready ~ ' Ready',
+                'mode': 'binding'
+            },
+            {
+                'title': 'Effective Consumer',
+                'detail': 'Alert Intelligence operational gate',
+                'value': (stats.alertmanager_operational ~ ' / ' ~ stats.total ~ ' Operational') if stats.total > 0 else 'Not Configured',
+                'mode': 'effective'
+            }
         ]
     }
 ] %}
 
 <section aria-labelledby="kubernetes-integration-coverage-title"
          class="{{ integration_ui.section_shell_classes() }}"
-         data-kaori-coverage-summary
-         x-data="{ openPath: null }">
+         data-kaori-coverage-summary>
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div class="flex min-w-0 items-start gap-3">
                 {{ integration_ui.palette_icon('workflow', 'brand', size='lg', rounded='xl') }}
                 <div class="min-w-0">
                     <h2 id="kubernetes-integration-coverage-title" class="text-lg font-semibold text-content-primary">Operational Readiness Paths</h2>
-                    <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Follow each consumer path from Kubernetes authority through optional provider resolution and its effective operational gate.</p>
+                    <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Compare how each operational consumer resolves Kubernetes authority, provider readiness, binding evidence, and its effective consumer gate.</p>
                 </div>
             </div>
             {{ compact_state(coverage_status, (stats.fully_operational ~ ' of ' ~ stats.total ~ ' Operational') if stats.total > 0 else 'Not Configured') }}
@@ -76,7 +133,7 @@
     <div class="grid items-stretch gap-4 p-4 sm:p-5 xl:grid-cols-3" data-kaori-operational-readiness-paths>
         {% for path in paths %}
             <article class="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-outline-subtle bg-surface-card" data-kaori-operational-path-card>
-                <header class="px-4 py-4 sm:px-5">
+                <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
                     <div class="flex min-w-0 items-start gap-3">
                         {{ integration_ui.palette_icon(path.icon, 'brand') }}
                         <div class="min-w-0 flex-1">
@@ -87,79 +144,44 @@
                             <p class="mt-2 text-xs leading-5 text-content-secondary">{{ path.description }}</p>
                         </div>
                     </div>
-                    <div class="mt-3 flex justify-end">
-                        <button type="button"
-                                @click="openPath = openPath === '{{ path.key }}' ? null : '{{ path.key }}'"
-                                :aria-expanded="(openPath === '{{ path.key }}').toString()"
-                                class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-surface-subtle hover:text-content-primary">
-                            <span>View Evidence</span>
-                            <i data-lucide="chevron-down" class="h-3.5 w-3.5 transition" :class="openPath === '{{ path.key }}' ? 'rotate-180' : ''" aria-hidden="true"></i>
-                        </button>
-                    </div>
                 </header>
 
-                <div class="flex-1 border-t border-outline-subtle bg-surface-subtle px-4 py-3 sm:px-5">
-                    <ol class="divide-y divide-outline-subtle" aria-label="{{ path.title }} readiness path">
-                        <li class="flex min-w-0 items-start gap-3 py-3 first:pt-0 last:pb-0" data-kaori-readiness-step>
-                            <span class="{{ integration_ui.palette_icon_classes('brand', size='xs', rounded='md') }}" aria-hidden="true">
-                                <i data-lucide="server" class="h-3.5 w-3.5"></i>
-                            </span>
-                            <div class="min-w-0">
-                                <p class="text-xs font-semibold text-content-primary">Direct Cluster Authority</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Kubernetes API + effective RBAC</p>
-                            </div>
-                        </li>
-                        {% if not path.direct %}
-                            <li class="flex min-w-0 items-start gap-3 py-3 last:pb-0" data-kaori-readiness-step>
-                                <span class="{{ integration_ui.palette_icon_classes('neutral', size='xs', rounded='md') }}" aria-hidden="true">
-                                    <i data-lucide="radio-tower" class="h-3.5 w-3.5"></i>
+                <div class="flex-1 px-4 py-4 sm:px-5">
+                    <div class="mb-3 flex items-center justify-between gap-3">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Readiness Path</p>
+                        <p class="text-xs font-medium text-content-muted">4 Stages</p>
+                    </div>
+
+                    <ol class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-subtle" aria-label="{{ path.title }} readiness path">
+                        {% for step in path.steps %}
+                            <li class="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)_auto] items-start gap-3 border-b border-outline-subtle px-3 py-3 last:border-b-0" data-kaori-readiness-step>
+                                <span class="{{ integration_ui.palette_icon_classes('brand' if step.mode in ['required', 'effective'] else 'neutral', size='xs', rounded='md') }} text-xs font-semibold tabular-nums" aria-hidden="true">
+                                    {{ '%02d'|format(loop.index) }}
                                 </span>
                                 <div class="min-w-0">
-                                    <p class="text-xs font-semibold text-content-primary">{{ path.provider }} Source</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Provider validation and runtime eligibility</p>
+                                    <p class="text-xs font-semibold text-content-primary">{{ step.title }}</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ step.detail }}</p>
                                 </div>
+                                <p class="max-w-28 pt-0.5 text-right text-xs font-semibold leading-5 {{ 'text-kaori-primary dark:text-kaori-accent' if step.mode in ['required', 'effective'] else 'text-content-secondary' }}">{{ step.value }}</p>
                             </li>
-                            <li class="flex min-w-0 items-start gap-3 py-3 last:pb-0" data-kaori-readiness-step>
-                                <span class="{{ integration_ui.palette_icon_classes('neutral', size='xs', rounded='md') }}" aria-hidden="true">
-                                    <i data-lucide="link-2" class="h-3.5 w-3.5"></i>
-                                </span>
-                                <div class="min-w-0">
-                                    <p class="text-xs font-semibold text-content-primary">Cluster Binding</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Governed scope identity and validation</p>
-                                </div>
-                            </li>
-                        {% endif %}
-                        <li class="flex min-w-0 items-start gap-3 py-3 last:pb-0" data-kaori-readiness-step>
-                            <span class="{{ integration_ui.palette_icon_classes('brand', size='xs', rounded='md') }}" aria-hidden="true">
-                                <i data-lucide="circle-check" class="h-3.5 w-3.5"></i>
-                            </span>
-                            <div class="min-w-0">
-                                <p class="text-xs font-semibold text-content-primary">Effective Consumer</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ path.title }} operational gate</p>
-                            </div>
-                        </li>
+                        {% endfor %}
                     </ol>
                 </div>
 
-                <div x-show="openPath === '{{ path.key }}'" x-cloak class="border-t border-outline-subtle px-4 py-4 sm:px-5">
-                    <div class="grid gap-3 sm:grid-cols-2">
-                        {% for label, value in path.evidence %}
-                            <div class="flex items-start justify-between gap-4 border-b border-outline-subtle pb-2 last:border-b-0 last:pb-0 sm:last:border-b">
-                                <p class="text-xs font-medium text-content-muted">{{ label }}</p>
-                                <p class="max-w-[60%] text-right text-xs font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
+                <footer class="border-t border-outline-subtle bg-surface-hover px-4 py-3 sm:px-5" data-kaori-operational-outcome>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Operational Outcome</p>
+                    <p class="mt-1.5 text-sm font-semibold text-content-primary">{{ path.outcome }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Effective consumer resolution for this operational path.</p>
+                </footer>
             </article>
         {% endfor %}
 
-        <section class="border-t border-outline-subtle pt-4 xl:col-span-3" aria-label="Provider resolution boundary">
+        <section class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3 xl:col-span-3" aria-label="Provider resolution boundary">
             <div class="flex items-start gap-3">
                 {{ integration_ui.palette_icon('route', 'brand', size='sm') }}
                 <div class="min-w-0">
                     <p class="text-xs font-semibold text-content-primary">Provider Resolution Boundary</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Kubernetes Inventory follows direct cluster authority. Kubernetes Analytics and Alert Intelligence additionally require provider readiness, a validated Cluster Binding, and Effective Consumer resolution. These states remain separate evidence dimensions.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Kubernetes Inventory remains on the direct authority path. Kubernetes Analytics and Alert Intelligence add provider readiness and Cluster Binding before Effective Consumer resolution; these remain separate evidence dimensions and should not be collapsed into Kubernetes connection readiness.</p>
                 </div>
             </div>
         </section>

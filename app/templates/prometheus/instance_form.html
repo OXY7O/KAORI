@@ -9,6 +9,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/context_guidance_card.html" as context_guidance_card %}
 {% import "components/information_guide_card.html" as information_guide_card %}
+{% import "components/action_button.html" as action_button %}
 {% block title %}{{ 'Edit' if instance else 'Register' }} Prometheus Connection · KAORI{% endblock title %}
 {% block dashboard_content %}
     <div id="prometheus-registration-workspace"
@@ -135,7 +136,7 @@
                                         hx-indicator="#prometheus-connection-test-loading"
                                         hx-disabled-elt="this"
                                         x-on:click="const form = $el.closest('form'); if (!form.reportValidity()) { $event.preventDefault(); $event.stopImmediatePropagation(); }"
-                                        class="group inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-wait disabled:opacity-70">
+                                        class="group {{ action_button.classes('secondary') }} disabled:cursor-wait disabled:opacity-70">
                                     <i data-lucide="plug-zap"
                                        class="h-4 w-4 group-[.htmx-request]:animate-pulse"></i>
                                     Test Connection
@@ -235,7 +236,7 @@
                             data-operation-submit
                             data-loading-label="{{ 'Saving changes...' if instance else 'Registering connection...' }}"
                             {% if not instance %}disabled x-bind:disabled="!connectionVerified" x-bind:title="connectionVerified ? 'Register this verified connection' : 'Run Test Connection successfully before registering'"{% endif %}
-                            class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 cursor-pointer disabled:cursor-not-allowed disabled:bg-content-disabled disabled:opacity-70">
+                            class="{{ action_button.classes('primary') }} shrink-0">
                         <i data-lucide="save" class="h-4 w-4"></i><span data-operation-submit-label>{{ 'Save Changes' if instance else 'Register Connection' }}</span>
                     </button>
                 {% endcall %}

@@ -171,7 +171,9 @@ Long selectors, source identities, and scope keys use controlled wrapping. Unexp
 
 ## Kubernetes Operational Readiness Layout Contract
 
-`Operational Readiness Paths` uses a three-column desktop composition: Kubernetes Inventory, Kubernetes Analytics, and Alert Intelligence are peer cards in one row at `xl` width. No consumer card spans multiple desktop columns. Each card keeps its readiness path vertical inside the card so provider/source, binding, and effective-consumer evidence stays readable at one-third workspace width. The Provider Resolution Boundary remains a full-width explanatory strip below all three cards.
+`Operational Readiness Paths` uses a professional three-column desktop comparison: Kubernetes Inventory, Kubernetes Analytics, and Alert Intelligence are equal peer cards in one row at `xl` width. Each card uses the same four-stage readiness model (`Direct Cluster Authority`, provider resolution, `Cluster Binding`, `Effective Consumer`) so the three paths stay visually aligned and can be compared without interaction. For the direct Inventory path, provider resolution and Cluster Binding are explicitly presented as `Direct Path` rather than omitted.
+
+Simple readiness evidence is always visible. Do not add `View Evidence`, accordions, disclosure buttons, or hidden evidence panels to this workspace unless the evidence becomes materially more complex than the four-stage comparison. Each card ends with an `Operational Outcome` footer; the Provider Resolution Boundary remains a quiet full-width explanatory band below the three cards.
 
 ## Kubernetes Registry Navigation Contract
 
