@@ -27,6 +27,29 @@
 
 <section id="kubernetes-capability-workspace"
          class="relative font-sans {{ integration_ui.section_shell_classes() }}"
+         data-kaori-capability-modal-scope
+         x-data='{
+            query: "",
+            requirement: "all",
+            status: "all",
+            detailOpen: false,
+            selectedDetail: null,
+            matches(element) {
+                const search = (element.dataset.search || "").toLowerCase();
+                const matchesQuery = !this.query.trim() || search.includes(this.query.trim().toLowerCase());
+                const matchesRequirement = this.requirement === "all" || element.dataset.requirement === this.requirement;
+                const matchesStatus = this.status === "all" || element.dataset.status === this.status;
+                return matchesQuery && matchesRequirement && matchesStatus;
+            },
+            openDetail(key) {
+                this.selectedDetail = key;
+                this.detailOpen = true;
+            },
+            closeDetail() {
+                this.detailOpen = false;
+                this.selectedDetail = null;
+            }
+         }'
          data-kaori-capability-workspace-v3
          data-kaori-capability-workspace-v4
          data-kaori-capability-workspace-v5
@@ -155,25 +178,7 @@
         {% endif %}
 
         <div class="mt-4 grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_24rem]"
-             data-kaori-capability-layout
-             x-data='{
-                query: "",
-                requirement: "all",
-                status: "all",
-                detailOpen: false,
-                selectedDetail: null,
-                matches(element) {
-                    const search = (element.dataset.search || "").toLowerCase();
-                    const matchesQuery = !this.query.trim() || search.includes(this.query.trim().toLowerCase());
-                    const matchesRequirement = this.requirement === "all" || element.dataset.requirement === this.requirement;
-                    const matchesStatus = this.status === "all" || element.dataset.status === this.status;
-                    return matchesQuery && matchesRequirement && matchesStatus;
-                },
-                openDetail(key) {
-                    this.selectedDetail = key;
-                    this.detailOpen = true;
-                }
-             }'>
+             data-kaori-capability-layout>
             <section class="min-w-0 overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
                      aria-labelledby="kubernetes-capability-matrix-title"
                      data-kaori-capability-explorer

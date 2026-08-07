@@ -57,6 +57,25 @@ def test_kubernetes_registry_uses_one_line_htmx_filters_and_inventory_table() ->
     assert "row.get('coverage_summary')" in service
 
 
+def test_kubernetes_activity_is_navigation_and_capability_modal_scope_isolated() -> None:
+    registry = read('app/templates/integrations/kubernetes/partials/_registry.html')
+    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
+    modal = read('app/templates/integrations/components/_record_detail_modal.html')
+
+    assert "url_for('integrations.kubernetes_detail', cluster_id=row.cluster_id)" in registry
+    assert '>Activity<' in registry or 'Activity\n' in registry
+    activity_link = registry[registry.index("url_for('integrations.kubernetes_detail', cluster_id=row.cluster_id)"):]
+    assert '@click=' not in activity_link.split('</a>', 1)[0]
+
+    workspace_scope = capability.index('id="kubernetes-capability-workspace"')
+    modal_state = capability.index('detailOpen: false')
+    modal_calls = capability.index('record_detail_modal.render(')
+    assert workspace_scope < modal_state < modal_calls
+    assert 'data-kaori-capability-modal-scope' in capability
+    assert 'style="display: none;"' in modal
+    assert "typeof detailOpen !== 'undefined'" in modal
+
+
 def test_kubernetes_runtime_health_requires_persisted_observation() -> None:
     service = read('app/integrations/service.py')
     presentation = read('app/integrations/runtime/presentation.py')
@@ -208,9 +227,15 @@ def test_capability_workspace_uses_registry_modal_and_consistent_typography() ->
     assert 'data-kaori-capability-side-panel' in capability
     assert 'data-kaori-capability-view-more' in capability
     assert 'View More' in capability
+    assert 'data-kaori-capability-modal-scope' in capability
     assert 'detailOpen: false' in capability
     assert 'selectedDetail: null' in capability
     assert 'openDetail(key)' in capability
+    assert 'closeDetail()' in capability
+    workspace_scope = capability.index('id="kubernetes-capability-workspace"')
+    layout_scope = capability.index('data-kaori-capability-layout')
+    assert capability.index("x-data='{", workspace_scope, layout_scope) > workspace_scope
+    assert "data-kaori-capability-layout\n             x-data='{" not in capability
     assert "@click='openDetail({{ row.key|tojson }})'" in capability
     assert 'record_detail_modal.render(' in capability
     assert 'data-kaori-capability-modal-content' in capability
@@ -245,7 +270,10 @@ def test_capability_workspace_uses_registry_modal_and_consistent_typography() ->
     assert 'x-teleport="body"' in modal
     assert 'role="dialog"' in modal
     assert 'aria-modal="true"' in modal
+    assert "typeof detailOpen !== 'undefined'" in modal
     assert 'detailOpen && selectedDetail ===' in modal
+    assert 'style="display: none;"' in modal
+    assert 'data-kaori-modal-root' in modal
     assert '@keydown.escape.window' in modal
     assert 'max-w-6xl' in modal
     assert 'Close' in modal
@@ -254,7 +282,7 @@ def test_capability_workspace_uses_registry_modal_and_consistent_typography() ->
     assert 'absolute inset-0 z-0' in modal
     assert 'data-kaori-modal-panel' in modal
     assert 'relative z-10' in modal
-    assert modal.count('x-show="detailOpen && selectedDetail ===') == 1
+    assert modal.count("x-show=\"typeof detailOpen !== 'undefined' && detailOpen && selectedDetail ===") == 1
 
 
 def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
