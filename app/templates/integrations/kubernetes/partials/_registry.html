@@ -87,11 +87,11 @@
                             </div>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            {{ integration_status(row.readiness) }}
+                            {{ integration_status(row.readiness, display='indicator') }}
                             <p class="mt-1 text-xs text-content-muted">Validated {{ row.last_validated_at }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            {{ integration_status(row.coverage_summary.status, row.coverage_summary.label) }}
+                            {{ integration_status(row.coverage_summary.status, row.coverage_summary.label, display='indicator') }}
                             <p class="mt-1 text-xs text-content-muted">{{ row.coverage_ready_count }} of 3 operational domains ready</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">

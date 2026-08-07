@@ -117,6 +117,15 @@ Icon rules:
 
 Integration Overview is the reference implementation: scope metadata may carry a filter icon, count metadata remains iconless, provider lifecycle/readiness uses text or dot labels, and runtime table states use dot labels.
 
+
+Kubernetes Integration applies the same roles:
+
+- connection, registry, capability, runtime, inventory, binding, and history statuses use `display='indicator'` when repeated or scanned alongside peer records;
+- TLS verification uses `display='special'` because it is a transport-security boundary;
+- compatibility profile, environment, provider/source identity, and other context may use `metadata_label(...)` with an icon only when no adjacent identity icon already provides that context;
+- requirement levels, counts, capability totals, retained-report counts, and lifecycle values use iconless metadata labels or plain text;
+- a status shown in a section header is not repeated again as a decorative metadata chip in the same visual block.
+
 ## Technical Evidence Contract
 
 Capability and validation evidence follows a stable order:

@@ -347,3 +347,51 @@ def test_kubernetes_integration_overview_uses_controlled_kaori_icon_palette() ->
     assert "connection_icon_tone = 'success' if row.readiness == 'ready'" in registry
     assert "palette_icon('server-cog', connection_icon_tone)" in registry
     assert "registry_header(title, description, icon, loading_id, title_id=None, tone='brand')" in provider_registry
+
+
+def test_kubernetes_integration_uses_canonical_compact_label_roles() -> None:
+    page = read('app/templates/integrations/kubernetes.html')
+    detail = read('app/templates/integrations/kubernetes/detail.html')
+    coverage = read('app/templates/integrations/kubernetes/partials/_integration_coverage.html')
+    registry = read('app/templates/integrations/kubernetes/partials/_registry.html')
+    registry_detail = read('app/templates/integrations/kubernetes/partials/_registry_detail_content.html')
+    connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
+    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
+    runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
+    inventory = read('app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html')
+    history = read('app/templates/integrations/partials/_runtime_history.html')
+    standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
+
+    assert "display='text'" in page
+    assert "display='text'" in detail
+    assert "display='text'" in coverage
+    assert "display='indicator'" in coverage
+    assert 'data-lucide="circle-check"' not in coverage
+    assert 'data-lucide="triangle-alert"' not in coverage
+    assert "display='indicator'" in registry
+    assert 'status_label(readiness_label, readiness_tone)' in registry_detail
+
+    assert "display='special'" in connection
+    assert "icon='shield-check' if connection.verify_ssl else 'shield-alert'" in connection
+    assert "metadata_label('Kubernetes Live API', 'server-cog')" in connection
+    assert "metadata_label(capability|replace('_', ' ')|title)" in connection
+
+    assert 'components/table_label.html' in capability
+    assert "metadata_label('Profile · '" in capability
+    assert "metadata_label(capability_counts.required ~ ' required')" in capability
+    assert "metadata_label((feature_rows|length) ~ ' capability contracts')" in capability
+    assert "metadata_label(row.requirement_label)" in capability
+    assert "display='text'" in capability
+    assert "display='indicator'" in capability
+
+    assert "metadata_label((runtime_state.diagnostics|length) ~ ' checks')" in runtime
+    assert "display='text'" in runtime
+    assert "display='indicator'" in runtime
+    assert "metadata_label(operational_use.report_count ~ ' reports retained')" in inventory
+    assert "metadata_label(operational_use.schedule_count ~ ' schedules retained')" in inventory
+    assert 'violet_ui.chip_classes()' not in inventory
+    assert "display='indicator'" in inventory
+
+    assert "integration_status(row.readiness, row.readiness_label, display='indicator')" in history
+    assert "integration_status(diagnostic_tone, diagnostic.status_label, display='indicator')" in history
+    assert 'Kubernetes Integration applies the same roles' in standard

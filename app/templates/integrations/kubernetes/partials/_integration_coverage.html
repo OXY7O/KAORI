@@ -2,23 +2,7 @@
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 
 {% macro compact_state(status, label) -%}
-    {% if status == 'ready' %}
-        {% set tone = 'text-status-normal-text' %}
-        {% set icon = 'circle-check' %}
-    {% elif status == 'degraded' %}
-        {% set tone = 'text-status-warning-text' %}
-        {% set icon = 'triangle-alert' %}
-    {% elif status in ['blocked', 'unhealthy'] %}
-        {% set tone = 'text-status-critical-text' %}
-        {% set icon = 'circle-x' %}
-    {% else %}
-        {% set tone = 'text-content-muted' %}
-        {% set icon = 'circle-dashed' %}
-    {% endif %}
-    <span class="inline-flex items-center gap-1 text-xs font-semibold {{ tone }}">
-        <i data-lucide="{{ icon }}" class="h-3.5 w-3.5" aria-hidden="true"></i>
-        {{ label }}
-    </span>
+    {{ integration_status(status, label, display='indicator') }}
 {%- endmacro %}
 
 {% set api_gate_status = 'ready' if stats.total > 0 and stats.ready == stats.total else ('degraded' if stats.ready > 0 else 'validation_required') %}
@@ -42,7 +26,8 @@
             </div>
             {{ integration_status(
                 'ready' if stats.total > 0 and stats.fully_operational == stats.total else ('degraded' if stats.total > 0 else 'not_configured'),
-                (stats.fully_operational ~ ' of ' ~ stats.total ~ ' Fully Operational') if stats.total > 0 else 'Not Configured'
+                (stats.fully_operational ~ ' of ' ~ stats.total ~ ' Fully Operational') if stats.total > 0 else 'Not Configured',
+                display='text'
             ) }}
         </div>
     </header>
@@ -139,7 +124,7 @@
                                     <p class="mt-1 text-xs leading-5 text-content-secondary">{{ path.description }}</p>
                                 </div>
                             </div>
-                            <div class="shrink-0">{{ integration_status(effective_status, path.effective_label) }}</div>
+                            <div class="shrink-0">{{ integration_status(effective_status, path.effective_label, display='text') }}</div>
                         </div>
                     </header>
 

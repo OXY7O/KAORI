@@ -1,6 +1,7 @@
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/technical_check.html" as technical_check %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "components/table_label.html" as table_label %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 
 {% set capability_counts = namespace(required=0, optional=0, ready=0, legacy=0, blocked=0) %}
@@ -84,7 +85,7 @@
                                 <p class="mt-1 max-w-2xl text-sm leading-6 text-content-secondary">Required API discovery and RBAC evidence used by Inventory, Analytics, Operations, Governance, and Reports.</p>
                             </div>
                         </div>
-                        {{ integration_status(validation_state.readiness, validation_state.readiness_label) }}
+                        {{ integration_status(validation_state.readiness, validation_state.readiness_label, display='text') }}
                     </div>
 
                     <div class="mt-5 grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
@@ -102,9 +103,9 @@
                             </div>
                         </div>
                         <div class="flex flex-wrap items-center gap-2 sm:justify-end">
-                            <span class="inline-flex min-h-7 items-center rounded-md border border-outline-subtle bg-surface-subtle px-2.5 text-xs font-semibold text-content-primary">Profile · {{ runtime_state.compatibility_profile or 'Validation Required' }}</span>
-                            <span class="inline-flex min-h-7 items-center rounded-md border border-outline-subtle bg-surface-card px-2.5 text-xs font-semibold text-content-secondary">{{ capability_counts.required }} required</span>
-                            <span class="inline-flex min-h-7 items-center rounded-md border border-outline-subtle bg-surface-card px-2.5 text-xs font-semibold text-content-secondary">{{ capability_counts.optional }} optional</span>
+                            {{ table_label.metadata_label('Profile · ' ~ (runtime_state.compatibility_profile or 'Validation Required'), 'layers-3') }}
+                            {{ table_label.metadata_label(capability_counts.required ~ ' required') }}
+                            {{ table_label.metadata_label(capability_counts.optional ~ ' optional') }}
                         </div>
                     </div>
                 </div>
@@ -143,9 +144,9 @@
                         </div>
                     </div>
                     <div class="flex flex-wrap gap-2 lg:justify-end">
-                        <span class="inline-flex min-h-7 items-center rounded-md border border-outline-subtle bg-surface-subtle px-2.5 text-xs font-semibold text-content-secondary">{{ blocked_features|length }} blocked</span>
-                        <span class="inline-flex min-h-7 items-center rounded-md border border-outline-subtle bg-surface-subtle px-2.5 text-xs font-semibold text-content-secondary">{{ legacy_features|length }} legacy</span>
-                        <span class="inline-flex min-h-7 items-center rounded-md border border-outline-subtle bg-surface-subtle px-2.5 text-xs font-semibold text-content-secondary">{{ optional_blocked_features|length }} optional gap</span>
+                        {{ table_label.metadata_label((blocked_features|length) ~ ' blocked') }}
+                        {{ table_label.metadata_label((legacy_features|length) ~ ' legacy') }}
+                        {{ table_label.metadata_label((optional_blocked_features|length) ~ ' optional gap') }}
                     </div>
                 </div>
             </section>
@@ -186,7 +187,7 @@
                             <p class="mt-1 text-sm leading-6 text-content-secondary">Scan the active API contract, requirement level, and validation state. Open one capability in the inspector without expanding the record list.</p>
                         </div>
                     </div>
-                    <span class="inline-flex min-h-7 shrink-0 items-center rounded-md border border-outline-subtle bg-surface-subtle px-2.5 text-xs font-semibold text-content-primary">{{ feature_rows|length }} capability contracts</span>
+                    {{ table_label.metadata_label((feature_rows|length) ~ ' capability contracts') }}
                 </header>
 
                 <div class="overflow-x-auto border-b border-outline-subtle bg-surface-subtle" data-kaori-capability-filters>
@@ -258,11 +259,11 @@
                                 </div>
                                 <div>
                                     <p class="text-xs font-semibold text-content-muted lg:hidden">Requirement</p>
-                                    <span class="mt-1 inline-flex min-h-7 items-center rounded-md border border-outline-subtle bg-surface-subtle px-2.5 text-xs font-semibold text-content-secondary lg:mt-0">{{ row.requirement_label }}</span>
+                                    <span class="mt-1 inline-flex lg:mt-0">{{ table_label.metadata_label(row.requirement_label) }}</span>
                                 </div>
                                 <div>
                                     <p class="text-xs font-semibold text-content-muted lg:hidden">Status</p>
-                                    <span class="mt-1 inline-flex lg:mt-0">{{ integration_status(tone, 'Ready' if row.status == 'ready' else ('Legacy Fallback' if row.status == 'legacy' else 'Blocked')) }}</span>
+                                    <span class="mt-1 inline-flex lg:mt-0">{{ integration_status(tone, 'Ready' if row.status == 'ready' else ('Legacy Fallback' if row.status == 'legacy' else 'Blocked'), display='indicator') }}</span>
                                 </div>
                                 <div class="lg:text-right">
                                     <button type="button"
@@ -356,7 +357,7 @@
                                             <p class="mt-1 text-xs text-content-secondary">Resource · {{ row.resource }}</p>
                                         </div>
                                     </div>
-                                    {{ integration_status(tone, check_status) }}
+                                    {{ integration_status(tone, check_status, display='text') }}
                                 </div>
 
                                 <dl class="mt-4 grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2">
@@ -454,7 +455,7 @@
                                     <p class="mt-1 text-xs leading-5 text-content-secondary">Current gate posture and next controlled action.</p>
                                 </div>
                             </div>
-                            {{ integration_status(validation_state.readiness, validation_state.readiness_label) }}
+                            {{ integration_status(validation_state.readiness, validation_state.readiness_label, display='text') }}
                         </div>
                     </header>
 
