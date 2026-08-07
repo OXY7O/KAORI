@@ -384,6 +384,7 @@ def test_kubernetes_integration_uses_canonical_compact_label_roles() -> None:
     assert "display='text'" in capability
     assert "display='indicator'" in capability
 
+    assert 'components/table_label.html' in runtime
     assert "metadata_label((runtime_state.diagnostics|length) ~ ' checks')" in runtime
     assert "display='text'" in runtime
     assert "display='indicator'" in runtime
