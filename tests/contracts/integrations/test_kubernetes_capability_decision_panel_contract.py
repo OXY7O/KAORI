@@ -36,13 +36,22 @@ def test_validation_decision_panel_keeps_readiness_progress_and_semantics():
     assert "bg-kaori-primary" in source
     assert "Operational Gate" in source
     assert "Next Operational Action" in source
-    assert "Interpret → Remediate → Revalidate → Synchronize" in source
+    assert "Follow the controlled sequence for validation, remediation, and synchronization." in source
 
 
 def test_validation_decision_panel_preserves_full_workflow_copy_without_truncation():
     source = _source()
 
-    assert 'Interpret → Remediate → Revalidate → Synchronize' in source
-    assert 'truncate text-xs text-content-secondary">Interpret → Remediate' not in source
+    assert 'Follow the controlled sequence for validation, remediation, and synchronization.' in source
+    assert 'Interpret → Remediate → Revalidate → Synchronize' not in source
     assert '[overflow-wrap:anywhere]' in source
     assert 'xl:px-5' in source
+
+
+def test_validation_workflow_uses_vertical_connected_step_nodes():
+    source = _source()
+
+    assert 'data-kaori-validation-workflow-node' in source
+    assert 'data-kaori-validation-workflow-connector' in source
+    assert 'top-7 bottom-[-1.25rem] w-px' in source
+    assert 'border-b border-outline-subtle' not in source[source.index('data-kaori-validation-workflow-steps'):source.index('data-kaori-validation-workflow-steps') + 3000]
