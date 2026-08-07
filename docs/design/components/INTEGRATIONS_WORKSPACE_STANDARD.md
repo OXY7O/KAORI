@@ -349,5 +349,5 @@ The shared `related_page_card.html` is the controlled contextual exception: it r
 
 - `Minimum Validation RBAC Example` uses the shared integrated-workspace tab strip directly attached to the modal header/content boundary. The tabs must not be wrapped in a second rounded card or detached tab container.
 - The Baseline and Optional Secret Reader panels remain mutually exclusive tab panels with matching `aria-controls` / panel IDs.
-- `Capability Registry` owns its loading bar inside the registry header. `Run Full Validation` must set the registry loading state immediately on the HTMX `before-request` event, while an active background validation keeps the same bar visible across polling swaps.
-- Do not create a second loading indicator for the same Capability Registry operation.
+- `Capability Registry` owns one shared KAORI loading bar directly inside the registry header, below the title/action row and before filters. `Run Full Validation` targets that exact element through `hx-indicator`; do not wrap the shared indicator in Alpine `x-show`/`x-cloak`, because inline display state can suppress HTMX indicator visibility.
+- When the worker remains active after the POST response, server-render the same loading bar with `active=validation_job and validation_job.is_active` so it stays visible across polling swaps. Do not create a second loading indicator or a page-local loading implementation for the same operation.
