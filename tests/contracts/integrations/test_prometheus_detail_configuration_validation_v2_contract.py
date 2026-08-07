@@ -27,9 +27,11 @@ def test_validation_uses_promql_registry_and_decision_panel():
     assert 'Prometheus Validation & PromQL' in text
     assert 'PromQL Capability Registry' in text
     assert 'Validation Decision' in text
+    assert 'Latest Validation Scope' in text
     assert 'Retention Coverage' in text
     assert 'Operational Domains' in text
     assert 'View More' in text
+    assert 'data-kaori-prometheus-validation-details' in text
 
 
 def test_validation_filters_are_local_and_buttonless():
