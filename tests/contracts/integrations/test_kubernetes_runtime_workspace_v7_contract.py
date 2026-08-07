@@ -15,6 +15,7 @@ def test_primary_finding_is_compact_and_nonduplicative() -> None:
     assert 'Primary Finding' in source
     assert "(' Item' if runtime_state.attention_factors|length == 1 else ' Items')" in source
     assert '{{ runtime_state.summary }}' in source
+    assert 'data-kaori-runtime-next-action-card' in source
     finding = source.split('data-kaori-runtime-primary-finding', 1)[1].split('runtime-next-action-title', 1)[0]
     assert 'runtime_state.message' not in finding
     assert 'truncate' not in finding
