@@ -1,9 +1,12 @@
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table.html" as table_ui %}
+{% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
-{% import "components/connection_validation_header.html" as connection_validation_header %}
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/action_button.html" as action_button %}
 {% import "components/technical_check.html" as technical_check %}
 {% import "integrations/components/_record_detail_modal.html" as record_detail_modal %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 
 {% set readiness = instance.readiness_status or 'validation_required' %}
@@ -11,119 +14,246 @@
 {% set total_count = capability_summary.total %}
 {% set readiness_percent = ((validated_count * 100 / total_count)|round(0, 'floor')|int) if total_count else 0 %}
 {% set required_ready = capability_summary.required_missing == 0 %}
+{% set domain_summary = namespace(ready=0, attention=0) %}
+{% for domain in module_readiness_rows %}
+    {% if domain.status == 'ready' %}
+        {% set domain_summary.ready = domain_summary.ready + 1 %}
+    {% else %}
+        {% set domain_summary.attention = domain_summary.attention + 1 %}
+    {% endif %}
+{% endfor %}
 
 <section id="alertmanager-validation-workspace"
-         class="relative space-y-4 font-sans"
-         data-kaori-alertmanager-validation-v2
-         {% if validation_job and validation_job.is_active %} hx-get="{{ url_for('alertmanager.instance_validation_status', instance_id=instance.id, task_id=validation_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML" {% endif %}>
-    <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
-        <div class="relative">
-            {% call connection_validation_header.render(
-                'Alertmanager Validation & Capability Matrix',
-                'Rebuild API v2 capability, compatibility, and downstream eligibility evidence.',
-                icon='scan-search',
-                loading_id='alertmanager-validation-loading',
-                loading_active=validation_job and validation_job.is_active,
-                loading_label='Running Alertmanager full validation'
-                ) %}
-                <form method="post"
-                      action="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
-                      hx-post="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
-                      hx-target="#alertmanager-validation-workspace"
-                      hx-swap="outerHTML"
-                      hx-disabled-elt="button"
-                      hx-indicator="#alertmanager-validation-loading">
-                    {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                    <button type="submit" {% if validation_job and validation_job.is_active %}disabled{% endif %} class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover disabled:cursor-wait disabled:opacity-70">
-                        <i data-lucide="{{ 'loader-circle' if validation_job and validation_job.is_active else 'scan-line' }}" class="h-4 w-4{% if validation_job and validation_job.is_active %} animate-spin{% endif %}"></i>
-                        {{ 'Validation Running' if validation_job and validation_job.is_active else 'Run Full Validation' }}
-                    </button>
-                </form>
-            {% endcall %}
-            {% if validation_job and validation_job.is_active %}
-                <div class="flex flex-col gap-2 border-b border-brand-outline bg-kaori-soft px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between"><span class="inline-flex items-center gap-2 font-semibold text-kaori-primary dark:text-kaori-accent"><i data-lucide="loader-circle" class="h-3.5 w-3.5 animate-spin"></i>{{ validation_job.title or 'Validation running in worker' }}</span><span>Task {{ validation_job.task_id[:8] }} · {{ validation_job.state_label|title }} · {{ validation_job.elapsed_seconds }}s</span></div>
-            {% endif %}
-        </div>
-
-        <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
-            <div class="px-5 py-4 sm:px-6"><div class="flex items-start justify-between gap-3"><div><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">API Readiness</p><p class="mt-2 text-lg font-semibold text-content-primary">{{ readiness|replace('_', ' ')|title }}</p></div>{{ integration_status(readiness, readiness|replace('_', ' ')|title, display='text') }}</div><p class="mt-2 text-xs leading-5 text-content-secondary">Eligibility for Alert Intelligence and governed alert operations.</p></div>
-            <div class="px-5 py-4 sm:px-6"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Validated Capabilities</p><p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ validated_count }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">Observed from {{ total_count }} registered contracts.</p></div>
-            <div class="px-5 py-4 sm:px-6"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Required Blocks</p><p class="mt-2 text-xl font-semibold tabular-nums {% if capability_summary.required_missing %}text-status-critical-text{% else %}text-content-primary{% endif %}">{{ capability_summary.required_missing }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">Required API v2 capabilities not observed.</p></div>
-            <div class="px-5 py-4 sm:px-6"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Optional Gaps</p><p class="mt-2 text-xl font-semibold tabular-nums {% if capability_summary.optional_missing %}text-status-warning-text{% else %}text-content-primary{% endif %}">{{ capability_summary.optional_missing }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">Optional enrichment not currently observed.</p></div>
-        </div>
-    </section>
-
-    <div class="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_25rem] 2xl:grid-cols-[minmax(0,1fr)_27rem]">
-        <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm" x-data="{ query: '', requirement: 'all', status: 'all' }" aria-labelledby="alertmanager-capability-registry-title">
-            <header class="border-b border-outline-subtle px-5 py-4">
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div class="flex items-start gap-3"><span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"><i data-lucide="list-checks" class="h-4 w-4"></i></span><div><h3 id="alertmanager-capability-registry-title" class="text-sm font-semibold text-content-primary">Alert Management Capability Registry</h3><p class="mt-1 text-xs leading-5 text-content-secondary">Review API v2 status, alerts, silences, routing evidence, and requirement level.</p></div></div>{{ table_label.metadata_label(total_count ~ ' capabilities') }}</div>
-            </header>
-            <div class="grid gap-4 border-b border-outline-subtle bg-surface-subtle px-5 py-3.5 lg:grid-cols-[minmax(0,1.4fr)_minmax(12rem,0.6fr)_minmax(12rem,0.6fr)]">
-                <div><label class="mb-1.5 block text-xs font-semibold text-content-primary">Search Capability</label><div class="relative"><i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i><input type="search" x-model.debounce.200ms="query" placeholder="Search capability or category..." class="h-10 w-full rounded-lg border border-outline-default bg-surface-card pl-9 pr-3 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20"></div></div>
-                <div><label class="mb-1.5 block text-xs font-semibold text-content-primary">Requirement</label><select x-model="requirement" class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20"><option value="all">All Requirements</option><option value="required">Required</option><option value="optional">Optional</option></select></div>
-                <div><label class="mb-1.5 block text-xs font-semibold text-content-primary">Validation Status</label><select x-model="status" class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20"><option value="all">All Statuses</option><option value="ready">Ready</option><option value="blocked">Blocked</option><option value="optional_gap">Optional Gap</option></select></div>
+         class="relative overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm font-sans"
+         data-kaori-alertmanager-validation-v3
+         x-data='{
+            query: "",
+            requirement: "all",
+            status: "all",
+            page: 1,
+            pageSize: 5,
+            rows: [
+                {% for row in capability_rows %}
+                {
+                    index: {{ loop.index0 }},
+                    search: {{ (row.label ~ " " ~ row.category ~ " " ~ row.description)|lower|tojson }},
+                    requirement: {{ ("required" if row.required else "optional")|tojson }},
+                    status: {{ ("ready" if row.available else ("blocked" if row.required else "optional_gap"))|tojson }}
+                }{{ "," if not loop.last else "" }}
+                {% endfor %}
+            ],
+            filteredRows() {
+                const q = this.query.trim().toLowerCase();
+                return this.rows.filter((row) => {
+                    const matchesQuery = !q || row.search.includes(q);
+                    const matchesRequirement = this.requirement === "all" || row.requirement === this.requirement;
+                    const matchesStatus = this.status === "all" || row.status === this.status;
+                    return matchesQuery && matchesRequirement && matchesStatus;
+                });
+            },
+            totalPages() { return Math.max(1, Math.ceil(this.filteredRows().length / this.pageSize)); },
+            resetPage() { this.page = 1; },
+            start() { return this.filteredRows().length ? ((this.page - 1) * this.pageSize) + 1 : 0; },
+            end() { return Math.min(this.page * this.pageSize, this.filteredRows().length); },
+            visible(index) {
+                const start = (this.page - 1) * this.pageSize;
+                return this.filteredRows().slice(start, start + this.pageSize).some((row) => row.index === index);
+            },
+            pages() {
+                const total = this.totalPages();
+                const start = Math.max(1, this.page - 2);
+                const end = Math.min(total, this.page + 2);
+                return Array.from({ length: end - start + 1 }, (_, offset) => start + offset);
+            },
+            previous() { if (this.page > 1) this.page -= 1; },
+            next() { if (this.page < this.totalPages()) this.page += 1; }
+         }'
+         x-init='$watch("query", () => resetPage()); $watch("requirement", () => resetPage()); $watch("status", () => resetPage()); $watch("pageSize", () => resetPage())'
+         {% if validation_job and validation_job.is_active %}hx-get="{{ url_for('alertmanager.instance_validation_status', instance_id=instance.id, task_id=validation_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML"{% endif %}>
+    <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                {{ integration_ui.palette_icon('scan-search', 'brand', size='lg') }}
+                <div class="min-w-0">
+                    <h2 class="text-base font-semibold text-content-primary">Alertmanager Validation &amp; Capability Matrix</h2>
+                    <p class="mt-0.5 max-w-3xl text-xs leading-5 text-content-muted">Rebuild API v2 capability, compatibility, routing, silence, and downstream eligibility evidence.</p>
+                </div>
             </div>
-            <div class="overflow-x-auto">
-                <table class="{{ table_ui.table_classes('min-w-[62rem]') }}">
-                    <thead class="{{ table_ui.head_classes() }}"><tr><th class="{{ table_ui.header_cell_classes() }}">Capability</th><th class="{{ table_ui.header_cell_classes() }}">Category</th><th class="{{ table_ui.header_cell_classes() }}">Requirement</th><th class="{{ table_ui.header_cell_classes() }}">Status</th><th class="{{ table_ui.header_cell_classes(action=true) }}">Details</th></tr></thead>
+            <form method="post"
+                  action="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
+                  hx-post="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
+                  hx-target="#alertmanager-validation-workspace"
+                  hx-swap="outerHTML"
+                  hx-disabled-elt="button"
+                  hx-indicator="#alertmanager-capability-loading">
+                {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                <button type="submit" {% if validation_job and validation_job.is_active %}disabled{% endif %} class="{{ action_button.classes('primary') }}">
+                    <i data-lucide="{{ 'loader-circle' if validation_job and validation_job.is_active else 'scan-line' }}" class="h-4 w-4{% if validation_job and validation_job.is_active %} animate-spin{% endif %}" aria-hidden="true"></i>
+                    {{ 'Validation Running' if validation_job and validation_job.is_active else 'Run Full Validation' }}
+                </button>
+            </form>
+        </div>
+    </header>
+
+    {% if validation_job and validation_job.is_active %}
+        <div class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-subtle px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between">
+            <span class="inline-flex items-center gap-2 font-semibold text-content-primary"><i data-lucide="loader-circle" class="h-3.5 w-3.5 animate-spin text-kaori-primary dark:text-kaori-accent" aria-hidden="true"></i>{{ validation_job.title or 'Alertmanager validation running' }}</span>
+            <span>Task {{ validation_job.task_id[:8] }} · {{ validation_job.state_label|title }} · {{ validation_job.elapsed_seconds }}s</span>
+        </div>
+    {% endif %}
+
+    <div class="space-y-4 p-4 sm:p-5">
+        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card" aria-labelledby="alertmanager-validation-decision-title" data-kaori-alertmanager-validation-decision-horizontal>
+            <header class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        {{ integration_ui.palette_icon('gauge', 'brand', size='sm') }}
+                        <div class="min-w-0">
+                            <h3 id="alertmanager-validation-decision-title" class="text-sm font-semibold text-content-primary">Validation Decision</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">One decision surface for capability coverage, consumer eligibility, domain posture, and the next controlled action.</p>
+                        </div>
+                    </div>
+                    {{ integration_status('ready' if required_ready else 'blocked', 'Ready' if required_ready else 'Blocked', display='text') }}
+                </div>
+            </header>
+
+            <div class="grid divide-y divide-outline-subtle lg:grid-cols-4 lg:divide-x lg:divide-y-0">
+                <section class="px-4 py-4 sm:px-5">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Capability Readiness</p>
+                    <div class="mt-2 flex items-end justify-between gap-3">
+                        <div><p class="text-lg font-semibold tabular-nums text-content-primary">{{ validated_count }} / {{ total_count }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">Validated capabilities</p></div>
+                        <p class="text-xl font-semibold tabular-nums text-content-primary">{{ readiness_percent }}%</p>
+                    </div>
+                    <div class="mt-3">{{ progress_bar.bar(readiness_percent, 'h-1.5 overflow-hidden rounded-full bg-surface-hover', 'h-full rounded-full bg-kaori-primary', 'Alertmanager capability readiness') }}</div>
+                </section>
+                <section class="px-4 py-4 sm:px-5">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Operational Gate</p>
+                    <div class="mt-3 flex items-start gap-3">
+                        {{ integration_ui.palette_icon('shield-check' if required_ready else 'shield-alert', 'normal' if required_ready else 'critical', size='sm') }}
+                        <div class="min-w-0"><p class="text-sm font-semibold text-content-primary">{{ 'Alert Consumers Eligible' if required_ready else 'Remediation Required' }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">Required API v2 contracts gate Alert Intelligence and governed silence operations.</p></div>
+                    </div>
+                </section>
+                <section class="px-4 py-4 sm:px-5">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Capability Gaps</p>
+                    <dl class="mt-3 grid grid-cols-2 gap-3">
+                        <div><dt class="text-xs text-content-secondary">Required</dt><dd class="mt-1 text-lg font-semibold tabular-nums text-content-primary">{{ capability_summary.required_missing }}</dd></div>
+                        <div><dt class="text-xs text-content-secondary">Optional</dt><dd class="mt-1 text-lg font-semibold tabular-nums text-content-primary">{{ capability_summary.optional_missing }}</dd></div>
+                    </dl>
+                </section>
+                <section class="px-4 py-4 sm:px-5">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Operational Domains</p>
+                    <dl class="mt-3 grid grid-cols-2 gap-3">
+                        <div><dt class="text-xs text-content-secondary">Ready</dt><dd class="mt-1 text-lg font-semibold tabular-nums text-content-primary">{{ domain_summary.ready }}</dd></div>
+                        <div><dt class="text-xs text-content-secondary">Attention</dt><dd class="mt-1 text-lg font-semibold tabular-nums text-content-primary">{{ domain_summary.attention }}</dd></div>
+                    </dl>
+                </section>
+            </div>
+
+            <div class="grid gap-px bg-outline-subtle lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+                <div class="bg-surface-subtle px-4 py-3.5 sm:px-5">
+                    <div class="flex items-start gap-3">{{ integration_ui.palette_icon('route', 'brand', size='sm') }}<div class="min-w-0"><p class="text-xs font-semibold text-content-primary">Evidence Boundary</p><p class="mt-1 text-xs leading-5 text-content-secondary">Full Validation owns API v2 capability and compatibility evidence. Runtime Refresh owns current endpoint health and latency.</p></div></div>
+                </div>
+                <div class="bg-surface-subtle px-4 py-3.5 sm:px-5">
+                    <div class="flex items-start gap-3">{{ integration_ui.palette_icon('target', 'brand', size='sm') }}<div class="min-w-0"><p class="text-xs font-semibold text-content-primary">Next Operational Action</p><p class="mt-1 text-xs leading-5 text-content-secondary">{% if capability_summary.required_missing %}Resolve required API or authorization gaps, then rerun Full Validation before relying on consumer resolution.{% elif capability_summary.optional_missing %}Core alert consumers are eligible. Review optional gaps only where deeper routing or enrichment evidence is required.{% else %}Capability evidence is complete. Refresh runtime health and confirm effective source resolution for governed scopes.{% endif %}</p></div></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card" aria-labelledby="alertmanager-capability-registry-title" data-kaori-alertmanager-capability-table>
+            <header class="relative border-b border-outline-subtle px-5 py-4">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="flex items-start gap-3">{{ integration_ui.palette_icon('list-checks', 'brand', size='md') }}<div><h3 id="alertmanager-capability-registry-title" class="text-sm font-semibold text-content-primary">Alert Management Capability Registry</h3><p class="mt-1 text-xs leading-5 text-content-secondary">Compare API v2 contracts and open detailed request evidence only when needed.</p></div></div>
+                    {{ table_label.metadata_label(total_count ~ ' Capabilities') }}
+                </div>
+                {{ loading_bar.render('alertmanager-capability-loading', active=validation_job and validation_job.is_active, label='Refreshing Alertmanager capability registry') }}
+            </header>
+
+            <div class="grid gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 lg:grid-cols-[minmax(0,1fr)_13rem_13rem]">
+                <div><label class="{{ table_ui.filter_label_classes() }}">Search Capability</label><div class="relative"><i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted" aria-hidden="true"></i><input type="search" x-model.debounce.200ms="query" placeholder="Search capability or category..." class="{{ table_ui.filter_input_classes() }} pl-9" /></div></div>
+                <div><label class="{{ table_ui.filter_label_classes() }}">Requirement</label><select x-model="requirement" class="{{ table_ui.filter_select_classes() }}"><option value="all">All Requirements</option><option value="required">Required</option><option value="optional">Optional</option></select></div>
+                <div><label class="{{ table_ui.filter_label_classes() }}">Validation Status</label><select x-model="status" class="{{ table_ui.filter_select_classes() }}"><option value="all">All Statuses</option><option value="ready">Ready</option><option value="blocked">Blocked</option><option value="optional_gap">Optional Gap</option></select></div>
+            </div>
+
+            <div class="overflow-hidden">
+                <table class="{{ table_ui.table_classes() }} table-fixed">
+                    <colgroup><col class="w-[38%]"><col class="w-[20%]"><col class="w-[15%]"><col class="w-[13%]"><col class="w-[14%]"></colgroup>
+                    <thead class="{{ table_ui.head_classes() }}"><tr><th class="px-4 py-3 text-left">Capability</th><th class="px-3 py-3 text-left">Category</th><th class="px-3 py-3 text-left">Requirement</th><th class="px-3 py-3 text-left">Status</th><th class="px-3 py-3 text-right">Details</th></tr></thead>
                     <tbody class="{{ table_ui.body_classes() }}">
                         {% for row in capability_rows %}
-                            {% set row_requirement = 'required' if row.required else 'optional' %}
-                            {% set row_state = 'ready' if row.available else ('blocked' if row.required else 'optional_gap') %}
-                            <tr class="{{ table_ui.row_classes() }}"
-                                x-show="(query === '' || {{ (row.label ~ ' ' ~ row.category ~ ' ' ~ row.description)|lower|tojson }}.includes(query.toLowerCase())) && (requirement === 'all' || requirement === '{{ row_requirement }}') && (status === 'all' || status === '{{ row_state }}')"
-                                x-cloak>
-                                <td class="{{ table_ui.cell_classes() }}"><div class="flex items-start gap-3"><span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"><i data-lucide="siren" class="h-4 w-4"></i></span><div><p class="text-sm font-semibold text-content-primary">{{ row.label }}</p><p class="mt-0.5 text-xs leading-5 text-content-muted">{{ row.description }}</p></div></div></td>
-                                <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(row.category|title) }}</td>
-                                <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label('Required' if row.required else 'Optional') }}</td>
-                                <td class="{{ table_ui.cell_classes() }}">{{ integration_status('ready' if row.available else ('blocked' if row.required else 'degraded'), row.status_label, display='indicator') }}</td>
-                                <td class="{{ table_ui.cell_classes(action=true) }}">
-                                    <button type="button" data-kaori-dialog-open data-dialog-target="alertmanager-capability-detail-{{ loop.index }}" class="{{ table_ui.action_classes() }}">
-                                        <span>View More</span><i data-lucide="panel-top-open" class="h-4 w-4" aria-hidden="true"></i>
-                                    </button>
-                                </td>
+                            <tr class="{{ table_ui.row_classes() }}" x-show="visible({{ loop.index0 }})" x-cloak>
+                                <td class="px-4 py-3 align-middle"><div class="flex min-w-0 items-start gap-3">{{ integration_ui.palette_icon('siren', 'brand', size='sm') }}<div class="min-w-0"><p class="truncate text-sm font-semibold text-content-primary" title="{{ row.label }}">{{ row.label }}</p><p class="mt-0.5 truncate text-xs leading-5 text-content-muted" title="{{ row.description }}">{{ row.description }}</p></div></div></td>
+                                <td class="px-3 py-3 align-middle whitespace-nowrap">{{ table_label.metadata_label(row.category|title) }}</td>
+                                <td class="px-3 py-3 align-middle whitespace-nowrap">{{ table_label.metadata_label('Required' if row.required else 'Optional') }}</td>
+                                <td class="px-3 py-3 align-middle whitespace-nowrap">{{ integration_status('ready' if row.available else ('blocked' if row.required else 'degraded'), row.status_label, display='indicator') }}</td>
+                                <td class="px-3 py-3 align-middle text-right whitespace-nowrap"><button type="button" data-kaori-dialog-open data-dialog-target="alertmanager-capability-detail-{{ loop.index }}" class="{{ table_ui.action_classes() }}"><span>View More</span><i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i></button></td>
                             </tr>
                         {% endfor %}
                     </tbody>
                 </table>
+                <div x-show="filteredRows().length === 0" x-cloak class="border-t border-outline-subtle px-5 py-10 text-center"><p class="text-sm font-semibold text-content-primary">No Matching Capabilities</p><p class="mt-1 text-xs leading-5 text-content-secondary">Adjust the search or validation filters.</p></div>
             </div>
 
-            {% for row in capability_rows %}
-                {% call record_detail_modal.render(
-                    'alertmanager-capability-detail-' ~ loop.index,
-                    row.key,
-                    'Alertmanager Validation & Capability Matrix',
-                    row.label,
-                    row.category|title ~ ' · ' ~ ('Required' if row.required else 'Optional') ~ ' capability',
-                    icon='list-checks',
-                    footer_text='Alertmanager capability details use the latest completed Full Validation evidence.'
-                ) %}
-                    <div class="space-y-4" data-kaori-alertmanager-validation-modal>
-                        <section class="grid gap-3 lg:grid-cols-3">
-                            <div class="rounded-xl border border-outline-subtle bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Latest Evidence</p><p class="mt-2 text-sm leading-6 text-content-primary [overflow-wrap:anywhere]">{{ row.evidence }}</p></div>
-                            <div class="rounded-xl border border-outline-subtle bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Success Criteria</p><p class="mt-2 text-sm leading-6 text-content-primary [overflow-wrap:anywhere]">{{ row.success_criteria }}</p></div>
-                            <div class="rounded-xl border border-outline-subtle bg-surface-card p-4"><p class="text-xs font-semibold text-content-muted">Operational Impact</p><p class="mt-2 text-sm leading-6 text-content-primary [overflow-wrap:anywhere]">{{ row.impact }}</p></div>
-                        </section>
-                        {% if row.technical_checks %}
-                            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
-                                <header class="border-b border-outline-subtle px-4 py-3"><p class="text-sm font-semibold text-content-primary">Technical Verification</p><p class="mt-1 text-xs leading-5 text-content-secondary">Inspect the exact Alertmanager API request and captured evidence.</p></header>
-                                <div class="space-y-3 p-3">{% for check in row.technical_checks %}{{ technical_check.render(check, query_label='Full API Request') }}{% endfor %}</div>
-                            </section>
-                        {% endif %}
-                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4"><p class="text-xs font-semibold text-content-primary">Recommended Action</p><p class="mt-1 text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ row.next_action }}</p>{% if not row.available and row.remediation %}<ol class="mt-3 space-y-2">{% for step in row.remediation %}<li class="flex items-start gap-2 text-xs leading-5 text-content-secondary"><span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-outline-default bg-surface-card font-semibold">{{ loop.index }}</span><span class="[overflow-wrap:anywhere]">{{ step }}</span></li>{% endfor %}</ol>{% endif %}</section>
-                    </div>
-                {% endcall %}
-            {% endfor %}
+            <footer class="{{ pagination_ui.footer_classes() }}">
+                <div class="{{ pagination_ui.summary_group_classes() }}">
+                    <p>Showing <span class="font-semibold text-content-primary" x-text="start()"></span>–<span class="font-semibold text-content-primary" x-text="end()"></span> of <span class="font-semibold text-content-primary" x-text="filteredRows().length"></span> Capabilities</p>
+                    <label class="{{ pagination_ui.rows_group_classes() }}"><span>Rows</span><select x-model.number="pageSize" class="{{ pagination_ui.page_size_classes() }}"><option value="5">5</option><option value="10">10</option><option value="25">25</option><option value="50">50</option></select></label>
+                </div>
+                <div class="{{ pagination_ui.navigation_group_classes() }}">
+                    <button type="button" @click="previous()" :disabled="page <= 1" :class="page <= 1 ? {{ pagination_ui.navigation_classes(true)|tojson }} : {{ pagination_ui.navigation_classes(false)|tojson }}"><i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous</button>
+                    <template x-for="pageNumber in pages()" :key="pageNumber"><button type="button" @click="page = pageNumber" :class="page === pageNumber ? {{ pagination_ui.current_page_classes()|tojson }} : {{ pagination_ui.navigation_classes(false)|tojson }}" x-text="pageNumber"></button></template>
+                    <button type="button" @click="next()" :disabled="page >= totalPages()" :class="page >= totalPages() ? {{ pagination_ui.navigation_classes(true)|tojson }} : {{ pagination_ui.navigation_classes(false)|tojson }}">Next<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i></button>
+                </div>
+            </footer>
         </section>
-
-        <aside class="self-start overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm xl:sticky xl:top-4" aria-labelledby="alertmanager-validation-decision-title">
-            <header class="border-b border-outline-subtle px-4 py-4 xl:px-5"><div class="flex items-start justify-between gap-3"><div class="flex min-w-0 items-start gap-3"><span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"><i data-lucide="gauge" class="h-4 w-4"></i></span><div><h3 id="alertmanager-validation-decision-title" class="text-sm font-semibold text-content-primary">Validation Decision</h3><p class="mt-1 text-xs leading-5 text-content-secondary">Current capability posture, consumer eligibility, and next controlled action.</p></div></div><div class="shrink-0">{{ integration_status('ready' if required_ready else 'blocked', 'Ready' if required_ready else 'Blocked', display='text') }}</div></div></header>
-            <section class="border-b border-outline-subtle px-4 py-4 xl:px-5"><div class="flex items-end justify-between gap-4"><div><p class="text-xs font-semibold text-content-secondary">Capability Readiness</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ validated_count }} of {{ total_count }} validated</p></div><p class="text-2xl font-semibold tabular-nums text-content-primary">{{ readiness_percent }}%</p></div><div class="mt-3">{{ progress_bar.bar(readiness_percent, 'h-1.5 overflow-hidden rounded-full bg-surface-subtle', 'h-full rounded-full bg-kaori-primary', 'Capability readiness') }}</div><p class="mt-2 text-xs leading-5 text-content-secondary">Required missing: {{ capability_summary.required_missing }} · Optional gaps: {{ capability_summary.optional_missing }}</p></section>
-            <section class="border-b border-outline-subtle px-4 py-4 xl:px-5"><div class="flex items-start gap-3"><span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-outline-subtle {% if required_ready %}bg-status-normal-soft text-status-normal-text{% else %}bg-status-critical-soft text-status-critical-text{% endif %}"><i data-lucide="shield-check" class="h-4 w-4"></i></span><div><p class="text-xs font-semibold text-content-secondary">Operational Gate</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ 'Alert Consumers Eligible' if required_ready else 'Remediation Required' }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">Required API v2 capabilities must be available before Alert Intelligence and governed alert operations rely on this source.</p></div></div></section>
-            <section class="border-b border-outline-subtle px-4 py-4 xl:px-5"><div class="flex items-center justify-between gap-3"><h4 class="text-sm font-semibold text-content-primary">Operational Domains</h4><span class="text-xs text-content-muted">Latest validation</span></div><div class="mt-3 divide-y divide-outline-subtle rounded-lg border border-outline-subtle">{% for row in module_readiness_rows %}<div class="flex items-start justify-between gap-3 px-3.5 py-2.5"><div><p class="text-xs font-semibold text-content-primary">{{ row.label }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.description }}</p></div>{{ integration_status(row.status, row.status|replace('_', ' ')|title, display='indicator') }}</div>{% endfor %}</div></section>
-            <section class="px-4 py-4 xl:px-5"><div class="flex items-start gap-3"><span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"><i data-lucide="target" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Next Operational Action</h4>{% if capability_summary.required_missing %}<p class="mt-1 text-xs leading-5 text-content-secondary">Resolve required API or authorization gaps first, then rerun Full Validation before refreshing runtime or relying on consumer resolution.</p>{% elif capability_summary.optional_missing %}<p class="mt-1 text-xs leading-5 text-content-secondary">Core alert consumers are eligible. Review optional gaps if deeper routing or enrichment evidence is required.</p>{% else %}<p class="mt-1 text-xs leading-5 text-content-secondary">Capability evidence is complete. Refresh runtime health and confirm effective source resolution for each governed scope.</p>{% endif %}</div></div></section>
-        </aside>
     </div>
+
+    {% for row in capability_rows %}
+        {% call record_detail_modal.render(
+            'alertmanager-capability-detail-' ~ loop.index,
+            row.key,
+            'Alertmanager Validation & Capability Matrix',
+            row.label,
+            row.category|title ~ ' · ' ~ ('Required' if row.required else 'Optional') ~ ' capability',
+            icon='list-checks',
+            footer_text='Alertmanager capability details use the latest completed Full Validation evidence.',
+            size='standard'
+        ) %}
+            <div class="space-y-4" data-kaori-alertmanager-validation-modal>
+                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                    <div class="grid gap-px bg-outline-subtle lg:grid-cols-[minmax(0,1.25fr)_minmax(16rem,0.75fr)]">
+                        <div class="bg-surface-card p-4">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Validation Result</p>
+                            <div class="mt-3 flex flex-wrap items-center gap-2">{{ integration_status('ready' if row.available else ('blocked' if row.required else 'degraded'), row.status_label, display='indicator') }}{{ table_label.metadata_label('Required' if row.required else 'Optional') }}{{ table_label.metadata_label(row.category|title) }}</div>
+                            <p class="mt-3 text-sm font-semibold text-content-primary">{{ row.label }}</p>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ row.description }}</p>
+                        </div>
+                        <div class="bg-surface-card p-4">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Latest Evidence</p>
+                            <p class="mt-2 text-sm leading-6 text-content-primary [overflow-wrap:anywhere]">{{ row.evidence }}</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="grid gap-3 lg:grid-cols-2">
+                    <div class="rounded-xl border border-outline-subtle bg-surface-card p-4"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Success Criteria</p><p class="mt-2 text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ row.success_criteria }}</p></div>
+                    <div class="rounded-xl border border-outline-subtle bg-surface-card p-4"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Operational Impact</p><p class="mt-2 text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ row.impact }}</p></div>
+                </section>
+
+                {% if row.technical_checks %}
+                    <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                        <header class="border-b border-outline-subtle px-4 py-3"><p class="text-sm font-semibold text-content-primary">Technical Verification</p><p class="mt-1 text-xs leading-5 text-content-secondary">Inspect exact Alertmanager API requests only when deeper evidence is required.</p></header>
+                        <div class="space-y-3 p-3">{% for check in row.technical_checks %}{{ technical_check.render(check, query_label='Full API Request') }}{% endfor %}</div>
+                    </section>
+                {% endif %}
+
+                <section class="rounded-xl border border-outline-subtle bg-kaori-mist/60 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Next Operational Action</p>
+                    <p class="mt-2 text-sm leading-6 text-content-primary [overflow-wrap:anywhere]">{{ row.next_action }}</p>
+                    {% if not row.available and row.remediation %}<ol class="mt-3 grid gap-2 sm:grid-cols-2">{% for step in row.remediation %}<li class="flex items-start gap-2 text-xs leading-5 text-content-secondary"><span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-outline-default bg-surface-card font-semibold">{{ loop.index }}</span><span class="[overflow-wrap:anywhere]">{{ step }}</span></li>{% endfor %}</ol>{% endif %}
+                </section>
+            </div>
+        {% endcall %}
+    {% endfor %}
 </section>
 {% include 'components/operation_feedback_oob.html' %}
 {% if validation_scope_oob is defined and validation_scope_oob %}{% with scope_oob=true %}{% include 'alertmanager/partials/_detail_scope.html' %}{% endwith %}{% endif %}

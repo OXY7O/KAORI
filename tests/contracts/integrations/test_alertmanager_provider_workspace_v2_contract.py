@@ -32,12 +32,15 @@ def test_alertmanager_validation_uses_capability_registry_and_decision_panel():
     assert 'table_ui.table_classes' in content
 
 
-def test_alertmanager_runtime_uses_kaori_runtime_decision_and_history_filters():
+def test_alertmanager_runtime_uses_horizontal_runtime_decision_and_history_filters():
     panel = read('app/templates/alertmanager/partials/_runtime_panel.html')
     history = read('app/templates/alertmanager/partials/_runtime_history.html')
     assert 'Runtime Decision' in panel
-    assert 'Diagnostic Evidence' in panel
-    assert 'Evidence Ownership' in panel
+    assert 'Runtime Evidence' in panel
+    assert 'Primary Finding' in panel
+    assert 'Evidence Boundary' in panel
+    assert 'lg:sticky' not in panel
+    assert 'xl:sticky' not in panel
     assert 'runtime_history_filters_enabled = true' in history
 
 
