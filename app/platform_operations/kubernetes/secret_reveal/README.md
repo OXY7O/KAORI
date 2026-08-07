@@ -120,3 +120,10 @@ Readiness controls use static form cards with explicit checkbox labels. Do not m
 The Kubernetes Boundary card is the violet KAORI guidance surface. Its header, supporting copy, icon containers, and internal guardrail cards must use white or white-opacity content against `bg-kaori-primary`.
 
 The Namespace Policies `Live Source` status is a text-only semantic label. Do not reintroduce decorative icons for `Current` or `Missing`.
+
+## Final UI Refinement
+
+- The `Current Policy` value is text-first. Approval, step-up, and disabled policy labels use shared KAORI semantic labels without decorative icons.
+- Namespace summary labels use Title Case (`Total`, `Enabled`, `Missing`) and shared label macros rather than page-local badge markup.
+- Operational readiness states use semantic-dot indicators; classification/policy values remain text-first.
+- Namespace pagination reuses `components/pagination.html` and renders the canonical `Showing X–Y of Z Namespaces` summary with shared singularization.

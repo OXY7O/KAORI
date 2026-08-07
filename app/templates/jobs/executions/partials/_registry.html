@@ -212,9 +212,9 @@
         </div>
     {% endif %}
 
-    <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 text-xs text-content-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div class="flex flex-wrap items-center gap-3">
-            <p>Showing <strong class="text-content-primary">{{ job_pagination.start_item }}–{{ job_pagination.end_item }}</strong> of <strong class="text-content-primary">{{ job_pagination.total_items }}</strong> executions</p>
+    <footer class="{{ pagination_ui.footer_classes() }}">
+        <div class="{{ pagination_ui.summary_group_classes() }}">
+            <p>Showing <span class="font-semibold text-content-primary">{{ job_pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ job_pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ job_pagination.total_items }}</span> {{ pagination_ui.resource_name('Executions', job_pagination.total_items)|trim }}</p>
             <form class="inline-flex items-center"
                   hx-get="{{ url_for('jobs.executions') }}"
                   hx-target="#job-execution-registry"
@@ -240,7 +240,7 @@
                 </select>
             </form>
         </div>
-        <div class="flex flex-wrap items-center gap-1">
+        <div class="{{ pagination_ui.navigation_group_classes() }}">
             {% set base = {'fragment': 'registry', 'tab': 'registry', 'status': selected_job_status, 'workload': selected_job_workload, 'queue': selected_job_queue, 'search': job_search, 'per_page': job_pagination.per_page} %}
             {% if job_pagination.has_prev %}
                 <a href="{{ url_for('jobs.executions', page=job_pagination.prev_page, **base) }}"

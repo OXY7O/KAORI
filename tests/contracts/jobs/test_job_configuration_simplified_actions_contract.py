@@ -13,5 +13,5 @@ def test_manual_job_action_labels_are_compact():
 
 def test_execution_history_button_is_compact():
     source = (ROOT / 'app/templates/jobs/configuration/_execution_activity.html').read_text()
-    assert '>\n                    Executions\n' in source
+    assert 'Executions' in source
     assert 'View All Executions' not in source

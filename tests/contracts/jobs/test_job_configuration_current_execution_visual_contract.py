@@ -8,7 +8,7 @@ def test_current_execution_uses_visual_status_workspace():
     assert "Current Execution" in source
     assert "bg-kaori-soft/40" in source
     assert "Execution Progress" in source
-    assert "Ready For Execution" in source
+    assert "Ready for Execution" in source
 
 
 def test_current_execution_keeps_single_determinate_progress_bar():

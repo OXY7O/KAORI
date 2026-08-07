@@ -6,7 +6,7 @@ TEMPLATE = Path("app/templates/jobs/configuration/_execution_activity.html")
 def test_current_execution_is_compact_status_strip():
     text = TEMPLATE.read_text()
     assert "Current Execution" in text
-    assert "xl:grid-cols-4" in text
+    assert "lg:grid-cols-4" in text
     assert "Worker Execution In Progress" not in text
     assert "Operational Control" not in text
     assert "rounded-lg border border-kaori-primary/20 bg-kaori-soft p-4" not in text

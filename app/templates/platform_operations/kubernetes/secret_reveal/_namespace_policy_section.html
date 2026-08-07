@@ -1,3 +1,4 @@
+{% import "components/table_label.html" as table_label %}
 <section id="secret-reveal-namespace-section"
          class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
     <div class="border-b border-outline-default px-6 py-5">
@@ -7,19 +8,16 @@
                     <i data-lucide="boxes" class="h-5 w-5"></i>
                 </span>
                 <div>
-                    <h2 class="text-lg font-semibold text-content-primary">Namespace Policies</h2>
+                    <h2 class="text-base font-semibold text-content-primary">Namespace Policies</h2>
                     <p class="mt-1 text-sm text-content-muted">Allow protected access only in namespaces with a clear operational requirement.</p>
                 </div>
             </div>
-            <div class="flex flex-wrap items-center gap-2 text-xs font-medium">
-                <span class="inline-flex items-center gap-1.5 rounded-md bg-kaori-soft px-3 py-1 text-kaori-primary ring-1 ring-inset ring-brand-outline">
-                    <i data-lucide="server" class="h-3.5 w-3.5"></i>
-                    {{ selected_cluster.name }}
-                </span>
-                <span class="inline-flex rounded-md bg-surface-subtle px-3 py-1 text-content-secondary ring-1 ring-inset ring-outline-default">{{ namespace_summary.total }} total</span>
-                <span class="inline-flex rounded-md bg-status-normal-soft px-3 py-1 text-status-normal-text ring-1 ring-inset ring-status-normal-border">{{ namespace_summary.enabled }} enabled</span>
+            <div class="flex flex-wrap items-center gap-2">
+                {{ table_label.metadata_label(selected_cluster.name, icon='server') }}
+                {{ table_label.metadata_label(namespace_summary.total ~ ' Total') }}
+                {{ table_label.status_label(namespace_summary.enabled ~ ' Enabled', 'normal') }}
                 {% if namespace_summary.missing %}
-                    <span class="inline-flex rounded-md bg-status-warning-soft px-3 py-1 text-status-warning-text ring-1 ring-inset ring-status-warning-border">{{ namespace_summary.missing }} missing</span>
+                    {{ table_label.status_label(namespace_summary.missing ~ ' Missing', 'warning') }}
                 {% endif %}
             </div>
         </div>
@@ -45,7 +43,7 @@
                    name="per_page"
                    value="{{ namespace_pagination.per_page }}">
             <div class="min-w-0">
-                <label class="mb-2 block text-sm font-medium text-content-secondary">Search namespace</label>
+                <label class="mb-2 block text-sm font-medium text-content-secondary">Search Namespace</label>
                 <div class="relative">
                     <i data-lucide="search"
                        class="absolute left-3 top-3.5 h-4 w-4 text-content-muted"></i>
@@ -57,7 +55,7 @@
                 </div>
             </div>
             <div>
-                <label class="mb-2 block text-sm font-medium text-content-secondary">Reveal policy</label>
+                <label class="mb-2 block text-sm font-medium text-content-secondary">Reveal Policy</label>
                 <select name="namespace_policy"
                         class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
                     {% for value, label in namespace_filter_options.items() %}

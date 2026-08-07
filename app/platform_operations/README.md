@@ -37,3 +37,10 @@ Operational Secret values remain owned by `app/kubernetes_operations/secrets/`. 
 
 - Kubernetes Administration tabs use the same compact rounded-button treatment as the Jobs & Executions inner workspace tabs: violet soft container, active violet button, and inactive white button with violet border.
 - Secret Reveal readiness and namespace policy saves update only the Secret Reveal cluster workspace through HTMX; full-page redirects are fallback behavior only.
+
+## Final UI refinement rules
+
+- Operational state labels in Platform Operations use the shared semantic label components. Repeated readiness/state values use `status_indicator_label()` with a semantic dot; configuration/classification values remain text-first and do not add decorative Lucide icons.
+- Kubernetes Administration section headings use the shared `text-base font-semibold` hierarchy for peer workspace sections.
+- Namespace filters and pagination use Title Case labels and the same shared pagination macros as Kubernetes Inventory. The summary format is `Showing X–Y of Z Namespaces`, with singularization delegated to `pagination_ui.resource_name()`.
+- Jobs & Executions uses shared metadata/status labels for queue and readiness chips; execution registry pagination follows the same shared footer contract.
