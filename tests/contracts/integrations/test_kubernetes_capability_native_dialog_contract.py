@@ -50,26 +50,38 @@ def test_capability_dialog_uses_compact_professional_decision_layout() -> None:
 
     for marker in (
         'data-kaori-capability-modal-v2',
+        'data-kaori-capability-modal-v3',
         'data-kaori-capability-decision-summary',
-        'data-kaori-capability-validation-scope',
-        'data-kaori-capability-operational-guidance',
-        'data-kaori-capability-verification-script',
+        'data-kaori-capability-contract-snapshot',
+        'data-kaori-capability-validation-evidence',
+        'data-kaori-capability-operational-decision',
+        'data-kaori-capability-governance-boundary',
+        'data-kaori-capability-verification-command',
     ):
         assert marker in capability
 
     for label in (
-        'Validation Decision',
-        'Contract Context',
-        'Validation Scope',
-        'Operational Guidance',
+        'Capability Decision',
+        'Contract Snapshot',
+        'Validation Evidence',
+        'Operational Decision',
         'Operational Impact',
         'Recommended Action',
         'Governance Boundary',
-        'Independent Verification',
-        'Execution Context',
+        'Verification Command',
         'Copy Script',
     ):
         assert label in capability
+
+    # The modal is a single reading flow, not a wall of nested evidence cards.
+    assert 'lg:grid-cols-4' in capability
+    assert 'lg:grid-cols-3' in capability
+    assert 'lg:grid-cols-2' in capability
+    assert 'data-kaori-capability-validation-scope' not in capability
+    assert 'data-kaori-capability-operational-guidance' not in capability
+    assert 'data-kaori-capability-verification-script' not in capability
+    assert 'Independent Verification' not in capability
+    assert 'Execution Context' not in capability
 
     assert "size='standard'" in capability
     assert 'technical_check.render(' not in capability

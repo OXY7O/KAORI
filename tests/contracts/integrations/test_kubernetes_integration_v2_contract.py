@@ -261,15 +261,15 @@ def test_capability_workspace_uses_registry_modal_and_consistent_typography() ->
     assert 'record_detail_modal.render(' in capability
     assert 'data-kaori-capability-modal-content' in capability
     assert 'data-kaori-capability-modal-v2' in capability
-    assert 'Validation Decision' in capability
-    assert 'Contract Context' in capability
-    assert 'Validation Scope' in capability
-    assert 'Operational Guidance' in capability
+    assert 'data-kaori-capability-modal-v3' in capability
+    assert 'Capability Decision' in capability
+    assert 'Contract Snapshot' in capability
+    assert 'Validation Evidence' in capability
+    assert 'Operational Decision' in capability
     assert 'Operational Impact' in capability
     assert 'Recommended Action' in capability
     assert 'Governance Boundary' in capability
-    assert 'Independent Verification' in capability
-    assert 'Execution Context' in capability
+    assert 'Verification Command' in capability
     assert 'technical_check.render(' not in capability
     assert 'font-sans' in capability
     assert 'font-mono' not in capability
