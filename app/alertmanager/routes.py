@@ -513,6 +513,9 @@ def runtime_history(instance_id: int) -> ResponseReturnValue:
         abort(404)
     page = request.args.get('page', default=1, type=int) or 1
     per_page = request.args.get('per_page', default=5, type=int) or 5
+    history_trigger = request.args.get('history_trigger', default='', type=str) or ''
+    history_health = request.args.get('history_health', default='', type=str) or ''
+    history_readiness = request.args.get('history_readiness', default='', type=str) or ''
     return render_template(
         'alertmanager/partials/_runtime_history.html',
         instance=instance,
@@ -520,6 +523,9 @@ def runtime_history(instance_id: int) -> ResponseReturnValue:
             instance,
             page=page,
             per_page=per_page,
+            trigger_type=history_trigger,
+            health_status=history_health,
+            readiness=history_readiness,
         ),
     )
 

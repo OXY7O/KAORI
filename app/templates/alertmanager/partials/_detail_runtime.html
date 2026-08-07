@@ -1,17 +1,6 @@
-{% import "components/workspace_summary_card.html" as workspace_summary_card %}
-<div class="space-y-5">
-    <section class="grid gap-4 lg:grid-cols-3"
-             aria-label="Runtime workspace summary">
-        {{ workspace_summary_card.render('Readiness Versus Health',
-                'Validation establishes readiness; runtime observations establish current health.',
-                icon='activity') }}
-        {{ workspace_summary_card.render('How Monitoring Works',
-                'Runtime refresh records reachability, latency, diagnostics, capability context, and health.',
-                icon='radar') }}
-        {{ workspace_summary_card.render('Resolver Correlation',
-                'Disabled, unready, capability-incomplete, or unhealthy sources can be skipped by resolution.',
-                icon='route') }}
-    </section>
+<div class="space-y-4 font-sans">
     {% include 'alertmanager/partials/_runtime_panel.html' %}
-    {% include 'alertmanager/partials/_runtime_history.html' %}
+    {% with runtime_history_id='alertmanager-runtime-history', runtime_history_loading_id='alertmanager-history-loading', runtime_history_url=url_for('alertmanager.runtime_history', instance_id=instance.id), provider_label='Alertmanager', runtime_history_filters_enabled=true, runtime_history_detail_url=url_for('alertmanager.instance_detail', instance_id=instance.id), runtime_history_tab='runtime' %}
+        {% include 'integrations/partials/_runtime_history.html' %}
+    {% endwith %}
 </div>

@@ -368,11 +368,17 @@ def build_runtime_history_context(
     *,
     page: int = 1,
     per_page: int = 5,
+    trigger_type: str = '',
+    health_status: str = '',
+    readiness: str = '',
 ) -> dict[str, object]:
     rows, pagination = paginate_runtime_history(
         'alertmanager',
         str(instance.id),
         page=page,
         per_page=per_page,
+        trigger_type=trigger_type,
+        health_status=health_status,
+        readiness=readiness,
     )
     return runtime_history_view(rows, pagination=pagination)
