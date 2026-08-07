@@ -216,7 +216,7 @@ def tls_certificates_detail(certificate_id: int):
             user_id=current_user.id,
             event_type='governance_tls_certificate_record_missing',
             status='warning',
-            title='TLS certificate record was not found',
+            title='TLS Certificate Record Was Not Found',
             message=(
                 'The requested TLS certificate record is no longer available. '
                 'Refresh the inventory and select a current record.'

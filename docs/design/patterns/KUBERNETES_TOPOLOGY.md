@@ -9,16 +9,16 @@ Visualization Workspace Style 1 — Adaptive Explorer
 ├── Filter Bar
 ├── Local Status / Warning Region
 ├── Canvas Toolbar
-│   ├── Tab Style 3: Graph / Resource List
-│   ├── Controls
-│   ├── Details
+│   ├── Tab Style 2: Graph / Resource List
+│   ├── Controls → left drawer
+│   ├── Details  → right drawer
 │   ├── Fit
 │   ├── Reset
 │   └── Export
-├── Display Controls
-├── Graph or Accessible Resource List
-└── Topology Inspector
-    └── Tab Style 3: Details / Relationships
+├── Full-Width Graph or Accessible Resource List
+├── Display Controls → hidden until requested
+└── Topology Inspector → hidden until requested/selection
+    └── Tab Style 2: Details / Relationships
 ```
 
 ## Information Ownership
@@ -81,12 +81,8 @@ A domain class must never assign the translucent `*-fill` token to `color`. Reso
 Resource List rows, search results, graph details, and the selected-resource inspector all reuse the
 same `.kaori-topology-domain-*` classes so light and dark mode cannot diverge.
 
-## Inspector Width and API Server Presentation
+## Canvas-First Drawer Contract
 
-The Adaptive Explorer uses a `26rem` right inspector at the `2xl` breakpoint and `max-w-md` for the
-mobile right drawer. This gives operational identities enough width without reducing the graph to a
-secondary column.
+Topology is a canvas-first workspace. Controls and Topology Details remain overlay drawers at every breakpoint; they never become persistent desktop columns. The canvas therefore keeps the full workspace width until the operator intentionally opens a drawer. Selecting a resource or relationship opens the right Details drawer, while Display Controls opens from the toolbar on demand. Closing either drawer restores the unchanged full-width graph.
 
-`API Server` uses the canonical horizontal field row. Its value is single-line, right aligned, and
-truncated only when the endpoint exceeds the available width. The complete endpoint remains exposed
-through the native `title` attribute. A dedicated stacked-row compatibility template is prohibited.
+The right drawer uses the shared visualization drawer geometry (`max-w-md`) and does not participate in page grid sizing. `API Server` keeps the canonical horizontal field row. Its value is single-line, right aligned, and truncated only when the endpoint exceeds the available drawer width. The complete endpoint remains exposed through the native `title` attribute. A dedicated stacked-row compatibility template is prohibited.

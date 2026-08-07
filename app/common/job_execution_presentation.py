@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.common.presentation import present_user_datetime
+from app.jobs.registry import job_operation_label
 from app.models.job import JobExecution
 
 _JOB_ICONS = {
@@ -83,7 +84,7 @@ def present_job_execution_row(job: JobExecution) -> dict[str, Any]:
         'task_id': job.celery_task_id,
         'job_type': job.job_type,
         'operation': job.operation,
-        'operation_label': job.operation.replace('_', ' ').title(),
+        'operation_label': job_operation_label(job.operation),
         'workload_class': job.workload_class,
         'workload_label': job.workload_class.replace('_', ' ').title(),
         'icon': _JOB_ICONS.get(job.workload_class, 'workflow'),

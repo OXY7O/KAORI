@@ -228,8 +228,6 @@ const startTopologyWorkspace = () => {
         }
     }
 
-    const isPersistentExplorer = () => window.matchMedia('(min-width: 1536px)').matches
-
     const closePanes = () => {
         paneBackdrop?.classList.add('hidden')
         document.body.classList.remove('overflow-hidden')
@@ -238,7 +236,7 @@ const startTopologyWorkspace = () => {
     }
 
     const openPane = (panel) => {
-        if (!panel || isPersistentExplorer()) return
+        if (!panel) return
         controlsPanel?.classList.add('hidden')
         detailsPanel?.classList.add('hidden')
         panel.classList.remove('hidden')
@@ -1685,7 +1683,6 @@ const startTopologyWorkspace = () => {
     paneBackdrop?.addEventListener('click', closePanes)
     document.querySelectorAll('[data-topology-close-pane]').forEach((button) => button.addEventListener('click', closePanes))
     document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closePanes() })
-    window.addEventListener('resize', () => { if (isPersistentExplorer()) closePanes() })
 
     $('topology-fit-button')?.addEventListener('click', fitGraphToCanvas)
     $('topology-reset-button')?.addEventListener('click', () => {

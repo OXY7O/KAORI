@@ -5,7 +5,7 @@
 Approved package:
 
 - A1 — Visualization Workspace Style 1: Adaptive Explorer;
-- B — Tab Style 3: Compact Segmented Tabs;
+- B — Tab Style 2: Compact Segmented Tabs;
 - C1 — Graph plus accessible Resource List;
 - D1 — Tokenized five-domain topology palette.
 
@@ -33,9 +33,9 @@ Approved package:
 
 ## Reference Behavior
 
-At `2xl`, controls, graph/list, and inspector are persistent. Below `2xl`, the canvas remains primary while Controls and Details use adaptive drawers.
+Topology is **canvas-first at every breakpoint**. Controls and Details are progressive-disclosure overlay drawers and never become persistent columns, including at `2xl`. This preserves the graph as the dominant working surface on laptops and wide desktop monitors. Selecting a resource or relationship opens the right Details drawer on demand; closing it restores the unchanged full-width canvas.
 
-Tab Style 3 switches Graph/Resource List and Details/Relationships. Resource List, search, JSON export, and payload-based detail inspection remain available if Cytoscape is unavailable.
+Tab Style 2 switches Graph/Resource List and Details/Relationships. Resource List, search, JSON export, and payload-based detail inspection remain available if Cytoscape is unavailable.
 
 ## Performance Contract
 
@@ -52,3 +52,7 @@ Topology payload cache key includes the committed generation signature and norma
 ## Readable Graph Node Refinement
 
 The canonical graph uses compact rounded domain badges with one-line external object-name labels, bounded ellipsis, and a semantic status dot. Full names and resource types remain available through Resource List and Details. Containment lines are quiet dashed orthogonal connectors without arrowheads; dependency labels remain progressive-disclosure content.
+
+## Final Lock Refinement — 2026-08-07
+
+A regression had reintroduced persistent Controls and Details columns at the `2xl` breakpoint. The final-lock refinement removes that breakpoint behavior and restores the agreed wide-canvas model. The shared visualization component, Topology JavaScript, reference pattern, and contract test now all prohibit persistent Topology side panes.

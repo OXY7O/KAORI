@@ -253,6 +253,7 @@ Secret values, decoded payloads, certificate bytes, private keys, and tokens are
 
 - The single TLS Secret rotation hero returns to Secret Management; it does not use an in-page `Open Replacement Form` hero action.
 - The rotation workflow uses the canonical target card, replacement-pair upload surface, shared guardrails, shared action bar, and sticky controlled-flow panel.
+- Single and bulk TLS rotation use the same peer upload-card treatment: explicit `tls.crt` / `tls.key` identity, file-format badge, inner dashed chooser boundary, selected filename, and transient-key wording.
 - Bulk `Target TLS Secrets` uses `components/table.html` and `components/pagination.html` for Inventory-standard header, loading state, filters, Cluster and Namespace identities, semantic status, empty state, Rows Per Page, Previous/Next, and numeric page links.
 - Bulk pagination keeps a normal full-page `href` and a separate HTMX `hx-get` partial URL so fallback navigation remains valid and `outerHTML` swaps reinitialize numeric page links.
 

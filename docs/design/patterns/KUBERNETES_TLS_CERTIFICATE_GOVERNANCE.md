@@ -160,3 +160,4 @@ The Kubernetes API response is processed transiently by the collector. KAORI may
 - TLS Secret validation remains transient. Single and bulk rotation terminal outcomes are persistent regardless of status.
 - Notification payloads contain only safe certificate metadata and counts; certificate bytes, private keys, Secret values, raw exceptions, and provider payload dumps are prohibited.
 - Toast labels may state **Activity Audit** or **Notification Deck** only when the corresponding persistence was confirmed.
+- User-facing notification and execution titles preserve canonical acronyms and Title Case. The registered sync display name is **TLS Certificate Sync**; generic snake-case `.title()` reconstruction is not used for registered job names.

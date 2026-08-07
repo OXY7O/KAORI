@@ -17,20 +17,43 @@ def test_topology_uses_the_adaptive_visualization_workspace() -> None:
     assert '{% import "components/visualization_workspace.html" as visualization_workspace %}' in workspace
     assert 'visualization_workspace.render(' in workspace
     assert 'data-kaori-visualization-workspace="adaptive-explorer"' in component
-    assert '2xl:grid-cols-[18rem_minmax(0,1fr)_26rem]' in component
+    assert 'relative min-h-[38rem]' in component
+    assert '2xl:grid-cols-' not in component
+    assert '2xl:static' not in component
+    assert '2xl:block' not in component
     assert 'topology-controls-panel' in workspace
     assert 'topology-details-panel' in workspace
     assert 'topology-pane-backdrop' in workspace
+    assert 'topology-controls-button' in workspace
+    assert 'topology-details-button' in workspace
+    assert '2xl:hidden' not in workspace
     assert 'components/loading_bar.html' in component
 
 
-def test_topology_registers_compact_segmented_tab_style_three() -> None:
+def test_topology_side_panes_are_always_on_demand_drawers() -> None:
+    workspace = _read('app/templates/inventory/topology/partials/_workspace.html')
+    component = _read('app/templates/components/visualization_workspace.html')
+    script = _read('app/static/js/inventory/topology.js')
+    pattern = _read('docs/design/patterns/KUBERNETES_TOPOLOGY.md')
+
+    assert "fixed inset-y-0" in component
+    assert "z-50 hidden w-full" in component
+    assert "2xl:static" not in component
+    assert "isPersistentExplorer" not in script
+    assert "if (!panel) return" in script
+    assert "openPane(detailsPanel)" in script
+    assert "data-topology-close-pane" in workspace
+    assert "overlay drawers at every breakpoint" in pattern.lower()
+    assert "never become persistent" in pattern.lower()
+
+
+def test_topology_registers_compact_segmented_tab_style() -> None:
     workspace = _read('app/templates/inventory/topology/partials/_workspace.html')
     inspector = _read('app/templates/inventory/topology/partials/_inspector_templates.html')
     component = _read('app/templates/components/segmented_tabs.html')
     registry = _read('docs/design/components/TAB_STYLES.md')
 
-    assert 'Tab Style 3 — Compact Segmented Tabs' in registry
+    assert 'Tab Style 2 — Compact Segmented Tabs' in registry
     assert '`compact-segmented`' in registry
     assert 'data-kaori-tab-variant="compact-segmented"' in component
     assert "[('graph', 'Graph', 'share-2'), ('list', 'Resource List', 'list-tree')]" in workspace
@@ -144,7 +167,7 @@ def test_topology_reference_pattern_is_documented() -> None:
     inventory_readme = _read('app/inventory/README.md')
 
     assert 'Visualization Workspace Style 1 — Adaptive Explorer' in pattern
-    assert 'Tab Style 3: Graph / Resource List' in pattern
+    assert 'Tab Style 2: Graph / Resource List' in pattern
     assert 'Renderer failure must not remove access' in pattern or 'Renderer errors preserve Resource List access' in pattern
     assert 'Approved package' in audit
     assert 'Kubernetes Topology Reference Pattern' in inventory_readme

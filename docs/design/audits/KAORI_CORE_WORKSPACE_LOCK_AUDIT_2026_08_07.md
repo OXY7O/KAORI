@@ -42,6 +42,13 @@ The repository already has a style-debt baseline for some shared/domain-local co
 
 Future cleanup may reduce the bounded baseline, but no locked workspace may increase it without an explicit design-system change.
 
+
+### Final refinement: Kubernetes Topology canvas contract
+
+- A `2xl` breakpoint regression had made Display Controls and Topology Details persistent columns, shrinking the graph even on wide screens.
+- The canonical contract is restored to canvas-first behavior at every breakpoint: Controls is a left overlay drawer, Details is a right overlay drawer, and resource/relationship selection opens Details on demand.
+- Shared visualization geometry, Topology JavaScript, documentation, and contract tests now all enforce the same rule so the persistent three-pane layout cannot silently return.
+
 ## Lock Decision
 
 The reviewed workspaces are considered **design-contract locked** after this patch when the scoped verifier and domain contract tests pass. Further work should prefer small defect fixes and content/data changes over structural redesign.

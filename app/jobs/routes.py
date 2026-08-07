@@ -17,7 +17,7 @@ from app.jobs.dispatcher import dispatch_registered_job
 from app.jobs.policies.forms import JobPolicyForm, ManualJobRunForm
 from app.jobs.policies.service import update_job_policy
 from app.jobs.presentation import build_job_execution_context, build_job_execution_status_context
-from app.jobs.registry import get_job_definition
+from app.jobs.registry import get_job_definition, job_operation_label
 from app.jobs.service import (
     JobCancellationNotAllowed,
     JobQuotaExceeded,
@@ -486,9 +486,9 @@ def cancel_execution(public_id: str) -> ResponseReturnValue:
                 status='warning',
                 title='Job Canceled' if canceled_before_start else 'Job Cancellation Requested',
                 message=(
-                    f'KAORI canceled {job.operation.replace("_", " ").title()} before worker execution.'
+                    f'KAORI canceled {job_operation_label(job.operation)} before worker execution.'
                     if canceled_before_start
-                    else f'KAORI requested cancellation for {job.operation.replace("_", " ").title()}.'
+                    else f'KAORI requested cancellation for {job_operation_label(job.operation)}.'
                 ),
                 detail=(
                     'The queued task was revoked and its active deduplication slot was released.'

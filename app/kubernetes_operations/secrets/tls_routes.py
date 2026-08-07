@@ -43,10 +43,10 @@ def _tls_csrf_guard(location: str):
         _record_secret_activity(
             event_type='kubernetes_tls_secret_csrf_failed',
             status='error',
-            title='TLS Secret operation expired',
+            title='TLS Secret Operation Expired',
             message=str(exc),
             action_url=location,
-            action_label='Reload TLS rotation',
+            action_label='Reload TLS Rotation',
             metadata={
                 'operation': 'csrf_validation',
                 'secret_value_recorded': False,
@@ -97,17 +97,17 @@ def _record_validation_activity(
 
     if target_count == 0:
         status = 'warning'
-        title = 'TLS certificate validation requires a target'
+        title = 'TLS Certificate Validation Requires a Target'
         message = 'Select at least one Kubernetes TLS Secret before validating the certificate pair.'
         detail = None
     elif not is_valid:
         status = 'error'
-        title = 'TLS certificate validation failed'
+        title = 'TLS Certificate Validation Failed'
         message = 'The uploaded certificate and private key could not be validated.'
         detail = ' '.join(validation.errors) if validation.errors else None
     elif uncovered_hosts:
         status = 'warning'
-        title = 'TLS certificate validation completed with warnings'
+        title = 'TLS Certificate Validation Completed With Warnings'
         message = (
             f'The certificate pair is valid, but {len(uncovered_hosts)} mapped host'
             f'{"s are" if len(uncovered_hosts) != 1 else " is"} not covered by its SANs.'
@@ -115,7 +115,7 @@ def _record_validation_activity(
         detail = ', '.join(uncovered_hosts)
     else:
         status = 'success'
-        title = 'TLS certificate validation completed'
+        title = 'TLS Certificate Validation Completed'
         message = (
             f'The uploaded certificate pair is valid for {target_count} selected TLS Secret'
             f'{"s" if target_count != 1 else ""}.'
@@ -135,7 +135,7 @@ def _record_validation_activity(
             if record is not None
             else url_for('kubernetes_operations.tls_secret_bulk_rotation')
         ),
-        action_label='Review TLS rotation',
+        action_label='Review TLS Rotation',
         metadata={
             'certificate_id': getattr(record, 'id', None),
             'cluster_id': getattr(record, 'cluster_id', None),
@@ -236,11 +236,11 @@ def tls_secret_rotate_apply(certificate_id: int):
     is_warning = result_status == 'warning'
     provider_updated = result.get('provider_updated') is True
     title = (
-        'TLS Secret rotation completed'
+        'TLS Secret Rotation Completed'
         if is_success
-        else 'TLS Secret rotation requires synchronization'
+        else 'TLS Secret Rotation Requires Synchronization'
         if is_warning
-        else 'TLS Secret rotation failed'
+        else 'TLS Secret Rotation Failed'
     )
     _record_secret_activity(
         event_type='kubernetes_tls_secret_rotation',
@@ -256,7 +256,7 @@ def tls_secret_rotate_apply(certificate_id: int):
             if record is not None
             else url_for('governance.tls_certificates')
         ),
-        action_label='View certificate posture',
+        action_label='View Certificate Posture',
         metadata={
             **target_metadata,
             'operation': 'rotate_tls_secret',
@@ -364,11 +364,11 @@ def tls_secret_bulk_rotation_apply():
     is_warning = apply_result.get('status') == 'warning'
     status = 'success' if is_success else 'warning' if is_warning else 'error'
     title = (
-        'Bulk TLS Secret rotation completed'
+        'Bulk TLS Secret Rotation Completed'
         if is_success
-        else 'Bulk TLS Secret rotation completed with warnings'
+        else 'Bulk TLS Secret Rotation Completed With Warnings'
         if is_warning
-        else 'Bulk TLS Secret rotation failed'
+        else 'Bulk TLS Secret Rotation Failed'
     )
     feedback = _record_secret_activity(
         event_type='kubernetes_tls_secret_bulk_rotation',
@@ -376,7 +376,7 @@ def tls_secret_bulk_rotation_apply():
         title=title,
         message=apply_result['message'],
         action_url=url_for('kubernetes_operations.tls_secret_bulk_rotation'),
-        action_label='Review TLS rotation workspace',
+        action_label='Review TLS Rotation Workspace',
         metadata={
             'bulk_job_id': apply_result.get('bulk_job_id'),
             'operation': 'bulk_rotate_tls_secret',

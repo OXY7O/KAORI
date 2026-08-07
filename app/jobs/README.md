@@ -75,4 +75,4 @@ Analytics and Forecast policies are freshness-aware. A due policy check may comp
 `governance.tls_certificates.sync` refreshes Kubernetes TLS Secret certificate inventory through the
 existing inventory worker. It defaults to a six-hour database-backed interval, supports manual execution,
 and uses the same canonical deduplication and terminal audit behavior as other registered jobs. The owning
-domain permission is `tls_certificates.sync`.
+domain permission is `tls_certificates.sync`. User-facing execution, Notification Deck, cancellation, and automatic-audit labels resolve from the registered definition name, so the acronym remains **TLS Certificate Sync** rather than being reconstructed as `Tls Certificate Sync`.

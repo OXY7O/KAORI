@@ -9,6 +9,7 @@ from flask import current_app
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
+from app.jobs.registry import job_operation_label
 from app.extensions.db import db
 from app.jobs.audit import is_automatic_execution
 from app.jobs.constants import ACTIVE_JOB_STATUSES, DEFAULT_PRIORITIES, HEAVY_WORKLOAD_CLASSES
@@ -295,7 +296,7 @@ def _append_automatic_terminal_audit(job: JobExecution) -> None:
     event.target_type = 'job_execution'
     event.target_id = job.public_id
     event.action = f'automatic_job_{job.status}'
-    operation_label = job.operation.replace('_', ' ').title()
+    operation_label = job_operation_label(job.operation)
     status_label = job.status.replace('_', ' ').title()
     event.summary = f'Automatic {operation_label} finished with status {status_label}.'[:255]
     event.metadata_json = to_json_compatible(

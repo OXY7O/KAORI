@@ -30,6 +30,7 @@ The following decisions may not be changed page-by-page:
 8. Inline `style=` and inline DOM event handlers are forbidden in locked templates. Dynamic progress width is owned by `components/progress_bar.html`; dialog behavior is owned by shared JavaScript.
 9. Operational toast auto-dismiss and countdown behavior is owned by `app/static/js/operational_toasts.js`.
 10. New copied surface shells, compatibility shims, dead wrappers, and reintroduced obsolete paths are release blockers.
+11. Kubernetes Topology is canvas-first at every breakpoint. Display Controls and Topology Details are on-demand overlay drawers and must never become persistent columns that reduce the graph working area.
 
 ## Frozen Evidence and Security Boundaries
 

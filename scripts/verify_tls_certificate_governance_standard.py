@@ -27,6 +27,8 @@ def main() -> int:
     progress = read('app/templates/governance/tls_certificates/partials/_sync_progress_toast.html')
     table = read('app/templates/governance/tls_certificates/partials/_table.html')
     detail = read('app/templates/governance/tls_certificates/partials/_detail_content.html')
+    single_rotation = read('app/templates/kubernetes_operations/secrets/tls_rotate.html')
+    tls_routes = read('app/kubernetes_operations/secrets/tls_routes.py')
     readme = read('app/governance/tls_certificates/README.md')
     standard = read('docs/design/patterns/KUBERNETES_TLS_CERTIFICATE_GOVERNANCE.md')
     audit = read('docs/design/audits/KUBERNETES_TLS_NOTIFICATION_DELIVERY_AUDIT_2026_08.md')
@@ -89,6 +91,20 @@ def main() -> int:
     for token in ('coverage_reported', 'ingress_mapping_reported', 'Not Reported'):
         require(token in detail or token in table,
                 f'TLS UI missing evidence semantic token: {token}', errors)
+
+    for token in (
+        'Certificate File',
+        'Private Key File',
+        'tls.crt',
+        'tls.key',
+        'border border-outline-default bg-surface-hover p-4',
+        'border border-dashed border-outline-strong bg-surface-card',
+        'Validate Before Update',
+    ):
+        require(token in single_rotation,
+                f'Single TLS rotation missing canonical upload/action token: {token}', errors)
+    require("TLS Certificate Validation Completed" in tls_routes,
+            'TLS rotation notifications must preserve TLS acronym and Title Case.', errors)
 
     require('queue_transient_feedback(' in routes,
             'TLS queued acknowledgement must remain transient.', errors)
