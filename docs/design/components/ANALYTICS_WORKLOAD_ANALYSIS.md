@@ -209,7 +209,7 @@ Cluster, Namespace, Time Range, active tab, local filters, and 5/10/25/50 page-s
 - Summary metrics, scope context, quota evidence, workload records, and expanded CPU/Memory evidence use bright surfaces.
 - Operational Reading, Recommended Action, and interpretation guidance use the darker Analytics guidance surface.
 - Semantic status is carried by shared labels, not by tinting entire rows.
-- Recommendation collections use the shared Analytics evidence shell; each recommendation row owns `bg-surface-card` so detached tab content never bleeds into the page background or appears visually clipped.
+- The detached Workload Recommendations tab owns one complete shared Analytics snapshot surface: header, recommendation rows, and pagination remain inside the same bordered card. Recommendation rows own `bg-surface-card`, while pagination uses the shared hover surface, so the workspace never appears visually split or clipped.
 - Missing values render `N/A`, use Unknown semantics, and suppress progress bars.
 
 ## Recommendation Destinations

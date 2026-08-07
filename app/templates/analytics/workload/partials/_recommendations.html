@@ -2,23 +2,22 @@
 {% import "components/recommendation_pager.html" as recommendation_pager %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
-<div class="space-y-4">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+<section class="{{ analysis_surface.snapshot_shell_classes() }}">
+    <header class="{{ analysis_surface.snapshot_header_classes() }}">
         <div class="flex min-w-0 items-start gap-3">
             <span class="{{ analysis_surface.snapshot_header_icon_classes() }}">
                 <i data-lucide="list-checks" class="h-5 w-5"></i>
             </span>
-            <div>
+            <div class="min-w-0">
                 <h3 class="text-lg font-semibold text-content-primary">Workload Recommendations</h3>
                 <p class="mt-1 text-sm leading-6 text-content-muted">Prioritized quota, request, limit, QoS, and right-sizing actions for the selected workload scope.</p>
             </div>
         </div>
-        {{ table_label.metadata_label(recommendation_count|default(0) ~ ' Actionable') }}
-    </div>
+        {{ table_label.metadata_label(recommendation_count|default(0) ~ ' Actionable', size='compact') }}
+    </header>
+
     {% if recommendation_cards %}
-        <div class="{{ analysis_surface.evidence_shell_classes() }}"
-             data-kaori-recommendation-pager
-             data-page-size="3">
+        <div data-kaori-recommendation-pager data-page-size="3">
             <div class="divide-y divide-outline-subtle">
                 {% for item in recommendation_cards %}
                     {% set priority_tone = 'critical' if item.priority in ['P1', 'Critical'] else ('warning' if item.priority in ['P2', 'Warning'] else ('info' if item.priority in ['P3', 'Info'] else 'unknown')) %}
@@ -32,7 +31,7 @@
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2">
                                     {{ table_label.status_label('Priority: ' ~ item.priority, tone=priority_tone, size='compact') }}
-                                    {{ table_label.metadata_label('Derived From: ' ~ item.source_label|default(item.source|default('Workload')), 'database-zap') }}
+                                    {{ table_label.metadata_label('Derived From: ' ~ item.source_label|default(item.source|default('Workload')), 'database-zap', size='compact') }}
                                 </div>
                                 <h4 class="mt-2 font-semibold text-content-primary">{{ item.title }}</h4>
                                 <p class="mt-1 text-sm leading-6 text-content-muted">{{ item.description }}</p>
@@ -45,12 +44,16 @@
                     </div>
                 {% endfor %}
             </div>
-            {{ recommendation_pager.controls(recommendation_cards|length, 'Recommendations', 3) }}
+            <div class="bg-surface-hover">
+                {{ recommendation_pager.controls(recommendation_cards|length, 'Recommendations', 3) }}
+            </div>
         </div>
     {% else %}
-        {% set empty_state_icon = 'check-circle-2' %}
-        {% set empty_state_title = 'No Actionable Workload Recommendation' %}
-        {% set empty_state_description = 'Current workload governance signals do not require immediate action.' %}
-        {% include "components/states/_empty_state.html" %}
+        <div class="p-5 sm:p-6">
+            {% set empty_state_icon = 'check-circle-2' %}
+            {% set empty_state_title = 'No Actionable Workload Recommendation' %}
+            {% set empty_state_description = 'Current workload governance signals do not require immediate action.' %}
+            {% include "components/states/_empty_state.html" %}
+        </div>
     {% endif %}
-</div>
+</section>

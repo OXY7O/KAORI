@@ -89,8 +89,11 @@ def test_workload_sections_use_inventory_aligned_overview_and_record_cards() -> 
     assert 'detached=true' in page
 
     recommendations = read('app/templates/analytics/workload/partials/_recommendations.html')
-    assert 'analysis_surface.evidence_shell_classes()' in recommendations
+    assert 'analysis_surface.snapshot_shell_classes()' in recommendations
+    assert 'analysis_surface.snapshot_header_classes()' in recommendations
     assert 'bg-surface-card px-4 py-4 sm:px-5' in recommendations
+    assert 'bg-surface-hover' in recommendations
+    assert 'analysis_surface.evidence_shell_classes()' not in recommendations
     assert 'overflow-hidden rounded-lg border border-outline-subtle' not in recommendations
 
 
