@@ -14,13 +14,18 @@ def _read(relative_path: str) -> str:
 def test_incident_readiness_uses_compact_operational_workspace() -> None:
     content = INCIDENT_TEMPLATE.read_text(encoding='utf-8')
 
+    assert 'Readiness Posture' in content
     assert 'Readiness Score' in content
+    assert 'Response Control Readiness' in content
+    assert 'Signal Pressure' in content
     assert 'Critical Signals' in content
     assert 'Warning Signals' in content
     assert 'Anomaly Signals' in content
-    assert 'Recommended Action' in content
+    assert 'Incident Decision' in content
+    assert 'Escalation Gate' in content
     assert 'Readiness Checks' in content
-    assert 'xl:grid-cols-6' in content
+    assert 'status_indicator_label(check.status|title' in content
+    assert 'xl:grid-cols-6' not in content
     assert '<details' not in content
     assert '<summary' not in content
     assert 'rounded-xl border border-outline-default bg-surface-subtle p-4' not in content

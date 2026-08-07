@@ -18,7 +18,7 @@ Alerts & Anomalies presents committed alert, anomaly, routing, suppression, owne
 
 1. Hero with page posture, Critical Alerts, Source Health, and a full-width bottom notice.
 2. Controls and Data Readiness with Cluster, Source, committed snapshot metadata, and source warnings.
-3. Cluster Signal Overview as one integrated signal workspace: compact Signal Snapshot, alert severity profile, Investigation Focus, and a dedicated Operational Reading rail. Avoid a six-column wall of peer metrics; primary volume, severity, and investigation guidance must read as separate evidence layers.
+3. Cluster Signal Overview as one integrated decision workspace: Signal Posture, Alert Severity Profile, Investigation Focus, and a dedicated Operator Decision + Evidence Boundary rail. Avoid a six-column wall of peer metrics; primary volume, severity, dominant evidence, and operator action must read as separate layers.
 4. Canonical tabs: Alerts, Anomalies, Routing & Suppression, Ownership & Runbooks, Incident Readiness, Recommendations, and Operational Resources.
 5. Bright record and operational evidence.
 6. Darker interpretation, attention, suppression boundary, and recommended-action regions.
@@ -79,7 +79,7 @@ The two collections use independent page state: `alerts_page`/`alerts_per_page` 
 - HTMX requests use the owning partial endpoint.
 - Filters retain Cluster, Source, Severity, State, Namespace, Search, active tab, and both page-size values.
 - Default page size is 5 with 5/10/25/50 options.
-- Alert and anomaly record actions use the shared Analytics record-detail modal with the canonical `View More` label. Detail evidence must not expand inline inside either record collection. The shared modal is content-sized on desktop (`max-w-5xl`) and uses viewport height only as a maximum bound; it must never force a near-full-screen empty body when the detail content is short.
+- Alert and anomaly record actions use the shared Analytics record-detail modal with the canonical `View More` label. Detail evidence must not expand inline inside either record collection. The shared modal is content-sized and defaults to `max-w-4xl`; dense Workload and Top Consumers evidence explicitly opt into the `wide` (`max-w-5xl`) variant. Viewport height is only a maximum guardrail, never a forced height. Alert details use Signal Context + Routing Metadata + Triage Decision/Readiness; Anomaly details use Observed Deviation + Review Decision + Investigation Sequence.
 - Long labels and technical identifiers use controlled wrapping, not unconditional `break-all`.
 
 ## Routing, Suppression, Ownership, and Readiness
@@ -88,9 +88,21 @@ Routing, silence, inhibition, ownership, runbook, and readiness records are prim
 
 Silence and inhibition evidence must not be interpreted as automatically good or bad. The UI shows matched scope and operational impact; the operator decides whether the suppression is intended.
 
+
+## Incident Readiness Decision Workspace
+
+Incident Readiness is not a six-metric dashboard. It is a decision workspace with four ordered layers:
+
+1. `Readiness Posture`: one score plus the semantic readiness label.
+2. `Response Control Readiness`: source health, ownership readiness, and routing context remain separate controls.
+3. `Signal Pressure`: Critical, Warning, and Anomaly counts remain factual signal-load evidence.
+4. `Incident Decision` and `Escalation Gate`: recommended action, silence/inhibition exposure, and pass/watch/fail check summary guide escalation.
+
+The detailed `Readiness Checks` collection uses repeated semantic-dot status labels. The score may use a semantic progress bar because it represents an actual readiness state; signal-volume bars are not used.
+
 ## Progress and Severity
 
-Readiness and ownership progress fills remain KAORI Violet. Alert severity belongs to semantic badges, icons, and copy. Do not recolor progress bars red or amber unless a separate visualization contract is approved.
+Status-related readiness and ownership progress bars use the shared semantic renderer because they represent operational state. Composition and contribution bars remain KAORI Violet; alert severity itself remains expressed through semantic labels and status evidence rather than recoloring quantitative contribution bars.
 
 ## Report and Overview Consumers
 
@@ -124,4 +136,6 @@ The legacy `/analytics/alerts-anomalies` route is not part of the canonical cont
 - No arbitrary micro typography in Alerts templates.
 - No inline expandable Alert or Anomaly evidence rows; `View More` must open the shared Analytics modal.
 - No fixed viewport-height Analytics record modal. Content should determine modal height until the viewport-safe maximum is reached.
-- No six-column Cluster Signal Overview metric wall. Use the integrated Signal Snapshot + severity profile + Investigation Focus + Operational Reading composition.
+- No six-column Cluster Signal Overview metric wall. Use Signal Posture + Alert Severity Profile + Investigation Focus + Operator Decision/Evidence Boundary.
+- No six-column Incident Readiness metric wall. Use Readiness Posture + Response Control Readiness + Signal Pressure + Incident Decision/Escalation Gate.
+- No alert/anomaly modal that merely moves the inline detail block into an oversized dialog; modal information architecture must be purpose-built for triage.

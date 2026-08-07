@@ -1,15 +1,23 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {#
-  Inline Analytics record-detail modal.
+  Canonical KAORI Analytics record-detail modal.
 
   The caller owns an Alpine scope containing `detailOpen`. The modal is
   teleported to <body> so table, overflow, and HTMX containers cannot clip it.
+
+  Size contract:
+  - standard: alert/anomaly evidence and ordinary record review,
+  - wide: dense evidence matrices such as Workload and Top Consumers.
+
+  The modal is content-sized. max-height is only a guardrail; short content
+  must never stretch to viewport height.
 #}
-{% macro render(modal_id, context_label, title, subtitle, icon='panel-top-open', footer_text='Details use the latest committed Analytics snapshot.') -%}
+{% macro render(modal_id, context_label, title, subtitle, icon='panel-top-open', footer_text='Details use the latest committed Analytics snapshot.', size='standard') -%}
+{% set modal_width = 'max-w-5xl' if size == 'wide' else 'max-w-4xl' %}
 <template x-teleport="body">
     <div x-show="detailOpen"
          x-cloak
-         class="fixed inset-0 z-[85] flex items-center justify-center p-2 sm:p-4 lg:p-6"
+         class="fixed inset-0 z-[85] flex items-center justify-center p-3 sm:p-5 lg:p-6"
          role="presentation"
          @keydown.escape.window="detailOpen = false">
         <button type="button"
@@ -23,6 +31,8 @@
                  aria-labelledby="{{ modal_id }}-title"
                  aria-describedby="{{ modal_id }}-description"
                  tabindex="-1"
+                 data-kaori-record-detail-modal
+                 data-kaori-modal-size="{{ size }}"
                  x-show="detailOpen"
                  x-effect="if (detailOpen) { $nextTick(() => $el.focus()) }"
                  x-transition:enter="transition ease-out duration-200"
@@ -31,17 +41,17 @@
                  x-transition:leave="transition ease-in duration-150"
                  x-transition:leave-start="opacity-100 translate-y-0 scale-100"
                  x-transition:leave-end="opacity-0 translate-y-2 scale-95"
-                 class="relative flex max-h-[calc(100dvh-1rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-2xl sm:max-h-[calc(100dvh-2rem)] lg:max-h-[calc(100dvh-3rem)]">
-            <header class="shrink-0 border-b border-outline-subtle bg-surface-card px-4 py-4 sm:px-6">
+                 class="relative flex max-h-[calc(100dvh-2rem)] w-full {{ modal_width }} flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-2xl sm:max-h-[calc(100dvh-3rem)]">
+            <header class="shrink-0 border-b border-outline-subtle bg-surface-card px-4 py-4 sm:px-5">
                 <div class="flex min-w-0 items-start justify-between gap-4">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="{{ analysis_surface.role_icon_classes('brand', size='large') }}" aria-hidden="true">
-                            <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
+                        <span class="{{ analysis_surface.role_icon_classes('brand', size='default') }}" aria-hidden="true">
+                            <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                         </span>
                         <div class="min-w-0">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary-dark dark:text-kaori-accent">{{ context_label }}</p>
+                            <p class="{{ analysis_surface.role_label_classes('brand') }}">{{ context_label }}</p>
                             <h2 id="{{ modal_id }}-title" class="mt-1 break-words text-lg font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ title }}</h2>
-                            <p id="{{ modal_id }}-description" class="mt-1 text-xs leading-5 text-content-muted">{{ subtitle }}</p>
+                            <p id="{{ modal_id }}-description" class="mt-1 max-w-3xl text-xs leading-5 text-content-muted">{{ subtitle }}</p>
                         </div>
                     </div>
                     <button type="button"
@@ -53,12 +63,12 @@
                 </div>
             </header>
 
-            <div class="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-surface-page px-4 py-5 sm:px-6">
+            <div class="min-h-0 min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain bg-surface-page px-4 py-4 sm:px-5 sm:py-5">
                 {{ caller() }}
             </div>
 
-            <footer class="flex shrink-0 items-center justify-between gap-3 border-t border-outline-subtle bg-surface-card px-4 py-3 sm:px-6">
-                <p class="hidden text-xs leading-5 text-content-muted sm:block">{{ footer_text }}</p>
+            <footer class="flex shrink-0 items-center justify-between gap-3 border-t border-outline-subtle bg-surface-card px-4 py-3 sm:px-5">
+                <p class="hidden max-w-3xl text-xs leading-5 text-content-muted sm:block">{{ footer_text }}</p>
                 <button type="button"
                         class="ml-auto inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-xs font-semibold text-content-secondary transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
                         @click="detailOpen = false">

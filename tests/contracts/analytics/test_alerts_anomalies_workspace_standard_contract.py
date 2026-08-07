@@ -54,13 +54,14 @@ def test_alerts_readiness_and_overview_follow_bright_evidence_hierarchy() -> Non
     assert 'Source Evidence Incomplete' in filters
     assert 'analytics/components/_analysis_surfaces.html' in overview
     assert 'data-kaori-cluster-signal-overview' in overview
-    assert 'Signal Snapshot' in overview
+    assert 'Signal Posture' in overview
     assert 'Investigation Focus' in overview
-    assert 'Operational Reading' in overview
+    assert 'Operator Decision' in overview
+    assert 'Evidence Boundary' in overview
     assert 'aria-label="Alert severity profile"' in overview
     assert 'Info Alerts' in overview
     assert 'Evidence Coverage' in overview
-    assert "xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.75fr)]" in overview
+    assert "xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]" in overview
     assert 'xl:grid-cols-6' not in overview
     assert 'Investigation Posture' not in overview
     assert 'progress_bar' not in overview
@@ -88,8 +89,10 @@ def test_alert_records_use_shared_view_more_modals_and_controlled_wrapping() -> 
     anomaly_row = read(PARTIALS / '_anomalies_table_row.html')
     modal = read('app/templates/analytics/components/_record_detail_modal.html')
 
-    assert 'max-w-5xl' in modal
-    assert 'max-h-[calc(100dvh-1rem)]' in modal
+    assert "modal_width = 'max-w-5xl' if size == 'wide' else 'max-w-4xl'" in modal
+    assert "size='standard'" in modal
+    assert 'max-h-[calc(100dvh-2rem)]' in modal
+    assert 'data-kaori-record-detail-modal' in modal
     assert 'relative flex h-[calc(100dvh-1rem)]' not in modal
 
     for row in (alert_row, anomaly_row):
@@ -107,6 +110,16 @@ def test_alert_records_use_shared_view_more_modals_and_controlled_wrapping() -> 
         assert 'break-all' not in row
         assert 'text-[' not in row
         assert 'tracking-[' not in row
+
+    assert 'data-kaori-alert-evidence-modal' in alert_row
+    assert 'Signal Context' in alert_row
+    assert 'Triage Decision' in alert_row
+    assert 'Triage Readiness' in alert_row
+    assert 'Routing Metadata' in alert_row
+    assert 'data-kaori-anomaly-evidence-modal' in anomaly_row
+    assert 'Observed Deviation' in anomaly_row
+    assert 'Review Decision' in anomaly_row
+    assert 'Investigation Sequence' in anomaly_row
 
 
 def test_alert_domain_payloads_are_semantic_and_do_not_emit_css_classes() -> None:

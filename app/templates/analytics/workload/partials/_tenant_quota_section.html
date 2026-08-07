@@ -137,7 +137,8 @@
                             row.namespace,
                             row.workloads ~ ' Active Pods · ' ~ row.quota_object_count ~ ' ResourceQuota Objects',
                             icon='badge-gauge',
-                            footer_text='Quota boundaries, observed allocation, and runtime demand come from the latest committed Workload Analysis snapshot.'
+                            footer_text='Quota boundaries, observed allocation, and runtime demand come from the latest committed Workload Analysis snapshot.',
+                            size='wide'
                         ) %}
                             <div class="space-y-5">
                                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">

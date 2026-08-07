@@ -141,7 +141,8 @@
                                 identity.primary|default('Unknown Consumer', true),
                                 row.resource_label ~ ' · ' ~ row.current_display ~ ' · ' ~ row.contribution_display ~ ' of selected scope',
                                 icon=identity.icon|default(row.resource_icon|default('activity')),
-                                footer_text='Consumer identity, resource pressure, and contribution evidence come from the latest committed Top Consumers snapshot.'
+                                footer_text='Consumer identity, resource pressure, and contribution evidence come from the latest committed Top Consumers snapshot.',
+                                size='wide'
                             ) %}
                                 <div class="space-y-4">
                                     <div class="grid gap-4 lg:grid-cols-2">
