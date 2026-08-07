@@ -248,7 +248,7 @@ def test_capability_workspace_uses_registry_modal_and_consistent_typography() ->
     assert 'All Requirements' in capability
     assert 'All Statuses' in capability
     assert 'x-model.debounce.150ms="query"' in capability
-    assert 'x-show="matches($el)"' in capability
+    assert 'x-show="visible({{ loop.index0 }})"' in capability
     assert 'lg:grid-cols-[minmax(0,1fr)_22rem]' not in capability
     assert 'xl:grid-cols-[minmax(0,1fr)_24rem]' not in capability
     assert '2xl:grid-cols-[minmax(0,1fr)_25rem]' not in capability
@@ -259,7 +259,7 @@ def test_capability_workspace_uses_registry_modal_and_consistent_typography() ->
     assert 'Next Operational Action' in capability
     assert 'Validation Workflow' not in capability
     assert 'Resource' in capability
-    assert 'Core contract' in capability
+    assert 'Core Contract' in capability
     assert 'record_actions.view_more(' in capability
     assert "'capability-detail-modal-' ~ loop.index" in capability
     assert 'record_detail_modal.render(' in capability
@@ -316,11 +316,17 @@ def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
     assert 'font-mono' not in capability
 
     assert 'data-kaori-inventory-lifecycle-v4' in inventory
+    assert 'data-kaori-inventory-lifecycle-v5' in inventory
+    assert 'data-kaori-inventory-lifecycle-decision' in inventory
     assert 'Bound Observability Sources' in inventory
     assert 'components/table.html' in inventory
+    assert 'Inventory &amp; Lifecycle Decision' in inventory
     assert 'Retention Boundary' in inventory
-    assert 'Lifecycle Impact' in inventory
-    assert 'Connection Lifecycle' in inventory
+    assert 'Removed With Connection' in inventory
+    assert 'Retained After Removal' in inventory
+    assert 'Next Lifecycle Action' in inventory
+    assert 'xl:grid-cols-[minmax(0,1fr)_28rem]' not in inventory
+    assert '<aside' not in inventory
 
     assert 'data-kaori-runtime-workspace-v8' in runtime
     assert 'data-kaori-runtime-decision-summary' in runtime
@@ -349,8 +355,8 @@ def test_kubernetes_runtime_uses_neutral_surfaces_with_controlled_brand_identity
 
     assert 'data-kaori-inventory-lifecycle-v4' in inventory
     assert 'bg-surface-card' in inventory
-    assert 'bg-kaori-soft' in inventory
-    assert 'dark:text-kaori-accent' in inventory
+    assert 'integration_ui.palette_icon' in inventory
+    assert "palette_icon('database', 'brand'" in inventory
     assert 'data-kaori-runtime-history-standard-v2' in history
     assert 'dark:text-kaori-accent' in history
 

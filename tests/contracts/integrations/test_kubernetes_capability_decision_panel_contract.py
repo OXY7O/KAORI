@@ -32,18 +32,18 @@ def test_capability_workspace_removes_redundant_validation_side_rail():
     assert "2xl:grid-cols-[minmax(0,1fr)_25rem]" not in source
 
 
-def test_capability_registry_is_full_width_and_uses_available_space():
+def test_capability_registry_is_full_width_and_uses_standard_kaori_table():
     source = _source()
 
     assert "data-kaori-capability-full-width" in source
+    assert "data-kaori-capability-table-standard" in source
     assert "Capability Registry" in source
-    assert "data-kaori-capability-matrix-header" in source
-    assert "Capability</span>" in source
-    assert "Resource</span>" in source
-    assert "API Contract</span>" in source
-    assert "Requirement</span>" in source
-    assert "Status</span>" in source
-    assert "Details</span>" in source
+    assert "table_ui.table_classes()" in source
+    assert "table_ui.head_classes()" in source
+    assert "table_ui.row_classes()" in source
+    assert "table_ui.cell_classes()" in source
+    for label in ("Capability", "Resource", "API Contract", "Requirement", "Status", "Details"):
+        assert f">{label}<" in source
 
 
 def test_capability_registry_filters_do_not_force_horizontal_scroll():
@@ -51,8 +51,25 @@ def test_capability_registry_filters_do_not_force_horizontal_scroll():
 
     assert 'data-kaori-capability-filters' in source
     assert 'lg:grid-cols-[minmax(0,1fr)_14rem_14rem]' in source
+    assert 'table-fixed' in source
     assert 'min-w-[760px]' not in source
-    assert 'overflow-x-auto border-b border-outline-subtle bg-surface-subtle' not in source
+    assert 'min-w-[820px]' not in source
+    assert 'overflow-x-auto' not in source
+
+
+def test_capability_registry_uses_kaori_pagination_and_loading_contract():
+    source = _source()
+
+    assert 'components/pagination.html' in source
+    assert 'components/loading_bar.html' in source
+    assert "loading_bar.render('kubernetes-capability-registry-loading'" in source
+    assert 'data-kaori-capability-pagination' in source
+    assert 'pageSize: 5' in source
+    assert '[5, 10, 25, 50]' in source
+    assert 'Showing <span' in source
+    assert '> Capabilities</p>' in source
+    assert 'Previous' in source
+    assert 'Next' in source
 
 
 def test_capability_registry_keeps_readiness_progress_and_modal_detail_boundary():

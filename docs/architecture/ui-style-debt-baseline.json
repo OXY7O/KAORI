@@ -134,13 +134,7 @@
     "app/templates/integrations/components/_workspace.html": {
       "semantic_border_utilities": 5
     },
-    "app/templates/integrations/kubernetes/partials/_capability_workspace.html": {
-      "copied_standard_surface_shells": 3
-    },
     "app/templates/integrations/kubernetes/partials/_delete_modal.html": {
-      "semantic_border_utilities": 1
-    },
-    "app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html": {
       "semantic_border_utilities": 1
     },
     "app/templates/integrations/kubernetes/partials/_registry_detail_content.html": {
