@@ -308,7 +308,7 @@
                                 </div>
                                 <span class="shrink-0 text-2xl font-semibold tabular-nums text-content-primary">{{ capability_readiness_percent|round|int }}%</span>
                             </div>
-                            <div class="mt-3">
+                            <div class="mt-3" aria-label="Capability readiness">
                                 {{ progress_bar.bar(capability_readiness_percent, 'h-1.5 overflow-hidden rounded-full bg-surface-hover', 'h-full rounded-full bg-kaori-primary transition-all', 'Capability readiness') }}
                             </div>
                             <p class="mt-2 text-xs leading-5 text-content-secondary">{{ required_usable_count }} of {{ capability_counts.required }} required contracts are usable.</p>

@@ -3,6 +3,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/technical_check.html" as technical_check %}
+{% import "integrations/components/_record_detail_modal.html" as record_detail_modal %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 
 {% set readiness = instance.readiness_status or 'validation_required' %}
@@ -131,14 +132,14 @@
                             <th class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
                         </tr>
                     </thead>
-                    {% for row in capability_rows %}
-                        {% set search_text = (row.label ~ ' ' ~ row.category ~ ' ' ~ row.source_owner)|lower %}
-                        {% set requirement_key = 'required' if row.required else 'optional' %}
-                        {% set status_key = 'ready' if row.available else 'blocked' %}
-                        <tbody class="{{ table_ui.body_classes() }}"
-                               x-data="{ open: false }"
-                               x-show="(query === '' || {{ search_text|tojson }}.includes(query.toLowerCase())) && (requirement === 'all' || requirement === {{ requirement_key|tojson }}) && (status === 'all' || status === {{ status_key|tojson }})">
-                            <tr class="{{ table_ui.row_classes() }}">
+                    <tbody class="{{ table_ui.body_classes() }}">
+                        {% for row in capability_rows %}
+                            {% set search_text = (row.label ~ ' ' ~ row.category ~ ' ' ~ row.source_owner)|lower %}
+                            {% set requirement_key = 'required' if row.required else 'optional' %}
+                            {% set status_key = 'ready' if row.available else 'blocked' %}
+                            <tr class="{{ table_ui.row_classes() }}"
+                                x-show="(query === '' || {{ search_text|tojson }}.includes(query.toLowerCase())) && (requirement === 'all' || requirement === {{ requirement_key|tojson }}) && (status === 'all' || status === {{ status_key|tojson }})"
+                                x-cloak>
                                 <td class="{{ table_ui.cell_classes() }}">
                                     <div class="flex items-start gap-3">
                                         <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent" aria-hidden="true"><i data-lucide="activity" class="h-4 w-4"></i></span>
@@ -148,56 +149,82 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td class="{{ table_ui.cell_classes() }}">
-                                    <p class="text-xs font-semibold text-content-primary">{{ row.source_owner }}</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ row.technical_checks|length }} technical check{{ '' if row.technical_checks|length == 1 else 's' }}</p>
-                                </td>
+                                <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(row.category) }}</td>
                                 <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label('Required' if row.required else 'Optional') }}</td>
                                 <td class="{{ table_ui.cell_classes() }}">{{ integration_status('ready' if row.available else ('blocked' if row.required else 'degraded'), row.status_label, display='indicator') }}</td>
                                 <td class="{{ table_ui.cell_classes(action=true) }}">
-                                    <button type="button" @click="open = !open" class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:bg-kaori-mist hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                                        <span x-text="open ? 'Hide Details' : 'View More'">View More</span>
-                                        <i data-lucide="chevron-down" class="h-3.5 w-3.5 transition" :class="open && 'rotate-180'" aria-hidden="true"></i>
+                                    <button type="button"
+                                            data-kaori-dialog-open
+                                            data-dialog-target="prometheus-capability-detail-{{ loop.index }}"
+                                            class="{{ table_ui.action_classes() }}">
+                                        <span>View More</span>
+                                        <i data-lucide="panel-top-open" class="h-4 w-4" aria-hidden="true"></i>
                                     </button>
                                 </td>
                             </tr>
-                            <tr x-show="open" x-cloak>
-                                <td colspan="5" class="border-t border-outline-subtle bg-surface-subtle px-4 py-4 sm:px-5">
-                                    <div class="grid gap-3 lg:grid-cols-3">
-                                        <div>
-                                            <p class="text-xs font-semibold text-content-muted">Latest Evidence</p>
-                                            <p class="mt-1 text-sm leading-6 text-content-secondary">{{ row.evidence }}</p>
-                                        </div>
-                                        <div>
-                                            <p class="text-xs font-semibold text-content-muted">Success Criteria</p>
-                                            <p class="mt-1 text-sm leading-6 text-content-secondary">{{ row.success_criteria }}</p>
-                                        </div>
-                                        <div>
-                                            <p class="text-xs font-semibold text-content-muted">Operational Impact</p>
-                                            <p class="mt-1 text-sm leading-6 text-content-secondary">{{ row.impact }}</p>
-                                        </div>
-                                    </div>
-                                    {% if row.technical_checks %}
-                                        <section class="mt-4 overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
-                                            <header class="border-b border-outline-subtle px-4 py-3">
-                                                <p class="text-sm font-semibold text-content-primary">Technical Verification</p>
-                                                <p class="mt-1 text-xs leading-5 text-content-secondary">Exact registered PromQL and provider evidence for this capability.</p>
-                                            </header>
-                                            <div class="space-y-3 p-3">
-                                                {% for check in row.technical_checks %}{{ technical_check.render(check, query_label='Full PromQL Query') }}{% endfor %}
-                                            </div>
-                                        </section>
-                                    {% endif %}
-                                    <div class="mt-4 border-l-2 border-outline-strong pl-3">
-                                        <p class="text-xs font-semibold text-content-primary">Recommended Action</p>
-                                        <p class="mt-1 text-sm leading-6 text-content-secondary">{{ row.next_action }}</p>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    {% endfor %}
+                        {% endfor %}
+                    </tbody>
                 </table>
             </div>
+
+            {% for row in capability_rows %}
+                {% call record_detail_modal.render(
+                    'prometheus-capability-detail-' ~ loop.index,
+                    row.key,
+                    'Prometheus Validation & PromQL',
+                    row.label,
+                    row.category ~ ' · ' ~ ('Required' if row.required else 'Optional') ~ ' contract',
+                    icon='braces',
+                    footer_text='PromQL capability details use the latest completed Full Validation evidence.'
+                ) %}
+                    <div class="space-y-4" data-kaori-prometheus-validation-modal>
+                        <section class="grid gap-3 lg:grid-cols-3">
+                            <div class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                                <p class="text-xs font-semibold text-content-muted">Contract</p>
+                                <p class="mt-2 text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.source_owner }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.description }}</p>
+                            </div>
+                            <div class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                                <p class="text-xs font-semibold text-content-muted">Latest Evidence</p>
+                                <p class="mt-2 text-sm leading-6 text-content-primary [overflow-wrap:anywhere]">{{ row.evidence }}</p>
+                            </div>
+                            <div class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                                <p class="text-xs font-semibold text-content-muted">Status</p>
+                                <div class="mt-2">{{ integration_status('ready' if row.available else ('blocked' if row.required else 'degraded'), row.status_label, display='indicator') }}</div>
+                                <p class="mt-2 text-xs leading-5 text-content-secondary">{{ row.technical_checks|length }} registered technical check{{ '' if row.technical_checks|length == 1 else 's' }}</p>
+                            </div>
+                        </section>
+
+                        <section class="grid gap-3 lg:grid-cols-2">
+                            <div class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                                <p class="text-xs font-semibold text-content-primary">Success Criteria</p>
+                                <p class="mt-2 text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ row.success_criteria }}</p>
+                            </div>
+                            <div class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                                <p class="text-xs font-semibold text-content-primary">Operational Impact</p>
+                                <p class="mt-2 text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ row.impact }}</p>
+                            </div>
+                        </section>
+
+                        {% if row.technical_checks %}
+                            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                                <header class="border-b border-outline-subtle px-4 py-3">
+                                    <p class="text-sm font-semibold text-content-primary">Technical Verification</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Exact registered PromQL and provider evidence stay out of the compact registry table.</p>
+                                </header>
+                                <div class="space-y-3 p-3">
+                                    {% for check in row.technical_checks %}{{ technical_check.render(check, query_label='Full PromQL Query') }}{% endfor %}
+                                </div>
+                            </section>
+                        {% endif %}
+
+                        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                            <p class="text-xs font-semibold text-content-primary">Recommended Action</p>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ row.next_action }}</p>
+                        </section>
+                    </div>
+                {% endcall %}
+            {% endfor %}
         </section>
 
         <aside class="self-start overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm xl:sticky xl:top-4" aria-labelledby="prometheus-validation-decision-title" data-kaori-prometheus-validation-decision>

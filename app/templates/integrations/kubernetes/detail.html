@@ -18,7 +18,7 @@
                         <p class="mt-2 {{ page_hero.description_classes() }}">Manage the connection contract, capability evidence, runtime health, and governed Kubernetes lifecycle.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('shield-check', readiness|replace('_', ' ') |title) }}
-                            {{ page_hero.meta_label('layers-3', (runtime_state.capability_count|string) ~ ' Capabilities') }}
+                            {{ page_hero.meta_label('layers-3', (runtime_state.capability_count|string) ~ ' Validated Features') }}
                             {{ page_hero.meta_label('network', cluster.environment|environment_name) }}
                         </div>
                     {% endcall %}
@@ -31,7 +31,7 @@
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Posture</p>
                                 <h2 class="{{ page_hero.context_panel_title_classes() }}">Kubernetes API Readiness</h2>
                             </div>
-                            {{ integration_status('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else 'validation_required') , source_posture) }}
+                            {{ integration_status('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else 'validation_required'), source_posture, display='text') }}
                         </div>
                         <div class="mt-4 grid grid-cols-2 gap-2">
                             <div class="{{ page_hero.context_metric_card_classes() }}">
@@ -45,23 +45,33 @@
                             <div class="{{ page_hero.context_metric_card_classes() }}">
                                 <div class="flex items-center gap-2 text-brand-foreground">
                                     <i data-lucide="layers-3" class="h-3.5 w-3.5"></i>
-                                    <p class="text-xs font-semibold">Capabilities</p>
+                                    <p class="text-xs font-semibold">Validated Features</p>
                                 </div>
                                 <p class="mt-1.5 text-xl font-semibold leading-none text-brand-foreground">{{ runtime_state.capability_count }}</p>
                                 <p class="{{ page_hero.context_metric_helper_classes() }}">Served APIs and access evidence</p>
                             </div>
                         </div>
                         <div class="{{ page_hero.context_actions_classes() }}">
-                            <button type="button"
-                                    @click="setTab('validation', true)"
-                                    class="{{ page_hero.context_action_classes() }}">
-                                <i data-lucide="scan-line" class="h-4 w-4"></i>
-                                Review Validation
-                            </button>
-                            <a href="{{ url_for('integrations.kubernetes') }}"
+                            {% if current_user.has_permission('clusters.sync') %}
+                                <button type="button"
+                                        @click="setTab('validation', true)"
+                                        class="{{ page_hero.context_action_classes() }}">
+                                    <i data-lucide="scan-line" class="h-4 w-4"></i>
+                                    Review Validation
+                                </button>
+                            {% endif %}
+                            {% if current_user.has_permission('settings.manage_integrations') %}
+                                <button type="button"
+                                        @click="setTab('configuration', true)"
+                                        class="{{ page_hero.context_action_classes() }}">
+                                    <i data-lucide="settings-2" class="h-4 w-4"></i>
+                                    Manage Connection
+                                </button>
+                            {% endif %}
+                            <a href="{{ url_for('cluster.list_clusters') }}"
                                class="{{ page_hero.context_action_classes() }}">
                                 <i data-lucide="arrow-left" class="h-4 w-4"></i>
-                                Back to Registry
+                                Back to Clusters
                             </a>
                         </div>
                     </div>

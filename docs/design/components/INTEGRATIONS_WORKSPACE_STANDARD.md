@@ -298,3 +298,17 @@ Integration UI changes must prefer shared ownership in this order:
 3. provider-specific template content only when the evidence contract differs.
 
 Do not copy runtime observation modals, dialog JavaScript, semantic label geometry, provider-registry table geometry, or toast lifecycle logic into Kubernetes, Prometheus, or Alertmanager templates.
+
+## Final Refinement Guardrails — 2026-08-07
+
+The final Integration refinement preserves the last approved KAORI workspace behavior and treats regressions to older inline/expanded layouts as defects.
+
+- **Minimum Validation RBAC Example** opens its complete baseline and optional Secret-reader YAML in a modal. The summary card remains compact; large RBAC manifests must not expand the manage workspace inline.
+- **Kubernetes Runtime Health & Diagnostics** uses the persisted-observation workspace: Runtime Snapshot and Diagnostic Evidence in the main column, with Runtime Decision / Operational Focus in the sticky decision rail. Runtime health must never be inferred from connection or validation state.
+- Pagination nouns shown to operators use Title Case, including `Scopes` and `Connections`.
+- **Prometheus Validation & PromQL** keeps the registry compact. The `Contract` cell shows only the contract category; source owner, criteria, technical evidence, complete PromQL, impact, and recommended action belong in the shared record-detail modal opened by `View More`.
+- **Alertmanager Validation & Capability Matrix** follows the same modal-detail contract. API request evidence and remediation must not expand as an inline table row.
+- `View More` for persisted runtime observations and validation/capability registries uses the shared/native dialog pattern. Inline disclosure remains allowed only for intentionally local supporting evidence that is not a registry record-detail workflow.
+- Self-dismissing operational toasts initialize their countdown at `scaleX(1)` so HTMX/OOB insertion cannot render an apparently empty timer before JavaScript scheduling starts.
+
+Regression ownership is enforced in `tests/contracts/integrations/`, including `test_integrations_final_refinement_20260807_contract.py`.
