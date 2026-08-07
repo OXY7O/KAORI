@@ -102,10 +102,7 @@ def test_kubernetes_actions_are_permission_aware() -> None:
     connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
 
     assert "current_user.has_permission('clusters.sync')" in detail
-    assert "{% elif current_user.has_permission('settings.manage_integrations') %}" in detail
-    assert "hero_has_context_action" in detail
-    assert "page_hero.context_actions_classes(2 if hero_has_context_action else 1)" in detail
-    assert detail.count('page_hero.context_action_classes()') == 3  # two mutually-exclusive task branches + registry navigation
+    assert "current_user.has_permission('settings.manage_integrations')" in detail
     routes = read('app/integrations/routes.py')
     assert "@integrations_bp.get('/kubernetes')" in routes
     assert 'def kubernetes() -> ResponseReturnValue:' in routes
@@ -232,16 +229,16 @@ def test_capability_workspace_uses_registry_modal_and_consistent_typography() ->
     for marker in (
         'data-kaori-capability-workspace-v8',
         'data-kaori-capability-overview',
+        'data-kaori-capability-decision-summary',
         'data-kaori-capability-explorer',
         'data-kaori-capability-matrix',
         'data-kaori-capability-matrix-header',
         'data-kaori-capability-matrix-row',
         'data-kaori-capability-layout',
-        'data-kaori-capability-side-panel',
-        'data-kaori-capability-decision-panel',
+        'data-kaori-capability-full-width',
         'data-kaori-readiness-score',
-        'data-kaori-capability-posture-list',
-        'data-kaori-validation-operating-boundary',
+        'data-kaori-capability-gate-decision',
+        'data-kaori-next-operational-action',
     ):
         assert marker in capability
     assert 'Capability Registry' in capability
@@ -250,15 +247,17 @@ def test_capability_workspace_uses_registry_modal_and_consistent_typography() ->
     assert 'All Statuses' in capability
     assert 'x-model.debounce.150ms="query"' in capability
     assert 'x-show="matches($el)"' in capability
-    assert 'lg:grid-cols-[minmax(0,1fr)_22rem]' in capability
-    assert 'xl:grid-cols-[minmax(0,1fr)_24rem]' in capability
-    assert '2xl:grid-cols-[minmax(0,1fr)_25rem]' in capability
-    assert 'Validation Decision' in capability
+    assert 'lg:grid-cols-[minmax(0,1fr)_22rem]' not in capability
+    assert 'xl:grid-cols-[minmax(0,1fr)_24rem]' not in capability
+    assert '2xl:grid-cols-[minmax(0,1fr)_25rem]' not in capability
+    assert 'Kubernetes Capability Readiness' in capability
+    assert 'Validation Decision' not in capability
+    assert 'data-kaori-capability-side-panel' not in capability
     assert 'Operational Gate' in capability
     assert 'Next Operational Action' in capability
-    assert 'Validation Workflow' in capability
-    assert "('1', 'Interpret'" in capability
-    assert "('4', 'Synchronize'" in capability
+    assert 'Validation Workflow' not in capability
+    assert 'Resource' in capability
+    assert 'Core contract' in capability
     assert 'record_actions.view_more(' in capability
     assert "'capability-detail-modal-' ~ loop.index" in capability
     assert 'record_detail_modal.render(' in capability
@@ -310,7 +309,8 @@ def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
     assert 'Capability Matrix' in capability
     assert 'data-kaori-capability-filters' in capability
     assert 'data-kaori-capability-record' in capability
-    assert 'Validation Workflow' in capability
+    assert 'Kubernetes Capability Readiness' in capability
+    assert 'data-kaori-capability-full-width' in capability
     assert 'font-mono' not in capability
 
     assert 'data-kaori-inventory-lifecycle-v4' in inventory
