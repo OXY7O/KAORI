@@ -1,4 +1,5 @@
 {% import "components/pagination.html" as pagination_ui %}
+{% import "components/table.html" as table_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set runtime_history_endpoint_name = runtime_history_endpoint|default(request.endpoint, true) %}
@@ -46,8 +47,8 @@
     </header>
 
     {% if runtime_history.rows %}
-        <div class="border-b border-outline-subtle bg-surface-hover px-5 py-3 sm:px-6" data-kaori-runtime-history-summary>
-            <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-content-secondary">
+        <div class="border-b border-outline-subtle px-5 py-3 sm:px-6" data-kaori-runtime-history-summary>
+            <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-content-secondary">
                 <span>Ready <strong class="ml-1 font-semibold text-content-primary">{{ runtime_history.posture_counts.ready }}</strong></span>
                 <span>Attention <strong class="ml-1 font-semibold text-content-primary">{{ runtime_history.posture_counts.attention }}</strong></span>
                 <span>Blocked <strong class="ml-1 font-semibold text-content-primary">{{ runtime_history.posture_counts.blocked }}</strong></span>
@@ -55,72 +56,70 @@
             </div>
         </div>
 
-        <div class="hidden border-b border-outline-subtle bg-surface-hover px-5 py-3 text-xs font-semibold text-content-muted sm:px-6 lg:grid lg:grid-cols-[minmax(13rem,1.25fr)_minmax(10rem,0.9fr)_minmax(7rem,0.5fr)_minmax(13rem,1.15fr)_minmax(10rem,0.85fr)_auto] lg:items-center lg:gap-4"
-             data-kaori-runtime-history-columns>
-            <span>Observed At</span>
-            <span>Runtime Posture</span>
-            <span>Health Score</span>
-            <span>Capability Profile</span>
-            <span>State Change</span>
-            <span class="text-right">Details</span>
-        </div>
-
-        <div class="divide-y divide-outline-subtle" data-kaori-runtime-history-records>
-            {% for row in runtime_history.rows %}
-                {% set health_tone = row.effective_status %}
-                <details id="{{ row.detail_id }}" class="group bg-surface-card">
-                    <summary class="grid cursor-pointer list-none gap-3 px-5 py-4 transition-colors hover:bg-kaori-mist sm:px-6 lg:grid-cols-[minmax(13rem,1.25fr)_minmax(10rem,0.9fr)_minmax(7rem,0.5fr)_minmax(13rem,1.15fr)_minmax(10rem,0.85fr)_auto] lg:items-center lg:gap-4 [&::-webkit-details-marker]:hidden">
-                        <div class="min-w-0">
-                            <span class="mb-1 block text-xs font-semibold text-content-muted lg:hidden">Observed At</span>
-                            <div class="flex min-w-0 items-center gap-2.5">
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary-dark dark:text-kaori-accent"
-                                      aria-hidden="true">
-                                    <i data-lucide="activity" class="h-4 w-4"></i>
-                                </span>
-                                <div class="min-w-0">
-                                    <p class="truncate text-sm font-semibold text-content-primary" title="{{ row.observed_at_display }}">{{ row.observed_at_display }}</p>
-                                    <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">{{ row.trigger_type_label }} observation</p>
+        <div class="overflow-x-auto overscroll-x-contain" data-kaori-runtime-history-records>
+            <table class="{{ table_ui.table_classes('min-w-[78rem]') }}" data-kaori-runtime-history-table>
+                <caption class="sr-only">Recent persisted runtime observations for {{ provider_label }}.</caption>
+                <thead class="{{ table_ui.head_classes() }}" data-kaori-runtime-history-columns>
+                    <tr>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Observation</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[11rem]">Runtime Posture</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[8rem]">Health</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Capability Context</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[11rem]">State Change</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
+                    </tr>
+                </thead>
+                {% for row in runtime_history.rows %}
+                    {% set health_tone = row.effective_status %}
+                    <tbody x-data="{ open: false }"
+                           class="border-t border-outline-subtle first:border-t-0"
+                           data-kaori-runtime-observation-row>
+                        <tr class="{{ table_ui.row_classes() }}">
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <div class="flex min-w-0 items-center gap-2.5">
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary-dark dark:text-kaori-accent" aria-hidden="true">
+                                        <i data-lucide="activity" class="h-4 w-4"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-semibold text-content-primary" title="{{ row.observed_at_display }}">{{ row.observed_at_display }}</p>
+                                        <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">{{ row.trigger_type_label }} observation</p>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-
-                        <div class="min-w-0">
-                            <span class="mb-1 block text-xs font-semibold text-content-muted lg:hidden">Runtime Posture</span>
-                            {{ integration_status(health_tone, row.effective_status_label, display='indicator') }}
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Validation · {{ row.readiness_label }}</p>
-                        </div>
-
-                        <div class="min-w-0">
-                            <span class="mb-1 block text-xs font-semibold text-content-muted lg:hidden">Health Score</span>
-                            <p class="text-sm font-semibold tabular-nums text-content-primary">{{ row.health_score_display }}</p>
-                            <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ row.latency_display }}</p>
-                        </div>
-
-                        <div class="min-w-0">
-                            <span class="mb-1 block text-xs font-semibold text-content-muted lg:hidden">Capability Profile</span>
-                            <p class="truncate text-sm font-semibold text-content-primary" title="{{ row.capability_profile or row.compatibility_profile or 'Not Detected' }}">{{ row.capability_profile or row.compatibility_profile or 'Not Detected' }}</p>
-                            <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">{{ row.capability_count_display }}</p>
-                        </div>
-
-                        <div class="min-w-0">
-                            <span class="mb-1 block text-xs font-semibold text-content-muted lg:hidden">State Change</span>
-                            {% if row.transition %}
-                                {% set transition_status = 'ready' if row.transition.kind == 'recovered' else ('degraded' if row.transition.kind in ['degraded', 'improving'] else 'blocked') %}
-                                {{ integration_status(transition_status, row.transition.label, display='indicator') }}
-                            {% else %}
-                                <span class="text-xs font-semibold text-content-muted">No State Change</span>
-                            {% endif %}
-                        </div>
-
-                        <div class="flex items-center justify-between gap-3 lg:justify-end">
-                            <span class="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-outline-default bg-surface-card px-2.5 text-xs font-medium text-content-secondary transition-colors group-hover:border-brand-outline group-hover:bg-kaori-soft group-hover:text-kaori-primary-dark">
-                                <span class="group-open:hidden">View More</span>
-                                <span class="hidden group-open:inline">Hide Details</span>
-                                <i data-lucide="chevron-down" class="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden="true"></i>
-                            </span>
-                        </div>
-                    </summary>
-                    <div class="space-y-4 border-t border-outline-subtle bg-surface-hover px-5 py-5 sm:px-6">
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                {{ integration_status(health_tone, row.effective_status_label, display='indicator') }}
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Validation · {{ row.readiness_label }}</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p class="text-sm font-semibold tabular-nums text-content-primary">{{ row.health_score_display }}</p>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ row.latency_display }}</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p class="truncate text-sm font-semibold text-content-primary" title="{{ row.capability_profile or row.compatibility_profile or 'Not Detected' }}">{{ row.capability_profile or row.compatibility_profile or 'Not Detected' }}</p>
+                                <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">{{ row.capability_count_display }}</p>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                {% if row.transition %}
+                                    {% set transition_status = 'ready' if row.transition.kind == 'recovered' else ('degraded' if row.transition.kind in ['degraded', 'improving'] else 'blocked') %}
+                                    {{ integration_status(transition_status, row.transition.label, display='indicator') }}
+                                {% else %}
+                                    <span class="text-xs font-semibold text-content-muted">No State Change</span>
+                                {% endif %}
+                            </td>
+                            <td class="{{ table_ui.cell_classes(action=true) }}">
+                                <button type="button"
+                                        class="{{ table_ui.action_classes() }}"
+                                        @click="open = !open"
+                                        :aria-expanded="open.toString()"
+                                        aria-controls="{{ row.detail_id }}">
+                                    <span x-text="open ? 'Hide Details' : 'View More'">View More</span>
+                                    <i data-lucide="chevron-down" class="h-4 w-4 transition-transform" :class="open ? 'rotate-180' : ''" aria-hidden="true"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr id="{{ row.detail_id }}" x-cloak x-show="open" data-kaori-runtime-observation-detail>
+                            <td colspan="6" class="border-t border-outline-subtle p-0">
+                            <div class="space-y-4 bg-surface-subtle px-5 py-5 sm:px-6">
                         <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                             <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
                                 <p class="text-xs font-semibold text-content-secondary">Health & Readiness</p>
@@ -264,8 +263,11 @@
                             </div>
                         </section>
                     </div>
-                </details>
-            {% endfor %}
+                            </td>
+                        </tr>
+                    </tbody>
+                {% endfor %}
+            </table>
         </div>
     {% else %}
         <div class="p-0">

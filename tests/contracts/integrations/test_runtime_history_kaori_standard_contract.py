@@ -7,20 +7,36 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_runtime_history_uses_kaori_standard_record_surface() -> None:
+def test_runtime_history_uses_inventory_table_primitives() -> None:
     template = read('app/templates/integrations/partials/_runtime_history.html')
 
-    assert 'data-kaori-runtime-history-standard-v2' in template
+    assert '{% import "components/table.html" as table_ui %}' in template
+    assert "table_ui.table_classes('min-w-[78rem]')" in template
+    assert 'table_ui.head_classes()' in template
+    assert 'table_ui.header_cell_classes()' in template
+    assert 'table_ui.header_cell_classes(action=true)' in template
+    assert 'table_ui.row_classes()' in template
+    assert 'table_ui.cell_classes()' in template
+    assert 'table_ui.cell_classes(action=true)' in template
+    assert 'data-kaori-runtime-history-table' in template
+    assert '<thead class="{{ table_ui.head_classes() }}"' in template
+    assert 'lg:grid-cols-[minmax(13rem' not in template
+
+
+def test_runtime_history_keeps_compact_context_and_expandable_detail() -> None:
+    template = read('app/templates/integrations/partials/_runtime_history.html')
+
     assert 'data-kaori-runtime-history-summary' in template
-    assert 'data-kaori-runtime-history-columns' in template
-    assert 'data-kaori-runtime-history-records' in template
-    assert 'Observed At' in template
-    assert 'Runtime Posture' in template
-    assert 'Health Score' in template
-    assert 'Capability Profile' in template
-    assert 'State Change' in template
-    assert 'View More' in template
-    assert 'hover:bg-kaori-mist' in template
+    assert '>Observation</th>' in template
+    assert '>Runtime Posture</th>' in template
+    assert '>Health</th>' in template
+    assert '>Capability Context</th>' in template
+    assert '>State Change</th>' in template
+    assert '>Details</th>' in template
+    assert 'x-data="{ open: false }"' in template
+    assert '@click="open = !open"' in template
+    assert 'data-kaori-runtime-observation-detail' in template
+    assert "open ? 'Hide Details' : 'View More'" in template
 
 
 def test_runtime_history_uses_inventory_pagination_contract() -> None:
@@ -42,11 +58,3 @@ def test_runtime_history_keeps_provider_neutral_routing() -> None:
     assert 'runtime_history_detail_endpoint_name' in template
     assert 'runtime_history_route_args_value' in template
     assert "hx_swap='outerHTML'" in template
-
-
-def test_runtime_history_identity_icons_follow_kaori_violet() -> None:
-    template = read('app/templates/integrations/partials/_runtime_history.html')
-
-    assert 'bg-kaori-soft text-kaori-primary-dark dark:text-kaori-accent' in template
-    assert 'runtime_history_is_violet' not in template
-    assert "runtime_history_variant|default('') == 'violet-v2'" not in template

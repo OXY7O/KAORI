@@ -269,30 +269,38 @@
                     </section>
                 {% endif %}
 
-                <section class="border-b border-outline-subtle px-4 py-4 xl:px-5" aria-labelledby="runtime-focus-title">
-                    <div class="flex items-center justify-between gap-3">
-                        <h4 id="runtime-focus-title" class="text-sm font-semibold text-content-primary">Operational Focus</h4>
-                        {{ table_label.metadata_label((runtime_state.attention_factors|length) ~ ' factors') }}
+                <section class="border-b border-outline-subtle px-4 py-4 xl:px-5" aria-labelledby="runtime-focus-title" data-kaori-operational-focus>
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <h4 id="runtime-focus-title" class="text-sm font-semibold text-content-primary">Operational Focus</h4>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Unresolved runtime or lifecycle evidence that needs operator review.</p>
+                        </div>
+                        {{ table_label.metadata_label((runtime_state.attention_factors|length) ~ (' item' if runtime_state.attention_factors|length == 1 else ' items')) }}
                     </div>
-                    <div class="mt-3 space-y-3">
-                        {% for factor in runtime_state.attention_factors %}
-                            <div class="flex items-start gap-3">
-                                <div class="mt-0.5 shrink-0">{{ integration_status(factor.status, display='indicator') }}</div>
-                                <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-content-primary">{{ factor.label }}</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ factor.detail or 'This factor requires review.' }}</p>
+
+                    {% if runtime_state.attention_factors %}
+                        <div class="mt-3 divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle bg-surface-card" data-kaori-operational-focus-list>
+                            {% for factor in runtime_state.attention_factors %}
+                                <div class="px-3.5 py-3">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-semibold text-content-primary">{{ factor.label }}</p>
+                                            <p class="mt-1 text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ factor.detail or 'This factor requires review.' }}</p>
+                                        </div>
+                                        <div class="shrink-0">{{ integration_status(factor.status, display='indicator') }}</div>
+                                    </div>
                                 </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="mt-3 flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-subtle px-3.5 py-3">
+                            {{ integration_ui.palette_icon('circle-check', 'brand', size='xs') }}
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">No Current Runtime Attention</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">The latest persisted observation does not expose an unresolved runtime or lifecycle factor.</p>
                             </div>
-                        {% else %}
-                            <div class="flex items-start gap-3">
-                                {{ integration_ui.palette_icon('circle-check', 'brand', size='xs') }}
-                                <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-content-primary">No Current Runtime Attention</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-secondary">The latest observation does not expose an unresolved runtime factor.</p>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
+                        </div>
+                    {% endif %}
                 </section>
 
                 <section class="px-4 py-4 xl:px-5" aria-labelledby="runtime-next-action-title">
