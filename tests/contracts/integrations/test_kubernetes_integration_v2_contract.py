@@ -249,6 +249,12 @@ def test_capability_workspace_uses_registry_modal_and_consistent_typography() ->
     assert '@keydown.escape.window' in modal
     assert 'max-w-6xl' in modal
     assert 'Close' in modal
+    assert 'z-[100] isolate' in modal
+    assert 'data-kaori-modal-backdrop' in modal
+    assert 'absolute inset-0 z-0' in modal
+    assert 'data-kaori-modal-panel' in modal
+    assert 'relative z-10' in modal
+    assert modal.count('x-show="detailOpen && selectedDetail ===') == 1
 
 
 def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
@@ -404,6 +410,7 @@ def test_kubernetes_integration_uses_canonical_compact_label_roles() -> None:
     assert "display='text'" in capability
     assert "display='indicator'" in capability
 
+    assert 'components/table_label.html' in runtime
     assert "metadata_label((runtime_state.diagnostics|length) ~ ' checks')" in runtime
     assert "display='text'" in runtime
     assert "display='indicator'" in runtime
