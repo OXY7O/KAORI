@@ -3,6 +3,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "integrations/components/_provider_registry.html" as provider_registry %}
+{% import "components/table_label.html" as table_label %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 <section id="integration-runtime-overview"
          class="{{ integration_ui.section_shell_classes() }}"
@@ -15,7 +16,10 @@
                     <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Runtime Overview</p>
                     <h2 class="mt-0.5 text-base font-semibold text-content-primary">Integration Health and Capability Posture</h2>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Review persisted runtime observations independently from connection and validation readiness.</p>
-                    <p class="mt-1 text-xs font-semibold text-content-muted">Scope · {{ runtime_scope_label }} · {{ runtime_stats.total }} of {{ runtime_global_stats.total }} target{{ '' if runtime_global_stats.total == 1 else 's' }}</p>
+                    <div class="mt-2 flex flex-wrap gap-2">
+                        {{ table_label.metadata_label(runtime_scope_label, 'filter', size='compact') }}
+                        {{ table_label.metadata_label(runtime_stats.total ~ ' of ' ~ runtime_global_stats.total ~ ' Targets', size='compact') }}
+                    </div>
                 </div>
             </div>
             <button type="button"
@@ -124,7 +128,7 @@
                                 </div>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                {{ integration_status(row.health_status) }}
+                                {{ integration_status(row.health_status, display='indicator') }}
                                 {% if row.health_score is not none %}
                                     <p class="mt-1 text-xs font-semibold text-content-muted">Health score · {{ row.health_score }}/100</p>
                                 {% else %}
@@ -132,7 +136,7 @@
                                 {% endif %}
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                {{ integration_status(row.readiness) }}
+                                {{ integration_status(row.readiness, display='indicator') }}
                                 <p class="mt-1 text-xs text-content-muted">Connection · {{ row.connection_status|replace('_', ' ')|title }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">

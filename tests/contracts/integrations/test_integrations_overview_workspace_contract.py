@@ -60,7 +60,7 @@ def test_runtime_records_use_inventory_table_and_expandable_details() -> None:
 
     assert 'components/table.html' in runtime
     assert "table_ui.table_classes('min-w-[78rem]')" in runtime
-    assert 'integration_ui.palette_icon(row.provider_icon, provider_icon_tone' in runtime
+    assert "integration_ui.palette_icon(row.provider_icon, 'brand', size='lg', rounded='md')" in runtime
     assert 'table_ui.row_classes()' in runtime
     assert 'components/details/_expandable_row.html' in runtime
     assert 'expandable_row.toggle_button(' in runtime
@@ -159,4 +159,36 @@ def test_integration_overview_uses_violet_identity_icons_and_semantic_status_bad
 
     # Semantic status adapter remains responsible for ready/warning/error meaning.
     assert 'integration_status(' in overview
-    assert 'integration_status(row.health_status)' in runtime
+    assert "integration_status(row.health_status, display='indicator')" in runtime
+
+
+def test_integration_overview_uses_canonical_label_roles() -> None:
+    overview = read('app/templates/integrations/overview.html')
+    runtime = read('app/templates/integrations/partials/_runtime_overview.html')
+    adapter = read('app/templates/integrations/components/_semantic_status.html')
+
+    assert 'components/table_label.html' in overview
+    assert 'components/table_label.html' in runtime
+
+    # Context and count metadata use the shared metadata label. Only scope gets an icon.
+    assert "table_label.metadata_label(available_provider_count ~ ' Available · ' ~ planned_provider_count ~ ' Planned'" in overview
+    assert "table_label.metadata_label(planned_provider_count ~ ' Planned'" in overview
+    assert "table_label.metadata_label(provider_name, size='compact')" in overview
+    assert "table_label.metadata_label(runtime_scope_label, 'filter'" in runtime
+    assert "table_label.metadata_label(runtime_stats.total ~ ' of ' ~ runtime_global_stats.total ~ ' Targets'" in runtime
+
+    # Repeated lifecycle/readiness states use a semantic dot instead of a Lucide icon.
+    assert "integration_status('ready', 'Available', display='indicator')" in overview
+    assert "integration_status(row.health_status, display='indicator')" in runtime
+    assert "integration_status(row.readiness, display='indicator')" in runtime
+
+    # Planned lifecycle is text-first and page-local compact-label bundles are removed.
+    assert "table_label.status_label('Planned', 'unknown'" in overview
+    assert 'kaori-context-label inline-flex min-h-6' not in overview
+    assert 'rounded-md bg-status-unknown-soft px-2 py-1 text-xs' not in overview
+
+    # Adapter exposes explicit label roles while preserving audited legacy callers.
+    assert "display='icon'" in adapter
+    assert "display == 'indicator'" in adapter
+    assert "display == 'text'" in adapter
+    assert "display == 'special'" in adapter

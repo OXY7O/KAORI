@@ -95,6 +95,28 @@ Uncovered
 
 Backend services emit semantic state keys and factual labels. They must not emit Tailwind classes as a presentation API.
 
+## Compact Label Role Contract
+
+Integrations follows the global label decision from `components/table_label.html`. The least visually heavy representation that preserves meaning is required.
+
+```text
+Operational state in a sparse card/header? → status_label (text only)
+Operational state repeated in a table/list? → status_indicator_label (semantic dot)
+Context, scope, provider type, category, or count? → metadata_label
+Exceptional security/eligibility/high-attention state? → special_label
+Ordinary value, timestamp, version, name, or count in a sentence? → plain text
+```
+
+Icon rules:
+
+- Lucide icons are permitted in metadata labels only when the icon adds independent context, such as scope, provider, source, time window, or externally linked identity.
+- Counts, lifecycle words, readiness states, provider names beside an existing provider icon, and repeated table statuses do not receive Lucide icons.
+- A semantic dot from `status_indicator_label(...)` is a scan aid, not a decorative icon.
+- `integration_status(...)` must choose `display='text'` or `display='indicator'` on newly touched overview/table surfaces. `display='icon'` is retained only for an audited provider-specific exception.
+- Icon + border compact labels are reserved for `display='special'` and must represent an exceptional posture, security boundary, or eligibility gate.
+
+Integration Overview is the reference implementation: scope metadata may carry a filter icon, count metadata remains iconless, provider lifecycle/readiness uses text or dot labels, and runtime table states use dot labels.
+
 ## Technical Evidence Contract
 
 Capability and validation evidence follows a stable order:

@@ -128,3 +128,15 @@ def test_integrations_standard_is_implemented_not_draft() -> None:
     assert 'Provider-local presentation wrappers are prohibited' in standard
     assert 'Technical matrices may use horizontal scrolling only' in standard
     assert 'Both documents are audit-only' not in app_readme
+
+
+def test_integrations_standard_defines_compact_label_roles() -> None:
+    standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
+
+    assert 'Compact Label Role Contract' in standard
+    assert 'Operational state in a sparse card/header?' in standard
+    assert 'Operational state repeated in a table/list?' in standard
+    assert 'Context, scope, provider type, category, or count?' in standard
+    assert "display='text'" in standard
+    assert "display='indicator'" in standard
+    assert "display='special'" in standard
