@@ -1,52 +1,15 @@
 {% extends "layouts/app.html" %}
-{% import "components/page_hero.html" as page_hero %}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+{% import "components/page_hero.html" as page_hero %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% block title %}{{ instance.name }} · Prometheus Integration · KAORI{% endblock title %}
 {% block dashboard_content %}
     {% set readiness = instance.readiness_status or 'validation_required' %}
     {% set source_posture = 'Ready' if readiness == 'ready' else ('Attention' if readiness in ['degraded', 'blocked'] else 'Configured') %}
     <div class="kaori-integration-semantic space-y-6"
-         x-data="{
-             tabs: ['configuration', 'validation', 'runtime', 'scope'],
-             activeTab: (() => {
-                 const url = new URL(window.location.href);
-                 const queryTab = url.searchParams.get('tab');
-                 const hashTab = url.hash.replace('#', '');
-                 return ['configuration', 'validation', 'runtime', 'scope'].includes(queryTab) ? queryTab : (['configuration', 'validation', 'runtime', 'scope'].includes(hashTab) ? hashTab : 'configuration');
-             })(),
-             setTab(tab, moveToWorkspace = false) {
-                 if (!this.tabs.includes(tab)) return;
-                 this.activeTab = tab;
-                 const nextUrl = new URL(window.location.href);
-                 nextUrl.searchParams.set('tab', tab);
-                 nextUrl.hash = tab;
-                 window.history.replaceState({}, '', nextUrl);
-                 this.$nextTick(() => {
-                     if (moveToWorkspace) document.getElementById('prometheus-detail-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                     if (window.renderKaoriIcons) window.renderKaoriIcons();
-                     else if (window.lucide) window.lucide.createIcons();
-                 });
-             },
-             moveTab(currentTab, direction, prefix) {
-                 const currentIndex = this.tabs.indexOf(currentTab);
-                 if (currentIndex < 0) return;
-                 let nextIndex = currentIndex;
-                 if (direction === 'home') nextIndex = 0;
-                 else if (direction === 'end') nextIndex = this.tabs.length - 1;
-                 else nextIndex = (currentIndex + direction + this.tabs.length) % this.tabs.length;
-                 const nextTab = this.tabs[nextIndex];
-                 this.setTab(nextTab);
-                 this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus());
-             },
-             syncTabFromLocation() {
-                 const url = new URL(window.location.href);
-                 const candidate = url.searchParams.get('tab') || url.hash.replace('#', '');
-                 this.activeTab = this.tabs.includes(candidate) ? candidate : 'configuration';
-             }
-         }"
-         x-on:hashchange.window="syncTabFromLocation()"
-         x-on:popstate.window="syncTabFromLocation()">
+         x-data="{ tabs: ['configuration', 'validation', 'runtime', 'scope'], activeTab: (() => { const url = new URL(window.location.href); const queryTab = url.searchParams.get('tab'); const hashTab = window.location.hash.replace('#', ''); return ['configuration', 'validation', 'runtime', 'scope'].includes(queryTab) ? queryTab : (['configuration', 'validation', 'runtime', 'scope'].includes(hashTab) ? hashTab : 'configuration'); })(), setTab(tab, moveToWorkspace = false) { if (!this.tabs.includes(tab)) return; this.activeTab = tab; const nextUrl = new URL(window.location.href); nextUrl.searchParams.set('tab', tab); nextUrl.hash = tab; window.history.replaceState(null, '', nextUrl); if (moveToWorkspace) { this.$nextTick(() => document.getElementById('prometheus-detail-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); } }, moveTab(currentTab, direction, prefix = 'prometheus') { const currentIndex = this.tabs.indexOf(currentTab); if (currentIndex < 0) return; let nextIndex = currentIndex; if (direction === 'home') nextIndex = 0; else if (direction === 'end') nextIndex = this.tabs.length - 1; else nextIndex = (currentIndex + direction + this.tabs.length) % this.tabs.length; const nextTab = this.tabs[nextIndex]; this.setTab(nextTab); this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus()); }, syncTab() { const url = new URL(window.location.href); const queryTab = url.searchParams.get('tab'); const hashTab = window.location.hash.replace('#', ''); this.activeTab = this.tabs.includes(queryTab) ? queryTab : (this.tabs.includes(hashTab) ? hashTab : 'configuration'); } }"
+         x-on:hashchange.window="syncTab()"
+         x-on:popstate.window="syncTab()">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -68,7 +31,7 @@
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Posture</p>
                                 <h2 class="{{ page_hero.context_panel_title_classes() }}">Readiness &amp; Operational Coverage</h2>
                             </div>
-                            {{ integration_status('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else 'validation_required'), source_posture, display='text') }}
+                            {{ integration_status('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else 'validation_required') , source_posture) }}
                         </div>
                         <div class="mt-4 grid grid-cols-2 gap-2">
                             {{ page_hero.context_metric('shield-check', 'Readiness', readiness|replace('_', ' ') |title, 'Produced by Full Validation', value_classes='truncate text-sm font-semibold leading-5') }}
@@ -93,13 +56,16 @@
         </section>
         <section id="prometheus-detail-tabs"
                  class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
-            {% set provider_detail_tabs = [
-                ('configuration', 'Configuration', 'settings-2', (instance.endpoint_product or 'Prometheus')|replace('_', ' ')|title),
-                ('validation', 'Validation & Capabilities', 'scan-search', readiness|replace('_', ' ')|title),
-                ('runtime', 'Runtime & History', 'activity', runtime_state.health_status_label),
-                ('scope', 'Bindings & Consumers', 'route', (bindings|length|string) ~ ' Bindings')
-            ] %}
-            {{ framed_workspace_tabs.render(provider_detail_tabs, prefix='prometheus', aria_label='Prometheus instance domains') }}
+            {{ framed_workspace_tabs.render(
+                [
+                    ('configuration', 'Configuration', 'settings-2', instance.environment|default('')|title),
+                    ('validation', 'Validation & PromQL', 'scan-search', (instance.readiness_status or 'validation_required')|replace('_', ' ')|title),
+                    ('runtime', 'Runtime & History', 'activity', runtime_state.health_status_label|default('Not Observed')),
+                    ('scope', 'Bindings & Consumers', 'waypoints', (scope_bindings|default([])|length|string) ~ ' Bindings'),
+                ],
+                prefix='prometheus',
+                aria_label='Prometheus Connection Domains'
+            ) }}
             <div class="p-4 sm:p-5 lg:p-6">
                 <div id="prometheus-panel-configuration"
                      role="tabpanel"

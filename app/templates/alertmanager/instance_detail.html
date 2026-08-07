@@ -1,6 +1,6 @@
 {% extends "layouts/app.html" %}
-{% import "components/page_hero.html" as page_hero %}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+{% import "components/page_hero.html" as page_hero %}
 {% import "components/table_label.html" as table_label %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% block title %}{{ instance.name }} · Alertmanager Integration · KAORI{% endblock title %}
@@ -18,46 +18,9 @@
         "global": "Global operational scope"
     } %}
     <div class="kaori-integration-semantic space-y-6"
-         x-data="{
-             tabs: ['configuration', 'validation', 'runtime', 'scope'],
-             activeTab: (() => {
-                 const url = new URL(window.location.href);
-                 const queryTab = url.searchParams.get('tab');
-                 const hashTab = url.hash.replace('#', '');
-                 return ['configuration', 'validation', 'runtime', 'scope'].includes(queryTab) ? queryTab : (['configuration', 'validation', 'runtime', 'scope'].includes(hashTab) ? hashTab : 'configuration');
-             })(),
-             setTab(tab, moveToWorkspace = false) {
-                 if (!this.tabs.includes(tab)) return;
-                 this.activeTab = tab;
-                 const nextUrl = new URL(window.location.href);
-                 nextUrl.searchParams.set('tab', tab);
-                 nextUrl.hash = tab;
-                 window.history.replaceState({}, '', nextUrl);
-                 this.$nextTick(() => {
-                     if (moveToWorkspace) document.getElementById('alertmanager-detail-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                     if (window.renderKaoriIcons) window.renderKaoriIcons();
-                     else if (window.lucide) window.lucide.createIcons();
-                 });
-             },
-             moveTab(currentTab, direction, prefix) {
-                 const currentIndex = this.tabs.indexOf(currentTab);
-                 if (currentIndex < 0) return;
-                 let nextIndex = currentIndex;
-                 if (direction === 'home') nextIndex = 0;
-                 else if (direction === 'end') nextIndex = this.tabs.length - 1;
-                 else nextIndex = (currentIndex + direction + this.tabs.length) % this.tabs.length;
-                 const nextTab = this.tabs[nextIndex];
-                 this.setTab(nextTab);
-                 this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus());
-             },
-             syncTabFromLocation() {
-                 const url = new URL(window.location.href);
-                 const candidate = url.searchParams.get('tab') || url.hash.replace('#', '');
-                 this.activeTab = this.tabs.includes(candidate) ? candidate : 'configuration';
-             }
-         }"
-         x-on:hashchange.window="syncTabFromLocation()"
-         x-on:popstate.window="syncTabFromLocation()">
+         x-data="{ tabs: ['configuration', 'validation', 'runtime', 'scope'], activeTab: (() => { const url = new URL(window.location.href); const queryTab = url.searchParams.get('tab'); const hashTab = window.location.hash.replace('#', ''); return ['configuration', 'validation', 'runtime', 'scope'].includes(queryTab) ? queryTab : (['configuration', 'validation', 'runtime', 'scope'].includes(hashTab) ? hashTab : 'configuration'); })(), setTab(tab, moveToWorkspace = false) { if (!this.tabs.includes(tab)) return; this.activeTab = tab; const nextUrl = new URL(window.location.href); nextUrl.searchParams.set('tab', tab); nextUrl.hash = tab; window.history.replaceState(null, '', nextUrl); if (moveToWorkspace) { this.$nextTick(() => document.getElementById('alertmanager-detail-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); } }, moveTab(currentTab, direction, prefix = 'alertmanager') { const currentIndex = this.tabs.indexOf(currentTab); if (currentIndex < 0) return; let nextIndex = currentIndex; if (direction === 'home') nextIndex = 0; else if (direction === 'end') nextIndex = this.tabs.length - 1; else nextIndex = (currentIndex + direction + this.tabs.length) % this.tabs.length; const nextTab = this.tabs[nextIndex]; this.setTab(nextTab); this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus()); }, syncTab() { const url = new URL(window.location.href); const queryTab = url.searchParams.get('tab'); const hashTab = window.location.hash.replace('#', ''); this.activeTab = this.tabs.includes(queryTab) ? queryTab : (this.tabs.includes(hashTab) ? hashTab : 'configuration'); } }"
+         x-on:hashchange.window="syncTab()"
+         x-on:popstate.window="syncTab()">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -79,7 +42,7 @@
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Posture</p>
                                 <h2 class="{{ page_hero.context_panel_title_classes() }}">Readiness &amp; Operational Coverage</h2>
                             </div>
-                            {{ integration_status('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else ('validation_required' if source_posture == 'Configured' else 'not_configured')), source_posture, display='text') }}
+                            {{ integration_status('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else ('validation_required' if source_posture == 'Configured' else 'not_configured') ), source_posture) }}
                         </div>
                         <div class="mt-4 grid grid-cols-2 gap-2">
                             <div class="{{ page_hero.context_metric_card_classes() }}">
@@ -118,13 +81,16 @@
         </section>
         <section id="alertmanager-detail-tabs"
                  class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
-            {% set provider_detail_tabs = [
-                ('configuration', 'Configuration', 'settings-2', instance.deployment_type|replace('_', ' ')|title),
-                ('validation', 'Validation & Capabilities', 'scan-search', readiness|replace('_', ' ')|title),
-                ('runtime', 'Runtime & History', 'activity', runtime_state.health_status_label),
-                ('scope', 'Bindings & Consumers', 'route', (bindings|length|string) ~ ' Bindings')
-            ] %}
-            {{ framed_workspace_tabs.render(provider_detail_tabs, prefix='alertmanager', aria_label='Alertmanager instance domains') }}
+            {{ framed_workspace_tabs.render(
+                [
+                    ('configuration', 'Configuration', 'settings-2', instance.environment|default('')|title),
+                    ('validation', 'Validation & Capabilities', 'scan-search', (instance.readiness_status or 'validation_required')|replace('_', ' ')|title),
+                    ('runtime', 'Runtime & History', 'activity', runtime_state.health_status_label|default('Not Observed')),
+                    ('scope', 'Bindings & Consumers', 'waypoints', (scope_bindings|default([])|length|string) ~ ' Bindings'),
+                ],
+                prefix='alertmanager',
+                aria_label='Alertmanager Connection Domains'
+            ) }}
             <div class="p-4 sm:p-5 lg:p-6">
                 <div id="alertmanager-panel-configuration"
                      role="tabpanel"

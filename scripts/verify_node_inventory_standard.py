@@ -90,7 +90,7 @@ def main() -> int:
         'scope="col"',
         'node.condition_summary',
         "technical_value.render(node.internal_ip or 'Not Reported')",
-        "{{ 'Node' if pagination.total_items == 1 else 'Nodes' }}",
+        "pagination_ui.resource_name('Nodes', pagination.total_items)", 
     ):
         require(token in table_content, f'Missing compact Node table contract: {token}', errors)
 

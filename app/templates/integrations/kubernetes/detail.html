@@ -1,64 +1,15 @@
 {% extends "layouts/app.html" %}
-{% import "components/page_hero.html" as page_hero %}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+{% import "components/page_hero.html" as page_hero %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% block title %}{{ cluster.name }} · Kubernetes Integration · KAORI{% endblock %}
 {% block dashboard_content %}
-    {% set readiness = validation_state.readiness or 'validation_required' %}
+    {% set readiness = runtime_state.readiness or 'validation_required' %}
     {% set source_posture = 'Ready' if readiness == 'ready' else ('Attention' if readiness in ['degraded', 'blocked'] else 'Configured') %}
-    {% set kubernetes_tabs = [
-        ('configuration', 'Configuration', 'settings-2', cluster.environment|environment_name),
-        ('validation', 'Validation & Capabilities', 'scan-search', readiness|replace('_', ' ')|title),
-        ('runtime', 'Runtime & History', 'activity', runtime_state.health_status_label),
-        ('inventory', 'Inventory & Lifecycle', 'database', operational_domain_count ~ ' Domains')
-    ] %}
     <div class="kaori-integration-semantic space-y-6"
-         x-data="{
-             tabs: ['configuration', 'validation', 'runtime', 'inventory'],
-             activeTab: (() => {
-                 const url = new URL(window.location.href);
-                 const queryTab = url.searchParams.get('tab');
-                 const hashTab = url.hash.replace('#', '');
-                 return ['configuration', 'validation', 'runtime', 'inventory'].includes(queryTab)
-                     ? queryTab
-                     : (['configuration', 'validation', 'runtime', 'inventory'].includes(hashTab) ? hashTab : 'configuration');
-             })(),
-             deleteModal: false,
-             deleteUrl: '',
-             deleteName: '',
-             setTab(tab, moveToWorkspace = false) {
-                 if (!this.tabs.includes(tab)) return;
-                 this.activeTab = tab;
-                 const nextUrl = new URL(window.location.href);
-                 nextUrl.searchParams.set('tab', tab);
-                 nextUrl.hash = tab;
-                 window.history.replaceState({}, '', nextUrl);
-                 this.$nextTick(() => {
-                     if (moveToWorkspace) document.getElementById('kubernetes-detail-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                     if (window.renderKaoriIcons) window.renderKaoriIcons();
-                     else if (window.lucide) window.lucide.createIcons();
-                 });
-             },
-             moveTab(currentTab, direction, prefix) {
-                 const currentIndex = this.tabs.indexOf(currentTab);
-                 if (currentIndex < 0) return;
-                 let nextIndex = currentIndex;
-                 if (direction === 'home') nextIndex = 0;
-                 else if (direction === 'end') nextIndex = this.tabs.length - 1;
-                 else nextIndex = (currentIndex + direction + this.tabs.length) % this.tabs.length;
-                 const nextTab = this.tabs[nextIndex];
-                 this.setTab(nextTab);
-                 this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus());
-             },
-             syncTabFromLocation() {
-                 const url = new URL(window.location.href);
-                 const candidate = url.searchParams.get('tab') || url.hash.replace('#', '');
-                 this.activeTab = this.tabs.includes(candidate) ? candidate : 'configuration';
-             },
-             openDelete(url, name) { this.deleteUrl = url; this.deleteName = name; this.deleteModal = true; }
-         }"
-         x-on:hashchange.window="syncTabFromLocation()"
-         x-on:popstate.window="syncTabFromLocation()">
+         x-data="{ tabs: ['configuration', 'validation', 'runtime', 'inventory'], activeTab: (() => { const url = new URL(window.location.href); const queryTab = url.searchParams.get('tab'); const hashTab = window.location.hash.replace('#', ''); return ['configuration', 'validation', 'runtime', 'inventory'].includes(queryTab) ? queryTab : (['configuration', 'validation', 'runtime', 'inventory'].includes(hashTab) ? hashTab : 'configuration'); })(), deleteModal: false, deleteUrl: '', deleteName: '', setTab(tab, moveToWorkspace = false) { if (!this.tabs.includes(tab)) return; this.activeTab = tab; const nextUrl = new URL(window.location.href); nextUrl.searchParams.set('tab', tab); nextUrl.hash = tab; window.history.replaceState(null, '', nextUrl); if (moveToWorkspace) { this.$nextTick(() => document.getElementById('kubernetes-detail-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); } }, moveTab(currentTab, direction, prefix = 'kubernetes') { const currentIndex = this.tabs.indexOf(currentTab); if (currentIndex < 0) return; let nextIndex = currentIndex; if (direction === 'home') nextIndex = 0; else if (direction === 'end') nextIndex = this.tabs.length - 1; else nextIndex = (currentIndex + direction + this.tabs.length) % this.tabs.length; const nextTab = this.tabs[nextIndex]; this.setTab(nextTab); this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus()); }, syncTab() { const url = new URL(window.location.href); const queryTab = url.searchParams.get('tab'); const hashTab = window.location.hash.replace('#', ''); this.activeTab = this.tabs.includes(queryTab) ? queryTab : (this.tabs.includes(hashTab) ? hashTab : 'configuration'); }, openDelete(url, name) { this.deleteUrl = url; this.deleteName = name; this.deleteModal = true; } }"
+         x-on:hashchange.window="syncTab()"
+         x-on:popstate.window="syncTab()">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -67,7 +18,7 @@
                         <p class="mt-2 {{ page_hero.description_classes() }}">Manage the connection contract, capability evidence, runtime health, and governed Kubernetes lifecycle.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('shield-check', readiness|replace('_', ' ') |title) }}
-                            {{ page_hero.meta_label('layers-3', (validated_feature_count|string) ~ ' Validated Features') }}
+                            {{ page_hero.meta_label('layers-3', (runtime_state.capability_count|string) ~ ' Capabilities') }}
                             {{ page_hero.meta_label('network', cluster.environment|environment_name) }}
                         </div>
                     {% endcall %}
@@ -80,7 +31,7 @@
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Posture</p>
                                 <h2 class="{{ page_hero.context_panel_title_classes() }}">Kubernetes API Readiness</h2>
                             </div>
-                            {{ integration_status('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else 'validation_required'), source_posture, display='text') }}
+                            {{ integration_status('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else 'validation_required') , source_posture) }}
                         </div>
                         <div class="mt-4 grid grid-cols-2 gap-2">
                             <div class="{{ page_hero.context_metric_card_classes() }}">
@@ -94,34 +45,24 @@
                             <div class="{{ page_hero.context_metric_card_classes() }}">
                                 <div class="flex items-center gap-2 text-brand-foreground">
                                     <i data-lucide="layers-3" class="h-3.5 w-3.5"></i>
-                                    <p class="text-xs font-semibold">Validated Features</p>
+                                    <p class="text-xs font-semibold">Capabilities</p>
                                 </div>
-                                <p class="mt-1.5 text-xl font-semibold leading-none text-brand-foreground">{{ validated_feature_count }}</p>
-                                <p class="{{ page_hero.context_metric_helper_classes() }}">Selected API and RBAC evidence</p>
+                                <p class="mt-1.5 text-xl font-semibold leading-none text-brand-foreground">{{ runtime_state.capability_count }}</p>
+                                <p class="{{ page_hero.context_metric_helper_classes() }}">Served APIs and access evidence</p>
                             </div>
                         </div>
                         <div class="{{ page_hero.context_actions_classes() }}">
-                            {% if current_user.has_permission('clusters.sync') %}
-                                <button type="button"
-                                        @click="setTab('validation', true)"
-                                        class="{{ page_hero.context_action_classes() }}">
-                                    <i data-lucide="scan-line" class="h-4 w-4" aria-hidden="true"></i>
-                                    Review Validation
-                                </button>
-                            {% endif %}
-                            {% if current_user.has_permission('settings.manage_integrations') %}
-                                <a href="{{ url_for('integrations.kubernetes') }}"
-                                   class="{{ page_hero.context_action_classes() }}">
-                                    <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
-                                    Back to Registry
-                                </a>
-                            {% else %}
-                                <a href="{{ url_for('cluster.list_clusters') }}"
-                                   class="{{ page_hero.context_action_classes() }}">
-                                    <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
-                                    Back to Clusters
-                                </a>
-                            {% endif %}
+                            <button type="button"
+                                    @click="setTab('validation', true)"
+                                    class="{{ page_hero.context_action_classes() }}">
+                                <i data-lucide="scan-line" class="h-4 w-4"></i>
+                                Review Validation
+                            </button>
+                            <a href="{{ url_for('integrations.kubernetes') }}"
+                               class="{{ page_hero.context_action_classes() }}">
+                                <i data-lucide="arrow-left" class="h-4 w-4"></i>
+                                Back to Registry
+                            </a>
                         </div>
                     </div>
                 </aside>
@@ -130,7 +71,12 @@
         <section id="kubernetes-detail-tabs"
                  class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
             {{ framed_workspace_tabs.render(
-                kubernetes_tabs,
+                [
+                    ('configuration', 'Configuration', 'settings-2', cluster.environment|environment_name),
+                    ('validation', 'Validation & Capabilities', 'scan-search', readiness|replace('_', ' ')|title),
+                    ('runtime', 'Runtime & History', 'activity', runtime_state.health_status_label),
+                    ('inventory', 'Inventory & Lifecycle', 'database', (capability_scope|length|string) ~ ' Scopes'),
+                ],
                 prefix='kubernetes',
                 aria_label='Kubernetes Connection Domains'
             ) }}
@@ -159,7 +105,7 @@
                     {% with validation_job=runtime_validation_job %}
                         {% include 'integrations/kubernetes/partials/_runtime_workspace.html' %}
                     {% endwith %}
-                    {% with runtime_history=history, runtime_history_id='kubernetes-runtime-history', runtime_history_loading_id='kubernetes-history-loading', runtime_history_url=url_for('integrations.kubernetes_runtime_history', cluster_id=cluster.id), runtime_history_endpoint='integrations.kubernetes_runtime_history', runtime_history_route_args={'cluster_id': cluster.id}, runtime_history_detail_url=url_for('integrations.kubernetes_detail', cluster_id=cluster.id), runtime_history_detail_endpoint='integrations.kubernetes_detail', runtime_history_filters_enabled=true, provider_label='Kubernetes' %}
+                    {% with runtime_history=history, runtime_history_id='kubernetes-runtime-history', runtime_history_loading_id='kubernetes-history-loading', runtime_history_url=url_for('integrations.kubernetes_runtime_history', cluster_id=cluster.id), runtime_history_endpoint='integrations.kubernetes_runtime_history', runtime_history_route_args={'cluster_id': cluster.id}, runtime_history_detail_url=url_for('integrations.kubernetes_detail', cluster_id=cluster.id, tab='runtime'), runtime_history_detail_endpoint='integrations.kubernetes_detail', runtime_history_filters_enabled=true, provider_label='Kubernetes' %}
                         {% include 'integrations/partials/_runtime_history.html' %}
                     {% endwith %}
                 </div>

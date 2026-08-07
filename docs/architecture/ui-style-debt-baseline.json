@@ -8,9 +8,6 @@
     "app/templates/alertmanager/partials/_delete_confirmation_modal.html": {
       "semantic_border_utilities": 2
     },
-    "app/templates/alertmanager/partials/_detail_validation_content.html": {
-      "semantic_border_utilities": 2
-    },
     "app/templates/analytics/components/_content_tabs.html": {
       "page_local_workspace_tablists": 1
     },
@@ -144,10 +141,6 @@
       "semantic_border_utilities": 1
     },
     "app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html": {
-      "semantic_border_utilities": 1
-    },
-    "app/templates/integrations/kubernetes/partials/_minimum_validation_rbac.html": {
-      "page_local_workspace_tablists": 1,
       "semantic_border_utilities": 1
     },
     "app/templates/integrations/kubernetes/partials/_registry_detail_content.html": {
@@ -284,9 +277,6 @@
     "app/templates/prometheus/partials/_detail_scope.html": {
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 3
-    },
-    "app/templates/prometheus/partials/_detail_validation_content.html": {
-      "semantic_border_utilities": 5
     },
     "app/templates/prometheus/partials/_runtime_panel.html": {
       "copied_standard_surface_shells": 1

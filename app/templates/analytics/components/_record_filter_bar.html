@@ -48,7 +48,7 @@
                 :aria-expanded="advancedOpen ? 'true' : 'false'">
             <i data-lucide="sliders-horizontal" class="h-4 w-4" aria-hidden="true"></i>
             Advanced Filters
-            {% if active_count %}<span class="inline-flex min-w-5 items-center justify-center rounded-full bg-kaori-soft px-1.5 text-xs font-semibold text-kaori-primary">{{ active_count }}</span>{% endif %}
+            {% if active_count %}<span class="inline-flex min-w-5 items-center justify-center rounded-md bg-kaori-soft px-1.5 text-xs font-semibold text-kaori-primary">{{ active_count }}</span>{% endif %}
             <i data-lucide="chevron-down" class="h-4 w-4 transition-transform" :class="advancedOpen ? 'rotate-180' : ''" aria-hidden="true"></i>
         </button>
     </div>

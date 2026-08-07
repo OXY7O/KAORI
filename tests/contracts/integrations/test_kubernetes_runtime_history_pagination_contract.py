@@ -55,7 +55,7 @@ def test_runtime_history_full_page_fallback_opens_runtime_tab() -> None:
     assert 'name="tab" value="{{ runtime_history_tab_name }}"' in runtime
     assert "runtime_history_tab|default('runtime', true)" in runtime
     assert "url.searchParams.get('tab')" in detail
-    assert 'syncTabFromLocation()' in detail
+    assert 'syncTab()' in detail
     assert "nextUrl.searchParams.set('tab', tab)" in detail
 
 

@@ -1,247 +1,184 @@
-{% import "integrations/components/_workspace.html" as integration_ui %}
-{% from "integrations/components/_semantic_status.html" import integration_status %}
-
-{% macro compact_state(status, label) -%}
-    {{ integration_status(status, label, display='indicator') }}
-{%- endmacro %}
-
-{% set api_gate_status = 'ready' if stats.total > 0 and stats.ready == stats.total else ('degraded' if stats.ready > 0 else 'validation_required') %}
-{% set fully_ready_paths = [
-    stats.total > 0 and stats.ready == stats.total,
-    stats.total > 0 and stats.prometheus_operational == stats.total,
-    stats.total > 0 and stats.alertmanager_operational == stats.total
-] %}
-{% set operational_path_count = fully_ready_paths|select|list|length %}
-
 <section aria-labelledby="kubernetes-integration-coverage-title"
-         class="{{ integration_ui.section_shell_classes() }}">
+         class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div class="flex min-w-0 items-start gap-3">
-                {{ integration_ui.palette_icon('workflow', 'brand', size='lg') }}
-                <div class="min-w-0">
-                    <h2 id="kubernetes-integration-coverage-title" class="text-base font-semibold text-content-primary">Kubernetes Integration Coverage</h2>
-                    <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Review the minimum provider path required by Inventory, Analytics, and Alert Intelligence while preserving source, binding, and effective-readiness boundaries.</p>
+            <div class="flex items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="workflow" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <h2 id="kubernetes-integration-coverage-title"
+                        class="text-lg font-semibold text-content-primary">Kubernetes Integration Coverage</h2>
+                    <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">
+                        Review the readiness chain from Kubernetes API validation through Prometheus and Alertmanager source bindings.
+                    </p>
                 </div>
             </div>
-            {{ integration_status(
-                'ready' if stats.total > 0 and stats.fully_operational == stats.total else ('degraded' if stats.total > 0 else 'not_configured'),
-                (stats.fully_operational ~ ' of ' ~ stats.total ~ ' Fully Operational') if stats.total > 0 else 'Not Configured',
-                display='text'
+            {{ integration_status('ready' if stats.total > 0 and stats.fully_operational == stats.total
+                        else ('degraded' if stats.total > 0 else 'not_configured') ,
+            (stats.fully_operational ~ ' of ' ~ stats.total ~ ' Operational')
+            if stats.total > 0 else 'Not Configured'
             ) }}
         </div>
     </header>
-
-    <div data-kaori-coverage-summary class="grid grid-cols-2 divide-x divide-y divide-outline-subtle border-b border-outline-subtle bg-surface-subtle lg:grid-cols-4 lg:divide-y-0">
-        {% set summary_items = [
-            ('Registered', stats.total, 'Kubernetes API connections'),
-            ('API Ready', stats.ready ~ ' / ' ~ stats.total, 'Validated cluster authority'),
-            ('Operational Paths', operational_path_count ~ ' / 3', 'Inventory, Analytics, and Alerting'),
-            ('Needs Review', stats.attention, 'Connections with an unresolved gate')
-        ] %}
-        {% for label, value, helper in summary_items %}
-            <div class="min-w-0 px-5 py-3 sm:px-6">
-                <div class="flex items-baseline justify-between gap-3">
-                    <p class="text-xs font-semibold text-content-secondary">{{ label }}</p>
-                    <p class="text-base font-semibold tabular-nums text-content-primary">{{ value }}</p>
+    <div class="grid gap-px bg-outline-subtle lg:grid-cols-3">
+        <article class="flex min-h-[260px] flex-col bg-surface-card p-5 sm:p-6">
+            <div class="flex items-start justify-between gap-4">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="server-cog" class="h-5 w-5" aria-hidden="true"></i>
+                </span>
+                {{ integration_status('ready' if stats.total > 0 and stats.ready == stats.total
+                                else ('degraded' if stats.total > 0 else 'not_configured') ,
+                (stats.ready ~ ' / ' ~ stats.total ~ ' Ready') if stats.total > 0 else 'Not Configured'
+                ) }}
+            </div>
+            <h3 class="mt-4 text-sm font-semibold text-content-primary">Kubernetes API</h3>
+            <p class="mt-1 text-xs leading-5 text-content-muted">
+                Validates API access, RBAC, compatibility, and capabilities required by Inventory and downstream integrations.
+            </p>
+            <dl class="mt-4 grid gap-0 divide-y divide-outline-subtle">
+                <div class="flex items-center justify-between gap-4 py-2.5 text-xs">
+                    <dt class="text-content-muted">Registered</dt>
+                    <dd class="font-semibold text-content-primary">
+                        {{ stats.total }}
+                    </dd>
                 </div>
-                <p class="mt-1 truncate text-xs text-content-muted" title="{{ helper }}">{{ helper }}</p>
+                <div class="flex items-center justify-between gap-4 py-2.5 text-xs">
+                    <dt class="text-content-muted">API Ready</dt>
+                    <dd class="font-semibold text-content-primary">
+                        {{ stats.ready }}
+                    </dd>
+                </div>
+                <div class="flex items-center justify-between gap-4 py-2.5 text-xs">
+                    <dt class="text-content-muted">Needs Attention</dt>
+                    <dd class="font-semibold text-content-primary">
+                        {{ stats.attention }}
+                    </dd>
+                </div>
+            </dl>
+            <p class="mt-auto pt-4 text-xs leading-5 text-content-muted">
+                Inventory readiness follows Kubernetes API validation directly.
+            </p>
+        </article>
+        <article class="flex min-h-[260px] flex-col bg-surface-card p-5 sm:p-6">
+            <div class="flex items-start justify-between gap-4">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="chart-no-axes-combined"
+                       class="h-5 w-5"
+                       aria-hidden="true"></i>
+                </span>
+                {{ integration_status('ready' if stats.total > 0 and stats.prometheus_operational == stats.total
+                                else ('degraded' if stats.prometheus_configured > 0 else 'not_configured') ,
+                (stats.prometheus_operational ~ ' / ' ~ stats.total ~ ' Operational')
+                if stats.total > 0 else 'Not Configured'
+                ) }}
             </div>
-        {% endfor %}
+            <h3 class="mt-4 text-sm font-semibold text-content-primary">Prometheus Metrics</h3>
+            <p class="mt-1 text-xs leading-5 text-content-muted">
+                Supplies utilization, capacity, forecasting, and top-consumer signals used by Kubernetes Analytics.
+            </p>
+            <dl class="mt-4 grid gap-0 divide-y divide-outline-subtle">
+                <div class="flex items-center justify-between gap-4 py-2.5 text-xs">
+                    <dt class="text-content-muted">Sources Bound</dt>
+                    <dd class="font-semibold text-content-primary">
+                        {{ stats.prometheus_configured }} / {{ stats.total }}
+                    </dd>
+                </div>
+                <div class="flex items-center justify-between gap-4 py-2.5 text-xs">
+                    <dt class="text-content-muted">Sources Ready</dt>
+                    <dd class="font-semibold text-content-primary">
+                        {{ stats.prometheus_source_ready }}
+                    </dd>
+                </div>
+                <div class="flex items-center justify-between gap-4 py-2.5 text-xs">
+                    <dt class="text-content-muted">Bindings Ready</dt>
+                    <dd class="font-semibold text-content-primary">
+                        {{ stats.prometheus_binding_ready }}
+                    </dd>
+                </div>
+            </dl>
+            <p class="mt-auto pt-4 text-xs leading-5 text-content-muted">
+                Analytics requires Kubernetes API readiness, Prometheus source readiness, and a validated binding.
+            </p>
+        </article>
+        <article class="flex min-h-[260px] flex-col bg-surface-card p-5 sm:p-6">
+            <div class="flex items-start justify-between gap-4">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="siren" class="h-5 w-5" aria-hidden="true"></i>
+                </span>
+                {{ integration_status('ready' if stats.total > 0 and stats.alertmanager_operational == stats.total
+                                else ('degraded' if stats.alertmanager_configured > 0 else 'not_configured') ,
+                (stats.alertmanager_operational ~ ' / ' ~ stats.total ~ ' Operational')
+                if stats.total > 0 else 'Not Configured'
+                ) }}
+            </div>
+            <h3 class="mt-4 text-sm font-semibold text-content-primary">Alertmanager Alerts</h3>
+            <p class="mt-1 text-xs leading-5 text-content-muted">
+                Supplies active alerts, routing context, inhibition evidence, and signals used by alert intelligence.
+            </p>
+            <dl class="mt-4 grid gap-0 divide-y divide-outline-subtle">
+                <div class="flex items-center justify-between gap-4 py-2.5 text-xs">
+                    <dt class="text-content-muted">Sources Bound</dt>
+                    <dd class="font-semibold text-content-primary">
+                        {{ stats.alertmanager_configured }} / {{ stats.total }}
+                    </dd>
+                </div>
+                <div class="flex items-center justify-between gap-4 py-2.5 text-xs">
+                    <dt class="text-content-muted">Sources Ready</dt>
+                    <dd class="font-semibold text-content-primary">
+                        {{ stats.alertmanager_source_ready }}
+                    </dd>
+                </div>
+                <div class="flex items-center justify-between gap-4 py-2.5 text-xs">
+                    <dt class="text-content-muted">Bindings Ready</dt>
+                    <dd class="font-semibold text-content-primary">
+                        {{ stats.alertmanager_binding_ready }}
+                    </dd>
+                </div>
+            </dl>
+            <p class="mt-auto pt-4 text-xs leading-5 text-content-muted">
+                Alert workflows require Kubernetes API readiness, Alertmanager source readiness, and a validated binding.
+            </p>
+        </article>
     </div>
-
-    <div class="p-5 sm:p-6">
-        <div class="mb-4">
-            <h3 class="text-sm font-semibold text-content-primary">Operational Readiness Paths</h3>
-            <p class="mt-1 max-w-4xl text-xs leading-5 text-content-secondary">Each consumer shows only the evidence gates it actually requires. Open one path at a time when detailed counts or interpretation are needed.</p>
-        </div>
-
-        {% set paths = [
-            {
-                'icon': 'boxes',
-                'consumer': 'Kubernetes Inventory',
-                'description': 'Live discovery, committed inventory, topology, relationships, and operational metadata.',
-                'provider': 'Direct Cluster Authority',
-                'provider_context': 'Kubernetes API remains the authoritative source.',
-                'provider_icon': 'server-cog',
-                'direct': true,
-                'source_configured': stats.total,
-                'source_ready': stats.ready,
-                'binding_ready': stats.ready,
-                'operational': stats.ready,
-                'effective_label': 'Inventory Ready',
-                'evidence_note': 'Inventory consumes the Kubernetes API directly. An external provider source and cluster-scoped binding are not required.'
-            },
-            {
-                'icon': 'chart-no-axes-combined',
-                'consumer': 'Kubernetes Analytics',
-                'description': 'Utilization, capacity, storage, workload, forecast, and top-consumer evidence.',
-                'provider': 'Prometheus',
-                'provider_context': 'Metrics and time-series source',
-                'provider_icon': 'chart-spline',
-                'direct': false,
-                'source_configured': stats.prometheus_configured,
-                'source_ready': stats.prometheus_source_ready,
-                'binding_ready': stats.prometheus_binding_ready,
-                'operational': stats.prometheus_operational,
-                'effective_label': 'Analytics Operational',
-                'evidence_note': 'Analytics requires a ready Kubernetes API, a usable Prometheus source, and a valid cluster-scoped binding.'
-            },
-            {
-                'icon': 'siren',
-                'consumer': 'Alert Intelligence',
-                'description': 'Active alerts, routing, inhibition, suppression, ownership, and anomaly context.',
-                'provider': 'Alertmanager',
-                'provider_context': 'Alert and routing source',
-                'provider_icon': 'bell-ring',
-                'direct': false,
-                'source_configured': stats.alertmanager_configured,
-                'source_ready': stats.alertmanager_source_ready,
-                'binding_ready': stats.alertmanager_binding_ready,
-                'operational': stats.alertmanager_operational,
-                'effective_label': 'Alerting Operational',
-                'evidence_note': 'Alert Intelligence requires a ready Kubernetes API, a usable Alertmanager source, and a valid cluster-scoped binding.'
-            }
-        ] %}
-
-        <div data-kaori-operational-readiness-paths
-             x-data="{ openPath: null }"
-             class="grid items-start gap-4 xl:grid-cols-2">
-            {% for path in paths %}
-                {% set path_index = loop.index0 %}
-                {% set source_status = 'ready' if stats.total > 0 and path.source_ready == stats.total else ('degraded' if path.source_ready > 0 else 'not_configured') %}
-                {% set binding_status = 'ready' if stats.total > 0 and path.binding_ready == stats.total else ('degraded' if path.binding_ready > 0 else 'not_configured') %}
-                {% set effective_status = 'ready' if stats.total > 0 and path.operational == stats.total else ('degraded' if path.operational > 0 else 'not_configured') %}
-
-                <article data-kaori-operational-path-card
-                         class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm {% if path.direct %}xl:col-span-2{% endif %}">
-                    <header class="border-b border-outline-subtle px-4 py-4">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="flex min-w-0 items-start gap-3">
-                                {{ integration_ui.palette_icon(path.icon, 'brand') }}
-                                <div class="min-w-0">
-                                    <h4 class="text-sm font-semibold text-content-primary">{{ path.consumer }}</h4>
-                                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ path.description }}</p>
-                                </div>
-                            </div>
-                            <div class="shrink-0">{{ integration_status(effective_status, path.effective_label, display='text') }}</div>
-                        </div>
-                    </header>
-
-                    <div class="px-4 py-4">
-                        <p class="text-xs font-semibold text-content-secondary">Evidence Path</p>
-                        <ol class="mt-3 {% if path.direct %}grid gap-3 lg:grid-cols-3{% else %}space-y-0{% endif %}">
-                            <li data-kaori-readiness-step class="relative flex gap-3 {% if not path.direct %}pb-4{% endif %}">
-                                {% if not path.direct %}<span class="absolute bottom-0 left-[0.875rem] top-7 w-px bg-outline-subtle" aria-hidden="true"></span>{% endif %}
-                                <span class="relative z-10 {{ integration_ui.palette_icon_classes('brand', size='xs', rounded='xl') }}" aria-hidden="true" data-kaori-palette-icon="brand">
-                                    <i data-lucide="server" class="h-3.5 w-3.5"></i>
-                                </span>
-                                <div class="flex min-w-0 flex-1 items-start justify-between gap-3 pt-0.5">
-                                    <div class="min-w-0">
-                                        <p class="text-xs font-semibold text-content-primary">Kubernetes API</p>
-                                        <p class="mt-0.5 text-xs text-content-muted">Validated cluster authority</p>
-                                    </div>
-                                    <div class="shrink-0 text-right">
-                                        <p class="text-xs font-semibold tabular-nums text-content-primary">{{ stats.ready }} / {{ stats.total }}</p>
-                                        <div class="mt-1">{{ compact_state(api_gate_status, 'Ready' if api_gate_status == 'ready' else ('Partial' if api_gate_status == 'degraded' else 'Not Ready')) }}</div>
-                                    </div>
-                                </div>
-                            </li>
-
-                            <li data-kaori-readiness-step class="relative flex gap-3 {% if not path.direct %}pb-4{% endif %}">
-                                {% if not path.direct %}<span class="absolute bottom-0 left-[0.875rem] top-7 w-px bg-outline-subtle" aria-hidden="true"></span>{% endif %}
-                                <span class="relative z-10 {{ integration_ui.palette_icon_classes('brand', size='xs', rounded='xl') }}" aria-hidden="true" data-kaori-palette-icon="brand">
-                                    <i data-lucide="{{ path.provider_icon }}" class="h-3.5 w-3.5"></i>
-                                </span>
-                                <div class="flex min-w-0 flex-1 items-start justify-between gap-3 pt-0.5">
-                                    <div class="min-w-0">
-                                        <p class="text-xs font-semibold text-content-primary">{{ path.provider }}</p>
-                                        <p class="mt-0.5 text-xs text-content-muted">{{ path.provider_context }}</p>
-                                    </div>
-                                    <div class="shrink-0 text-right">
-                                        <p class="text-xs font-semibold tabular-nums text-content-primary">{{ path.source_ready }} / {{ stats.total }}</p>
-                                        <div class="mt-1">{{ compact_state('ready' if path.direct and stats.ready > 0 else source_status, 'Direct API' if path.direct else ('Ready' if source_status == 'ready' else ('Partial' if source_status == 'degraded' else 'Not Ready'))) }}</div>
-                                    </div>
-                                </div>
-                            </li>
-
-                            {% if not path.direct %}
-                                <li data-kaori-readiness-step class="relative flex gap-3 pb-4">
-                                    <span class="absolute bottom-0 left-[0.875rem] top-7 w-px bg-outline-subtle" aria-hidden="true"></span>
-                                    <span class="relative z-10 {{ integration_ui.palette_icon_classes('neutral', size='xs', rounded='xl') }}" aria-hidden="true" data-kaori-palette-icon="neutral">
-                                        <i data-lucide="link-2" class="h-3.5 w-3.5"></i>
-                                    </span>
-                                    <div class="flex min-w-0 flex-1 items-start justify-between gap-3 pt-0.5">
-                                        <div class="min-w-0">
-                                            <p class="text-xs font-semibold text-content-primary">Cluster Binding</p>
-                                            <p class="mt-0.5 text-xs text-content-muted">Cluster-scoped provider resolution</p>
-                                        </div>
-                                        <div class="shrink-0 text-right">
-                                            <p class="text-xs font-semibold tabular-nums text-content-primary">{{ path.binding_ready }} / {{ stats.total }}</p>
-                                            <div class="mt-1">{{ compact_state(binding_status, 'Ready' if binding_status == 'ready' else ('Partial' if binding_status == 'degraded' else 'Not Ready')) }}</div>
-                                        </div>
-                                    </div>
-                                </li>
-                            {% endif %}
-
-                            <li data-kaori-readiness-step class="relative flex gap-3">
-                                <span class="relative z-10 {{ integration_ui.palette_icon_classes('neutral', size='xs', rounded='xl') }}" aria-hidden="true" data-kaori-palette-icon="neutral">
-                                    <i data-lucide="check-check" class="h-3.5 w-3.5"></i>
-                                </span>
-                                <div class="flex min-w-0 flex-1 items-start justify-between gap-3 pt-0.5">
-                                    <div class="min-w-0">
-                                        <p class="text-xs font-semibold text-content-primary">Effective Consumer</p>
-                                        <p class="mt-0.5 text-xs text-content-muted">Resolved downstream readiness</p>
-                                    </div>
-                                    <div class="shrink-0 text-right">
-                                        <p class="text-xs font-semibold tabular-nums text-content-primary">{{ path.operational }} / {{ stats.total }}</p>
-                                        <div class="mt-1">{{ compact_state(effective_status, 'Operational' if effective_status == 'ready' else ('Partial' if effective_status == 'degraded' else 'Not Ready')) }}</div>
-                                    </div>
-                                </div>
-                            </li>
-                        </ol>
-                    </div>
-
-                    <footer class="border-t border-outline-subtle px-4 py-3">
-                        <button type="button"
-                                class="inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-md border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-kaori-primary/30 hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kaori-primary/30"
-                                @click="openPath = openPath === {{ path_index }} ? null : {{ path_index }}"
-                                :aria-expanded="(openPath === {{ path_index }}).toString()">
-                            <span x-text="openPath === {{ path_index }} ? 'Hide Evidence' : 'View Evidence'">View Evidence</span>
-                            <i data-lucide="chevron-down" class="h-3.5 w-3.5 transition-transform" :class="openPath === {{ path_index }} ? 'rotate-180' : ''" aria-hidden="true"></i>
-                        </button>
-                    </footer>
-
-                    <div x-show="openPath === {{ path_index }}"
-                         x-transition.opacity.duration.150ms
-                         x-cloak
-                         class="border-t border-outline-subtle bg-surface-subtle px-4 py-4">
-                        <dl class="grid gap-3 sm:grid-cols-3">
-                            <div>
-                                <dt class="text-xs text-content-muted">Provider Sources</dt>
-                                <dd class="mt-1 text-xs font-semibold text-content-primary">{{ 'Not required' if path.direct else path.source_configured }}</dd>
-                            </div>
-                            <div>
-                                <dt class="text-xs text-content-muted">Ready Bindings</dt>
-                                <dd class="mt-1 text-xs font-semibold text-content-primary">{{ 'Not required' if path.direct else path.binding_ready ~ ' of ' ~ stats.total }}</dd>
-                            </div>
-                            <div>
-                                <dt class="text-xs text-content-muted">Effective Resolution</dt>
-                                <dd class="mt-1 text-xs font-semibold text-content-primary">{{ path.operational }} of {{ stats.total }}</dd>
-                            </div>
-                        </dl>
-                        <p class="mt-3 border-t border-outline-subtle pt-3 text-xs leading-5 text-content-secondary">{{ path.evidence_note }}</p>
-                    </div>
-                </article>
-            {% endfor %}
-        </div>
-
-        <div class="mt-4 flex items-start gap-3 border-t border-outline-subtle pt-4">
-            {{ integration_ui.palette_icon('route', 'brand', size='sm') }}
+    <div class="border-t border-outline-subtle bg-surface-subtle px-5 py-4 sm:px-6">
+        <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
             <div>
-                <p class="text-xs font-semibold text-content-primary">Provider Resolution Boundary</p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Prometheus and Alertmanager remain reusable provider sources. KAORI reports source readiness, cluster binding validation, and downstream consumer readiness separately so a ready source cannot hide an unresolved binding.</p>
+                <div class="flex items-center gap-2">
+                    <i data-lucide="route"
+                       class="h-4 w-4 text-kaori-primary"
+                       aria-hidden="true"></i>
+                    <h3 class="text-sm font-semibold text-content-primary">Readiness Dependency</h3>
+                </div>
+                <p class="mt-1 text-xs leading-5 text-content-muted">
+                    Validate Kubernetes first. Prometheus and Alertmanager each require both a Ready source and a Ready cluster-scoped binding before their consumers become operational.
+                </p>
             </div>
+            <ol class="flex flex-wrap items-center gap-2 text-xs font-semibold"
+                aria-label="Kubernetes integration readiness dependency">
+                <li class="inline-flex min-h-6 items-center rounded-md border border-kaori-outline bg-kaori-soft px-2 text-kaori-primary-dark">
+                    Kubernetes Ready
+                </li>
+                <li aria-hidden="true" class="text-content-muted">
+                    <i data-lucide="chevron-right" class="h-3.5 w-3.5"></i>
+                </li>
+                <li class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-card px-2 text-content-secondary">
+                    Source Ready
+                </li>
+                <li aria-hidden="true" class="text-content-muted">
+                    <i data-lucide="chevron-right" class="h-3.5 w-3.5"></i>
+                </li>
+                <li class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-card px-2 text-content-secondary">
+                    Binding Ready
+                </li>
+                <li aria-hidden="true" class="text-content-muted">
+                    <i data-lucide="chevron-right" class="h-3.5 w-3.5"></i>
+                </li>
+                <li class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-status-normal-soft px-2 text-status-normal-text">
+                    Operational
+                </li>
+            </ol>
         </div>
     </div>
 </section>

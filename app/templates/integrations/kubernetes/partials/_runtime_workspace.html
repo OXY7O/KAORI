@@ -1,332 +1,154 @@
 {% import "components/connection_validation_header.html" as connection_validation_header %}
-{% import "components/table_label.html" as table_label %}
-{% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-
 <article id="kubernetes-runtime-workspace"
-         class="relative font-sans {{ integration_ui.section_shell_classes() }}"
-         data-kaori-runtime-workspace-v6
-         data-kaori-runtime-decision-layout
+         class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
          {% if validation_job and validation_job.is_active %} hx-get="{{ url_for('integrations.kubernetes_runtime_refresh_status', cluster_id=cluster.id, task_id=validation_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML" {% endif %}>
     {% call connection_validation_header.render(
         'Runtime Health & Diagnostics',
-        'Review persisted runtime health, diagnostic evidence, lifecycle context, and the next controlled operational action.',
+        'Refresh connection health and compatibility evidence.',
         icon='activity',
         loading_id='kubernetes-runtime-validation-loading',
         loading_active=validation_job and validation_job.is_active,
         loading_label='Refreshing Kubernetes runtime health'
         ) %}
-        {% if current_user.has_permission('clusters.sync') %}
-            <form method="post"
-                  action="{{ url_for('integrations.kubernetes_runtime_refresh', cluster_id=cluster.id) }}"
-                  hx-post="{{ url_for('integrations.kubernetes_runtime_refresh', cluster_id=cluster.id) }}"
-                  hx-target="#kubernetes-runtime-workspace"
-                  hx-swap="outerHTML"
-                  hx-disabled-elt="button"
-                  hx-indicator="#kubernetes-runtime-validation-loading">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit"
-                        {% if validation_job and validation_job.is_active %}disabled{% endif %}
-                        class="inline-flex h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover disabled:cursor-wait disabled:opacity-70">
-                    <i data-lucide="{{ 'loader-circle' if validation_job and validation_job.is_active else 'refresh-cw' }}"
-                       class="h-4 w-4{% if validation_job and validation_job.is_active %} animate-spin{% endif %}" aria-hidden="true"></i>
-                    {{ 'Refresh Running' if validation_job and validation_job.is_active else 'Refresh Runtime' }}
-                </button>
-            </form>
-        {% endif %}
+        <form method="post"
+              action="{{ url_for('integrations.kubernetes_runtime_refresh', cluster_id=cluster.id) }}"
+              hx-post="{{ url_for('integrations.kubernetes_runtime_refresh', cluster_id=cluster.id) }}"
+              hx-target="#kubernetes-runtime-workspace"
+              hx-swap="outerHTML"
+              hx-disabled-elt="button"
+              hx-indicator="#kubernetes-runtime-validation-loading">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit"
+                    {% if validation_job and validation_job.is_active %}disabled{% endif %}
+                    class="inline-flex h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover disabled:cursor-wait disabled:opacity-70">
+                <i data-lucide="{{ 'loader-circle' if validation_job and validation_job.is_active else 'refresh-cw' }}"
+                   class="h-4 w-4{% if validation_job and validation_job.is_active %} animate-spin{% endif %}"></i>
+                {{ 'Validation Running' if validation_job and validation_job.is_active else 'Refresh Runtime' }}
+            </button>
+        </form>
     {% endcall %}
-
     {% if validation_job and validation_job.is_active %}
-        <div class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-subtle px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between">
-            <span class="inline-flex items-center gap-2 font-semibold text-content-primary">
-                <i data-lucide="loader-circle" class="h-3.5 w-3.5 animate-spin text-kaori-primary" aria-hidden="true"></i>
+        <div class="flex flex-col gap-2 border-b border-brand-outline bg-kaori-soft px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between">
+            <span class="inline-flex items-center gap-2 font-semibold text-kaori-primary">
+                <i data-lucide="loader-circle" class="h-3.5 w-3.5 animate-spin"></i>
                 {{ validation_job.title or 'Kubernetes runtime validation running' }}
             </span>
             <span>Task {{ validation_job.task_id[:8] }} · {{ validation_job.state_label|title }} · {{ validation_job.elapsed_seconds }}s</span>
         </div>
     {% endif %}
-
-    <div class="p-4 sm:p-5 lg:p-6">
-        <div class="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_23rem] xl:grid-cols-[minmax(0,1fr)_24rem] 2xl:grid-cols-[minmax(0,1fr)_25rem]" data-kaori-runtime-main-layout>
-            <div class="min-w-0 space-y-4">
-                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card" aria-labelledby="runtime-snapshot-title" data-kaori-runtime-snapshot>
-                    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
-                        <div class="flex min-w-0 items-start gap-3">
-                            {{ integration_ui.palette_icon('activity', 'brand', size='lg') }}
-                            <div class="min-w-0">
-                                <h3 id="runtime-snapshot-title" class="text-base font-semibold text-content-primary">Runtime Snapshot</h3>
-                                <p class="mt-1 text-sm leading-6 text-content-secondary">Latest persisted operational observation for this Kubernetes connection.</p>
-                            </div>
-                        </div>
-                        {{ integration_status(runtime_state.health_status, runtime_state.health_status_label, display='text') }}
-                    </header>
-
-                    <div class="grid lg:grid-cols-[minmax(0,1.35fr)_minmax(19rem,0.65fr)]" data-kaori-runtime-snapshot-layout>
-                        <div class="border-b border-outline-subtle p-5 sm:p-6 lg:border-b-0 lg:border-r">
-                            <div class="flex items-start gap-4">
-                                {{ integration_ui.palette_icon('radio-tower', 'brand', size='lg') }}
-                                <div class="min-w-0 flex-1">
-                                    <p class="text-xs font-semibold text-content-muted">Persisted Runtime Posture</p>
-                                    <div class="mt-1 flex flex-wrap items-end gap-x-4 gap-y-2">
-                                        <p class="text-2xl font-semibold text-content-primary">{{ runtime_state.health_status_label }}</p>
-                                        <p class="text-sm font-semibold text-content-secondary">Score {{ runtime_state.health_score_display }}</p>
-                                    </div>
-                                    <p class="mt-2 max-w-3xl text-sm leading-6 text-content-secondary">Runtime health is sourced only from persisted observations and is not inferred from connection or validation state.</p>
+    <div class="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="rounded-lg border border-outline-subtle p-4">
+            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Health</p>
+            <p class="mt-2 text-2xl font-bold text-content-primary">{{ runtime_state.health_score_display }}</p>
+            <div class="mt-2">{{ integration_status(runtime_state.health_status_label|lower) }}</div>
+        </div>
+        <div class="rounded-lg border border-outline-subtle p-4">
+            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Readiness</p>
+            <div class="mt-3">{{ integration_status(runtime_state.readiness) }}</div>
+        </div>
+        <div class="rounded-lg border border-outline-subtle p-4">
+            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Compatibility</p>
+            <p class="mt-2 text-sm font-semibold text-content-primary">{{ runtime_state.compatibility_profile or 'Not validated' }}</p>
+        </div>
+        <div class="rounded-lg border border-outline-subtle p-4">
+            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Capabilities</p>
+            <p class="mt-2 text-2xl font-bold text-content-primary">{{ runtime_state.capability_count }}</p>
+        </div>
+    </div>
+    <section class="grid gap-px border-y border-outline-subtle bg-outline-subtle md:grid-cols-2">
+        <div class="bg-surface-card px-5 py-4">
+            <div class="flex items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="clock-3" class="h-4 w-4"></i></span>
+                <div>
+                    <p class="text-sm font-semibold text-content-primary">Scheduled Runtime Health</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI automatically queues lightweight Kubernetes reachability and runtime-health checks. This does not rebuild API discovery or RBAC evidence.</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-surface-card px-5 py-4">
+            <div class="flex items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="scan-search" class="h-4 w-4"></i></span>
+                <div>
+                    <p class="text-sm font-semibold text-content-primary">Full Validation On Demand</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Run Full Validation after registration, Kubernetes upgrades, kubeconfig or RBAC changes, and compatibility-policy updates.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    {% if runtime_state.lifecycle_context %}
+        {% set lifecycle = runtime_state.lifecycle_context %}
+        <section class="border-b border-outline-subtle bg-surface-hover px-5 py-4">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                    <p class="text-sm font-semibold text-content-primary">Kubernetes Lifecycle Contract</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Detected {{ lifecycle.detected_version }} is {{ lifecycle.lifecycle_status_label }}. KAORI separates the current lifecycle band from the wider technically accepted compatibility contract.</p>
+                </div>
+                {{ integration_status('degraded' if lifecycle.lifecycle_status == 'legacy' else ('ready' if lifecycle.lifecycle_status == 'current' else 'validation_required') , lifecycle.lifecycle_status_label) }}
+            </div>
+            <div class="mt-3 grid gap-3 sm:grid-cols-3">
+                <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                    <p class="text-xs font-semibold text-content-secondary">Detected</p>
+                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ lifecycle.detected_version }}</p>
+                </div>
+                <div class="rounded-lg border border-outline-subtle bg-status-normal-soft p-3">
+                    <p class="text-xs font-semibold text-status-normal-text">KAORI Current Band</p>
+                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ lifecycle.current_version_band }}</p>
+                </div>
+                <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                    <p class="text-xs font-semibold text-content-secondary">Accepted Compatibility</p>
+                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ lifecycle.supported_constraint }}</p>
+                </div>
+            </div>
+        </section>
+    {% endif %}
+    {% if runtime_state.attention_factors %}
+        <section class="border-t border-outline-subtle bg-status-warning-soft px-5 py-4">
+            <div class="flex items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-status-warning-text"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span>
+                <div class="min-w-0 flex-1">
+                    <p class="text-sm font-semibold text-status-warning-text">Why This Runtime Requires Attention</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">The score is calculated from weighted runtime factors. Healthy API and capability checks can still produce Degraded readiness when lifecycle or compatibility requires action.</p>
+                    <div class="mt-3 grid gap-2 lg:grid-cols-2">
+                        {% for factor in runtime_state.attention_factors %}
+                            <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-xs font-semibold text-content-primary">{{ factor.label }}</p>
+                                    <span class="font-mono text-xs font-semibold text-status-warning-text">{{ factor.score }}/100</span>
                                 </div>
-                            </div>
-
-                            {% if not runtime_state.has_observation %}
-                                <div class="mt-5 flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-subtle px-4 py-3">
-                                    {{ integration_ui.palette_icon('circle-help', 'brand', size='sm') }}
-                                    <div class="min-w-0">
-                                        <p class="text-sm font-semibold text-content-primary">Runtime Not Observed</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-secondary">Run Refresh Runtime to establish health, score, latency, and diagnostic evidence.</p>
-                                    </div>
-                                </div>
-                            {% endif %}
-
-                            <div class="mt-5 grid gap-3 sm:grid-cols-2">
-                                <div class="rounded-lg border border-outline-subtle bg-surface-subtle px-4 py-3">
-                                    <div class="flex items-center justify-between gap-3">
-                                        <span class="text-xs font-semibold text-content-secondary">Validated Features</span>
-                                        <span class="text-base font-semibold text-content-primary">{{ validated_feature_count }}</span>
-                                    </div>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Capabilities backed by completed validation evidence.</p>
-                                </div>
-                                <div class="rounded-lg border border-outline-subtle bg-surface-subtle px-4 py-3">
-                                    <div class="flex items-center justify-between gap-3">
-                                        <span class="text-xs font-semibold text-content-secondary">Operational Domains</span>
-                                        <span class="text-base font-semibold text-content-primary">{{ operational_domain_count }}</span>
-                                    </div>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">KAORI domains currently eligible to consume this connection.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="divide-y divide-outline-subtle" data-kaori-runtime-observation-context>
-                            <div class="px-5 py-4 sm:px-6">
-                                <div class="flex items-start gap-3">
-                                    {{ integration_ui.palette_icon('clock-3', 'brand', size='sm') }}
-                                    <div class="min-w-0">
-                                        <p class="text-xs font-semibold text-content-muted">Last Observation</p>
-                                        <p class="mt-1 break-words text-sm font-semibold text-content-primary">{{ runtime_state.observed_at_display }}</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-secondary">Latest persisted runtime sample.</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="px-5 py-4 sm:px-6">
-                                <div class="flex items-start gap-3">
-                                    {{ integration_ui.palette_icon('shield-check', 'brand', size='sm') }}
-                                    <div class="min-w-0">
-                                        <p class="text-xs font-semibold text-content-muted">Validation Readiness</p>
-                                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ validation_state.readiness_label }}</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-secondary">API, compatibility, and effective RBAC evidence.</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="px-5 py-4 sm:px-6">
-                                <div class="flex items-start gap-3">
-                                    {{ integration_ui.palette_icon('stethoscope', 'brand', size='sm') }}
-                                    <div class="min-w-0">
-                                        <p class="text-xs font-semibold text-content-muted">Diagnostic Coverage</p>
-                                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ runtime_state.diagnostics|length }} checks</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-secondary">Reachability and runtime diagnostic evidence in the latest observation.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card" aria-labelledby="runtime-diagnostic-evidence-title" data-kaori-runtime-diagnostic-list>
-                    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
-                        <div class="flex min-w-0 items-start gap-3">
-                            {{ integration_ui.palette_icon('stethoscope', 'brand', size='lg') }}
-                            <div class="min-w-0">
-                                <h3 id="runtime-diagnostic-evidence-title" class="text-base font-semibold text-content-primary">Diagnostic Evidence</h3>
-                                <p class="mt-1 text-sm leading-6 text-content-secondary">Latest checks supporting the persisted runtime posture.</p>
-                            </div>
-                        </div>
-                        {{ table_label.metadata_label((runtime_state.diagnostics|length) ~ ' checks') }}
-                    </header>
-
-                    {% if runtime_state.diagnostics %}
-                        <div class="hidden border-b border-outline-subtle bg-surface-subtle px-5 py-2.5 md:grid md:grid-cols-12 md:gap-4 sm:px-6" aria-hidden="true">
-                            <span class="md:col-span-3 text-xs font-semibold text-content-muted">Check</span>
-                            <span class="md:col-span-7 text-xs font-semibold text-content-muted">Evidence</span>
-                            <span class="md:col-span-2 text-right text-xs font-semibold text-content-muted">Status</span>
-                        </div>
-                    {% endif %}
-
-                    <div class="divide-y divide-outline-subtle">
-                        {% for item in runtime_state.diagnostics %}
-                            <article class="grid gap-3 px-5 py-4 transition hover:bg-kaori-mist md:grid-cols-12 md:items-center md:gap-4 sm:px-6" data-kaori-runtime-diagnostic-row>
-                                <div class="flex min-w-0 items-center gap-3 md:col-span-3">
-                                    {{ integration_ui.palette_icon('check-check', 'brand', size='sm') }}
-                                    <p class="text-sm font-semibold text-content-primary">{{ item.label }}</p>
-                                </div>
-                                <div class="min-w-0 md:col-span-7">
-                                    <p class="mb-1 text-xs font-semibold text-content-muted md:hidden">Evidence</p>
-                                    <p class="text-sm leading-6 text-content-secondary">{{ item.detail }}</p>
-                                </div>
-                                <div class="md:col-span-2 md:text-right">
-                                    <p class="mb-1 text-xs font-semibold text-content-muted md:hidden">Status</p>
-                                    {{ integration_status(item.status, display='indicator') }}
-                                </div>
-                            </article>
-                        {% else %}
-                            <div class="px-5 py-10 text-center sm:px-6">
-                                <div class="mx-auto w-fit">{{ integration_ui.palette_icon('scan-search', 'brand', size='lg') }}</div>
-                                <p class="mt-3 text-sm font-semibold text-content-primary">No Diagnostic Evidence</p>
-                                <p class="mt-1 text-sm leading-6 text-content-secondary">Refresh Runtime to persist reachability, latency, and diagnostic checks.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ factor.detail or 'This factor requires review.' }}</p>
                             </div>
                         {% endfor %}
                     </div>
-
-                    <footer class="border-t border-outline-subtle bg-surface-subtle px-5 py-3.5 sm:px-6" data-kaori-runtime-observation-boundary>
-                        <div class="flex items-start gap-3">
-                            {{ integration_ui.palette_icon('shield-check', 'brand', size='sm') }}
-                            <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">Observation Boundary</p>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Runtime Refresh records lightweight reachability and health evidence. API discovery, compatibility, and effective RBAC remain owned by Full Validation.</p>
-                            </div>
-                        </div>
-                    </footer>
-                </section>
+                </div>
             </div>
-
-            <aside class="self-start overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm lg:sticky lg:top-4" aria-labelledby="runtime-decision-title" data-kaori-runtime-decision-panel>
-                <header class="border-b border-outline-subtle px-4 py-4 xl:px-5">
+        </section>
+    {% endif %}
+    <div class="border-t border-outline-subtle p-5">
+        <div class="grid gap-3 lg:grid-cols-2">
+            {% for item in runtime_state.diagnostics %}
+                <div class="rounded-lg border border-outline-subtle p-4">
                     <div class="flex items-start justify-between gap-3">
-                        <div class="flex min-w-0 items-start gap-3">
-                            {{ integration_ui.palette_icon('gauge', 'brand', size='lg') }}
-                            <div class="min-w-0">
-                                <h3 id="runtime-decision-title" class="text-base font-semibold text-content-primary">Runtime Decision</h3>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Current runtime gate, evidence ownership, and next controlled action.</p>
-                            </div>
+                        <div>
+                            <p class="text-sm font-semibold text-content-primary">{{ item.label }}</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.detail }}</p>
                         </div>
-                        {{ integration_status(runtime_state.health_status, runtime_state.health_status_label, display='text') }}
+                        {{ integration_status(item.status) }}
                     </div>
-                </header>
-
-                <section class="border-b border-outline-subtle px-4 py-4 xl:px-5" aria-labelledby="runtime-decision-posture-title">
-                    <div class="flex items-start justify-between gap-4">
-                        <div class="min-w-0">
-                            <p id="runtime-decision-posture-title" class="text-xs font-semibold text-content-muted">Current Runtime Gate</p>
-                            <p class="mt-1 text-base font-semibold text-content-primary">{{ runtime_state.health_status_label }}</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Persisted health evidence only.</p>
-                        </div>
-                        <div class="shrink-0 text-right">
-                            <p class="text-2xl font-semibold text-content-primary">{{ runtime_state.health_score_display }}</p>
-                            <p class="mt-1 text-xs text-content-muted">Health score</p>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="border-b border-outline-subtle px-4 py-4 xl:px-5" aria-labelledby="runtime-evidence-ownership-title">
-                    <h4 id="runtime-evidence-ownership-title" class="text-sm font-semibold text-content-primary">Evidence Ownership</h4>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Use the lighter workflow unless the issue belongs to API, compatibility, or RBAC validation.</p>
-                    <div class="mt-3 divide-y divide-outline-subtle rounded-lg border border-outline-subtle">
-                        <div class="flex items-start gap-3 px-3.5 py-3">
-                            {{ integration_ui.palette_icon('refresh-cw', 'brand', size='xs') }}
-                            <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">Runtime Refresh</p>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Reachability, health score, latency, and diagnostic observation.</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start gap-3 px-3.5 py-3">
-                            {{ integration_ui.palette_icon('scan-search', 'brand', size='xs') }}
-                            <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">Full Validation</p>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">API discovery, compatibility, fallback, and effective RBAC evidence.</p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                {% if runtime_state.lifecycle_context %}
-                    {% set lifecycle = runtime_state.lifecycle_context %}
-                    <section class="border-b border-outline-subtle px-4 py-4 xl:px-5" aria-labelledby="runtime-lifecycle-contract-title">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="min-w-0">
-                                <h4 id="runtime-lifecycle-contract-title" class="text-sm font-semibold text-content-primary">Lifecycle Contract</h4>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Version posture against KAORI's accepted Kubernetes lifecycle band.</p>
-                            </div>
-                            {{ integration_status('degraded' if lifecycle.lifecycle_status == 'legacy' else ('ready' if lifecycle.lifecycle_status == 'current' else 'validation_required'), lifecycle.lifecycle_status_label, display='text') }}
-                        </div>
-                        <dl class="mt-3 divide-y divide-outline-subtle rounded-lg border border-outline-subtle">
-                            {% for label, value in [
-                                ('Detected Version', lifecycle.detected_version),
-                                ('KAORI Current Band', lifecycle.current_version_band),
-                                ('Accepted Compatibility', lifecycle.supported_constraint)
-                            ] %}
-                                <div class="flex items-start justify-between gap-4 px-3.5 py-2.5">
-                                    <dt class="text-xs text-content-secondary">{{ label }}</dt>
-                                    <dd class="max-w-[58%] text-right text-xs font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</dd>
-                                </div>
-                            {% endfor %}
-                        </dl>
-                    </section>
-                {% endif %}
-
-                <section class="border-b border-outline-subtle px-4 py-4 xl:px-5" aria-labelledby="runtime-focus-title" data-kaori-operational-focus>
-                    <div class="flex items-center justify-between gap-3">
-                        <h4 id="runtime-focus-title" class="text-sm font-semibold text-content-primary">Operational Focus</h4>
-                        {{ table_label.metadata_label((runtime_state.attention_factors|length) ~ (' item' if runtime_state.attention_factors|length == 1 else ' items')) }}
-                    </div>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Prioritized evidence that needs operator review before the next controlled action.</p>
-
-                    {% if runtime_state.attention_factors %}
-                        <div class="mt-3 border-y border-outline-subtle" data-kaori-operational-focus-list>
-                            {% for factor in runtime_state.attention_factors %}
-                                <article class="py-3.5 {% if not loop.last %}border-b border-outline-subtle{% endif %}">
-                                    <div class="flex items-center justify-between gap-3">
-                                        <p class="min-w-0 text-sm font-semibold text-content-primary">{{ factor.label }}</p>
-                                        <div class="shrink-0">{{ integration_status(factor.status, display='indicator') }}</div>
-                                    </div>
-                                    {% if factor.key == 'compatibility' and runtime_state.lifecycle_context %}
-                                        <p class="mt-1.5 text-xs leading-5 text-content-secondary">Review the Lifecycle Contract above, then rerun Full Validation after Kubernetes version or compatibility changes.</p>
-                                    {% else %}
-                                        <p class="mt-1.5 text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ factor.detail or 'Review this evidence before continuing the runtime workflow.' }}</p>
-                                    {% endif %}
-                                </article>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <div class="mt-3 flex items-start gap-3 border-y border-outline-subtle py-3.5">
-                            {{ integration_ui.palette_icon('circle-check', 'brand', size='xs') }}
-                            <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">No Current Runtime Attention</p>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">The latest persisted observation does not expose an unresolved runtime or lifecycle factor.</p>
-                            </div>
-                        </div>
-                    {% endif %}
-                </section>
-
-                <section class="px-4 py-4 xl:px-5" aria-labelledby="runtime-next-action-title">
-                    <div class="flex items-start gap-3">
-                        {{ integration_ui.palette_icon('target', 'brand', size='sm') }}
-                        <div class="min-w-0">
-                            <h4 id="runtime-next-action-title" class="text-sm font-semibold text-content-primary">Next Operational Action</h4>
-                            {% if not runtime_state.has_observation %}
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Run Refresh Runtime to establish the first persisted health and diagnostic observation.</p>
-                            {% elif runtime_state.attention_factors %}
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Review the active runtime factors. Run Full Validation when the issue involves API discovery, compatibility, kubeconfig, or RBAC.</p>
-                            {% else %}
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">No immediate corrective action is required. Refresh runtime evidence after infrastructure changes or scheduled maintenance.</p>
-                            {% endif %}
-                        </div>
-                    </div>
-                </section>
-            </aside>
+                </div>
+            {% else %}
+                <p class="text-sm text-content-muted">No diagnostic checks recorded.</p>
+            {% endfor %}
         </div>
     </div>
 </article>
 {% include 'components/operation_feedback_oob.html' %}
 
-<span id="kubernetes-runtime-tab-badge" hx-swap-oob="innerHTML" class="hidden">{{ runtime_state.health_status_label }}</span>
+<span id="kubernetes-runtime-tab-badge"
+      hx-swap-oob="innerHTML"
+      class="hidden">{{ runtime_state.health_status_label }}</span>
 {% if runtime_history_oob|default(false) and history %}
-    {% with runtime_history=history, runtime_history_id='kubernetes-runtime-history', runtime_history_loading_id='kubernetes-history-loading', runtime_history_url=url_for('integrations.kubernetes_runtime_history', cluster_id=cluster.id), runtime_history_endpoint='integrations.kubernetes_runtime_history', runtime_history_route_args={'cluster_id': cluster.id}, runtime_history_detail_url=url_for('integrations.kubernetes_detail', cluster_id=cluster.id), runtime_history_detail_endpoint='integrations.kubernetes_detail', runtime_history_filters_enabled=true, provider_label='Kubernetes', runtime_history_oob=true %}
+    {% with runtime_history=history, runtime_history_id='kubernetes-runtime-history', runtime_history_loading_id='kubernetes-history-loading', runtime_history_url=url_for('integrations.kubernetes_runtime_history', cluster_id=cluster.id), runtime_history_endpoint='integrations.kubernetes_runtime_history', runtime_history_route_args={'cluster_id': cluster.id}, runtime_history_detail_url=url_for('integrations.kubernetes_detail', cluster_id=cluster.id, tab='runtime'), runtime_history_detail_endpoint='integrations.kubernetes_detail', runtime_history_filters_enabled=true, provider_label='Kubernetes', runtime_history_oob=true %}
         {% include 'integrations/partials/_runtime_history.html' %}
     {% endwith %}
 {% endif %}

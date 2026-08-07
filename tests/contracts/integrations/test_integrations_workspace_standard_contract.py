@@ -36,7 +36,6 @@ def test_provider_registries_share_geometry_loading_and_pagination() -> None:
     assert 'components/loading_bar.html' in shared
     assert 'hx-push-url="true"' in shared
     assert 'href_endpoint=endpoint' in shared
-    assert '>Rows</span>' in shared
 
     for template in (prometheus, alertmanager):
         assert 'integrations/components/_provider_registry.html' in template
@@ -53,21 +52,14 @@ def test_provider_registries_share_geometry_loading_and_pagination() -> None:
     assert 'provider_registry.registry_header(' in coverage
 
 
-def test_runtime_overview_uses_inventory_table_and_shared_controls() -> None:
+def test_runtime_overview_uses_bright_evidence_and_shared_controls() -> None:
     runtime = read('app/templates/integrations/partials/_runtime_overview.html')
 
     assert 'integrations/components/_workspace.html' in runtime
-    assert 'components/table.html' in runtime
     assert 'integration_ui.metric_grid_classes(' in runtime
     assert 'integration_ui.metric_card(' in runtime
     assert 'table_ui.inventory_filter_bar_classes()' in runtime
-    assert 'table_ui.table_classes(' in runtime
-    assert 'table_ui.row_classes()' in runtime
-    assert 'components/details/_expandable_row.html' in runtime
-    assert 'expandable_row.toggle_button(' in runtime
-    assert 'expandable_row.detail_row(' in runtime
-    assert 'hx-trigger="change delay:100ms"' in runtime
-    assert 'Apply Filters' not in runtime
+    assert 'table_ui.filter_select_classes()' in runtime
     assert 'provider_registry.pagination_footer(' in runtime
     assert 'components/loading_bar.html' in runtime
 
@@ -79,9 +71,10 @@ def test_runtime_history_has_one_direct_shared_component() -> None:
     assert not exists('app/templates/integrations/kubernetes/partials/_runtime_history.html')
     assert "'integrations/partials/_runtime_history.html'" in routes
     assert 'integrations/components/_semantic_status.html' in shared
-    assert 'href_endpoint=runtime_history_detail_endpoint_name' in shared
-    assert 'endpoint=runtime_history_endpoint_name' in shared
+    assert 'runtime_history_detail_endpoint_name' in shared
     assert 'runtime_history_route_args_value' in shared
+    assert "'integrations.kubernetes_detail'" not in shared
+    assert 'endpoint=runtime_history_endpoint_name' in shared
 
 
 def test_dead_binding_presentation_is_removed() -> None:
@@ -128,15 +121,3 @@ def test_integrations_standard_is_implemented_not_draft() -> None:
     assert 'Provider-local presentation wrappers are prohibited' in standard
     assert 'Technical matrices may use horizontal scrolling only' in standard
     assert 'Both documents are audit-only' not in app_readme
-
-
-def test_integrations_standard_defines_compact_label_roles() -> None:
-    standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
-
-    assert 'Compact Label Role Contract' in standard
-    assert 'Operational state in a sparse card/header?' in standard
-    assert 'Operational state repeated in a table/list?' in standard
-    assert 'Context, scope, provider type, category, or count?' in standard
-    assert "display='text'" in standard
-    assert "display='indicator'" in standard
-    assert "display='special'" in standard

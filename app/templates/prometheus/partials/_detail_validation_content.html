@@ -1,3 +1,4 @@
+{% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
@@ -187,7 +188,7 @@
                                             </div>
                                         </section>
                                     {% endif %}
-                                    <div class="mt-4 border-l-2 {{ 'border-status-normal-border' if row.available else ('border-status-critical-border' if row.required else 'border-status-warning-border') }} pl-3">
+                                    <div class="mt-4 border-l-2 border-outline-strong pl-3">
                                         <p class="text-xs font-semibold text-content-primary">Recommended Action</p>
                                         <p class="mt-1 text-sm leading-6 text-content-secondary">{{ row.next_action }}</p>
                                     </div>
@@ -221,14 +222,14 @@
                     </div>
                     <p class="text-xl font-semibold tabular-nums text-content-primary">{{ ((capability_summary.observed / capability_summary.total * 100)|round|int) if capability_summary.total else 0 }}%</p>
                 </div>
-                <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-hover"><div class="h-full rounded-full bg-kaori-primary" style="width: {{ ((capability_summary.observed / capability_summary.total * 100)|round|int) if capability_summary.total else 0 }}%"></div></div>
+                <div class="mt-3">{{ progress_bar.bar(((capability_summary.observed / capability_summary.total * 100)|round|int) if capability_summary.total else 0, 'h-1.5 overflow-hidden rounded-full bg-surface-hover', 'h-full rounded-full bg-kaori-primary', 'Capability readiness') }}</div>
                 <p class="mt-2 text-xs leading-5 text-content-secondary">Required gaps block core consumers; optional gaps reduce selected analytics depth.</p>
             </section>
 
             <section class="border-b border-outline-subtle px-4 py-4">
-                <h4 class="text-xs font-semibold uppercase tracking-wide text-content-muted">Operational Gate</h4>
+                <h4 class="text-xs font-semibold text-content-muted">Operational Gate</h4>
                 <div class="mt-3 flex items-start gap-3">
-                    <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border {{ 'border-status-normal-border bg-status-normal-soft text-status-normal-text' if capability_summary.required_missing == 0 else 'border-status-critical-border bg-status-critical-soft text-status-critical-text' }}" aria-hidden="true"><i data-lucide="{{ 'shield-check' if capability_summary.required_missing == 0 else 'shield-alert' }}" class="h-4 w-4"></i></span>
+                    <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-outline-subtle {{ 'bg-status-normal-soft text-status-normal-text' if capability_summary.required_missing == 0 else 'bg-status-critical-soft text-status-critical-text' }}" aria-hidden="true"><i data-lucide="{{ 'shield-check' if capability_summary.required_missing == 0 else 'shield-alert' }}" class="h-4 w-4"></i></span>
                     <div class="min-w-0">
                         <p class="text-sm font-semibold text-content-primary">{{ 'Core Analytics Eligible' if capability_summary.required_missing == 0 else 'Remediation Required' }}</p>
                         <p class="mt-1 text-xs leading-5 text-content-secondary">{{ 'Required capability contracts are usable. Binding resolution remains an independent gate.' if capability_summary.required_missing == 0 else 'Restore required PromQL, metric, label, or retention evidence before treating this source as ready.' }}</p>
@@ -237,7 +238,7 @@
             </section>
 
             <section class="border-b border-outline-subtle px-4 py-4">
-                <div class="flex items-center justify-between gap-3"><h4 class="text-xs font-semibold uppercase tracking-wide text-content-muted">Retention Coverage</h4><span class="text-xs text-content-muted">Latest validation</span></div>
+                <div class="flex items-center justify-between gap-3"><h4 class="text-xs font-semibold text-content-muted">Retention Coverage</h4><span class="text-xs text-content-muted">Latest validation</span></div>
                 <div class="mt-3 divide-y divide-outline-subtle rounded-lg border border-outline-subtle">
                     {% for horizon in ['24h', '7d', '30d', '60d'] %}
                         {% set horizon_state = retention.get(horizon, {}) if retention is mapping else {} %}
@@ -251,7 +252,7 @@
             </section>
 
             <section class="border-b border-outline-subtle px-4 py-4">
-                <div class="flex items-center justify-between gap-3"><h4 class="text-xs font-semibold uppercase tracking-wide text-content-muted">Operational Domains</h4>{{ table_label.metadata_label(module_readiness_rows|length ~ ' domains') }}</div>
+                <div class="flex items-center justify-between gap-3"><h4 class="text-xs font-semibold text-content-muted">Operational Domains</h4>{{ table_label.metadata_label(module_readiness_rows|length ~ ' domains') }}</div>
                 <div class="mt-3 divide-y divide-outline-subtle">
                     {% for row in module_readiness_rows %}
                         <div class="flex items-start justify-between gap-3 py-2.5">
