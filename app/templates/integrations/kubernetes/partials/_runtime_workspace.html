@@ -270,30 +270,30 @@
                 {% endif %}
 
                 <section class="border-b border-outline-subtle px-4 py-4 xl:px-5" aria-labelledby="runtime-focus-title" data-kaori-operational-focus>
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="min-w-0">
-                            <h4 id="runtime-focus-title" class="text-sm font-semibold text-content-primary">Operational Focus</h4>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Unresolved runtime or lifecycle evidence that needs operator review.</p>
-                        </div>
+                    <div class="flex items-center justify-between gap-3">
+                        <h4 id="runtime-focus-title" class="text-sm font-semibold text-content-primary">Operational Focus</h4>
                         {{ table_label.metadata_label((runtime_state.attention_factors|length) ~ (' item' if runtime_state.attention_factors|length == 1 else ' items')) }}
                     </div>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Prioritized evidence that needs operator review before the next controlled action.</p>
 
                     {% if runtime_state.attention_factors %}
-                        <div class="mt-3 divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle bg-surface-card" data-kaori-operational-focus-list>
+                        <div class="mt-3 border-y border-outline-subtle" data-kaori-operational-focus-list>
                             {% for factor in runtime_state.attention_factors %}
-                                <div class="px-3.5 py-3">
-                                    <div class="flex items-start justify-between gap-3">
-                                        <div class="min-w-0">
-                                            <p class="text-sm font-semibold text-content-primary">{{ factor.label }}</p>
-                                            <p class="mt-1 text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ factor.detail or 'This factor requires review.' }}</p>
-                                        </div>
+                                <article class="py-3.5 {% if not loop.last %}border-b border-outline-subtle{% endif %}">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <p class="min-w-0 text-sm font-semibold text-content-primary">{{ factor.label }}</p>
                                         <div class="shrink-0">{{ integration_status(factor.status, display='indicator') }}</div>
                                     </div>
-                                </div>
+                                    {% if factor.key == 'compatibility' and runtime_state.lifecycle_context %}
+                                        <p class="mt-1.5 text-xs leading-5 text-content-secondary">Review the Lifecycle Contract above, then rerun Full Validation after Kubernetes version or compatibility changes.</p>
+                                    {% else %}
+                                        <p class="mt-1.5 text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ factor.detail or 'Review this evidence before continuing the runtime workflow.' }}</p>
+                                    {% endif %}
+                                </article>
                             {% endfor %}
                         </div>
                     {% else %}
-                        <div class="mt-3 flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-subtle px-3.5 py-3">
+                        <div class="mt-3 flex items-start gap-3 border-y border-outline-subtle py-3.5">
                             {{ integration_ui.palette_icon('circle-check', 'brand', size='xs') }}
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">No Current Runtime Attention</p>
@@ -326,7 +326,7 @@
 
 <span id="kubernetes-runtime-tab-badge" hx-swap-oob="innerHTML" class="hidden">{{ runtime_state.health_status_label }}</span>
 {% if runtime_history_oob|default(false) and history %}
-    {% with runtime_history=history, runtime_history_id='kubernetes-runtime-history', runtime_history_loading_id='kubernetes-history-loading', runtime_history_url=url_for('integrations.kubernetes_runtime_history', cluster_id=cluster.id), runtime_history_endpoint='integrations.kubernetes_runtime_history', runtime_history_route_args={'cluster_id': cluster.id}, runtime_history_detail_url=url_for('integrations.kubernetes_detail', cluster_id=cluster.id), runtime_history_detail_endpoint='integrations.kubernetes_detail', provider_label='Kubernetes', runtime_history_oob=true %}
+    {% with runtime_history=history, runtime_history_id='kubernetes-runtime-history', runtime_history_loading_id='kubernetes-history-loading', runtime_history_url=url_for('integrations.kubernetes_runtime_history', cluster_id=cluster.id), runtime_history_endpoint='integrations.kubernetes_runtime_history', runtime_history_route_args={'cluster_id': cluster.id}, runtime_history_detail_url=url_for('integrations.kubernetes_detail', cluster_id=cluster.id), runtime_history_detail_endpoint='integrations.kubernetes_detail', runtime_history_filters_enabled=true, provider_label='Kubernetes', runtime_history_oob=true %}
         {% include 'integrations/partials/_runtime_history.html' %}
     {% endwith %}
 {% endif %}

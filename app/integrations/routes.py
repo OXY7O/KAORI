@@ -128,6 +128,9 @@ def _kubernetes_detail_context(
             str(connection.id),
             page=resolved_page,
             per_page=resolved_per_page,
+            trigger_type=request.args.get('history_trigger', '').strip(),
+            health_status=request.args.get('history_health', '').strip(),
+            readiness=request.args.get('history_readiness', '').strip(),
         )
         context['history'] = runtime_history_view(rows, pagination=pagination)
     return context
@@ -355,6 +358,9 @@ def kubernetes_runtime_history(cluster_id: str) -> ResponseReturnValue:
         str(connection.id),
         page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
+        trigger_type=request.args.get('history_trigger', '').strip(),
+        health_status=request.args.get('history_health', '').strip(),
+        readiness=request.args.get('history_readiness', '').strip(),
     )
     return render_template(
         'integrations/partials/_runtime_history.html',
@@ -362,8 +368,12 @@ def kubernetes_runtime_history(cluster_id: str) -> ResponseReturnValue:
         runtime_history_id='kubernetes-runtime-history',
         runtime_history_loading_id='kubernetes-history-loading',
         runtime_history_url=url_for('integrations.kubernetes_runtime_history', cluster_id=cluster_id),
+        runtime_history_endpoint='integrations.kubernetes_runtime_history',
+        runtime_history_route_args={'cluster_id': cluster_id},
+        runtime_history_detail_url=url_for('integrations.kubernetes_detail', cluster_id=cluster_id),
+        runtime_history_detail_endpoint='integrations.kubernetes_detail',
+        runtime_history_filters_enabled=True,
         provider_label='Kubernetes',
-        cluster=connection.cluster,
     )
 
 

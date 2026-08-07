@@ -75,11 +75,28 @@ def paginate_runtime_history(
     *,
     page: int = 1,
     per_page: int = 5,
+    trigger_type: str = '',
+    health_status: str = '',
+    readiness: str = '',
 ) -> tuple[list[IntegrationRuntimeObservation], dict[str, object]]:
+    trigger_filter = _normalized_filter(trigger_type, {'manual', 'scheduled', 'recovery'})
+    health_filter = _normalized_filter(health_status, {'healthy', 'degraded', 'unhealthy'})
+    readiness_filter = _normalized_filter(
+        readiness,
+        {'ready', 'degraded', 'validation_required', 'blocked'},
+    )
+
     query = IntegrationRuntimeObservation.query.filter_by(
         provider=provider,
         instance_id=str(instance_id),
     )
+    if trigger_filter:
+        query = query.filter(IntegrationRuntimeObservation.trigger_type == trigger_filter)
+    if health_filter:
+        query = query.filter(IntegrationRuntimeObservation.health_status == health_filter)
+    if readiness_filter:
+        query = query.filter(IntegrationRuntimeObservation.readiness == readiness_filter)
+
     window = build_pagination_window(
         total_items=query.count(),
         page=page,
@@ -98,4 +115,14 @@ def paginate_runtime_history(
     return rows, {
         **window.as_dict(),
         'allowed_per_page': PER_PAGE_OPTIONS,
+        'filters': {
+            'trigger_type': trigger_filter,
+            'health_status': health_filter,
+            'readiness': readiness_filter,
+        },
     }
+
+
+def _normalized_filter(value: object, allowed: set[str]) -> str:
+    normalized = str(value or '').strip().lower()
+    return normalized if normalized in allowed else ''
