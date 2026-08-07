@@ -101,7 +101,12 @@ def test_kubernetes_actions_are_permission_aware() -> None:
 
     assert "current_user.has_permission('clusters.sync')" in detail
     assert "current_user.has_permission('settings.manage_integrations')" in detail
-    assert "url_for('cluster.list_clusters')" in detail
+    routes = read('app/integrations/routes.py')
+    assert "@integrations_bp.get('/kubernetes')" in routes
+    assert 'def kubernetes() -> ResponseReturnValue:' in routes
+    assert "url_for('integrations.kubernetes')" in detail
+    assert "cluster.list_clusters" not in detail
+    assert 'Back to Registry' in detail
     assert "current_user.has_permission('clusters.sync')" in capability
     assert "current_user.has_permission('clusters.sync')" in runtime
     assert "current_user.has_permission('clusters.manage')" in connection

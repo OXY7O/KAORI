@@ -169,6 +169,10 @@ Source Readiness, Binding Validation, and Effective Resolution are separate evid
 
 Long selectors, source identities, and scope keys use controlled wrapping. Unexpected persistence failures must record sanitized user-facing Activity Audit evidence and preserve the original stack trace with application exception logging.
 
+## Kubernetes Registry Navigation Contract
+
+Kubernetes connection detail pages return to the canonical Kubernetes Integration registry via `integrations.kubernetes`. The legacy `cluster.list_clusters` endpoint is not part of the current cluster blueprint and must not be referenced by active Integration templates. The visible action label is `Back to Registry`, matching the parent workspace and avoiding an invalid Flask URL build at render time.
+
 ## Action Contract
 
 - Test Connection is synchronous and verifies submitted draft settings.
