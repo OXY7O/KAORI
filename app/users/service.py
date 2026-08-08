@@ -14,13 +14,187 @@ from app.common.pagination import (
     positive_int,
 )
 from app.extensions.db import db
-from app.models import AuditEvent, Role, User
+from app.models import AuditEvent, ExternalIdentityLink, IdentityProvider, Role, User
 
 if TYPE_CHECKING:
     from app.users.forms import UserForm
 
 USER_STATUS_OPTIONS = ['all', 'active', 'inactive', 'deleted']
 USER_AUTH_SOURCE_OPTIONS = ['all', 'database', 'ldap', 'sso']
+
+PROVIDER_TYPE_OPTIONS = ['all', 'ldap', 'google_oidc', 'github_oauth']
+PROVIDER_STATE_OPTIONS = ['all', 'enabled', 'disabled']
+
+
+def normalize_provider_filters(args: Mapping[str, str | None]) -> dict[str, str]:
+    provider_type = (args.get('provider_type') or 'all').strip().lower()
+    state = (args.get('state') or 'all').strip().lower()
+    return {
+        'search': (args.get('search') or '').strip(),
+        'provider_type': provider_type if provider_type in PROVIDER_TYPE_OPTIONS else 'all',
+        'state': state if state in PROVIDER_STATE_OPTIONS else 'all',
+    }
+
+
+def _provider_configuration_complete(provider: IdentityProvider) -> bool:
+    if provider.provider_type == 'ldap':
+        return all(
+            str(value or '').strip()
+            for value in (
+                provider.server_uri,
+                provider.base_dn,
+                provider.bind_dn,
+                provider.bind_password_env,
+            )
+        )
+    if provider.provider_type in {'google_oidc', 'github_oauth'}:
+        return all(
+            str(value or '').strip()
+            for value in (provider.oidc_client_id, provider.oidc_client_secret_env)
+        )
+    return False
+
+
+def present_identity_provider(provider: IdentityProvider, *, identity_links: int) -> dict[str, Any]:
+    type_catalog = {
+        'ldap': {'label': 'LDAP / Active Directory', 'short_label': 'LDAP', 'icon': 'network'},
+        'google_oidc': {'label': 'Google OpenID Connect', 'short_label': 'Google OIDC', 'icon': 'chrome'},
+        'github_oauth': {'label': 'GitHub OAuth', 'short_label': 'GitHub OAuth', 'icon': 'github'},
+    }
+    provider_type = type_catalog.get(
+        provider.provider_type,
+        {'label': 'External Provider', 'short_label': 'External', 'icon': 'fingerprint'},
+    )
+    configuration_complete = _provider_configuration_complete(provider)
+
+    if provider.provider_type == 'ldap':
+        access_model = {
+            'label': 'Administrative Provisioning',
+            'description': 'Directory identities are projected into KAORI before authentication.',
+        }
+        credential_reference = provider.bind_password_env or 'Not Configured'
+        connection = provider.server_uri or 'Not Configured'
+        projection = 'Directory Provisioning'
+    elif provider.jit_enabled:
+        access_model = {
+            'label': 'Controlled JIT',
+            'description': 'Approved external identities may create a KAORI account with the configured default role.',
+        }
+        credential_reference = provider.oidc_client_secret_env or 'Not Configured'
+        connection = 'External OAuth / OIDC Application'
+        projection = 'Controlled JIT'
+    else:
+        access_model = {
+            'label': 'Pre-Provisioned SSO',
+            'description': 'Only external identities already linked to a KAORI account may authenticate.',
+        }
+        credential_reference = provider.oidc_client_secret_env or 'Not Configured'
+        connection = 'External OAuth / OIDC Application'
+        projection = 'Pre-Provisioned'
+
+    return {
+        'record': provider,
+        'type': provider_type,
+        'configuration': {
+            'label': 'Configured' if configuration_complete else 'Incomplete',
+            'tone': 'normal' if configuration_complete else 'warning',
+            'icon': 'circle-check' if configuration_complete else 'triangle-alert',
+            'complete': configuration_complete,
+        },
+        'state': {
+            'label': 'Enabled' if provider.enabled else 'Disabled',
+            'tone': 'normal' if provider.enabled else 'unknown',
+            'icon': 'power' if provider.enabled else 'power-off',
+        },
+        'identity_links': int(identity_links or 0),
+        'access_model': access_model,
+        'credential_reference': credential_reference,
+        'connection': connection,
+        'projection': projection,
+        'validation': {
+            'label': 'On Demand',
+            'description': 'Validation runs live and is not stored as durable provider readiness evidence.',
+        },
+    }
+
+
+def build_identity_provider_payload(filters: dict[str, str]) -> dict[str, Any]:
+    all_providers = IdentityProvider.query.order_by(
+        IdentityProvider.provider_type.asc(), IdentityProvider.display_name.asc()
+    ).all()
+    link_count_rows = (
+        db.session.query(ExternalIdentityLink.provider_id, func.count(ExternalIdentityLink.id))
+        .group_by(ExternalIdentityLink.provider_id)
+        .all()
+    )
+    link_counts = {int(provider_id): int(count or 0) for provider_id, count in link_count_rows}
+
+    provider_rows = [
+        present_identity_provider(provider, identity_links=link_counts.get(provider.id, 0))
+        for provider in all_providers
+    ]
+
+    search = filters['search'].lower()
+    if search:
+        provider_rows = [
+            row
+            for row in provider_rows
+            if search
+            in ' '.join(
+                (
+                    row['record'].display_name or '',
+                    row['record'].key or '',
+                    row['type']['label'],
+                    row['access_model']['label'],
+                )
+            ).lower()
+        ]
+    if filters['provider_type'] != 'all':
+        provider_rows = [
+            row for row in provider_rows if row['record'].provider_type == filters['provider_type']
+        ]
+    if filters['state'] == 'enabled':
+        provider_rows = [row for row in provider_rows if row['record'].enabled]
+    elif filters['state'] == 'disabled':
+        provider_rows = [row for row in provider_rows if not row['record'].enabled]
+
+    all_presentations = [
+        present_identity_provider(provider, identity_links=link_counts.get(provider.id, 0))
+        for provider in all_providers
+    ]
+    configured_count = sum(1 for row in all_presentations if row['configuration']['complete'])
+    enabled_count = sum(1 for provider in all_providers if provider.enabled)
+    ldap_count = sum(1 for provider in all_providers if provider.provider_type == 'ldap')
+    sso_count = len(all_providers) - ldap_count
+    identity_links = sum(link_counts.values())
+    ldap_provider_ids = {provider.id for provider in all_providers if provider.provider_type == 'ldap'}
+    ldap_identity_links = sum(count for provider_id, count in link_counts.items() if provider_id in ldap_provider_ids)
+
+    if not all_providers:
+        posture_label, posture_tone = 'Not Configured', 'unknown'
+    elif configured_count < len(all_providers):
+        posture_label, posture_tone = 'Review Required', 'warning'
+    else:
+        posture_label, posture_tone = 'Configured', 'normal'
+
+    return {
+        'provider_rows': provider_rows,
+        'summary': {
+            'total': len(all_providers),
+            'configured': configured_count,
+            'enabled': enabled_count,
+            'ldap': ldap_count,
+            'sso': sso_count,
+            'identity_links': identity_links,
+            'ldap_identity_links': ldap_identity_links,
+            'matching': len(provider_rows),
+            'posture_label': posture_label,
+            'posture_tone': posture_tone,
+        },
+        'filters': filters,
+        'provider_type_options': PROVIDER_TYPE_OPTIONS,
+        'provider_state_options': PROVIDER_STATE_OPTIONS,
+    }
 
 
 def normalize_optional_text(value: str | None) -> str | None:

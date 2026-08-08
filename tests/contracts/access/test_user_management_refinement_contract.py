@@ -120,7 +120,7 @@ def test_user_delete_uses_shared_destructive_confirmation_component() -> None:
 def test_user_management_keeps_dual_audit_ledger_until_shared_audit_consumers_are_migrated() -> None:
     service = read('app/users/service.py')
     readme = read('app/users/README.md')
-    assert 'from app.models import AuditEvent, Role, User' in service
+    assert 'AuditEvent' in service and 'Role' in service and 'User' in service
     assert 'def record_admin_event(' in service
     assert 'Legacy AuditEvent Boundary' in readme
     assert 'must not be removed from User Management in isolation' in readme
@@ -161,7 +161,7 @@ def test_access_main_right_rails_are_sticky_with_shared_desktop_offset() -> None
     required = {
         'app/templates/users/form.html': 2,
         'app/templates/users/reset_password.html': 1,
-        'app/templates/users/providers/index.html': 1,
+        'app/templates/users/providers/partials/_index_guidance.html': 1,
         'app/templates/users/providers/partials/_provider_guidance.html': 1,
         'app/templates/users/external_identities.html': 1,
         'app/templates/access/roles/index.html': 1,

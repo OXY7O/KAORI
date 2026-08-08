@@ -22,21 +22,20 @@
                         </div>
                     {% endcall %}
                 </div>
-                <div class="{{ page_hero.aside_classes() }}">
-                    <div class="{{ page_hero.context_panel_classes() }}">
-                        <div>
-                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Configuration Sequence</p>
-                            <p class="mt-2 text-sm font-semibold leading-6 text-brand-foreground">
-                                Choose provider, configure its dedicated fields, save while disabled, validate, then enable authentication.
-                            </p>
-                        </div>
-                        <a href="{{ url_for('users.providers') }}"
-                           class="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-brand-surface-strong px-4 text-sm font-semibold text-brand-foreground transition hover:bg-brand-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
-                            <i data-lucide="arrow-left" class="h-4 w-4"></i>
-                            Back to Providers
-                        </a>
-                    </div>
-                </div>
+                {{ page_hero.context_card(
+                    'Identity Provider Configuration',
+                    'Authentication Source',
+                    'Configuration Scope',
+                    ('Enabled' if provider and provider.enabled else ('Disabled' if provider else 'Draft')),
+                    ('normal' if provider and provider.enabled else 'unknown'),
+                    [
+                        ('settings-2', 'Mode', 'Edit' if provider else 'Add', 'Administrative configuration'),
+                        ('key-round', 'Credential Owner', 'Runtime Environment', 'Secret values stay external')
+                    ],
+                    'Back to Providers',
+                    url_for('users.providers'),
+                    action_icon='arrow-left'
+                ) }}
             </div>
         </section>
         <form method="post"

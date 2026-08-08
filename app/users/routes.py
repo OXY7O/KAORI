@@ -31,6 +31,7 @@ from app.users.notifications import user_management_feedback
 from app.users.provider_forms import identity_provider_configuration_from_form
 from app.users.service import (
     assign_user_form_choices,
+    build_identity_provider_payload,
     build_user_identity_context,
     build_users_payload,
     can_activate_user,
@@ -41,6 +42,7 @@ from app.users.service import (
     can_reset_user_password,
     can_restore_user,
     create_or_update_user,
+    normalize_provider_filters,
     normalize_user_filters,
     lock_active_super_admin_boundary,
     record_admin_event,
@@ -373,10 +375,11 @@ def delete(user_id: int):
 @bp.route('/providers', methods=['GET'])
 @permission_required('users.manage')
 def providers():
-    items = IdentityProvider.query.order_by(
-        IdentityProvider.provider_type.asc(), IdentityProvider.display_name.asc()
-    ).all()
-    return render_template('users/providers/index.html', providers=items)
+    filters = normalize_provider_filters(request.args.to_dict())
+    payload = build_identity_provider_payload(filters)
+    if request.headers.get('HX-Request') == 'true':
+        return render_template('users/providers/partials/_registry.html', **payload)
+    return render_template('users/providers/index.html', **payload)
 
 
 @bp.route('/providers/new', methods=['GET', 'POST'])
