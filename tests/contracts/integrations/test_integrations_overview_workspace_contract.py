@@ -60,6 +60,8 @@ def test_runtime_records_use_inventory_table_and_shared_modal_details() -> None:
 
     assert 'components/table.html' in runtime
     assert 'table-fixed' in runtime
+    assert '<col class="w-[10%]">' in runtime
+    assert 'table_ui.cell_classes(true) }} whitespace-nowrap' in runtime
     assert "table_ui.table_classes('min-w-[78rem]')" not in runtime
     assert 'record_actions.view_more(' in runtime
     assert "role='runtime-overview'" in runtime

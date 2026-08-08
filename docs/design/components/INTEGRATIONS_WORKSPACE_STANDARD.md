@@ -60,6 +60,9 @@ Coverage status is not provider runtime health. `Covered`, `Uncovered`, missing 
 
 ## Runtime Overview Contract
 
+
+- Integration Runtime Overview reserves a dedicated action column wide enough for the canonical shared `View More` control; do not compress the action column until the button clips or overlaps the table boundary.
+- Runtime Observation `Diagnostic Review` presents status first, technical evidence in a bounded neutral evidence surface, and `Recommended Action` as one shared KAORI guidance surface. Failed/blocked provider observations must not use a bare left-border recommendation treatment or provider-specific remediation styling.
 Runtime Overview separates:
 
 ```text
@@ -400,7 +403,7 @@ Kubernetes, Prometheus, Alertmanager, Runtime Observations, and Integration Runt
 
 Before final lock, Integrations use the following canonical composition rules:
 
-- **Configuration** — Prometheus and Alertmanager render one shared horizontal `Configuration Decision` surface above a full-width configuration form. Persistent Configuration Decision side rails are prohibited. The shared decision surface owns current contract facts, change impact, `Configure → Validate → Observe → Resolve`, and the provider consumer boundary.
+- **Configuration** — Prometheus and Alertmanager use one shared `Configuration Decision` side panel beside the primary configuration form. Configuration is the deliberate exception to the full-width decision pattern because its content is compact guidance while the form is the active working surface. The shared panel owns current contract facts, change impact, the `Configure → Validate → Observe → Resolve` flow, and the provider consumer boundary. Use the canonical 25rem/27rem desktop rail; do not duplicate provider-specific side-panel markup.
 - **Provider workspace tabs** — Prometheus and Alertmanager use `integration_workspace_tabs.js` as the shared tab-state controller. Page-local copies of URL/hash synchronization, keyboard navigation, and `moveTab()` logic are prohibited.
 - **Runtime Observation modal** — the content macro must call `_record_detail_modal.html` with `size='standard'`; it must not own a second standalone `<dialog>` shell. Diagnostic detail is shown once under `Diagnostic Review`; only a non-duplicative `standalone_message` may appear above it. Lifecycle and capability evidence remain optional dedicated boundaries.
 - **Integration Runtime Overview** — runtime records use a full-width fixed-layout KAORI table and the shared native `View More` modal. Inline `View More / Hide Details` expansion is prohibited for runtime record detail.

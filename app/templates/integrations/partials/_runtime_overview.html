@@ -102,12 +102,12 @@
         <div class="overflow-hidden">
             <table class="{{ table_ui.table_classes() }} table-fixed">
                 <colgroup>
-                    <col class="w-[28%]">
-                    <col class="w-[15%]">
-                    <col class="w-[15%]">
-                    <col class="w-[20%]">
-                    <col class="w-[15%]">
-                    <col class="w-[7%]">
+                    <col class="w-[27%]">
+                    <col class="w-[14%]">
+                    <col class="w-[14%]">
+                    <col class="w-[18%]">
+                    <col class="w-[17%]">
+                    <col class="w-[10%]">
                 </colgroup>
                 <caption class="sr-only">Integration runtime records for {{ runtime_scope_label }}.</caption>
                 <thead class="{{ table_ui.head_classes() }}">
@@ -154,7 +154,7 @@
                                 <p class="text-sm font-semibold text-content-primary">{{ row.observed_at_display }}</p>
                                 <p class="mt-1 text-xs text-content-muted">{{ row.latency_display or 'Latency unavailable' }}</p>
                             </td>
-                            <td class="{{ table_ui.cell_classes(true) }}">
+                            <td class="{{ table_ui.cell_classes(true) }} whitespace-nowrap">
                                 {{ record_actions.view_more(
                                     detail_target_id,
                                     role='runtime-overview',

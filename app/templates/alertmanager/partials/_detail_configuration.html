@@ -12,22 +12,8 @@
 {% set deployment_label = (instance.deployment_type or 'external_managed')|replace('_', ' ')|title %}
 
 <div id="alertmanager-configuration-workspace" class="space-y-4 font-sans" data-kaori-alertmanager-configuration-v2>
-    {{ configuration_decision.render(
-        'Alertmanager Configuration Decision',
-        'Review the saved alert-source contract, readiness impact, and controlled path before changing endpoint or access settings.',
-        readiness,
-        [
-            ('Canonical Source', instance.name, 'Reusable provider identity'),
-            ('API Contract', 'Alertmanager API v2', instance.detected_version or 'Runtime version not observed'),
-            ('Deployment Context', deployment_label, 'Ownership and lifecycle context'),
-            ('Scope Bindings', bindings|length, 'Governed consumer contexts')
-        ],
-        'Saving endpoint, authentication, TLS, or ownership settings resets readiness until Full Validation rebuilds API and capability evidence.',
-        'Consumer Boundary',
-        'Alertmanager remains authoritative for routing, grouping, inhibition, silences, and delivery. KAORI consumes validated API evidence and governed bindings.'
-    ) }}
+    <div class="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_25rem] 2xl:grid-cols-[minmax(0,1fr)_27rem]">
 
-    <div>
         <form id="alertmanager-instance-form"
               method="post"
               action="{{ url_for('alertmanager.instance_detail', instance_id=instance.id) }}#configuration"
@@ -83,7 +69,20 @@
             </section>
         </form>
 
-
+        {{ configuration_decision.side_panel(
+            'Alertmanager Configuration Decision',
+            'Current connection contract and the controlled path back to operational alert-management use.',
+            readiness,
+            [
+                ('API Contract', 'Alertmanager API v2', 'Canonical provider interface'),
+                ('Detected Runtime', instance.detected_version or 'Not Observed', 'Latest validated provider version'),
+                ('Compatibility Profile', instance.compatibility_profile or 'Validation Required', 'Validated compatibility contract'),
+                ('Capability Profile', instance.capability_profile or 'Validation Required', 'Validated alert-management capabilities')
+            ],
+            'Saving endpoint, authentication, TLS, or ownership settings resets readiness until Full Validation rebuilds API and capability evidence.',
+            'Consumer Boundary',
+            'Alertmanager remains authoritative for routing, grouping, inhibition, silences, and delivery. KAORI consumes validated API evidence and governed bindings.'
+        ) }}
     </div>
 </div>
 {% include 'components/operation_feedback_oob.html' %}

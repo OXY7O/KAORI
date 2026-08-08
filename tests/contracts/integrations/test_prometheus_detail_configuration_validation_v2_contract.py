@@ -8,15 +8,15 @@ PROMQL_REGISTRY = ROOT / 'app/templates/prometheus/partials/_capability_registry
 PROMETHEUS_ROUTES = ROOT / 'app/prometheus/routes.py'
 
 
-def test_configuration_uses_shared_horizontal_decision_and_full_width_form():
+def test_configuration_uses_shared_side_decision_and_primary_form_workspace():
     text = CONFIG.read_text()
     shared = (ROOT / 'app/templates/integrations/components/_configuration_decision.html').read_text()
-    assert 'configuration_decision.render(' in text
+    assert 'configuration_decision.side_panel(' in text
     assert 'Prometheus Configuration Decision' in text
-    assert 'data-kaori-configuration-decision' in shared
+    assert 'data-kaori-configuration-decision-side' in shared
     assert 'Controlled Flow' in shared
-    assert "xl:grid-cols-[minmax(0,1fr)_25rem]" not in text
-    assert 'xl:sticky' not in text
+    assert "xl:grid-cols-[minmax(0,1fr)_25rem]" in text
+    assert 'xl:sticky xl:top-4' in shared
     assert 'Test Connection' in text
     assert 'Save Changes' in text
 

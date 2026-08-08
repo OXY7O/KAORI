@@ -2,63 +2,84 @@
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 
 {#
-  Shared horizontal configuration-decision surface for provider detail pages.
-  Provider templates own values; this component owns information hierarchy,
-  spacing, surface tokens, and the Configure -> Validate -> Observe -> Resolve
-  lifecycle contract.
+  Shared side configuration-decision panel for provider detail pages.
+  Configuration is the exception to the full-width decision pattern because the
+  form remains the primary working area while this panel provides compact
+  contract, impact, controlled-flow, and consumer-boundary guidance.
 #}
-{% macro render(title, description, readiness, metrics, change_impact, boundary_title, boundary_copy) -%}
-<section class="{{ integration_ui.section_shell_classes() }}" data-kaori-configuration-decision>
-    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
-        <div class="flex min-w-0 items-start gap-3">
-            {{ integration_ui.palette_icon('gauge', 'brand', size='md') }}
-            <div class="min-w-0">
-                <h2 class="text-base font-semibold text-content-primary">{{ title }}</h2>
-                <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">{{ description }}</p>
+{% macro side_panel(title, description, readiness, metrics, change_impact, boundary_title, boundary_copy) -%}
+<aside class="{{ integration_ui.section_shell_classes() }} self-start xl:sticky xl:top-4"
+       data-kaori-configuration-decision
+       data-kaori-configuration-decision-side>
+    <header class="border-b border-outline-subtle px-4 py-4 xl:px-5">
+        <div class="flex items-start justify-between gap-3">
+            <div class="flex min-w-0 items-start gap-3">
+                {{ integration_ui.palette_icon('gauge', 'brand', size='md') }}
+                <div class="min-w-0">
+                    <h3 class="text-sm font-semibold text-content-primary">{{ title }}</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ description }}</p>
+                </div>
             </div>
+            <div class="shrink-0">{{ integration_status(readiness, readiness|replace('_', ' ')|title, display='text') }}</div>
         </div>
-        <div class="shrink-0">{{ integration_status(readiness, readiness|replace('_', ' ')|title, display='text') }}</div>
     </header>
 
-    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
-        {% for label, value, helper in metrics %}
-            <article class="bg-surface-card px-5 py-4">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
-                <p class="mt-2 text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</p>
-            </article>
-        {% endfor %}
-    </div>
+    <section class="border-b border-outline-subtle px-4 py-4 xl:px-5">
+        <h4 class="text-xs font-semibold uppercase tracking-wide text-content-muted">Connection Contract</h4>
+        <dl class="mt-3 divide-y divide-outline-subtle rounded-lg border border-outline-subtle">
+            {% for label, value, helper in metrics %}
+                <div class="px-3.5 py-2.5">
+                    <div class="flex items-start justify-between gap-4">
+                        <dt class="text-xs text-content-secondary">{{ label }}</dt>
+                        <dd class="max-w-[58%] text-right text-xs font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</dd>
+                    </div>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                </div>
+            {% endfor %}
+        </dl>
+    </section>
 
-    <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle lg:grid-cols-3">
-        <section class="bg-surface-subtle px-5 py-4">
-            <div class="flex items-start gap-3">
-                {{ integration_ui.palette_icon('refresh-ccw', 'warning', size='sm') }}
-                <div class="min-w-0">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Change Impact</p>
-                    <p class="mt-2 text-sm leading-6 text-content-secondary">{{ change_impact }}</p>
-                </div>
+    <section class="border-b border-outline-subtle px-4 py-4 xl:px-5">
+        <div class="flex items-start gap-3">
+            {{ integration_ui.palette_icon('refresh-ccw', 'brand', size='sm') }}
+            <div class="min-w-0">
+                <h4 class="text-sm font-semibold text-content-primary">Change Impact</h4>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ change_impact }}</p>
             </div>
-        </section>
-        <section class="bg-surface-subtle px-5 py-4">
-            <div class="flex items-start gap-3">
-                {{ integration_ui.palette_icon('route', 'brand', size='sm') }}
-                <div class="min-w-0">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Controlled Flow</p>
-                    <p class="mt-2 text-sm font-semibold text-content-primary">Configure → Validate → Observe → Resolve</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Each stage owns separate evidence and must not be inferred from the previous stage.</p>
+        </div>
+    </section>
+
+    <section class="border-b border-outline-subtle px-4 py-4 xl:px-5">
+        <h4 class="text-sm font-semibold text-content-primary">Controlled Flow</h4>
+        <div class="mt-3 space-y-0">
+            {% for step_title, copy in [
+                ('Configure', 'Save identity, endpoint, authentication, and trust settings.'),
+                ('Validate', 'Rebuild compatibility and capability readiness evidence.'),
+                ('Observe', 'Refresh lightweight runtime health and latency evidence.'),
+                ('Resolve', 'Confirm governed binding and consumer eligibility.')
+            ] %}
+                <div class="relative flex gap-3 {% if not loop.last %}pb-4{% endif %}">
+                    <div class="relative flex w-7 shrink-0 justify-center">
+                        {% if not loop.last %}<span class="absolute top-7 bottom-[-0.5rem] left-1/2 w-px -translate-x-1/2 bg-outline-subtle"></span>{% endif %}
+                        <span class="relative z-10 inline-flex h-7 w-7 items-center justify-center rounded-full border border-outline-default bg-surface-card text-xs font-semibold text-content-primary">{{ loop.index }}</span>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-xs font-semibold text-content-primary">{{ step_title }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ copy }}</p>
+                    </div>
                 </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="px-4 py-4 xl:px-5">
+        <div class="flex items-start gap-3">
+            {{ integration_ui.palette_icon('shield-check', 'brand', size='sm') }}
+            <div class="min-w-0">
+                <h4 class="text-sm font-semibold text-content-primary">{{ boundary_title }}</h4>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ boundary_copy }}</p>
             </div>
-        </section>
-        <section class="bg-surface-subtle px-5 py-4">
-            <div class="flex items-start gap-3">
-                {{ integration_ui.palette_icon('shield-check', 'brand', size='sm') }}
-                <div class="min-w-0">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ boundary_title }}</p>
-                    <p class="mt-2 text-sm leading-6 text-content-secondary">{{ boundary_copy }}</p>
-                </div>
-            </div>
-        </section>
-    </div>
-</section>
+        </div>
+    </section>
+</aside>
 {%- endmacro %}

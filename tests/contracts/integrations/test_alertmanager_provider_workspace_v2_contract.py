@@ -16,16 +16,16 @@ def test_alertmanager_detail_uses_provider_v2_tabs_without_malformed_alpine_mark
     assert "scrollIntoView({ behavior: 'smooth', block: 'start' })); } } }" not in content
 
 
-def test_alertmanager_configuration_uses_horizontal_shared_decision_and_full_width_form():
+def test_alertmanager_configuration_uses_shared_side_decision_and_primary_form_workspace():
     content = read('app/templates/alertmanager/partials/_detail_configuration.html')
     shared = read('app/templates/integrations/components/_configuration_decision.html')
-    assert 'configuration_decision.render(' in content
+    assert 'configuration_decision.side_panel(' in content
     assert 'Alertmanager Configuration Decision' in content
     assert 'Alertmanager API v2' in content
     assert 'Controlled Flow' in shared
-    assert 'data-kaori-configuration-decision' in shared
-    assert 'xl:sticky' not in content
-    assert 'grid-cols-[minmax(0,1fr)_25rem]' not in content
+    assert 'data-kaori-configuration-decision-side' in shared
+    assert 'grid-cols-[minmax(0,1fr)_25rem]' in content
+    assert 'xl:sticky xl:top-4' in shared
 
 
 def test_alertmanager_validation_uses_kubernetes_style_capability_readiness_and_registry():

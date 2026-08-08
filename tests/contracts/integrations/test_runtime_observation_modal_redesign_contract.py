@@ -62,6 +62,10 @@ def test_runtime_observation_modal_is_decision_first_and_shared() -> None:
     assert 'data-kaori-runtime-observation-diagnostic-review' in modal
     assert 'Diagnostic Review' in modal
     assert 'Recommended Action' in modal
+    assert 'data-kaori-diagnostic-recommendation' in modal
+    assert 'data-kaori-runtime-diagnostic-evidence' in modal
+    assert 'Technical Evidence' in modal
+    assert 'border-l-2 border-brand-outline' not in modal
     assert 'h-[calc(100dvh' not in modal
     assert 'w-[min(68rem' not in modal
     assert '<details' not in modal

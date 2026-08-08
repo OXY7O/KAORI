@@ -22,15 +22,15 @@ def test_shared_record_detail_and_action_contract_is_canonical() -> None:
     assert 'row.standalone_message' in runtime_modal
 
 
-def test_provider_configuration_uses_shared_horizontal_decision() -> None:
+def test_provider_configuration_uses_shared_side_decision() -> None:
     shared = read('app/templates/integrations/components/_configuration_decision.html')
-    assert 'data-kaori-configuration-decision' in shared
-    assert 'Configure → Validate → Observe → Resolve' in shared
+    assert 'data-kaori-configuration-decision-side' in shared
+    assert 'Controlled Flow' in shared
+    assert 'xl:sticky xl:top-4' in shared
     for provider in ('prometheus', 'alertmanager'):
         source = read(f'app/templates/{provider}/partials/_detail_configuration.html')
-        assert 'configuration_decision.render(' in source
-        assert 'xl:sticky' not in source
-        assert 'grid-cols-[minmax(0,1fr)_25rem]' not in source
+        assert 'configuration_decision.side_panel(' in source
+        assert 'grid-cols-[minmax(0,1fr)_25rem]' in source
 
 
 def test_provider_tabs_share_one_controller() -> None:
@@ -49,6 +49,8 @@ def test_runtime_overview_uses_modal_and_registry_tables_avoid_forced_scroll() -
     assert "role='runtime-overview'" in runtime
     assert 'expandable_row' not in runtime
     assert 'table-fixed' in runtime
+    assert '<col class="w-[10%]">' in runtime
+    assert 'table_ui.cell_classes(true) }} whitespace-nowrap' in runtime
     assert "table_ui.table_classes('min-w-[78rem]')" not in runtime
     assert 'record_detail_modal.render(' in modal
 

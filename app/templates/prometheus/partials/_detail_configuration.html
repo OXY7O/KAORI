@@ -12,22 +12,8 @@
 {% set readiness = instance.readiness_status or 'validation_required' %}
 
 <div id="prometheus-configuration-workspace" class="space-y-4 font-sans" data-kaori-prometheus-configuration-v2>
-    {{ configuration_decision.render(
-        'Prometheus Configuration Decision',
-        'Review the saved source contract, readiness impact, and controlled path before changing endpoint or access settings.',
-        readiness,
-        [
-            ('Canonical Source', instance.name, 'Reusable provider identity'),
-            ('Endpoint Product', endpoint_product_label, instance.detected_version or 'Version not observed'),
-            ('Query Profile', instance.query_profile or 'Validation Required', 'PromQL contract selected by Full Validation'),
-            ('Scope Bindings', bindings|length, 'Governed consumer contexts')
-        ],
-        'Saving endpoint, access, trust, or compatibility settings resets readiness to Validation Required. Test Connection proves transport only.',
-        'Consumer Boundary',
-        'Prometheus remains authoritative for metric collection and query execution. KAORI owns source selection, validation evidence, bindings, and operational interpretation.'
-    ) }}
+    <div class="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_25rem] 2xl:grid-cols-[minmax(0,1fr)_27rem]">
 
-    <div>
         <form id="prometheus-instance-form"
               method="post"
               action="{{ url_for('prometheus.instance_detail', instance_id=instance.id) }}#configuration"
@@ -196,7 +182,20 @@
             </section>
         </form>
 
-
+        {{ configuration_decision.side_panel(
+            'Prometheus Configuration Decision',
+            'Current source contract and the controlled path back to operational Analytics use.',
+            readiness,
+            [
+                ('Canonical Source', instance.name, 'Reusable provider identity'),
+                ('Endpoint Product', endpoint_product_label, instance.detected_version or 'Version not observed'),
+                ('Query Profile', instance.query_profile or 'Validation Required', 'PromQL contract selected by Full Validation'),
+                ('Scope Bindings', bindings|length, 'Governed consumer contexts')
+            ],
+            'Saving endpoint, access, trust, or compatibility settings resets readiness to Validation Required. Test Connection proves transport only.',
+            'Consumer Boundary',
+            'Prometheus remains authoritative for metric collection and query execution. KAORI owns source selection, validation evidence, bindings, and operational interpretation.'
+        ) }}
     </div>
 </div>
 {% include 'components/operation_feedback_oob.html' %}
