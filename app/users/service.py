@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import and_, case, func, or_
+from sqlalchemy import and_, case, func, or_, select
 
 from app.auth.providers.catalog import provider_types_for_family
 from app.common.pagination import (
@@ -125,21 +125,39 @@ def build_users_payload(filters: dict[str, Any], actor: User | None = None) -> d
     ldap_users = int(source_counts.get('ldap', 0))
     google_users = int(source_counts.get('google_oidc', 0))
     github_users = int(source_counts.get('github_oauth', 0))
+    deleted_users = User.query.filter(User.deleted_at.is_not(None)).count()
+    roles = Role.query.order_by(Role.is_active.desc(), Role.display_name.asc()).all()
+    user_presentations = {user.id: present_user_record(user) for user in users}
+    user_identity_contexts = {user.id: build_user_identity_context(user) for user in users}
+
+    can_manage_users = bool(actor and actor.has_permission('users.manage'))
+    active_users = int(population.active or 0)
+    inactive_users = int(population.inactive or 0)
+    active_super_admins = int(population.active_super_admins or 0)
+    sso_users = google_users + github_users
+    external_users = ldap_users + sso_users
+    identity_source_count = sum(1 for count in (local_users, ldap_users, sso_users) if count > 0)
+    posture_requires_review = active_users == 0 or active_super_admins == 0
 
     return {
         'users': users,
-        'roles': Role.query.filter_by(is_active=True).order_by(Role.display_name.asc()).all(),
+        'roles': roles,
         'summary': {
             'total': int(population.total or 0),
-            'active': int(population.active or 0),
-            'inactive': int(population.inactive or 0),
+            'managed': int(population.total or 0) + int(deleted_users or 0),
+            'active': active_users,
+            'inactive': inactive_users,
+            'deleted': int(deleted_users or 0),
             'local': local_users,
             'ldap': ldap_users,
             'google': google_users,
             'github': github_users,
-            'sso': google_users + github_users,
-            'external': ldap_users + google_users + github_users,
-            'active_super_admins': int(population.active_super_admins or 0),
+            'sso': sso_users,
+            'external': external_users,
+            'identity_source_count': identity_source_count,
+            'active_super_admins': active_super_admins,
+            'posture_label': 'Review Required' if posture_requires_review else 'Ready',
+            'posture_tone': 'warning' if posture_requires_review else 'normal',
         },
         'filters': {**filters, 'page': page},
         'pagination': pagination.as_dict(),
@@ -147,7 +165,70 @@ def build_users_payload(filters: dict[str, Any], actor: User | None = None) -> d
         'status_options': USER_STATUS_OPTIONS,
         'auth_source_options': USER_AUTH_SOURCE_OPTIONS,
         'user_actions': build_user_action_policies(actor, users),
+        'user_presentations': user_presentations,
+        'user_identity_contexts': user_identity_contexts,
+        'can_manage_users': can_manage_users,
+        'pagination_query': {
+            'per_page': pagination.per_page,
+            'search': filters['search'],
+            'status': filters['status'],
+            'auth_source': filters['auth_source'],
+            'role_id': filters['role_id'] or 'all',
+        },
     }
+
+
+def present_user_record(user: User) -> dict[str, dict[str, str]]:
+    """Return semantic, presentation-only labels for the User Directory."""
+
+    if user.deleted_at is not None:
+        lifecycle = {'label': 'Deleted', 'tone': 'unknown', 'icon': 'archive'}
+    elif user.account_is_active:
+        lifecycle = {'label': 'Active', 'tone': 'normal', 'icon': 'circle-check'}
+    else:
+        lifecycle = {'label': 'Inactive', 'tone': 'unknown', 'icon': 'pause-circle'}
+
+    sources = {
+        'database': {'label': 'Local Database', 'icon': 'database'},
+        'ldap': {'label': 'LDAP', 'icon': 'building-2'},
+        'google_oidc': {'label': 'Google OIDC', 'icon': 'chrome'},
+        'github_oauth': {'label': 'GitHub OAuth', 'icon': 'github'},
+    }
+    source = sources.get(user.auth_source, {'label': 'External Provider', 'icon': 'key-round'})
+
+    role_active = bool(user.role_record and user.role_record.is_active)
+    role = {
+        'label': user.role_display_name,
+        'state_label': 'Active' if role_active else 'Inactive',
+        'state_tone': 'normal' if role_active else 'warning',
+    }
+
+    return {'lifecycle': lifecycle, 'source': source, 'role': role}
+
+
+def lock_active_super_admin_boundary(target: User) -> None:
+    """Serialize lifecycle mutations that could remove active super-admin authority.
+
+    Presentation checks remain lock-free. Mutation routes call this immediately
+    before the final guardrail check so concurrent deactivate/delete/demotion
+    requests cannot each observe a stale active-super-admin count.
+    """
+
+    if not target.is_super_admin or not target.account_is_active or target.deleted_at is not None:
+        return
+
+    statement = (
+        select(User)
+        .where(
+            User.is_super_admin.is_(True),
+            User.account_is_active.is_(True),
+            User.deleted_at.is_(None),
+        )
+        .order_by(User.id.asc())
+        .with_for_update()
+    )
+    db.session.execute(statement).scalars().all()
+    db.session.refresh(target)
 
 
 def assign_user_form_choices(form: UserForm, *, include_admin_roles: bool = True) -> None:
@@ -566,7 +647,9 @@ def soft_delete_user(target: User) -> None:
 def restore_user(target: User) -> None:
     now = datetime.now(UTC)
     target.deleted_at = None
-    target.account_is_active = True
+    # Restore and Activate are separate administrative decisions. A restored
+    # account returns to inactive administration until activation is explicit.
+    target.account_is_active = False
     target.updated_at = now
 
 

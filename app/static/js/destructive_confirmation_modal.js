@@ -27,7 +27,12 @@
       : cluster?.value?.trim();
     const namespaceLabel = namespace?.value?.trim();
     const scope = modal.querySelector('[data-destructive-target-scope]');
-    if (scope) scope.textContent = [clusterLabel, namespaceLabel].filter(Boolean).join(' / ') || 'Live Kubernetes target';
+    if (scope) {
+      scope.textContent = button.dataset.destructiveScope
+        || [clusterLabel, namespaceLabel].filter(Boolean).join(' / ')
+        || scope.textContent
+        || 'Operational target';
+    }
     modal.classList.remove('hidden');
     modal.classList.add('flex');
     modal.setAttribute('aria-hidden', 'false');
@@ -62,7 +67,8 @@
     const confirm = event.target.closest('[data-destructive-modal-confirm]');
     if (confirm) {
       const modal = confirm.closest('[data-destructive-confirmation-modal]');
-      const submit = document.getElementById(confirm.dataset.submitButtonId || '');
+      const submitButtonId = opener?.dataset.destructiveSubmitButtonId || confirm.dataset.submitButtonId || '';
+      const submit = document.getElementById(submitButtonId);
       closeModal(modal);
       submit?.click();
     }

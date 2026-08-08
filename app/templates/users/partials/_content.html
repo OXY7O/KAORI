@@ -1,30 +1,26 @@
+{% import "components/loading_bar.html" as loading_bar %}
 <div id="users-page-content" class="space-y-6">
     {% include "users/partials/_summary_cards.html" %}
-    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-        <header class="border-b border-outline-subtle px-5 py-4">
+    <section id="user-directory" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
             <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div class="flex items-center gap-3">
-                    <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                        <i data-lucide="users" class="h-5 w-5"></i>
+                <div class="flex min-w-0 items-center gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="users" class="h-5 w-5" aria-hidden="true"></i>
                     </span>
-                    <div>
+                    <div class="min-w-0">
                         <h2 class="text-base font-semibold text-content-primary">User Directory</h2>
-                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Search, filter, and administer identity records from one directory.</p>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Search account lifecycle, identity source, role assignment, and administrative state.</p>
                     </div>
                 </div>
-                <div class="flex flex-wrap items-center gap-2 text-xs text-content-muted">
-                    <span class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 font-semibold">
-                        <i data-lucide="database" class="h-3.5 w-3.5 text-kaori-primary"></i>
-                        {{ pagination.total_items }} Matching Users
-                    </span>
-                </div>
+                <span class="inline-flex min-h-8 shrink-0 items-center gap-1.5 self-start rounded-md border border-outline-default bg-surface-subtle px-3 text-xs font-semibold text-content-secondary lg:self-auto">
+                    <i data-lucide="scan-search" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>
+                    {{ pagination.total_items }} Matching {{ 'User' if pagination.total_items == 1 else 'Users' }}
+                </span>
             </div>
-            <div id="users-refresh-indicator"
-                 class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
-                <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
-            </div>
+            {{ loading_bar.render('users-refresh-indicator', label='Refreshing User Directory') }}
         </header>
-        <div class="border-b border-outline-subtle bg-surface-hover px-5 py-4">
+        <div class="border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6">
             {% include "users/partials/_filters.html" %}
         </div>
         <div id="users-table-content">{% include "users/partials/_table.html" %}</div>

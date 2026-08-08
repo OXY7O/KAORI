@@ -127,3 +127,23 @@ Full administrator configuration is documented in `docs/authentication/IDENTITY_
 ## SSO provider administration
 
 Google and GitHub provider configuration is managed by the Users domain, while browser authentication is owned by Authentication. Controlled SSO JIT requires a non-admin default role and provider-specific allow-list. Persistence remains centralized in `app/models/identity.py`.
+
+## User Management refinement baseline
+
+The User Management review keeps the page open for final Access UI lock while tightening the operational contract:
+
+- Restore and Activate are separate lifecycle decisions. Restore clears `deleted_at` but returns the account to **Inactive**.
+- Deactivate, delete, and super-admin demotion serialize the active-super-admin rows with a database `FOR UPDATE` boundary before the final last-super-admin check.
+- The directory uses shared KAORI loading, filter, table-label, expandable-detail, destructive-confirmation, and pagination contracts.
+- Inactive roles remain visible in the directory filter so operators can locate users assigned to a fail-closed role.
+- User-directory mutations update the hero posture out-of-band so account counts do not remain stale after HTMX actions.
+
+This refinement is not the User Management Final Lock. The page remains open until Access child pages are reviewed independently.
+
+## Legacy AuditEvent Boundary
+
+User Management still writes the legacy `AuditEvent` row in the primary mutation transaction and also emits the Notification-backed operational feedback used by Activity Audit / Notification Center. `AuditEvent` is still consumed by Jobs, TLS Governance, Intelligence, Resolver, Knowledge, and other domains, so it **must not be removed from User Management in isolation**. Consolidation requires a separate cross-domain audit-ledger migration.
+
+## Password Reset Session Boundary
+
+Account deactivation and soft deletion take effect on the next authenticated request because the Flask-Login user loader rejects inactive/deleted users. A Local Database password reset changes the credential immediately, but **existing authenticated sessions are not yet version-invalidated** because KAORI does not currently persist a session/security generation on `User`. This security-hardening decision must be resolved before User Management Final Lock rather than being hidden inside a page-only refinement.

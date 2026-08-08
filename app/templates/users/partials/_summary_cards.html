@@ -1,141 +1,65 @@
+{% import "components/table_label.html" as table_label %}
 <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
     <header class="border-b border-outline-subtle px-5 py-4 lg:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-center gap-3">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="badge-check" class="h-5 w-5"></i>
+                    <i data-lucide="users-round" class="h-5 w-5" aria-hidden="true"></i>
                 </span>
                 <div class="min-w-0">
-                    <h2 class="text-base font-semibold text-content-primary">Identity &amp; Access Overview</h2>
-                    <p class="mt-0.5 text-xs leading-5 text-content-muted">A current view of account lifecycle, credential ownership, and provider-backed identity projections.</p>
+                    <h2 class="text-base font-semibold text-content-primary">Account &amp; Identity Posture</h2>
+                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Current account lifecycle, privileged access, and identity-source ownership.</p>
                 </div>
             </div>
-            <span class="inline-flex h-8 shrink-0 items-center gap-1.5 self-start rounded-lg border border-outline-default bg-surface-subtle px-3 text-xs font-semibold text-content-secondary sm:self-auto">
-                <i data-lucide="users-round" class="h-3.5 w-3.5 text-kaori-primary"></i>
-                {{ summary.total }} Managed Accounts
-            </span>
+            {{ table_label.metadata_label('Lifecycle Governed', icon='shield-check') }}
         </div>
     </header>
+
     <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
-        <article class="flex min-h-[13rem] flex-col bg-surface-card p-5">
-            <div class="flex items-start justify-between gap-3">
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Account Population</p>
-                    <p class="mt-2 text-3xl font-semibold tracking-tight text-content-primary">{{ summary.total }}</p>
+        {% set metrics = [
+            ('circle-check', 'Active Accounts', summary.active, 'Accounts currently allowed to authenticate.', 'bg-status-normal-soft text-status-normal-text'),
+            ('pause-circle', 'Inactive Accounts', summary.inactive, 'Access is paused while the account record remains managed.', 'bg-status-info-soft text-status-info-text'),
+            ('archive', 'Deleted Accounts', summary.deleted, 'Soft-deleted accounts remain recoverable and auditable.', 'bg-status-warning-soft text-status-warning-text'),
+            ('shield-check', 'Super Admins', summary.active_super_admins, 'Active emergency administrative authority.', 'bg-kaori-soft text-kaori-primary')
+        ] %}
+        {% for icon, label, value, description, tone in metrics %}
+            <article class="flex min-h-[11rem] flex-col bg-surface-card p-5">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
+                        <p class="mt-2 truncate text-3xl font-bold tracking-tight text-content-primary">{{ value }}</p>
+                    </div>
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ tone }}">
+                        <i data-lucide="{{ icon }}" class="h-5 w-5" aria-hidden="true"></i>
+                    </span>
                 </div>
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="users" class="h-5 w-5"></i>
-                </span>
-            </div>
-            <p class="mt-3 text-sm leading-6 text-content-muted">All non-deleted KAORI identity records, regardless of the authoritative authentication provider.</p>
-            <div class="mt-auto grid grid-cols-2 gap-2 pt-4">
-                <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 dark:border-emerald-900/60 dark:bg-emerald-950/30">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Active</p>
-                    <p class="mt-0.5 text-lg font-semibold text-emerald-700 dark:text-emerald-300">{{ summary.active }}</p>
-                </div>
-                <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-900/60 dark:bg-amber-950/30">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">Inactive</p>
-                    <p class="mt-0.5 text-lg font-semibold text-amber-700 dark:text-amber-300">{{ summary.inactive }}</p>
-                </div>
-            </div>
-        </article>
-        <article class="flex min-h-[13rem] flex-col bg-surface-card p-5">
-            <div class="flex items-start justify-between gap-3">
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Local Database</p>
-                    <p class="mt-2 text-3xl font-semibold tracking-tight text-content-primary">{{ summary.local }}</p>
-                </div>
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="database" class="h-5 w-5"></i>
-                </span>
-            </div>
-            <p class="mt-3 text-sm leading-6 text-content-muted">Created directly in KAORI. KAORI owns the password hash and the local password-reset workflow.</p>
-            <div class="mt-auto border-t border-dashed border-outline-subtle pt-4">
-                <p class="flex items-center gap-2 text-xs font-semibold text-content-secondary">
-                    <i data-lucide="key-round" class="h-3.5 w-3.5 text-kaori-primary"></i>
-                    Credential Owner: KAORI
-                </p>
-            </div>
-        </article>
-        <article class="flex min-h-[13rem] flex-col bg-surface-card p-5">
-            <div class="flex items-start justify-between gap-3">
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">LDAP Directory</p>
-                    <p class="mt-2 text-3xl font-semibold tracking-tight text-content-primary">{{ summary.ldap }}</p>
-                </div>
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="building-2" class="h-5 w-5"></i>
-                </span>
-            </div>
-            <p class="mt-3 text-sm leading-6 text-content-muted">Provisioned administratively from LDAP or Active Directory. Directory credentials remain external to KAORI.</p>
-            <div class="mt-auto border-t border-dashed border-outline-subtle pt-4">
-                <p class="flex items-center gap-2 text-xs font-semibold text-content-secondary">
-                    <i data-lucide="contact-round" class="h-3.5 w-3.5 text-kaori-primary"></i>
-                    Access Path: Directory Provisioning
-                </p>
-            </div>
-        </article>
-        <article class="flex min-h-[13rem] flex-col bg-surface-card p-5">
-            <div class="flex items-start justify-between gap-3">
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Google &amp; GitHub SSO</p>
-                    <p class="mt-2 text-3xl font-semibold tracking-tight text-content-primary">{{ summary.sso }}</p>
-                </div>
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="log-in" class="h-5 w-5"></i>
-                </span>
-            </div>
-            <p class="mt-3 text-sm leading-6 text-content-muted">Linked identities or controlled JIT projections authenticated by Google OpenID Connect or GitHub OAuth.</p>
-            <div class="mt-auto grid grid-cols-2 gap-2 pt-4">
-                <div class="rounded-lg border border-outline-subtle bg-surface-subtle px-3 py-2">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Google</p>
-                    <p class="mt-0.5 text-lg font-semibold text-content-primary">{{ summary.google }}</p>
-                </div>
-                <div class="rounded-lg border border-outline-subtle bg-surface-subtle px-3 py-2">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">GitHub</p>
-                    <p class="mt-0.5 text-lg font-semibold text-content-primary">{{ summary.github }}</p>
-                </div>
-            </div>
-        </article>
+                <p class="mt-3 text-sm leading-6 text-content-muted">{{ description }}</p>
+            </article>
+        {% endfor %}
     </div>
+
     <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6">
         <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <div class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="shield-check" class="h-4 w-4"></i>
-                </span>
-                <div>
-                    <p class="text-sm font-semibold text-content-primary">Assigned Role</p>
-                    <p class="mt-0.5 text-xs leading-5 text-content-muted">RBAC remains local to KAORI for every identity source.</p>
+            {% set boundaries = [
+                ('database', 'Local Database', summary.local ~ (' Account' if summary.local == 1 else ' Accounts'), 'KAORI owns local credentials and password lifecycle.'),
+                ('building-2', 'LDAP Directory', summary.ldap ~ (' Account' if summary.ldap == 1 else ' Accounts'), 'Directory credentials remain authoritative outside KAORI.'),
+                ('fingerprint', 'SSO Providers', summary.sso ~ (' Account' if summary.sso == 1 else ' Accounts'), 'Google and GitHub identities remain provider-owned.'),
+                ('rotate-ccw', 'Restore Boundary', 'Deleted → Inactive', 'Restore never reactivates access; activation remains explicit.')
+            ] %}
+            {% for icon, title, value, description in boundaries %}
+                <div class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="{{ icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
+                            <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
+                            <p class="text-xs font-semibold text-content-secondary">{{ value }}</p>
+                        </div>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>
+                    </div>
                 </div>
-            </div>
-            <div class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="toggle-right" class="h-4 w-4"></i>
-                </span>
-                <div>
-                    <p class="text-sm font-semibold text-content-primary">Account Lifecycle</p>
-                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Inactive state blocks KAORI access across Local, LDAP, Google, and GitHub.</p>
-                </div>
-            </div>
-            <div class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="shield-alert" class="h-4 w-4"></i>
-                </span>
-                <div>
-                    <p class="text-sm font-semibold text-content-primary">Super Admin Guardrail</p>
-                    <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ summary.active_super_admins }} active Super Admin account{{ '' if summary.active_super_admins == 1 else 's' }} retained for Emergency Access and protected by last-admin safeguards.</p>
-                </div>
-            </div>
-            <div class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="scroll-text" class="h-4 w-4"></i>
-                </span>
-                <div>
-                    <p class="text-sm font-semibold text-content-primary">Activity Audit</p>
-                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Authentication and administrative lifecycle actions are retained for review.</p>
-                </div>
-            </div>
+            {% endfor %}
         </div>
     </div>
 </section>

@@ -1,7 +1,8 @@
+{% import "components/table.html" as table_ui %}
 <form id="users-filter-form"
       method="get"
       action="{{ url_for('users.index') }}"
-      class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:items-end"
+      class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,0.78fr)_minmax(0,0.88fr)_minmax(0,0.88fr)_auto] lg:items-end"
       hx-get="{{ url_for('users.index') }}"
       hx-trigger="submit, change delay:120ms from:select, keyup changed delay:450ms from:input[name='search']"
       hx-target="#users-page-content"
@@ -11,47 +12,56 @@
       hx-sync="#users-filter-form:replace">
     <input type="hidden" name="page" value="1">
     <input type="hidden" name="per_page" value="{{ filters.per_page }}">
+
     <label class="min-w-0">
-        <span class="mb-2 block text-sm font-semibold text-content-secondary">Search User</span>
-        <span class="relative block">
-            <i data-lucide="search"
-               class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
-            <input type="search"
-                   name="search"
-                   value="{{ filters.search }}"
-                   placeholder="Username, display name, or email"
-                   class="h-11 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-        </span>
+        <span class="{{ table_ui.filter_label_classes() }}">Search User</span>
+        {{ table_ui.search_field('search', filters.search, 'Username, display name, or email', 'users-search') }}
     </label>
+
     <label class="min-w-0">
-        <span class="mb-2 block text-sm font-semibold text-content-secondary">Status</span>
-        <select name="status"
-                class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+        <span class="{{ table_ui.filter_label_classes() }}">Account State</span>
+        <select name="status" class="{{ table_ui.filter_select_classes() }}">
             {% for option in status_options %}
-                <option value="{{ option }}"
-                        {% if filters.status == option %}selected{% endif %}>{{ option|title }}</option>
+                <option value="{{ option }}" {% if filters.status == option %}selected{% endif %}>
+                    {{ {'all': 'All States', 'active': 'Active', 'inactive': 'Inactive', 'deleted': 'Deleted'}.get(option, option|title) }}
+                </option>
             {% endfor %}
         </select>
     </label>
+
     <label class="min-w-0">
-        <span class="mb-2 block text-sm font-semibold text-content-secondary">Identity Source</span>
-        <select name="auth_source"
-                class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+        <span class="{{ table_ui.filter_label_classes() }}">Identity Source</span>
+        <select name="auth_source" class="{{ table_ui.filter_select_classes() }}">
             {% for option in auth_source_options %}
-                <option value="{{ option }}"
-                        {% if filters.auth_source == option %}selected{% endif %}>{{ option|upper if option != 'all' else 'All Sources' }}</option>
+                <option value="{{ option }}" {% if filters.auth_source == option %}selected{% endif %}>
+                    {{ {'all': 'All Sources', 'database': 'Local Database', 'ldap': 'LDAP', 'sso': 'SSO'}.get(option, option|title) }}
+                </option>
             {% endfor %}
         </select>
     </label>
+
     <label class="min-w-0">
-        <span class="mb-2 block text-sm font-semibold text-content-secondary">Role</span>
-        <select name="role_id"
-                class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+        <span class="{{ table_ui.filter_label_classes() }}">Role</span>
+        <select name="role_id" class="{{ table_ui.filter_select_classes() }}">
             <option value="all">All Roles</option>
             {% for role in roles %}
-                <option value="{{ role.id }}"
-                        {% if filters.role_id == role.id %}selected{% endif %}>{{ role.display_name }}</option>
+                <option value="{{ role.id }}" {% if filters.role_id == role.id %}selected{% endif %}>
+                    {{ role.display_name }}{% if not role.is_active %} · Inactive{% endif %}
+                </option>
             {% endfor %}
         </select>
     </label>
+
+    <div class="flex items-end md:col-span-2 lg:col-span-1">
+        <a href="{{ url_for('users.index', per_page=filters.per_page) }}"
+           hx-get="{{ url_for('users.index', per_page=filters.per_page) }}"
+           hx-target="#users-page-content"
+           hx-swap="outerHTML settle:150ms"
+           hx-push-url="true"
+           hx-indicator="#users-refresh-indicator"
+           class="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-md border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-strong hover:bg-surface-subtle lg:w-auto">
+            <i data-lucide="rotate-ccw" class="h-3.5 w-3.5" aria-hidden="true"></i>
+            Clear Filters
+        </a>
+    </div>
 </form>

@@ -302,16 +302,6 @@
     "app/templates/users/partials/_content.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/users/partials/_delete_modal.html": {
-      "raw_palette_utilities": 14
-    },
-    "app/templates/users/partials/_summary_cards.html": {
-      "raw_palette_utilities": 16
-    },
-    "app/templates/users/partials/_table.html": {
-      "font_extrabold_utilities": 3,
-      "raw_palette_utilities": 52
-    },
     "app/templates/users/providers/form.html": {
       "copied_standard_surface_shells": 1
     },

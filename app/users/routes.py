@@ -42,6 +42,7 @@ from app.users.service import (
     can_restore_user,
     create_or_update_user,
     normalize_user_filters,
+    lock_active_super_admin_boundary,
     record_admin_event,
     restore_user,
     set_user_active,
@@ -57,12 +58,13 @@ def render_users_content(feedback: dict[str, Any] | None = None) -> str:
     content = render_template('users/partials/_content.html', **payload)
     if feedback is None:
         return content
+    hero = render_template('users/partials/_hero.html', **payload, hero_oob=True)
     toast = render_template(
         'components/operational_toast.html',
         **feedback,
         toast_oob=True,
     )
-    return f'{content}{toast}'
+    return f'{content}{hero}{toast}'
 
 
 def finish(feedback: dict[str, Any]) -> Any:
@@ -179,6 +181,14 @@ def edit(user_id: int):
         form.is_super_admin.data = user.is_super_admin
 
     if form.validate_on_submit():
+        removes_active_super_admin_authority = bool(
+            user.is_super_admin
+            and user.account_is_active
+            and (not bool(form.is_active.data) or not bool(form.is_super_admin.data))
+        )
+        if removes_active_super_admin_authority:
+            lock_active_super_admin_boundary(user)
+
         allowed, message = can_edit_user(
             actor,
             user,
@@ -256,6 +266,7 @@ def deactivate(user_id: int):
     user = db.session.get(User, user_id)
     if user is None:
         return reject('User unavailable', 'The requested user record was not found.', status='error')
+    lock_active_super_admin_boundary(user)
     allowed, message = can_deactivate_user(actor, user)
     if not allowed:
         return reject('Deactivation blocked', message or 'This account cannot be deactivated.', target=user)
@@ -340,6 +351,7 @@ def delete(user_id: int):
     user = db.session.get(User, user_id)
     if user is None:
         return reject('User unavailable', 'The requested user record was not found.', status='error')
+    lock_active_super_admin_boundary(user)
     allowed, message = can_delete_user(actor, user)
     if not allowed:
         return reject('Deletion blocked', message or 'This account cannot be deleted.', target=user)
