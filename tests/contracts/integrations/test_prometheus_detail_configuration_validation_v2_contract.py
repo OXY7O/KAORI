@@ -79,16 +79,22 @@ def test_prometheus_detail_alpine_shell_is_not_corrupted():
     assert "scrollIntoView({ behavior: 'smooth', block: 'start' })); } } }" not in text
 
 
-def test_promql_view_more_uses_decision_first_modal_content():
-    text = PROMQL_REGISTRY.read_text()
+def test_promql_view_more_matches_kubernetes_capability_evidence_concept():
+    registry = PROMQL_REGISTRY.read_text()
+    shared = (ROOT / 'app/templates/integrations/components/_provider_capability_detail.html').read_text()
+    actions = (ROOT / 'app/templates/integrations/components/_record_actions.html').read_text()
+    assert "provider_capability_detail.content(" in registry
+    assert "record_actions.view_more(" in registry
+    assert "'Prometheus Capability Evidence'" in registry
     for token in (
-        'data-kaori-promql-capability-decision',
-        'Validation Result',
-        'Latest Evidence',
-        'data-kaori-promql-contract-evaluation',
-        'Contract Evaluation',
-        'data-kaori-promql-technical-verification',
-        'Next Operational Action',
+        'Capability Contract',
+        'Validation Evidence',
+        'Success Criteria',
+        'Operational Impact',
+        'Recommended Action',
+        'Technical Verification',
+        'Evidence Boundary',
     ):
-        assert token in text
-    assert text.count('Evidence Snapshot') == 0
+        assert token in shared
+    assert 'panel-top-open' in actions
+    assert 'inline-flex h-9 items-center justify-center gap-2 rounded-lg' in actions

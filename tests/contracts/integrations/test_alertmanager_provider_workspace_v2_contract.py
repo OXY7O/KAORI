@@ -31,7 +31,7 @@ def test_alertmanager_validation_uses_kubernetes_style_capability_readiness_and_
     assert 'data-kaori-provider-capability-matrix' in content
     assert 'Validation Decision' not in content
     assert 'Alert Management Capability Registry' in registry
-    assert 'View More' in registry
+    assert 'record_actions.view_more(' in registry
     assert 'table_ui.table_classes' in registry
 
 

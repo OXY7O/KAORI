@@ -1,24 +1,11 @@
-{#
-  KAORI Integration record actions.
-
-  Registry-style `View More` actions intentionally reuse the canonical KAORI
-  table action treatment so capability, runtime, validation, and future
-  evidence registries do not drift into oversized or page-local buttons.
-#}
-{% import "components/table.html" as table_ui %}
-
-{% macro view_more(dialog_target, label='View More', role='record') -%}
+{% macro view_more(dialog_id, label='View More') -%}
 <button type="button"
-        class="group whitespace-nowrap {{ table_ui.action_classes() }}"
         data-kaori-dialog-open
-        data-dialog-target="{{ dialog_target }}"
+        data-dialog-target="{{ dialog_id }}"
         aria-haspopup="dialog"
-        aria-controls="{{ dialog_target }}"
-        data-kaori-record-action
-        data-kaori-{{ role }}-view-more>
+        aria-controls="{{ dialog_id }}"
+        class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:border-outline-focus hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-1">
+    <i data-lucide="panel-top-open" class="h-3.5 w-3.5" aria-hidden="true"></i>
     <span>{{ label }}</span>
-    <i data-lucide="chevron-right"
-       class="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-0.5"
-       aria-hidden="true"></i>
 </button>
 {%- endmacro %}

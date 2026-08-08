@@ -27,16 +27,27 @@ def test_alertmanager_validation_matches_kubernetes_capability_matrix_and_regist
     assert "@alertmanager_bp.get('/instances/<int:instance_id>/validation/capabilities')" in routes
     assert 'def instance_capability_registry' in routes
 
-def test_alertmanager_validation_modal_is_decision_first_without_repeated_evidence_cards():
-    content = ALERT_REGISTRY.read_text()
-    assert 'Validation Result' in content
-    assert 'Latest Evidence' in content
-    assert 'Success Criteria' in content
-    assert 'Operational Impact' in content
-    assert 'Technical Verification' in content
-    assert 'Next Operational Action' in content
-    assert "size='standard'" in content
-    assert 'Full API Request' in content
+def test_alertmanager_validation_modal_matches_kubernetes_capability_evidence_concept():
+    registry = ALERT_REGISTRY.read_text()
+    shared = read('app/templates/integrations/components/_provider_capability_detail.html')
+    actions = read('app/templates/integrations/components/_record_actions.html')
+    assert "provider_capability_detail.content(" in registry
+    assert "record_actions.view_more(" in registry
+    assert "'Alertmanager Capability Evidence'" in registry
+    assert "'Runnable API Request'" in registry
+    assert "size='standard'" in registry
+    for token in (
+        'Capability Contract',
+        'Validation Evidence',
+        'Success Criteria',
+        'Operational Impact',
+        'Recommended Action',
+        'Technical Verification',
+        'Evidence Boundary',
+    ):
+        assert token in shared
+    assert 'panel-top-open' in actions
+    assert 'inline-flex h-9 items-center justify-center gap-2 rounded-lg' in actions
 
 
 def test_alertmanager_runtime_matches_kubernetes_full_width_runtime_pattern():

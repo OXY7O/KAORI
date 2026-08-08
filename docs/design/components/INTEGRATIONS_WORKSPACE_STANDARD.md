@@ -385,3 +385,7 @@ Prometheus and Alertmanager `Runtime Health & Diagnostics` use the Kubernetes ru
 - the runtime observation modal must suppress a top-level observation message when it repeats a diagnostic detail already shown in `Diagnostic Review`.
 
 The provider decision shell is owned by `integrations/components/_runtime_decision.html`. Provider-specific runtime templates supply only context values and evidence rows.
+
+### Capability Registry detail interaction
+
+Prometheus and Alertmanager capability registries use a shared `View More` action that mirrors the Kubernetes Capability Registry geometry and `panel-top-open` affordance. Provider capability modals must mirror the Kubernetes capability-evidence information architecture rather than invent provider-specific card stacks: **Capability Contract → Validation Evidence / Operational Impact → Recommended Action → Technical Verification → Evidence Boundary**. Provider-specific query/request syntax belongs only in Technical Verification.
