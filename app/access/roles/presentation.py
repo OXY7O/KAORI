@@ -210,3 +210,62 @@ def build_role_form_context(
             IdentityProvider.default_role_id == role.id
         ).count()
     return context
+
+
+def build_role_detail_context(*, role: Role, can_manage_roles: bool) -> dict[str, Any]:
+    assigned_users = User.query.filter(
+        User.role_id == role.id,
+        User.deleted_at.is_(None),
+    ).count()
+    provider_mappings = IdentityProvider.query.filter(
+        IdentityProvider.default_role_id == role.id
+    ).count()
+
+    permissions = sorted(role.permissions, key=lambda item: (item.module or '', item.key))
+    module_map: dict[str, list[Permission]] = {}
+    for permission in permissions:
+        module_map.setdefault(permission.module or 'general', []).append(permission)
+
+    permission_modules = [
+        {
+            'key': module_name,
+            'label': module_name.replace('_', ' ').title(),
+            'count': len(module_permissions),
+            'permissions': [
+                {
+                    'key': permission.key,
+                    'label': (permission.action or permission.key.rsplit('.', 1)[-1]).replace('_', ' ').title(),
+                    'description': permission.description or 'No permission description is defined.',
+                }
+                for permission in module_permissions
+            ],
+        }
+        for module_name, module_permissions in sorted(module_map.items())
+    ]
+
+    delete_blocked = bool(assigned_users or provider_mappings)
+    return {
+        'role': role,
+        'can_manage_roles': can_manage_roles,
+        'detail': {
+            'type_label': 'Default Role' if role.is_system else 'Custom Role',
+            'type_short': 'Default' if role.is_system else 'Custom',
+            'type_icon': 'shield-check' if role.is_system else 'user-cog',
+            'state_label': 'Active' if role.is_active else 'Inactive',
+            'state_tone': 'normal' if role.is_active else 'unknown',
+            'state_icon': 'circle-check' if role.is_active else 'pause-circle',
+            'assigned_users': assigned_users,
+            'provider_mappings': provider_mappings,
+            'permission_count': len(permissions),
+            'module_count': len(permission_modules),
+            'permission_modules': permission_modules,
+            'delete_blocked': delete_blocked,
+            'delete_eligible': bool(not role.is_system and not delete_blocked),
+            'version_token': role_version_token(role),
+            'assignment_effect': (
+                'Assigned users receive no permissions from this inactive role.'
+                if not role.is_active and assigned_users
+                else 'Role assignments are evaluated on each protected authorization check.'
+            ),
+        },
+    }

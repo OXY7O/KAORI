@@ -4,6 +4,7 @@
 {% import "components/operational_section_card.html" as operational_section %}
 {% import "components/operational_point_flow.html" as point_flow %}
 {% import "components/destructive_confirmation_modal.html" as destructive_modal %}
+{% import "components/resource_detail_modal.html" as resource_detail_modal %}
 {% block title %}Roles & Access{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6">
@@ -105,6 +106,14 @@
         {% endcall %}
 
         {% include "access/roles/partials/_registry.html" %}
+
+        {{ resource_detail_modal.host(
+            'Role',
+            url_for('access.roles.modal_details', role_id=0),
+            footer_text='Role evidence reflects the current committed RBAC registry.',
+            context_label='Access',
+            dialog_max_width='max-w-6xl'
+        ) }}
 
         {{ destructive_modal.render(
             'role-delete-confirmation',

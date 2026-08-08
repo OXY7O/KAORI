@@ -2,9 +2,9 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/pagination.html" as pagination_ui %}
-{% import "components/details/_expandable_row.html" as expandable %}
+{% import "components/resource_detail_modal.html" as resource_detail_modal %}
 <section id="role-registry" class="{{ table_ui.block_classes() }}">
-    <header class="{{ table_ui.block_header_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="list-tree" class="h-5 w-5"></i></span>
@@ -13,7 +13,7 @@
                     <p class="{{ table_ui.block_description_classes() }}">Review role type, lifecycle state, assignments, permission coverage, and governed actions.</p>
                 </div>
             </div>
-            <span class="text-xs font-semibold text-content-secondary">{{ summary.matching }} Matching {{ 'Role' if summary.matching == 1 else 'Roles' }}</span>
+            {{ table_label.metadata_label(summary.matching ~ ' Matching ' ~ ('Role' if summary.matching == 1 else 'Roles'), 'list-filter') }}
         </div>
         {{ loading_bar.render('role-registry-loading', label='Refreshing Role Registry') }}
     </header>
@@ -69,19 +69,14 @@
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for row in role_rows %}
                     {% set role = row.record %}
-                    {% set detail_target_id = 'role-detail-content-' ~ role.id %}
-                    {% set detail_row_id = 'role-detail-row-' ~ role.id %}
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(role.display_name, role.name, row.type.icon) }}</td>
                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(row.type.short_label, icon=row.type.icon) }}</td>
                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(row.state.label, row.state.tone, row.state.icon) }}</td>
                         <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ row.assigned_users }}</span></td>
                         <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ row.permission_count }}</span></td>
-                        <td class="{{ table_ui.cell_classes(action=true) }}">{{ expandable.toggle_button('roles', role.id, '', detail_target_id, detail_row_id, open_label='View Details') }}</td>
+                        <td class="{{ table_ui.cell_classes(action=true) }}">{{ resource_detail_modal.detail_button(role.id, url_for('access.roles.modal_details', role_id=role.id), role.display_name, 'Role', label='View Details') }}</td>
                     </tr>
-                    {% call expandable.static_detail_row(detail_row_id, detail_target_id, 6) %}
-                        {% include "access/roles/partials/_role_detail.html" %}
-                    {% endcall %}
                 {% else %}
                     <tr>
                         <td colspan="6" class="p-0">

@@ -9,14 +9,15 @@ This refinement keeps `app/access/roles/` as the HTTP and presentation owner whi
 ## Decisions implemented
 
 - Roles & Access is now a single full-width operational workspace.
-- The duplicate cross-role Mapping Matrix is removed from Roles & Access; Permission Catalog remains the authoritative permission-registry workspace.
+- The duplicate cross-role Mapping Matrix is removed from Roles & Access. Role-specific permission coverage stays available in the role detail modal, while Permission Catalog remains the authoritative home for cross-role permission comparison and coverage.
 - The index uses the KAORI Hero, Role Registry Overview, compact Role Assignment Flow, and a shared-table Role Registry.
-- Role filters are server/HTMX owned and use the shared loading bar and 5/10/25/50 pagination contract.
-- Role detail expands below the row and exposes assignment impact, provider-default references, permission coverage, protected-default ownership, and deletion eligibility.
+- Role filters are server/HTMX owned and use the shared loading bar and 5/10/25/50 pagination contract. The loading bar sits in a full-width block header so it remains visible during filter and pagination requests.
+- Role detail opens in the shared KAORI resource-detail modal and exposes role identity, assignment impact, role-specific permission coverage, administrative ownership, and deletion eligibility.
 - Custom-role deletion uses the shared destructive-confirmation modal and is still revalidated server-side.
 - Role edit/delete mutations acquire a database row lock and carry a version token to prevent silent stale-form overwrite or stale deletion.
 - Permission dependencies remain normalized by the RBAC service; the form now marks permissions that are required by the current effective scope.
-- Add/Edit/Clone/Detail retain the standard sticky right rail (`xl:sticky xl:top-5`) and now emphasize role impact instead of generic summary metrics.
+- Add/Edit/Clone/Detail retain the standard sticky right rail (`xl:sticky xl:top-5`). Role Impact now uses compact operational evidence and Access Guardrails remain always visible instead of expandable.
+- Authorization-effect copy is intentionally compact: `Changes apply on the next authorization check.`
 
 ## Security / correctness boundary
 

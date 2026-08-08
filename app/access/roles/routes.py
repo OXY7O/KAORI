@@ -8,6 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.access.roles.forms import DeleteRoleForm, RoleForm
 from app.access.roles.presentation import (
+    build_role_detail_context,
     build_role_form_context,
     build_roles_index_context,
     normalize_role_filters,
@@ -188,6 +189,23 @@ def detail(role_id: int):
             clone_source=None,
             view_only=True,
             selected_permission_ids={permission.id for permission in role.permissions},
+        ),
+    )
+
+
+@bp.get('/<int:role_id>/details')
+@permission_required('roles.view')
+def modal_details(role_id: int):
+    seed_default_rbac()
+    role = db.session.get(Role, role_id)
+    if role is None:
+        return 'Role details unavailable.', 404
+    actor = cast(User, current_user._get_current_object())
+    return render_template(
+        'access/roles/partials/_role_detail.html',
+        **build_role_detail_context(
+            role=role,
+            can_manage_roles=actor.has_permission('roles.manage'),
         ),
     )
 
