@@ -16,6 +16,8 @@ def test_identity_provider_route_uses_server_side_filter_payload_and_htmx_regist
     assert "users/providers/partials/_registry.html" in routes
     assert 'PROVIDER_TYPE_OPTIONS' in service
     assert 'PROVIDER_STATE_OPTIONS' in service
+    assert "'page': positive_int(args.get('page'), 1)" in service
+    assert "'per_page': normalize_per_page(args.get('per_page'))" in service
     assert 'ExternalIdentityLink.provider_id' in service
     assert "'ldap_identity_links': ldap_identity_links" in service
 
@@ -51,6 +53,12 @@ def test_provider_registry_uses_shared_table_loading_filters_and_expandable_deta
         assert heading in registry
     assert "expandable.toggle_button('identity-providers'" in registry
     assert 'users/providers/partials/_provider_detail.html' in registry
+    assert '{% import "components/pagination.html" as pagination_ui %}' in registry
+    assert 'Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }}' in registry
+    assert '>Rows</span>' in registry
+    assert 'Rows Per Page' in registry
+    assert '>Previous</span>' in registry
+    assert 'Next<i data-lucide="chevron-right"' in registry
 
 
 def test_provider_detail_keeps_validation_on_demand_and_secrets_externalized() -> None:
@@ -82,17 +90,31 @@ def test_identity_provider_index_uses_full_width_registry_and_directory_workflow
     assert "url_for('users.external_identities')" in strip
 
 
-def test_identity_provider_form_uses_shared_hero_and_default_collapsed_guidance() -> None:
+def test_identity_provider_form_uses_shared_hero_ldap_flow_and_sticky_guidance() -> None:
     form = read('app/templates/users/providers/form.html')
     guidance = read('app/templates/users/providers/partials/_provider_guidance.html')
+    ldap = read('app/templates/users/providers/partials/_ldap_configuration.html')
+    routes = read('app/users/routes.py')
     assert 'page_hero.context_card(' in form
     assert 'page_hero.context_panel_classes()' not in form
     assert "'Configuration Scope'" in form
     assert 'xl:sticky xl:top-5' in guidance
-    assert guidance.count('open_by_default=false') >= 4
+    assert '{% import "components/operational_flow_steps.html" as flow_steps %}' in guidance
+    assert "'LDAP Setup Guidance'" in guidance
+    assert 'open_by_default=true' in guidance
+    assert "flow_steps.render(ldap_flow_rows, aria_label='LDAP Setup Flow')" in guidance
+    assert guidance.count('open_by_default=false') >= 3
     assert 'Exact Callback URL' in guidance
     assert 'Technical Runbook' in guidance
     assert '<details open' not in guidance
+    assert 'font-mono' not in ldap
+    assert 'font-mono' not in guidance
+    assert 'Test Connection' in form
+    assert "url_for('users.test_provider_configuration'" in form
+    assert "@bp.post('/providers/test')" in routes
+    assert "@bp.post('/providers/<int:provider_id>/test')" in routes
+    assert 'candidate = IdentityProvider()' in routes
+    assert 'validate_identity_provider(candidate)' in routes
 
 
 def test_identity_provider_refinement_remains_open_before_final_lock() -> None:

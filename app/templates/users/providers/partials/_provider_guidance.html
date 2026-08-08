@@ -1,30 +1,27 @@
 {% import "components/view_more_content.html" as view_more %}
+{% import "components/operational_flow_steps.html" as flow_steps %}
 <aside class="space-y-5 xl:sticky xl:top-5">
     <div data-provider-info="ldap" {% if selected_type != 'ldap' %}hidden{% endif %}>
         {% call view_more.render(
             'LDAP Setup Guidance',
-            'Connection, service bind, attribute mapping, and controlled provisioning.',
+            'Controlled setup from directory reachability through account projection.',
             icon='network',
-            open_by_default=false,
-            aria_label='LDAP Setup Guidance'
+            open_by_default=true,
+            aria_label='LDAP Setup Guidance',
+            closed_label='View Flow',
+            open_label='Collapse Flow'
         ) %}
-            <div class="space-y-4">
-                {% set ldap_steps = [
-                    ('1', 'Network and Certificate', 'Allow KAORI to reach LDAPS or StartTLS and trust the directory CA.'),
-                    ('2', 'Service Account', 'Use a read-only Bind DN that can search the configured Base DN and mapped attributes.'),
-                    ('3', 'Attribute Mapping', 'Confirm username, email, display-name, and stable-ID attributes for the directory.'),
-                    ('4', 'Provision Users', 'Save, validate, enable, then use Directory Provisioning to assign a KAORI role.')
-                ] %}
-                {% for number, title, text in ldap_steps %}
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-xs font-semibold text-kaori-primary">{{ number }}</span>
-                        <div class="min-w-0">
-                            <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ text }}</p>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
+            {% set ldap_flow_rows = [
+                [
+                    ('network', 'Connect Directory', 'Reach LDAPS or StartTLS and trust the directory CA.'),
+                    ('key-round', 'Configure Service Bind', 'Use a read-only Bind DN and runtime secret reference.')
+                ],
+                [
+                    ('list-tree', 'Map Identity', 'Confirm username, email, display name, and stable ID attributes.'),
+                    ('user-plus', 'Project Access', 'Test, save, enable, then provision approved identities with a KAORI role.')
+                ]
+            ] %}
+            {{ flow_steps.render(ldap_flow_rows, aria_label='LDAP Setup Flow') }}
         {% endcall %}
     </div>
 
@@ -95,7 +92,7 @@
             </div>
         </header>
         <div class="p-5">
-            <code class="block break-all rounded-lg border border-outline-default bg-surface-hover p-3 font-mono text-xs leading-5 text-content-primary"><span>{{ request.url_root.rstrip("/") }}/auth/sso/</span><span data-callback-key>{{ form.key.data or '&lt;provider-key&gt;' }}</span>/callback</code>
+            <code class="block break-all rounded-lg border border-outline-default bg-surface-hover p-3 text-xs font-medium leading-5 text-content-primary"><span>{{ request.url_root.rstrip("/") }}/auth/sso/</span><span data-callback-key>{{ form.key.data or '&lt;provider-key&gt;' }}</span>/callback</code>
         </div>
     </section>
 
@@ -106,7 +103,7 @@
         open_by_default=false,
         aria_label='Identity Provider Technical Runbook'
     ) %}
-        <code class="block break-all rounded-lg border border-outline-default bg-surface-hover p-3 font-mono text-xs leading-5 text-content-primary">docs/authentication/IDENTITY_PROVIDER_CONFIGURATION.md</code>
+        <code class="block break-all rounded-lg border border-outline-default bg-surface-hover p-3 text-xs font-medium leading-5 text-content-primary">docs/authentication/IDENTITY_PROVIDER_CONFIGURATION.md</code>
         <div class="mt-4 grid gap-3">
             {% for icon, title, text in [
                 ('save', 'Save Disabled', 'Keep the provider disabled while credentials and callback registration are incomplete.'),

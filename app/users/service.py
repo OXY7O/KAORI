@@ -26,13 +26,15 @@ PROVIDER_TYPE_OPTIONS = ['all', 'ldap', 'google_oidc', 'github_oauth']
 PROVIDER_STATE_OPTIONS = ['all', 'enabled', 'disabled']
 
 
-def normalize_provider_filters(args: Mapping[str, str | None]) -> dict[str, str]:
+def normalize_provider_filters(args: Mapping[str, str | None]) -> dict[str, Any]:
     provider_type = (args.get('provider_type') or 'all').strip().lower()
     state = (args.get('state') or 'all').strip().lower()
     return {
         'search': (args.get('search') or '').strip(),
         'provider_type': provider_type if provider_type in PROVIDER_TYPE_OPTIONS else 'all',
         'state': state if state in PROVIDER_STATE_OPTIONS else 'all',
+        'page': positive_int(args.get('page'), 1),
+        'per_page': normalize_per_page(args.get('per_page')),
     }
 
 
@@ -118,7 +120,7 @@ def present_identity_provider(provider: IdentityProvider, *, identity_links: int
     }
 
 
-def build_identity_provider_payload(filters: dict[str, str]) -> dict[str, Any]:
+def build_identity_provider_payload(filters: dict[str, Any]) -> dict[str, Any]:
     all_providers = IdentityProvider.query.order_by(
         IdentityProvider.provider_type.asc(), IdentityProvider.display_name.asc()
     ).all()
@@ -158,6 +160,14 @@ def build_identity_provider_payload(filters: dict[str, str]) -> dict[str, Any]:
     elif filters['state'] == 'disabled':
         provider_rows = [row for row in provider_rows if not row['record'].enabled]
 
+    matching_count = len(provider_rows)
+    pagination = build_pagination_window(
+        total_items=matching_count,
+        page=filters['page'],
+        per_page=filters['per_page'],
+    )
+    provider_rows = provider_rows[pagination.offset : pagination.offset + pagination.per_page]
+
     all_presentations = [
         present_identity_provider(provider, identity_links=link_counts.get(provider.id, 0))
         for provider in all_providers
@@ -187,11 +197,19 @@ def build_identity_provider_payload(filters: dict[str, str]) -> dict[str, Any]:
             'sso': sso_count,
             'identity_links': identity_links,
             'ldap_identity_links': ldap_identity_links,
-            'matching': len(provider_rows),
+            'matching': matching_count,
             'posture_label': posture_label,
             'posture_tone': posture_tone,
         },
-        'filters': filters,
+        'filters': {**filters, 'page': pagination.page, 'per_page': pagination.per_page},
+        'pagination': pagination.as_dict(),
+        'per_page_options': list(PER_PAGE_OPTIONS),
+        'pagination_query': {
+            'per_page': pagination.per_page,
+            'search': filters['search'],
+            'provider_type': filters['provider_type'],
+            'state': filters['state'],
+        },
         'provider_type_options': PROVIDER_TYPE_OPTIONS,
         'provider_state_options': PROVIDER_STATE_OPTIONS,
     }

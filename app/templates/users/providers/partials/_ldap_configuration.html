@@ -56,8 +56,8 @@
             </label>
             <label class="block min-w-0 sm:col-span-2">
                 <span class="text-sm font-semibold text-content-primary">{{ form.user_filter.label.text }}</span>
-                {{ form.user_filter(class_='mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 font-mono text-xs text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', placeholder='(&(objectCategory=person)(objectClass=user)(|(sAMAccountName=*{query}*)(mail=*{query}*)))', disabled=selected_type != 'ldap') }}
-                <span class="mt-2 block text-xs leading-5 text-content-muted">Use <span class="font-mono text-content-secondary">{query}</span>; KAORI escapes the search value before inserting it.</span>
+                {{ form.user_filter(class_='mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', placeholder='(&(objectCategory=person)(objectClass=user)(|(sAMAccountName=*{query}*)(mail=*{query}*)))', disabled=selected_type != 'ldap') }}
+                <span class="mt-2 block text-xs leading-5 text-content-muted">Use <span class="font-semibold text-content-secondary">{query}</span>; KAORI escapes the search value before inserting it.</span>
                 {% for error in form.user_filter.errors %}
                     <span class="mt-1 block text-xs font-medium text-status-critical">{{ error }}</span>
                 {% endfor %}
@@ -86,7 +86,7 @@
             {% for field, placeholder, helper in ldap_fields %}
                 <label class="block min-w-0">
                     <span class="text-sm font-semibold text-content-primary">{{ field.label.text }}</span>
-                    {{ field(class_='mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 font-mono text-xs text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', placeholder=placeholder, disabled=selected_type != 'ldap') }}
+                    {{ field(class_='mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', placeholder=placeholder, disabled=selected_type != 'ldap') }}
                     <span class="mt-2 block text-xs leading-5 text-content-muted">{{ helper }}</span>
                     {% for error in field.errors %}
                         <span class="mt-1 block text-xs font-medium text-status-critical">{{ error }}</span>

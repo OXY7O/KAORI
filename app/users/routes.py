@@ -433,6 +433,47 @@ def edit_provider(provider_id: int):
     return render_template('users/providers/form.html', form=form, provider=provider)
 
 
+@bp.post('/providers/test')
+@bp.post('/providers/<int:provider_id>/test')
+@permission_required('users.manage')
+def test_provider_configuration(provider_id: int | None = None):
+    provider = db.get_or_404(IdentityProvider, provider_id) if provider_id is not None else None
+    form = IdentityProviderForm()
+    _assign_provider_role_choices(form)
+    test_result: dict[str, str]
+
+    if form.validate_on_submit():
+        candidate = IdentityProvider()
+        apply_identity_provider_configuration(candidate, identity_provider_configuration_from_form(form))
+        try:
+            message = validate_identity_provider(candidate)
+        except (ExternalProviderError, SsoProviderError, SsoAdmissionError) as exc:
+            test_result = {
+                'status': 'error',
+                'title': 'Connection Test Failed',
+                'message': str(exc),
+            }
+        else:
+            test_result = {
+                'status': 'success',
+                'title': 'Connection Test Passed',
+                'message': message,
+            }
+    else:
+        test_result = {
+            'status': 'error',
+            'title': 'Connection Test Blocked',
+            'message': 'Complete the required provider fields before testing the current configuration.',
+        }
+
+    return render_template(
+        'users/providers/form.html',
+        form=form,
+        provider=provider,
+        test_result=test_result,
+    )
+
+
 @bp.post('/providers/<int:provider_id>/validate')
 @permission_required('users.manage')
 def validate_provider(provider_id: int):

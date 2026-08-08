@@ -133,12 +133,12 @@ The Identity Providers review keeps the page open for final Access UI lock while
 
 - the hero uses the shared Inventory-style KAORI `page_hero.context_card()` pattern;
 - Provider Registry Overview separates configuration completeness, enablement, provider family, and identity-link evidence;
-- the Provider Registry uses shared KAORI table/filter/loading/detail components and server-side HTMX filtering;
+- the Provider Registry uses shared KAORI table/filter/loading/detail/pagination components, server-side HTMX filtering, and the standard 5/10/25/50 Rows contract;
 - `Enabled` and `Configured` are independent states; KAORI does not claim durable `Validated` readiness because provider validation results are currently on-demand operational feedback rather than persisted provider evidence;
 - provider detail surfaces may display environment-variable references, but never runtime secret values;
 - LDAP Directory Provisioning remains a child workflow of Identity Providers and local KAORI role assignment remains the authorization boundary;
 - the provider index is a full-width operational workspace: authentication/provider-family guidance is consolidated into Provider Registry Overview, while Directory Provisioning is a horizontal workflow strip above the registry;
-- provider-form setup guidance and the technical runbook remain default-collapsed, while form right rails remain sticky at `xl:top-5`.
+- LDAP Setup Guidance opens by default as a shared KAORI box-flow; Google/GitHub guidance and the technical runbook remain collapsed, while form right rails remain sticky at `xl:top-5`. Add/Edit forms can test current values before Save without persisting validation posture.
 
 This refinement is not the Identity Providers Final Lock. Directory Provisioning and remaining Access child pages are still reviewed independently before Access is final-locked.
 

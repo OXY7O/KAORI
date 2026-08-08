@@ -96,15 +96,36 @@
                 </section>
                 {% include "users/providers/partials/_ldap_configuration.html" %}
                 {% include "users/providers/partials/_sso_configuration.html" %}
+                {% if test_result %}
+                    {% set test_passed = test_result.status == 'success' %}
+                    <section class="rounded-xl border {{ 'border-status-normal-border bg-status-normal-soft' if test_passed else 'border-status-critical-border bg-status-critical-soft' }} p-4 shadow-sm" aria-live="polite">
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card {{ 'text-status-normal-text' if test_passed else 'text-status-critical-text' }}" aria-hidden="true">
+                                <i data-lucide="{{ 'circle-check' if test_passed else 'circle-alert' }}" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <h2 class="text-sm font-semibold {{ 'text-status-normal-text' if test_passed else 'text-status-critical-text' }}">{{ test_result.title }}</h2>
+                                <p class="mt-1 text-xs leading-5 {{ 'text-status-normal-text' if test_passed else 'text-status-critical-text' }}">{{ test_result.message }}</p>
+                            </div>
+                        </div>
+                    </section>
+                {% endif %}
                 <footer class="flex flex-col gap-4 rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm sm:px-5 lg:flex-row lg:items-center lg:justify-between">
                     <p class="min-w-0 text-xs leading-5 text-content-muted lg:flex-1">
-                        Save first, then run <strong class="font-semibold text-content-secondary">Validate</strong> from Identity Providers before enabling production access.
+                        Test the current configuration before saving; enable only after the expected authentication flow succeeds.
                     </p>
-                    <div class="flex justify-end gap-2 lg:shrink-0">
+                    <div class="flex flex-wrap justify-end gap-2 lg:shrink-0">
                         <a href="{{ url_for('users.providers') }}"
                            class="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                             Cancel
                         </a>
+                        <button type="submit"
+                                formaction="{{ url_for('users.test_provider_configuration', provider_id=provider.id) if provider else url_for('users.test_provider_configuration') }}"
+                                formmethod="post"
+                                class="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-surface-hover hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus cursor-pointer">
+                            <i data-lucide="plug-zap" class="h-4 w-4 shrink-0"></i>
+                            <span>Test Connection</span>
+                        </button>
                         <button type="submit"
                                 class="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card cursor-pointer disabled:cursor-not-allowed">
                             <i data-lucide="save" class="h-4 w-4 shrink-0"></i>
