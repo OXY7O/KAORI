@@ -10,8 +10,12 @@ def read(relative: str) -> str:
 def test_platform_operations_final_lock_is_documented_and_release_gated() -> None:
     assert (ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1.md').exists()
     assert (ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_1.md').exists()
+    assert (ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_2.md').exists()
+    assert (ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_3.md').exists()
     assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_AUDIT_2026_08_08.md').exists()
     assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md').exists()
+    assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_2_AUDIT_2026_08_08.md').exists()
+    assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_3_AUDIT_2026_08_08.md').exists()
     assert 'verify_platform_operations_final_lock.py' in read('scripts/quality_gate.sh')
 
 

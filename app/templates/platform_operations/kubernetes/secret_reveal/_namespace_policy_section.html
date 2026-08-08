@@ -1,32 +1,66 @@
 {% import "components/table_label.html" as table_label %}
-<section id="secret-reveal-namespace-section"
-         class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+{% import "components/operational_callout.html" as operational_callout %}
+<section id="secret-reveal-namespace-section" class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
     <div class="border-b border-outline-default px-6 py-5">
-        <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div class="flex items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="boxes" class="h-5 w-5"></i>
-                </span>
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="boxes" class="h-5 w-5"></i></span>
                 <div>
                     <h2 class="text-base font-semibold text-content-primary">Namespace Policies</h2>
-                    <p class="mt-1 text-sm text-content-muted">Allow protected access only in namespaces with a clear operational requirement.</p>
+                    <p class="mt-1 text-sm text-content-muted">Allow protected access only where there is a clear operational requirement.</p>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
                 {{ table_label.metadata_label(selected_cluster.name, icon='server') }}
                 {{ table_label.metadata_label(namespace_summary.total ~ ' Total') }}
                 {{ table_label.status_label(namespace_summary.enabled ~ ' Enabled', 'normal') }}
-                {% if namespace_summary.missing %}
-                    {{ table_label.status_label(namespace_summary.missing ~ ' Missing', 'warning') }}
-                {% endif %}
+                {% if namespace_summary.missing %}{{ table_label.status_label(namespace_summary.missing ~ ' Missing', 'warning') }}{% endif %}
+                {% if namespace_summary.unknown %}{{ table_label.status_label(namespace_summary.unknown ~ ' Unknown', 'unknown') }}{% endif %}
             </div>
         </div>
-        <div id="secret-reveal-namespace-loading"
-             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
+        <div class="mt-4 flex flex-col gap-3 rounded-xl border border-outline-default bg-surface-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-content-muted">
+                <span class="inline-flex items-center gap-2">
+                    <i data-lucide="radio-tower" class="h-4 w-4 text-kaori-primary"></i>
+                    <span class="font-semibold text-content-secondary">Live Source</span>
+                    {{ table_label.status_indicator_label('Current' if namespace_source.available else 'Unavailable', 'normal' if namespace_source.available else 'warning') }}
+                </span>
+                {% if namespace_source.available %}
+                    <span>Last Refreshed <strong class="font-semibold text-content-secondary">{{ namespace_source.last_successful_at }}</strong></span>
+                {% elif namespace_source.has_successful_snapshot %}
+                    <span>Last Successful <strong class="font-semibold text-content-secondary">{{ namespace_source.last_successful_at }}</strong></span>
+                {% else %}
+                    <span>No successful live refresh yet.</span>
+                {% endif %}
+            </div>
+            <a href="{{ url_for('platform_operations.kubernetes.index', tab='secret-reveal', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=1, per_page=namespace_pagination.per_page) }}"
+               hx-get="{{ url_for('platform_operations.kubernetes.secret_reveal.workspace', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=1, per_page=namespace_pagination.per_page, refresh_namespace=1) }}"
+               hx-target="#secret-reveal-cluster-workspace"
+               hx-swap="outerHTML show:none"
+               hx-indicator="#secret-reveal-namespace-loading"
+               class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft/40 hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-kaori-primary/10">
+                <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                Refresh
+            </a>
+        </div>
+        <div id="secret-reveal-namespace-loading" class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
             <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
         </div>
     </div>
-    <div class="border-b border-outline-default bg-surface-hover px-6 py-4">
+    {% if not namespace_source.available %}
+        <div class="border-b border-outline-default px-6 py-4">
+            <div class="rounded-xl border {{ operational_callout.semantic_surface_classes('warning') }} p-4">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning-text"><i data-lucide="cloud-off" class="h-4 w-4"></i></span>
+                    <div>
+                        <h3 class="text-sm font-semibold text-status-warning-text">Live Namespace Source Unavailable</h3>
+                        <p class="mt-1 text-xs leading-5 text-status-warning-text">KAORI could not refresh namespaces from {{ selected_cluster.name }}. Existing policy configuration remains available, but live namespace presence is marked Unknown until refresh succeeds.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+    <div class="border-b border-outline-default bg-surface-card px-6 py-4">
         <form method="get"
               action="{{ url_for('platform_operations.kubernetes.index', tab='secret-reveal') }}"
               hx-get="{{ url_for('platform_operations.kubernetes.secret_reveal.workspace') }}"
@@ -39,28 +73,19 @@
               class="grid gap-4 md:grid-cols-[minmax(0,1fr)_18rem] md:items-end">
             <input type="hidden" name="cluster_id" value="{{ selected_cluster.id }}">
             <input type="hidden" name="page" value="1">
-            <input type="hidden"
-                   name="per_page"
-                   value="{{ namespace_pagination.per_page }}">
+            <input type="hidden" name="per_page" value="{{ namespace_pagination.per_page }}">
             <div class="min-w-0">
                 <label class="mb-2 block text-sm font-medium text-content-secondary">Search Namespace</label>
                 <div class="relative">
-                    <i data-lucide="search"
-                       class="absolute left-3 top-3.5 h-4 w-4 text-content-muted"></i>
-                    <input type="search"
-                           name="namespace_q"
-                           value="{{ namespace_filters.query }}"
-                           placeholder="Search namespace name..."
-                           class="h-11 w-full rounded-lg border border-outline-default bg-surface-card py-2 pr-3 pl-10 text-sm text-content-primary transition outline-none placeholder:text-content-muted focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
+                    <i data-lucide="search" class="absolute left-3 top-3.5 h-4 w-4 text-content-muted"></i>
+                    <input type="search" name="namespace_q" value="{{ namespace_filters.query }}" placeholder="Search namespace name..." class="h-11 w-full rounded-lg border border-outline-default bg-surface-card py-2 pr-3 pl-10 text-sm text-content-primary transition outline-none placeholder:text-content-muted focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
                 </div>
             </div>
             <div>
                 <label class="mb-2 block text-sm font-medium text-content-secondary">Reveal Policy</label>
-                <select name="namespace_policy"
-                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
+                <select name="namespace_policy" class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
                     {% for value, label in namespace_filter_options.items() %}
-                        <option value="{{ value }}"
-                                {% if namespace_filters.policy == value %}selected{% endif %}>{{ label }}</option>
+                        <option value="{{ value }}" {% if namespace_filters.policy == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>

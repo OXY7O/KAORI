@@ -18,6 +18,7 @@ from wtforms.validators import ValidationError
 
 from app.extensions.db import db
 from app.kubernetes_operations.secrets.reveal_policy import (
+    cluster_reveal_readiness_evidence,
     set_namespace_reveal_policy,
     update_cluster_reveal_readiness,
 )
@@ -61,7 +62,10 @@ def _settings_response(cluster_id: str):
         namespace_policy_filter=settings_args.get('namespace_policy'),
         page=settings_args.get('page'),
         per_page=settings_args.get('per_page'),
+        refresh_namespace_source=False,
     )
+    context['workspace_partial'] = True
+    context['posture_oob'] = True
     response = make_response(
         render_template(
             'platform_operations/kubernetes/secret_reveal/_cluster_workspace.html',
@@ -126,8 +130,10 @@ def workspace():
         namespace_policy_filter=request.args.get('namespace_policy'),
         page=request.args.get('page'),
         per_page=request.args.get('per_page'),
+        refresh_namespace_source=request.args.get('refresh_namespace') == '1',
     )
     context['workspace_partial'] = True
+    context['posture_oob'] = True
     response = make_response(
         render_template(
             'platform_operations/kubernetes/secret_reveal/_cluster_workspace.html',
@@ -165,7 +171,8 @@ def update_readiness(cluster_id: str):
             encryption_verified=request.form.get('encryption_verified') == '1',
             audit_verified=request.form.get('audit_verified') == '1',
         )
-        ready = bool(cluster.secret_reveal_encryption_verified and cluster.secret_reveal_audit_verified)
+        readiness = cluster_reveal_readiness_evidence(cluster)
+        ready = readiness['ready']
         _record_settings_activity(
             event_type='kubernetes_secret_reveal_cluster_readiness_updated',
             status='success' if ready else 'warning',
@@ -182,6 +189,7 @@ def update_readiness(cluster_id: str):
                 'previous_encryption_verified': previous_encryption,
                 'audit_verified': cluster.secret_reveal_audit_verified,
                 'previous_audit_verified': previous_audit,
+                'cluster_credential_configured': readiness['credential_configured'],
                 'uses_cluster_kubeconfig': True,
             },
         )

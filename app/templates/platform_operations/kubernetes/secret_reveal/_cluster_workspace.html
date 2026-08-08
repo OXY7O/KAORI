@@ -2,14 +2,26 @@
 {% if workspace_partial | default(false) %}
     <p id="secret-reveal-hero-cluster-name" hx-swap-oob="innerHTML">{{ selected_cluster.name if selected_cluster else 'No cluster selected' }}</p>
 {% endif %}
+{% if posture_oob | default(false) %}
+    <p id="secret-reveal-protected-cluster-count" hx-swap-oob="innerHTML">{{ protected_cluster_count }}</p>
+    <p id="secret-reveal-enabled-namespace-count" hx-swap-oob="innerHTML">{{ total_enabled_namespaces }}</p>
+    <div id="secret-reveal-selected-cluster-posture" hx-swap-oob="outerHTML" class="flex items-start justify-between gap-3">
+        <div>
+            <p class="text-xs font-semibold text-content-muted">Cluster Readiness</p>
+            <p class="mt-2 text-xl font-bold tracking-tight {{ 'text-status-normal-text' if selected_cluster_ready else 'text-status-warning-text' if selected_cluster else 'text-content-muted' }}">{{ 'Ready' if selected_cluster_ready else 'Review Required' if selected_cluster else 'Not Selected' }}</p>
+        </div>
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ 'bg-status-normal-soft text-status-normal-text' if selected_cluster_ready else 'bg-status-warning-soft text-status-warning-text' if selected_cluster else 'bg-surface-disabled text-content-muted' }}"><i data-lucide="{{ 'badge-check' if selected_cluster_ready else 'shield-alert' if selected_cluster else 'circle-dashed' }}" class="h-4 w-4"></i></span>
+    </div>
+    <p id="secret-reveal-selected-cluster-summary" hx-swap-oob="innerHTML">{{ selected_cluster.name if selected_cluster else 'Choose a cluster.' }}</p>
+{% endif %}
 <div id="secret-reveal-cluster-workspace" class="space-y-6">
     <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-        <div class="flex flex-col gap-4 border-b border-outline-default bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div class="flex flex-col gap-4 border-b border-outline-default bg-surface-card px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <div class="flex items-start gap-3">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="server" class="h-5 w-5"></i></span>
                 <div>
                     <h2 class="text-base font-semibold text-content-primary">Cluster Readiness</h2>
-                    <p class="mt-1 text-sm leading-5 text-content-secondary">Select a cluster and verify its security prerequisites before namespace policies become active.</p>
+                    <p class="mt-1 text-sm leading-5 text-content-secondary">Verify cluster credential and security prerequisites before enabling namespace policies.</p>
                 </div>
             </div>
             <form method="get"
@@ -19,16 +31,11 @@
                   hx-swap="outerHTML"
                   hx-indicator="#secret-reveal-cluster-loading"
                   class="w-full max-w-md">
-                <input type="hidden"
-                       name="namespace_q"
-                       value="{{ namespace_filters.query }}">
-                <input type="hidden"
-                       name="namespace_policy"
-                       value="{{ namespace_filters.policy }}">
+                <input type="hidden" name="refresh_namespace" value="1">
+                <input type="hidden" name="namespace_q" value="{{ namespace_filters.query }}">
+                <input type="hidden" name="namespace_policy" value="{{ namespace_filters.policy }}">
                 <input type="hidden" name="page" value="1">
-                <input type="hidden"
-                       name="per_page"
-                       value="{{ namespace_pagination.per_page }}">
+                <input type="hidden" name="per_page" value="{{ namespace_pagination.per_page }}">
                 <label class="sr-only" for="secret-reveal-cluster">Cluster</label>
                 <select id="secret-reveal-cluster"
                         name="cluster_id"
@@ -36,14 +43,12 @@
                         class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
                     {% if not clusters %}<option value="">No cluster registered</option>{% endif %}
                     {% for cluster in clusters %}
-                        <option value="{{ cluster.id }}"
-                                {% if selected_cluster and selected_cluster.id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
+                        <option value="{{ cluster.id }}" {% if selected_cluster and selected_cluster.id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
                     {% endfor %}
                 </select>
             </form>
         </div>
-        <div id="secret-reveal-cluster-loading"
-             class="htmx-indicator h-1 overflow-hidden bg-kaori-soft">
+        <div id="secret-reveal-cluster-loading" class="htmx-indicator h-1 overflow-hidden bg-kaori-soft">
             <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
         </div>
         {% if selected_cluster %}
@@ -51,12 +56,10 @@
                 <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm xl:col-span-7">
                     <div class="flex flex-col gap-3 border-b border-outline-default px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
                         <div class="flex items-start gap-3">
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                                <i data-lucide="shield-check" class="h-5 w-5"></i>
-                            </span>
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="shield-check" class="h-5 w-5"></i></span>
                             <div>
                                 <h3 class="text-sm font-semibold text-content-primary">Readiness Controls</h3>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Verify both cluster-level prerequisites before namespace reveal policies can become active.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">All three cluster prerequisites must be satisfied.</p>
                             </div>
                         </div>
                         {{ table_label.status_indicator_label('Ready' if selected_cluster_ready else 'Blocked', 'normal' if selected_cluster_ready else 'warning') }}
@@ -69,109 +72,97 @@
                           hx-indicator="#secret-reveal-cluster-loading"
                           hx-disabled-elt="button[type='submit']">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <input type="hidden"
-                               name="namespace_q"
-                               value="{{ namespace_filters.query }}">
-                        <input type="hidden"
-                               name="namespace_policy"
-                               value="{{ namespace_filters.policy }}">
+                        <input type="hidden" name="namespace_q" value="{{ namespace_filters.query }}">
+                        <input type="hidden" name="namespace_policy" value="{{ namespace_filters.policy }}">
                         <input type="hidden" name="page" value="{{ namespace_pagination.page }}">
-                        <input type="hidden"
-                               name="per_page"
-                               value="{{ namespace_pagination.per_page }}">
-                        <div class="grid gap-3 p-4 sm:grid-cols-2 sm:p-5">
+                        <input type="hidden" name="per_page" value="{{ namespace_pagination.per_page }}">
+                        <div class="grid gap-3 p-4 sm:p-5 lg:grid-cols-3">
+                            <article class="flex h-full flex-col rounded-xl border border-outline-default bg-surface-card p-4">
+                                <div class="flex items-start gap-3">
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="key-round" class="h-4 w-4"></i></span>
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <p class="text-sm font-semibold text-content-primary">Cluster Credential</p>
+                                            {{ table_label.status_indicator_label('Configured' if selected_cluster_readiness.credential_configured else 'Missing', 'normal' if selected_cluster_readiness.credential_configured else 'warning') }}
+                                        </div>
+                                        <p class="mt-2 text-xs leading-5 text-content-muted">Primary cluster kubeconfig availability. Managed from cluster configuration.</p>
+                                    </div>
+                                </div>
+                            </article>
                             <article class="flex h-full flex-col rounded-xl border border-outline-default bg-surface-card p-4">
                                 <div class="flex items-start justify-between gap-4">
                                     <div class="flex min-w-0 items-start gap-3">
-                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                            <i data-lucide="database" class="h-4 w-4" aria-hidden="true"></i>
-                                        </span>
+                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="database" class="h-4 w-4"></i></span>
                                         <div class="min-w-0">
                                             <div class="flex flex-wrap items-center gap-2">
                                                 <label for="secret-reveal-encryption-verified" class="cursor-pointer text-sm font-semibold text-content-primary">Encryption at Rest</label>
                                                 {{ table_label.status_indicator_label('Verified' if selected_cluster.secret_reveal_encryption_verified else 'Pending', 'normal' if selected_cluster.secret_reveal_encryption_verified else 'warning') }}
                                             </div>
-                                            <p class="mt-2 text-xs leading-5 text-content-muted">Confirm the Kubernetes Secret encryption configuration has been reviewed for this cluster.</p>
+                                            <p class="mt-2 text-xs leading-5 text-content-muted">Confirm Kubernetes Secret encryption has been reviewed.</p>
                                         </div>
                                     </div>
-                                    <input id="secret-reveal-encryption-verified"
-                                           type="checkbox"
-                                           name="encryption_verified"
-                                           value="1"
-                                           {% if selected_cluster.secret_reveal_encryption_verified %}checked{% endif %}
-                                           class="mt-1 h-4 w-4 shrink-0 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                    <input id="secret-reveal-encryption-verified" type="checkbox" name="encryption_verified" value="1" {% if selected_cluster.secret_reveal_encryption_verified %}checked{% endif %} class="mt-1 h-4 w-4 shrink-0 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
                                 </div>
                             </article>
                             <article class="flex h-full flex-col rounded-xl border border-outline-default bg-surface-card p-4">
                                 <div class="flex items-start justify-between gap-4">
                                     <div class="flex min-w-0 items-start gap-3">
-                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                            <i data-lucide="file-check-2" class="h-4 w-4" aria-hidden="true"></i>
-                                        </span>
+                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="file-check-2" class="h-4 w-4"></i></span>
                                         <div class="min-w-0">
                                             <div class="flex flex-wrap items-center gap-2">
                                                 <label for="secret-reveal-audit-verified" class="cursor-pointer text-sm font-semibold text-content-primary">Metadata Audit</label>
                                                 {{ table_label.status_indicator_label('Verified' if selected_cluster.secret_reveal_audit_verified else 'Pending', 'normal' if selected_cluster.secret_reveal_audit_verified else 'warning') }}
                                             </div>
-                                            <p class="mt-2 text-xs leading-5 text-content-muted">Confirm Secret reads are audited without recording request or response payloads.</p>
+                                            <p class="mt-2 text-xs leading-5 text-content-muted">Confirm Secret reads are audited without payload capture.</p>
                                         </div>
                                     </div>
-                                    <input id="secret-reveal-audit-verified"
-                                           type="checkbox"
-                                           name="audit_verified"
-                                           value="1"
-                                           {% if selected_cluster.secret_reveal_audit_verified %}checked{% endif %}
-                                           class="mt-1 h-4 w-4 shrink-0 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
+                                    <input id="secret-reveal-audit-verified" type="checkbox" name="audit_verified" value="1" {% if selected_cluster.secret_reveal_audit_verified %}checked{% endif %} class="mt-1 h-4 w-4 shrink-0 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
                                 </div>
                             </article>
                         </div>
-                        <div class="mx-4 mb-4 rounded-2xl border border-brand-outline bg-kaori-soft/45 px-4 py-3 sm:mx-5 sm:mb-5">
+                        <div class="mx-4 mb-4 rounded-xl border border-outline-default bg-surface-card px-4 py-3 sm:mx-5 sm:mb-5">
                             <div class="flex items-start gap-3">
-                                <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                                    <i data-lucide="workflow" class="h-4 w-4"></i>
-                                </span>
+                                <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="workflow" class="h-4 w-4"></i></span>
                                 <div>
                                     <p class="text-xs font-semibold text-content-primary">Activation Boundary</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Namespace policies remain inactive until both prerequisites are verified. Kubernetes RBAC and the global feature switch are evaluated separately at reveal time.</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Policies activate only when cluster readiness is satisfied. Global enablement and Kubernetes RBAC are verified at reveal time.</p>
                                 </div>
                             </div>
                         </div>
-                        <div class="flex flex-col gap-3 border-t border-outline-default bg-surface-hover/50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                        <div class="flex flex-col gap-3 border-t border-outline-default bg-surface-card px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                             <div class="flex items-start gap-2 text-xs leading-5 text-content-muted">
                                 <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
                                 <span>Changes apply to <strong class="font-semibold text-content-secondary">{{ selected_cluster.name }}</strong> only.</span>
                             </div>
-                            <button type="submit"
-                                    class="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-kaori-primary bg-kaori-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:border-kaori-primary-hover hover:bg-kaori-primary-hover active:border-kaori-primary-dark active:bg-kaori-primary-dark focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-kaori-primary/20 cursor-pointer disabled:cursor-not-allowed">
+                            <button type="submit" class="inline-flex min-h-10 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg border border-kaori-primary bg-kaori-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:border-kaori-primary-hover hover:bg-kaori-primary-hover active:border-kaori-primary-dark active:bg-kaori-primary-dark focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-kaori-primary/20 disabled:cursor-not-allowed">
                                 <i data-lucide="save" class="h-4 w-4"></i>
                                 Save Readiness
                             </button>
                         </div>
                     </form>
                 </section>
-                <aside class="overflow-hidden rounded-2xl border border-kaori-primary bg-kaori-primary shadow-sm xl:col-span-5">
-                    <div class="flex items-start gap-3 border-b border-white/20 px-5 py-4">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white ring-1 ring-inset ring-white/20">
-                            <i data-lucide="key-round" class="h-5 w-5" aria-hidden="true"></i>
-                        </span>
+                <aside class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm xl:col-span-5">
+                    <div class="flex items-start gap-3 border-b border-outline-default px-5 py-4">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="key-round" class="h-5 w-5"></i></span>
                         <div>
-                            <h3 class="text-sm font-semibold text-white">Kubernetes Boundary</h3>
-                            <p class="mt-1 text-xs leading-5 text-white/75">KAORI uses the primary cluster kubeconfig. Least-privilege Kubernetes RBAC remains the final authorization boundary.</p>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h3 class="text-sm font-semibold text-content-primary">Kubernetes Boundary</h3>
+                                {{ table_label.status_indicator_label('Protected', 'maintenance') }}
+                            </div>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Least-privilege Kubernetes RBAC remains the final authorization boundary.</p>
                         </div>
                     </div>
                     <div class="grid gap-3 p-4 sm:grid-cols-2 sm:p-5">
                         {% for icon, title, text in [
-                            ('eye', 'Secret Get Only', 'Reveal requires get permission on the selected Secret.'),
-                            ('shield-ban', 'Avoid List and Watch', 'Do not grant broad Secret discovery unless another enabled feature needs it.'),
-                            ('box', 'Prefer Namespace Scope', 'Use namespace Role and RoleBinding wherever practical.'),
-                            ('refresh-cw', 'Review Credential Scope', 'Rotate or replace kubeconfig access whenever responsibilities change.')
-                            ] %}
-                            <div class="flex h-full flex-col rounded-xl border border-white/20 bg-white/10 p-4">
-                                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 text-white ring-1 ring-inset ring-white/20">
-                                    <i data-lucide="{{ icon }}" class="h-4 w-4" aria-hidden="true"></i>
-                                </span>
-                                <p class="mt-3 text-xs font-semibold text-white">{{ title }}</p>
-                                <p class="mt-1 text-xs leading-5 text-white/75">{{ text }}</p>
+                            ('eye', 'Secret Get Only', 'Require get permission on the selected Secret.'),
+                            ('shield-ban', 'Avoid List and Watch', 'Avoid broad Secret discovery unless another feature requires it.'),
+                            ('box', 'Namespace Scope', 'Prefer namespace Role and RoleBinding where practical.'),
+                            ('refresh-cw', 'Credential Scope', 'Review kubeconfig access when responsibilities change.')
+                        ] %}
+                            <div class="flex h-full flex-col rounded-xl border border-outline-default bg-surface-card p-4">
+                                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                                <p class="mt-3 text-xs font-semibold text-content-primary">{{ title }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ text }}</p>
                             </div>
                         {% endfor %}
                     </div>

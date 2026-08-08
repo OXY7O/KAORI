@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
+from threading import Lock
 from typing import Any
 
 from app.extensions.db import db
@@ -22,6 +24,9 @@ REVEAL_NAMESPACE_POLICIES = {
 }
 ENABLED_REVEAL_NAMESPACE_POLICIES = {'step_up', 'approval_required'}
 
+_NAMESPACE_SOURCE_CACHE: dict[str, 'NamespaceSourceSnapshot'] = {}
+_NAMESPACE_SOURCE_CACHE_LOCK = Lock()
+
 
 @dataclass(frozen=True)
 class NamespaceRevealPolicyChange:
@@ -32,6 +37,20 @@ class NamespaceRevealPolicyChange:
     record: SecretRevealNamespacePolicy | None
 
 
+@dataclass(frozen=True)
+class NamespaceSourceSnapshot:
+    cluster_id: str
+    names: tuple[str, ...]
+    state: str
+    last_attempted_at: datetime
+    last_successful_at: datetime | None
+    error: str | None = None
+
+    @property
+    def available(self) -> bool:
+        return self.state == 'available'
+
+
 def normalize_namespace_policy(value: str | None) -> str:
     normalized = (value or 'disabled').strip().lower()
     if normalized not in REVEAL_NAMESPACE_POLICIES:
@@ -39,12 +58,20 @@ def normalize_namespace_policy(value: str | None) -> str:
     return normalized
 
 
+def cluster_reveal_readiness_evidence(cluster: Cluster) -> dict[str, bool]:
+    credential_configured = bool(kubeconfig_for_cluster(cluster))
+    encryption_verified = bool(cluster.secret_reveal_encryption_verified)
+    audit_verified = bool(cluster.secret_reveal_audit_verified)
+    return {
+        'credential_configured': credential_configured,
+        'encryption_verified': encryption_verified,
+        'audit_verified': audit_verified,
+        'ready': bool(credential_configured and encryption_verified and audit_verified),
+    }
+
+
 def cluster_reveal_readiness(cluster: Cluster) -> bool:
-    return bool(
-        kubeconfig_for_cluster(cluster)
-        and cluster.secret_reveal_encryption_verified
-        and cluster.secret_reveal_audit_verified
-    )
+    return cluster_reveal_readiness_evidence(cluster)['ready']
 
 
 def get_namespace_policy_record(
@@ -95,6 +122,54 @@ def get_enabled_namespace_names(cluster_id: str) -> list[str]:
     )
 
 
+def refresh_namespace_source_snapshot(cluster: Cluster) -> NamespaceSourceSnapshot:
+    cluster_id = str(cluster.id)
+    attempted_at = datetime.now(UTC)
+    with _NAMESPACE_SOURCE_CACHE_LOCK:
+        previous = _NAMESPACE_SOURCE_CACHE.get(cluster_id)
+
+    try:
+        names = tuple(sorted(set(list_live_namespaces(cluster_id))))
+    except ValueError as exc:
+        snapshot = NamespaceSourceSnapshot(
+            cluster_id=cluster_id,
+            names=previous.names if previous is not None else (),
+            state='unavailable',
+            last_attempted_at=attempted_at,
+            last_successful_at=previous.last_successful_at if previous is not None else None,
+            error=str(exc),
+        )
+    else:
+        snapshot = NamespaceSourceSnapshot(
+            cluster_id=cluster_id,
+            names=names,
+            state='available',
+            last_attempted_at=attempted_at,
+            last_successful_at=attempted_at,
+            error=None,
+        )
+
+    with _NAMESPACE_SOURCE_CACHE_LOCK:
+        _NAMESPACE_SOURCE_CACHE[cluster_id] = snapshot
+    return snapshot
+
+
+def get_namespace_source_snapshot(
+    cluster: Cluster,
+    *,
+    refresh: bool = False,
+) -> NamespaceSourceSnapshot:
+    cluster_id = str(cluster.id)
+    if refresh:
+        return refresh_namespace_source_snapshot(cluster)
+
+    with _NAMESPACE_SOURCE_CACHE_LOCK:
+        cached = _NAMESPACE_SOURCE_CACHE.get(cluster_id)
+    if cached is not None:
+        return cached
+    return refresh_namespace_source_snapshot(cluster)
+
+
 def update_cluster_reveal_readiness(
     cluster: Cluster,
     *,
@@ -135,7 +210,7 @@ def set_namespace_reveal_policy(
 
     if normalized_policy in ENABLED_REVEAL_NAMESPACE_POLICIES and not cluster_reveal_readiness(cluster):
         raise ValueError(
-            'Verify Kubernetes Secret encryption at rest and Metadata-level audit logging for this cluster before enabling a namespace.'
+            'Configure the cluster credential and verify Secret encryption at rest and Metadata-level audit logging before enabling a namespace.'
         )
 
     if normalized_policy != previous_policy:
@@ -182,29 +257,35 @@ def set_namespace_reveal_policy(
     )
 
 
-def build_namespace_policy_rows(cluster: Cluster) -> list[dict[str, Any]]:
+def build_namespace_policy_rows(
+    cluster: Cluster,
+    *,
+    refresh_source: bool = False,
+) -> tuple[list[dict[str, Any]], NamespaceSourceSnapshot]:
     policy_records = {
         record.namespace: record for record in SecretRevealNamespacePolicy.query.filter_by(cluster_id=cluster.id).all()
     }
-    live_lookup_error = None
-    try:
-        live_names = set(list_live_namespaces(cluster.id))
-    except ValueError as exc:
-        live_names = set()
-        live_lookup_error = str(exc)
+    source_snapshot = get_namespace_source_snapshot(cluster, refresh=refresh_source)
+    source_names = set(source_snapshot.names)
+    names = sorted(source_names.union(policy_records))
 
-    names = sorted(live_names.union(policy_records))
-    return [
-        {
-            'namespace': namespace,
-            'policy': (policy_records[namespace].policy if namespace in policy_records else 'disabled'),
-            'policy_label': REVEAL_NAMESPACE_POLICIES.get(
-                policy_records[namespace].policy if namespace in policy_records else 'disabled',
-                'Disabled',
-            ),
-            'in_live_cluster': namespace in live_names,
-            'live_lookup_error': live_lookup_error,
-            'record': policy_records.get(namespace),
-        }
-        for namespace in names
-    ]
+    rows: list[dict[str, Any]] = []
+    for namespace in names:
+        policy = policy_records[namespace].policy if namespace in policy_records else 'disabled'
+        if not source_snapshot.available:
+            live_state = 'unknown'
+        elif namespace in source_names:
+            live_state = 'available'
+        else:
+            live_state = 'missing'
+        rows.append(
+            {
+                'namespace': namespace,
+                'policy': policy,
+                'policy_label': REVEAL_NAMESPACE_POLICIES.get(policy, 'Disabled'),
+                'in_live_cluster': live_state == 'available',
+                'live_state': live_state,
+                'record': policy_records.get(namespace),
+            }
+        )
+    return rows, source_snapshot

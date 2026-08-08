@@ -11,32 +11,31 @@
         <thead>
             <tr class="border-b border-brand-outline bg-kaori-soft/70 text-xs text-content-secondary">
                 <th class="px-5 py-3 text-left">Namespace</th>
-                <th class="px-5 py-3 text-left">Live Source</th>
+                <th class="px-5 py-3 text-left">Live Namespace</th>
                 <th class="px-5 py-3 text-left">Current Policy</th>
-                <th class="px-5 py-3 text-right">Configure</th>
+                <th class="px-5 py-3 text-right">Set Policy</th>
             </tr>
         </thead>
         <tbody>
             {% for row in namespace_rows %}
                 {% set policy_tone = 'maintenance' if row.policy in ['approval_required', 'step_up'] else 'unknown' %}
+                {% set live_label = 'Available' if row.live_state == 'available' else 'Missing' if row.live_state == 'missing' else 'Unknown' %}
+                {% set live_tone = 'normal' if row.live_state == 'available' else 'warning' if row.live_state == 'missing' else 'unknown' %}
                 <tr class="border-t border-outline-default text-sm transition hover:bg-kaori-soft/40">
                     <td class="px-5 py-3 align-middle">
                         <div class="flex max-w-[360px] items-center gap-2.5">
-                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                                <i data-lucide="box" class="h-4 w-4"></i>
-                            </span>
+                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="box" class="h-4 w-4"></i></span>
                             <div class="min-w-0">
-                                <div class="truncate font-semibold text-content-primary"
-                                     title="{{ row.namespace }}">{{ row.namespace }}</div>
+                                <div class="truncate font-semibold text-content-primary" title="{{ row.namespace }}">{{ row.namespace }}</div>
                                 <div class="mt-0.5 text-xs text-content-muted">Namespace-scoped Secret access</div>
                             </div>
                         </div>
                     </td>
                     <td class="px-5 py-3 text-left align-middle">
-                        {{ table_label.status_label('Current' if row.in_live_cluster else 'Missing', 'normal' if row.in_live_cluster else 'warning') }}
+                        {{ table_label.status_label(live_label, live_tone) }}
                     </td>
                     <td class="px-5 py-3 text-left align-middle">
-                        {{ table_label.status_label(reveal_policy_choices.get(row.policy, row.policy.replace('_', ' ') |title), policy_tone) }}
+                        {{ table_label.status_label(reveal_policy_choices.get(row.policy, row.policy.replace('_', ' ') | title), policy_tone) }}
                     </td>
                     <td class="px-5 py-3 align-middle">
                         <form method="post"
@@ -46,31 +45,30 @@
                               hx-swap="outerHTML show:none"
                               hx-indicator="#secret-reveal-namespace-loading"
                               hx-disabled-elt="button[type='submit']"
+                              x-data="{ initial: '{{ row.policy }}', current: '{{ row.policy }}' }"
                               class="ml-auto flex w-full items-center justify-end gap-2">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="namespace" value="{{ row.namespace }}">
-                            <input type="hidden"
-                                   name="namespace_q"
-                                   value="{{ namespace_filters.query }}">
-                            <input type="hidden"
-                                   name="namespace_policy"
-                                   value="{{ namespace_filters.policy }}">
+                            <input type="hidden" name="namespace_q" value="{{ namespace_filters.query }}">
+                            <input type="hidden" name="namespace_policy" value="{{ namespace_filters.policy }}">
                             <input type="hidden" name="page" value="{{ namespace_pagination.page }}">
-                            <input type="hidden"
-                                   name="per_page"
-                                   value="{{ namespace_pagination.per_page }}">
+                            <input type="hidden" name="per_page" value="{{ namespace_pagination.per_page }}">
                             <select name="policy"
+                                    x-model="current"
                                     aria-label="Reveal policy for {{ row.namespace }}"
-                                    {% if not row.in_live_cluster and row.policy == 'disabled' %}disabled{% endif %}
                                     class="h-10 min-w-0 flex-1 rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 disabled:cursor-not-allowed disabled:bg-surface-disabled disabled:text-content-muted">
                                 {% for value, label in reveal_policy_choices.items() %}
-                                    <option value="{{ value }}" {% if row.policy == value %}selected{% endif %}>{{ label }}</option>
+                                    {% set enable_option_blocked = value != 'disabled' and (not selected_cluster_ready or row.live_state != 'available') %}
+                                    <option value="{{ value }}"
+                                            {% if row.policy == value %}selected{% endif %}
+                                            {% if enable_option_blocked %}disabled{% endif %}>{{ label }}</option>
                                 {% endfor %}
                             </select>
                             <button type="submit"
                                     title="Save {{ row.namespace }} policy"
-                                    {% if not row.in_live_cluster and row.policy == 'disabled' %}disabled{% endif %}
-                                    class="inline-flex h-10 w-20 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-kaori-primary-hover focus:ring-4 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-surface-disabled disabled:text-content-muted disabled:shadow-none">
+                                    :disabled="current === initial"
+                                    :class="current !== initial ? 'border-kaori-primary bg-kaori-primary text-white shadow-sm hover:border-kaori-primary-hover hover:bg-kaori-primary-hover' : 'border-outline-default bg-surface-card text-content-muted shadow-none'"
+                                    class="inline-flex h-10 w-20 shrink-0 items-center justify-center gap-2 rounded-lg border px-3 text-sm font-semibold outline-none transition focus:ring-4 focus:ring-kaori-primary/20 disabled:cursor-not-allowed">
                                 <i data-lucide="save" class="h-4 w-4"></i>
                                 Save
                             </button>
@@ -84,10 +82,14 @@
                             {% set empty_state_icon = "search" %}
                             {% set empty_state_title = "No Namespace Matches the Current Filters" %}
                             {% set empty_state_description = "Adjust the search or reveal policy filter to show namespace settings." %}
+                        {% elif not namespace_source.available %}
+                            {% set empty_state_icon = "cloud-off" %}
+                            {% set empty_state_title = "Live Namespace Source Unavailable" %}
+                            {% set empty_state_description = "Retry the live source after Kubernetes connectivity is restored." %}
                         {% else %}
                             {% set empty_state_icon = "box" %}
                             {% set empty_state_title = "No Live Namespace Available" %}
-                            {% set empty_state_description = "Reload the live namespace list and verify Kubernetes connectivity before enabling namespace-level Secret Reveal." %}
+                            {% set empty_state_description = "Refresh the live source after namespaces are created in Kubernetes." %}
                         {% endif %}
                         {% set empty_state_min_height = "min-h-[190px]" %}
                         {% include 'components/states/_empty_state.html' %}
@@ -110,20 +112,12 @@
               hx-indicator="#secret-reveal-namespace-loading"
               class="flex items-center">
             <input type="hidden" name="cluster_id" value="{{ selected_cluster.id }}">
-            <input type="hidden"
-                   name="namespace_q"
-                   value="{{ namespace_filters.query }}">
-            <input type="hidden"
-                   name="namespace_policy"
-                   value="{{ namespace_filters.policy }}">
+            <input type="hidden" name="namespace_q" value="{{ namespace_filters.query }}">
+            <input type="hidden" name="namespace_policy" value="{{ namespace_filters.policy }}">
             <input type="hidden" name="page" value="1">
-            <select name="per_page"
-                    aria-label="Rows per page"
-                    data-kaori-auto-submit
-                    class="{{ pagination_ui.page_size_classes() }}">
+            <select name="per_page" aria-label="Rows per page" data-kaori-auto-submit class="{{ pagination_ui.page_size_classes() }}">
                 {% for option in namespace_per_page_options %}
-                    <option value="{{ option }}"
-                            {% if namespace_pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                    <option value="{{ option }}" {% if namespace_pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
                 {% endfor %}
             </select>
         </form>
@@ -132,16 +126,7 @@
         {% if namespace_pagination.has_prev %}
             {% set prev_url = url_for('platform_operations.kubernetes.index', tab='secret-reveal', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.prev_page, per_page=namespace_pagination.per_page) %}
             {% set prev_partial_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.prev_page, per_page=namespace_pagination.per_page) %}
-            <a href="{{ prev_url }}"
-               hx-get="{{ prev_partial_url }}"
-               hx-target="#secret-reveal-namespace-table-content"
-               hx-select="#secret-reveal-namespace-table-content"
-               hx-swap="innerHTML"
-               hx-push-url="true"
-               hx-indicator="#secret-reveal-namespace-loading"
-               class="{{ pagination_ui.navigation_classes(disabled=false) }}">
-                <i data-lucide="chevron-left" class="h-4 w-4"></i>Previous
-            </a>
+            <a href="{{ prev_url }}" hx-get="{{ prev_partial_url }}" hx-target="#secret-reveal-namespace-table-content" hx-select="#secret-reveal-namespace-table-content" hx-swap="innerHTML" hx-push-url="true" hx-indicator="#secret-reveal-namespace-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
         {% else %}
             <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
         {% endif %}
@@ -149,16 +134,7 @@
         {% if namespace_pagination.has_next %}
             {% set next_url = url_for('platform_operations.kubernetes.index', tab='secret-reveal', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.next_page, per_page=namespace_pagination.per_page) %}
             {% set next_partial_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.next_page, per_page=namespace_pagination.per_page) %}
-            <a href="{{ next_url }}"
-               hx-get="{{ next_partial_url }}"
-               hx-target="#secret-reveal-namespace-table-content"
-               hx-select="#secret-reveal-namespace-table-content"
-               hx-swap="innerHTML"
-               hx-push-url="true"
-               hx-indicator="#secret-reveal-namespace-loading"
-               class="{{ pagination_ui.navigation_classes(disabled=false) }}">
-                Next<i data-lucide="chevron-right" class="h-4 w-4"></i>
-            </a>
+            <a href="{{ next_url }}" hx-get="{{ next_partial_url }}" hx-target="#secret-reveal-namespace-table-content" hx-select="#secret-reveal-namespace-table-content" hx-swap="innerHTML" hx-push-url="true" hx-indicator="#secret-reveal-namespace-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
         {% else %}
             <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
         {% endif %}

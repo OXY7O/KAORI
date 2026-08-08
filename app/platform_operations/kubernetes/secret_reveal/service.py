@@ -5,10 +5,11 @@ from typing import Any
 
 from flask import current_app
 
+from app.common.presentation import present_user_datetime
 from app.kubernetes_operations.secrets.reveal_policy import (
     REVEAL_NAMESPACE_POLICIES,
     build_namespace_policy_rows,
-    cluster_reveal_readiness,
+    cluster_reveal_readiness_evidence,
 )
 from app.models import Cluster, SecretRevealNamespacePolicy
 
@@ -21,6 +22,7 @@ _NAMESPACE_POLICY_FILTERS = {
     'step_up': 'Step-up authentication',
     'approval_required': 'Approval required',
     'missing': 'Missing from live cluster',
+    'unknown': 'Live state unknown',
 }
 
 
@@ -61,7 +63,9 @@ def _filter_namespace_rows(
     if policy_filter == 'enabled':
         return [row for row in filtered_rows if row['policy'] in {'step_up', 'approval_required'}]
     if policy_filter == 'missing':
-        return [row for row in filtered_rows if not row['in_live_cluster']]
+        return [row for row in filtered_rows if row['live_state'] == 'missing']
+    if policy_filter == 'unknown':
+        return [row for row in filtered_rows if row['live_state'] == 'unknown']
     if policy_filter != 'all':
         return [row for row in filtered_rows if row['policy'] == policy_filter]
     return filtered_rows
@@ -74,6 +78,7 @@ def build_secret_reveal_settings_context(
     namespace_policy_filter: str | None = None,
     page: str | int | None = None,
     per_page: str | int | None = None,
+    refresh_namespace_source: bool = False,
 ) -> dict[str, Any]:
     clusters = Cluster.query.order_by(Cluster.name.asc()).all()
     selected_cluster = None
@@ -88,8 +93,19 @@ def build_secret_reveal_settings_context(
         selected_cluster = clusters[0]
 
     all_namespace_rows: list[dict[str, Any]] = []
+    namespace_source = None
+    selected_cluster_readiness = {
+        'credential_configured': False,
+        'encryption_verified': False,
+        'audit_verified': False,
+        'ready': False,
+    }
     if selected_cluster is not None:
-        all_namespace_rows = build_namespace_policy_rows(selected_cluster)
+        all_namespace_rows, namespace_source = build_namespace_policy_rows(
+            selected_cluster,
+            refresh_source=refresh_namespace_source,
+        )
+        selected_cluster_readiness = cluster_reveal_readiness_evidence(selected_cluster)
 
     normalized_query = (namespace_query or '').strip().lower()
     normalized_policy_filter = _normalize_policy_filter(namespace_policy_filter)
@@ -123,6 +139,22 @@ def build_secret_reveal_settings_context(
         row['policy'] in {'step_up', 'approval_required'} for row in all_namespace_rows
     )
 
+    namespace_source_context = {
+        'state': namespace_source.state if namespace_source is not None else 'unavailable',
+        'available': bool(namespace_source is not None and namespace_source.available),
+        'last_attempted_at': (
+            present_user_datetime(namespace_source.last_attempted_at, empty='Not attempted')
+            if namespace_source is not None
+            else 'Not attempted'
+        ),
+        'last_successful_at': (
+            present_user_datetime(namespace_source.last_successful_at, empty='No successful refresh')
+            if namespace_source is not None
+            else 'No successful refresh'
+        ),
+        'has_successful_snapshot': bool(namespace_source is not None and namespace_source.last_successful_at is not None),
+    }
+
     return {
         'clusters': clusters,
         'selected_cluster': selected_cluster,
@@ -150,11 +182,14 @@ def build_secret_reveal_settings_context(
             'total': len(all_namespace_rows),
             'enabled': selected_enabled_namespace_count,
             'disabled': sum(row['policy'] == 'disabled' for row in all_namespace_rows),
-            'missing': sum(not row['in_live_cluster'] for row in all_namespace_rows),
+            'missing': sum(row['live_state'] == 'missing' for row in all_namespace_rows),
+            'unknown': sum(row['live_state'] == 'unknown' for row in all_namespace_rows),
         },
+        'namespace_source': namespace_source_context,
         'reveal_policy_choices': REVEAL_NAMESPACE_POLICIES,
         'global_reveal_enabled': bool(current_app.config.get('KUBERNETES_SECRET_REVEAL_ENABLED', False)),
-        'selected_cluster_ready': bool(selected_cluster is not None and cluster_reveal_readiness(selected_cluster)),
+        'selected_cluster_readiness': selected_cluster_readiness,
+        'selected_cluster_ready': bool(selected_cluster_readiness['ready']),
         'protected_cluster_count': protected_cluster_count,
         'total_enabled_namespaces': total_enabled_namespaces,
         'selected_enabled_namespace_count': selected_enabled_namespace_count,

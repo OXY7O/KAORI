@@ -46,6 +46,7 @@ def index():
         active_tab=_active_administration_tab(request.args.get('tab')),
         secret_reveal_workspace_url=url_for(
             'platform_operations.kubernetes.secret_reveal_tab_workspace',
+            refresh_namespace='1',
             **workspace_args,
         ),
         **_administration_summary(),
@@ -61,6 +62,7 @@ def secret_reveal_tab_workspace():
         namespace_policy_filter=request.args.get('namespace_policy'),
         page=request.args.get('page'),
         per_page=request.args.get('per_page'),
+        refresh_namespace_source=request.args.get('refresh_namespace') == '1',
     )
     return render_template(
         'platform_operations/kubernetes/_secret_reveal_workspace.html',

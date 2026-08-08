@@ -10,9 +10,11 @@ ROOT = Path(__file__).resolve().parents[1]
 LOCK_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1.md'
 LOCK_V1_1_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_1.md'
 LOCK_V1_2_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_2.md'
+LOCK_V1_3_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_3.md'
 AUDIT_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_AUDIT_2026_08_08.md'
 AUDIT_V1_1_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md'
 AUDIT_V1_2_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_2_AUDIT_2026_08_08.md'
+AUDIT_V1_3_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_3_AUDIT_2026_08_08.md'
 QUALITY_GATE = ROOT / 'scripts/quality_gate.sh'
 CLEANUP = ROOT / 'scripts/cleanup_obsolete_files.sh'
 CORE_UI_LOCK = ROOT / 'scripts/verify_core_workspace_ui_lock.py'
@@ -56,7 +58,7 @@ def template_files() -> list[Path]:
 def main() -> int:
     errors: list[str] = []
 
-    for doc in (LOCK_DOC, LOCK_V1_1_DOC, LOCK_V1_2_DOC, AUDIT_DOC, AUDIT_V1_1_DOC, AUDIT_V1_2_DOC):
+    for doc in (LOCK_DOC, LOCK_V1_1_DOC, LOCK_V1_2_DOC, LOCK_V1_3_DOC, AUDIT_DOC, AUDIT_V1_1_DOC, AUDIT_V1_2_DOC, AUDIT_V1_3_DOC):
         if not doc.exists():
             errors.append(f'missing lock artifact: {doc.relative_to(ROOT).as_posix()}')
 
@@ -201,6 +203,86 @@ def main() -> int:
     if 'Global Reveal Remains Disabled' not in secret_workspace or 'KUBERNETES_SECRET_REVEAL_ENABLED=true' not in secret_workspace:
         errors.append('Secret Reveal global guardrail guidance must remain visible when disabled')
 
+    reveal_policy = read('app/kubernetes_operations/secrets/reveal_policy.py')
+    for required in (
+        'class NamespaceSourceSnapshot:',
+        'def cluster_reveal_readiness_evidence(',
+        "'credential_configured': credential_configured",
+        "state='unavailable'",
+        "live_state = 'unknown'",
+        'get_namespace_source_snapshot(cluster, refresh=refresh_source)',
+        'verify_live_namespace(cluster, normalized_namespace)',
+    ):
+        if required not in reveal_policy:
+            errors.append(f'Secret Reveal v1.3 readiness/source contract missing: {required}')
+
+    secret_service = read('app/platform_operations/kubernetes/secret_reveal/service.py')
+    for required in (
+        'refresh_namespace_source: bool = False',
+        "row['live_state'] == 'missing'",
+        "row['live_state'] == 'unknown'",
+        "'namespace_source': namespace_source_context",
+        "'selected_cluster_readiness': selected_cluster_readiness",
+    ):
+        if required not in secret_service:
+            errors.append(f'Secret Reveal v1.3 presentation contract missing: {required}')
+
+    kubernetes_routes = read('app/platform_operations/kubernetes/routes.py')
+    if "refresh_namespace='1'" not in kubernetes_routes:
+        errors.append('Secret Reveal initial lazy load must explicitly refresh the namespace source')
+
+    namespace_section = read('app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html')
+    for required in (
+        'Live Namespace Source Unavailable',
+        'Last Refreshed',
+        'refresh_namespace=1',
+        'data-lucide="refresh-cw"',
+    ):
+        if required not in namespace_section:
+            errors.append(f'Secret Reveal live-source evidence missing: {required}')
+    if 'refresh_namespace' in namespace_section.split('hx-trigger=', 1)[1].split('class=', 1)[0]:
+        errors.append('Secret Reveal search/filter trigger must not request a live namespace refresh')
+
+    for required in (
+        '>Live Namespace<',
+        '>Set Policy<',
+        "live_label = 'Available'",
+        "else 'Unknown'",
+        'x-data="{ initial:',
+        ':disabled="current === initial"',
+        "value != 'disabled' and (not selected_cluster_ready or row.live_state != 'available')",
+    ):
+        if required not in namespace_table:
+            errors.append(f'Secret Reveal namespace-row contract missing: {required}')
+
+    cluster_workspace = read('app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html')
+    for required in (
+        'Cluster Credential',
+        'selected_cluster_readiness.credential_configured',
+        'All three cluster prerequisites must be satisfied.',
+        'bg-surface-card shadow-sm xl:col-span-5',
+        'Policies activate only when cluster readiness is satisfied.',
+        'secret-reveal-selected-cluster-posture',
+        'hx-swap-oob="outerHTML"',
+    ):
+        if required not in cluster_workspace:
+            errors.append(f'Secret Reveal cluster-readiness contract missing: {required}')
+    if '<aside class="overflow-hidden rounded-2xl border border-kaori-primary bg-kaori-primary' in cluster_workspace:
+        errors.append('Secret Reveal Kubernetes Boundary must not return to a solid Violet surface')
+
+    for required in (
+        'Protection Boundary',
+        'Step-up Authentication',
+        'Independent Approval',
+        'Namespace Policy',
+        'Kubernetes RBAC',
+        'secret-reveal-protected-cluster-count',
+        'secret-reveal-enabled-namespace-count',
+        'secret-reveal-selected-cluster-posture',
+    ):
+        if required not in secret_workspace:
+            errors.append(f'Secret Reveal compact posture/boundary contract missing: {required}')
+
     cluster_workspace = read('app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html')
     for evidence in ('Kubernetes RBAC', 'Step-up', 'Approval'):
         if evidence.lower() not in cluster_workspace.lower() and evidence.lower() not in secret_workspace.lower():
@@ -235,9 +317,10 @@ def main() -> int:
         return 1
 
     print(
-        'KAORI Platform Operations Final Lock v1.2 passed: Kubernetes Administration and Jobs & Executions '
+        'KAORI Platform Operations Final Lock v1.3 passed: Kubernetes Administration and Jobs & Executions '
         'use shared tabs, Title Case, bounded execution attention, expandable execution evidence, worker readiness, '
         'activity-center background feedback, lean Job Configuration rendering, clear configuration surfaces, '
+        'tri-state Secret Reveal live evidence, snapshot-backed namespace filtering, explicit credential readiness, '
         'HTMX-owned registry controls, protected Secret Reveal guardrails, and permanent legacy cleanup.'
     )
     return 0
