@@ -75,11 +75,10 @@ def test_user_directory_uses_shared_kaori_loading_filters_labels_and_expand_deta
     assert "loading_bar.render('users-refresh-indicator'" in content
     assert '{% import "components/table.html" as table_ui %}' in filters
     assert 'table_ui.filter_select_classes()' in filters
-    assert 'Clear Filters' in filters
+    assert 'Clear Filters' not in filters
     assert 'Local Database' in filters
     assert '· Inactive' in filters
-    assert 'lg:grid-cols-[minmax(0,1.45fr)_minmax(0,0.78fr)_minmax(0,0.88fr)_minmax(0,0.88fr)_auto]' in filters
-    assert 'md:col-span-2 lg:col-span-1' in filters
+    assert 'lg:grid-cols-[minmax(0,1.55fr)_minmax(0,0.82fr)_minmax(0,0.9fr)_minmax(0,0.9fr)]' in filters
     assert '{% import "components/details/_expandable_row.html" as expandable %}' in table
     assert 'expandable.toggle_button' in table
     assert 'expandable.static_detail_row' in table
