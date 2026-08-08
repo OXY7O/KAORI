@@ -16,10 +16,18 @@ def build_access_overview() -> dict[str, Any]:
     """Build a read-only Access landing summary from domain-owned sources."""
 
     workspaces: list[dict[str, Any]] = []
+    posture_candidates: list[dict[str, Any]] = []
 
     if _can('users.view'):
         active_users = User.query.filter(User.deleted_at.is_(None), User.account_is_active.is_(True)).count()
         total_users = User.query.filter(User.deleted_at.is_(None)).count()
+        posture_candidates.append(
+            {
+                'icon': 'users-round',
+                'label': 'Active Users',
+                'value': active_users,
+            }
+        )
         workspaces.append(
             {
                 'label': 'User Management',
@@ -37,6 +45,13 @@ def build_access_overview() -> dict[str, Any]:
     if _can('users.manage'):
         enabled_providers = IdentityProvider.query.filter(IdentityProvider.enabled.is_(True)).count()
         total_providers = IdentityProvider.query.count()
+        posture_candidates.append(
+            {
+                'icon': 'fingerprint',
+                'label': 'Providers',
+                'value': enabled_providers,
+            }
+        )
         workspaces.append(
             {
                 'label': 'Identity Providers',
@@ -54,6 +69,13 @@ def build_access_overview() -> dict[str, Any]:
     if _can('roles.view'):
         active_roles = Role.query.filter(Role.is_active.is_(True)).count()
         total_permissions = Permission.query.count()
+        posture_candidates.append(
+            {
+                'icon': 'badge-check',
+                'label': 'Active Roles',
+                'value': active_roles,
+            }
+        )
         workspaces.extend(
             [
                 {
@@ -82,6 +104,13 @@ def build_access_overview() -> dict[str, Any]:
         )
 
     if _can('settings.view_operational_activity'):
+        posture_candidates.append(
+            {
+                'icon': 'history',
+                'label': 'Audit Scope',
+                'value': 'System',
+            }
+        )
         workspaces.append(
             {
                 'label': 'Activity Audit',
@@ -96,7 +125,32 @@ def build_access_overview() -> dict[str, Any]:
             }
         )
 
+    secondary_posture = next(iter(posture_candidates), None) or {
+        'icon': 'shield-check',
+        'label': 'Mode',
+        'value': 'Read Only',
+        'description': 'Overview posture only',
+    }
+    hero_metrics = [
+        {
+            'icon': 'blocks',
+            'label': 'Workspaces',
+            'value': len(workspaces),
+            'description': 'Visible access domains',
+        },
+        {
+            **secondary_posture,
+            'description': {
+                'Active Users': 'Enabled account identities',
+                'Providers': 'Enabled identity sources',
+                'Active Roles': 'Enabled authorization roles',
+                'Audit Scope': 'Administrative evidence scope',
+            }.get(secondary_posture['label'], secondary_posture.get('description', 'Current access posture')),
+        },
+    ]
+
     return {
         'workspace_count': len(workspaces),
         'workspaces': workspaces,
+        'hero_metrics': hero_metrics,
     }
