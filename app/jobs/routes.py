@@ -76,7 +76,7 @@ def _page_context(
     policy_form: JobPolicyForm | None = None,
     policy_error: str | None = None,
 ) -> dict[str, object]:
-    context = _execution_context()
+    context = _execution_context(include_queue_activity=active_section == 'executions')
     context.update(
         _configuration_context(
             selected_job_key=selected_job_key,
@@ -127,7 +127,6 @@ def _render_configuration_job(
     policy_form: JobPolicyForm | None = None,
     policy_error: str | None = None,
     operation_feedback: dict[str, object] | None = None,
-    sync_progress: dict[str, object] | None = None,
     status_code: int = 200,
 ) -> ResponseReturnValue:
     context = _configuration_context(
@@ -136,7 +135,6 @@ def _render_configuration_job(
         policy_error=policy_error,
     )
     context['operation_feedback'] = operation_feedback
-    context['sync_progress'] = sync_progress
     if operation_feedback is not None:
         context['notification_context'] = get_navigation_notification_context(
             user_id=int(current_user.id)
@@ -432,23 +430,9 @@ def run_now(job_key: str) -> ResponseReturnValue:
         queue_feedback=not is_htmx,
     )
     if is_htmx:
-        sync_progress = None
-        if job_key == 'kubernetes.inventory.sync' and outcome.created and job.celery_task_id:
-            try:
-                build_cluster_sync_snapshot = getattr(
-                    import_module('app.cluster.sync_state'),
-                    'build_cluster_sync_snapshot',
-                )
-                sync_progress = build_cluster_sync_snapshot(str(job.celery_task_id))
-            except (RuntimeError, KeyError):
-                logger.exception(
-                    'Could not build immediate inventory sync progress for job %s.',
-                    job.public_id,
-                )
         return _render_configuration_job(
             job_key,
             operation_feedback=feedback,
-            sync_progress=sync_progress,
         )
     return redirect(url_for('jobs.configuration', job_key=job_key))
 

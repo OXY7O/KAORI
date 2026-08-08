@@ -4,7 +4,7 @@ REPORT_SCHEDULE_DEFINITION = JobDefinition(
     key='reports.schedule.dispatch',
     name='Report Schedule Dispatcher',
     domain='Reports',
-    description='Process due report schedules through the dedicated report worker and record generated artifacts.',
+    description='Dispatch due report schedules through the Reports worker.',
     icon='file-clock',
     queue_name='reports',
     workload_class='standard',
@@ -22,7 +22,10 @@ REPORT_SCHEDULE_DEFINITION = JobDefinition(
     default_interval_minutes=5,
     minimum_interval_minutes=1,
     maximum_interval_minutes=60,
-    safety_summary='Each schedule creates a normal report record, stores its artifact through the configured backend, and records delivery results.',
+    safety_summary=(
+        'Each schedule creates a normal report record, stores its artifact through the configured '
+        'backend, and records delivery results.'
+    ),
     execution_summary='Process due report schedules or run the dispatcher manually through the dedicated Reports queue.',
     recent_execution_summary='Latest scheduled and manual report dispatcher executions.',
     default_configuration={'batch_limit': 20},

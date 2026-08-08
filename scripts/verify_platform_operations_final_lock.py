@@ -9,8 +9,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 LOCK_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1.md'
 LOCK_V1_1_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_1.md'
+LOCK_V1_2_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_2.md'
 AUDIT_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_AUDIT_2026_08_08.md'
 AUDIT_V1_1_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md'
+AUDIT_V1_2_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_2_AUDIT_2026_08_08.md'
 QUALITY_GATE = ROOT / 'scripts/quality_gate.sh'
 CLEANUP = ROOT / 'scripts/cleanup_obsolete_files.sh'
 CORE_UI_LOCK = ROOT / 'scripts/verify_core_workspace_ui_lock.py'
@@ -54,7 +56,7 @@ def template_files() -> list[Path]:
 def main() -> int:
     errors: list[str] = []
 
-    for doc in (LOCK_DOC, LOCK_V1_1_DOC, AUDIT_DOC, AUDIT_V1_1_DOC):
+    for doc in (LOCK_DOC, LOCK_V1_1_DOC, LOCK_V1_2_DOC, AUDIT_DOC, AUDIT_V1_1_DOC, AUDIT_V1_2_DOC):
         if not doc.exists():
             errors.append(f'missing lock artifact: {doc.relative_to(ROOT).as_posix()}')
 
@@ -160,6 +162,32 @@ def main() -> int:
     if 'Operational Attention' not in jobs_index or 'job_stats.attention + configuration_stats.attention' not in jobs_index:
         errors.append('Jobs hero must present combined Operational Attention')
 
+    job_routes = read('app/jobs/routes.py')
+    if "_execution_context(include_queue_activity=active_section == 'executions')" not in job_routes:
+        errors.append('Job Configuration must skip inactive Queue Activity topology inspection')
+    job_workspace = read('app/templates/jobs/configuration/_job_workspace.html')
+    if 'sync_progress' in job_workspace or '_quick_sync_status.html' in job_workspace or 'sync_progress' in job_routes:
+        errors.append('Job Configuration must not reintroduce Inventory Sync progress toasts')
+    configuration_workspace = read('app/templates/jobs/configuration/_workspace.html')
+    if 'Planned Job Definitions' in configuration_workspace:
+        errors.append('Job Configuration must list registered jobs only; Planned Job Definitions is retired')
+    if 'Centralized orchestration with domain-owned execution.' not in configuration_workspace:
+        errors.append('Job Configuration compact orchestration helper copy is missing')
+    materialization_job = read('app/templates/jobs/configuration/definitions/_materialization_job.html')
+    if 'Keep the last successful result available.' not in materialization_job:
+        errors.append('Materialization stale-fallback helper copy must remain compact')
+    for relative in (
+        'app/templates/jobs/configuration/definitions/inventory_sync.html',
+        'app/templates/jobs/configuration/definitions/tls_certificate_sync.html',
+        'app/templates/jobs/configuration/definitions/_materialization_job.html',
+    ):
+        source = read(relative)
+        if 'Policy Timeline' not in source or 'overflow-hidden rounded-xl border border-outline-subtle bg-surface-card' not in source:
+            errors.append(f'Job Configuration clear Policy Timeline surface missing: {relative}')
+    report_schedule = read('app/templates/jobs/configuration/definitions/report_schedule.html')
+    if 'article class="rounded-xl border border-outline-subtle bg-surface-card p-4"' not in report_schedule:
+        errors.append('Report delivery-channel cards must use the clear KAORI card surface')
+
     namespace_table = read('app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html')
     if 'min-w-[980px]' in namespace_table or '<div class="overflow-x-auto">' in namespace_table:
         errors.append('Namespace Policies must not force desktop horizontal scrolling')
@@ -207,8 +235,9 @@ def main() -> int:
         return 1
 
     print(
-        'KAORI Platform Operations Final Lock v1.1 passed: Kubernetes Administration and Jobs & Executions '
+        'KAORI Platform Operations Final Lock v1.2 passed: Kubernetes Administration and Jobs & Executions '
         'use shared tabs, Title Case, bounded execution attention, expandable execution evidence, worker readiness, '
+        'activity-center background feedback, lean Job Configuration rendering, clear configuration surfaces, '
         'HTMX-owned registry controls, protected Secret Reveal guardrails, and permanent legacy cleanup.'
     )
     return 0

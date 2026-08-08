@@ -14,7 +14,7 @@
                        placeholder="Inventory, Reports, Analytics…">
             </div>
             <p class="mt-2 text-xs leading-4 text-content-muted">
-                Job orchestration is centralized here while execution logic remains in its owning domain.
+                Centralized orchestration with domain-owned execution.
             </p>
         </div>
 
@@ -63,24 +63,6 @@
             {% endfor %}
         </div>
 
-        <div class="rounded-xl border border-dashed border-outline-default bg-surface-subtle p-4">
-            <p class="text-xs font-semibold text-content-muted">
-                Planned Job Definitions
-            </p>
-            <div class="mt-3 space-y-2 text-xs text-content-secondary">
-                {% for icon, label in [
-                    ('file-chart-column', 'Report Generation'),
-                    ('file-clock', 'Scheduled Report Generation'),
-                    ('brain-circuit', 'Knowledge Base Indexing')
-                ] %}
-                    <div class="flex items-center gap-2">
-                        <i data-lucide="{{ icon }}" class="h-4 w-4 text-kaori-primary"></i>
-                        <span class="font-medium">{{ label }}</span>
-                        <span class="ml-auto text-xs font-semibold text-content-muted">Planned</span>
-                    </div>
-                {% endfor %}
-            </div>
-        </div>
     </aside>
 
     <main class="min-w-0 xl:col-span-8">

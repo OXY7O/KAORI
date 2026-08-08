@@ -143,6 +143,8 @@ The Registry exposes expandable execution evidence from the canonical `JobExecut
 
 Queue Activity combines execution demand with Celery worker readiness. One short-lived topology snapshot is shared across all queues in a render so KAORI does not issue one Celery inspection broadcast per row. Registry and Active Work fragment refreshes skip queue topology inspection entirely.
 
+Job Configuration also skips Queue Activity topology inspection on its initial render. Manual background dispatches, including Inventory Sync, are recorded in Activity Audit/Activity Center and rely on the embedded execution activity surface for progress instead of opening a separate progress toast. Immediate blocking failures may still use standard operational feedback.
+
 Inventory Sync is the first registered configuration. Future report, analytics, forecasting, retention, and reconciliation jobs must register here rather than introducing a new Settings page or parallel scheduler.
 
 ## Implementation boundaries
