@@ -389,3 +389,5 @@ The provider decision shell is owned by `integrations/components/_runtime_decisi
 ### Capability Registry detail interaction
 
 Prometheus and Alertmanager capability registries use a shared `View More` action that mirrors the Kubernetes Capability Registry geometry and `panel-top-open` affordance. Provider capability modals must mirror the Kubernetes capability-evidence information architecture rather than invent provider-specific card stacks: **Capability Contract → Validation Evidence / Operational Impact → Recommended Action → Technical Verification → Evidence Boundary**. Provider-specific query/request syntax belongs only in Technical Verification.
+- Shared Integration `View More` actions must preserve the optional `role` keyword so Runtime Observations, Capability Registry, Prometheus, and Alertmanager can share one presentation macro without breaking semantic data markers.
+

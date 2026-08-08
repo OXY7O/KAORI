@@ -1,9 +1,17 @@
-{% macro view_more(dialog_id, label='View More') -%}
+{#
+  Shared KAORI Integration record action.
+
+  `role` is intentionally preserved for backward compatibility because runtime
+  observations, capability registries, and other evidence tables attach their
+  own semantic data marker while sharing the exact same button presentation.
+#}
+{% macro view_more(dialog_id, label='View More', role='record') -%}
 <button type="button"
         data-kaori-dialog-open
         data-dialog-target="{{ dialog_id }}"
         aria-haspopup="dialog"
         aria-controls="{{ dialog_id }}"
+        data-kaori-{{ role }}-view-more
         class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:border-outline-focus hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-1">
     <i data-lucide="panel-top-open" class="h-3.5 w-3.5" aria-hidden="true"></i>
     <span>{{ label }}</span>
