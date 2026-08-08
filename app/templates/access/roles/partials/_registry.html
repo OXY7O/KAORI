@@ -115,7 +115,7 @@
                 <input type="hidden" name="role_type" value="{{ filters.role_type }}">
                 <input type="hidden" name="state" value="{{ filters.state }}">
                 <span class="text-xs font-semibold text-content-secondary">Rows</span>
-                <select name="per_page" aria-label="Rows Per Page" class="{{ pagination_ui.select_classes() }}">
+                <select name="per_page" aria-label="Rows Per Page" class="{{ pagination_ui.page_size_classes() }}">
                     {% for option in per_page_options %}<option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}
                 </select>
             </form>

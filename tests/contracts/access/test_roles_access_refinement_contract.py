@@ -88,3 +88,9 @@ def test_role_form_uses_sticky_impact_rail_and_dependency_evidence() -> None:
 
 def test_obsolete_role_access_tab_script_is_removed() -> None:
     assert not (ROOT / 'app/static/js/role_access_tabs.js').exists()
+
+
+def test_role_registry_uses_canonical_pagination_page_size_macro() -> None:
+    template = read('app/templates/access/roles/partials/_registry.html')
+    assert 'pagination_ui.page_size_classes()' in template
+    assert 'pagination_ui.select_classes()' not in template
