@@ -12,6 +12,7 @@ from app.integrations.service import (
     build_alertmanager_page,
     build_integration_runtime_detail,
     build_integrations_overview,
+    build_kubernetes_capability_registry,
     build_kubernetes_detail,
     build_kubernetes_page,
     build_kubernetes_registry_row,
@@ -112,6 +113,14 @@ def _kubernetes_detail_context(
     )
     context['capability_validation_job'] = build_validation_snapshot(capability_task_id) if capability_task_id else None
     context['runtime_validation_job'] = build_validation_snapshot(runtime_task_id) if runtime_task_id else None
+    context['capability_registry'] = build_kubernetes_capability_registry(
+        context['feature_rows'],
+        query=request.args.get('capability_q', '').strip(),
+        requirement=request.args.get('capability_requirement', '').strip(),
+        status=request.args.get('capability_status', '').strip(),
+        page=request.args.get('capability_page', 1, type=int) or 1,
+        per_page=request.args.get('capability_per_page', 5, type=int) or 5,
+    )
     if include_history:
         resolved_page = (
             history_page
@@ -154,6 +163,17 @@ def kubernetes_detail(cluster_id: str) -> ResponseReturnValue:
     return render_template(
         'integrations/kubernetes/detail.html',
         **_kubernetes_detail_context(cluster_id, include_history=True),
+    )
+
+
+@integrations_bp.get('/kubernetes/<string:cluster_id>/capabilities/registry')
+@permission_required('clusters.view')
+def kubernetes_capability_registry(cluster_id: str) -> ResponseReturnValue:
+    context = _kubernetes_detail_context(cluster_id)
+    return render_template(
+        'integrations/kubernetes/partials/_capability_registry.html',
+        validation_job=context.get('capability_validation_job'),
+        **context,
     )
 
 

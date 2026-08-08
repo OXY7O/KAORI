@@ -352,9 +352,10 @@ The shared `related_page_card.html` is the controlled contextual exception: it r
 - `Capability Registry` owns one shared KAORI loading bar directly inside the registry header, below the title/action row and before filters. `Run Full Validation` targets that exact element through `hx-indicator`; do not wrap the shared indicator in Alpine `x-show`/`x-cloak`, because inline display state can suppress HTMX indicator visibility.
 - When the worker remains active after the POST response, server-render the same loading bar with `active=validation_job and validation_job.is_active` so it stays visible across polling swaps. Do not create a second loading indicator or a page-local loading implementation for the same operation.
 
-### Capability Registry local interaction loading
+### Capability Registry loading and table interaction
 
-- Capability Registry filter/search/page interactions are client-side, so they do not naturally emit an HTMX request.
-- The registry MUST still use the shared `components/loading_bar.html` presentation for short local transition feedback.
-- One loading region owns both local filter/page transitions and Full Validation request/job activity; do not render a second visual loading bar.
-- Local filter feedback is deliberately brief and returns to the persisted Full Validation activity state after the table recomputes.
+- Capability Registry follows the same loading contract as `Recent Runtime Observations`: search, filters, Rows, Previous/Next, and numeric pagination are server-backed HTMX requests rather than Alpine-only filtering.
+- Every registry interaction targets the canonical registry section and references the one shared `components/loading_bar.html` indicator through `hx-indicator`.
+- The shared bar sits inside the registry header below the title/action row. `Run Full Validation` and registry filter/pagination requests reuse that exact loading element.
+- Do not add page-local timers, `x-show` loading state, or synthetic delays to make client-side filters appear asynchronous. Loading feedback must correspond to a real request or an active background validation job.
+- Default page size remains 5 with 5/10/25/50 options, and filter changes reset the server-backed page to 1.

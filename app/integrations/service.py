@@ -450,6 +450,71 @@ def build_kubernetes_page(
     }
 
 
+def build_kubernetes_capability_registry(
+    feature_rows: list[dict[str, Any]],
+    *,
+    query: str = '',
+    requirement: str = '',
+    status: str = '',
+    page: int = 1,
+    per_page: int = 5,
+) -> dict[str, Any]:
+    """Filter and paginate Kubernetes capability rows for the HTMX registry.
+
+    Capability Registry interactions intentionally follow the same server-backed
+    loading contract as Recent Runtime Observations: filters and pagination issue
+    an HTMX request, the shared loading bar is the request indicator, and the
+    server returns the canonical filtered page.
+    """
+    normalized_query = str(query or '').strip().lower()
+    normalized_requirement = str(requirement or '').strip().lower()
+    normalized_status = str(status or '').strip().lower()
+
+    if normalized_requirement not in {'required', 'optional'}:
+        normalized_requirement = ''
+    if normalized_status not in {'ready', 'legacy', 'blocked'}:
+        normalized_status = ''
+
+    filtered_rows = list(feature_rows)
+    if normalized_query:
+        filtered_rows = [
+            row
+            for row in filtered_rows
+            if normalized_query
+            in ' '.join(
+                str(value or '')
+                for value in (
+                    row.get('key'),
+                    row.get('resource'),
+                    row.get('api_version'),
+                    row.get('stability'),
+                    row.get('requirement_label'),
+                    row.get('status'),
+                )
+            ).lower()
+        ]
+    if normalized_requirement:
+        filtered_rows = [
+            row
+            for row in filtered_rows
+            if ('required' if row.get('required') else 'optional') == normalized_requirement
+        ]
+    if normalized_status:
+        filtered_rows = [row for row in filtered_rows if row.get('status') == normalized_status]
+
+    page_rows, pagination = _paginate(filtered_rows, page=page, per_page=per_page)
+    return {
+        'rows': page_rows,
+        'pagination': pagination,
+        'filters': {
+            'query': normalized_query,
+            'requirement': normalized_requirement,
+            'status': normalized_status,
+        },
+        'total_contracts': len(feature_rows),
+    }
+
+
 def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
     from app.integrations.runtime.presentation import runtime_observation_state_view
     from app.integrations.runtime.repository import list_runtime_history

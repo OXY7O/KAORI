@@ -8,7 +8,7 @@ def read(relative_path: str) -> str:
 
 
 def test_capability_view_more_uses_native_top_layer_dialog() -> None:
-    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
+    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html') + read('app/templates/integrations/kubernetes/partials/_capability_registry.html')
     modal = read('app/templates/integrations/components/_record_detail_modal.html')
     actions = read('app/templates/integrations/components/_record_actions.html')
 
@@ -45,7 +45,7 @@ def test_capability_view_more_uses_native_top_layer_dialog() -> None:
 
 
 def test_capability_dialog_uses_compact_professional_decision_layout() -> None:
-    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
+    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html') + read('app/templates/integrations/kubernetes/partials/_capability_registry.html')
     modal = read('app/templates/integrations/components/_record_detail_modal.html')
 
     for marker in (

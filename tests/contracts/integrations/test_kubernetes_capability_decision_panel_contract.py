@@ -1,6 +1,9 @@
 from pathlib import Path
 
 TEMPLATE = Path("app/templates/integrations/kubernetes/partials/_capability_workspace.html")
+REGISTRY = Path("app/templates/integrations/kubernetes/partials/_capability_registry.html")
+ROUTES = Path("app/integrations/routes.py")
+SERVICE = Path("app/integrations/service.py")
 
 
 def _source() -> str:
@@ -33,7 +36,7 @@ def test_capability_workspace_removes_redundant_validation_side_rail():
 
 
 def test_capability_registry_is_full_width_and_uses_standard_kaori_table():
-    source = _source()
+    source = REGISTRY.read_text(encoding="utf-8")
 
     assert "data-kaori-capability-full-width" in source
     assert "data-kaori-capability-table-standard" in source
@@ -47,7 +50,7 @@ def test_capability_registry_is_full_width_and_uses_standard_kaori_table():
 
 
 def test_capability_registry_filters_do_not_force_horizontal_scroll():
-    source = _source()
+    source = REGISTRY.read_text(encoding="utf-8")
 
     assert 'data-kaori-capability-filters' in source
     assert 'lg:grid-cols-[minmax(0,1fr)_14rem_14rem]' in source
@@ -57,36 +60,53 @@ def test_capability_registry_filters_do_not_force_horizontal_scroll():
     assert 'overflow-x-auto' not in source
 
 
-def test_capability_registry_uses_kaori_pagination_and_loading_contract():
-    source = _source()
+def test_capability_registry_uses_runtime_history_style_htmx_loading_contract():
+    source = REGISTRY.read_text(encoding="utf-8")
+    routes = ROUTES.read_text(encoding="utf-8")
+    service = SERVICE.read_text(encoding="utf-8")
 
     assert 'components/pagination.html' in source
     assert 'components/loading_bar.html' in source
-    assert "loading_bar.render('kubernetes-capability-loading', active=true" in source
+    assert "loading_bar.render('kubernetes-capability-loading', active=validation_job and validation_job.is_active" in source
     assert 'hx-indicator="#kubernetes-capability-loading"' in source
     assert 'data-kaori-capability-loading-region' in source
-    assert 'registryLoading:' in source
-    assert 'validationActive:' in source
-    assert 'showRegistryLoading()' in source
-    assert 'x-show="registryLoading"' in source
-    assert '$watch("requirement", () => { resetPage(); showRegistryLoading(); })' in source
-    assert '$watch("status", () => { resetPage(); showRegistryLoading(); })' in source
-    assert '$watch("query", () => { resetPage(); showRegistryLoading(); })' in source
-    assert 'x-on:htmx:before-request="registryLoading = true"' in source
+    assert "hx-get=\"{{ url_for('integrations.kubernetes_capability_registry'" in source
+    assert 'hx-trigger="input changed delay:300ms from:#kubernetes-capability-search, change delay:100ms from:select"' in source
+    assert 'data-kaori-auto-submit' in source
+    assert 'pagination_ui.numeric_pages(' in source
+    assert 'capability_page' in source
+    assert 'capability_per_page' in source
+    assert "@integrations_bp.get('/kubernetes/<string:cluster_id>/capabilities/registry')" in routes
+    assert 'def kubernetes_capability_registry(' in routes
+    assert 'def build_kubernetes_capability_registry(' in service
+
+    # No page-local fake loading state: filters are real HTMX requests, matching
+    # Recent Runtime Observations and the rest of KAORI server-backed tables.
+    for legacy_token in (
+        'registryLoading:',
+        'validationActive:',
+        'showRegistryLoading()',
+        'loadingTimer:',
+        'x-show="registryLoading"',
+        'pageSize: 5',
+        'filteredRows()',
+    ):
+        assert legacy_token not in source
+        assert legacy_token not in _source()
+
     assert 'data-kaori-capability-pagination' in source
-    assert 'pageSize: 5' in source
-    assert '[5, 10, 25, 50]' in source
     assert 'Showing <span' in source
-    assert '> Capabilities</p>' in source
     assert 'Previous' in source
     assert 'Next' in source
 
 
 def test_capability_registry_keeps_readiness_progress_and_modal_detail_boundary():
-    source = _source()
+    workspace = _source()
+    source = REGISTRY.read_text(encoding="utf-8")
 
-    assert 'aria-label="Capability readiness"' in source
-    assert "bg-kaori-primary" in source
+    assert 'aria-label="Capability readiness"' in workspace
+    assert "bg-kaori-primary" in workspace
+
     assert "record_actions.view_more(" in source
     assert "record_detail_modal.render(" in source
     assert "Capability Decision" in source
