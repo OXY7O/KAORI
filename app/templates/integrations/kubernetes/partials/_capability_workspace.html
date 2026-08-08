@@ -1,8 +1,7 @@
-{% import "components/progress_bar.html" as progress_bar %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "components/table_label.html" as table_label %}
-{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% import "integrations/components/_capability_readiness.html" as capability_readiness %}
 
 {% set capability_counts = namespace(required=0, optional=0, ready=0, legacy=0, blocked=0) %}
 {% for capability_row in feature_rows %}
@@ -22,7 +21,25 @@
 {% set capability_total = feature_rows|length %}
 {% set capability_readiness_percent = ((validated_feature_count * 100 / capability_total) if capability_total else 0) %}
 {% set required_usable_count = capability_counts.required - blocked_features|length %}
-{% set optional_available_count = capability_counts.optional - optional_blocked_features|length %}
+{% set capability_metadata = [
+    'Profile · ' ~ (runtime_state.compatibility_profile or 'Validation Required'),
+    capability_counts.required ~ ' Required',
+    capability_counts.optional ~ ' Optional'
+] %}
+{% set capability_metrics = [
+    {'icon': 'layers-3', 'tone': 'normal', 'label': 'Validated Features', 'value': validated_feature_count, 'description': 'Usable Kubernetes API and effective RBAC evidence.'},
+    {'icon': 'history', 'tone': 'warning' if legacy_features else 'neutral', 'label': 'Legacy Fallbacks', 'value': legacy_features|length, 'description': 'Required contracts currently resolved through fallback APIs.'},
+    {'icon': 'shield-x', 'tone': 'critical' if blocked_features else 'normal', 'label': 'Required Blocks', 'value': blocked_features|length, 'description': 'Core capability contracts blocked by API discovery or RBAC.'}
+] %}
+{% if blocked_features %}
+    {% set capability_next_action = 'Resolve ' ~ (blocked_features|length) ~ ' required API or RBAC block' ~ ('' if blocked_features|length == 1 else 's') ~ ', then rerun Full Validation.' %}
+{% elif legacy_features %}
+    {% set capability_next_action = 'Migrate ' ~ (legacy_features|length) ~ ' legacy API fallback' ~ ('' if legacy_features|length == 1 else 's') ~ ', then rerun Full Validation.' %}
+{% elif optional_blocked_features %}
+    {% set capability_next_action = 'Core workspaces are eligible. Review optional governed access only for approved sensitive-resource workflows.' %}
+{% else %}
+    {% set capability_next_action = 'No corrective action is required. Revalidate after Kubernetes upgrades, API changes, or RBAC changes.' %}
+{% endif %}
 
 <section id="kubernetes-capability-workspace"
          class="relative font-sans {{ integration_ui.section_shell_classes() }}"
@@ -71,108 +88,22 @@
     {% endif %}
 
     <div class="p-5 sm:p-6">
-        <section class="{{ integration_ui.section_shell_classes() }}"
-                 data-kaori-capability-overview
-                 data-kaori-capability-decision-summary
-                 data-kaori-neutral-command-strip>
-            <header class="border-b border-outline-subtle bg-surface-subtle px-5 py-4 sm:px-6">
-                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div class="flex min-w-0 items-start gap-3.5">
-                        {{ integration_ui.palette_icon('badge-check', 'brand', size='lg', rounded='xl') }}
-                        <div class="min-w-0">
-                            <p class="text-base font-semibold text-content-primary">Kubernetes Capability Readiness</p>
-                            <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">One decision surface for API discovery, effective RBAC, compatibility posture, and downstream workspace eligibility.</p>
-                        </div>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-2 lg:justify-end">
-                        {{ table_label.metadata_label('Profile · ' ~ (runtime_state.compatibility_profile or 'Validation Required'), 'layers-3') }}
-                        {{ integration_status(validation_state.readiness, validation_state.readiness_label, display='text') }}
-                    </div>
-                </div>
-            </header>
-
-            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
-                <section class="bg-surface-card p-5" data-kaori-readiness-score>
-                    <div class="flex items-end justify-between gap-4">
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Capability Coverage</p>
-                            <p class="mt-2 text-lg font-semibold tabular-nums text-content-primary">{{ validated_feature_count }} / {{ capability_total }}</p>
-                        </div>
-                        <span class="text-2xl font-semibold tabular-nums text-content-primary">{{ capability_readiness_percent|round|int }}%</span>
-                    </div>
-                    <div class="mt-3" aria-label="Capability readiness">
-                        {{ progress_bar.bar(capability_readiness_percent, 'h-1.5 overflow-hidden rounded-full bg-surface-hover', 'h-full rounded-full bg-kaori-primary transition-all', 'Capability readiness') }}
-                    </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">Validated API and RBAC evidence from the latest Full Validation.</p>
-                </section>
-
-                <section class="bg-surface-card p-5">
-                    <div class="flex items-start justify-between gap-3">
-                        {{ integration_ui.palette_icon('shield-check', 'normal' if blocked_features|length == 0 else 'critical', size='md') }}
-                        <span class="text-2xl font-semibold tabular-nums text-content-primary">{{ required_usable_count }} / {{ capability_counts.required }}</span>
-                    </div>
-                    <p class="mt-4 text-sm font-semibold text-content-primary">Required Usable</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Required capability contracts available to core workspaces.</p>
-                </section>
-
-                <section class="bg-surface-card p-5">
-                    <div class="flex items-start justify-between gap-3">
-                        {{ integration_ui.palette_icon('layers-3', 'warning' if legacy_features else 'normal', size='md') }}
-                        <span class="text-2xl font-semibold tabular-nums text-content-primary">{{ capability_counts.ready }}</span>
-                    </div>
-                    <p class="mt-4 text-sm font-semibold text-content-primary">Stable APIs</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ capability_counts.legacy }} legacy fallback{{ '' if capability_counts.legacy == 1 else 's' }} currently required.</p>
-                </section>
-
-                <section class="bg-surface-card p-5">
-                    <div class="flex items-start justify-between gap-3">
-                        {{ integration_ui.palette_icon('shield-x', 'critical' if blocked_features else ('warning' if optional_blocked_features else 'normal'), size='md') }}
-                        <span class="text-2xl font-semibold tabular-nums text-content-primary">{{ blocked_features|length }}</span>
-                    </div>
-                    <p class="mt-4 text-sm font-semibold text-content-primary">Required Blocks</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ optional_blocked_features|length }} optional gap{{ '' if optional_blocked_features|length == 1 else 's' }} remain outside core readiness.</p>
-                </section>
-            </div>
-
-            <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
-                <section class="bg-surface-card px-5 py-4" data-kaori-capability-gate-decision>
-                    <div class="flex items-start gap-3">
-                        {{ integration_ui.palette_icon('shield-check' if validation_state.readiness == 'ready' else 'shield-alert', 'normal' if validation_state.readiness == 'ready' else 'warning', size='sm') }}
-                        <div class="min-w-0">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Operational Gate</p>
-                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ 'Core Workspaces Eligible' if validation_state.readiness == 'ready' else 'Remediation Required' }}</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]">
-                                {% if validation_state.readiness == 'ready' %}
-                                    Required API and RBAC contracts permit Inventory and downstream workspaces to operate.
-                                {% else %}
-                                    Resolve required API or RBAC blocks before runtime refresh and inventory synchronization.
-                                {% endif %}
-                            </p>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="bg-surface-card px-5 py-4" data-kaori-next-operational-action>
-                    <div class="flex items-start gap-3">
-                        {{ integration_ui.palette_icon('crosshair', 'warning' if blocked_features or legacy_features or optional_blocked_features else 'normal', size='sm') }}
-                        <div class="min-w-0">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Next Operational Action</p>
-                            <p class="mt-1 text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">
-                                {% if blocked_features %}
-                                    Resolve {{ blocked_features|length }} required API or RBAC block{{ '' if blocked_features|length == 1 else 's' }}, then rerun Full Validation.
-                                {% elif legacy_features %}
-                                    Migrate {{ legacy_features|length }} legacy API fallback{{ '' if legacy_features|length == 1 else 's' }}, then revalidate.
-                                {% elif optional_blocked_features %}
-                                    Core readiness is available. Review optional governed access only for approved workflows.
-                                {% else %}
-                                    No corrective action is required. Revalidate after Kubernetes upgrades or RBAC changes.
-                                {% endif %}
-                            </p>
-                        </div>
-                    </div>
-                </section>
-            </div>
-        </section>
+        {{ capability_readiness.render(
+            'Kubernetes Capability Readiness',
+            'Required API discovery, effective RBAC, compatibility, and capability evidence used by Inventory and downstream Kubernetes workspaces.',
+            validation_state.readiness,
+            validation_state.readiness_label,
+            'Validated capability coverage',
+            validated_feature_count ~ ' / ' ~ capability_total,
+            capability_readiness_percent,
+            capability_metadata,
+            capability_metrics,
+            'Core Workspaces Eligible' if validation_state.readiness == 'ready' else 'Remediation Required',
+            'Required API and RBAC contracts permit Inventory and downstream workspaces to operate; runtime health remains an independent gate.' if validation_state.readiness == 'ready' else 'Resolve required API or RBAC evidence before runtime refresh and inventory synchronization.',
+            'normal' if validation_state.readiness == 'ready' else 'critical',
+            'Full Validation owns API discovery, compatibility selection, capability contracts, and effective RBAC. Runtime Refresh owns current Kubernetes API reachability, latency, and health.',
+            capability_next_action
+        ) }}
 
         {% if validation_state.readiness != 'ready' or optional_blocked_features %}
             <section class="mt-4 rounded-xl border border-outline-subtle bg-surface-card p-4" data-kaori-capability-attention>

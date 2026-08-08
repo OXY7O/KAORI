@@ -20,9 +20,10 @@
     next_action=''
 ) -%}
 <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+         data-kaori-capability-readiness
          data-kaori-provider-capability-readiness>
     <div class="grid gap-px bg-outline-subtle xl:grid-cols-[minmax(25rem,1.45fr)_repeat(3,minmax(10rem,0.5fr))]">
-        <div class="bg-surface-card p-5 sm:p-6">
+        <div class="bg-surface-card p-5 sm:p-6" data-kaori-readiness-score>
             <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
                 <div class="flex min-w-0 items-start gap-3.5">
                     {{ integration_ui.palette_icon('badge-check', 'brand', size='lg', rounded='xl') }}
@@ -67,7 +68,7 @@
     </div>
 
     <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle lg:grid-cols-3">
-        <section class="bg-surface-subtle px-4 py-4 sm:px-5">
+        <section class="bg-surface-subtle px-4 py-4 sm:px-5" data-kaori-capability-gate-decision>
             <div class="flex items-start gap-3">
                 {{ integration_ui.palette_icon('shield-check' if gate_tone == 'normal' else 'shield-alert', gate_tone, size='sm') }}
                 <div class="min-w-0">
@@ -86,7 +87,7 @@
                 </div>
             </div>
         </section>
-        <section class="bg-surface-subtle px-4 py-4 sm:px-5">
+        <section class="bg-surface-subtle px-4 py-4 sm:px-5" data-kaori-next-operational-action>
             <div class="flex items-start gap-3">
                 {{ integration_ui.palette_icon('target', 'brand', size='sm') }}
                 <div class="min-w-0">

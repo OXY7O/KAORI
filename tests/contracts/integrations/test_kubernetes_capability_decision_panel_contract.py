@@ -2,6 +2,7 @@ from pathlib import Path
 
 TEMPLATE = Path("app/templates/integrations/kubernetes/partials/_capability_workspace.html")
 REGISTRY = Path("app/templates/integrations/kubernetes/partials/_capability_registry.html")
+READINESS = Path("app/templates/integrations/components/_capability_readiness.html")
 ROUTES = Path("app/integrations/routes.py")
 SERVICE = Path("app/integrations/service.py")
 
@@ -10,17 +11,26 @@ def _source() -> str:
     return TEMPLATE.read_text(encoding="utf-8")
 
 
-def test_capability_readiness_merges_overview_and_decision_into_one_surface():
+def test_capability_readiness_uses_shared_provider_surface():
     source = _source()
+    shared = READINESS.read_text(encoding="utf-8")
 
-    assert "data-kaori-capability-decision-summary" in source
+    assert 'integrations/components/_capability_readiness.html' in source
+    assert 'capability_readiness.render(' in source
     assert "Kubernetes Capability Readiness" in source
-    assert "Capability Coverage" in source
-    assert "Required Usable" in source
-    assert "Stable APIs" in source
+    assert "Validated Features" in source
+    assert "Legacy Fallbacks" in source
     assert "Required Blocks" in source
-    assert "Operational Gate" in source
-    assert "Next Operational Action" in source
+    assert 'data-kaori-capability-readiness' in shared
+    assert "Operational Gate" in shared
+    assert "Evidence Boundary" in shared
+    assert "Next Operational Action" in shared
+    assert 'bg-surface-subtle' in shared
+    assert 'bg-kaori-primary' in shared
+
+    # Presentation geometry belongs to the shared component, not this provider page.
+    assert 'data-kaori-capability-overview' not in source
+    assert 'progress_bar.bar(' not in source
 
 
 def test_capability_workspace_removes_redundant_validation_side_rail():
@@ -102,10 +112,12 @@ def test_capability_registry_uses_runtime_history_style_htmx_loading_contract():
 
 def test_capability_registry_keeps_readiness_progress_and_modal_detail_boundary():
     workspace = _source()
+    shared = READINESS.read_text(encoding="utf-8")
     source = REGISTRY.read_text(encoding="utf-8")
 
-    assert 'aria-label="Capability readiness"' in workspace
-    assert "bg-kaori-primary" in workspace
+    assert 'capability_readiness.render(' in workspace
+    assert 'progress_bar.bar(' in shared
+    assert "bg-kaori-primary" in shared
 
     assert "record_actions.view_more(" in source
     assert "record_detail_modal.render(" in source

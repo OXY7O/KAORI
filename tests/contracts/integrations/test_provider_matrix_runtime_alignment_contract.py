@@ -7,17 +7,22 @@ def read(path: str) -> str:
     return (ROOT / path).read_text()
 
 
-def test_provider_validation_workspaces_share_capability_readiness_component():
+def test_all_capability_workspaces_share_one_readiness_component():
     shared = read('app/templates/integrations/components/_capability_readiness.html')
+    kubernetes = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
     prometheus = read('app/templates/prometheus/partials/_detail_validation_content.html')
     alertmanager = read('app/templates/alertmanager/partials/_detail_validation_content.html')
 
+    assert 'data-kaori-capability-readiness' in shared
     assert 'data-kaori-provider-capability-readiness' in shared
     assert 'Validated capability coverage' not in shared  # label is provider supplied
-    assert "capability_readiness.render(" in prometheus
-    assert "capability_readiness.render(" in alertmanager
-    assert 'Validation Decision' not in prometheus
-    assert 'Validation Decision' not in alertmanager
+    for source in (kubernetes, prometheus, alertmanager):
+        assert "capability_readiness.render(" in source
+        assert 'Validation Decision' not in source
+
+    # Kubernetes no longer owns a one-off copy of the readiness geometry.
+    assert 'data-kaori-capability-overview' not in kubernetes
+    assert 'progress_bar.bar(' not in kubernetes
 
 
 def test_provider_runtime_workspaces_share_kubernetes_style_decision_component():
