@@ -12,13 +12,13 @@ def test_platform_operations_contains_overview_jobs_data_lifecycle_and_kubernete
     assert 'Overview' in menu
     assert 'Jobs &amp; Executions' in menu
     assert 'Data Lifecycle' in menu
-    assert 'Kubernetes Administration' in menu
+    assert 'K8s Administration' in menu
     assert "url_for('platform_operations.overview.index')" in menu
     assert "url_for('jobs.executions')" in menu
     assert "url_for('platform_operations.data_lifecycle.index')" in menu
     assert "url_for('platform_operations.kubernetes.index')" in menu
     assert 'Inventory Sync' not in menu
-    assert menu.index('Overview') < menu.index('Jobs &amp; Executions') < menu.index('Data Lifecycle') < menu.index('Kubernetes Administration')
+    assert menu.index('Overview') < menu.index('Jobs &amp; Executions') < menu.index('Data Lifecycle') < menu.index('K8s Administration')
     assert 'Job Configuration' in page
     assert "url_for('jobs.configuration')" in page
 

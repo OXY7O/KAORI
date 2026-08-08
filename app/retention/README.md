@@ -7,8 +7,9 @@ This package provides the shared archive-first lifecycle used by **Platform Oper
 - `operational_activity`: canonical Activity Audit records plus persistent user Notification Center rows from the shared `notifications` table; transient toasts are excluded because they are not persisted.
 - `job_execution`: terminal canonical worker executions and subscriber snapshots.
 - `runtime_observation`: append-only Recent Runtime Observations for Kubernetes, Prometheus/Thanos, Alertmanager, and future providers using the shared `IntegrationRuntimeObservation` model.
+- `analytics_snapshot`: reusable Analytics/Forecast materialization rows from `analytics_snapshots`; pending or still-serveable snapshots remain protected until stale grace and hot retention have both elapsed.
 
-Future domains such as generated reports, analytics datasets, and forecast results should be added as adapters rather than separate retention subsystems.
+Future domains such as generated reports and Intelligence execution evidence should be added as adapters rather than separate retention subsystems.
 
 ## Safety invariants
 
@@ -23,7 +24,7 @@ Future domains such as generated reports, analytics datasets, and forecast resul
 
 ## Scale and scheduling
 
-Celery Beat runs a lightweight dispatcher every 15 minutes. Persistent per-domain policies decide whether a domain is due and at what hour/minute. Due domains are fanned out as separate maintenance jobs, so Activity Audit and Job Execution retention do not create one large database/storage burst.
+Celery Beat runs a lightweight dispatcher every 15 minutes. Persistent per-domain policies decide whether a domain is due and at what hour/minute. Due domains are fanned out as separate maintenance jobs, so Activity Audit, Job Execution, Runtime Observation, and Analytics Snapshot retention do not create one large database/storage burst.
 
 Transient connectivity failures receive one bounded automatic retry using `RETENTION_RETRY_DELAY_SECONDS` (default 60 seconds). Non-retryable or exhausted failures remain terminal and keep cleanup blocked. Production consumes the default `RETENTION_CELERY_QUEUE=maintenance` through the existing dedicated `maintenance-worker`; only a custom retention queue requires an additional queue consumer.
 
@@ -87,3 +88,7 @@ Restore/import remains an administrative capability and must include duplicate p
 ## Operational activity lifecycle
 
 `notifications` is the canonical persisted source for both the administrative **Activity Audit** and deck-visible **Notification Center** records. The `operational_activity` adapter archives every persisted row regardless of `deck_visible`, so audit-only events, user notifications, and authentication events remain under one archive-first policy. `protect_unreviewed` may extend hot retention for unread persisted records. Request-local transient toasts created without persistence are intentionally outside Data Lifecycle.
+
+## Analytics snapshot lifecycle
+
+`analytics_snapshots` is managed by the `analytics_snapshot` lifecycle adapter. The adapter archives Capacity, Utilization, Storage, Workload, Top Consumers, Alerts, dashboard materialization, and Forecast rows from the shared snapshot table. Cleanup never removes `pending` rows or snapshots that are still within their stale-serve window. Eligibility is frozen only after the stale deadline is older than the hot-retention cutoff; cleanup re-checks the current row before deletion so a concurrent refresh is preserved and produces `cleanup_partial` instead of deleting fresh evidence. The default hot-retention boundary is 30 days, verified archive retention is 180 days, and the scheduled window is 04:15 in the configured Celery timezone.

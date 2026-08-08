@@ -64,8 +64,8 @@ def test_data_lifecycle_navigation_and_breadcrumb_are_platform_owned() -> None:
 
     assert 'Jobs &amp; Executions' in menu
     assert 'Data Lifecycle' in menu
-    assert 'Kubernetes Administration' in menu
-    assert menu.index('Jobs &amp; Executions') < menu.index('Data Lifecycle') < menu.index('Kubernetes Administration')
+    assert 'K8s Administration' in menu
+    assert menu.index('Jobs &amp; Executions') < menu.index('Data Lifecycle') < menu.index('K8s Administration')
     assert "url_for('platform_operations.data_lifecycle.index')" in menu
     assert "has_permission('platform_operations.view_data_lifecycle')" in sidebar
     assert 'Data Lifecycle' not in settings_menu
@@ -112,6 +112,7 @@ def test_data_lifecycle_final_lock_is_release_gated() -> None:
     assert (ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_LOCK_V1.md').exists()
     assert (ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_LOCK_V1_1.md').exists()
     assert (ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_LOCK_V1_2.md').exists()
+    assert (ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_LOCK_V1_3.md').exists()
     assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_AUDIT_2026_08_08.md').exists()
     assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md').exists()
     assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_2_AUDIT_2026_08_08.md').exists()

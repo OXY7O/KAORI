@@ -14,9 +14,11 @@ def test_notification_center_is_personal_and_distinct_from_activity_audit() -> N
 
     assert '<h1 class="{{ page_hero.title_classes() }}">Notification Center</h1>' in page
     assert 'Personal Operations' in page
-    assert 'Center Boundary' in page
+    assert 'Personal Inbox' in page
+    assert 'Notification Posture' in page
+    assert 'Center Boundary' not in page
     assert 'Activity Audit' in page
-    assert 'remains the administrative system-wide evidence view.' in page
+    assert 'Activity Audit remains the system-wide administrative evidence view.' in page
     assert 'Notifications' in content
     assert 'Active Work' in content
     assert 'Personal Operations Inbox' in content
@@ -61,18 +63,39 @@ def test_notification_center_uses_quiet_kaori_surfaces() -> None:
     assert 'Active Work' in deck
 
 
+def test_notification_center_history_uses_kaori_table_contract() -> None:
+    content = read('app/templates/notifications/partials/_center_page_content.html')
+
+    for token in (
+        'components/table.html',
+        'components/table_label.html',
+        'Notification',
+        'Event',
+        'Status',
+        'Received',
+        'State',
+        'Action',
+        'table_ui.table_classes(',
+        'table_label.status_label(',
+    ):
+        assert token in content
+
+
 def test_notification_center_exposes_canonical_runtime_and_lifecycle_boundaries() -> None:
     content = read('app/templates/notifications/partials/_center_page_content.html')
 
     assert "url_for('jobs.executions')" in content
-    assert 'this page does not create a second execution registry.' in content
+    assert 'Canonical queued and running work mirrored from Jobs &amp; Executions.' in content
     assert 'Lifecycle Boundary' in content
     assert "domain='operational_activity'" in content
-    assert 'Transient toasts are not persisted and are not archived.' in content
+    assert 'Persistent notifications share the Activity Audit retention policy.' in content
+    assert 'Transient toasts remain outside Data Lifecycle.' in content
 
 
 def test_notification_center_final_lock_is_documented_and_release_gated() -> None:
     assert (ROOT / 'docs/design/KAORI_NOTIFICATION_CENTER_LOCK_V1.md').exists()
+    assert (ROOT / 'docs/design/KAORI_NOTIFICATION_CENTER_LOCK_V1_1.md').exists()
+    assert (ROOT / 'docs/design/audits/KAORI_NOTIFICATION_CENTER_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md').exists()
     assert (ROOT / 'docs/design/audits/KAORI_NOTIFICATION_CENTER_FINAL_LOCK_AUDIT_2026_08_08.md').exists()
     assert (ROOT / 'scripts/verify_notification_center_final_lock.py').exists()
     assert 'verify_notification_center_final_lock.py' in read('scripts/quality_gate.sh')

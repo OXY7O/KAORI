@@ -18,9 +18,12 @@ REQUIRED = (
     'docs/design/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_LOCK_V1.md',
     'docs/design/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_LOCK_V1_1.md',
     'docs/design/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_LOCK_V1_2.md',
+    'docs/design/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_LOCK_V1_3.md',
     'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_AUDIT_2026_08_08.md',
     'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md',
     'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_2_AUDIT_2026_08_08.md',
+    'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_3_AUDIT_2026_08_08.md',
+    'app/retention/domains/analytics_snapshot.py',
     'migrations/versions/20260808_data_lifecycle_platform_operations.py',
     'app/settings/data_lifecycle_compat.py',
 )
@@ -153,6 +156,38 @@ def main() -> int:
         if required not in retention_presentation:
             errors.append(f'Data Lifecycle v1.2 coverage semantics missing: {required}')
 
+    registry = read('app/retention/domains/__init__.py')
+    for required in (
+        'from app.retention.domains.analytics_snapshot import AnalyticsSnapshotArchiveDomain',
+        "'analytics_snapshot': AnalyticsSnapshotArchiveDomain",
+    ):
+        if required not in registry:
+            errors.append(f'Analytics Snapshot lifecycle adapter registration missing: {required}')
+
+    analytics_domain = read('app/retention/domains/analytics_snapshot.py')
+    for required in (
+        "name = 'analytics_snapshot'",
+        "source_model = 'analytics_snapshots'",
+        "AnalyticsSnapshot.status != 'pending'",
+        'stale_deadline < cutoff_at',
+        'safe_ids = [row.id for row in rows if _eligible_for_boundary(row, cutoff_at=cutoff_at)]',
+        "'payload': row.payload_json",
+        "'last_job_execution_id': row.last_job_execution_id",
+    ):
+        if required not in analytics_domain:
+            errors.append(f'Analytics Snapshot safety/archive contract missing: {required}')
+
+    for required in (
+        "'analytics_snapshot': 'Analytics Snapshots'",
+        "'label': 'Analytics Materialization'",
+        "'label': 'Forecast History'",
+        "'label': 'Dashboard Evidence'",
+    ):
+        if required not in retention_presentation:
+            errors.append(f'Analytics Snapshot lifecycle presentation missing: {required}')
+    if "selected.name == 'analytics_snapshot'" not in domain_workspace or 'Serve Window Protection' not in domain_workspace:
+        errors.append('Analytics Snapshots must expose Serve Window Protection in Retention Policies')
+
     runtime_domain = read('app/retention/domains/runtime_observation.py')
     if 'IntegrationRuntimeObservation.query.filter(' not in runtime_domain:
         errors.append('Runtime Observation archive domain must read the canonical integration runtime model')
@@ -207,8 +242,8 @@ def main() -> int:
     ):
         if required not in menu:
             errors.append(f'Platform Operations navigation missing: {required}')
-    if menu.find('Jobs &amp; Executions') > menu.find('Data Lifecycle') or menu.find('Data Lifecycle') > menu.find('Kubernetes Administration'):
-        errors.append('Platform Operations navigation order must be Jobs & Executions → Data Lifecycle → Kubernetes Administration')
+    if menu.find('Jobs &amp; Executions') > menu.find('Data Lifecycle') or menu.find('Data Lifecycle') > menu.find('K8s Administration'):
+        errors.append('Platform Operations navigation order must be Jobs & Executions → Data Lifecycle → K8s Administration')
     if 'Data Lifecycle' in settings_menu or 'data_lifecycle' in settings_menu:
         errors.append('Settings navigation must not expose Data Lifecycle')
 
@@ -277,11 +312,11 @@ def main() -> int:
         return 1
 
     print(
-        'KAORI Data Lifecycle Final Lock v1.2 passed: Platform Operations owns route, template, RBAC, navigation, '
+        'KAORI Data Lifecycle Final Lock v1.3 passed: Platform Operations owns route, template, RBAC, navigation, '
         'feedback and presentation boundaries; Settings is redirect-only; archive-first retention remains shared; '
         'Jobs & Executions remains canonical runtime evidence; Lifecycle Coverage explicitly maps Activity Audit, persistent '
         'Notification Center records, authentication audit, and provider-neutral Kubernetes/Prometheus/Alertmanager '
-        'runtime observations; shared tabs, dark-mode-safe surfaces, Archive History pagination and compatibility migration are frozen.'
+        'runtime observations plus stale-serve-protected Analytics Snapshots; shared tabs, dark-mode-safe surfaces, Archive History pagination and compatibility migration are frozen.'
     )
     return 0
 

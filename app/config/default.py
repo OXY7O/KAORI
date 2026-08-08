@@ -125,7 +125,14 @@ def _retention_queue_name() -> str:
 
 def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
     schedule: dict[str, dict[str, object]] = {}
-    if _env_bool('ACTIVITY_RETENTION_SCHEDULE_ENABLED', True) or _env_bool('JOB_EXECUTION_RETENTION_ENABLED', True):
+    if any(
+        (
+            _env_bool('ACTIVITY_RETENTION_SCHEDULE_ENABLED', True),
+            _env_bool('JOB_EXECUTION_RETENTION_ENABLED', True),
+            _env_bool('RUNTIME_OBSERVATION_RETENTION_ENABLED', True),
+            _env_bool('ANALYTICS_SNAPSHOT_RETENTION_ENABLED', True),
+        )
+    ):
         schedule['data-lifecycle-dispatcher'] = {
             'task': 'app.retention.tasks.run_scheduled_retention',
             'schedule': crontab(minute='*/15'),
@@ -625,7 +632,7 @@ class Config:
     ARCHIVE_SCHEDULED_DOMAINS = tuple(
         item.strip().lower().replace('-', '_')
         for item in _env_str(
-            'ARCHIVE_SCHEDULED_DOMAINS', 'operational_activity,job_execution,runtime_observation'
+            'ARCHIVE_SCHEDULED_DOMAINS', 'operational_activity,job_execution,runtime_observation,analytics_snapshot'
         ).split(',')
         if item.strip()
     )
@@ -680,6 +687,18 @@ class Config:
     )
     RUNTIME_OBSERVATION_RETENTION_SCHEDULE_MINUTE = _bounded_env_int(
         'RUNTIME_OBSERVATION_RETENTION_SCHEDULE_MINUTE', 45, 0, 59
+    )
+
+    # Reusable AnalyticsSnapshot archive-first retention policy.
+    ANALYTICS_SNAPSHOT_RETENTION_ENABLED = _env_bool('ANALYTICS_SNAPSHOT_RETENTION_ENABLED', True)
+    ANALYTICS_SNAPSHOT_RETENTION_DAYS = _env_int('ANALYTICS_SNAPSHOT_RETENTION_DAYS', 30)
+    ANALYTICS_SNAPSHOT_ARCHIVE_RETENTION_DAYS = _env_int('ANALYTICS_SNAPSHOT_ARCHIVE_RETENTION_DAYS', 180)
+    ANALYTICS_SNAPSHOT_RETENTION_BATCH_SIZE = _env_int('ANALYTICS_SNAPSHOT_RETENTION_BATCH_SIZE', 5000)
+    ANALYTICS_SNAPSHOT_RETENTION_SCHEDULE_HOUR = _bounded_env_int(
+        'ANALYTICS_SNAPSHOT_RETENTION_SCHEDULE_HOUR', 4, 0, 23
+    )
+    ANALYTICS_SNAPSHOT_RETENTION_SCHEDULE_MINUTE = _bounded_env_int(
+        'ANALYTICS_SNAPSHOT_RETENTION_SCHEDULE_MINUTE', 15, 0, 59
     )
 
     REPORT_SCHEDULE_TIMEZONE = _env_str(

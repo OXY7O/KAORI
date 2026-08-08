@@ -42,8 +42,8 @@ def test_activity_audit_and_user_notifications_share_one_lifecycle_source() -> N
     assert "'label': 'Notification Center'" in presentation
     assert "'label': 'Authentication Audit'" in presentation
     assert 'Activity Audit and persistent Notification Center records share the same archive-first policy' in activity
-    assert 'Persistent Notification Center records share the Activity Audit retention policy.' in center
-    assert 'Transient toasts are not persisted and are not archived.' in center
+    assert 'Persistent notifications share the Activity Audit retention policy.' in center
+    assert 'Transient toasts remain outside Data Lifecycle.' in center
 
 
 def test_data_lifecycle_exposes_coverage_instead_of_new_parallel_domains() -> None:
@@ -57,3 +57,4 @@ def test_data_lifecycle_exposes_coverage_instead_of_new_parallel_domains() -> No
     assert "'operational_activity': OperationalActivityArchiveDomain" in registry
     assert "'job_execution': JobExecutionArchiveDomain" in registry
     assert "'runtime_observation': RuntimeObservationArchiveDomain" in registry
+    assert "'analytics_snapshot': AnalyticsSnapshotArchiveDomain" in registry

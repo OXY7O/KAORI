@@ -288,11 +288,12 @@ def _domain_label(name: str) -> str:
         'operational_activity': 'Activity Audit',
         'job_execution': 'Job Executions',
         'runtime_observation': 'Runtime Observations',
+        'analytics_snapshot': 'Analytics Snapshots',
     }.get(name, name.replace('_', ' ').title())
 
 
 def _domain_icon(name: str) -> str:
-    return {'operational_activity': 'scroll-text', 'job_execution': 'workflow', 'runtime_observation': 'activity'}.get(
+    return {'operational_activity': 'scroll-text', 'job_execution': 'workflow', 'runtime_observation': 'activity', 'analytics_snapshot': 'chart-no-axes-combined'}.get(
         name, 'database'
     )
 
@@ -302,6 +303,7 @@ def _domain_description(name: str) -> str:
         'operational_activity': 'Activity Audit and persistent user notifications.',
         'job_execution': 'Canonical queue, progress, results, and worker metadata.',
         'runtime_observation': 'Kubernetes, Prometheus, and Alertmanager runtime evidence.',
+        'analytics_snapshot': 'Reusable analytics and forecast materialization snapshots.',
     }.get(name, 'KAORI operational data domain.')
 
 
@@ -348,6 +350,23 @@ def _domain_coverage(name: str) -> tuple[dict[str, str], ...]:
                 'description': 'Recent Runtime Observations for Alertmanager integration targets.',
             },
         ),
+        'analytics_snapshot': (
+            {
+                'icon': 'chart-spline',
+                'label': 'Analytics Materialization',
+                'description': 'Capacity, utilization, storage, workload, top-consumer, and alert datasets.',
+            },
+            {
+                'icon': 'line-chart',
+                'label': 'Forecast History',
+                'description': 'Reusable forecast snapshots stored in the shared analytics snapshot table.',
+            },
+            {
+                'icon': 'layout-dashboard',
+                'label': 'Dashboard Evidence',
+                'description': 'Shared materialized alert evidence reused by Kubernetes dashboards.',
+            },
+        ),
     }.get(name, ())
 
 
@@ -356,6 +375,7 @@ def _domain_coverage_note(name: str) -> str | None:
         'operational_activity': 'One retention policy governs the shared notifications table; the user inbox and Activity Audit are different views over the same persisted records.',
         'job_execution': 'Execution payloads remain domain-owned; lifecycle archives canonical execution metadata and result references.',
         'runtime_observation': 'The policy is provider-neutral. Future integrations using IntegrationRuntimeObservation inherit the same lifecycle boundary.',
+        'analytics_snapshot': 'Cleanup applies only after a snapshot is outside both its stale-serve window and the configured hot-retention boundary.',
     }.get(name)
 
 
@@ -364,6 +384,7 @@ def _domain_exclusion_note(name: str) -> str | None:
         'operational_activity': 'Transient toasts are not persisted and therefore are not lifecycle-managed.',
         'job_execution': 'Domain datasets referenced by a job are not deleted by the Job Executions retention policy.',
         'runtime_observation': 'Full provider configuration and credentials are not part of runtime-observation archives.',
+        'analytics_snapshot': 'Pending or still-serveable snapshots are protected from archive cleanup.',
     }.get(name)
 
 

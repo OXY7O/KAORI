@@ -1,6 +1,8 @@
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
 {% import "notifications/components/_activity_center_items.html" as center_item %}
 {% set active_jobs = activity_center.get('active_jobs', []) %}
 {% set history_items = activity_center.get('history_items', []) %}
@@ -18,11 +20,11 @@
         <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h2 class="text-base font-semibold text-content-primary">Personal Operations Inbox</h2>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Persistent account notifications and live background work share one synchronized operational surface.</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Persistent account outcomes and canonical active work in one synchronized surface.</p>
             </div>
             <div class="flex flex-wrap gap-2 text-xs font-semibold text-content-muted">
-                <span class="inline-flex min-h-6 items-center gap-1.5 rounded-md border border-outline-subtle bg-surface-subtle px-2"><i data-lucide="refresh-cw" class="h-3 w-3"></i>Auto refresh · 15s</span>
-                <span class="inline-flex min-h-6 items-center gap-1.5 rounded-md border border-outline-subtle bg-surface-subtle px-2"><i data-lucide="database" class="h-3 w-3"></i>Persistent evidence</span>
+                <span class="inline-flex min-h-6 items-center gap-1.5 rounded-md border border-outline-subtle bg-surface-subtle px-2"><i data-lucide="refresh-cw" class="h-3 w-3"></i>Auto Refresh · 15s</span>
+                <span class="inline-flex min-h-6 items-center gap-1.5 rounded-md border border-outline-subtle bg-surface-subtle px-2"><i data-lucide="database" class="h-3 w-3"></i>Persistent Evidence</span>
             </div>
         </header>
 
@@ -44,10 +46,10 @@
                 <div class="flex flex-col gap-3 rounded-xl border border-outline-default bg-surface-card p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <p class="text-sm font-semibold text-content-primary">Active Work</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Queued and running work is read from canonical JobExecution records; this page does not create a second execution registry.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Canonical queued and running work mirrored from Jobs &amp; Executions.</p>
                     </div>
                     {% if current_user.has_permission('jobs.view') %}
-                        <a href="{{ url_for('jobs.executions') }}" class="inline-flex min-h-9 items-center gap-2 rounded-md border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-strong hover:bg-surface-hover hover:text-content-primary"><i data-lucide="external-link" class="h-3.5 w-3.5"></i>Open Jobs &amp; Executions</a>
+                        <a href="{{ url_for('jobs.executions') }}" class="{{ table_ui.action_classes() }}"><i data-lucide="external-link" class="h-3.5 w-3.5"></i>Open Jobs &amp; Executions</a>
                     {% endif %}
                 </div>
                 <div data-local-activity-list class="space-y-3"></div>
@@ -63,9 +65,12 @@
                 </div>
             {% else %}
                 <div class="flex flex-col gap-3 rounded-xl border border-outline-default bg-surface-card p-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <p class="text-sm font-semibold text-content-primary">Persistent Notifications</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Unread {{ activity_center.unread_count }} · {{ activity_center.attention_count }} need attention.</p>
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="{{ table_ui.block_icon_classes() }}"><i data-lucide="inbox" class="h-5 w-5"></i></span>
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-content-primary">Notification Inbox</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ activity_center.unread_count }} unread · {{ activity_center.attention_count }} need attention · newest first.</p>
+                        </div>
                     </div>
                     {% if activity_center.unread_count %}
                         <form method="POST" action="{{ url_for('notifications.mark_all_read', surface='page', view=selected_view, page=pager.page, per_page=pager.per_page) }}">
@@ -74,7 +79,7 @@
                                     hx-post="{{ url_for('notifications.mark_all_read', surface='page', view=selected_view, page=pager.page, per_page=pager.per_page) }}"
                                     hx-target="#activity-notification-page"
                                     hx-swap="outerHTML"
-                                    class="inline-flex min-h-9 items-center gap-2 rounded-md border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-strong hover:bg-surface-hover hover:text-content-primary">
+                                    class="{{ table_ui.action_classes() }}">
                                 <i data-lucide="check-check" class="h-3.5 w-3.5"></i>Mark All Read
                             </button>
                         </form>
@@ -83,7 +88,7 @@
                 {% if activity_center.attention_count %}
                     {{ operational_callout.render(
                         activity_center.attention_count ~ ' notification' ~ ('' if activity_center.attention_count == 1 else 's') ~ ' need attention',
-                        'Unread warnings and failed operations are highlighted below.',
+                        'Unread warnings and failed operations are prioritized in the inbox below.',
                         icon='triangle-alert',
                         tone='warning',
                         variant='semantic'
@@ -91,8 +96,75 @@
                 {% endif %}
                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
                     {% if history_items %}
-                        <div class="space-y-3 p-3 sm:p-4">
-                            {% for notification in history_items %}{{ center_item.notification_item(notification, surface='page', target='#activity-notification-page', page=pager.page, per_page=pager.per_page) }}{% endfor %}
+                        <div class="overflow-x-auto">
+                            <table class="{{ table_ui.table_classes('min-w-[980px]') }}">
+                                <thead class="{{ table_ui.head_classes() }}">
+                                    <tr>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Notification</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Event</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Status</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">Received</th>
+                                        <th class="{{ table_ui.header_cell_classes() }}">State</th>
+                                        <th class="{{ table_ui.header_cell_classes(true) }}">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="{{ table_ui.body_classes() }}">
+                                    {% for notification in history_items %}
+                                        {% set tone = 'normal' if notification.status == 'success' else ('warning' if notification.status == 'warning' else ('critical' if notification.status == 'error' else 'info')) %}
+                                        {% set status_icon = 'check-circle-2' if notification.status == 'success' else ('triangle-alert' if notification.status == 'warning' else ('circle-x' if notification.status == 'error' else 'info')) %}
+                                        {% set read_url = url_for('notifications.mark_read', notification_id=notification.id, surface='page', page=pager.page, per_page=pager.per_page) %}
+                                        {% set read_hx_url = url_for('notifications.mark_read', notification_id=notification.id, surface='page', view='notifications', page=pager.page, per_page=pager.per_page) %}
+                                        <tr class="{{ table_ui.row_classes() }} {% if not notification.is_read %}bg-surface-subtle{% endif %}">
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <div class="flex min-w-[22rem] items-start gap-3">
+                                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {% if tone == 'normal' %}bg-status-normal-soft text-status-normal-text{% elif tone == 'warning' %}bg-status-warning-soft text-status-warning-text{% elif tone == 'critical' %}bg-status-critical-soft text-status-critical-text{% else %}bg-status-info-soft text-status-info-text{% endif %}">
+                                                        <i data-lucide="{{ status_icon }}" class="h-4 w-4"></i>
+                                                    </span>
+                                                    <div class="min-w-0">
+                                                        <div class="flex items-center gap-2">
+                                                            <p class="text-sm font-semibold leading-5 text-content-primary">{{ notification.title }}</p>
+                                                            {% if not notification.is_read %}<span class="h-2 w-2 shrink-0 rounded-full bg-status-info" title="Unread"></span>{% endif %}
+                                                        </div>
+                                                        <p class="mt-1 max-w-[34rem] text-xs leading-5 text-content-secondary">{{ notification.message }}</p>
+                                                        {% if notification.detail %}<p class="mt-1 max-w-[34rem] text-xs leading-5 text-content-muted">{{ notification.detail }}</p>{% endif %}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                {{ table_label.metadata_label(notification.event_label, 'tag') }}
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                {{ table_label.status_label(notification.status_label, tone, status_icon) }}
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                <span class="whitespace-nowrap text-xs font-medium text-content-secondary">{{ notification.created_label }}</span>
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes() }}">
+                                                {{ table_label.status_indicator_label(notification.read_label, 'unknown' if notification.is_read else 'info') }}
+                                            </td>
+                                            <td class="{{ table_ui.cell_classes(true) }}">
+                                                <div class="flex justify-end gap-2">
+                                                    {% if notification.action_url %}
+                                                        <a href="{{ notification.action_url }}" class="{{ table_ui.action_classes() }}"><i data-lucide="arrow-up-right" class="h-3.5 w-3.5"></i>Open</a>
+                                                    {% endif %}
+                                                    {% if not notification.is_read %}
+                                                        <form method="POST" action="{{ read_url }}">
+                                                            {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                                            <input type="hidden" name="next" value="{{ request.full_path }}">
+                                                            <button type="submit"
+                                                                    hx-post="{{ read_hx_url }}"
+                                                                    hx-target="#activity-notification-page"
+                                                                    hx-swap="outerHTML"
+                                                                    class="{{ table_ui.action_classes() }}"><i data-lucide="check" class="h-3.5 w-3.5"></i>Read</button>
+                                                        </form>
+                                                    {% endif %}
+                                                    {% if notification.is_read and not notification.action_url %}<span class="text-xs font-medium text-content-muted">No Action</span>{% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
                     {% else %}
                         <div class="px-5 py-12 text-center">
@@ -133,7 +205,7 @@
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary dark:text-kaori-accent"><i data-lucide="archive-restore" class="h-4 w-4"></i></span>
                         <div class="min-w-0 flex-1">
                             <p class="text-sm font-semibold text-content-primary">Lifecycle Boundary</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Persistent Notification Center records share the Activity Audit retention policy. Transient toasts are not persisted and are not archived.</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Persistent notifications share the Activity Audit retention policy. Transient toasts remain outside Data Lifecycle.</p>
                             {% if current_user.has_permission('platform_operations.view_data_lifecycle') %}
                                 <a href="{{ url_for('platform_operations.data_lifecycle.index', tab='policies', domain='operational_activity') }}" class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-kaori-primary hover:underline dark:text-kaori-accent"><i data-lucide="external-link" class="h-3.5 w-3.5"></i>Open Data Lifecycle</a>
                             {% endif %}

@@ -83,11 +83,14 @@ def test_platform_operations_overview_uses_kaori_page_components() -> None:
 
     for token in (
         'components/page_hero.html',
-        'components/operational_section_card.html',
         'components/table_label.html',
+        'components/operational_section_card.html',
         'components/section_link_button.html',
-        'Operational Posture',
-        'Control Plane Boundaries',
+        'Platform Overview',
+        'Platform Posture',
+        'Workspace Posture',
+        'Operating Boundaries',
+        'Read-only overview; changes stay in each workspace.',
         'table_label.status_indicator_label',
         'section_link_button.render',
     ):
@@ -100,7 +103,7 @@ def test_platform_operations_overview_is_first_navigation_target() -> None:
     welcome = read('app/welcome/shortcuts.py')
 
     assert "url_for('platform_operations.overview.index')" in menu
-    assert menu.index('Overview') < menu.index('Jobs &amp; Executions') < menu.index('Data Lifecycle') < menu.index('Kubernetes Administration')
+    assert menu.index('Overview') < menu.index('Jobs &amp; Executions') < menu.index('Data Lifecycle') < menu.index('K8s Administration')
     assert "endpoint.startswith('platform_operations.overview.')" in breadcrumb
     assert "('jobs.view', 'platform_operations.overview.index')" in welcome
     assert "('platform_operations.view_data_lifecycle', 'platform_operations.overview.index')" in welcome
@@ -109,7 +112,10 @@ def test_platform_operations_overview_is_first_navigation_target() -> None:
 
 def test_platform_operations_overview_final_lock_is_release_gated() -> None:
     assert (ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_OVERVIEW_LOCK_V1.md').exists()
+    assert (ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_OVERVIEW_LOCK_V1_1.md').exists()
     assert (ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V2_0.md').exists()
+    assert (ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V2_2.md').exists()
     assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_OVERVIEW_FINAL_LOCK_AUDIT_2026_08_08.md').exists()
+    assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_OVERVIEW_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md').exists()
     assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V2_0_AUDIT_2026_08_08.md').exists()
     assert 'verify_platform_operations_overview_final_lock.py' in read('scripts/quality_gate.sh')

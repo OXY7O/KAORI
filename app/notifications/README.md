@@ -199,6 +199,8 @@ static progress marker and never controls polling state.
 
 ## Full Notification Center page
 
-`/notifications/` remains a dedicated personal operational inbox because it serves a different audience and purpose from **Activity Audit**. It is login-scoped, shows only deck-visible records targeted to the current user, provides standard 5/10/25/50 pagination, explicit read actions, and a synchronized **Active Work** view. Activity Audit remains permission-gated and system-wide. The page never becomes a second execution registry: Active Work reads canonical `JobExecution` records and links to Jobs & Executions for full evidence.
+`/notifications/` remains a dedicated personal operational inbox because it serves a different audience and purpose from **Activity Audit**. The hero uses the standardized **Notification Posture** context panel, while the Notifications workspace uses the shared KAORI table with `Notification / Event / Status / Received / State / Action` columns, standard 5/10/25/50 pagination, and explicit read/open actions.
 
-Persistent Notification Center rows and Activity Audit rows share the `notifications` table and therefore the same **Platform Operations → Data Lifecycle → Activity Audit** archive-first policy. Audit-only rows remain outside the personal inbox through `deck_visible=false` but are still lifecycle-managed. Transient request-local toasts are not persisted and are intentionally excluded from retention and archive.
+The page is login-scoped and shows only deck-visible records targeted to the current user. **Active Work** mirrors canonical `JobExecution` state and links to Jobs & Executions for full evidence; it never becomes a second execution registry. Activity Audit remains permission-gated and system-wide.
+
+Persistent Notification Center rows and Activity Audit rows share the `notifications` table and therefore the same **Platform Operations → Data Lifecycle → Activity Audit** archive-first policy. Audit-only rows remain outside the personal inbox through `deck_visible=false` but are still lifecycle-managed. Transient request-local toasts are not persisted and remain outside Data Lifecycle.

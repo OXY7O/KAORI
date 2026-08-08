@@ -7,7 +7,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 REQUIRED = (
     'docs/design/KAORI_NOTIFICATION_CENTER_LOCK_V1.md',
+    'docs/design/KAORI_NOTIFICATION_CENTER_LOCK_V1_1.md',
     'docs/design/audits/KAORI_NOTIFICATION_CENTER_FINAL_LOCK_AUDIT_2026_08_08.md',
+    'docs/design/audits/KAORI_NOTIFICATION_CENTER_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md',
     'app/templates/notifications/index.html',
     'app/templates/notifications/partials/_center_page_content.html',
     'app/templates/notifications/components/_activity_center_items.html',
@@ -41,25 +43,41 @@ def main() -> int:
     for required in (
         'Notification Center',
         'Personal Operations',
-        'Center Boundary',
+        'Personal Inbox',
+        'Notification Posture',
+        'Unread',
         'Active Work',
         'Activity Audit',
+        'Activity Audit remains the system-wide administrative evidence view.',
         "url_for('notifications.activity_log')",
     ):
         if required not in page:
             errors.append(f'Notification Center hero/boundary contract missing: {required}')
+    if 'Center Boundary' in page:
+        errors.append('Notification Center v1.1 must not reintroduce the verbose Center Boundary panel')
 
     for required in (
         'Personal Operations Inbox',
         'components/framed_workspace_tabs.html',
         'framed_workspace_tabs.render_navigation(',
+        'components/table.html',
+        'components/table_label.html',
         'Notifications',
         'Active Work',
+        'Notification',
+        'Event',
+        'Status',
+        'Received',
+        'State',
+        'Action',
+        'table_ui.table_classes(',
+        'table_label.status_label(',
         'components/pagination.html',
         'Rows Per Page',
         "pagination_ui.resource_name('Notifications'",
         'Lifecycle Boundary',
-        'Transient toasts are not persisted and are not archived.',
+        'Persistent notifications share the Activity Audit retention policy.',
+        'Transient toasts remain outside Data Lifecycle.',
         "url_for('platform_operations.data_lifecycle.index', tab='policies', domain='operational_activity')",
         "url_for('jobs.executions')",
     ):
@@ -69,7 +87,7 @@ def main() -> int:
     if 'rounded-xl border border-kaori-primary/20 bg-kaori-soft p-1' in content:
         errors.append('full Notification Center must not use the old brand-heavy segmented track')
     if 'role="tablist"' in content:
-        errors.append('full Notification Center must use the shared server-owned framed navigation, not a page-local tablist')
+        errors.append('full Notification Center must use shared server-owned framed navigation, not a page-local tablist')
     if 'macro render_navigation' not in framed_tabs or 'framed-workspace-v2-server' not in framed_tabs:
         errors.append('shared framed workspace component must own server-backed Notification Center navigation geometry')
     if 'border-kaori-primary/20 bg-kaori-soft' in items:
@@ -108,7 +126,7 @@ def main() -> int:
             print(f'- {error}')
         return 1
 
-    print('KAORI Notification Center Final Lock v1 passed.')
+    print('KAORI Notification Center Final Lock v1.1 passed.')
     return 0
 
 

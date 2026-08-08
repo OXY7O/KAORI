@@ -50,6 +50,7 @@ def build_platform_operations_overview_context(
                 ),
                 'action_endpoint': 'jobs.executions',
                 'action_label': 'Open Jobs & Executions',
+                'boundary_label': 'Canonical execution evidence',
             }
         )
 
@@ -82,6 +83,7 @@ def build_platform_operations_overview_context(
                 ),
                 'action_endpoint': 'platform_operations.data_lifecycle.index',
                 'action_label': 'Open Data Lifecycle',
+                'boundary_label': 'Archive-first governance',
             }
         )
 
@@ -102,7 +104,7 @@ def build_platform_operations_overview_context(
         workspaces.append(
             {
                 'key': 'kubernetes',
-                'label': 'Kubernetes Administration',
+                'label': 'K8s Administration',
                 'icon': 'server-cog',
                 'description': 'Protected Kubernetes controls with explicit readiness and authorization boundaries.',
                 'status_label': status_label,
@@ -113,7 +115,8 @@ def build_platform_operations_overview_context(
                     ('shield', 'Global Reveal', 'Enabled' if global_enabled else 'Disabled'),
                 ),
                 'action_endpoint': 'platform_operations.kubernetes.index',
-                'action_label': 'Open Kubernetes Administration',
+                'action_label': 'Open K8s Administration',
+                'boundary_label': 'Protected control boundary',
             }
         )
 

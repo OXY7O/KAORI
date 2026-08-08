@@ -62,6 +62,17 @@
                 </footer>
             {% endif %}
         </section>
+        {% if selected.name == 'analytics_snapshot' %}
+            <section class="rounded-xl border border-outline-default bg-surface-subtle p-4">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary dark:text-kaori-accent"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-content-primary">Serve Window Protection</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Pending, current, and stale-but-serveable snapshots remain in hot storage. The lifecycle boundary starts only after stale grace has ended and the configured hot-retention window has also elapsed.</p>
+                    </div>
+                </div>
+            </section>
+        {% endif %}
         {% if lifecycle.preview %}
             <div class="rounded-xl border border-kaori-primary/25 bg-kaori-soft p-4">
                 <div class="flex items-start gap-3">

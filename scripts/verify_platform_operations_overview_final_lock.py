@@ -18,7 +18,9 @@ def main() -> int:
         'app/platform_operations/overview/presentation.py',
         'app/templates/platform_operations/overview/index.html',
         'docs/design/KAORI_PLATFORM_OPERATIONS_OVERVIEW_LOCK_V1.md',
+        'docs/design/KAORI_PLATFORM_OPERATIONS_OVERVIEW_LOCK_V1_1.md',
         'docs/design/audits/KAORI_PLATFORM_OPERATIONS_OVERVIEW_FINAL_LOCK_AUDIT_2026_08_08.md',
+        'docs/design/audits/KAORI_PLATFORM_OPERATIONS_OVERVIEW_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md',
     )
     for relative in required_files:
         if not (ROOT / relative).exists():
@@ -66,20 +68,26 @@ def main() -> int:
             errors.append(f'Overview must remain lightweight/read-only: {forbidden}')
 
     for required in (
-        'Operational Posture',
-        'Control Plane Boundaries',
+        'Platform Overview',
+        'Platform Posture',
+        'Workspace Posture',
+        'Operating Boundaries',
+        'Read-only overview; changes stay in each workspace.',
         'components/page_hero.html',
+        'components/table_label.html',
         'components/operational_section_card.html',
+        'components/section_link_button.html',
         'table_label.status_indicator_label',
         'section_link_button.render',
+        'lg:grid-cols-3',
     ):
         if required not in template:
             errors.append(f'Overview UI contract missing: {required}')
     for forbidden in ('hx-post=', '<form', 'type="submit"', 'role="tablist"'):
         if forbidden in template:
-            errors.append(f'Overview must remain navigation-only: {forbidden}')
+            errors.append(f'Overview must remain navigation-only and use the compact v1.1 layout: {forbidden}')
 
-    if not (menu.index('Overview') < menu.index('Jobs &amp; Executions') < menu.index('Data Lifecycle') < menu.index('Kubernetes Administration')):
+    if not (menu.index('Overview') < menu.index('Jobs &amp; Executions') < menu.index('Data Lifecycle') < menu.index('K8s Administration')):
         errors.append('Platform Operations navigation order drifted')
 
     for required in (
@@ -103,7 +111,7 @@ def main() -> int:
             print(f'ERROR: {error}')
         return 1
 
-    print('KAORI Platform Operations Overview Final Lock v1 passed.')
+    print('KAORI Platform Operations Overview Final Lock v1.1 passed.')
     return 0
 
 
