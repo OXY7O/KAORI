@@ -1,36 +1,54 @@
-<section class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <div class="flex flex-col gap-4 px-5 py-4 lg:flex-row lg:items-center lg:justify-between lg:px-6">
+{% import "components/operational_flow_steps.html" as operational_flow_steps %}
+<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <header class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
         <div class="flex min-w-0 items-start gap-3">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
                 <i data-lucide="contact-round" class="h-5 w-5"></i>
             </span>
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
-                    <h2 class="text-sm font-semibold text-content-primary">Directory Provisioning</h2>
-                    <span class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-subtle px-2 text-[10px] font-semibold text-content-secondary">
-                        LDAP Workflow
-                    </span>
+                    <h2 class="text-base font-semibold text-content-primary">Directory Provisioning</h2>
+                    <span class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-subtle px-2 text-[10px] font-semibold text-content-secondary">LDAP Workflow</span>
                 </div>
-                <p class="mt-1 text-xs leading-5 text-content-muted">
-                    Project approved LDAP identities into KAORI accounts, then assign local authorization through Roles &amp; Access.
-                </p>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">Project approved LDAP identities into KAORI accounts, then assign local authorization without taking ownership of directory credentials.</p>
             </div>
         </div>
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center lg:shrink-0">
-            <div class="grid grid-cols-2 gap-2">
-                <div class="rounded-lg border border-outline-default bg-surface-subtle px-3 py-2.5">
-                    <p class="text-xs font-semibold text-content-muted">LDAP Providers</p>
-                    <p class="mt-1 text-sm font-bold text-content-primary">{{ summary.ldap }}</p>
-                </div>
-                <div class="rounded-lg border border-outline-default bg-surface-subtle px-3 py-2.5">
-                    <p class="text-xs font-semibold text-content-muted">Identity Links</p>
-                    <p class="mt-1 text-sm font-bold text-content-primary">{{ summary.ldap_identity_links }}</p>
-                </div>
-            </div>
-            <a href="{{ url_for('users.external_identities') }}" class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:border-outline-strong hover:bg-surface-hover">
-                <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                Open Directory Provisioning
-            </a>
+        <a href="{{ url_for('users.external_identities') }}"
+           class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:border-outline-strong hover:bg-surface-hover">
+            <i data-lucide="arrow-up-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+            Open Directory Provisioning
+        </a>
+    </header>
+
+    <div class="grid border-b border-outline-subtle sm:grid-cols-3 sm:divide-x sm:divide-outline-subtle">
+        <div class="px-5 py-4 sm:px-6">
+            <p class="text-xs font-semibold text-content-muted">LDAP Providers</p>
+            <p class="mt-1 text-2xl font-bold tracking-tight text-content-primary">{{ summary.ldap }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Configured directory sources available to the provisioning workflow.</p>
         </div>
+        <div class="border-t border-outline-subtle px-5 py-4 sm:border-t-0 sm:px-6">
+            <p class="text-xs font-semibold text-content-muted">Identity Links</p>
+            <p class="mt-1 text-2xl font-bold tracking-tight text-content-primary">{{ summary.ldap_identity_links }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Projected LDAP identities already linked to KAORI accounts.</p>
+        </div>
+        <div class="border-t border-outline-subtle px-5 py-4 sm:border-t-0 sm:px-6">
+            <p class="text-xs font-semibold text-content-muted">Authorization Owner</p>
+            <p class="mt-1 text-sm font-bold text-content-primary">KAORI Role</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Authentication remains directory-owned; application access remains local.</p>
+        </div>
+    </div>
+
+    <div class="bg-surface-hover px-5 py-4 sm:px-6">
+        {% set provisioning_rows = [
+            [
+                ('scan-search', 'Validate Provider', 'Confirm directory reachability, TLS, and service-bind readiness.'),
+                ('search', 'Find Identity', 'Search the selected directory for the intended external identity.')
+            ],
+            [
+                ('badge-check', 'Assign Role', 'Choose the local KAORI role and initial account state.'),
+                ('user-plus', 'Provision Account', 'Create the account projection and external identity link without copying credentials.')
+            ]
+        ] %}
+        {{ operational_flow_steps.render(provisioning_rows, aria_label='Directory Provisioning Flow') }}
     </div>
 </section>

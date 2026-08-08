@@ -60,6 +60,12 @@ User Management must not call Flask `flash()`. Every create, update, activate, d
 
 `users/index.html` is the page shell. Reusable sections live in `users/partials/`. Forms remain dedicated templates because they are independent workflows. Templates contain presentation branching only; business rules remain in Python.
 
+## Identity Providers refinement baseline
+
+Identity Providers uses the Access/Inventory visual grammar while `app/users` remains the provider-administration owner. The registry uses shared KAORI table, filter, loading, expandable-detail, and pagination components. Add/Edit provider forms use sticky right rails; LDAP setup is presented as an always-visible controlled flow, while SSO guidance remains collapsible. Draft provider configuration can be tested live before save without persisting validation as readiness evidence. Provider secret values remain runtime-owned and only environment-reference names may appear in UI evidence.
+
+This is not the Identity Providers Final Lock. Directory Provisioning and durable validation-evidence policy remain open for review.
+
 ## External-provider extension boundary
 
 Provider discovery, external subject binding, LDAP directory search, administrative LDAP provisioning, and controlled Google/GitHub JIT are implemented. Protocol behavior remains in Auth provider adapters; Users owns only administration forms, lifecycle orchestration, and projection requests. Generic OIDC, SAML, group/claim mapping, reconciliation, and deprovisioning remain future extensions.
@@ -121,8 +127,8 @@ The provider form is split so provider-specific UI remains traceable and only ac
 | `templates/users/providers/partials/_sso_configuration.html`  | SSO credentials, JIT role, Google-domain policy, and GitHub-subject policy.                                                       |
 | `templates/users/providers/partials/_registry.html`           | Shared KAORI provider registry with server-side Search / Type / State filtering, loading evidence, and expandable rows.            |
 | `templates/users/providers/partials/_provider_detail.html`    | Expanded provider identity, authentication contract, projection evidence, and administrative actions.                             |
-| `templates/users/providers/partials/_directory_provisioning_strip.html` | Full-width LDAP provisioning workflow strip between provider posture and the registry.                                      |
-| `templates/users/providers/partials/_provider_guidance.html`  | Sticky provider-form guidance with default-collapsed setup summaries, callback evidence, and runbook reference.                    |
+| `templates/users/providers/partials/_directory_provisioning_strip.html` | Full-width LDAP provisioning workflow with posture evidence, four controlled steps, and the Directory Provisioning action.                                      |
+| `templates/users/providers/partials/_provider_guidance.html`  | Sticky provider-form guidance using always-visible Role Assignment Flow-style provider setup guidance, callback evidence, and a compact runbook reference.                    |
 | `static/js/identity_provider_form.js`                         | Provider selection, panel visibility, inactive-control disabling, JIT policy selection, callback preview, and dynamic SSO labels. |
 
 Full administrator configuration is documented in `docs/authentication/IDENTITY_PROVIDER_CONFIGURATION.md`.
@@ -133,12 +139,12 @@ The Identity Providers review keeps the page open for final Access UI lock while
 
 - the hero uses the shared Inventory-style KAORI `page_hero.context_card()` pattern;
 - Provider Registry Overview separates configuration completeness, enablement, provider family, and identity-link evidence;
-- the Provider Registry uses shared KAORI table/filter/loading/detail/pagination components, server-side HTMX filtering, and the standard 5/10/25/50 Rows contract;
+- the Provider Registry uses shared KAORI table/filter/loading/detail components, right-aligned matching-count evidence, full-width HTMX loading feedback, and server-side filtering;
 - `Enabled` and `Configured` are independent states; KAORI does not claim durable `Validated` readiness because provider validation results are currently on-demand operational feedback rather than persisted provider evidence;
 - provider detail surfaces may display environment-variable references, but never runtime secret values;
 - LDAP Directory Provisioning remains a child workflow of Identity Providers and local KAORI role assignment remains the authorization boundary;
-- the provider index is a full-width operational workspace: authentication/provider-family guidance is consolidated into Provider Registry Overview, while Directory Provisioning is a horizontal workflow strip above the registry;
-- LDAP Setup Guidance opens by default as a shared KAORI box-flow; Google/GitHub guidance and the technical runbook remain collapsed, while form right rails remain sticky at `xl:top-5`. Add/Edit forms can test current values before Save without persisting validation posture.
+- the provider index is a full-width operational workspace: authentication/provider-family guidance is consolidated into Provider Registry Overview, while Directory Provisioning is a dedicated operational workflow above the registry;
+- LDAP, Google OIDC, and GitHub OAuth setup guidance use the same always-visible ordered flow grammar as Role Assignment Flow; the Technical Runbook is a compact non-expandable reference, while form right rails remain sticky at `xl:top-5`.
 
 This refinement is not the Identity Providers Final Lock. Directory Provisioning and remaining Access child pages are still reviewed independently before Access is final-locked.
 

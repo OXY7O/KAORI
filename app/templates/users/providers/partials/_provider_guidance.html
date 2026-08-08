@@ -1,84 +1,57 @@
-{% import "components/view_more_content.html" as view_more %}
-{% import "components/operational_flow_steps.html" as flow_steps %}
+{% import "components/info_flow.html" as info_flow %}
 <aside class="space-y-5 xl:sticky xl:top-5">
     <div data-provider-info="ldap" {% if selected_type != 'ldap' %}hidden{% endif %}>
-        {% call view_more.render(
+        {% set ldap_setup_steps = [
+            ('Connect Directory', 'Reach LDAPS or StartTLS and trust the directory certificate chain used by KAORI.'),
+            ('Configure Service Bind', 'Use a read-only Bind DN that can search the configured Base DN and mapped attributes.'),
+            ('Map Identity', 'Confirm username, email, display name, and stable-ID attributes before projecting accounts.'),
+            ('Validate and Provision', 'Test the current configuration, save it, then provision approved identities with a KAORI role.')
+        ] %}
+        {{ info_flow.render(
             'LDAP Setup Guidance',
-            'Controlled setup from directory reachability through account projection.',
-            icon='network',
-            open_by_default=true,
-            aria_label='LDAP Setup Guidance',
-            closed_label='View Flow',
-            open_label='Collapse Flow'
-        ) %}
-            {% set ldap_flow_rows = [
-                [
-                    ('network', 'Connect Directory', 'Reach LDAPS or StartTLS and trust the directory CA.'),
-                    ('key-round', 'Configure Service Bind', 'Use a read-only Bind DN and runtime secret reference.')
-                ],
-                [
-                    ('list-tree', 'Map Identity', 'Confirm username, email, display name, and stable ID attributes.'),
-                    ('user-plus', 'Project Access', 'Test, save, enable, then provision approved identities with a KAORI role.')
-                ]
-            ] %}
-            {{ flow_steps.render(ldap_flow_rows, aria_label='LDAP Setup Flow') }}
-        {% endcall %}
+            'Controlled path from directory connectivity to locally authorized KAORI access.',
+            ldap_setup_steps,
+            icon='workflow',
+            note='LDAP remains the credential authority; KAORI owns the provider contract, identity projection, and local role assignment.',
+            note_icon='shield-check',
+            open_by_default=true
+        ) }}
     </div>
 
     <div data-provider-info="google_oidc" {% if selected_type != 'google_oidc' %}hidden{% endif %}>
-        {% call view_more.render(
+        {% set google_setup_steps = [
+            ('Create OAuth Client', 'Create a Google Web application client and complete the required consent configuration.'),
+            ('Register Callback', 'Add the exact KAORI callback URL below as an authorized redirect URI.'),
+            ('Supply Credentials', 'Store the Client ID in KAORI and resolve the Client Secret through the runtime environment reference.'),
+            ('Control Admission', 'For JIT, choose a non-admin role and admit only approved verified email domains.')
+        ] %}
+        {{ info_flow.render(
             'Google OIDC Guidance',
-            'OAuth application registration, callback, credential reference, and admission policy.',
-            icon='chrome',
-            open_by_default=false,
-            aria_label='Google OIDC Guidance'
-        ) %}
-            <div class="space-y-4">
-                {% set google_steps = [
-                    ('1', 'Create OAuth Client', 'Create a Google Web application client and complete the required consent configuration.'),
-                    ('2', 'Register Callback', 'Add the exact KAORI callback URL below as an authorized redirect URI.'),
-                    ('3', 'Supply Credentials', 'Store the Client ID in KAORI and provide the Client Secret through the runtime environment reference.'),
-                    ('4', 'Control Admission', 'For JIT, choose a non-admin role and allow only approved verified email domains.')
-                ] %}
-                {% for number, title, text in google_steps %}
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-xs font-semibold text-kaori-primary">{{ number }}</span>
-                        <div class="min-w-0">
-                            <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ text }}</p>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-        {% endcall %}
+            'Controlled path from OAuth client registration to locally authorized KAORI access.',
+            google_setup_steps,
+            icon='workflow',
+            note='Google authenticates identity; KAORI retains the local role and account-lifecycle authority.',
+            note_icon='shield-check',
+            open_by_default=true
+        ) }}
     </div>
 
     <div data-provider-info="github_oauth" {% if selected_type != 'github_oauth' %}hidden{% endif %}>
-        {% call view_more.render(
+        {% set github_setup_steps = [
+            ('Create OAuth App', 'Register a GitHub OAuth App for each KAORI environment with a distinct callback URL.'),
+            ('Register Callback', 'Set the exact KAORI callback URL below as the Authorization callback URL.'),
+            ('Supply Credentials', 'Store the Client ID in KAORI and resolve the Client Secret through the runtime environment reference.'),
+            ('Control Admission', 'For JIT, choose a non-admin role and prefer immutable numeric GitHub user IDs.')
+        ] %}
+        {{ info_flow.render(
             'GitHub OAuth Guidance',
-            'OAuth App registration, callback, credential reference, and subject admission policy.',
-            icon='github',
-            open_by_default=false,
-            aria_label='GitHub OAuth Guidance'
-        ) %}
-            <div class="space-y-4">
-                {% set github_steps = [
-                    ('1', 'Create OAuth App', 'Register a GitHub OAuth App for each KAORI environment with a distinct callback URL.'),
-                    ('2', 'Register Callback', 'Set the exact KAORI callback URL below as the Authorization callback URL.'),
-                    ('3', 'Supply Credentials', 'Store the Client ID in KAORI and expose the Client Secret through the runtime environment reference.'),
-                    ('4', 'Control Admission', 'For JIT, choose a non-admin role and prefer immutable numeric GitHub user IDs.')
-                ] %}
-                {% for number, title, text in github_steps %}
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-xs font-semibold text-kaori-primary">{{ number }}</span>
-                        <div class="min-w-0">
-                            <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ text }}</p>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-        {% endcall %}
+            'Controlled path from OAuth application registration to locally authorized KAORI access.',
+            github_setup_steps,
+            icon='workflow',
+            note='GitHub authenticates identity; KAORI retains the local role and account-lifecycle authority.',
+            note_icon='shield-check',
+            open_by_default=true
+        ) }}
     </div>
 
     <section data-sso-callback
@@ -92,32 +65,38 @@
             </div>
         </header>
         <div class="p-5">
-            <code class="block break-all rounded-lg border border-outline-default bg-surface-hover p-3 text-xs font-medium leading-5 text-content-primary"><span>{{ request.url_root.rstrip("/") }}/auth/sso/</span><span data-callback-key>{{ form.key.data or '&lt;provider-key&gt;' }}</span>/callback</code>
+            <div class="block break-all rounded-lg border border-outline-default bg-surface-hover p-3 text-xs font-medium leading-5 text-content-primary"><span>{{ request.url_root.rstrip("/") }}/auth/sso/</span><span data-callback-key>{{ form.key.data or '&lt;provider-key&gt;' }}</span>/callback</div>
         </div>
     </section>
 
-    {% call view_more.render(
-        'Technical Runbook',
-        'Repository guidance for setup values, validation, and troubleshooting.',
-        icon='book-open-text',
-        open_by_default=false,
-        aria_label='Identity Provider Technical Runbook'
-    ) %}
-        <code class="block break-all rounded-lg border border-outline-default bg-surface-hover p-3 text-xs font-medium leading-5 text-content-primary">docs/authentication/IDENTITY_PROVIDER_CONFIGURATION.md</code>
-        <div class="mt-4 grid gap-3">
-            {% for icon, title, text in [
-                ('save', 'Save Disabled', 'Keep the provider disabled while credentials and callback registration are incomplete.'),
-                ('scan-search', 'Validate Live', 'Run Validate after runtime secrets and network access are available.'),
-                ('shield-check', 'Enable Last', 'Enable only after a non-administrative test identity completes the expected login flow.')
-            ] %}
-                <div class="flex items-start gap-3">
-                    <i data-lucide="{{ icon }}" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
-                    <div class="min-w-0">
-                        <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ text }}</p>
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+             aria-label="Identity Provider Technical Runbook">
+        <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                <i data-lucide="book-open-text" class="h-5 w-5"></i>
+            </span>
+            <div class="min-w-0">
+                <h2 class="text-sm font-semibold text-content-primary">Technical Runbook</h2>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Setup values, live validation, and controlled enablement guidance.</p>
+            </div>
+        </header>
+        <div class="space-y-4 p-5">
+            <div class="break-all rounded-lg border border-outline-default bg-surface-hover p-3 text-xs font-medium leading-5 text-content-primary">docs/authentication/IDENTITY_PROVIDER_CONFIGURATION.md</div>
+            <div class="grid gap-3">
+                {% for icon, title, text in [
+                    ('save', 'Save Disabled', 'Keep the provider disabled while credentials and callback registration are incomplete.'),
+                    ('scan-search', 'Validate Live', 'Run Test Configuration after runtime secrets and network access are available.'),
+                    ('shield-check', 'Enable Last', 'Enable only after a non-administrative test identity completes the expected login flow.')
+                ] %}
+                    <div class="flex items-start gap-3">
+                        <i data-lucide="{{ icon }}" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ text }}</p>
+                        </div>
                     </div>
-                </div>
-            {% endfor %}
+                {% endfor %}
+            </div>
         </div>
-    {% endcall %}
+    </section>
 </aside>

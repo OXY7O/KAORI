@@ -1,11 +1,11 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/loading_bar.html" as loading_bar %}
-{% import "components/pagination.html" as pagination_ui %}
 {% import "components/details/_expandable_row.html" as expandable %}
+{% import "components/pagination.html" as pagination_ui %}
 <section id="identity-provider-registry" class="{{ table_ui.block_classes() }}">
-    <header class="{{ table_ui.block_header_classes() }}">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
                     <i data-lucide="blocks" class="h-5 w-5"></i>
@@ -15,7 +15,10 @@
                     <p class="{{ table_ui.block_description_classes() }}">Review configuration, enablement, identity links, and provider-owned actions.</p>
                 </div>
             </div>
-            <span class="text-xs font-semibold text-content-secondary">{{ summary.matching }} Matching {{ 'Provider' if summary.matching == 1 else 'Providers' }}</span>
+            <span class="inline-flex min-h-8 shrink-0 items-center gap-1.5 self-start rounded-md border border-outline-default bg-surface-subtle px-3 text-xs font-semibold text-content-secondary lg:self-auto">
+                <i data-lucide="scan-search" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>
+                {{ summary.matching }} Matching {{ 'Provider' if summary.matching == 1 else 'Providers' }}
+            </span>
         </div>
         {{ loading_bar.render('identity-provider-registry-loading', label='Refreshing Provider Registry') }}
     </header>
@@ -31,7 +34,7 @@
           hx-push-url="true"
           hx-indicator="#identity-provider-registry-loading">
             <input type="hidden" name="page" value="1">
-            <input type="hidden" name="per_page" value="{{ filters.per_page }}">
+            <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
             <label class="min-w-0">
                 <span class="{{ table_ui.filter_label_classes() }}">Search Provider</span>
                 <div class="relative">
@@ -64,7 +67,7 @@
     </div>
 
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[980px]') }}">
+        <table class="{{ table_ui.table_classes() }}">
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
                     <th class="{{ table_ui.header_cell_classes() }}">Provider</th>
@@ -82,15 +85,7 @@
                     {% set detail_row_id = 'identity-provider-detail-row-' ~ provider.id %}
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }}">
-                            <div class="flex min-w-[15rem] items-start gap-2.5">
-                                <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary" aria-hidden="true">
-                                    <i data-lucide="{{ row.type.icon }}" class="h-4 w-4"></i>
-                                </span>
-                                <div class="min-w-0">
-                                    <p class="truncate text-sm font-semibold text-content-primary" title="{{ provider.display_name }}">{{ provider.display_name }}</p>
-                                    <p class="mt-1 truncate text-xs text-content-muted" title="{{ provider.key }}">{{ provider.key }}</p>
-                                </div>
-                            </div>
+                            {{ table_ui.title_cell(provider.display_name, provider.key, row.type.icon) }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(row.type.short_label, icon=row.type.icon) }}</td>
                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(row.configuration.label, row.configuration.tone, row.configuration.icon) }}</td>
@@ -123,9 +118,7 @@
             </tbody>
         </table>
     </div>
-
-
-    <div class="{{ pagination_ui.footer_classes() }}">
+    <footer class="{{ pagination_ui.footer_classes() }}">
         <div class="{{ pagination_ui.summary_group_classes() }}">
             <span class="font-medium text-content-secondary">
                 Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} {{ pagination_ui.resource_name('Providers', pagination.total_items) }}
@@ -146,7 +139,7 @@
                 <span class="text-xs font-semibold text-content-secondary">Rows</span>
                 <select name="per_page" aria-label="Rows Per Page" class="{{ pagination_ui.page_size_classes() }}">
                     {% for option in per_page_options %}
-                        <option value="{{ option }}" {% if filters.per_page == option %}selected{% endif %}>{{ option }}</option>
+                        <option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
                     {% endfor %}
                 </select>
             </form>
@@ -155,7 +148,10 @@
             {% if pagination.has_prev %}
                 <a href="{{ url_for('users.providers', page=pagination.prev_page, **pagination_query) }}"
                    hx-get="{{ url_for('users.providers', page=pagination.prev_page, **pagination_query) }}"
-                   hx-target="#identity-provider-registry" hx-swap="outerHTML settle:150ms" hx-push-url="true" hx-indicator="#identity-provider-registry-loading"
+                   hx-target="#identity-provider-registry"
+                   hx-swap="outerHTML settle:150ms"
+                   hx-push-url="true"
+                   hx-indicator="#identity-provider-registry-loading"
                    class="{{ pagination_ui.navigation_classes() }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
             {% else %}
                 <span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
@@ -174,11 +170,14 @@
             {% if pagination.has_next %}
                 <a href="{{ url_for('users.providers', page=pagination.next_page, **pagination_query) }}"
                    hx-get="{{ url_for('users.providers', page=pagination.next_page, **pagination_query) }}"
-                   hx-target="#identity-provider-registry" hx-swap="outerHTML settle:150ms" hx-push-url="true" hx-indicator="#identity-provider-registry-loading"
+                   hx-target="#identity-provider-registry"
+                   hx-swap="outerHTML settle:150ms"
+                   hx-push-url="true"
+                   hx-indicator="#identity-provider-registry-loading"
                    class="{{ pagination_ui.navigation_classes() }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
             {% else %}
                 <span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
             {% endif %}
         </div>
-    </div>
+    </footer>
 </section>

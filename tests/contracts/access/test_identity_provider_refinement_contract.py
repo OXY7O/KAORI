@@ -16,10 +16,11 @@ def test_identity_provider_route_uses_server_side_filter_payload_and_htmx_regist
     assert "users/providers/partials/_registry.html" in routes
     assert 'PROVIDER_TYPE_OPTIONS' in service
     assert 'PROVIDER_STATE_OPTIONS' in service
-    assert "'page': positive_int(args.get('page'), 1)" in service
-    assert "'per_page': normalize_per_page(args.get('per_page'))" in service
     assert 'ExternalIdentityLink.provider_id' in service
     assert "'ldap_identity_links': ldap_identity_links" in service
+    assert "'page': positive_int(args.get('page'), 1)" in service
+    assert "'per_page': normalize_per_page(args.get('per_page'))" in service
+    assert 'build_pagination_window(' in service
 
 
 def test_identity_provider_hero_and_overview_follow_kaori_operational_grammar() -> None:
@@ -39,26 +40,34 @@ def test_identity_provider_hero_and_overview_follow_kaori_operational_grammar() 
     assert 'enablement does not imply validation success' in template
 
 
-def test_provider_registry_uses_shared_table_loading_filters_and_expandable_details() -> None:
+def test_provider_registry_uses_shared_kaori_table_filter_loading_detail_and_pagination() -> None:
     registry = read('app/templates/users/providers/partials/_registry.html')
     assert '{% import "components/table.html" as table_ui %}' in registry
     assert '{% import "components/loading_bar.html" as loading_bar %}' in registry
     assert '{% import "components/details/_expandable_row.html" as expandable %}' in registry
+    assert '{% import "components/pagination.html" as pagination_ui %}' in registry
     assert 'Search Provider' in registry
     assert 'Provider Type' in registry
     assert 'Provider State' in registry
     assert 'hx-target="#identity-provider-registry"' in registry
     assert 'identity-provider-registry-loading' in registry
+    assert "loading_bar.render('identity-provider-registry-loading', label='Refreshing Provider Registry')" in registry
+    assert 'scan-search' in registry
+    assert "{{ summary.matching }} Matching" in registry
+    assert 'table_ui.title_cell(provider.display_name, provider.key, row.type.icon)' in registry
+    assert 'font-mono text-xs text-content-muted' not in registry
     for heading in ('Provider', 'Type', 'Configuration', 'State', 'Identity Links', 'Action'):
         assert heading in registry
     assert "expandable.toggle_button('identity-providers'" in registry
     assert 'users/providers/partials/_provider_detail.html' in registry
-    assert '{% import "components/pagination.html" as pagination_ui %}' in registry
+    assert "table_ui.table_classes()" in registry
+    assert "table_ui.table_classes('min-w-[980px]')" not in registry
     assert 'Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }}' in registry
-    assert '>Rows</span>' in registry
+    assert '>Rows<' in registry
     assert 'Rows Per Page' in registry
-    assert '>Previous</span>' in registry
-    assert 'Next<i data-lucide="chevron-right"' in registry
+    assert '>Previous<' in registry
+    assert '>Next<' in registry
+    assert 'pagination_ui.numeric_pages(' in registry
 
 
 def test_provider_detail_keeps_validation_on_demand_and_secrets_externalized() -> None:
@@ -85,36 +94,45 @@ def test_identity_provider_index_uses_full_width_registry_and_directory_workflow
     assert 'Provider Types' not in template
     assert 'Directory Provisioning' in strip
     assert 'LDAP Workflow' in strip
+    assert '{% import "components/operational_flow_steps.html" as operational_flow_steps %}' in strip
+    assert "'Validate Provider'" in strip
+    assert "'Find Identity'" in strip
+    assert "'Assign Role'" in strip
+    assert "'Provision Account'" in strip
+    assert 'Authorization Owner' in strip
+    assert 'KAORI Role' in strip
     assert 'summary.ldap' in strip
     assert 'summary.ldap_identity_links' in strip
     assert "url_for('users.external_identities')" in strip
 
 
-def test_identity_provider_form_uses_shared_hero_ldap_flow_and_sticky_guidance() -> None:
+def test_identity_provider_form_uses_shared_hero_live_test_and_standard_guidance() -> None:
     form = read('app/templates/users/providers/form.html')
     guidance = read('app/templates/users/providers/partials/_provider_guidance.html')
-    ldap = read('app/templates/users/providers/partials/_ldap_configuration.html')
+    ldap_config = read('app/templates/users/providers/partials/_ldap_configuration.html')
     routes = read('app/users/routes.py')
+    script = read('app/static/js/identity_provider_form.js')
     assert 'page_hero.context_card(' in form
     assert 'page_hero.context_panel_classes()' not in form
     assert "'Configuration Scope'" in form
     assert 'xl:sticky xl:top-5' in guidance
-    assert '{% import "components/operational_flow_steps.html" as flow_steps %}' in guidance
-    assert "'LDAP Setup Guidance'" in guidance
-    assert 'open_by_default=true' in guidance
-    assert "flow_steps.render(ldap_flow_rows, aria_label='LDAP Setup Flow')" in guidance
-    assert guidance.count('open_by_default=false') >= 3
+    assert '{% import "components/info_flow.html" as info_flow %}' in guidance
+    for guidance_title in ('LDAP Setup Guidance', 'Google OIDC Guidance', 'GitHub OAuth Guidance'):
+        assert guidance_title in guidance
+    assert guidance.count('open_by_default=true') >= 3
+    assert 'view_more.render(' not in guidance
     assert 'Exact Callback URL' in guidance
     assert 'Technical Runbook' in guidance
-    assert '<details open' not in guidance
-    assert 'font-mono' not in ldap
-    assert 'font-mono' not in guidance
-    assert 'Test Connection' in form
-    assert "url_for('users.test_provider_configuration'" in form
-    assert "@bp.post('/providers/test')" in routes
-    assert "@bp.post('/providers/<int:provider_id>/test')" in routes
-    assert 'candidate = IdentityProvider()' in routes
-    assert 'validate_identity_provider(candidate)' in routes
+    assert 'Identity Provider Technical Runbook' in guidance
+    assert 'docs/authentication/IDENTITY_PROVIDER_CONFIGURATION.md' in guidance
+    assert 'name="form_action"' in form
+    assert 'value="test"' in form
+    assert 'Test Configuration' in form
+    assert 'Test Connection' in script
+    assert 'operation_result.render(validation_result)' in form
+    assert 'def _test_identity_provider_form(' in routes
+    assert 'validate_identity_provider(draft)' in routes
+    assert 'font-mono text-xs text-content-primary' not in ldap_config
 
 
 def test_identity_provider_refinement_remains_open_before_final_lock() -> None:
