@@ -137,3 +137,9 @@ Dark mode for both workspaces follows the neutral-first KAORI contract: informat
 - The namespace-policy registry footer follows the canonical `Showing … Namespaces · Rows · page size` pattern.
 - Protected Reveal does not depend on broad Namespace `LIST` for target discovery. It starts from policy-enabled namespace records and verifies only those names live.
 - The Protected Reveal target selector explains global-disablement, cluster eligibility, missing policy configuration, and configured-but-not-live namespace states explicitly.
+
+## Global Protected Reveal Gate
+
+Namespace Policy enablement and the Protected Reveal deployment kill switch are intentionally separate controls. A Namespace can be configured as `step_up` or `approval_required` while Protected Reveal remains unavailable. Runtime target selection is enabled only after `KUBERNETES_SECRET_REVEAL_ENABLED=true` is loaded by the KAORI web application. Restart or redeploy KAORI after changing the environment value.
+
+This is not exposed as an in-page toggle. Platform Operations owns readiness and Namespace Policy configuration; deployment configuration owns the global kill switch.

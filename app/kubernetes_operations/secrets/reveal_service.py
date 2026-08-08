@@ -29,7 +29,7 @@ from app.kubernetes_operations.secrets.reveal_policy import (
     get_enabled_namespace_names,
     get_namespace_policy,
 )
-from app.models import Cluster, SecretRevealRequest
+from app.models import Cluster, SecretRevealNamespacePolicy, SecretRevealRequest
 
 SUPPORTED_REVEAL_TYPES = {
     'Opaque': {
@@ -392,8 +392,13 @@ def get_reveal_page_context(
         'end': min(normalized_pending_page * normalized_pending_per_page, pending_total),
         'page_sizes': pending_page_sizes,
     }
+    configured_reveal_namespace_count = SecretRevealNamespacePolicy.query.filter(
+        SecretRevealNamespacePolicy.policy.in_(('step_up', 'approval_required'))
+    ).count()
+
     return {
         'global_reveal_enabled': _global_enabled(),
+        'configured_reveal_namespace_count': configured_reveal_namespace_count,
         'clusters': get_reveal_clusters(),
         'my_reveal_requests': my_requests,
         'my_reveal_pagination': my_pagination,

@@ -52,8 +52,8 @@
             <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
         </div>
         {% if selected_cluster %}
-            <div class="grid gap-4 p-5 sm:p-6 xl:grid-cols-12">
-                <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm xl:col-span-7">
+            <div class="grid items-stretch gap-4 p-5 sm:p-6 xl:grid-cols-12">
+                <section class="h-full overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm xl:col-span-7">
                     <div class="flex flex-col gap-3 border-b border-outline-default px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
                         <div class="flex items-start gap-3">
                             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="shield-check" class="h-5 w-5"></i></span>
@@ -141,7 +141,7 @@
                         </div>
                     </form>
                 </section>
-                <aside class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm xl:col-span-5">
+                <aside class="flex h-full flex-col overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm xl:col-span-5">
                     <div class="flex items-start gap-3 border-b border-outline-default px-5 py-4">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="key-round" class="h-5 w-5"></i></span>
                         <div>
@@ -152,7 +152,7 @@
                             <p class="mt-1 text-xs leading-5 text-content-muted">Least-privilege Kubernetes RBAC remains the final authorization boundary.</p>
                         </div>
                     </div>
-                    <div class="grid gap-3 p-4 sm:grid-cols-2 sm:p-5">
+                    <div class="grid flex-1 gap-3 p-4 sm:grid-cols-2 sm:p-5">
                         {% for icon, title, text in [
                             ('eye', 'Secret Get Only', 'Require get permission on the selected Secret.'),
                             ('shield-ban', 'Avoid List and Watch', 'Avoid broad Secret discovery unless another feature requires it.'),

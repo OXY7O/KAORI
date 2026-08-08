@@ -6,12 +6,12 @@
   Related Page Card, Information Guide Card, Page Context Card, or a semantic
   readiness block.
 #}
-{% macro layout_classes(width='default') -%}
-    grid gap-6 {{ 'xl:grid-cols-[minmax(0,1fr)_22rem]' if width == 'wide' else 'xl:grid-cols-[minmax(0,1fr)_20rem]' }} xl:items-start
+{% macro layout_classes(width='default', align='start') -%}
+    grid gap-6 {{ 'xl:grid-cols-[minmax(0,1fr)_22rem]' if width == 'wide' else 'xl:grid-cols-[minmax(0,1fr)_20rem]' }} {{ 'xl:items-stretch' if align == 'stretch' else 'xl:items-start' }}
 {%- endmacro %}
 {% macro main_classes() -%}
     min-w-0 space-y-6
 {%- endmacro %}
-{% macro rail_classes() -%}
-    min-w-0 space-y-4
+{% macro rail_classes(fill=false) -%}
+    min-w-0 space-y-4 {{ 'h-full' if fill else '' }}
 {%- endmacro %}

@@ -281,3 +281,7 @@ The canonical presentation is documented in `docs/design/patterns/KUBERNETES_CON
 ### Protected Reveal configuration authority
 
 Protected Kubernetes Secret Reveal does not own a separate readiness or namespace-policy registry. It consumes `app/kubernetes_operations/secrets/reveal_policy.py`, the same authority configured from Platform Operations. Current readiness/policy is revalidated during request creation, approval, and one-time reveal, and configuration changes expire affected active requests. Platform Operations namespace snapshots are display optimizations only; live Kubernetes reads remain mandatory at the protected execution boundary.
+
+## Global Gate Troubleshooting
+
+If a Namespace is policy-enabled but the Protected Kubernetes Secret Reveal Cluster selector is disabled, check the deployment-level gate first. `KUBERNETES_SECRET_REVEAL_ENABLED` must be `true` and the KAORI web application must be restarted/redeployed so Flask reloads the configuration. Namespace Policy enablement never bypasses or implicitly flips this kill switch.

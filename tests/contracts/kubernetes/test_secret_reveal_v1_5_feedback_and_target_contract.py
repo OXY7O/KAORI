@@ -58,5 +58,6 @@ def test_protected_reveal_explains_empty_namespace_and_cluster_states() -> None:
 
     assert 'Policy-enabled namespaces are configured, but none is currently available in Kubernetes.' in target
     assert 'Enable a namespace policy under Platform Operations → Secret Reveal first.' in target
-    assert 'Global Protected Reveal is disabled.' in page
+    assert 'Protected Reveal globally disabled' in page
+    assert 'KUBERNETES_SECRET_REVEAL_ENABLED=true' in page
     assert 'No eligible cluster. Verify cluster readiness and enable at least one Namespace Policy.' in page
