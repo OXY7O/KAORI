@@ -55,7 +55,6 @@ Owns RBAC business rules:
 - `app/access/roles/service.py`: role create/clone mutation orchestration.
 - `app/access/roles/presentation.py`: role list/form presentation context.
 - `app/templates/access/roles/`: Roles & Access list and role form.
-- `app/static/js/role_access_tabs.js`: progressive enhancement for Role Registry / Mapping Matrix tabs.
 - `app/static/js/role_permission_editor.js`: scoped Permission Matrix search, module toggles, global Select all/Clear all, counters, and viewport protection.
 - `app/access/permissions/`: read-only Permission Catalog HTTP/presentation boundary.
 - `app/templates/access/permissions/`: read-only Permission Catalog template.

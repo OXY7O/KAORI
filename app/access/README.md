@@ -56,3 +56,11 @@ Legacy Settings role/permission URLs are retired. Settings must not contain redi
 ## UI review boundary
 
 This ownership refactor is an architecture baseline, not the Access UI Final Lock. User Management, Identity Providers, Roles & Access, Permission Catalog, Activity Audit, and Access Overview will be reviewed independently before the Access domain is final-locked.
+
+## Roles & Access review status
+
+Roles & Access now uses the KAORI operational registry pattern: read-only posture overview, compact assignment flow, full-width filtered Role Registry, expandable role evidence, shared pagination/loading, and a sticky impact rail on role forms. The old page-local Role-Permission Mapping Matrix and `role_access_tabs.js` have been removed; cross-role permission coverage belongs to Permission Catalog.
+
+Custom-role edit/delete mutations are serialized with a database row lock and protected by a role version token so stale administrative forms do not silently overwrite a newer role state. Delete blockers for user assignments and Identity Provider defaults are rechecked at mutation time.
+
+This remains a refinement baseline, not the Access Final Lock. RBAC seed/convergence ownership is intentionally deferred to Permission Catalog review.

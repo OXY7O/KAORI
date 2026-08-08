@@ -7,6 +7,7 @@ from wtforms.validators import DataRequired, Length, Optional, Regexp
 
 class RoleForm(FlaskForm):
     role_id = HiddenField()
+    role_version = HiddenField()
     name = StringField(
         'Role Slug',
         validators=[
@@ -26,4 +27,5 @@ class RoleForm(FlaskForm):
 
 class DeleteRoleForm(FlaskForm):
     role_id = HiddenField(validators=[DataRequired()])
+    role_version = HiddenField(validators=[DataRequired()])
     submit = SubmitField('Delete Role')

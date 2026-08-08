@@ -1,0 +1,60 @@
+{% import "components/table_label.html" as table_label %}
+<div class="grid gap-4 xl:grid-cols-4">
+    <section class="rounded-xl border border-outline-default bg-surface-card p-4">
+        <h3 class="text-sm font-semibold text-content-primary">Role Identity</h3>
+        <dl class="mt-3 space-y-2 text-xs">
+            <div><dt class="text-content-muted">Role Slug</dt><dd class="mt-0.5 break-all font-medium text-content-primary">{{ role.name }}</dd></div>
+            <div><dt class="text-content-muted">Role Type</dt><dd class="mt-0.5">{{ table_label.metadata_label(row.type.label, icon=row.type.icon) }}</dd></div>
+            <div><dt class="text-content-muted">State</dt><dd class="mt-0.5">{{ table_label.status_label(row.state.label, row.state.tone, row.state.icon) }}</dd></div>
+        </dl>
+    </section>
+    <section class="rounded-xl border border-outline-default bg-surface-card p-4">
+        <h3 class="text-sm font-semibold text-content-primary">Assignment Impact</h3>
+        <dl class="mt-3 grid grid-cols-2 gap-3 text-xs">
+            <div><dt class="text-content-muted">Assigned Users</dt><dd class="mt-1 text-base font-semibold text-content-primary">{{ row.assigned_users }}</dd></div>
+            <div><dt class="text-content-muted">Provider Defaults</dt><dd class="mt-1 text-base font-semibold text-content-primary">{{ row.provider_mappings }}</dd></div>
+        </dl>
+        {% if not role.is_active and row.assigned_users %}<p class="mt-3 text-xs leading-5 text-status-warning-text">Assigned users receive no permissions from this inactive role.</p>{% endif %}
+    </section>
+    <section class="rounded-xl border border-outline-default bg-surface-card p-4">
+        <h3 class="text-sm font-semibold text-content-primary">Permission Coverage</h3>
+        <dl class="mt-3 grid grid-cols-2 gap-3 text-xs">
+            <div><dt class="text-content-muted">Permissions</dt><dd class="mt-1 text-base font-semibold text-content-primary">{{ row.permission_count }}</dd></div>
+            <div><dt class="text-content-muted">Modules</dt><dd class="mt-1 text-base font-semibold text-content-primary">{{ row.module_count }}</dd></div>
+        </dl>
+        <div class="mt-3 flex flex-wrap gap-1.5">
+            {% for permission in role.permissions[:8] %}{{ table_label.metadata_label(permission.key) }}{% endfor %}
+            {% if row.permission_count > 8 %}<span class="text-xs font-semibold text-content-muted">+{{ row.permission_count - 8 }} more</span>{% elif row.permission_count == 0 %}{{ table_label.status_label('No Permissions', 'warning', 'triangle-alert') }}{% endif %}
+        </div>
+    </section>
+    <section class="rounded-xl border border-outline-default bg-surface-card p-4">
+        <h3 class="text-sm font-semibold text-content-primary">Administrative Boundary</h3>
+        {% if role.is_system %}
+            <p class="mt-2 text-xs leading-5 text-content-muted">Protected defaults are code-owned. Clone this role to create an editable custom variant.</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+                <a href="{{ url_for('access.roles.detail', role_id=role.id) }}" class="inline-flex h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:bg-surface-hover"><i data-lucide="eye" class="h-3.5 w-3.5"></i>Open Role</a>
+                {% if can_manage_roles %}<a href="{{ url_for('access.roles.clone', role_id=role.id) }}" class="inline-flex h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white"><i data-lucide="copy-plus" class="h-3.5 w-3.5"></i>Clone Role</a>{% endif %}
+            </div>
+        {% else %}
+            <p class="mt-2 text-xs leading-5 text-content-muted">Custom roles remain administrator-managed. Deletion is allowed only after all user and Identity Provider references are removed.</p>
+            {% if row.delete_blocked %}
+                <div class="mt-3 rounded-lg border border-status-warning-border bg-status-warning-soft p-3 text-xs leading-5 text-status-warning-text">
+                    Deletion blocked by {{ row.assigned_users }} user assignment{{ '' if row.assigned_users == 1 else 's' }} and {{ row.provider_mappings }} Identity Provider default mapping{{ '' if row.provider_mappings == 1 else 's' }}.
+                </div>
+            {% endif %}
+            <div class="mt-3 flex flex-wrap gap-2">
+                <a href="{{ url_for('access.roles.detail', role_id=role.id) }}" class="inline-flex h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:bg-surface-hover"><i data-lucide="eye" class="h-3.5 w-3.5"></i>Open Role</a>
+                {% if can_manage_roles %}<a href="{{ url_for('access.roles.edit', role_id=role.id) }}" class="inline-flex h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white"><i data-lucide="pencil" class="h-3.5 w-3.5"></i>Edit Role</a>{% endif %}
+                {% if can_manage_roles and row.delete_eligible %}
+                    <button type="button" data-destructive-modal-open data-destructive-modal-id="role-delete-confirmation" data-destructive-target="{{ role.display_name }}" data-destructive-scope="{{ row.permission_count }} Permissions · No Active References" data-destructive-submit-button-id="delete-role-submit-{{ role.id }}" class="inline-flex h-9 items-center gap-2 rounded-lg border border-status-critical-border bg-status-critical-soft px-3 text-xs font-semibold text-status-critical-text"><i data-lucide="trash-2" class="h-3.5 w-3.5"></i>Delete Role</button>
+                    <form method="post" action="{{ url_for('access.roles.delete', role_id=role.id) }}" class="hidden">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="role_id" value="{{ role.id }}">
+                        <input type="hidden" name="role_version" value="{{ row.version_token }}">
+                        <button id="delete-role-submit-{{ role.id }}" type="submit">Delete</button>
+                    </form>
+                {% endif %}
+            </div>
+        {% endif %}
+    </section>
+</div>

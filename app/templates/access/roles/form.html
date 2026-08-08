@@ -1,5 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/table_label.html" as table_label %}
 {% set read_only = view_only|default(false) %}
 {% set is_system_role = role and role.is_system %}
 {% set page_mode = 'view' if read_only else ('clone' if clone_source else ('edit' if role else 'create')) %}
@@ -85,41 +86,22 @@
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="{{ page_hero.aside_classes() }}" aria-label="Role state">
-                    <div class="{{ page_hero.context_panel_classes() }}">
-                        <div class="flex items-start justify-between gap-3">
-                            <div>
-                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Role state</p>
-                                <h2 class="{{ page_hero.context_panel_title_classes() }}">
-                                    {% if is_system_role %}
-                                        Default · Locked
-                                    {% elif role and not role.is_active %}
-                                        Custom · Inactive
-                                    {% else %}
-                                        Custom · Active
-                                    {% endif %}
-                                </h2>
-                            </div>
-                            <span class="{{ page_hero.context_icon_classes() }}">
-                                <i data-lucide="{{ 'lock-keyhole' if is_system_role else ('pause-circle' if role and not role.is_active else 'circle-check') }}"
-                                   class="h-5 w-5"></i>
-                            </span>
-                        </div>
-                        <p class="mt-2 text-sm leading-5 text-brand-foreground-muted">
-                            {% if is_system_role %}
-                                Managed by the RBAC seed baseline and restored to its canonical permissions when seeding runs.
-                            {% elif read_only %}
-                                Custom roles remain editable only for users with roles.manage.
-                            {% else %}
-                                Required view permissions are automatically included with dependent action permissions.
-                            {% endif %}
-                        </p>
-                        <a href="{{ url_for('access.roles.index') }}"
-                           class="{{ page_hero.context_single_action_classes() }}">
-                            <i data-lucide="arrow-left" class="h-4 w-4"></i>Back to Roles &amp; Access
-                        </a>
-                    </div>
-                </aside>
+                {% set hero_state_label = 'Protected' if is_system_role else ('Inactive' if role and not role.is_active else ('Draft' if not role else 'Active')) %}
+                {% set hero_state_tone = 'maintenance' if is_system_role else ('unknown' if role and not role.is_active else ('info' if not role else 'normal')) %}
+                {{ page_hero.context_card(
+                    'Role posture',
+                    'Authorization Profile',
+                    'Role Posture',
+                    hero_state_label,
+                    hero_state_tone,
+                    [
+                        ('users', 'Assigned Users', assigned_user_count, 'Accounts using this role'),
+                        ('key-round', 'Permissions', selected_count, 'Effective permission scope')
+                    ],
+                    'Back to Roles & Access',
+                    url_for('access.roles.index'),
+                    'arrow-left'
+                ) }}
             </div>
         </section>
         {% if is_system_role %}
@@ -190,7 +172,7 @@
                                             <p class="mt-0.5 text-xs leading-5 text-content-muted">Stable machine identity and user-facing access label.</p>
                                         </div>
                                     </div>
-                                    <span class="inline-flex min-h-7 items-center rounded-md border border-brand-outline bg-kaori-soft px-2.5 text-xs font-bold uppercase tracking-wide text-kaori-primary">Custom profile</span>
+                                    {{ table_label.metadata_label('Custom Profile', icon='user-cog') }}
                                 </div>
                                 <div class="grid gap-5 lg:grid-cols-2">
                                     <label class="space-y-2">
@@ -226,7 +208,7 @@
                                     <span class="min-w-0 flex-1">
                                         <span class="flex flex-wrap items-center gap-2">
                                             <span class="text-sm font-bold text-content-primary">Assignment availability</span>
-                                            <span class="rounded-md border border-brand-outline bg-surface-card px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-kaori-primary">Active role</span>
+                                            {{ table_label.status_label('Active Role', 'normal', 'circle-check') }}
                                         </span>
                                         <span class="mt-1 block text-sm leading-6 text-content-muted">Active custom roles can be assigned in User Management and selected as an Identity Provider default. Deactivation removes role-derived access from assigned users.</span>
                                     </span>
@@ -244,7 +226,7 @@
                                     <p class="mt-0.5 text-sm leading-5 text-content-muted">Review {{ selected_count }} mapped permissions across {{ selected_module_ns.count }} modules. Expand only the modules you need.</p>
                                 </div>
                             </div>
-                            <span class="inline-flex min-h-7 shrink-0 items-center rounded-md border border-brand-outline bg-kaori-soft px-2.5 text-xs font-bold uppercase tracking-wide text-kaori-primary">RBAC scope</span>
+                            {{ table_label.metadata_label('RBAC Scope', icon='shield-check') }}
                         </header>
                         <div>
                             <div class="flex flex-col gap-3 border-b border-outline-default bg-surface-card px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
@@ -334,8 +316,11 @@
                                                         <i data-lucide="check" class="h-4 w-4"></i>
                                                     </span>
                                                     <span class="min-w-0">
-                                                        <span class="block text-sm font-bold text-content-primary">{{ permission_label(permission) }}</span>
-                                                        <span class="mt-1 block font-mono text-xs font-semibold text-content-muted">{{ permission.key }}</span>
+                                                        <span class="flex flex-wrap items-center gap-2">
+                                                            <span class="text-sm font-semibold text-content-primary">{{ permission_label(permission) }}</span>
+                                                            {% if permission.id in required_permission_ids %}{{ table_label.status_label('Required', 'info', 'git-merge') }}{% endif %}
+                                                        </span>
+                                                        <span class="mt-1 block text-xs font-medium text-content-muted">{{ permission.key }}</span>
                                                         <span class="mt-1.5 block text-xs leading-5 text-content-muted">{{ permission.description or 'No permission description is defined.' }}</span>
                                                     </span>
                                                 </label>
@@ -377,127 +362,58 @@
                     </div>
                 </div>
                 <aside class="self-start space-y-5 xl:sticky xl:top-5">
-                    <section class="self-start overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-                        <header class="border-b border-outline-default bg-surface-hover px-5 py-4">
-                            <div class="flex items-center gap-3">
-                                <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="bar-chart-3" class="h-5 w-5"></i></span>
-                                <div>
-                                    <h2 class="text-base font-bold text-content-primary">Role Summary</h2>
-                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Effective scope and assignment posture.</p>
+                    <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+                        <header class="border-b border-outline-subtle px-5 py-4">
+                            <div class="flex items-start gap-3">
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="activity" class="h-5 w-5"></i></span>
+                                <div class="min-w-0">
+                                    <h2 class="text-base font-semibold text-content-primary">Role Impact</h2>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Assignment and authorization impact for the current role state.</p>
                                 </div>
                             </div>
                         </header>
                         <div class="space-y-4 p-5">
-                            <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4">
-                                <div class="flex items-start justify-between gap-3">
-                                    <div>
-                                        <p class="text-xs font-bold uppercase tracking-wider text-kaori-primary">Effective coverage</p>
-                                        <p class="mt-2 text-3xl font-bold tracking-tight text-content-primary"><span data-role-selected-count>{{ selected_count }}</span> <span class="text-sm font-semibold text-content-muted">permissions</span></p>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">Distributed across <strong data-role-selected-module-count class="text-content-primary">{{ selected_module_ns.count }}</strong> application modules.</p>
-                                    </div>
-                                    {% if role and role.is_active %}
-                                        <span class="rounded-md border border-status-normal-border bg-status-normal-soft px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-status-normal-text">Active</span>
-                                    {% elif role %}
-                                        <span class="rounded-md border border-status-disabled-border bg-status-disabled-soft px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-status-disabled-text">Inactive</span>
-                                    {% else %}
-                                        <span class="rounded-md border border-status-pending-border bg-status-pending-soft px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-status-pending-text">Draft</span>
-                                    {% endif %}
-                                </div>
-                            </div>
                             <dl class="grid grid-cols-2 gap-3">
                                 <div class="rounded-xl border border-outline-default bg-surface-subtle p-3.5">
-                                    <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Role type</dt>
-                                    <dd class="mt-1.5 text-sm font-bold text-content-primary">
-                                        {{ 'Default baseline' if role and role.is_system else 'Custom role' }}
-                                    </dd>
+                                    <dt class="text-xs font-semibold text-content-muted">Assigned Users</dt>
+                                    <dd class="mt-1.5 text-lg font-semibold text-content-primary">{{ assigned_user_count }}</dd>
                                 </div>
                                 <div class="rounded-xl border border-outline-default bg-surface-subtle p-3.5">
-                                    <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Assigned users</dt>
-                                    <dd class="mt-1.5 text-sm font-bold text-content-primary">
-                                        {{ assigned_user_count if role else 0 }}
-                                    </dd>
+                                    <dt class="text-xs font-semibold text-content-muted">Provider Defaults</dt>
+                                    <dd class="mt-1.5 text-lg font-semibold text-content-primary">{{ identity_provider_count }}</dd>
                                 </div>
                                 <div class="rounded-xl border border-outline-default bg-surface-subtle p-3.5">
-                                    <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Lifecycle</dt>
-                                    <dd class="mt-1.5 text-sm font-bold text-content-primary">
-                                        {% if page_mode == 'clone' %}
-                                            Clone draft
-                                        {% elif page_mode == 'edit' %}
-                                            Managed update
-                                        {% elif read_only %}
-                                            Read only
-                                        {% else %}
-                                            New profile
-                                        {% endif %}
-                                    </dd>
+                                    <dt class="text-xs font-semibold text-content-muted">Permissions</dt>
+                                    <dd class="mt-1.5 text-lg font-semibold text-content-primary"><span data-role-selected-count>{{ selected_count }}</span></dd>
                                 </div>
                                 <div class="rounded-xl border border-outline-default bg-surface-subtle p-3.5">
-                                    <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Assignment model</dt>
-                                    <dd class="mt-1.5 text-sm font-bold text-content-primary">
-                                        One role / user
-                                    </dd>
+                                    <dt class="text-xs font-semibold text-content-muted">Modules</dt>
+                                    <dd class="mt-1.5 text-lg font-semibold text-content-primary"><span data-role-selected-module-count>{{ selected_module_ns.count }}</span></dd>
                                 </div>
                             </dl>
-                            <div class="flex items-start gap-2.5 rounded-xl border border-outline-default bg-surface-hover p-3.5 text-xs leading-5 text-content-muted">
-                                <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
-                                <p>Permission changes affect every account and Identity Provider default currently mapped to this role.</p>
-                            </div>
+                            {% if page_mode == 'edit' and role and role.is_active and not form.is_active.data and assigned_user_count %}
+                                <div class="rounded-xl border border-status-warning-border bg-status-warning-soft p-3.5 text-xs leading-5 text-status-warning-text">
+                                    <div class="flex items-start gap-2.5"><i data-lucide="triangle-alert" class="mt-0.5 h-4 w-4 shrink-0"></i><p>{{ assigned_user_count }} assigned {{ 'user' if assigned_user_count == 1 else 'users' }} will lose this role's permissions on the next authorization check if the role is deactivated.</p></div>
+                                </div>
+                            {% else %}
+                                <div class="rounded-xl border border-outline-default bg-surface-hover p-3.5 text-xs leading-5 text-content-muted">
+                                    <div class="flex items-start gap-2.5"><i data-lucide="shield-check" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i><p>Role changes take effect on the next authorization check; active sessions do not cache role permission assignments.</p></div>
+                                </div>
+                            {% endif %}
                         </div>
                     </section>
-                    <details open
-                             class="group overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+                    <details class="group overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
                         <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 marker:hidden">
-                            <div class="flex items-center gap-3">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="shield-check" class="h-5 w-5"></i></span>
-                                <div>
-                                    <h2 class="text-base font-bold text-content-primary">Access Guardrails</h2>
-                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Operational rules applied when this role is saved and assigned.</p>
-                                </div>
+                            <div class="flex items-start gap-3">
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="shield-check" class="h-5 w-5"></i></span>
+                                <div class="min-w-0"><h2 class="text-base font-semibold text-content-primary">Access Guardrails</h2><p class="mt-1 text-xs leading-5 text-content-muted">Least-privilege and assignment rules applied to role changes.</p></div>
                             </div>
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition group-open:rotate-180">
-                                <i data-lucide="chevron-down" class="h-4 w-4"></i>
-                            </span>
+                            <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 text-content-muted transition group-open:rotate-180"></i>
                         </summary>
                         <div class="grid gap-3 border-t border-outline-default bg-surface-subtle p-4">
-                            <div class="rounded-xl border border-outline-default bg-surface-card p-3.5">
-                                <div class="flex items-start gap-3">
-                                    <i data-lucide="scan-search"
-                                       class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
-                                    <div>
-                                        <p class="text-sm font-semibold text-content-primary">Design for responsibility</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">Build reusable access profiles around operational duties. Do not create one-off roles for individual users unless the boundary is intentionally reusable.</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="rounded-xl border border-outline-default bg-surface-card p-3.5">
-                                <div class="flex items-start gap-3">
-                                    <i data-lucide="git-merge"
-                                       class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
-                                    <div>
-                                        <p class="text-sm font-semibold text-content-primary">Dependency normalization</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">Mutation permissions automatically include their required view baseline, so the saved role remains operationally consistent.</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="rounded-xl border border-outline-default bg-surface-card p-3.5">
-                                <div class="flex items-start gap-3">
-                                    <i data-lucide="users-round"
-                                       class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
-                                    <div>
-                                        <p class="text-sm font-semibold text-content-primary">Assignment impact</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">User Management assigns one active role per account. Deactivating this role removes its permission scope from every assigned user.</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="rounded-xl border border-brand-outline bg-kaori-soft p-3.5 text-kaori-primary">
-                                <div class="flex items-start gap-3">
-                                    <i data-lucide="shield-alert" class="mt-0.5 h-4 w-4 shrink-0"></i>
-                                    <div>
-                                        <p class="text-sm font-semibold">Super Admin boundary</p>
-                                        <p class="mt-1 text-xs leading-5">Super Admin is not a role and is never granted through this matrix. It remains a separately controlled emergency authority flag.</p>
-                                    </div>
-                                </div>
-                            </div>
+                            <div class="rounded-xl border border-outline-default bg-surface-card p-3.5"><p class="text-sm font-semibold text-content-primary">Design for Responsibility</p><p class="mt-1 text-xs leading-5 text-content-muted">Build reusable profiles around operational duties instead of one-off user-specific roles.</p></div>
+                            <div class="rounded-xl border border-outline-default bg-surface-card p-3.5"><p class="text-sm font-semibold text-content-primary">Dependency Normalization</p><p class="mt-1 text-xs leading-5 text-content-muted">Required baseline permissions are added automatically when a dependent capability is selected.</p></div>
+                            <div class="rounded-xl border border-outline-default bg-surface-card p-3.5"><p class="text-sm font-semibold text-content-primary">Super Admin Boundary</p><p class="mt-1 text-xs leading-5 text-content-muted">Super Admin remains a separate emergency authority flag and is never granted through the permission matrix.</p></div>
                         </div>
                     </details>
                 </aside>
