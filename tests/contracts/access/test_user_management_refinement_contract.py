@@ -130,3 +130,12 @@ def test_password_reset_session_revocation_remains_explicit_pre_lock_follow_up()
     assert 'Password Reset Session Boundary' in readme
     assert 'existing authenticated sessions are not yet version-invalidated' in readme
     assert 'must be resolved before User Management Final Lock' in readme
+
+
+def test_user_form_identity_provider_guidance_starts_collapsed_and_right_rail_stays_sticky() -> None:
+    form = read('app/templates/users/form.html')
+    identity_section = form.split('Add User by Identity Provider', 1)[0].rsplit('<details', 1)[1]
+    assert ' open' not in identity_section.split('>', 1)[0]
+    assert form.count('aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5"') >= 2
+    assert "{% if mode == 'create' %}" in form
+    assert "{% else %}" in form

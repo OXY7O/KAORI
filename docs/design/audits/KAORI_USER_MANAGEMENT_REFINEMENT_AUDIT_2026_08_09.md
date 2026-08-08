@@ -40,3 +40,10 @@ Inactive/deleted users are rejected by the Flask-Login user loader. Password res
 2. Review Add/Edit User form UI independently.
 3. Complete Identity Providers, Roles & Access, Permission Catalog, and Activity Audit reviews.
 4. Run full Access final-lock audit only after all child workspaces are accepted.
+
+
+## Add / Edit Form Rail Refinement
+
+- `Add User by Identity Provider` is collapsed by default so Local Database creation remains the primary form path while provider guidance stays available on demand.
+- The right-side guidance rail remains sticky at the existing KAORI desktop breakpoint for both Add User and Edit User.
+- Mobile and stacked layouts keep normal document flow; sticky behavior is only active once the form uses the two-column `xl` layout.
