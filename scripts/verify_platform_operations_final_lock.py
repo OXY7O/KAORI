@@ -14,6 +14,7 @@ LOCK_V1_3_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_3.md'
 LOCK_V1_4_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_4.md'
 LOCK_V1_5_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_5.md'
 LOCK_V1_6_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_6.md'
+LOCK_V1_7_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_7.md'
 AUDIT_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_AUDIT_2026_08_08.md'
 AUDIT_V1_1_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md'
 AUDIT_V1_2_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_2_AUDIT_2026_08_08.md'
@@ -21,6 +22,7 @@ AUDIT_V1_3_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK
 AUDIT_V1_4_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_4_AUDIT_2026_08_08.md'
 AUDIT_V1_5_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_5_AUDIT_2026_08_08.md'
 AUDIT_V1_6_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_6_AUDIT_2026_08_08.md'
+AUDIT_V1_7_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_7_AUDIT_2026_08_08.md'
 QUALITY_GATE = ROOT / 'scripts/quality_gate.sh'
 CLEANUP = ROOT / 'scripts/cleanup_obsolete_files.sh'
 CORE_UI_LOCK = ROOT / 'scripts/verify_core_workspace_ui_lock.py'
@@ -64,7 +66,7 @@ def template_files() -> list[Path]:
 def main() -> int:
     errors: list[str] = []
 
-    for doc in (LOCK_DOC, LOCK_V1_1_DOC, LOCK_V1_2_DOC, LOCK_V1_3_DOC, LOCK_V1_4_DOC, LOCK_V1_5_DOC, LOCK_V1_6_DOC, AUDIT_DOC, AUDIT_V1_1_DOC, AUDIT_V1_2_DOC, AUDIT_V1_3_DOC, AUDIT_V1_4_DOC, AUDIT_V1_5_DOC, AUDIT_V1_6_DOC):
+    for doc in (LOCK_DOC, LOCK_V1_1_DOC, LOCK_V1_2_DOC, LOCK_V1_3_DOC, LOCK_V1_4_DOC, LOCK_V1_5_DOC, LOCK_V1_6_DOC, LOCK_V1_7_DOC, AUDIT_DOC, AUDIT_V1_1_DOC, AUDIT_V1_2_DOC, AUDIT_V1_3_DOC, AUDIT_V1_4_DOC, AUDIT_V1_5_DOC, AUDIT_V1_6_DOC, AUDIT_V1_7_DOC):
         if not doc.exists():
             errors.append(f'missing lock artifact: {doc.relative_to(ROOT).as_posix()}')
 
@@ -355,14 +357,21 @@ def main() -> int:
     for required in (
         'KUBERNETES_SECRET_REVEAL_ENABLED=true',
         'Protected Reveal globally disabled',
-        'selection is locked by the global kill switch',
         'configured_reveal_namespace_count',
+        'Activation Tip',
+        'selection is locked by the global kill switch',
+        "context_rail.layout_classes('wide')",
+        'context_rail.rail_classes()',
+    ):
+        if required not in protected_reveal_page:
+            errors.append(f'Secret Reveal v1.7 global-gate/natural-height contract missing: {required}')
+    for forbidden in (
         "context_rail.layout_classes('wide', 'stretch')",
         'context_rail.rail_classes(true)',
         "extra_classes='h-full'",
     ):
-        if required not in protected_reveal_page:
-            errors.append(f'Secret Reveal v1.6 global-gate/layout contract missing: {required}')
+        if forbidden in protected_reveal_page:
+            errors.append(f'Secret Reveal v1.7 must keep Protected Reveal panels content-driven: {forbidden}')
     for required in (
         'SecretRevealNamespacePolicy',
         "SecretRevealNamespacePolicy.policy.in_(('step_up', 'approval_required'))",
@@ -371,19 +380,26 @@ def main() -> int:
         if required not in protected_reveal_service:
             errors.append(f'Secret Reveal v1.6 configured-policy evidence missing: {required}')
     for required in (
-        "layout_classes(width='default', align='start')",
-        "'xl:items-stretch' if align == 'stretch' else 'xl:items-start'",
-        'rail_classes(fill=false)',
+        "layout_classes(width='default')",
+        'xl:items-start',
+        'rail_classes()',
     ):
         if required not in context_rail:
-            errors.append(f'Secret Reveal v1.6 shared context-rail contract missing: {required}')
+            errors.append(f'Secret Reveal v1.7 shared context-rail contract missing: {required}')
+    for forbidden in ('items-stretch', 'rail_classes(fill=false)', "align='start'"):
+        if forbidden in context_rail:
+            errors.append(f'Secret Reveal v1.7 shared context rail must return to natural-height geometry: {forbidden}')
     for required in (
-        'grid items-stretch gap-4',
-        'flex h-full flex-col overflow-hidden rounded-2xl',
-        'grid flex-1 gap-3',
+        'grid gap-4 p-5 sm:p-6 xl:grid-cols-12',
+        'overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm xl:col-span-7',
+        'overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm xl:col-span-5',
+        'grid gap-3 p-4 sm:grid-cols-2 sm:p-5',
     ):
         if required not in cluster_workspace:
-            errors.append(f'Secret Reveal v1.6 administration symmetry missing: {required}')
+            errors.append(f'Secret Reveal v1.7 administration natural-height contract missing: {required}')
+    for forbidden in ('grid items-stretch gap-4', 'flex h-full flex-col overflow-hidden rounded-2xl', 'grid flex-1 gap-3'):
+        if forbidden in cluster_workspace:
+            errors.append(f'Secret Reveal v1.7 administration panels must remain content-driven: {forbidden}')
 
     if 'bg-white/70' in secret_workspace:
         errors.append('Secret Reveal administration must not use hardcoded light-only callout surfaces')
@@ -419,12 +435,12 @@ def main() -> int:
         return 1
 
     print(
-        'KAORI Platform Operations Final Lock v1.6 passed: Kubernetes Administration and Jobs & Executions '
+        'KAORI Platform Operations Final Lock v1.7 passed: Kubernetes Administration and Jobs & Executions '
         'use shared tabs, Title Case, bounded execution attention, expandable execution evidence, worker readiness, '
         'activity-center background feedback, lean Job Configuration rendering, clear configuration surfaces, '
         'tri-state Secret Reveal live evidence, snapshot-backed namespace filtering, explicit credential readiness, '
         'HTMX-owned registry controls, shared Secret Reveal policy authority, neutral-first protected-reveal dark surfaces, '
-        'Title Case reveal pagination with Rows labels, immediate HTMX mutation feedback, configured-only live namespace verification, explicit global kill-switch diagnostics, symmetric Secret Reveal side panels, protected Secret Reveal guardrails, and permanent legacy cleanup.'
+        'Title Case reveal pagination with Rows labels, immediate HTMX mutation feedback, configured-only live namespace verification, explicit global kill-switch diagnostics with compact activation tips, natural-height Secret Reveal side panels, protected Secret Reveal guardrails, and permanent legacy cleanup.'
     )
     return 0
 

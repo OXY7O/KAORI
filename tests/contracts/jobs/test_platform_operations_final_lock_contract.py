@@ -15,6 +15,7 @@ def test_platform_operations_final_lock_is_documented_and_release_gated() -> Non
     assert (ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_4.md').exists()
     assert (ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_5.md').exists()
     assert (ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_6.md').exists()
+    assert (ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_7.md').exists()
     assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_AUDIT_2026_08_08.md').exists()
     assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md').exists()
     assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_2_AUDIT_2026_08_08.md').exists()
@@ -22,6 +23,7 @@ def test_platform_operations_final_lock_is_documented_and_release_gated() -> Non
     assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_4_AUDIT_2026_08_08.md').exists()
     assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_5_AUDIT_2026_08_08.md').exists()
     assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_6_AUDIT_2026_08_08.md').exists()
+    assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_7_AUDIT_2026_08_08.md').exists()
     assert 'verify_platform_operations_final_lock.py' in read('scripts/quality_gate.sh')
 
 

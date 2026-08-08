@@ -38,25 +38,13 @@ def test_protected_reveal_reports_configured_policy_count_while_global_gate_is_o
     assert 'policy-enabled Namespace' in page
 
 
-def test_secret_reveal_side_panels_use_explicit_stretch_geometry() -> None:
-    context_rail = read('app/templates/components/context_rail.html')
-    protected = read('app/templates/kubernetes_operations/secrets/reveal.html')
-    administration = read('app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html')
+def test_secret_reveal_v16_layout_refinement_is_explicitly_superseded_by_v17() -> None:
+    v16 = read('docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_6.md')
+    v17 = read('docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_7.md')
 
-    assert "layout_classes(width='default', align='start')" in context_rail
-    assert "'xl:items-stretch' if align == 'stretch' else 'xl:items-start'" in context_rail
-    assert 'rail_classes(fill=false)' in context_rail
-    assert "'h-full' if fill else ''" in context_rail
-
-    assert "context_rail.layout_classes('wide', 'stretch')" in protected
-    assert 'context_rail.rail_classes(true)' in protected
-    assert "extra_classes='h-full'" in protected
-    assert 'Protected one-time reveal lifecycle.' in protected
-
-    assert 'grid items-stretch gap-4' in administration
-    assert 'h-full overflow-hidden rounded-2xl' in administration
-    assert 'flex h-full flex-col overflow-hidden rounded-2xl' in administration
-    assert 'grid flex-1 gap-3' in administration
+    assert 'Side panels are symmetric at desktop breakpoints.' in v16
+    assert 'Natural-height side panels' in v17
+    assert 'Supersedes' in v17
 
 
 def test_secret_reveal_v16_keeps_neutral_dark_mode_surfaces() -> None:

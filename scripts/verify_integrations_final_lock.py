@@ -138,6 +138,10 @@ def main() -> int:
     config_decision = read('app/templates/integrations/components/_configuration_decision.html')
     require('data-kaori-configuration-decision-side' in config_decision, 'Shared Configuration Decision side panel marker is missing', errors)
     require('flex h-full min-h-full flex-col self-stretch' in config_decision, 'Configuration Decision must stretch with the working form', errors)
+    require('operational_effects=none' in config_decision, 'Configuration Decision must support optional Operational Effects evidence', errors)
+    require('validation_boundary=none' in config_decision, 'Configuration Decision must support optional Validation Boundary evidence', errors)
+    require('Operational Effects' in config_decision, 'Configuration Decision Operational Effects block is missing', errors)
+    require('Validation Boundary' in config_decision, 'Configuration Decision Validation Boundary block is missing', errors)
     require('xl:sticky' not in config_decision, 'Configuration Decision must not become a mismatched sticky rail', errors)
     for provider in ('prometheus', 'alertmanager'):
         relative = f'app/templates/{provider}/partials/_detail_configuration.html'
@@ -146,6 +150,19 @@ def main() -> int:
         require('grid-cols-[minmax(0,1fr)_25rem]' in source, f'{relative}: canonical desktop configuration rail width drifted', errors)
         require('items-stretch' in source, f'{relative}: configuration surfaces must remain vertically symmetric', errors)
         require('embedded=true' in source, f'{relative}: Save Changes must remain an embedded footer action', errors)
+    prometheus_configuration = read('app/templates/prometheus/partials/_detail_configuration.html')
+    for required in (
+        "('Save Changes', 'Resets technical readiness.')",
+        "('Test Connection', 'Proves transport reachability only.')",
+        "('Full Validation', 'Rebuilds capability evidence.')",
+        "('Consumer Use', 'Requires eligible scope bindings.')",
+        "('Transport Check', 'Test Connection')",
+        "('Capability Contract', 'Full Validation')",
+        "('Consumer Eligibility', 'Scope Binding')",
+        "('Operational Use', 'Source Resolution')",
+        'Prometheus executes metric queries. KAORI governs source selection, validation evidence, bindings, and consumer eligibility.',
+    ):
+        require(required in prometheus_configuration, f'Prometheus Configuration Decision density contract missing: {required}', errors)
 
     # Provider detail tabs use one shared controller.
     tab_controller = read('app/static/js/integration_workspace_tabs.js')
@@ -210,9 +227,15 @@ def main() -> int:
 
     # The final lock documentation is itself part of the contract.
     lock_doc = read('docs/design/KAORI_INTEGRATIONS_LOCK_V1.md')
+    refinement_doc = read('docs/design/KAORI_INTEGRATIONS_LOCK_V1_1.md')
+    audit_doc = read('docs/design/audits/KAORI_INTEGRATIONS_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md')
     standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
     require('Status: Locked baseline' in lock_doc, 'Integration lock document must declare Locked baseline', errors)
+    require('Status: Locked refinement baseline' in refinement_doc, 'Integration v1.1 refinement lock must declare Locked refinement baseline', errors)
+    require('Configuration Decision rail density' in refinement_doc, 'Integration v1.1 refinement lock must freeze Configuration Decision density', errors)
+    require('Prometheus Configuration Decision' in audit_doc, 'Integration v1.1 audit must record Prometheus Configuration Decision refinement', errors)
     require('KAORI Integrations Lock v1' in standard, 'Integration workspace standard must reference the final lock', errors)
+    require('KAORI Integrations Lock v1.1' in standard, 'Integration workspace standard must reference the v1.1 refinement', errors)
 
     if errors:
         for error in errors:
@@ -220,9 +243,9 @@ def main() -> int:
         return 1
 
     print(
-        'KAORI Integrations final lock passed across '
+        'KAORI Integrations final lock v1.1 passed across '
         f'{checked_templates} provider templates: shared capability/readiness, HTMX registry loading, '
-        'runtime decision/evidence, modal detail, configuration side decisions, registered binding counts, '
+        'runtime decision/evidence, modal detail, dense configuration side decisions, registered binding counts, '
         'RBAC separation, responsive registries, operational feedback, and obsolete-template cleanup are frozen.'
     )
     return 0

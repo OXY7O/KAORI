@@ -2,6 +2,8 @@
 
 > Status: Locked canonical baseline under **KAORI Integrations Lock v1** (`docs/design/KAORI_INTEGRATIONS_LOCK_V1.md`).
 
+Latest locked refinement: **KAORI Integrations Lock v1.1**.
+
 ## Purpose
 
 This standard aligns the Integrations Overview, provider registries, source bindings, runtime evidence, and Kubernetes connection workspace without flattening provider-specific operational detail.

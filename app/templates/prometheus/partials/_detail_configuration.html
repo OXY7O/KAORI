@@ -192,9 +192,21 @@
                 ('Query Profile', instance.query_profile or 'Validation Required', 'PromQL contract selected by Full Validation'),
                 ('Scope Bindings', bindings|length, 'Governed consumer contexts')
             ],
-            'Saving endpoint, access, trust, or compatibility settings resets readiness to Validation Required. Test Connection proves transport only.',
+            'Saving endpoint, access, trust, or compatibility settings resets readiness. Test Connection proves transport only.',
             'Consumer Boundary',
-            'Prometheus remains authoritative for metric collection and query execution. KAORI owns source selection, validation evidence, bindings, and operational interpretation.'
+            'Prometheus executes metric queries. KAORI governs source selection, validation evidence, bindings, and consumer eligibility.',
+            [
+                ('Save Changes', 'Resets technical readiness.'),
+                ('Test Connection', 'Proves transport reachability only.'),
+                ('Full Validation', 'Rebuilds capability evidence.'),
+                ('Consumer Use', 'Requires eligible scope bindings.')
+            ],
+            [
+                ('Transport Check', 'Test Connection'),
+                ('Capability Contract', 'Full Validation'),
+                ('Consumer Eligibility', 'Scope Binding'),
+                ('Operational Use', 'Source Resolution')
+            ]
         ) }}
     </div>
 </div>
