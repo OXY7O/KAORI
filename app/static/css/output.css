@@ -1049,8 +1049,8 @@
   .min-h-\[15\.5rem\] {
     min-height: 15.5rem;
   }
-  .min-h-\[19rem\] {
-    min-height: 19rem;
+  .min-h-\[21rem\] {
+    min-height: 21rem;
   }
   .min-h-\[23rem\] {
     min-height: 23rem;
@@ -1366,6 +1366,9 @@
   }
   .max-w-\[18rem\] {
     max-width: 18rem;
+  }
+  .max-w-\[34rem\] {
+    max-width: 34rem;
   }
   .max-w-\[44rem\] {
     max-width: 44rem;
