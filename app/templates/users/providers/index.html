@@ -100,11 +100,8 @@
             </div>
         </section>
 
-        <div class="grid gap-6 xl:grid-cols-12 xl:items-start">
-            <main class="min-w-0 xl:col-span-8">
-                {% include "users/providers/partials/_registry.html" %}
-            </main>
-            {% include "users/providers/partials/_index_guidance.html" %}
-        </div>
+        {% include "users/providers/partials/_directory_provisioning_strip.html" %}
+
+        {% include "users/providers/partials/_registry.html" %}
     </div>
 {% endblock dashboard_content %}

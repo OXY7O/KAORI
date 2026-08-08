@@ -66,14 +66,20 @@ def test_provider_detail_keeps_validation_on_demand_and_secrets_externalized() -
         assert forbidden not in service
 
 
-def test_identity_provider_index_guidance_is_compact_sticky_and_directory_scoped() -> None:
-    guidance = read('app/templates/users/providers/partials/_index_guidance.html')
-    assert 'xl:sticky xl:top-5' in guidance
-    assert 'Authentication Boundary' in guidance
-    assert 'Provider Types' in guidance
-    assert 'open_by_default=false' in guidance
-    assert 'Directory Provisioning' in guidance
-    assert 'summary.ldap_identity_links' in guidance
+def test_identity_provider_index_uses_full_width_registry_and_directory_workflow_strip() -> None:
+    template = read('app/templates/users/providers/index.html')
+    strip = read('app/templates/users/providers/partials/_directory_provisioning_strip.html')
+    assert 'users/providers/partials/_directory_provisioning_strip.html' in template
+    assert 'users/providers/partials/_registry.html' in template
+    assert 'xl:grid-cols-12' not in template
+    assert '_index_guidance.html' not in template
+    assert 'Authentication Boundary' not in template
+    assert 'Provider Types' not in template
+    assert 'Directory Provisioning' in strip
+    assert 'LDAP Workflow' in strip
+    assert 'summary.ldap' in strip
+    assert 'summary.ldap_identity_links' in strip
+    assert "url_for('users.external_identities')" in strip
 
 
 def test_identity_provider_form_uses_shared_hero_and_default_collapsed_guidance() -> None:

@@ -12,9 +12,10 @@ Identity Providers remains under the Access control-plane composition while `app
 - Rebuilt the provider list as a shared KAORI registry with Search / Provider Type / Provider State filters, shared loading bar, semantic labels, and expand-below-row details.
 - Provider detail exposes credential environment references only; secret values remain outside provider records.
 - Validation remains an on-demand action. The UI does not invent a durable `Last Validated` or `Validated` provider state because no such evidence is persisted yet.
-- Kept Directory Provisioning as the LDAP child workflow and moved its entry point out of the hero into contextual provider administration.
-- Converted provider-specific setup guidance and the technical runbook to shared default-collapsed expandable guidance.
-- Standardized provider form hero composition and retained the shared Access sticky right-rail contract (`xl:sticky xl:top-5`).
+- Kept Directory Provisioning as the LDAP child workflow and moved it into a full-width operational strip above the Provider Registry.
+- Removed the Identity Providers index right rail: Authentication Boundary and provider-family guidance are consolidated into Provider Registry Overview instead of repeated side documentation.
+- Converted provider-form setup guidance and the technical runbook to shared default-collapsed expandable guidance.
+- Standardized provider form hero composition and retained the shared Access sticky right-rail contract (`xl:sticky xl:top-5`) for Add/Edit forms only.
 
 ## Security / Correctness Boundary
 

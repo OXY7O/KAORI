@@ -161,7 +161,6 @@ def test_access_main_right_rails_are_sticky_with_shared_desktop_offset() -> None
     required = {
         'app/templates/users/form.html': 2,
         'app/templates/users/reset_password.html': 1,
-        'app/templates/users/providers/partials/_index_guidance.html': 1,
         'app/templates/users/providers/partials/_provider_guidance.html': 1,
         'app/templates/users/external_identities.html': 1,
         'app/templates/access/roles/index.html': 1,
