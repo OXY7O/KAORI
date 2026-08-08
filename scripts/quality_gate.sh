@@ -23,6 +23,7 @@ run_static() {
     python scripts/verify_secret_management_standard.py
     python scripts/verify_operational_delivery_policy.py
     python scripts/verify_operational_feedback_coverage.py
+    python scripts/verify_access_ownership.py
     python scripts/verify_tls_certificate_governance_standard.py
     python scripts/verify_workload_inventory_standard.py
     python scripts/verify_pod_inventory_standard.py

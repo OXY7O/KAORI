@@ -188,9 +188,10 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'scope': 'Platform',
         'group': 'platform',
         'targets': (
-            ('users.view', 'users.index'),
-            ('roles.view', 'settings.roles'),
-            ('settings.view_operational_activity', 'notifications.activity_log'),
+            ('users.view', 'access.overview.index'),
+            ('users.manage', 'access.overview.index'),
+            ('roles.view', 'access.overview.index'),
+            ('settings.view_operational_activity', 'access.overview.index'),
         ),
     },
     {

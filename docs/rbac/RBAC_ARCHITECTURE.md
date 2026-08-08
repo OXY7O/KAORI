@@ -25,10 +25,10 @@ UI visibility is not an authorization boundary. A hidden menu, disabled button, 
 | `app/rbac/defaults.py` | Canonical permission registry and protected default-role definitions. |
 | `app/rbac/service.py` | Seeding, slug normalization, dependency expansion, permission replacement, and delete blockers. |
 | `app/rbac/decorators.py` | `permission_required()` and `any_permission_required()` route guards. |
-| `app/settings/routes.py` | Role and Permission Catalog HTTP lifecycle. |
-| `app/settings/roles/forms.py` | CSRF-protected role create/update/delete forms. |
-| `app/templates/settings/roles/` | Roles & Access list, detail, clone, and custom-role editor. |
-| `app/templates/settings/permissions/` | Read-only permission registry and role coverage. |
+| `app/access/roles/routes.py` / `app/access/permissions/routes.py` | Role and Permission Catalog HTTP lifecycle. |
+| `app/access/roles/forms.py` | CSRF-protected role create/update/delete forms. |
+| `app/templates/access/roles/` | Roles & Access list, detail, clone, and custom-role editor. |
+| `app/templates/access/permissions/` | Read-only permission registry and role coverage. |
 | `app/commands/rbac.py` | Idempotent `flask seed-rbac` command. |
 
 All database models remain centralized in `app/models/`. The RBAC domain package contains policy, services, decorators, and documentation only.

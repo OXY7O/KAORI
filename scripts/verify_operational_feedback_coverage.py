@@ -91,10 +91,13 @@ def main() -> int:
         "event_type='identity_provider_updated'",
     )
     require(
-        'app/settings/routes.py',
+        'app/access/roles/routes.py',
         "event_type='rbac_role_created'",
         "event_type='rbac_role_updated'",
         "event_type='rbac_role_deleted'",
+    )
+    require(
+        'app/settings/routes.py',
         "event_type='account_security'",
         "event_type='user_preference'",
         'OperationalDeliveryPolicy.AUDIT_ONLY',

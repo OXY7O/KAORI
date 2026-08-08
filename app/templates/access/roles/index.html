@@ -49,13 +49,13 @@
                             <p class="mt-2 text-sm leading-5 text-brand-foreground-muted">Default Roles are code-owned. Clone a baseline when a team needs a tailored permission set.</p>
                         </div>
                         <div class="mt-auto grid gap-2 pt-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                            <a href="{{ url_for('settings.permission_catalog') }}"
+                            <a href="{{ url_for('access.permissions.index') }}"
                                class="{{ page_hero.context_action_classes() }}">
                                 <i data-lucide="book-key" class="h-4 w-4"></i>
                                 Permission Catalog
                             </a>
                             {% if can_manage_roles %}
-                                <a href="{{ url_for('settings.new_role') }}"
+                                <a href="{{ url_for('access.roles.create') }}"
                                    class="{{ page_hero.context_action_classes() }}">
                                     <i data-lucide="plus" class="h-4 w-4"></i>
                                     New Custom Role
@@ -248,17 +248,17 @@
                                         </div>
                                     </div>
                                     <div class="space-y-2">
-                                        <a href="{{ url_for('settings.role_detail', role_id=role.id) }}"
+                                        <a href="{{ url_for('access.roles.detail', role_id=role.id) }}"
                                            class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm font-semibold text-content-primary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary">
                                             <i data-lucide="eye" class="h-4 w-4"></i>View role
                                         </a>
                                         {% if can_manage_roles and role.is_system %}
-                                            <a href="{{ url_for('settings.clone_role', role_id=role.id) }}"
+                                            <a href="{{ url_for('access.roles.clone', role_id=role.id) }}"
                                                class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 py-2 text-sm font-semibold text-white transition hover:bg-kaori-primary/90">
                                                 <i data-lucide="copy-plus" class="h-4 w-4"></i>Clone default role
                                             </a>
                                         {% elif can_manage_roles %}
-                                            <a href="{{ url_for('settings.edit_role', role_id=role.id) }}"
+                                            <a href="{{ url_for('access.roles.edit', role_id=role.id) }}"
                                                class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 py-2 text-sm font-semibold text-white transition hover:bg-kaori-primary/90">
                                                 <i data-lucide="pencil" class="h-4 w-4"></i>Edit Role
                                             </a>
@@ -296,7 +296,7 @@
                                             </div>
                                         </div>
                                         <form method="post"
-                                              action="{{ url_for('settings.delete_role', role_id=role.id) }}"
+                                              action="{{ url_for('access.roles.delete', role_id=role.id) }}"
                                               class="mt-5 flex justify-end gap-3">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <input type="hidden" name="role_id" value="{{ role.id }}">
@@ -372,7 +372,7 @@
                     </div>
                     <div class="mt-4 space-y-3">
                         {% for role in roles if role.is_system %}
-                            <a href="{{ url_for('settings.role_detail', role_id=role.id) }}"
+                            <a href="{{ url_for('access.roles.detail', role_id=role.id) }}"
                                class="flex items-center justify-between gap-3 rounded-xl border border-outline-default bg-surface-subtle px-3 py-3 transition hover:border-brand-outline hover:bg-kaori-soft">
                                 <div class="min-w-0">
                                     <p class="truncate text-sm font-semibold text-content-primary">{{ role.display_name }}</p>
@@ -386,7 +386,7 @@
                 </section>
                 {{ related_page_card.render('Permission Catalog',
                                 'Permission keys are code-backed KAORI contracts. Role management assigns them; it does not edit the registry.',
-                                url_for('settings.permission_catalog') ,
+                                url_for('access.permissions.index') ,
                 'Open Permission Catalog',
                 icon='book-key',
                 eyebrow='Related Access Workspace',
@@ -448,7 +448,7 @@
                                         data-role-type="{{ 'system' if role.is_system else 'custom' }}"
                                         data-role-search="{{ ((role.display_name or '') ~ ' ' ~ (role.name or '') ~ ' ' ~ (role.description or ''))|lower|e }}"
                                         class="sticky top-0 z-20 w-[136px] min-w-[136px] max-w-[136px] border-b border-r border-outline-default bg-surface-hover px-3 py-3 align-top last:border-r-0">
-                                        <a href="{{ url_for('settings.role_detail', role_id=role.id) }}"
+                                        <a href="{{ url_for('access.roles.detail', role_id=role.id) }}"
                                            title="{{ role.display_name }} · {{ role.name }}"
                                            class="group block min-w-0">
                                             <span class="flex items-start gap-2">

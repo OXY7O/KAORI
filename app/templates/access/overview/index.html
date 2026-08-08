@@ -1,0 +1,66 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/operational_section_card.html" as operational_section %}
+{% import "components/section_link_button.html" as section_link_button %}
+{% block title %}Access Overview · KAORI{% endblock %}
+{% block dashboard_content %}
+    <div class="space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('shield-check', 'Access', 'users-round') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Access Overview</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Open identity, authorization, and audit workspaces from one administrative boundary.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('blocks', access_overview.workspace_count ~ ' Available Workspaces') }}
+                            {{ page_hero.meta_label('shield-check', 'Read Only') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}" aria-label="Access ownership boundary">
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Identity & Authorization</p>
+                        <h2 class="{{ page_hero.context_panel_title_classes() }}">Access Boundary</h2>
+                        {{ page_hero.context_info('shield-check', 'Overview only; each workspace keeps its own authorization and mutation rules.') }}
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        {% call operational_section.render(
+            'Access Workspaces',
+            'Only workspaces allowed by the current account are shown.',
+            'blocks',
+            body_classes='bg-surface-page p-4 sm:p-5'
+        ) %}
+            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {% for workspace in access_overview.workspaces %}
+                    <article class="flex min-h-[15rem] flex-col rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary dark:text-kaori-accent" aria-hidden="true">
+                                <i data-lucide="{{ workspace.icon }}" class="h-5 w-5"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold text-content-primary">{{ workspace.label }}</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ workspace.description }}</p>
+                            </div>
+                        </div>
+                        <dl class="mt-4 grid grid-cols-2 gap-3">
+                            <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
+                                <dt class="text-xs font-medium text-content-muted">{{ workspace.metric_label }}</dt>
+                                <dd class="mt-1 text-lg font-semibold text-content-primary">{{ workspace.metric_value }}</dd>
+                            </div>
+                            <div class="rounded-lg border border-outline-subtle bg-surface-subtle p-3">
+                                <dt class="text-xs font-medium text-content-muted">{{ workspace.secondary_label }}</dt>
+                                <dd class="mt-1 text-lg font-semibold text-content-primary">{{ workspace.secondary_value }}</dd>
+                            </div>
+                        </dl>
+                        <div class="mt-auto pt-4">
+                            {{ section_link_button.render(url_for(workspace.action_endpoint), workspace.action_label, icon='arrow-right') }}
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% endcall %}
+    </div>
+{% endblock dashboard_content %}

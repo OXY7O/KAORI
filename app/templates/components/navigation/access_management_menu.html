@@ -1,19 +1,20 @@
-{% set access_management_active = request.endpoint in [
-    'users.index',
-    'users.create',
-    'users.edit',
-    'users.reset_password',
-    'settings.roles',
-    'settings.new_role',
-    'settings.edit_role',
-    'settings.permission_catalog',
-    'notifications.activity_log'
-] or (request.endpoint and (
-request.endpoint.startswith('users.')
-or request.endpoint.startswith('settings.roles')
-)) %}
+{% set identity_provider_active = request.endpoint in [
+    'users.providers',
+    'users.create_provider',
+    'users.edit_provider',
+    'users.validate_provider',
+    'users.external_identities',
+    'users.provision_identity'
+] %}
+{% set user_management_active = request.endpoint and request.endpoint.startswith('users.') and not identity_provider_active %}
+{% set role_access_active = request.endpoint and request.endpoint.startswith('access.roles.') %}
+{% set permission_catalog_active = request.endpoint and request.endpoint.startswith('access.permissions.') %}
+{% set access_overview_active = request.endpoint and request.endpoint.startswith('access.overview.') %}
+{% set activity_audit_active = request.endpoint == 'notifications.activity_log' %}
+{% set access_management_active = access_overview_active or user_management_active or identity_provider_active or role_access_active or permission_catalog_active or activity_audit_active %}
 {% set can_access_management = current_user.is_authenticated and (
     current_user.has_permission('users.view')
+    or current_user.has_permission('users.manage')
     or current_user.has_permission('roles.view')
     or current_user.has_permission('settings.view_operational_activity')
 ) %}
@@ -34,26 +35,36 @@ or request.endpoint.startswith('settings.roles')
                class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-kaori-accent' if access_management_active else 'text-white/[0.35]' }}"></i>
         </summary>
         <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3">
+            <a href="{{ url_for('access.overview.index') }}"
+               class="{{ 'bg-white/[0.08] text-kaori-accent' if access_overview_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+                <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if access_overview_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="layout-dashboard" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Overview</span>
+            </a>
             {% if current_user.has_permission('users.view') %}
                 <a href="{{ url_for('users.index') }}"
-                   class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint and request.endpoint.startswith('users.') or request.endpoint in ['users.create', 'users.edit', 'users.reset_password'] else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
-                    <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint and request.endpoint.startswith('users.') or request.endpoint in ['users.create', 'users.edit', 'users.reset_password'] else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="users-round" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">User Management</span>
+                   class="{{ 'bg-white/[0.08] text-kaori-accent' if user_management_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+                    <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if user_management_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="users-round" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">User Management</span>
+                </a>
+            {% endif %}
+            {% if current_user.has_permission('users.manage') %}
+                <a href="{{ url_for('users.providers') }}"
+                   class="{{ 'bg-white/[0.08] text-kaori-accent' if identity_provider_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+                    <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if identity_provider_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="fingerprint" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Identity Providers</span>
                 </a>
             {% endif %}
             {% if current_user.has_permission('roles.view') %}
-                <a href="{{ url_for('settings.roles') }}"
-                   class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint and request.endpoint.startswith('settings.roles') or request.endpoint in ['settings.new_role', 'settings.edit_role'] else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
-                    <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint and request.endpoint.startswith('settings.roles') or request.endpoint in ['settings.new_role', 'settings.edit_role'] else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="badge-check" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Roles & Access</span>
+                <a href="{{ url_for('access.roles.index') }}"
+                   class="{{ 'bg-white/[0.08] text-kaori-accent' if role_access_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+                    <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if role_access_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="badge-check" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Roles &amp; Access</span>
                 </a>
-                <a href="{{ url_for('settings.permission_catalog') }}"
-                   class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'settings.permission_catalog' else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
-                    <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'settings.permission_catalog' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="key-round" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Permission Catalog</span>
+                <a href="{{ url_for('access.permissions.index') }}"
+                   class="{{ 'bg-white/[0.08] text-kaori-accent' if permission_catalog_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+                    <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if permission_catalog_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="key-round" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Permission Catalog</span>
                 </a>
             {% endif %}
             {% if current_user.has_permission('settings.view_operational_activity') %}
                 <a href="{{ url_for('notifications.activity_log') }}"
-                   class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'notifications.activity_log' else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
-                    <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'notifications.activity_log' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="history" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Activity Audit Log</span>
+                   class="{{ 'bg-white/[0.08] text-kaori-accent' if activity_audit_active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
+                    <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if activity_audit_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="history" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Activity Audit</span>
                 </a>
             {% endif %}
         </div>

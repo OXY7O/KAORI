@@ -75,7 +75,7 @@ The shared implementation is:
 {{ related_page_card.render(
     'Permission Catalog',
     'Permission keys are code-backed KAORI contracts.',
-    url_for('settings.permission_catalog'),
+    url_for('access.permissions.index'),
     'Open Permission Catalog',
     icon='book-key',
     eyebrow='Related Access Workspace',

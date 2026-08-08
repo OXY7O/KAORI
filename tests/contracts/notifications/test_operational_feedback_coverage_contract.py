@@ -62,7 +62,8 @@ def test_tls_integrations_platform_operations_access_and_settings_are_covered() 
         'app/platform_operations/data_lifecycle/service.py': ('data_lifecycle_policy_updated', 'data_lifecycle_execution_requested'),
         'app/platform_operations/kubernetes/secret_reveal/routes.py': ('kubernetes_secret_reveal_cluster_readiness_updated', 'kubernetes_secret_reveal_namespace_policy_updated'),
         'app/users/routes.py': ('user_created', 'user_updated', 'user_deleted', 'identity_provider_created', 'identity_provider_updated'),
-        'app/settings/routes.py': ('rbac_role_created', 'rbac_role_updated', 'rbac_role_deleted', 'account_security', 'user_preference'),
+        'app/access/roles/routes.py': ('rbac_role_created', 'rbac_role_updated', 'rbac_role_deleted'),
+        'app/settings/routes.py': ('account_security', 'user_preference'),
     }
     for path, events in sources.items():
         text = read(path)

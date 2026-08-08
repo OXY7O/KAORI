@@ -5,6 +5,7 @@ from flask import Flask
 
 def register_blueprints(app: Flask) -> None:
     """Import and register KAORI web domains after extensions are initialized."""
+    from app.access import bp as access_bp
     from app.alertmanager.routes import alertmanager_bp
     from app.analytics.routes import analytics_bp
     from app.auth.routes import auth_bp
@@ -28,6 +29,7 @@ def register_blueprints(app: Flask) -> None:
 
     for blueprint in (
         auth_bp,
+        access_bp,
         welcome_bp,
         kubernetes_dashboard_bp,
         cluster_bp,

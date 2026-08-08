@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`app/users` owns administrative lifecycle management for KAORI user records. It does not authenticate credentials and it does not define permissions. Authentication belongs to `app/auth`; authorization and role mapping belong to `app/rbac`.
+`app/users` owns administrative lifecycle management for KAORI user records. It does not authenticate credentials and it does not define permissions. Authentication belongs to `app/auth`; authorization and role mapping belong to `app/rbac`. The Access control plane groups User Management and Identity Providers in navigation, while this package remains the canonical user/provider administration implementation.
 
 ## Current scope
 

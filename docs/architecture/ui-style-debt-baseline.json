@@ -286,10 +286,10 @@
     "app/templates/settings/general/partials/_time_locale.html": {
       "raw_palette_utilities": 3
     },
-    "app/templates/settings/roles/form.html": {
+    "app/templates/access/roles/form.html": {
       "semantic_border_utilities": 5
     },
-    "app/templates/settings/roles/index.html": {
+    "app/templates/access/roles/index.html": {
       "semantic_border_utilities": 1
     },
     "app/templates/users/external_identities.html": {

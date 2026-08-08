@@ -52,7 +52,7 @@ def role_access_feedback(
         title=title,
         message=message,
         detail=detail,
-        action_url=url_for('settings.roles'),
+        action_url=url_for('access.roles.index'),
         action_label='Open Roles & Access',
         action_icon='shield-check',
         metadata=metadata,

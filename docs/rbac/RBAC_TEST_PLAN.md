@@ -58,13 +58,13 @@ For each role-management endpoint:
 
 | Endpoint | Required permission | Expected behavior |
 |---|---|---|
-| `GET /settings/roles` | `roles.view` | 200 or 403. |
-| `GET /settings/permissions` | `roles.view` | 200 or 403. |
-| `GET /settings/roles/<id>` | `roles.view` | Read-only detail. |
-| `GET/POST /settings/roles/new` | `roles.manage` | Create or 403. |
-| `GET/POST /settings/roles/<id>/clone` | `roles.manage` | Clone default only. |
-| `GET/POST /settings/roles/<id>/edit` | `roles.manage` | Edit custom only. |
-| `POST /settings/roles/<id>/delete` | `roles.manage` | Delete safe custom role only. |
+| `GET /access/roles/` | `roles.view` | 200 or 403. |
+| `GET /access/permissions/` | `roles.view` | 200 or 403. |
+| `GET /access/roles/<id>` | `roles.view` | Read-only detail. |
+| `GET/POST /access/roles/new` | `roles.manage` | Create or 403. |
+| `GET/POST /access/roles/<id>/clone` | `roles.manage` | Clone default only. |
+| `GET/POST /access/roles/<id>/edit` | `roles.manage` | Edit custom only. |
+| `POST /access/roles/<id>/delete` | `roles.manage` | Delete safe custom role only. |
 
 Test direct HTTP calls, not only hidden links.
 

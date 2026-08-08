@@ -2,7 +2,7 @@
 
 RBAC is KAORI's authorization layer. It defines the code-owned permission registry, protected default roles, custom-role consistency rules, and reusable route guards.
 
-Database models remain centralized in `app/models/`; role-management HTTP routes remain in `app/settings/`.
+Database models remain centralized in `app/models/`; role-management and Permission Catalog HTTP/presentation ownership lives in `app/access/`.
 
 ## File responsibilities
 
@@ -50,12 +50,15 @@ Owns RBAC business rules:
 
 - `app/models/rbac.py`: Role, Permission, RolePermission.
 - `app/models/user.py`: normalized role relation and `has_permission()`.
-- `app/settings/routes.py`: list/detail/create/clone/edit/delete and Permission Catalog routes.
-- `app/settings/roles/forms.py`: role and deletion CSRF forms.
-- `app/templates/settings/roles/`: KAORI Violet overview, tabbed role registry, dynamic role-permission matrix, and role form.
+- `app/access/roles/routes.py`: role list/detail/create/clone/edit/delete HTTP orchestration.
+- `app/access/roles/forms.py`: role and deletion CSRF forms.
+- `app/access/roles/service.py`: role create/clone mutation orchestration.
+- `app/access/roles/presentation.py`: role list/form presentation context.
+- `app/templates/access/roles/`: Roles & Access list and role form.
 - `app/static/js/role_access_tabs.js`: progressive enhancement for Role Registry / Mapping Matrix tabs.
 - `app/static/js/role_permission_editor.js`: scoped Permission Matrix search, module toggles, global Select all/Clear all, counters, and viewport protection.
-- `app/templates/settings/permissions/`: read-only Permission Catalog.
+- `app/access/permissions/`: read-only Permission Catalog HTTP/presentation boundary.
+- `app/templates/access/permissions/`: read-only Permission Catalog template.
 - `app/commands/rbac.py`: `flask seed-rbac`.
 - `docs/rbac/`: complete architecture, data model, flow, default-role review, permission-registry review, security, UI, and test documentation.
 

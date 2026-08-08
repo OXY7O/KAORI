@@ -69,11 +69,14 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'settings.general': 'General',
     'settings.account': 'Account',
     # Access
+    'access.overview.index': 'Overview',
     'users.index': 'User Management',
-    'settings.roles': 'Roles & Access',
-    'settings.permission_catalog': 'Permission Catalog',
+    'users.providers': 'Identity Providers',
+    'users.external_identities': 'Directory Provisioning',
+    'access.roles.index': 'Roles & Access',
+    'access.permissions.index': 'Permission Catalog',
     'notifications.center': 'Notification Center',
-    'notifications.activity_log': 'Activity Audit Log',
+    'notifications.activity_log': 'Activity Audit',
 }
 
 _WORKFLOW_LABELS: tuple[tuple[str, str], ...] = (
@@ -92,10 +95,10 @@ _WORKFLOW_LABELS: tuple[tuple[str, str], ...] = (
     ('users.create_provider', 'Add Provider'),
     ('users.edit_provider', 'Edit Provider'),
     ('users.external_identities', 'External Identities'),
-    ('settings.new_role', 'Add Role'),
-    ('settings.clone_role', 'Clone Role'),
-    ('settings.role_detail', 'Role Details'),
-    ('settings.edit_role', 'Edit Role'),
+    ('access.roles.create', 'Add Role'),
+    ('access.roles.clone', 'Clone Role'),
+    ('access.roles.detail', 'Role Details'),
+    ('access.roles.edit', 'Edit Role'),
 )
 
 
@@ -201,22 +204,28 @@ def build_navigation_breadcrumb(endpoint: str | None, path: str = '') -> list[di
             'integrations.alertmanager': 'Alertmanager',
         }.get(endpoint, 'Overview')
         items = [BreadcrumbItem('Integrations', 'plug'), BreadcrumbItem(leaf)]
+    elif endpoint.startswith('access.overview.'):
+        items = [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Overview')]
+    elif endpoint in {'users.providers', 'users.create_provider', 'users.edit_provider', 'users.validate_provider'}:
+        items = [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Identity Providers')]
+        items = _append_workflow(items, endpoint)
+    elif endpoint in {'users.external_identities', 'users.provision_identity'}:
+        items = [
+            BreadcrumbItem('Access', 'users-round'),
+            BreadcrumbItem('Identity Providers'),
+            BreadcrumbItem('Directory Provisioning'),
+        ]
     elif endpoint.startswith('users.'):
         items = [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('User Management')]
         items = _append_workflow(items, endpoint)
     elif endpoint == 'notifications.center':
         items = [BreadcrumbItem('Notification Center', 'bell')]
     elif endpoint.startswith('notifications.'):
-        items = [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem(_leaf(endpoint, 'Activity Audit Log'))]
-    elif endpoint.startswith('settings.roles') or endpoint in {
-        'settings.new_role',
-        'settings.clone_role',
-        'settings.role_detail',
-        'settings.edit_role',
-    }:
+        items = [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem(_leaf(endpoint, 'Activity Audit'))]
+    elif endpoint.startswith('access.roles.'):
         items = [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Roles & Access')]
         items = _append_workflow(items, endpoint)
-    elif endpoint == 'settings.permission_catalog':
+    elif endpoint.startswith('access.permissions.'):
         items = [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('Permission Catalog')]
     elif endpoint.startswith('settings.'):
         items = [BreadcrumbItem('Settings', 'settings-2'), BreadcrumbItem(_leaf(endpoint, 'General'))]

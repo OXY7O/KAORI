@@ -181,7 +181,7 @@ A permission must not be added only to the UI or only to the default-role seed.
 ## 12. Role registry and mapping matrix render
 
 ```text
-GET /settings/roles
+GET /access/roles/
   -> seed/converge default RBAC
   -> query every current role
   -> query grouped permission registry
