@@ -16,7 +16,9 @@ REQUIRED = (
     'app/templates/platform_operations/data_lifecycle/partials/_storage.html',
     'app/templates/platform_operations/data_lifecycle/partials/_history.html',
     'docs/design/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_LOCK_V1.md',
+    'docs/design/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_LOCK_V1_1.md',
     'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_AUDIT_2026_08_08.md',
+    'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md',
     'migrations/versions/20260808_data_lifecycle_platform_operations.py',
     'app/settings/data_lifecycle_compat.py',
 )
@@ -95,8 +97,8 @@ def main() -> int:
         'components/framed_workspace_tabs.html',
         'framed_workspace_tabs.render(',
         "('policies', 'Retention Policies', 'sliders-horizontal')",
-        "('storage', 'Archive Storage', 'hard-drive')",
         "('history', 'Archive History', 'history')",
+        "('storage', 'Archive Storage', 'hard-drive')",
         'Execution Boundary',
         "url_for('jobs.executions')",
     ):
@@ -105,12 +107,49 @@ def main() -> int:
     for forbidden in ('role="tablist"', 'Planned Domains', 'bg-white', 'settings.data_lifecycle'):
         if forbidden in index:
             errors.append(f'Data Lifecycle workspace contains obsolete presentation debt: {forbidden}')
+    expected_tabs = "[('policies', 'Retention Policies', 'sliders-horizontal'), ('history', 'Archive History', 'history'), ('storage', 'Archive Storage', 'hard-drive')]"
+    if expected_tabs not in index or "tabs: ['policies', 'history', 'storage']" not in index:
+        errors.append('Data Lifecycle tab order must be Retention Policies → Archive History → Archive Storage')
+    if 'Only approved lifecycle domains are manageable.' not in index:
+        errors.append('Data Lifecycle managed-domain helper copy drifted from the compact lock')
+
+    domain_workspace = read('app/templates/platform_operations/data_lifecycle/partials/_domain_workspace.html')
+    storage = read('app/templates/platform_operations/data_lifecycle/partials/_storage.html')
+    for required in (
+        'components/loading_bar.html',
+        "loading_bar.render('data-lifecycle-policy-loading'",
+        'Changing retention days only changes eligibility; it does not run a job immediately.',
+        'Requires Policy enabled + Scheduled execution.',
+        'Transient failures retry once; exhausted failures require manual retry.',
+        'Queue {{ lifecycle.queue_name }} · {{ lifecycle.worker.label }}.',
+    ):
+        if required not in domain_workspace:
+            errors.append(f'Retention Policies operational contract missing: {required}')
+    if 'notification-progress-indeterminate' in domain_workspace:
+        errors.append('Retention Policies must use the shared KAORI loading bar, not the legacy notification progress segment')
+
+    for required in (
+        'Archive Target Contract',
+        'Execution Contract',
+        'Storage Readiness',
+        'Worker Readiness',
+        'Last Verified',
+        'Archive-First Safety Boundary',
+        'Freeze Boundary',
+        'Verify Evidence',
+        'Storage Interpretation',
+        'Production uses the dedicated maintenance worker service.',
+    ):
+        if required not in storage:
+            errors.append(f'Archive Storage operational evidence contract missing: {required}')
 
     history = read('app/templates/platform_operations/data_lifecycle/partials/_history.html')
     for required in (
         'Archive History',
         "{{ 'Archive' if pager.total == 1 else 'Archives' }}",
-        '>Rows</span>',
+        '<span class="text-xs font-semibold text-content-secondary">Rows</span>',
+        'components/loading_bar.html',
+        "loading_bar.render('data-lifecycle-history-loading'",
         'aria-label="Rows Per Page"',
         "current_user.has_permission('platform_operations.export_data_lifecycle')",
         "current_user.has_permission('platform_operations.manage_data_lifecycle')",
@@ -119,6 +158,8 @@ def main() -> int:
             errors.append(f'Archive History standard missing: {required}')
     if 'Lifecycle Execution History' in history:
         errors.append('Archive evidence must not be labeled as a second execution registry')
+    if 'notification-progress-indeterminate' in history:
+        errors.append('Archive History must use the shared KAORI loading bar')
 
     menu = read('app/templates/components/navigation/platform_operations_menu.html')
     settings_menu = read('app/templates/components/navigation/settings_menu.html')
@@ -180,6 +221,14 @@ def main() -> int:
             errors.append(f'{source_name} must link to Platform Operations Data Lifecycle')
     if '/platform-operations/data-lifecycle/?tab=history' not in retention_tasks:
         errors.append('retention worker notifications must link to canonical Platform Operations Data Lifecycle URL')
+    for required in (
+        '_is_retryable_retention_error',
+        'RETENTION_RETRY_DELAY_SECONDS',
+        'execution.retrying(',
+        'self.retry(exc=exc, countdown=retry_delay, max_retries=1)',
+    ):
+        if required not in retention_tasks:
+            errors.append(f'retention bounded retry contract missing: {required}')
 
     quality_gate = read('scripts/quality_gate.sh')
     if 'verify_data_lifecycle_final_lock.py' not in quality_gate:
@@ -191,7 +240,7 @@ def main() -> int:
         return 1
 
     print(
-        'KAORI Data Lifecycle Final Lock v1 passed: Platform Operations owns route, template, RBAC, navigation, '
+        'KAORI Data Lifecycle Final Lock v1.1 passed: Platform Operations owns route, template, RBAC, navigation, '
         'feedback and presentation boundaries; Settings is redirect-only; archive-first retention remains shared; '
         'Jobs & Executions remains canonical runtime evidence; shared tabs, dark-mode-safe surfaces, Archive History '
         'pagination and compatibility migration are frozen.'

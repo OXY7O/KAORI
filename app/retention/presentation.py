@@ -295,7 +295,7 @@ def _domain_icon(name: str) -> str:
 def _domain_description(name: str) -> str:
     return {
         'operational_activity': 'Administrative activity and security-sensitive operational evidence.',
-        'job_execution': 'Canonical queue, progress, result-reference, and worker execution metadata.',
+        'job_execution': 'Canonical queue, progress, results, and worker metadata.',
         'runtime_observation': 'Provider health, readiness, latency, and capability-drift evidence.',
     }.get(name, 'KAORI operational data domain.')
 

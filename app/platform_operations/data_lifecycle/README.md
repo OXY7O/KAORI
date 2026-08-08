@@ -15,8 +15,8 @@ The former `/settings/data-lifecycle/` route is compatibility-only and redirects
 The page contains three controlled workspaces:
 
 1. **Retention Policies** — per-domain retention, archive, schedule, and cleanup intent.
-2. **Archive Storage** — shared archive target and archive-first safety boundary.
-3. **Archive History** — verified archive artifacts and cleanup evidence. Canonical worker runtime remains under Jobs & Executions.
+2. **Archive History** — verified archive artifacts and cleanup evidence. Canonical worker runtime remains under Jobs & Executions.
+3. **Archive Storage** — shared target posture, verification evidence, worker dependency, and archive-first safety boundary.
 
 Only registered archive adapters are displayed. Future domains are not advertised as placeholders before their adapter and safety contract exist.
 
@@ -27,3 +27,8 @@ Only registered archive adapters are displayed. Future domains are not advertise
 - `platform_operations.export_data_lifecycle`
 
 The ownership-cutover migration renames the former `settings.*_data_lifecycle` permission rows in place, preserving role assignments and custom-role access.
+
+
+## Execution semantics
+
+Retention days define eligibility only. Automatic execution requires both the policy and its schedule to be enabled; Celery Beat checks due lifecycle policies every 15 minutes and dispatches due domains through the canonical `maintenance` execution path. Transient connectivity failures retry once automatically; exhausted or non-retryable failures keep cleanup blocked and require operator review/manual retry. A later scheduled window can dispatch a new run. Production already deploys a dedicated `maintenance-worker`, so a separate retention worker is unnecessary while `RETENTION_CELERY_QUEUE=maintenance`.

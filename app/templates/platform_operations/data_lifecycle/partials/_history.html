@@ -1,33 +1,33 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/loading_bar.html" as loading_bar %}
 {% set filters = lifecycle.history_filters %}
 {% set pager = lifecycle.history_pagination %}
 <section id="data-lifecycle-history" class="{{ table_ui.block_classes() }}">
-    <div class="{{ table_ui.block_header_classes() }}">
-        <div class="flex items-start gap-3">
-            <span class="{{ table_ui.block_icon_classes() }}"><i data-lucide="history" class="h-5 w-5"></i></span>
-            <div>
-                <h2 class="{{ table_ui.block_title_classes() }}">Archive History</h2>
-                <p class="{{ table_ui.block_description_classes() }}">Review verified archive artifacts and cleanup evidence across managed KAORI data domains.</p>
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-start gap-3">
+                <span class="{{ table_ui.block_icon_classes() }}"><i data-lucide="history" class="h-5 w-5"></i></span>
+                <div>
+                    <h2 class="{{ table_ui.block_title_classes() }}">Archive History</h2>
+                    <p class="{{ table_ui.block_description_classes() }}">Review verified archive artifacts and cleanup evidence across managed KAORI data domains.</p>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                {% if current_user.has_permission('jobs.view') %}
+                    <a href="{{ url_for('jobs.executions') }}" class="{{ table_ui.action_classes() }}"><i data-lucide="list-checks" class="h-4 w-4"></i>Jobs &amp; Executions</a>
+                {% endif %}
+                <a href="{{ url_for('platform_operations.data_lifecycle.index', tab='history', archive_domain=filters.domain, archive_status=filters.status, archive_trigger=filters.trigger_type, archive_mode=filters.operation_mode, archive_storage=filters.storage_backend, archive_search=filters.search, archive_page=pager.page, archive_per_page=pager.per_page) }}"
+                   hx-get="{{ url_for('platform_operations.data_lifecycle.index', tab='history', archive_domain=filters.domain, archive_status=filters.status, archive_trigger=filters.trigger_type, archive_mode=filters.operation_mode, archive_storage=filters.storage_backend, archive_search=filters.search, archive_page=pager.page, archive_per_page=pager.per_page) }}"
+                   hx-target="#data-lifecycle-history"
+                   hx-swap="outerHTML"
+                   hx-indicator="#data-lifecycle-history-loading"
+                   class="{{ table_ui.action_classes() }}"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh</a>
             </div>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-            {% if current_user.has_permission('jobs.view') %}
-                <a href="{{ url_for('jobs.executions') }}" class="{{ table_ui.action_classes() }}"><i data-lucide="list-checks" class="h-4 w-4"></i>Jobs &amp; Executions</a>
-            {% endif %}
-            <a href="{{ url_for('platform_operations.data_lifecycle.index', tab='history', archive_domain=filters.domain, archive_status=filters.status, archive_trigger=filters.trigger_type, archive_mode=filters.operation_mode, archive_storage=filters.storage_backend, archive_search=filters.search, archive_page=pager.page, archive_per_page=pager.per_page) }}"
-               hx-get="{{ url_for('platform_operations.data_lifecycle.index', tab='history', archive_domain=filters.domain, archive_status=filters.status, archive_trigger=filters.trigger_type, archive_mode=filters.operation_mode, archive_storage=filters.storage_backend, archive_search=filters.search, archive_page=pager.page, archive_per_page=pager.per_page) }}"
-               hx-target="#data-lifecycle-history"
-               hx-swap="outerHTML"
-               hx-indicator="#data-lifecycle-history-loading"
-               class="{{ table_ui.action_classes() }}"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh</a>
-        </div>
-    </div>
-    <div id="data-lifecycle-history-loading"
-         class="{{ table_ui.loading_bar_classes() }}">
-        <div class="notification-progress-indeterminate h-full bg-kaori-primary"></div>
-    </div>
+        {{ loading_bar.render('data-lifecycle-history-loading', label='Refreshing Archive History') }}
+    </header>
     <form method="get"
           action="{{ url_for('platform_operations.data_lifecycle.index') }}"
           hx-get="{{ url_for('platform_operations.data_lifecycle.index') }}"
@@ -161,12 +161,13 @@
             </tbody>
         </table>
     </div>
-    <div class="flex flex-col gap-3 border-t border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <div class="flex items-center gap-3">
-            <p class="text-xs text-content-muted">Showing {{ pager.start_item }}–{{ pager.end_item }} of {{ pager.total }} {{ 'Archive' if pager.total == 1 else 'Archives' }}</p>
-            <span class="font-semibold text-content-secondary">Rows</span>
-            <select aria-label="Rows Per Page"
-                    class="{{ pagination_ui.page_size_classes() }}"
+    <div class="{{ pagination_ui.footer_classes() }}">
+        <div class="{{ pagination_ui.summary_group_classes() }}">
+            <p>Showing {{ pager.start_item }}–{{ pager.end_item }} of {{ pager.total }} {{ 'Archive' if pager.total == 1 else 'Archives' }}</p>
+            <div class="{{ pagination_ui.rows_group_classes() }}">
+                <span class="text-xs font-semibold text-content-secondary">Rows</span>
+                <select aria-label="Rows Per Page"
+                        class="{{ pagination_ui.page_size_classes() }}"
                     hx-get="{{ url_for('platform_operations.data_lifecycle.index', tab='history', archive_domain=filters.domain, archive_status=filters.status, archive_trigger=filters.trigger_type, archive_mode=filters.operation_mode, archive_storage=filters.storage_backend, archive_search=filters.search, archive_page=1) }}"
                     hx-target="#data-lifecycle-history"
                     hx-swap="outerHTML"
@@ -175,10 +176,11 @@
                     name="archive_per_page">
                 {% for size in pager.allowed_per_page %}
                     <option value="{{ size }}" {% if size == pager.per_page %}selected{% endif %}>{{ size }}</option>
-                {% endfor %}
-            </select>
+                    {% endfor %}
+                </select>
+            </div>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="{{ pagination_ui.navigation_group_classes() }}">
             {% if pager.has_prev %}
                 <a class="{{ pagination_ui.navigation_classes() }}"
                    hx-get="{{ url_for('platform_operations.data_lifecycle.index', tab='history', archive_domain=filters.domain, archive_status=filters.status, archive_trigger=filters.trigger_type, archive_mode=filters.operation_mode, archive_storage=filters.storage_backend, archive_search=filters.search, archive_page=pager.prev_num, archive_per_page=pager.per_page) }}"

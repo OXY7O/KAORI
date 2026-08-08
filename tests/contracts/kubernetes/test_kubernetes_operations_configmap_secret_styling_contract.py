@@ -116,7 +116,8 @@ def test_secret_create_selection_and_actions_are_visually_owned_by_main_workspac
     assert 'secret-type-selected-indicator' in choice
     assert 'x-show=' not in choice
     assert '@change="{{ model }} = $event.target.value"' in choice
-    assert 'box-shadow: inset 3px 0 0 var(--kaori-brand-primary)' in styles
+    assert 'box-shadow: inset 3px 0 0 var(--kaori-brand-primary)' not in styles
+    assert 'box-shadow: 0 8px 20px rgba(5, 3, 9, 0.24)' in styles
     assert '0 0 0 2px var(--kaori-brand-primary)' not in styles
     assert '.secret-type-input:checked + .secret-type-option .secret-type-selected-indicator' in styles
     assert 'border border-brand-outline bg-kaori-soft' in choice

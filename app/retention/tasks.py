@@ -77,6 +77,22 @@ def run_domain_retention_task(
         }
     except Exception as exc:
         db.session.rollback()
+        retry_number = int(getattr(self.request, 'retries', 0) or 0)
+        if retry_number < 1 and _is_retryable_retention_error(exc):
+            retry_delay = max(int(current_app.config.get('RETENTION_RETRY_DELAY_SECONDS', 60) or 60), 1)
+            logger.warning(
+                'Transient retention failure for %s; retrying once in %s seconds.',
+                domain_name,
+                retry_delay,
+                exc_info=True,
+            )
+            if execution is not None:
+                execution.retrying(
+                    message=f'Transient failure; retrying attempt {retry_number + 2} of 2',
+                    error=exc,
+                )
+            raise self.retry(exc=exc, countdown=retry_delay, max_retries=1)
+
         logger.exception('Retention task failed for %s.', domain_name)
         if execution is not None:
             execution.fail(exc, error_code='data_lifecycle_failed')
@@ -291,6 +307,28 @@ def _resolve_activity_owner_user_id(preferred_user_id: int | None) -> int | None
         if user.is_admin_level:
             return user.id
     return active_users[0].id if active_users else None
+
+
+def _is_retryable_retention_error(error: Exception) -> bool:
+    if isinstance(error, (ConnectionError, TimeoutError)):
+        return True
+    normalized = f'{type(error).__name__}: {error}'.strip().lower()
+    return any(
+        marker in normalized
+        for marker in (
+            'endpointconnectionerror',
+            'could not connect to the endpoint',
+            'connection refused',
+            'connection reset',
+            'connection timed out',
+            'read timeout',
+            'connect timeout',
+            'temporarily unavailable',
+            'service unavailable',
+            'gaierror',
+            'name or service not known',
+        )
+    )
 
 
 def _retention_error_summary(error: Exception) -> str:

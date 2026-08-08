@@ -306,6 +306,7 @@ class Config:
     )
 
     RETENTION_CELERY_QUEUE = _retention_queue_name()
+    RETENTION_RETRY_DELAY_SECONDS = _bounded_env_int('RETENTION_RETRY_DELAY_SECONDS', 60, 1, 3600)
 
     INTEGRATION_VALIDATION_CELERY_QUEUE = (
         _env_str('INTEGRATION_VALIDATION_CELERY_QUEUE', 'integration-validation').strip() or 'integration-validation'

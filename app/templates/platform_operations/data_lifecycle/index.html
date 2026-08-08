@@ -5,7 +5,7 @@
 {% block title %}Data Lifecycle · KAORI{% endblock %}
 {% block dashboard_content %}
     <div class="space-y-6"
-         x-data="{ tabs: ['policies', 'storage', 'history'], activeTab: '{{ lifecycle.active_tab }}', activeDomain: '{{ lifecycle.selected_domain }}', domainSearch: '', setTab(tab) { if (!this.tabs.includes(tab)) return; this.activeTab = tab; const url = new URL(window.location.href); url.searchParams.set('tab', tab); if (this.activeDomain) url.searchParams.set('domain', this.activeDomain); window.history.replaceState({}, '', url); }, moveTab(currentTab, direction, prefix = 'data-lifecycle') { const currentIndex = this.tabs.indexOf(currentTab); if (currentIndex < 0) return; let nextIndex = currentIndex; if (direction === 'home') nextIndex = 0; else if (direction === 'end') nextIndex = this.tabs.length - 1; else nextIndex = (currentIndex + direction + this.tabs.length) % this.tabs.length; const nextTab = this.tabs[nextIndex]; this.setTab(nextTab); this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus()); } }">
+         x-data="{ tabs: ['policies', 'history', 'storage'], activeTab: '{{ lifecycle.active_tab }}', activeDomain: '{{ lifecycle.selected_domain }}', domainSearch: '', setTab(tab) { if (!this.tabs.includes(tab)) return; this.activeTab = tab; const url = new URL(window.location.href); url.searchParams.set('tab', tab); if (this.activeDomain) url.searchParams.set('domain', this.activeDomain); window.history.replaceState({}, '', url); }, moveTab(currentTab, direction, prefix = 'data-lifecycle') { const currentIndex = this.tabs.indexOf(currentTab); if (currentIndex < 0) return; let nextIndex = currentIndex; if (direction === 'home') nextIndex = 0; else if (direction === 'end') nextIndex = this.tabs.length - 1; else nextIndex = (currentIndex + direction + this.tabs.length) % this.tabs.length; const nextTab = this.tabs[nextIndex]; this.setTab(nextTab); this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus()); } }">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -33,7 +33,7 @@
         </section>
 
         <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-            {{ framed_workspace_tabs.render([('policies', 'Retention Policies', 'sliders-horizontal'), ('storage', 'Archive Storage', 'hard-drive'), ('history', 'Archive History', 'history')], prefix='data-lifecycle', aria_label='Data Lifecycle Workspaces') }}
+            {{ framed_workspace_tabs.render([('policies', 'Retention Policies', 'sliders-horizontal'), ('history', 'Archive History', 'history'), ('storage', 'Archive Storage', 'hard-drive')], prefix='data-lifecycle', aria_label='Data Lifecycle Workspaces') }}
             <div class="p-5 lg:p-6">
                 <div id="data-lifecycle-panel-policies"
                      role="tabpanel"
@@ -50,7 +50,7 @@
                                            class="h-9 w-full rounded-md border border-outline-default bg-surface-card pl-9 pr-3 text-xs text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-accent/30"
                                            placeholder="Audit, jobs, runtime…">
                                 </div>
-                                <p class="mt-2 text-xs leading-4 text-content-muted">Only domains with an approved archive adapter and cleanup boundary are manageable.</p>
+                                <p class="mt-2 text-xs leading-4 text-content-muted">Only approved lifecycle domains are manageable.</p>
                             </div>
 
                             <div class="max-h-[580px] space-y-3 overflow-y-auto pr-1">
@@ -101,18 +101,18 @@
                     </div>
                 </div>
 
-                <div id="data-lifecycle-panel-storage"
-                     role="tabpanel"
-                     x-show="activeTab === 'storage'"
-                     x-cloak>
-                    {% include "platform_operations/data_lifecycle/partials/_storage.html" %}
-                </div>
-
                 <div id="data-lifecycle-panel-history"
                      role="tabpanel"
                      x-show="activeTab === 'history'"
                      x-cloak>
                     {% include "platform_operations/data_lifecycle/partials/_history.html" %}
+                </div>
+
+                <div id="data-lifecycle-panel-storage"
+                     role="tabpanel"
+                     x-show="activeTab === 'storage'"
+                     x-cloak>
+                    {% include "platform_operations/data_lifecycle/partials/_storage.html" %}
                 </div>
             </div>
         </section>

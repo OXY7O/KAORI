@@ -55,7 +55,7 @@ STYLE_TOKENS = (
     ".sidebar-item-idle-icon",
     ".sidebar-section-label",
     ".dark .sidebar-parent-active",
-    "box-shadow: inset 3px 0 0 var(--kaori-brand-primary)",
+    "box-shadow: 0 8px 20px rgba(5, 3, 9, 0.24)",
 )
 
 DOC_TOKENS = (

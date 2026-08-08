@@ -192,7 +192,7 @@ Active parent behavior:
 
 - light mode: solid KAORI Violet;
 - dark mode: Violet at 18% opacity;
-- dark mode adds a 3 px inset Violet indicator on the left;
+- dark mode keeps the active surface without a separate left-edge Violet indicator;
 - label remains white;
 - icon uses the Accent Violet;
 - no large Violet glow or elevated CTA-like appearance.

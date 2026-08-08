@@ -30,5 +30,5 @@ def test_sidebar_standard_is_registered_as_authoritative_design_document() -> No
     assert "locked v1.2 sidebar hierarchy" in design_system
     assert "The earlier 12/11 px markdown baseline" in standard
     assert "KAORI Sidebar Navigation Standard v1.2" in standard
-    assert "dark mode uses Violet at 18% opacity" in standard
+    assert "dark mode keeps the active Violet surface without a separate left-edge accent" in standard
     assert "15/13 px visual-guide draft" in standard

@@ -31,6 +31,8 @@ Celery Beat
 - Set `JOB_POLICY_SCHEDULER_ENABLED=true` on the Beat deployment. Policy intervals remain database-backed and do not require a Beat restart.
 - Keep one logical Beat scheduler active. PostgreSQL row locking prevents duplicate policy claims, but a single Beat owner remains the operational standard.
 - Development Compose service names are `inventory-worker` and `maintenance-worker`; production uses the same names.
+- Data Lifecycle retention defaults to `RETENTION_CELERY_QUEUE=maintenance`, so it uses the existing `maintenance-worker`; do not deploy a second retention worker unless the retention queue is intentionally separated.
+- `RETENTION_RETRY_DELAY_SECONDS` controls the single bounded retry delay for transient retention connectivity failures (default `60`). Exhausted or non-retryable failures remain visible in Jobs & Executions and require operator review.
 - Default inventory worker tuning is concurrency `1`, max tasks per child `50`, CPU `1.0`, and memory `1g`. Adjust only after measuring sync duration, Kubernetes API pressure, and peak inventory memory.
 
 After deploying this change:

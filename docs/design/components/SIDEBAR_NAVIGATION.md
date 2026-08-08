@@ -178,7 +178,7 @@ sidebar-parent-active-icon
 ```
 
 - light mode uses a solid KAORI Violet surface;
-- dark mode uses Violet at 18% opacity with a 3 px inset Violet indicator on the left;
+- dark mode keeps the active Violet surface without a separate left-edge accent;
 - label remains white and the dark-mode icon uses Accent Violet;
 - dark mode does not use a large glow or CTA-like elevation;
 - active parent remains visually dominant over its active submenu;

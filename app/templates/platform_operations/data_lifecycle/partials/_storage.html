@@ -1,39 +1,154 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
+{% set storage_ready = lifecycle.storage.status in ['ready', 'verified', 'reachable'] %}
+{% set worker_ready = lifecycle.worker.queue_ready %}
 <section class="{{ table_ui.block_classes() }}">
     <div class="{{ table_ui.block_header_classes() }}">
         <div class="flex items-start gap-3">
             <span class="{{ table_ui.block_icon_classes() }}"><i data-lucide="hard-drive" class="h-5 w-5"></i></span>
             <div>
                 <h2 class="{{ table_ui.block_title_classes() }}">Archive Storage</h2>
-                <p class="{{ table_ui.block_description_classes() }}">One verified archive target serves all lifecycle domains while each domain keeps an independent policy and manifest.</p>
+                <p class="{{ table_ui.block_description_classes() }}">Shared archive target, verification evidence, and lifecycle execution dependencies.</p>
             </div>
         </div>
-        {{ table_label.status_label(lifecycle.storage.status_label, 'normal' if lifecycle.storage.status in ['ready','verified','reachable'] else 'warning', 'database') }}
+        {{ table_label.status_label(lifecycle.storage.status_label, 'normal' if storage_ready else 'warning', 'database') }}
     </div>
-    <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4 lg:p-6">
-        {% for label,value,icon in [('Backend',lifecycle.storage.provider_label,'database'),('Status',lifecycle.storage.status_label,'shield-check'),('Format',lifecycle.archive_format,'file-archive'),('Worker Queue',lifecycle.queue_name,'list-tree')] %}
-            <div class="rounded-xl border border-outline-default bg-surface-subtle p-4">
-                <div class="flex items-center gap-2 text-kaori-primary">
-                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-                    <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
+
+    <div class="space-y-5 p-5 lg:p-6">
+        <section aria-label="Archive storage posture">
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div class="rounded-xl border border-outline-default bg-surface-subtle p-4">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="shield-check" class="h-4 w-4 text-kaori-primary dark:text-kaori-accent"></i>
+                        <p class="text-xs font-semibold text-content-muted">Storage Readiness</p>
+                    </div>
+                    <p class="mt-3 text-sm font-semibold text-content-primary">{{ lifecycle.storage.status_label }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ lifecycle.storage.provider_label }}</p>
                 </div>
-                <p class="mt-3 text-sm font-semibold text-content-primary">{{ value }}</p>
+                <div class="rounded-xl border border-outline-default bg-surface-subtle p-4">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="server-cog" class="h-4 w-4 text-kaori-primary dark:text-kaori-accent"></i>
+                        <p class="text-xs font-semibold text-content-muted">Worker Readiness</p>
+                    </div>
+                    <p class="mt-3 text-sm font-semibold text-content-primary">{{ lifecycle.worker.label }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ lifecycle.worker.count }} worker{{ '' if lifecycle.worker.count == 1 else 's' }} on {{ lifecycle.queue_name }}</p>
+                </div>
+                <div class="rounded-xl border border-outline-default bg-surface-subtle p-4">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="badge-check" class="h-4 w-4 text-kaori-primary dark:text-kaori-accent"></i>
+                        <p class="text-xs font-semibold text-content-muted">Last Verified</p>
+                    </div>
+                    <p class="mt-3 text-sm font-semibold text-content-primary">{{ lifecycle.storage.last_verified_at|user_datetime if lifecycle.storage.last_verified_at else 'Awaiting Evidence' }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Verified archive + manifest checksums</p>
+                </div>
+                <div class="rounded-xl border border-outline-default bg-surface-subtle p-4">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="file-archive" class="h-4 w-4 text-kaori-primary dark:text-kaori-accent"></i>
+                        <p class="text-xs font-semibold text-content-muted">Archive Format</p>
+                    </div>
+                    <p class="mt-3 text-sm font-semibold text-content-primary">{{ lifecycle.archive_format }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Data and manifest stored together</p>
+                </div>
             </div>
-        {% endfor %}
-    </div>
-    <div class="border-t border-outline-subtle p-5 lg:p-6">
-        <div class="rounded-xl border border-outline-default bg-surface-subtle p-4">
-            <p class="text-sm font-semibold text-content-primary">Archive-First Safety Boundary</p>
-            <div class="mt-3 grid gap-3 md:grid-cols-4">
-                {% for step,title in [('1','Select immutable boundary'),('2','Write data + manifest'),('3','Verify checksums'),('4','Cleanup eligible rows')] %}
-                    <div class="flex items-start gap-2">
-                        <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-kaori-primary text-xs font-bold text-white">{{ step }}</span>
-                        <p class="text-xs leading-5 text-content-secondary">{{ title }}</p>
+        </section>
+
+        <div class="grid gap-5 xl:grid-cols-12">
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card xl:col-span-7" aria-labelledby="archive-target-contract-title">
+                <header class="border-b border-outline-subtle px-4 py-3.5">
+                    <h3 id="archive-target-contract-title" class="text-sm font-semibold text-content-primary">Archive Target Contract</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Deployment-managed destination used by every registered lifecycle domain.</p>
+                </header>
+                <dl class="divide-y divide-outline-subtle">
+                    <div class="grid gap-1 px-4 py-3 sm:grid-cols-3 sm:items-start">
+                        <dt class="text-xs font-semibold text-content-muted">Provider</dt>
+                        <dd class="break-words text-sm font-medium text-content-primary sm:col-span-2">{{ lifecycle.storage.provider_label }}</dd>
+                    </div>
+                    <div class="grid gap-1 px-4 py-3 sm:grid-cols-3 sm:items-start">
+                        <dt class="text-xs font-semibold text-content-muted">Location</dt>
+                        <dd class="break-all font-mono text-xs leading-5 text-content-secondary sm:col-span-2">{{ lifecycle.storage.location }}</dd>
+                    </div>
+                    {% if lifecycle.storage.endpoint_label %}
+                        <div class="grid gap-1 px-4 py-3 sm:grid-cols-3 sm:items-start">
+                            <dt class="text-xs font-semibold text-content-muted">Endpoint</dt>
+                            <dd class="break-all text-sm font-medium text-content-primary sm:col-span-2">{{ lifecycle.storage.endpoint_label }}</dd>
+                        </div>
+                    {% endif %}
+                    {% if lifecycle.storage.bucket %}
+                        <div class="grid gap-1 px-4 py-3 sm:grid-cols-3 sm:items-start">
+                            <dt class="text-xs font-semibold text-content-muted">Bucket</dt>
+                            <dd class="break-all text-sm font-medium text-content-primary sm:col-span-2">{{ lifecycle.storage.bucket }}</dd>
+                        </div>
+                    {% endif %}
+                    <div class="grid gap-1 px-4 py-3 sm:grid-cols-3 sm:items-start">
+                        <dt class="text-xs font-semibold text-content-muted">Worker Queue</dt>
+                        <dd class="text-sm font-medium text-content-primary sm:col-span-2">{{ lifecycle.queue_name }}</dd>
+                    </div>
+                </dl>
+            </section>
+
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card xl:col-span-5" aria-labelledby="archive-execution-contract-title">
+                <header class="border-b border-outline-subtle px-4 py-3.5">
+                    <h3 id="archive-execution-contract-title" class="text-sm font-semibold text-content-primary">Execution Contract</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Retention intent runs asynchronously through the canonical maintenance path.</p>
+                </header>
+                <div class="space-y-3 p-4">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-hover text-content-secondary"><i data-lucide="timer" class="h-3.5 w-3.5"></i></span>
+                        <div><p class="text-xs font-semibold text-content-primary">Dispatcher</p><p class="mt-0.5 text-xs leading-5 text-content-muted">Checks due policies every 15 minutes.</p></div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-hover text-content-secondary"><i data-lucide="calendar-clock" class="h-3.5 w-3.5"></i></span>
+                        <div><p class="text-xs font-semibold text-content-primary">Scheduled Run</p><p class="mt-0.5 text-xs leading-5 text-content-muted">Requires both Policy enabled and Scheduled execution.</p></div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-hover text-content-secondary"><i data-lucide="rotate-ccw" class="h-3.5 w-3.5"></i></span>
+                        <div><p class="text-xs font-semibold text-content-primary">Failure Recovery</p><p class="mt-0.5 text-xs leading-5 text-content-muted">Cleanup stays blocked. Transient failures retry once; exhausted failures require manual retry.</p></div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-hover text-content-secondary"><i data-lucide="shield" class="h-3.5 w-3.5"></i></span>
+                        <div><p class="text-xs font-semibold text-content-primary">Worker Isolation</p><p class="mt-0.5 text-xs leading-5 text-content-muted">Production uses the dedicated maintenance worker service.</p></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <section class="rounded-xl border border-outline-default bg-surface-subtle p-4" aria-labelledby="archive-safety-boundary-title">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <h3 id="archive-safety-boundary-title" class="text-sm font-semibold text-content-primary">Archive-First Safety Boundary</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Hot records cannot be removed until archive evidence is written and verified.</p>
+                </div>
+                {{ table_label.status_label('Cleanup Gated', 'info', 'shield-check') }}
+            </div>
+            <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {% for step,title,description in [
+                    ('1','Freeze Boundary','Select immutable eligible source IDs.'),
+                    ('2','Write Archive','Store JSONL.GZ data and manifest.'),
+                    ('3','Verify Evidence','Validate data and manifest checksums.'),
+                    ('4','Cleanup Hot Data','Delete only rows inside the verified boundary.')
+                ] %}
+                    <div class="rounded-lg border border-outline-default bg-surface-card p-3.5">
+                        <div class="flex items-center gap-2">
+                            <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-xs font-bold text-kaori-primary-dark dark:text-kaori-accent">{{ step }}</span>
+                            <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
+                        </div>
+                        <p class="mt-2 text-xs leading-5 text-content-muted">{{ description }}</p>
                     </div>
                 {% endfor %}
             </div>
+        </section>
+
+        <div class="rounded-xl border border-outline-default {{ 'bg-status-normal-soft' if storage_ready else 'bg-status-warning-soft' }} p-4">
+            <div class="flex items-start gap-3">
+                <i data-lucide="{{ 'badge-check' if storage_ready else 'triangle-alert' }}" class="mt-0.5 h-4 w-4 {{ 'text-status-normal-text' if storage_ready else 'text-status-warning-text' }}"></i>
+                <div>
+                    <p class="text-sm font-semibold {{ 'text-status-normal-text' if storage_ready else 'text-status-warning-text' }}">Storage Interpretation</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ lifecycle.storage.detail }}</p>
+                    {% if lifecycle.storage.status == 'reachable' %}
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Endpoint reachability proves transport only. A verified archive is the write/read/checksum evidence.</p>
+                    {% endif %}
+                </div>
+            </div>
         </div>
-        <p class="mt-4 text-sm leading-6 text-content-secondary">{{ lifecycle.storage.detail }}</p>
     </div>
 </section>

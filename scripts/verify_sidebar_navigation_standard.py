@@ -223,7 +223,7 @@ def verify() -> None:
         "Parent:  min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold leading-6",
         "Child:   rounded-lg px-2.5 py-1.5 text-sm leading-5",
         "sidebar-parent-active",
-        "dark mode uses Violet at 18% opacity",
+        "dark mode keeps the active Violet surface without a separate left-edge accent",
         "## Canonical Information Architecture",
         "## Enforcement and Change Control",
         "scripts/verify_sidebar_navigation_standard.py",
