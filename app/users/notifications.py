@@ -19,7 +19,7 @@ def user_management_feedback(
     detail: str | None = None,
     queue_feedback: bool = True,
 ) -> dict[str, Any]:
-    """Create the standard User Management toast and Activity Audit entry."""
+    """Create canonical User Management feedback, inbox evidence, and Activity Audit."""
     metadata: dict[str, Any] = {
         'module': 'user_management',
         'actor_id': actor.id,

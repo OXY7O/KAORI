@@ -88,6 +88,10 @@ def _center_page_context() -> dict[str, object]:
         per_page=_request_int('per_page', 5),
         job_limit=ACTIVITY_CENTER_PAGE_LIMIT,
         include_all_jobs=current_user.has_permission('jobs.view'),
+        status=request.args.get('status', 'all'),
+        read_state=request.args.get('read_state', 'all'),
+        category=request.args.get('category', 'all'),
+        search=request.args.get('search', ''),
     )
 
 

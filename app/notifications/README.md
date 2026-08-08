@@ -83,8 +83,7 @@ label. The progress or completion rail is a separate narrow element below the to
 card; it must not be absolutely attached to the card edge. This separation keeps the
 operation state visible without making the toast look like a single fused block.
 
-Personal preference saves do not generate operational toasts. They create personal
-Notification Center records and trigger the canonical notification refresh event.
+Personal preference saves generate the standard immediate toast and durable Activity Audit evidence, but remain hidden from Notification Center because routine display/locale preferences are not actionable operational outcomes.
 
 ## Notification Deck standard
 
@@ -127,7 +126,7 @@ KAORI separates three responsibilities:
 `deck_visible = true`; the administrative Activity Audit query must continue reading all rows.
 Audit-only rows are written as read so they never inflate unread counters.
 
-Foreground policy for ConfigMap, Secret, and TLS operations:
+Foreground policy follows `docs/design/KAORI_OPERATIONAL_FEEDBACK_COVERAGE_V1.md`. The key ConfigMap, Secret, and TLS rules are:
 
 | Event | Toast | Notification Deck | Activity Audit |
 |---|---:|---:|---:|
@@ -199,7 +198,9 @@ static progress marker and never controls polling state.
 
 ## Full Notification Center page
 
-`/notifications/` remains a dedicated personal operational inbox because it serves a different audience and purpose from **Activity Audit**. The hero uses the standardized **Notification Posture** context panel, while the Notifications workspace uses the shared KAORI table with `Notification / Event / Status / Received / State / Action` columns, standard 5/10/25/50 pagination, and explicit read/open actions.
+`/notifications/` remains a dedicated personal operational inbox because it serves a different audience and purpose from **Activity Audit**. The hero uses the standardized **Notification Posture** context panel. The Notifications workspace presents **Notification Evidence** before the register, then uses shared KAORI search/category/status/state filters, the shared loading bar, and the table contract with `Notification / Event / Status / Received / State / Action` columns.
+
+Default Rows is 5 with 5/10/25/50 choices. Pagination must render **Previous**, numeric pages, and **Next**, and every HTMX refresh/read/pagination action must preserve the active filter state. Compact Notification titles and event labels use Title Case with operational acronyms preserved. Category labels are `ConfigMap Management`, `TLS Certificate`, `Secret Management`, `Integrations`, `Platform Operations`, `Access`, and `Settings`.
 
 The page is login-scoped and shows only deck-visible records targeted to the current user. **Active Work** mirrors canonical `JobExecution` state and links to Jobs & Executions for full evidence; it never becomes a second execution registry. Activity Audit remains permission-gated and system-wide.
 

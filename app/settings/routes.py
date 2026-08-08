@@ -31,6 +31,7 @@ from app.common.timezone import (
 )
 from app.extensions.db import db
 from app.models import Notification, Permission, Role, User
+from app.notifications.feedback import OperationalDeliveryPolicy
 from app.notifications.service import record_operational_activity
 from app.rbac.decorators import permission_required
 from app.rbac.notifications import role_access_feedback
@@ -71,6 +72,8 @@ def general():
     timezone_form = TimezonePreferenceForm()
     regional_form = RegionalFormatForm()
     notification_changed = False
+    general_settings_saved = False
+    operation_feedback: dict[str, Any] | None = None
 
     timezone_submission = (
         request.method == 'POST' and active_tab == 'time-locale' and bool(timezone_form.submit_timezone.data)
@@ -99,11 +102,11 @@ def general():
             user.timezone_mode = timezone_mode
             user.timezone = normalize_timezone_name(requested_timezone)
             db.session.commit()
-            record_operational_activity(
+            operation_feedback = record_operational_activity(
                 user_id=user.id,
                 event_type='user_preference',
                 status='success',
-                title='Time zone preference saved',
+                title='Time Zone Preference Saved',
                 message=(f'KAORI now renders time-related information for this account using {user.timezone}.'),
                 action_url=url_for('settings.general', tab='time-locale'),
                 action_label='Open General Settings',
@@ -113,8 +116,11 @@ def general():
                     'timezone_mode': user.timezone_mode,
                     'timezone': user.timezone,
                 },
+                queue_feedback=not bool(request.headers.get('HX-Request')),
+                delivery_policy=OperationalDeliveryPolicy.AUDIT_ONLY,
             )
-            notification_changed = True
+            notification_changed = bool(operation_feedback.get('notification_deck_visible'))
+            general_settings_saved = True
             if not request.headers.get('HX-Request'):
                 return redirect(url_for('settings.general', tab='time-locale'))
 
@@ -127,11 +133,11 @@ def general():
         user.date_format = normalize_date_format(regional_form.date_format.data)
         user.time_format = normalize_time_format(regional_form.time_format.data)
         db.session.commit()
-        record_operational_activity(
+        operation_feedback = record_operational_activity(
             user_id=user.id,
             event_type='user_preference',
             status='success',
-            title='Regional format preference saved',
+            title='Regional Format Preference Saved',
             message=('Date, time, and locale presentation preferences are now active for this account.'),
             action_url=url_for('settings.general', tab='regional-format'),
             action_label='Open General Settings',
@@ -142,8 +148,11 @@ def general():
                 'date_format': user.date_format,
                 'time_format': user.time_format,
             },
+            queue_feedback=not bool(request.headers.get('HX-Request')),
+            delivery_policy=OperationalDeliveryPolicy.AUDIT_ONLY,
         )
-        notification_changed = True
+        notification_changed = bool(operation_feedback.get('notification_deck_visible'))
+        general_settings_saved = True
         if not request.headers.get('HX-Request'):
             return redirect(url_for('settings.general', tab='regional-format'))
 
@@ -179,14 +188,21 @@ def general():
         if request.headers.get('HX-Request')
         else 'settings/general/index.html'
     )
-    response = make_response(render_template(template_name, **context))
-    if notification_changed:
-        response.headers['HX-Trigger'] = json.dumps(
-            {
-                'kaori:notifications-changed': True,
-                'kaori:general-settings-saved': {'tab': active_tab},
-            }
+    rendered_page = render_template(template_name, **context)
+    if request.headers.get('HX-Request') and operation_feedback is not None:
+        rendered_page += render_template(
+            'components/operational_toast.html',
+            **operation_feedback,
+            toast_oob=True,
         )
+    response = make_response(rendered_page)
+    if general_settings_saved:
+        trigger_payload: dict[str, Any] = {
+            'kaori:general-settings-saved': {'tab': active_tab},
+        }
+        if notification_changed:
+            trigger_payload['kaori:notifications-changed'] = True
+        response.headers['HX-Trigger'] = json.dumps(trigger_payload)
     return response
 
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import or_
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import joinedload
 
 from app.common.celery_queue_health import get_queue_readiness, inspect_celery_topology
@@ -21,8 +21,71 @@ from app.notifications.constants import (
     ALLOWED_STATUSES,
     NAVIGATION_NOTIFICATION_LIMIT,
 )
-from app.notifications.event_catalog import event_label
+from app.notifications.event_catalog import CATEGORY_LABELS, event_label
 from app.notifications.presentation import _serialize_notification, _user_label
+
+
+_CENTER_CATEGORY_ORDER = (
+    'configmap_management',
+    'tls_certificate',
+    'secret_management',
+    'integrations',
+    'platform_operations',
+    'access',
+    'settings',
+)
+
+
+def _notification_category_condition(category: str):
+    if category == 'configmap_management':
+        return Notification.event_type.like('kubernetes_configmap_%')
+    if category == 'tls_certificate':
+        return or_(
+            Notification.event_type.like('governance_tls_%'),
+            Notification.event_type.like('kubernetes_tls_secret_%'),
+        )
+    if category == 'secret_management':
+        return and_(
+            Notification.event_type.like('kubernetes_secret_%'),
+            ~Notification.event_type.like('kubernetes_tls_secret_%'),
+            ~Notification.event_type.like('kubernetes_secret_reveal_cluster_readiness_%'),
+            ~Notification.event_type.like('kubernetes_secret_reveal_namespace_policy_%'),
+        )
+    if category == 'integrations':
+        return or_(
+            Notification.event_type.like('prometheus_%'),
+            Notification.event_type.like('alertmanager_%'),
+            Notification.event_type.like('cluster_%'),
+            Notification.event_type.like('kubernetes_capability_%'),
+            Notification.event_type.like('kubernetes_runtime_%'),
+            Notification.event_type.like('integration_%'),
+            Notification.event_type == 'kubernetes_inventory_sync',
+        )
+    if category == 'platform_operations':
+        return or_(
+            Notification.event_type.like('data_lifecycle_%'),
+            Notification.event_type.like('job_%'),
+            Notification.event_type.like('kubernetes_secret_reveal_cluster_readiness_%'),
+            Notification.event_type.like('kubernetes_secret_reveal_namespace_policy_%'),
+        )
+    if category == 'access':
+        return or_(
+            Notification.event_type.like('rbac_%'),
+            Notification.event_type.like('identity_provider_%'),
+            Notification.event_type.like('external_identity_%'),
+            and_(
+                Notification.event_type.like('user_%'),
+                Notification.event_type != 'user_preference',
+            ),
+            Notification.event_type == 'authentication',
+        )
+    if category == 'settings':
+        return or_(
+            Notification.event_type == 'user_preference',
+            Notification.event_type == 'account_security',
+            Notification.event_type.like('settings_%'),
+        )
+    return None
 
 
 def get_navigation_notification_context(
@@ -164,8 +227,12 @@ def get_notification_center_page_context(
     per_page: int,
     job_limit: int = ACTIVITY_CENTER_JOB_LIMIT,
     include_all_jobs: bool = False,
+    status: str = 'all',
+    read_state: str = 'all',
+    category: str = 'all',
+    search: str = '',
 ) -> dict[str, Any]:
-    """Return the full Notification Center page with standard pagination."""
+    """Return the full Notification Center page with standard filters and pagination."""
 
     base_context = get_activity_center_context(
         user_id=user_id,
@@ -175,8 +242,35 @@ def get_notification_center_page_context(
     )
     normalized_page = max(page, 1)
     normalized_per_page = per_page if per_page in ACTIVITY_PER_PAGE_OPTIONS else ACTIVITY_PER_PAGE_OPTIONS[0]
+    normalized_status = status if status in ALLOWED_STATUSES else 'all'
+    normalized_read_state = read_state if read_state in {'all', 'read', 'unread'} else 'all'
+    normalized_category = category if category in _CENTER_CATEGORY_ORDER else 'all'
+    normalized_search = search.strip()
+
+    filtered_query = _user_notification_query(user_id)
+    if normalized_status != 'all':
+        filtered_query = filtered_query.filter(Notification.status == normalized_status)
+    if normalized_read_state == 'read':
+        filtered_query = filtered_query.filter(Notification.read_at.is_not(None))
+    elif normalized_read_state == 'unread':
+        filtered_query = filtered_query.filter(Notification.read_at.is_(None))
+    if normalized_category != 'all':
+        category_condition = _notification_category_condition(normalized_category)
+        if category_condition is not None:
+            filtered_query = filtered_query.filter(category_condition)
+    if normalized_search:
+        pattern = f'%{normalized_search}%'
+        filtered_query = filtered_query.filter(
+            or_(
+                Notification.title.ilike(pattern),
+                Notification.message.ilike(pattern),
+                Notification.detail.ilike(pattern),
+                Notification.event_type.ilike(pattern),
+            )
+        )
+
     pagination = (
-        _user_notification_query(user_id)
+        filtered_query
         .order_by(Notification.created_at.desc(), Notification.id.desc())
         .paginate(page=normalized_page, per_page=normalized_per_page, error_out=False)
     )
@@ -190,6 +284,16 @@ def get_notification_center_page_context(
             'items': [
                 _serialize_notification(notification, include_metadata=False)
                 for notification in pagination.items
+            ],
+            'notification_filters': {
+                'status': normalized_status,
+                'read_state': normalized_read_state,
+                'category': normalized_category,
+                'search': normalized_search,
+            },
+            'notification_category_options': [
+                {'key': key, 'label': CATEGORY_LABELS[key]}
+                for key in _CENTER_CATEGORY_ORDER
             ],
             'notification_pagination': {
                 'page': pagination.page,

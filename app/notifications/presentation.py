@@ -8,7 +8,7 @@ from app.models.notification import Notification
 from app.models.user import User
 from app.notifications.event_catalog import build_event_context, event_label
 from app.notifications.metadata import changed_fields, metadata_items
-from app.notifications.normalization import standardize_activity_text
+from app.notifications.normalization import standardize_activity_text, standardize_activity_title
 
 
 def _normalize_created_at(created_at: datetime) -> datetime:
@@ -120,12 +120,14 @@ def _serialize_notification(
         'event_label': event_label(notification.event_type),
         'status': notification.status,
         'status_label': status_labels.get(notification.status, 'Information'),
-        'title': standardize_activity_text(
-            notification.title,
-            event_type=notification.event_type,
-            status=notification.status,
+        'title': standardize_activity_title(
+            standardize_activity_text(
+                notification.title,
+                event_type=notification.event_type,
+                status=notification.status,
+            )
         )
-        or 'Operational activity',
+        or 'Operational Activity',
         'message': standardize_activity_text(
             notification.message,
             event_type=notification.event_type,

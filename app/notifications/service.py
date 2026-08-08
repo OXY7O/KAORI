@@ -17,7 +17,7 @@ from app.notifications.feedback import (
     build_operational_feedback,
     queue_operational_feedback,
 )
-from app.notifications.normalization import standardize_activity_text
+from app.notifications.normalization import standardize_activity_text, standardize_activity_title
 from app.notifications.queries import (
     get_activity_center_context as _get_activity_center_context,
 )
@@ -98,12 +98,14 @@ def _normalize_notification_content(
 ) -> tuple[str, str, str, str | None]:
     normalized_status = status if status in ALLOWED_STATUSES else 'info'
     normalized_title = (
-        standardize_activity_text(
-            title,
-            event_type=event_type,
-            status=normalized_status,
+        standardize_activity_title(
+            standardize_activity_text(
+                title,
+                event_type=event_type,
+                status=normalized_status,
+            )
         )
-        or 'Operational activity'
+        or 'Operational Activity'
     )
     normalized_message = (
         standardize_activity_text(

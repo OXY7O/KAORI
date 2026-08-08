@@ -21,6 +21,46 @@ RAW_ERROR_PATTERNS = (
     'exception:',
 )
 
+_TITLE_CASE_OVERRIDES = {
+    'api': 'API',
+    'configmap': 'ConfigMap',
+    'csv': 'CSV',
+    'http': 'HTTP',
+    'https': 'HTTPS',
+    'id': 'ID',
+    'jit': 'JIT',
+    'kaori': 'KAORI',
+    'k8s': 'K8s',
+    'ldap': 'LDAP',
+    'minio': 'MinIO',
+    'oidc': 'OIDC',
+    'rbac': 'RBAC',
+    's3': 'S3',
+    'saml': 'SAML',
+    'sso': 'SSO',
+    'tls': 'TLS',
+    'url': 'URL',
+}
+
+
+def standardize_activity_title(value: str | None) -> str | None:
+    """Return a compact Title Case label while preserving KAORI acronyms."""
+    if value is None:
+        return None
+    normalized = re.sub(r'\s+', ' ', str(value)).strip()
+    if not normalized:
+        return None
+
+    def _word(match: re.Match[str]) -> str:
+        token = match.group(0)
+        override = _TITLE_CASE_OVERRIDES.get(token.lower())
+        if override is not None:
+            return override
+        return token[:1].upper() + token[1:].lower()
+
+    return re.sub(r"[A-Za-z0-9]+", _word, normalized)
+
+
 
 def activity_failure_message(event_type: str, text: str) -> str:
     normalized = text.lower()

@@ -8,8 +8,11 @@ ROOT = Path(__file__).resolve().parents[1]
 REQUIRED = (
     'docs/design/KAORI_NOTIFICATION_CENTER_LOCK_V1.md',
     'docs/design/KAORI_NOTIFICATION_CENTER_LOCK_V1_1.md',
+    'docs/design/KAORI_NOTIFICATION_CENTER_LOCK_V1_2.md',
     'docs/design/audits/KAORI_NOTIFICATION_CENTER_FINAL_LOCK_AUDIT_2026_08_08.md',
     'docs/design/audits/KAORI_NOTIFICATION_CENTER_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md',
+    'docs/design/audits/KAORI_NOTIFICATION_CENTER_FINAL_LOCK_V1_2_AUDIT_2026_08_08.md',
+    'docs/design/KAORI_OPERATIONAL_FEEDBACK_COVERAGE_V1.md',
     'app/templates/notifications/index.html',
     'app/templates/notifications/partials/_center_page_content.html',
     'app/templates/notifications/components/_activity_center_items.html',
@@ -17,6 +20,8 @@ REQUIRED = (
     'app/templates/components/framed_workspace_tabs.html',
     'app/notifications/routes.py',
     'app/notifications/queries.py',
+    'app/notifications/event_catalog.py',
+    'app/notifications/presentation.py',
     'app/notifications/service.py',
 )
 
@@ -38,7 +43,10 @@ def main() -> int:
     framed_tabs = read('app/templates/components/framed_workspace_tabs.html')
     routes = read('app/notifications/routes.py')
     queries = read('app/notifications/queries.py')
+    catalog = read('app/notifications/event_catalog.py')
+    presentation = read('app/notifications/presentation.py')
     navigation = read('app/common/navigation.py')
+    quality_gate = read('scripts/quality_gate.sh')
 
     for required in (
         'Notification Center',
@@ -53,8 +61,6 @@ def main() -> int:
     ):
         if required not in page:
             errors.append(f'Notification Center hero/boundary contract missing: {required}')
-    if 'Center Boundary' in page:
-        errors.append('Notification Center v1.1 must not reintroduce the verbose Center Boundary panel')
 
     for required in (
         'Personal Operations Inbox',
@@ -62,36 +68,33 @@ def main() -> int:
         'framed_workspace_tabs.render_navigation(',
         'components/table.html',
         'components/table_label.html',
-        'Notifications',
-        'Active Work',
-        'Notification',
-        'Event',
-        'Status',
-        'Received',
-        'State',
-        'Action',
-        'table_ui.table_classes(',
-        'table_label.status_label(',
-        'components/pagination.html',
+        'components/loading_bar.html',
+        'Notification Evidence',
+        'Lifecycle Boundary',
+        'Delivery Boundary',
+        'Administrative Evidence',
+        'Notification Register',
+        'Search Notifications',
+        'All Categories',
+        'All Statuses',
+        'All States',
+        'notification-center-loading',
+        'Previous',
+        'Next',
         'Rows Per Page',
         "pagination_ui.resource_name('Notifications'",
-        'Lifecycle Boundary',
-        'Persistent notifications share the Activity Audit retention policy.',
-        'Transient toasts remain outside Data Lifecycle.',
         "url_for('platform_operations.data_lifecycle.index', tab='policies', domain='operational_activity')",
         "url_for('jobs.executions')",
     ):
         if required not in content:
             errors.append(f'Notification Center workspace contract missing: {required}')
 
-    if 'rounded-xl border border-kaori-primary/20 bg-kaori-soft p-1' in content:
-        errors.append('full Notification Center must not use the old brand-heavy segmented track')
+    if content.index('Lifecycle Boundary') > content.index('Notification Register'):
+        errors.append('Lifecycle Boundary must appear before the Notification Register')
     if 'role="tablist"' in content:
-        errors.append('full Notification Center must use shared server-owned framed navigation, not a page-local tablist')
+        errors.append('Notification Center must use shared server-owned framed navigation')
     if 'macro render_navigation' not in framed_tabs or 'framed-workspace-v2-server' not in framed_tabs:
         errors.append('shared framed workspace component must own server-backed Notification Center navigation geometry')
-    if 'border-kaori-primary/20 bg-kaori-soft' in items:
-        errors.append('unread Notification cards must use neutral KAORI surfaces')
     if 'components/progress_bar.html' not in items or 'progress_bar.determinate(' not in items:
         errors.append('Notification Center Active Work must use shared determinate progress presentation')
 
@@ -110,15 +113,41 @@ def main() -> int:
         'ACTIVITY_PER_PAGE_OPTIONS',
         "Notification.deck_visible.is_(True)",
         "Notification.event_type != 'authentication'",
-        "'notification_pagination': {",
+        "'notification_filters': {",
+        "'notification_category_options': [",
+        "status=request.args.get('status', 'all')",
+        "read_state=request.args.get('read_state', 'all')",
+        "category=request.args.get('category', 'all')",
+        "search=request.args.get('search', '')",
     ):
-        if required not in queries:
-            errors.append(f'Notification Center pagination/scope contract missing: {required}')
+        source = routes if 'request.args' in required else queries
+        if required not in source:
+            errors.append(f'Notification Center query/filter contract missing: {required}')
 
+    for required in (
+        "'configmap_management': 'ConfigMap Management'",
+        "'tls_certificate': 'TLS Certificate'",
+        "'secret_management': 'Secret Management'",
+        "'integrations': 'Integrations'",
+        "'platform_operations': 'Platform Operations'",
+        "'access': 'Access'",
+        "'settings': 'Settings'",
+        "'configmap': 'ConfigMap'",
+        "'tls': 'TLS'",
+        "'rbac': 'RBAC'",
+        "'k8s': 'K8s'",
+    ):
+        if required not in catalog:
+            errors.append(f'Notification category/Title Case contract missing: {required}')
+
+    if 'standardize_activity_title(' not in presentation:
+        errors.append('Notification titles must use the Title Case display normalizer')
     if 'get_notification_center_page_context(' not in routes or "per_page=_request_int('per_page', 5)" not in routes:
         errors.append('Notification Center route must use paginated user-scoped page context with default Rows=5')
     if "'notifications.center': 'Notification Center'" not in navigation:
         errors.append('Notification Center navigation label must be canonical')
+    if 'verify_operational_feedback_coverage.py' not in quality_gate:
+        errors.append('Operational Feedback Coverage verifier must be release-gated')
 
     if errors:
         print('KAORI Notification Center Final Lock FAILED')
@@ -126,7 +155,7 @@ def main() -> int:
             print(f'- {error}')
         return 1
 
-    print('KAORI Notification Center Final Lock v1.1 passed.')
+    print('KAORI Notification Center Final Lock v1.2 passed.')
     return 0
 
 
