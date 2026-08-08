@@ -1,6 +1,7 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/operational_section_card.html" as operational_section %}
 <section id="job-queue-activity"
-         class="{{ 'min-w-0' if embedded|default(false) else 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' }}"
+         class="{{ 'min-w-0' if embedded|default(false) else operational_section.shell_classes() }}"
          aria-labelledby="queue-activity-title">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -19,7 +20,7 @@
     </header>
 
     {% if job_queue_rows %}
-        <div class="hidden grid-cols-12 gap-4 border-b border-outline-subtle bg-surface-hover px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-content-muted lg:grid sm:px-6">
+        <div class="hidden grid-cols-12 gap-4 border-b border-outline-subtle bg-surface-hover px-5 py-2.5 text-xs font-semibold text-content-muted lg:grid sm:px-6">
             <span class="col-span-4">Queue</span><span class="col-span-6">Execution Activity</span><span class="col-span-2 text-right">Posture</span>
         </div>
         <div class="divide-y divide-outline-subtle">
@@ -36,7 +37,7 @@
                     <dl class="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:col-span-6">
                         {% for label, value in [('Active', queue.active), ('Running', queue.running), ('Queued', queue.queued), ('Completed · 24H', queue.completed_24h)] %}
                             <div class="min-w-0 rounded-lg bg-surface-hover px-3 py-2.5">
-                                <dt class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</dt>
+                                <dt class="text-xs font-semibold text-content-muted">{{ label }}</dt>
                                 <dd class="mt-1 text-base font-bold text-content-primary">{{ value }}</dd>
                             </div>
                         {% endfor %}

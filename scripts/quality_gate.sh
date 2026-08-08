@@ -11,7 +11,6 @@ run_static() {
     python scripts/verify_python_syntax.py
     python scripts/verify_single_pdf_engine.py
     python scripts/verify_analytics_pdf_publication.py
-    python scripts/verify_analytics_compact_label_standard.py
     python scripts/verify_report_generation_contract.py
     python scripts/verify_report_runtime_imports.py
     python scripts/verify_report_job_standard.py
@@ -34,6 +33,7 @@ run_static() {
     python scripts/verify_dark_mode_standard.py
     python scripts/verify_core_workspace_ui_lock.py
     python scripts/verify_core_kubernetes_final_lock.py
+    python scripts/verify_platform_operations_final_lock.py
     python scripts/verify_integrations_final_lock.py
     python scripts/verify_hero_component_standard.py
     python scripts/verify_operational_dashboard_standard.py

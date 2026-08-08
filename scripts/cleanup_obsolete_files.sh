@@ -51,6 +51,7 @@ obsolete_paths=(
   'app/templates/inventory/workloads/partials/_inventory_scope.html'
   'app/templates/jobs/executions/partials/_hero_context_metrics.html'
   'app/templates/jobs/executions/partials/_hero_metadata.html'
+  'app/templates/platform_operations/kubernetes/_tabs.html'
   'app/templates/prometheus/partials/_validation_response.html'
   'app/templates/reports/overview/partials/_recommended_actions.html'
   'app/templates/settings/reports/index.html'

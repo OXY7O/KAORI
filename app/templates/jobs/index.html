@@ -1,9 +1,10 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% block title %}Jobs &amp; Executions · KAORI{% endblock %}
 {% block dashboard_content %}
     <div class="space-y-6"
-         x-data="{ activeTab: '{{ active_jobs_section }}' }">
+         x-data="{ tabs: ['executions', 'configuration'], activeTab: '{{ active_jobs_section }}', setTab(tab) { if (!this.tabs.includes(tab)) return; this.activeTab = tab; const url = new URL(tab === 'executions' ? '{{ url_for('jobs.executions') }}' : '{{ url_for('jobs.configuration') }}?job_key={{ selected_job_key }}', window.location.origin); window.history.replaceState(null, '', url); }, moveTab(currentTab, direction, prefix = 'jobs-platform') { const currentIndex = this.tabs.indexOf(currentTab); if (currentIndex < 0) return; let nextIndex = currentIndex; if (direction === 'home') nextIndex = 0; else if (direction === 'end') nextIndex = this.tabs.length - 1; else nextIndex = (currentIndex + direction + this.tabs.length) % this.tabs.length; const nextTab = this.tabs[nextIndex]; this.setTab(nextTab); this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus()); } }">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -51,39 +52,15 @@
         </section>
 
         <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-            <nav class="border-b border-outline-default bg-kaori-soft/50 px-5 pt-4"
-                 aria-label="Jobs and executions workspaces">
-                <div class="flex gap-2 overflow-x-auto" role="tablist">
-                    <button type="button"
-                            role="tab"
-                            :aria-selected="activeTab === 'executions'"
-                            aria-controls="jobs-executions-workspace"
-                            @click="activeTab='executions'; history.replaceState(null, '', '{{ url_for('jobs.executions') }}')"
-                            class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition"
-                            :class="activeTab === 'executions' ? '-mb-px border-kaori-primary bg-kaori-primary text-white' : 'border-kaori-primary/25 bg-white text-kaori-primary hover:bg-kaori-soft'">
-                        <i data-lucide="list-checks" class="h-4 w-4"></i>
-                        Executions
-                    </button>
-                    <button type="button"
-                            role="tab"
-                            :aria-selected="activeTab === 'configuration'"
-                            aria-controls="jobs-configuration-tabpanel"
-                            @click="activeTab='configuration'; history.replaceState(null, '', '{{ url_for('jobs.configuration') }}?job_key={{ selected_job_key }}')"
-                            class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition"
-                            :class="activeTab === 'configuration' ? '-mb-px border-kaori-primary bg-kaori-primary text-white' : 'border-kaori-primary/25 bg-white text-kaori-primary hover:bg-kaori-soft'">
-                        <i data-lucide="sliders-horizontal" class="h-4 w-4"></i>
-                        Job Configuration
-                    </button>
-                </div>
-            </nav>
+            {{ framed_workspace_tabs.render([('executions', 'Executions', 'list-checks'), ('configuration', 'Job Configuration', 'sliders-horizontal')], prefix='jobs-platform', aria_label='Jobs and Executions Workspaces') }}
             <div class="p-5 lg:p-6">
-                <div id="jobs-executions-workspace"
+                <div id="jobs-platform-panel-executions"
                      role="tabpanel"
                      x-show="activeTab === 'executions'"
                      x-cloak>
                     {% include "jobs/executions/_workspace.html" %}
                 </div>
-                <div id="jobs-configuration-tabpanel"
+                <div id="jobs-platform-panel-configuration"
                      role="tabpanel"
                      x-show="activeTab === 'configuration'"
                      x-cloak>

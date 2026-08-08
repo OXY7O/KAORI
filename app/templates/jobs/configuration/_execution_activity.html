@@ -1,12 +1,14 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/operational_section_card.html" as operational_section %}
+{% import "components/operational_callout.html" as operational_callout %}
 {% set definition = selected_job.definition %}
 {% set active_job = selected_job.active_job %}
 {% set can_execute = current_user.has_permission(definition.execute_permission) and (not definition.domain_execute_permission or current_user.has_permission(definition.domain_execute_permission)) %}
 <section id="job-execution-activity"
          {% if execution_activity_oob|default(false) %}hx-swap-oob="outerHTML"{% endif %}
-         class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+         class="{{ operational_section.shell_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div class="flex min-w-0 items-start gap-3">
@@ -39,7 +41,7 @@
                     </span>
                     <div class="min-w-0 flex-1">
                         <div class="flex flex-wrap items-center gap-2">
-                            <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary/80">Current Execution</p>
+                            <p class="text-xs font-semibold text-kaori-primary/80">Current Execution</p>
                             {{ table_label.status_indicator_label(
                                 active_job.status_label if active_job else selected_job.execution_state.label,
                                 active_job.status_tone if active_job else selected_job.execution_state.tone,
@@ -80,19 +82,19 @@
 
             <div class="grid border-t border-kaori-primary/10 bg-surface-card/70 sm:grid-cols-2 lg:grid-cols-4">
                 <div class="px-4 py-3 sm:px-5">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Scope</p>
+                    <p class="text-xs font-semibold text-content-muted">Scope</p>
                     <p class="mt-1 break-words text-xs font-semibold text-content-primary">{{ selected_job.execution_scope_label }}</p>
                 </div>
                 <div class="border-t border-outline-subtle px-4 py-3 sm:border-l sm:border-t-0 sm:px-5">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Queue</p>
+                    <p class="text-xs font-semibold text-content-muted">Queue</p>
                     <p class="mt-1 break-words text-xs font-semibold text-content-primary">{{ definition.queue_name }}</p>
                 </div>
                 <div class="border-t border-outline-subtle px-4 py-3 sm:px-5 lg:border-l lg:border-t-0">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Requested By</p>
+                    <p class="text-xs font-semibold text-content-muted">Requested By</p>
                     <p class="mt-1 break-words text-xs font-semibold text-content-primary">{{ active_job.requester if active_job else '—' }}</p>
                 </div>
                 <div class="border-t border-outline-subtle px-4 py-3 sm:border-l sm:px-5 lg:border-t-0">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Started</p>
+                    <p class="text-xs font-semibold text-content-muted">Started</p>
                     <p class="mt-1 break-words text-xs font-semibold text-content-primary">{{ active_job.started_at if active_job else '—' }}</p>
                 </div>
             </div>
@@ -135,7 +137,7 @@
                 <h4 class="text-sm font-semibold text-content-primary">Recent Executions</h4>
                 <p class="mt-1 text-xs leading-5 text-content-muted">{{ definition.recent_execution_summary }}</p>
             </div>
-            <span class="text-xs font-semibold uppercase tracking-wider text-content-muted">
+            <span class="text-xs font-semibold text-content-muted">
                 Latest {{ selected_job.recent_jobs|length }} Records
             </span>
         </div>
@@ -170,7 +172,7 @@
                         <p class="mt-1 text-content-muted">{{ job.duration|default(job.completed_at, true) }}</p>
                     </div>
                     {% if job.failure_detail %}
-                        <div class="rounded-lg border {{ 'border-status-critical-border bg-status-critical-soft' if job.status == 'failed' else 'border-status-warning-border bg-status-warning-soft' }} px-3 py-2 text-xs leading-5 sm:col-span-2 lg:col-span-12">
+                        <div class="rounded-lg border {{ operational_callout.semantic_surface_classes('critical' if job.status == 'failed' else 'warning') }} px-3 py-2 text-xs leading-5 sm:col-span-2 lg:col-span-12">
                             <div class="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
                                 <div class="min-w-0">
                                     <p class="font-semibold text-content-primary">{{ job.failure_title or 'Execution Attention Required' }}</p>

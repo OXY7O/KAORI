@@ -14,6 +14,7 @@ This lock applies to the user-facing workspaces that are considered stable befor
 - Kubernetes Operations
 - Kubernetes Governance
 - Integrations, including Kubernetes, Prometheus, and Alertmanager provider workspaces (further frozen by `docs/design/KAORI_INTEGRATIONS_LOCK_V1.md`)
+- Platform Operations, including Kubernetes Administration and Jobs & Executions
 
 The lock is intentionally narrower than the entire repository. Reports, Intelligence, Settings, Notifications, and Identity remain independently reviewable domains.
 
@@ -58,6 +59,7 @@ The static quality gate runs:
 
 ```bash
 python scripts/verify_core_workspace_ui_lock.py
+python scripts/verify_platform_operations_final_lock.py
 python scripts/verify_dark_mode_standard.py
 python scripts/verify_core_workspace_legacy_cleanup.py
 python scripts/verify_core_workspace_code_health.py
@@ -66,7 +68,7 @@ python scripts/verify_ui_style.py
 python scripts/verify_ui_reuse.py
 ```
 
-Domain-specific Inventory, Analytics, Operations, Governance, and Integration contract tests remain additional release gates.
+Domain-specific Inventory, Analytics, Operations, Governance, Integration, and Platform Operations contract tests remain additional release gates.
 
 
 ## Focused Core Kubernetes Lock

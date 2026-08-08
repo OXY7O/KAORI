@@ -14,8 +14,11 @@ def test_tab_counts_refresh_out_of_band_without_page_reload() -> None:
     workspace = _read('_workspace.html')
     status = _read('partials/_status_refresh.html')
     poller = _read('partials/_status_poller.html')
+    shared_tabs = (ROOT / 'app' / 'templates' / 'components' / 'workspace_tabs.html').read_text(encoding='utf-8')
 
-    assert 'id="execution-tab-count-{{ key }}"' in workspace
+    assert 'components/workspace_tabs.html' in workspace
+    assert "prefix='execution'" in workspace
+    assert 'id="{{ prefix }}-tab-count-{{ tab_key }}"' in shared_tabs
     for key in ('active', 'registry', 'queues'):
         assert f'id="execution-tab-count-{key}"' in status
     assert 'hx-swap-oob="outerHTML"' in status

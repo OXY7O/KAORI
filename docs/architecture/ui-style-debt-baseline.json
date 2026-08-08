@@ -150,35 +150,6 @@
     "app/templates/inventory/topology/partials/_workspace.html": {
       "semantic_border_utilities": 3
     },
-    "app/templates/jobs/configuration/_execution_activity.html": {
-      "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 2
-    },
-    "app/templates/jobs/configuration/_job_overview.html": {
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/jobs/configuration/definitions/_materialization_job.html": {
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/jobs/configuration/definitions/inventory_sync.html": {
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/jobs/configuration/definitions/report_schedule.html": {
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/jobs/configuration/definitions/tls_certificate_sync.html": {
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/jobs/executions/_workspace.html": {
-      "copied_standard_surface_shells": 2,
-      "page_local_workspace_tablists": 1
-    },
-    "app/templates/jobs/executions/partials/_queue_activity.html": {
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/jobs/index.html": {
-      "page_local_workspace_tablists": 1
-    },
     "app/templates/kubernetes_operations/configmaps/create.html": {
       "copied_standard_surface_shells": 2
     },
@@ -239,15 +210,6 @@
     "app/templates/notifications/partials/_activity_table_content.html": {
       "font_extrabold_utilities": 16,
       "raw_palette_utilities": 191
-    },
-    "app/templates/platform_operations/kubernetes/_overview_workspace.html": {
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/platform_operations/kubernetes/_secret_reveal_workspace.html": {
-      "semantic_border_utilities": 1
-    },
-    "app/templates/platform_operations/kubernetes/_tabs.html": {
-      "page_local_workspace_tablists": 1
     },
     "app/templates/prometheus/instance_form.html": {
       "copied_standard_surface_shells": 1

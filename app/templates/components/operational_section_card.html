@@ -1,5 +1,7 @@
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/section_link_button.html" as section_link_button %}
+{% macro shell_classes(extra_classes='') -%}overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ extra_classes }}{%- endmacro %}
+
 {#
   Canonical KAORI operational dashboard section shell.
 
@@ -24,7 +26,7 @@
     aria_label=None
 ) -%}
     <section{% if id %} id="{{ id }}"{% endif %}
-             class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ extra_classes }}"
+             class="{{ shell_classes(extra_classes) }}"
              {% if aria_label %}aria-label="{{ aria_label }}"{% endif %}>
         <header class="border-b border-outline-subtle px-5 py-4">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

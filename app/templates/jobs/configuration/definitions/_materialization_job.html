@@ -1,5 +1,6 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/operational_section_card.html" as operational_section %}
 {% set definition = selected_job.definition %}
 {% set policy = selected_job.policy %}
 {% set can_configure = current_user.has_permission(definition.configure_permission) %}
@@ -13,7 +14,7 @@
 <div class="space-y-5">
     {% include "jobs/configuration/_job_overview.html" %}
 
-    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <section class="{{ operational_section.shell_classes() }}">
         <header class="border-b border-kaori-primary/15 bg-kaori-soft px-5 py-4 sm:px-6">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-start gap-3">
@@ -21,7 +22,7 @@
                         <i data-lucide="sliders-horizontal" class="h-4 w-4"></i>
                     </span>
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Policy & Configuration</p>
+                        <p class="text-xs font-semibold text-kaori-primary">Policy & Configuration</p>
                         <h3 class="mt-1 text-base font-semibold text-content-primary">Materialization Policy</h3>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Control scheduling, freshness, fallback, and precomputed snapshot coverage.</p>
                     </div>

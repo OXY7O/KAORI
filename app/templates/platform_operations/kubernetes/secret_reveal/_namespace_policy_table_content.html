@@ -1,15 +1,15 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
-<div class="overflow-x-auto">
-    <table class="w-full min-w-[980px] table-fixed text-content-primary">
+<div class="w-full">
+    <table class="w-full table-fixed text-content-primary">
         <colgroup>
-            <col class="w-[31%]">
-            <col class="w-[15%]">
+            <col class="w-[38%]">
+            <col class="w-[16%]">
             <col class="w-[20%]">
-            <col class="w-[34%]">
+            <col class="w-[26%]">
         </colgroup>
         <thead>
-            <tr class="border-b border-brand-outline bg-kaori-soft/70 text-xs uppercase tracking-wide text-content-secondary">
+            <tr class="border-b border-brand-outline bg-kaori-soft/70 text-xs text-content-secondary">
                 <th class="px-5 py-3 text-left">Namespace</th>
                 <th class="px-5 py-3 text-left">Live Source</th>
                 <th class="px-5 py-3 text-left">Current Policy</th>
@@ -46,7 +46,7 @@
                               hx-swap="outerHTML show:none"
                               hx-indicator="#secret-reveal-namespace-loading"
                               hx-disabled-elt="button[type='submit']"
-                              class="ml-auto flex w-full max-w-md items-center justify-end gap-3">
+                              class="ml-auto flex w-full items-center justify-end gap-2">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="namespace" value="{{ row.namespace }}">
                             <input type="hidden"
@@ -70,7 +70,7 @@
                             <button type="submit"
                                     title="Save {{ row.namespace }} policy"
                                     {% if not row.in_live_cluster and row.policy == 'disabled' %}disabled{% endif %}
-                                    class="inline-flex h-10 w-24 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-kaori-primary-hover focus:ring-4 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-surface-disabled disabled:text-content-muted disabled:shadow-none">
+                                    class="inline-flex h-10 w-20 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-kaori-primary-hover focus:ring-4 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-surface-disabled disabled:text-content-muted disabled:shadow-none">
                                 <i data-lucide="save" class="h-4 w-4"></i>
                                 Save
                             </button>

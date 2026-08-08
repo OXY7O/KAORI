@@ -1,6 +1,7 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/operational_section_card.html" as operational_section %}
 <section class="space-y-6" aria-label="Kubernetes Administration Overview">
-    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <section class="{{ operational_section.shell_classes() }}">
         <header class="flex flex-col gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">

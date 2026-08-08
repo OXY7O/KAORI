@@ -1,3 +1,16 @@
+{% macro semantic_border_classes(tone='info') -%}
+    {%- if tone == 'normal' -%}border-status-normal-border
+    {%- elif tone == 'warning' -%}border-status-warning-border
+    {%- elif tone == 'critical' -%}border-status-critical-border
+    {%- elif tone == 'unknown' -%}border-status-unknown-border
+    {%- else -%}border-status-info-border
+    {%- endif -%}
+{%- endmacro %}
+
+{% macro semantic_surface_classes(tone='info') -%}
+    {{ semantic_border_classes(tone) }} {{ 'bg-status-normal-soft' if tone == 'normal' else ('bg-status-warning-soft' if tone == 'warning' else ('bg-status-critical-soft' if tone == 'critical' else ('bg-status-unknown-soft' if tone == 'unknown' else 'bg-status-info-soft'))) }}
+{%- endmacro %}
+
 {#
   Reusable operational callout.
 

@@ -1,13 +1,13 @@
-{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% import "components/table_label.html" as table_label %}
 {% include 'jobs/executions/partials/_status_poller.html' %}
 <span id="execution-overview-posture" hx-swap-oob="outerHTML">
-    {{ integration_status('pending' if job_stats.active else 'ready', 'Work Active' if job_stats.active else 'Queues Clear') }}
+    {{ table_label.status_indicator_label('Work Active' if job_stats.active else 'Queues Clear', 'pending' if job_stats.active else 'normal') }}
 </span>
 <p id="execution-overview-updated" class="text-xs font-medium text-content-muted" hx-swap-oob="outerHTML">Updated {{ job_last_refreshed_at }}</p>
 <p id="execution-overview-metric-active" class="text-xl font-bold text-content-primary" hx-swap-oob="outerHTML">{{ job_stats.active }}</p>
 <p id="execution-overview-metric-running" class="text-xl font-bold text-content-primary" hx-swap-oob="outerHTML">{{ job_stats.running }}</p>
 <p id="execution-overview-metric-attention" class="text-xl font-bold text-content-primary" hx-swap-oob="outerHTML">{{ job_stats.attention }}</p>
 <p id="execution-overview-metric-completed" class="text-xl font-bold text-content-primary" hx-swap-oob="outerHTML">{{ job_stats.completed_24h }}</p>
-<span id="execution-tab-count-active" class="inline-flex min-h-5 min-w-5 items-center justify-center rounded-md bg-kaori-soft px-1.5 text-xs font-semibold text-kaori-primary" hx-swap-oob="outerHTML">{{ job_stats.active }}</span>
-<span id="execution-tab-count-registry" class="inline-flex min-h-5 min-w-5 items-center justify-center rounded-md bg-kaori-soft px-1.5 text-xs font-semibold text-kaori-primary" hx-swap-oob="outerHTML">{{ job_stats.total }}</span>
-<span id="execution-tab-count-queues" class="inline-flex min-h-5 min-w-5 items-center justify-center rounded-md bg-kaori-soft px-1.5 text-xs font-semibold text-kaori-primary" hx-swap-oob="outerHTML">{{ job_stats.queues }}</span>
+<span id="execution-tab-count-active" class="kaori-semantic-label inline-flex min-h-5 min-w-5 items-center justify-center rounded-md bg-kaori-soft px-1.5 text-xs font-semibold text-kaori-primary dark:text-kaori-accent" hx-swap-oob="outerHTML">{{ job_stats.active }}</span>
+<span id="execution-tab-count-registry" class="kaori-semantic-label inline-flex min-h-5 min-w-5 items-center justify-center rounded-md bg-kaori-soft px-1.5 text-xs font-semibold text-kaori-primary dark:text-kaori-accent" hx-swap-oob="outerHTML">{{ job_stats.total }}</span>
+<span id="execution-tab-count-queues" class="kaori-semantic-label inline-flex min-h-5 min-w-5 items-center justify-center rounded-md bg-kaori-soft px-1.5 text-xs font-semibold text-kaori-primary dark:text-kaori-accent" hx-swap-oob="outerHTML">{{ job_stats.queues }}</span>

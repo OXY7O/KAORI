@@ -16,6 +16,8 @@ LOCKED_TEMPLATE_PREFIXES = (
     'app/templates/integrations/',
     'app/templates/prometheus/',
     'app/templates/alertmanager/',
+    'app/templates/platform_operations/',
+    'app/templates/jobs/',
 )
 
 # Shared domain components may legitimately own a tablist. Page templates may not.
@@ -140,7 +142,7 @@ def main() -> int:
     print(
         'KAORI core workspace UI lock passed across '
         f'{checked} templates: Welcome, Kubernetes Dashboard, Kubernetes Inventory, Analytics, Operations, Governance, '
-        'and Integrations are protected against raw palette drift, arbitrary typography, inline UI debt, '
+        'Integrations, and Platform Operations are protected against raw palette drift, arbitrary typography, inline UI debt, '
         'page-local tablists, compact pill labels, known compatibility wrappers, and RBAC regression.'
     )
     return 0
