@@ -1,0 +1,64 @@
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+
+{#
+  Shared horizontal configuration-decision surface for provider detail pages.
+  Provider templates own values; this component owns information hierarchy,
+  spacing, surface tokens, and the Configure -> Validate -> Observe -> Resolve
+  lifecycle contract.
+#}
+{% macro render(title, description, readiness, metrics, change_impact, boundary_title, boundary_copy) -%}
+<section class="{{ integration_ui.section_shell_classes() }}" data-kaori-configuration-decision>
+    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
+        <div class="flex min-w-0 items-start gap-3">
+            {{ integration_ui.palette_icon('gauge', 'brand', size='md') }}
+            <div class="min-w-0">
+                <h2 class="text-base font-semibold text-content-primary">{{ title }}</h2>
+                <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">{{ description }}</p>
+            </div>
+        </div>
+        <div class="shrink-0">{{ integration_status(readiness, readiness|replace('_', ' ')|title, display='text') }}</div>
+    </header>
+
+    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+        {% for label, value, helper in metrics %}
+            <article class="bg-surface-card px-5 py-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
+                <p class="mt-2 text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</p>
+            </article>
+        {% endfor %}
+    </div>
+
+    <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle lg:grid-cols-3">
+        <section class="bg-surface-subtle px-5 py-4">
+            <div class="flex items-start gap-3">
+                {{ integration_ui.palette_icon('refresh-ccw', 'warning', size='sm') }}
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Change Impact</p>
+                    <p class="mt-2 text-sm leading-6 text-content-secondary">{{ change_impact }}</p>
+                </div>
+            </div>
+        </section>
+        <section class="bg-surface-subtle px-5 py-4">
+            <div class="flex items-start gap-3">
+                {{ integration_ui.palette_icon('route', 'brand', size='sm') }}
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Controlled Flow</p>
+                    <p class="mt-2 text-sm font-semibold text-content-primary">Configure → Validate → Observe → Resolve</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Each stage owns separate evidence and must not be inferred from the previous stage.</p>
+                </div>
+            </div>
+        </section>
+        <section class="bg-surface-subtle px-5 py-4">
+            <div class="flex items-start gap-3">
+                {{ integration_ui.palette_icon('shield-check', 'brand', size='sm') }}
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ boundary_title }}</p>
+                    <p class="mt-2 text-sm leading-6 text-content-secondary">{{ boundary_copy }}</p>
+                </div>
+            </div>
+        </section>
+    </div>
+</section>
+{%- endmacro %}

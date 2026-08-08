@@ -1,6 +1,6 @@
-{% import "components/details/_expandable_row.html" as expandable_row %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table.html" as table_ui %}
+{% import "integrations/components/_record_actions.html" as record_actions %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "integrations/components/_provider_registry.html" as provider_registry %}
 {% import "components/table_label.html" as table_label %}
@@ -99,16 +99,24 @@
             </form>
         </div>
 
-        <div class="overflow-x-auto">
-            <table class="{{ table_ui.table_classes('min-w-[78rem]') }}">
+        <div class="overflow-hidden">
+            <table class="{{ table_ui.table_classes() }} table-fixed">
+                <colgroup>
+                    <col class="w-[28%]">
+                    <col class="w-[15%]">
+                    <col class="w-[15%]">
+                    <col class="w-[20%]">
+                    <col class="w-[15%]">
+                    <col class="w-[7%]">
+                </colgroup>
                 <caption class="sr-only">Integration runtime records for {{ runtime_scope_label }}.</caption>
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[20rem]">Provider / Instance</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[10rem]">Runtime Health</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[11rem]">Readiness</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Capability</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[13rem]">Last Observation</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Provider / Instance</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Runtime Health</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Readiness</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Capability</th>
+                        <th scope="col" class="{{ table_ui.header_cell_classes() }}">Last Observation</th>
                         <th scope="col" class="{{ table_ui.header_cell_classes(true) }}">Action</th>
                     </tr>
                 </thead>
@@ -116,7 +124,6 @@
                     {% for row in runtime_rows %}
                         {% set detail_token = row.provider ~ '-' ~ row.instance_id %}
                         {% set detail_target_id = 'integration-runtime-detail-' ~ detail_token %}
-                        {% set detail_row_id = detail_target_id ~ '-row' %}
                         <tr class="{{ table_ui.row_classes() }}">
                             <td class="{{ table_ui.cell_classes() }}">
                                 <div class="flex min-w-0 items-center gap-2.5">
@@ -148,24 +155,14 @@
                                 <p class="mt-1 text-xs text-content-muted">{{ row.latency_display or 'Latency unavailable' }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes(true) }}">
-                                {{ expandable_row.toggle_button(
-                                    'integration-runtime-overview',
-                                    detail_token,
-                                    url_for('integrations.runtime_overview_details', detail_key=row.detail_key),
+                                {{ record_actions.view_more(
                                     detail_target_id,
-                                    detail_row_id,
-                                    class_name='whitespace-nowrap',
-                                    open_label='View More',
-                                    close_label='Hide Details'
+                                    role='runtime-overview',
+                                    hx_get=url_for('integrations.runtime_overview_details', detail_key=row.detail_key),
+                                    hx_target='#integration-runtime-modal-host'
                                 ) }}
                             </td>
                         </tr>
-                        {{ expandable_row.detail_row(
-                            detail_row_id,
-                            detail_target_id,
-                            6,
-                            content_classes='w-full min-w-0'
-                        ) }}
                     {% else %}
                         <tr>
                             <td colspan="6" class="p-0">
@@ -197,4 +194,5 @@
             swap='outerHTML'
         ) }}
     {% endif %}
+    <div id="integration-runtime-modal-host"></div>
 </section>

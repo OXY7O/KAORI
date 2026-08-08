@@ -53,26 +53,21 @@ def test_runtime_filters_auto_refresh_in_one_row_without_action_buttons() -> Non
     assert '>Reset<' not in runtime
 
 
-def test_runtime_records_use_inventory_table_and_expandable_details() -> None:
+def test_runtime_records_use_inventory_table_and_shared_modal_details() -> None:
     runtime = read('app/templates/integrations/partials/_runtime_overview.html')
-    detail = read('app/templates/integrations/partials/_runtime_detail_content.html')
-    overview = read('app/templates/integrations/overview.html')
+    modal = read('app/templates/integrations/partials/_runtime_overview_modal.html')
+    routes = read('app/integrations/routes.py')
 
     assert 'components/table.html' in runtime
-    assert "table_ui.table_classes('min-w-[78rem]')" in runtime
-    assert "integration_ui.palette_icon(row.provider_icon, 'brand', size='lg', rounded='md')" in runtime
-    assert 'table_ui.row_classes()' in runtime
-    assert 'components/details/_expandable_row.html' in runtime
-    assert 'expandable_row.toggle_button(' in runtime
-    assert "open_label='View More'" in runtime
-    assert 'expandable_row.detail_row(' in runtime
-    assert 'resource_detail_modal' not in runtime
-    assert 'resource_detail_modal' not in overview
-    assert 'data-kaori-detail-variant="inline-expansion"' in detail
-    assert 'Runtime Evidence' in detail
-    assert 'Connection & Validation' in detail
-    assert 'Capability & Diagnostic' in detail
-
+    assert 'table-fixed' in runtime
+    assert "table_ui.table_classes('min-w-[78rem]')" not in runtime
+    assert 'record_actions.view_more(' in runtime
+    assert "role='runtime-overview'" in runtime
+    assert 'integration-runtime-modal-host' in runtime
+    assert 'expandable_row' not in runtime
+    assert 'record_detail_modal.render(' in modal
+    assert 'data-kaori-runtime-overview-modal' in modal
+    assert "'integrations/partials/_runtime_overview_modal.html'" in routes
 
 def test_runtime_footer_uses_standard_showing_and_rows_copy() -> None:
     runtime = read('app/templates/integrations/partials/_runtime_overview.html')

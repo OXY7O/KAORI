@@ -1,19 +1,29 @@
 {#
   Shared KAORI Integration record action.
 
-  `role` is intentionally preserved for backward compatibility because runtime
-  observations, capability registries, and other evidence tables attach their
-  own semantic data marker while sharing the exact same button presentation.
+  Registry/table detail actions reuse the global table action primitive so
+  Capability Registry, Runtime Observations, Prometheus, Alertmanager, and the
+  Integration Runtime Overview keep one compact interaction contract.
 #}
-{% macro view_more(dialog_id, label='View More', role='record') -%}
+{% import "components/table.html" as table_ui %}
+
+{% macro view_more(dialog_id, label='View More', role='record', hx_get=None, hx_target=None) -%}
+{% set dialog_target = dialog_id %}
 <button type="button"
         data-kaori-dialog-open
-        data-dialog-target="{{ dialog_id }}"
+        data-kaori-record-action
+        data-dialog-target="{{ dialog_target }}"
         aria-haspopup="dialog"
-        aria-controls="{{ dialog_id }}"
+        aria-controls="{{ dialog_target }}"
         data-kaori-{{ role }}-view-more
-        class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:border-outline-focus hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-1">
-    <i data-lucide="panel-top-open" class="h-3.5 w-3.5" aria-hidden="true"></i>
+        {% if hx_get %}
+        hx-get="{{ hx_get }}"
+        hx-target="{{ hx_target or '#integration-dialog-host' }}"
+        hx-swap="innerHTML"
+        hx-on::after-request="requestAnimationFrame(() => document.getElementById('{{ dialog_target }}')?.showModal())"
+        {% endif %}
+        class="{{ table_ui.action_classes() }} whitespace-nowrap">
     <span>{{ label }}</span>
+    <i data-lucide="chevron-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
 </button>
 {%- endmacro %}

@@ -235,6 +235,11 @@ def runtime_history_view(
                 'capability_changed': bool(added_capabilities or removed_capabilities),
                 'message': row.message,
                 'message_redundant': _message_repeats_diagnostic(row.message or '', diagnostics),
+                'standalone_message': (
+                    row.message
+                    if row.message and not _message_repeats_diagnostic(row.message or '', diagnostics)
+                    else None
+                ),
                 'diagnostics': diagnostics,
                 'diagnostic_count': len(diagnostics),
                 'lifecycle_context': lifecycle_context,

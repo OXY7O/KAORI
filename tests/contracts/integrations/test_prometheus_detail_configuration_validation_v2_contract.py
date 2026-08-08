@@ -8,11 +8,15 @@ PROMQL_REGISTRY = ROOT / 'app/templates/prometheus/partials/_capability_registry
 PROMETHEUS_ROUTES = ROOT / 'app/prometheus/routes.py'
 
 
-def test_configuration_uses_connection_contract_and_decision_panel():
+def test_configuration_uses_shared_horizontal_decision_and_full_width_form():
     text = CONFIG.read_text()
-    assert 'Prometheus Connection Contract' in text
-    assert 'Configuration Decision' in text
-    assert "xl:grid-cols-[minmax(0,1fr)_25rem]" in text
+    shared = (ROOT / 'app/templates/integrations/components/_configuration_decision.html').read_text()
+    assert 'configuration_decision.render(' in text
+    assert 'Prometheus Configuration Decision' in text
+    assert 'data-kaori-configuration-decision' in shared
+    assert 'Controlled Flow' in shared
+    assert "xl:grid-cols-[minmax(0,1fr)_25rem]" not in text
+    assert 'xl:sticky' not in text
     assert 'Test Connection' in text
     assert 'Save Changes' in text
 
@@ -75,7 +79,8 @@ def test_validation_filters_are_htmx_backed_and_buttonless():
 
 def test_prometheus_detail_alpine_shell_is_not_corrupted():
     text = DETAIL.read_text()
-    assert "x-on:popstate.window=\"syncTabFromLocation()\">" in text
+    assert 'integrationWorkspaceTabs(' in text
+    assert "x-on:popstate.window=\"syncTab()\"" in text
     assert "scrollIntoView({ behavior: 'smooth', block: 'start' })); } } }" not in text
 
 
@@ -96,5 +101,6 @@ def test_promql_view_more_matches_kubernetes_capability_evidence_concept():
         'Evidence Boundary',
     ):
         assert token in shared
-    assert 'panel-top-open' in actions
-    assert 'inline-flex h-9 items-center justify-center gap-2 rounded-lg' in actions
+    assert '{{ table_ui.action_classes() }}' in actions
+    assert 'data-lucide="chevron-right"' in actions
+    assert 'panel-top-open' not in actions

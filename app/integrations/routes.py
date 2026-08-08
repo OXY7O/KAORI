@@ -65,7 +65,7 @@ def runtime_overview_details(detail_key: str) -> ResponseReturnValue:
     if detail is None:
         abort(404)
     return render_template(
-        'integrations/partials/_runtime_detail_content.html',
+        'integrations/partials/_runtime_overview_modal.html',
         detail=detail,
     )
 

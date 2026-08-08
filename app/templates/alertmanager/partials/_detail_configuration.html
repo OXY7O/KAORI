@@ -2,6 +2,7 @@
 {% import "components/form_action_bar.html" as form_action_bar %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table_label.html" as table_label %}
+{% import "integrations/components/_configuration_decision.html" as configuration_decision %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 
 {% set current_auth_type = instance.auth_type or 'none' %}
@@ -11,28 +12,22 @@
 {% set deployment_label = (instance.deployment_type or 'external_managed')|replace('_', ' ')|title %}
 
 <div id="alertmanager-configuration-workspace" class="space-y-4 font-sans" data-kaori-alertmanager-configuration-v2>
-    <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm" aria-labelledby="alertmanager-connection-contract-title">
-        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div class="flex min-w-0 items-start gap-3">
-                    <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent" aria-hidden="true"><i data-lucide="siren" class="h-5 w-5"></i></span>
-                    <div class="min-w-0">
-                        <h2 id="alertmanager-connection-contract-title" class="text-base font-semibold text-content-primary">Alertmanager Connection Contract</h2>
-                        <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Manage the reusable alert source identity, API v2 endpoint, authentication, TLS policy, and resolver eligibility used by governed alert consumers.</p>
-                    </div>
-                </div>
-                <div class="shrink-0">{{ integration_status(readiness, readiness|replace('_', ' ')|title, display='text') }}</div>
-            </div>
-        </header>
-        <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
-            <div class="px-5 py-3.5 sm:px-6"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Canonical Source</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ instance.name }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">Reusable provider identity</p></div>
-            <div class="px-5 py-3.5 sm:px-6"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">API Contract</p><p class="mt-1 text-sm font-semibold text-content-primary">Alertmanager API v2</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ instance.detected_version or 'Runtime version not observed' }}</p></div>
-            <div class="px-5 py-3.5 sm:px-6"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Deployment Context</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ deployment_label }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">Ownership and lifecycle context</p></div>
-            <div class="px-5 py-3.5 sm:px-6"><p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Scope Bindings</p><p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ bindings|length }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">Governed consumer contexts</p></div>
-        </div>
-    </section>
+    {{ configuration_decision.render(
+        'Alertmanager Configuration Decision',
+        'Review the saved alert-source contract, readiness impact, and controlled path before changing endpoint or access settings.',
+        readiness,
+        [
+            ('Canonical Source', instance.name, 'Reusable provider identity'),
+            ('API Contract', 'Alertmanager API v2', instance.detected_version or 'Runtime version not observed'),
+            ('Deployment Context', deployment_label, 'Ownership and lifecycle context'),
+            ('Scope Bindings', bindings|length, 'Governed consumer contexts')
+        ],
+        'Saving endpoint, authentication, TLS, or ownership settings resets readiness until Full Validation rebuilds API and capability evidence.',
+        'Consumer Boundary',
+        'Alertmanager remains authoritative for routing, grouping, inhibition, silences, and delivery. KAORI consumes validated API evidence and governed bindings.'
+    ) }}
 
-    <div class="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_25rem] 2xl:grid-cols-[minmax(0,1fr)_27rem]">
+    <div>
         <form id="alertmanager-instance-form"
               method="post"
               action="{{ url_for('alertmanager.instance_detail', instance_id=instance.id) }}#configuration"
@@ -88,13 +83,7 @@
             </section>
         </form>
 
-        <aside class="self-start overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm xl:sticky xl:top-4" aria-labelledby="alertmanager-configuration-decision-title">
-            <header class="border-b border-outline-subtle px-4 py-4 xl:px-5"><div class="flex items-start gap-3"><span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"><i data-lucide="gauge" class="h-4 w-4"></i></span><div><h3 id="alertmanager-configuration-decision-title" class="text-sm font-semibold text-content-primary">Configuration Decision</h3><p class="mt-1 text-xs leading-5 text-content-secondary">Current connection contract and the controlled path back to operational use.</p></div></div></header>
-            <section class="border-b border-outline-subtle px-4 py-4 xl:px-5"><h4 class="text-xs font-semibold text-content-muted">Endpoint Contract</h4><dl class="mt-3 divide-y divide-outline-subtle rounded-lg border border-outline-subtle">{% for label, value in [('API Contract','Alertmanager API v2'),('Detected Runtime', instance.detected_version or 'Not observed'),('Compatibility Profile', instance.compatibility_profile or 'Validation Required'),('Capability Profile', instance.capability_profile or 'Validation Required')] %}<div class="flex items-start justify-between gap-4 px-3.5 py-2.5"><dt class="text-xs text-content-secondary">{{ label }}</dt><dd class="max-w-[60%] text-right text-xs font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</dd></div>{% endfor %}</dl></section>
-            <section class="border-b border-outline-subtle px-4 py-4 xl:px-5"><div class="flex items-start gap-3"><span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"><i data-lucide="refresh-ccw" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Change Impact</h4><p class="mt-1 text-xs leading-5 text-content-secondary">Saving endpoint, authentication, TLS, or ownership settings resets readiness until Full Validation rebuilds API and capability evidence.</p></div></div></section>
-            <section class="border-b border-outline-subtle px-4 py-4 xl:px-5"><h4 class="text-sm font-semibold text-content-primary">Controlled Flow</h4><div class="mt-3 space-y-0">{% for title, copy in [('Configure','Save identity, endpoint, authentication, and trust settings.'),('Validate','Discover API v2 capabilities and effective readiness.'),('Observe','Refresh lightweight runtime health and latency evidence.'),('Resolve','Confirm binding and consumer eligibility for governed scopes.')] %}<div class="relative flex gap-3 {% if not loop.last %}pb-4{% endif %}"><div class="relative flex w-7 shrink-0 justify-center">{% if not loop.last %}<span class="absolute top-7 bottom-[-0.5rem] left-1/2 w-px -translate-x-1/2 bg-outline-subtle"></span>{% endif %}<span class="relative z-10 inline-flex h-7 w-7 items-center justify-center rounded-full border border-outline-default bg-surface-card text-xs font-semibold text-content-primary">{{ loop.index }}</span></div><div class="min-w-0 flex-1"><p class="text-xs font-semibold text-content-primary">{{ title }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ copy }}</p></div></div>{% endfor %}</div></section>
-            <section class="px-4 py-4 xl:px-5"><div class="flex items-start gap-3"><span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"><i data-lucide="shield" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Consumer Boundary</h4><p class="mt-1 text-xs leading-5 text-content-secondary">Alertmanager remains authoritative for alert routing, grouping, inhibition, silences, and notification delivery. KAORI consumes validated API evidence and governed bindings.</p></div></div></section>
-        </aside>
+
     </div>
 </div>
 {% include 'components/operation_feedback_oob.html' %}

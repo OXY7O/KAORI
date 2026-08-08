@@ -18,7 +18,7 @@
         "global": "Global operational scope"
     } %}
     <div class="kaori-integration-semantic space-y-6"
-         x-data="{ tabs: ['configuration', 'validation', 'runtime', 'scope'], activeTab: (() => { const url = new URL(window.location.href); const queryTab = url.searchParams.get('tab'); const hashTab = window.location.hash.replace('#', ''); return ['configuration', 'validation', 'runtime', 'scope'].includes(queryTab) ? queryTab : (['configuration', 'validation', 'runtime', 'scope'].includes(hashTab) ? hashTab : 'configuration'); })(), setTab(tab, moveToWorkspace = false) { if (!this.tabs.includes(tab)) return; this.activeTab = tab; const nextUrl = new URL(window.location.href); nextUrl.searchParams.set('tab', tab); nextUrl.hash = tab; window.history.replaceState(null, '', nextUrl); if (moveToWorkspace) { this.$nextTick(() => document.getElementById('alertmanager-detail-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); } }, moveTab(currentTab, direction, prefix = 'alertmanager') { const currentIndex = this.tabs.indexOf(currentTab); if (currentIndex < 0) return; let nextIndex = currentIndex; if (direction === 'home') nextIndex = 0; else if (direction === 'end') nextIndex = this.tabs.length - 1; else nextIndex = (currentIndex + direction + this.tabs.length) % this.tabs.length; const nextTab = this.tabs[nextIndex]; this.setTab(nextTab); this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus()); }, syncTab() { const url = new URL(window.location.href); const queryTab = url.searchParams.get('tab'); const hashTab = window.location.hash.replace('#', ''); this.activeTab = this.tabs.includes(queryTab) ? queryTab : (this.tabs.includes(hashTab) ? hashTab : 'configuration'); } }"
+         x-data="integrationWorkspaceTabs(['configuration', 'validation', 'runtime', 'scope'], 'configuration', 'alertmanager-detail-tabs')"
          x-on:hashchange.window="syncTab()"
          x-on:popstate.window="syncTab()">
         <section class="{{ page_hero.shell_classes() }}">
@@ -45,22 +45,8 @@
                             {{ integration_status('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else ('validation_required' if source_posture == 'Configured' else 'not_configured') ), source_posture) }}
                         </div>
                         <div class="mt-4 grid grid-cols-2 gap-2">
-                            <div class="{{ page_hero.context_metric_card_classes() }}">
-                                <div class="flex items-center gap-2 text-brand-foreground">
-                                    <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
-                                    <p class="text-xs font-semibold">Readiness</p>
-                                </div>
-                                <p class="mt-1.5 truncate text-sm font-semibold text-brand-foreground">{{ readiness|replace('_', ' ') |title }}</p>
-                                <p class="mt-1 text-xs leading-4 text-brand-foreground-muted">Produced by Full Validation</p>
-                            </div>
-                            <div class="{{ page_hero.context_metric_card_classes() }}">
-                                <div class="flex items-center gap-2 text-brand-foreground">
-                                    <i data-lucide="link-2" class="h-3.5 w-3.5"></i>
-                                    <p class="text-xs font-semibold">Scope Bindings</p>
-                                </div>
-                                <p class="mt-1.5 text-xl font-semibold leading-none text-brand-foreground">{{ bindings|length }}</p>
-                                <p class="mt-1 text-xs leading-4 text-brand-foreground-muted">Contexts evaluated by resolver</p>
-                            </div>
+                            {{ page_hero.context_metric('shield-check', 'Readiness', readiness|replace('_', ' ') |title, 'Produced by Full Validation', value_classes='truncate text-sm font-semibold leading-5') }}
+                            {{ page_hero.context_metric('link-2', 'Scope Bindings', bindings|length, 'Contexts evaluated by resolver') }}
                         </div>
                         <div class="{{ page_hero.context_actions_classes() }}">
                             <button type="button"

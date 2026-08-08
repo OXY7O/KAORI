@@ -128,9 +128,6 @@
     "app/templates/integrations/bindings/partials/_workspace.html": {
       "semantic_border_utilities": 4
     },
-    "app/templates/integrations/components/_runtime_observation_modal.html": {
-      "semantic_border_utilities": 2
-    },
     "app/templates/integrations/components/_workspace.html": {
       "semantic_border_utilities": 5
     },
@@ -266,7 +263,7 @@
       "semantic_border_utilities": 2
     },
     "app/templates/prometheus/partials/_detail_configuration.html": {
-      "semantic_border_utilities": 2
+      "semantic_border_utilities": 1
     },
     "app/templates/prometheus/partials/_detail_scope.html": {
       "copied_standard_surface_shells": 1,

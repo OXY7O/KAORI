@@ -10,14 +10,21 @@
     "storage_service": "Infrastructure service",
     "global": "Global operational scope"
 } %}
-<div class="overflow-x-auto">
-    <table class="{{ table_ui.table_classes('min-w-[1040px]') }}">
+<div class="overflow-hidden">
+    <table class="{{ table_ui.table_classes() }} table-fixed">
+        <colgroup>
+            <col class="w-[25%]">
+            <col class="w-[24%]">
+            <col class="w-[19%]">
+            <col class="w-[14%]">
+            <col class="w-[8%]">
+            <col class="w-[10%]">
+        </colgroup>
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
                 <th class="{{ table_ui.header_cell_classes() }}">Connection</th>
                 <th class="{{ table_ui.header_cell_classes() }}">Endpoint Contract</th>
-                <th class="{{ table_ui.header_cell_classes() }}">Deployment</th>
-                <th class="{{ table_ui.header_cell_classes() }}">Runtime</th>
+                <th class="{{ table_ui.header_cell_classes() }}">Deployment &amp; Runtime</th>
                 <th class="{{ table_ui.header_cell_classes() }}">Readiness</th>
                 <th class="{{ table_ui.header_cell_classes() }}">Bindings</th>
                 <th class="{{ table_ui.header_cell_classes(action=true) }}">Action</th>
@@ -41,10 +48,9 @@
                         <p class="max-w-[260px] truncate text-sm text-content-secondary" title="{{ row.endpoint }}">{{ row.endpoint }}</p>
                         <p class="mt-0.5 text-xs leading-5 text-content-muted">Alertmanager API v2</p>
                     </td>
-                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(row.deployment_type|replace('_', ' ')|title, 'boxes') }}</td>
                     <td class="{{ table_ui.cell_classes() }}">
-                        <p class="text-sm font-semibold text-content-primary">{{ row.version or 'Not Detected' }}</p>
-                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Validated runtime version</p>
+                        {{ table_label.metadata_label(row.deployment_type|replace('_', ' ')|title, 'boxes') }}
+                        <p class="mt-1 truncate text-xs leading-5 text-content-muted" title="{{ row.version or 'Not Detected' }}">Runtime · {{ row.version or 'Not Detected' }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">{{ integration_status(row.readiness, display='indicator') }}</td>
                     <td class="{{ table_ui.cell_classes() }}">
@@ -66,7 +72,7 @@
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="7" class="p-0">
+                    <td colspan="6" class="p-0">
                         {% set empty_state_icon = "siren" %}
                         {% set empty_state_title = "No Alertmanager Connections Found" %}
                         {% set empty_state_description = "Register an Alertmanager connection or adjust the active filters." %}

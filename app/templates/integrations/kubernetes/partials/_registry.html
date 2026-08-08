@@ -21,10 +21,10 @@
           hx-push-url="true"
           hx-indicator="#kubernetes-registry-loading"
           hx-trigger="input changed delay:300ms from:#kubernetes-registry-search, change delay:100ms from:select"
-          class="overflow-x-auto border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
+          class="border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
         <input type="hidden" name="page" value="1">
         <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
-        <div data-kaori-one-line-filters class="grid min-w-[840px] grid-cols-[minmax(17rem,1.45fr)_repeat(3,minmax(11rem,0.85fr))] gap-3">
+        <div data-kaori-one-line-filters class="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,1fr))]">
         <div>
             <label for="kubernetes-registry-search" class="{{ table_ui.filter_label_classes() }}">Search</label>
             <div class="relative">
@@ -62,8 +62,15 @@
         </div>
     </form>
 
-    <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[1040px]') }}">
+    <div class="overflow-hidden">
+        <table class="{{ table_ui.table_classes() }} table-fixed">
+            <colgroup>
+                <col class="w-[28%]">
+                <col class="w-[18%]">
+                <col class="w-[20%]">
+                <col class="w-[14%]">
+                <col class="w-[20%]">
+            </colgroup>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
                     <th class="{{ table_ui.header_cell_classes() }}">Connection</th>
@@ -78,7 +85,7 @@
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }}">
                             {% set connection_icon_tone = 'success' if row.readiness == 'ready' else ('warning' if row.readiness in ['degraded', 'validation_required'] else 'neutral') %}
-                            <div class="flex min-w-[16rem] items-start gap-3">
+                            <div class="flex min-w-0 items-start gap-3">
                                 {{ integration_ui.palette_icon('server-cog', connection_icon_tone) }}
                                 <div class="min-w-0">
                                     <p class="truncate text-sm font-semibold text-content-primary" title="{{ row.cluster_name }}">{{ row.cluster_name }}</p>

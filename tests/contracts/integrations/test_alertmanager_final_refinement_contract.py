@@ -46,8 +46,10 @@ def test_alertmanager_validation_modal_matches_kubernetes_capability_evidence_co
         'Evidence Boundary',
     ):
         assert token in shared
-    assert 'panel-top-open' in actions
-    assert 'inline-flex h-9 items-center justify-center gap-2 rounded-lg' in actions
+    assert '{% import "components/table.html" as table_ui %}' in actions
+    assert '{{ table_ui.action_classes() }}' in actions
+    assert 'data-lucide="chevron-right"' in actions
+    assert 'panel-top-open' not in actions
 
 
 def test_alertmanager_runtime_matches_kubernetes_full_width_runtime_pattern():

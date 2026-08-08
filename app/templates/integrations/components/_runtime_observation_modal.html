@@ -1,191 +1,174 @@
 {% import "components/table_label.html" as table_label %}
+{% import "integrations/components/_record_detail_modal.html" as record_detail_modal %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 
 {% macro render(row, provider_label, modal_id) -%}
 {% set health_tone = row.effective_status %}
-<dialog id="{{ modal_id }}"
-        data-kaori-runtime-observation-dialog
-        class="kaori-native-dialog m-auto w-[min(68rem,calc(100vw-2rem))] max-h-[calc(100dvh-2rem)] overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 text-content-primary shadow-2xl "
-        aria-labelledby="{{ modal_id }}-title">
-    <div class="flex max-h-[calc(100dvh-2rem)] min-h-0 flex-col font-sans">
-        <header class="flex items-start justify-between gap-4 border-b border-outline-subtle px-5 py-4 sm:px-6">
-            <div class="flex min-w-0 items-start gap-3">
-                {{ integration_ui.palette_icon('activity', 'brand', size='lg') }}
-                <div class="min-w-0">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ provider_label }} Runtime Observation</p>
-                    <h3 id="{{ modal_id }}-title" class="mt-1 text-base font-semibold text-content-primary">{{ row.observed_at_display }}</h3>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Immutable runtime, readiness, capability, lifecycle, and diagnostic evidence captured for this observation.</p>
+{% call record_detail_modal.render(
+    modal_id,
+    row.detail_id|default(modal_id),
+    provider_label ~ ' Runtime Observation',
+    row.observed_at_display,
+    'Immutable runtime, readiness, capability, lifecycle, and diagnostic evidence for the selected observation.',
+    icon='activity',
+    footer_text='Runtime observation evidence is immutable and reflects the selected persisted snapshot.',
+    size='standard'
+) %}
+    <div class="space-y-4" data-kaori-runtime-observation-dialog data-kaori-runtime-observation-dialog-v4>
+        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card" data-kaori-runtime-observation-decision>
+            <header class="flex flex-col gap-2 border-b border-outline-subtle px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <p class="text-sm font-semibold text-content-primary">Observation Decision</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Read the persisted runtime posture first; diagnostic detail remains below and is shown only once.</p>
+                </div>
+                {{ integration_status(health_tone, row.effective_status_label, display='indicator') }}
+            </header>
+            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+                <div class="bg-surface-card p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Runtime Posture</p>
+                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                        {{ integration_status(health_tone, row.effective_status_label, display='indicator') }}
+                        {{ integration_status(row.readiness, row.readiness_label, display='indicator') }}
+                    </div>
+                </div>
+                <div class="bg-surface-card p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Health Score</p>
+                    <p class="mt-2 text-lg font-semibold tabular-nums text-content-primary">{{ row.health_score_display }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ row.diagnostic_count }} diagnostic check{{ '' if row.diagnostic_count == 1 else 's' }}</p>
+                </div>
+                <div class="bg-surface-card p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Validation Readiness</p>
+                    <div class="mt-2">{{ integration_status(row.readiness, row.readiness_label, display='indicator') }}</div>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Independent from current runtime health</p>
+                </div>
+                <div class="bg-surface-card p-4">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Capability Snapshot</p>
+                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ row.capability_count_display }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ row.compatibility_profile or 'Compatibility not detected' }}</p>
                 </div>
             </div>
-            <button type="button"
-                    data-kaori-dialog-close
-                    class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-secondary transition hover:bg-surface-hover hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
-                    aria-label="Close runtime observation detail">
-                <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
-            </button>
-        </header>
+        </section>
 
-        <div class="min-h-0 flex-1 overflow-y-auto bg-surface-subtle p-5 sm:p-6">
-            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card" aria-label="Runtime observation summary">
-                <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
-                    <div class="bg-surface-card p-4">
-                        <p class="text-xs font-semibold text-content-secondary">Runtime Posture</p>
-                        <div class="mt-2 flex flex-wrap items-center gap-2">
-                            {{ integration_status(health_tone, row.effective_status_label, display='indicator') }}
-                            {{ integration_status(row.readiness, row.readiness_label, display='indicator') }}
-                        </div>
-                    </div>
-                    <div class="bg-surface-card p-4">
-                        <p class="text-xs font-semibold text-content-secondary">Health &amp; Timing</p>
-                        <p class="mt-2 text-lg font-semibold tabular-nums text-content-primary">{{ row.health_score_display }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ row.latency_display }} · {{ row.trigger_type_label }}</p>
-                    </div>
-                    <div class="bg-surface-card p-4">
-                        <p class="text-xs font-semibold text-content-secondary">Compatibility</p>
-                        <p class="mt-2 break-words text-sm font-semibold text-content-primary">{{ row.compatibility_profile or 'Not Detected' }}</p>
-                    </div>
-                    <div class="bg-surface-card p-4">
-                        <p class="text-xs font-semibold text-content-secondary">Capability Snapshot</p>
-                        <p class="mt-2 text-sm font-semibold text-content-primary">{{ row.capability_count_display }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ row.diagnostic_count }} diagnostic check{{ '' if row.diagnostic_count == 1 else 's' }}</p>
+        <section class="rounded-xl border border-outline-subtle bg-surface-card p-4" data-kaori-runtime-observation-context>
+            <div class="flex items-start gap-3">
+                {{ integration_ui.palette_icon('clock-3', 'brand', size='sm') }}
+                <div class="min-w-0 flex-1">
+                    <p class="text-sm font-semibold text-content-primary">Observation Context</p>
+                    <dl class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        {% for label, value in [
+                            ('Observed At', row.observed_at_display),
+                            ('Trigger', row.trigger_type_label),
+                            ('Latency', row.latency_display),
+                            ('Compatibility', row.compatibility_profile or 'Not Detected')
+                        ] %}
+                            <div class="rounded-lg border border-outline-subtle bg-surface-hover px-3 py-2.5">
+                                <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
+                                <dd class="mt-1 text-xs font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ value }}</dd>
+                            </div>
+                        {% endfor %}
+                    </dl>
+                </div>
+            </div>
+        </section>
+
+        {% if row.standalone_message %}
+            <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                <div class="flex items-start gap-3">
+                    {{ integration_ui.palette_icon('message-square-text', 'brand', size='sm') }}
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-content-primary">Observation Detail</p>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ row.standalone_message }}</p>
                     </div>
                 </div>
             </section>
+        {% endif %}
 
-            {% if row.message and not row.message_redundant %}
-                <section class="mt-4 rounded-xl border border-outline-subtle bg-surface-card p-4">
-                    <div class="flex items-start gap-3">
-                        {{ integration_ui.palette_icon('message-square-text', 'brand', size='sm') }}
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-content-primary">Observation Detail</p>
-                            <p class="mt-1 text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ row.message }}</p>
-                        </div>
+        {% if row.lifecycle_context %}
+            {% set lifecycle = row.lifecycle_context %}
+            <section data-kaori-runtime-observation-lifecycle-boundary class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                <header class="flex flex-col gap-2 border-b border-outline-subtle px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <p class="text-sm font-semibold text-content-primary">Kubernetes Lifecycle Boundary</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Lifecycle policy and accepted compatibility remain separate from runtime health.</p>
                     </div>
-                </section>
-            {% endif %}
-
-            {% if row.lifecycle_context %}
-                {% set lifecycle = row.lifecycle_context %}
-                <section class="mt-4 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
-                    <header class="flex flex-col gap-2 border-b border-outline-subtle px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                            <p class="text-sm font-semibold text-content-primary">Kubernetes Version Lifecycle</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Current lifecycle policy and accepted compatibility remain separate evidence.</p>
-                        </div>
-                        {{ integration_status('degraded' if lifecycle.lifecycle_status == 'legacy' else ('ready' if lifecycle.lifecycle_status == 'current' else 'validation_required'), lifecycle.lifecycle_status_label, display='indicator') }}
-                    </header>
-                    <div class="grid gap-px bg-outline-subtle sm:grid-cols-3">
-                        {% for label, value, helper in [
-                            ('Detected Version', lifecycle.detected_version, 'Observed cluster version'),
-                            ('KAORI Current Band', lifecycle.current_version_band, 'Versions treated as current by lifecycle policy'),
-                            ('Accepted Compatibility', lifecycle.supported_constraint, 'Broader technically accepted contract')
-                        ] %}
-                            <div class="bg-surface-card p-4">
-                                <p class="text-xs font-semibold text-content-secondary">{{ label }}</p>
-                                <p class="mt-2 text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
-                            </div>
-                        {% endfor %}
-                    </div>
-                    <div class="grid gap-4 border-t border-outline-subtle p-4 lg:grid-cols-2">
-                        <div>
-                            <p class="text-xs font-semibold text-content-primary">Selected Stable APIs · {{ lifecycle.stable_api_count }}</p>
-                            {% if lifecycle.stable_apis %}
-                                <div class="mt-2 flex flex-wrap gap-1.5">
-                                    {% for api in lifecycle.stable_apis %}{{ table_label.metadata_label(api) }}{% endfor %}
-                                </div>
-                            {% else %}
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">No stable API selection was recorded.</p>
-                            {% endif %}
-                        </div>
-                        <div>
-                            <p class="text-xs font-semibold {{ 'text-status-warning-text' if lifecycle.legacy_api_count else 'text-content-primary' }}">Legacy API Fallbacks · {{ lifecycle.legacy_api_count }}</p>
-                            {% if lifecycle.legacy_apis %}
-                                <div class="mt-2 flex flex-wrap gap-1.5">
-                                    {% for api in lifecycle.legacy_apis %}{{ table_label.status_label(api, 'warning') }}{% endfor %}
-                                </div>
-                            {% else %}
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">No legacy API fallback was selected.</p>
-                            {% endif %}
-                        </div>
-                    </div>
-                </section>
-            {% endif %}
-
-            {% if row.capabilities or row.capability_changed %}
-                <section class="mt-4 rounded-xl border border-outline-subtle bg-surface-card p-4">
-                    <p class="text-sm font-semibold text-content-primary">Capability Detail</p>
-                    {% if row.capabilities %}
-                        <div class="mt-3 flex flex-wrap gap-1.5">
-                            {% for capability in row.capabilities %}{{ table_label.metadata_label(capability.label) }}{% endfor %}
-                        </div>
-                    {% endif %}
-                    {% if row.capability_changed %}
-                        <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                            {% if row.added_capabilities %}
-                                <div class="rounded-lg border border-status-normal-border bg-status-normal-soft p-3">
-                                    <p class="text-xs font-semibold text-status-normal-text">Added</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.added_capabilities|join(', ') }}</p>
-                                </div>
-                            {% endif %}
-                            {% if row.removed_capabilities %}
-                                <div class="rounded-lg border border-status-critical-border bg-status-critical-soft p-3">
-                                    <p class="text-xs font-semibold text-status-critical-text">Removed</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.removed_capabilities|join(', ') }}</p>
-                                </div>
-                            {% endif %}
-                        </div>
-                    {% endif %}
-                </section>
-            {% endif %}
-
-            <section class="mt-4 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
-                <header class="border-b border-outline-subtle px-4 py-3">
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <p class="text-sm font-semibold text-content-primary">Diagnostic Review</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Full technical evidence and remediation are shown once here for the selected immutable observation.</p>
-                        </div>
-                        {{ table_label.metadata_label(row.diagnostic_count ~ (' check' if row.diagnostic_count == 1 else ' checks')) }}
-                    </div>
+                    {{ integration_status('degraded' if lifecycle.lifecycle_status == 'legacy' else ('ready' if lifecycle.lifecycle_status == 'current' else 'validation_required'), lifecycle.lifecycle_status_label, display='indicator') }}
                 </header>
-                <div class="divide-y divide-outline-subtle">
-                    {% for diagnostic in row.diagnostics %}
-                        {% set diagnostic_tone = 'ready' if diagnostic.status == 'success' else ('degraded' if diagnostic.status == 'warning' else ('blocked' if diagnostic.status == 'failed' else 'validation_required')) %}
-                        <article class="grid gap-3 px-4 py-4 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.7fr)_auto] lg:items-start">
-                            <div>
-                                <p class="text-sm font-semibold text-content-primary">{{ diagnostic.label }}</p>
-                                <p class="mt-1 text-xs text-content-muted">{{ diagnostic.category_label }}{% if diagnostic.duration_ms is not none %} · {{ diagnostic.duration_display }}{% endif %}</p>
-                            </div>
-                            <div>
-                                <p class="text-sm leading-6 text-content-secondary">{{ diagnostic.detail }}</p>
-                                {% if diagnostic.recommendation %}
-                                    <div class="mt-2 border-l-2 border-brand-outline pl-3">
-                                        <p class="text-xs font-semibold text-content-primary">Recommended Action</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ diagnostic.recommendation }}</p>
-                                    </div>
-                                {% endif %}
-                            </div>
-                            <div class="shrink-0">{{ integration_status(diagnostic_tone, diagnostic.status_label, display='indicator') }}</div>
-                        </article>
-                    {% else %}
-                        <div class="px-4 py-8 text-center">
-                            <p class="text-sm font-semibold text-content-primary">No Diagnostic Detail</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">This observation was recorded without diagnostic rows.</p>
+                <div class="grid gap-px bg-outline-subtle sm:grid-cols-3">
+                    {% for label, value in [
+                        ('Detected Version', lifecycle.detected_version),
+                        ('KAORI Current Band', lifecycle.current_version_band),
+                        ('Accepted Compatibility', lifecycle.supported_constraint)
+                    ] %}
+                        <div class="bg-surface-card p-4">
+                            <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
+                            <p class="mt-2 text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
                         </div>
                     {% endfor %}
                 </div>
             </section>
-        </div>
+        {% endif %}
 
-        <footer class="flex items-center justify-end border-t border-outline-subtle bg-surface-card px-5 py-3.5 sm:px-6">
-            <button type="button"
-                    data-kaori-dialog-close
-                    class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:bg-surface-hover hover:text-content-primary">
-                Close
-            </button>
-        </footer>
+        {% if row.capabilities or row.capability_changed %}
+            <section data-kaori-runtime-observation-capability-evidence class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                <p class="text-sm font-semibold text-content-primary">Capability Evidence</p>
+                {% if row.capabilities %}
+                    <div class="mt-3 flex flex-wrap gap-1.5">
+                        {% for capability in row.capabilities %}{{ table_label.metadata_label(capability.label) }}{% endfor %}
+                    </div>
+                {% endif %}
+                {% if row.capability_changed %}
+                    <div class="mt-4 grid gap-3 sm:grid-cols-2" data-kaori-runtime-observation-capability-drift>
+                        <div class="rounded-lg border border-outline-subtle bg-surface-hover p-3">
+                            <p class="text-xs font-semibold text-content-primary">Added Capabilities</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.added_capabilities|join(', ') if row.added_capabilities else 'None' }}</p>
+                        </div>
+                        <div class="rounded-lg border border-outline-subtle bg-surface-hover p-3">
+                            <p class="text-xs font-semibold text-content-primary">Removed Capabilities</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ row.removed_capabilities|join(', ') if row.removed_capabilities else 'None' }}</p>
+                        </div>
+                    </div>
+                {% endif %}
+            </section>
+        {% endif %}
+
+        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card" data-kaori-runtime-observation-diagnostic-review>
+            <header class="border-b border-outline-subtle px-4 py-3">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-sm font-semibold text-content-primary">Diagnostic Review</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Full technical evidence and remediation are shown once for this immutable observation.</p>
+                    </div>
+                    {{ table_label.metadata_label(row.diagnostic_count ~ (' Check' if row.diagnostic_count == 1 else ' Checks')) }}
+                </div>
+            </header>
+            <div class="divide-y divide-outline-subtle">
+                {% for diagnostic in row.diagnostics %}
+                    {% set diagnostic_tone = 'ready' if diagnostic.status == 'success' else ('degraded' if diagnostic.status == 'warning' else ('blocked' if diagnostic.status == 'failed' else 'validation_required')) %}
+                    <article class="grid gap-3 px-4 py-4 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.7fr)_auto] lg:items-start">
+                        <div>
+                            <p class="text-sm font-semibold text-content-primary">{{ diagnostic.label }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ diagnostic.category_label }}{% if diagnostic.duration_ms is not none %} · {{ diagnostic.duration_display }}{% endif %}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ diagnostic.detail }}</p>
+                            {% if diagnostic.recommendation %}
+                                <div class="mt-2 border-l-2 border-brand-outline pl-3">
+                                    <p class="text-xs font-semibold text-content-primary">Recommended Action</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ diagnostic.recommendation }}</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="shrink-0">{{ integration_status(diagnostic_tone, diagnostic.status_label, display='indicator') }}</div>
+                    </article>
+                {% else %}
+                    <div class="px-4 py-8 text-center">
+                        <p class="text-sm font-semibold text-content-primary">No Diagnostic Detail</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">This observation was recorded without diagnostic rows.</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
     </div>
-</dialog>
+{% endcall %}
 {%- endmacro %}

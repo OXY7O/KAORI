@@ -10,17 +10,22 @@ def read(path: str) -> str:
 def test_alertmanager_detail_uses_provider_v2_tabs_without_malformed_alpine_markup():
     content = read('app/templates/alertmanager/instance_detail.html')
     assert 'Bindings & Consumers' in content
-    assert "x-on:popstate.window=\"syncTabFromLocation()\"" in content
+    assert "x-data=\"integrationWorkspaceTabs(" in content
+    assert "x-on:popstate.window=\"syncTab()\"" in content
+    assert 'integration_workspace_tabs.js' in read('app/templates/layouts/app.html')
     assert "scrollIntoView({ behavior: 'smooth', block: 'start' })); } } }" not in content
 
 
-def test_alertmanager_configuration_uses_connection_contract_and_decision_panel():
+def test_alertmanager_configuration_uses_horizontal_shared_decision_and_full_width_form():
     content = read('app/templates/alertmanager/partials/_detail_configuration.html')
-    assert 'Alertmanager Connection Contract' in content
+    shared = read('app/templates/integrations/components/_configuration_decision.html')
+    assert 'configuration_decision.render(' in content
+    assert 'Alertmanager Configuration Decision' in content
     assert 'Alertmanager API v2' in content
-    assert 'Configuration Decision' in content
-    assert 'Controlled Flow' in content
-    assert 'h-10 w-full' in content
+    assert 'Controlled Flow' in shared
+    assert 'data-kaori-configuration-decision' in shared
+    assert 'xl:sticky' not in content
+    assert 'grid-cols-[minmax(0,1fr)_25rem]' not in content
 
 
 def test_alertmanager_validation_uses_kubernetes_style_capability_readiness_and_registry():

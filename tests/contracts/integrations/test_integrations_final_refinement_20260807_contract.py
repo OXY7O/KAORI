@@ -56,25 +56,26 @@ def test_integration_scope_pagination_uses_title_case_item_label() -> None:
 
 def test_prometheus_validation_keeps_compact_contract_and_modal_detail() -> None:
     source = read("app/templates/prometheus/partials/_detail_validation_content.html")
+    registry = read("app/templates/prometheus/partials/_capability_registry.html")
 
-    assert 'import "integrations/components/_record_detail_modal.html" as record_detail_modal' in source
+    assert 'import "integrations/components/_record_detail_modal.html" as record_detail_modal' in registry
     assert "Prometheus Validation & PromQL" in source
-    assert "data-kaori-dialog-open" in source
-    assert "data-kaori-prometheus-validation-modal" in source
-    assert "table_label.metadata_label(row.category)" in source
-    assert "row.source_owner" in source
-    assert "Full PromQL Query" in source
+    assert "record_actions.view_more(" in registry
+    assert "provider_capability_detail.content(" in registry
+    assert "provider_capability_detail.content(" in registry
+    assert "Runnable PromQL Query" in registry
     assert "Hide Details" not in source
     assert 'x-show="open"' not in source
 
 
 def test_alertmanager_capability_matrix_uses_modal_detail() -> None:
     source = read("app/templates/alertmanager/partials/_detail_validation_content.html")
+    registry = read("app/templates/alertmanager/partials/_capability_registry.html")
 
-    assert 'import "integrations/components/_record_detail_modal.html" as record_detail_modal' in source
+    assert 'import "integrations/components/_record_detail_modal.html" as record_detail_modal' in registry
     assert "Alertmanager Validation & Capability Matrix" in source
-    assert "data-kaori-dialog-open" in source
-    assert "data-kaori-alertmanager-validation-modal" in source
-    assert "Full API Request" in source
+    assert "record_actions.view_more(" in registry
+    assert "provider_capability_detail.content(" in registry
+    assert "Runnable API Request" in registry
     assert "Hide Details" not in source
     assert 'x-show="open"' not in source

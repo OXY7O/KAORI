@@ -8,12 +8,12 @@ DETAIL = ROOT / 'app/templates/integrations/components/_provider_capability_deta
 ACTIONS = ROOT / 'app/templates/integrations/components/_record_actions.html'
 
 
-def test_provider_view_more_action_matches_kubernetes_capability_action_geometry():
+def test_provider_view_more_action_uses_shared_kaori_table_action():
     action = ACTIONS.read_text()
-    kubernetes = KUBERNETES.read_text()
-    assert 'panel-top-open' in action
-    assert 'inline-flex h-9 items-center justify-center gap-2 rounded-lg' in action
-    assert 'inline-flex h-9 items-center justify-center gap-2 rounded-lg' in kubernetes
+    assert '{% import "components/table.html" as table_ui %}' in action
+    assert '{{ table_ui.action_classes() }}' in action
+    assert 'data-lucide="chevron-right"' in action
+    assert 'panel-top-open' not in action
     assert 'record_actions.view_more(' in PROMETHEUS.read_text()
     assert 'record_actions.view_more(' in ALERTMANAGER.read_text()
 

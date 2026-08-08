@@ -35,7 +35,7 @@
 ] %}
 
 <section id="alertmanager-runtime-panel"
-         class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm font-sans"
+         class="relative {{ integration_ui.section_shell_classes() }} font-sans"
          data-kaori-alertmanager-runtime-v3
          data-kaori-provider-runtime-kubernetes-pattern
          {% if runtime_refresh_job and runtime_refresh_job.is_active %}hx-get="{{ url_for('alertmanager.runtime_refresh_status', instance_id=instance.id, task_id=runtime_refresh_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML"{% endif %}>
