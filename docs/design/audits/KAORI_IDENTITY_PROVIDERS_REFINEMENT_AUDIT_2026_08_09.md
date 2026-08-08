@@ -28,3 +28,10 @@ Identity Providers remains under the Access control-plane composition while `app
 
 - Decide whether durable provider-validation evidence is required before showing historical validation posture.
 - Review provider-type mutability after real UI usage; no URL namespace cutover is required for this refinement.
+
+
+## v1.16 Directory Provisioning flow refinement
+
+- Replaced the 2x2 arrow-card Directory Provisioning diagram with the shared compact `operational_point_flow` lifecycle path.
+- The workflow is now a four-stage read path without zig-zag arrows or per-step cards: Validate Provider → Find Identity → Assign Role → Provision Account.
+- The point-flow component now chooses a stable 3/4/5-column desktop grid from the number of stages so four-stage workflows do not leave an empty fifth column.

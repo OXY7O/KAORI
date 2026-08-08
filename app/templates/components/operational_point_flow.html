@@ -1,6 +1,7 @@
 {# Compact ordered flow without cards. Each step: (icon, title, detail). #}
 {% macro render(steps, aria_label='Operational Flow') -%}
-    <ol class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5" aria-label="{{ aria_label }}">
+    {% set desktop_grid = 'xl:grid-cols-3' if steps|length == 3 else 'xl:grid-cols-4' if steps|length == 4 else 'xl:grid-cols-5' %}
+    <ol class="grid gap-3 sm:grid-cols-2 {{ desktop_grid }}" aria-label="{{ aria_label }}">
         {% for icon, title, detail in steps %}
             <li class="relative min-w-0 pl-9">
                 <span class="absolute left-0 top-0 flex h-7 w-7 items-center justify-center rounded-full border border-kaori-primary/30 bg-kaori-soft text-xs font-semibold text-kaori-primary" aria-hidden="true">{{ loop.index }}</span>
