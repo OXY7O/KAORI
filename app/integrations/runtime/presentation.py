@@ -118,6 +118,7 @@ def runtime_observation_state_view(
             'observed_at': None,
             'observed_at_display': 'Never',
             'message': 'No persisted Kubernetes runtime observation is available yet.',
+            'summary': 'No persisted Kubernetes runtime observation is available yet.',
             'latency_ms': None,
             'latency_display': 'N/A',
         }
@@ -163,6 +164,11 @@ def runtime_observation_state_view(
             observation.observed_at, empty='Not observed', include_seconds=True
         ),
         'message': observation.message or '',
+        'summary': _runtime_primary_summary(
+            provider=observation.provider,
+            message=observation.message or '',
+            diagnostics=diagnostics,
+        ),
         'latency_ms': observation.latency_ms,
         'latency_display': present_milliseconds(observation.latency_ms),
     }
@@ -283,21 +289,47 @@ def _effective_runtime_posture(health_status: str | None, readiness: str | None)
 def _diagnostic_summary(detail: str, *, label: str = 'Diagnostic') -> str:
     value = ' '.join(str(detail or '').split())
     lowered = value.lower()
+    label_lower = str(label or '').lower()
+    subject = 'Kubernetes API' if 'kubernetes' in label_lower else 'Provider'
     if not value:
         return f'{label} evidence was not recorded.'
     if 'could not resolve' in lowered or 'name or service not known' in lowered or 'temporary failure in name resolution' in lowered:
-        return 'Provider hostname could not be resolved.'
+        return f'{subject} hostname could not be resolved.'
     if 'connection refused' in lowered:
-        return 'Provider connection was refused.'
+        return f'{subject} connection was refused.'
     if 'timed out' in lowered or 'timeout' in lowered:
-        return 'Provider request timed out.'
+        return f'{subject} request timed out.'
     if 'x509' in lowered or 'certificate verify failed' in lowered or 'tls certificate' in lowered:
-        return 'Provider TLS certificate validation failed.'
+        return f'{subject} TLS certificate validation failed.'
     if len(value) <= 140:
         return value
     clipped = value[:137].rsplit(' ', 1)[0].rstrip(' ,;:.')
     return f'{clipped}…'
 
+
+def _runtime_primary_summary(
+    *,
+    provider: str,
+    message: str,
+    diagnostics: list[dict[str, object]],
+) -> str:
+    """Return one concise current finding without duplicating diagnostic detail."""
+    priority = {'failed': 0, 'warning': 1, 'pending': 2, 'unknown': 3}
+    candidates = sorted(
+        diagnostics,
+        key=lambda item: priority.get(str(item.get('status') or '').lower(), 9),
+    )
+    for item in candidates:
+        if str(item.get('status') or '').lower() in priority:
+            summary = str(item.get('summary') or '').strip()
+            if summary:
+                if provider == 'kubernetes' and summary.startswith('Provider '):
+                    return 'Kubernetes API ' + summary[len('Provider '):]
+                return summary
+    if message:
+        label = 'Kubernetes API' if provider == 'kubernetes' else 'Runtime'
+        return _diagnostic_summary(message, label=label)
+    return 'No current runtime issue was recorded.'
 
 def _message_repeats_diagnostic(message: str, diagnostics: list[dict[str, object]]) -> bool:
     normalized = ' '.join(str(message or '').split()).strip().lower()

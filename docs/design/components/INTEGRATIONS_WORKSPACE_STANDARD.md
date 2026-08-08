@@ -391,3 +391,6 @@ The provider decision shell is owned by `integrations/components/_runtime_decisi
 Prometheus and Alertmanager capability registries use a shared `View More` action that mirrors the Kubernetes Capability Registry geometry and `panel-top-open` affordance. Provider capability modals must mirror the Kubernetes capability-evidence information architecture rather than invent provider-specific card stacks: **Capability Contract → Validation Evidence / Operational Impact → Recommended Action → Technical Verification → Evidence Boundary**. Provider-specific query/request syntax belongs only in Technical Verification.
 - Shared Integration `View More` actions must preserve the optional `role` keyword so Runtime Observations, Capability Registry, Prometheus, and Alertmanager can share one presentation macro without breaking semantic data markers.
 
+
+- `Bindings & Consumers` tab badges count registered binding records, not only operational bindings. Source disconnects, failed runtime health, or failed binding validation must change binding status inside the workspace, not erase the registered-binding count.
+- Kubernetes Runtime Decision `Primary Finding` must always resolve to one concise persisted-observation summary when attention factors exist; it must never render an empty finding because a presentation key is missing.
