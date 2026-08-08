@@ -109,5 +109,5 @@ def test_welcome_catalog_matches_current_primary_navigation_domains() -> None:
         assert f"'title': '{title}'" in shortcuts
 
     assert "'title': 'Kubernetes Cluster'" not in shortcuts
-    assert "('jobs.view', 'jobs.executions')" in shortcuts
-    assert "('jobs.configure', 'jobs.configuration')" in shortcuts
+    assert "('jobs.view', 'platform_operations.overview.index')" in shortcuts
+    assert "('jobs.configure', 'platform_operations.overview.index')" in shortcuts

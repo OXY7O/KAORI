@@ -113,10 +113,10 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'scope': 'Platform',
         'group': 'operations',
         'targets': (
-            ('jobs.view', 'jobs.executions'),
-            ('jobs.configure', 'jobs.configuration'),
-            ('platform_operations.view_data_lifecycle', 'platform_operations.data_lifecycle.index'),
-            ('kubernetes_secrets.manage_reveal', 'platform_operations.kubernetes.index'),
+            ('jobs.view', 'platform_operations.overview.index'),
+            ('jobs.configure', 'platform_operations.overview.index'),
+            ('platform_operations.view_data_lifecycle', 'platform_operations.overview.index'),
+            ('kubernetes_secrets.manage_reveal', 'platform_operations.overview.index'),
         ),
     },
     {

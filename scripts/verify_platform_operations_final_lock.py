@@ -17,6 +17,8 @@ LOCK_V1_6_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_6.md'
 LOCK_V1_7_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_7.md'
 LOCK_V1_8_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_8.md'
 LOCK_V1_9_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_9.md'
+LOCK_V2_0_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V2_0.md'
+OVERVIEW_LOCK_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_OVERVIEW_LOCK_V1.md'
 DATA_LIFECYCLE_LOCK_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_LOCK_V1.md'
 DATA_LIFECYCLE_LOCK_V1_1_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_LOCK_V1_1.md'
 AUDIT_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_AUDIT_2026_08_08.md'
@@ -29,6 +31,8 @@ AUDIT_V1_6_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK
 AUDIT_V1_7_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_7_AUDIT_2026_08_08.md'
 AUDIT_V1_8_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_8_AUDIT_2026_08_08.md'
 AUDIT_V1_9_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_9_AUDIT_2026_08_08.md'
+AUDIT_V2_0_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V2_0_AUDIT_2026_08_08.md'
+OVERVIEW_AUDIT_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_OVERVIEW_FINAL_LOCK_AUDIT_2026_08_08.md'
 DATA_LIFECYCLE_AUDIT_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_AUDIT_2026_08_08.md'
 DATA_LIFECYCLE_AUDIT_V1_1_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md'
 QUALITY_GATE = ROOT / 'scripts/quality_gate.sh'
@@ -74,7 +78,7 @@ def template_files() -> list[Path]:
 def main() -> int:
     errors: list[str] = []
 
-    for doc in (LOCK_DOC, LOCK_V1_1_DOC, LOCK_V1_2_DOC, LOCK_V1_3_DOC, LOCK_V1_4_DOC, LOCK_V1_5_DOC, LOCK_V1_6_DOC, LOCK_V1_7_DOC, LOCK_V1_8_DOC, LOCK_V1_9_DOC, DATA_LIFECYCLE_LOCK_DOC, DATA_LIFECYCLE_LOCK_V1_1_DOC, AUDIT_DOC, AUDIT_V1_1_DOC, AUDIT_V1_2_DOC, AUDIT_V1_3_DOC, AUDIT_V1_4_DOC, AUDIT_V1_5_DOC, AUDIT_V1_6_DOC, AUDIT_V1_7_DOC, AUDIT_V1_8_DOC, AUDIT_V1_9_DOC, DATA_LIFECYCLE_AUDIT_DOC, DATA_LIFECYCLE_AUDIT_V1_1_DOC):
+    for doc in (LOCK_DOC, LOCK_V1_1_DOC, LOCK_V1_2_DOC, LOCK_V1_3_DOC, LOCK_V1_4_DOC, LOCK_V1_5_DOC, LOCK_V1_6_DOC, LOCK_V1_7_DOC, LOCK_V1_8_DOC, LOCK_V1_9_DOC, LOCK_V2_0_DOC, OVERVIEW_LOCK_DOC, DATA_LIFECYCLE_LOCK_DOC, DATA_LIFECYCLE_LOCK_V1_1_DOC, AUDIT_DOC, AUDIT_V1_1_DOC, AUDIT_V1_2_DOC, AUDIT_V1_3_DOC, AUDIT_V1_4_DOC, AUDIT_V1_5_DOC, AUDIT_V1_6_DOC, AUDIT_V1_7_DOC, AUDIT_V1_8_DOC, AUDIT_V1_9_DOC, AUDIT_V2_0_DOC, OVERVIEW_AUDIT_DOC, DATA_LIFECYCLE_AUDIT_DOC, DATA_LIFECYCLE_AUDIT_V1_1_DOC):
         if not doc.exists():
             errors.append(f'missing lock artifact: {doc.relative_to(ROOT).as_posix()}')
 
@@ -95,6 +99,50 @@ def main() -> int:
             errors.append(f'{relative}: visible Platform Operations labels must use Title Case')
         if TABLIST.search(source):
             errors.append(f'{relative}: page-local tablist is forbidden; use shared KAORI tabs')
+
+    overview_index = read('app/templates/platform_operations/overview/index.html')
+    overview_routes = read('app/platform_operations/overview/routes.py')
+    overview_presentation = read('app/platform_operations/overview/presentation.py')
+    platform_menu = read('app/templates/components/navigation/platform_operations_menu.html')
+    platform_init = read('app/platform_operations/__init__.py')
+    for required in (
+        'components/page_hero.html',
+        'components/operational_section_card.html',
+        'components/table_label.html',
+        'Operational Posture',
+        'Control Plane Boundaries',
+        'Overview is read-only',
+    ):
+        if required not in overview_index:
+            errors.append(f'Platform Operations Overview lock missing: {required}')
+    for forbidden in ('hx-post=', '<form', 'type="submit"', 'role="tablist"'):
+        if forbidden in overview_index:
+            errors.append(f'Platform Operations Overview must remain read-only and tab-free: {forbidden}')
+    for required in (
+        "@any_permission_required(",
+        "'jobs.view'",
+        "'platform_operations.view_data_lifecycle'",
+        "'kubernetes_secrets.manage_reveal'",
+        'build_platform_operations_overview_context(',
+    ):
+        if required not in overview_routes:
+            errors.append(f'Platform Operations Overview permission/route contract missing: {required}')
+    for required in (
+        'build_job_execution_status_context()',
+        'build_data_lifecycle_overview_summary()',
+        'build_kubernetes_administration_summary()',
+    ):
+        if required not in overview_presentation:
+            errors.append(f'Platform Operations Overview domain projection missing: {required}')
+    for forbidden in ('inspect_celery_topology', 'get_queue_readiness', 'build_storage_profile', 'preview_retention', 'list_namespace', 'read_namespace'):
+        if forbidden in overview_presentation:
+            errors.append(f'Platform Operations Overview must not perform external/heavy probes: {forbidden}')
+    if "bp.register_blueprint(overview_bp)" not in platform_init:
+        errors.append('Platform Operations Overview blueprint must own the /platform-operations/ landing route')
+    if "url_for('platform_operations.overview.index')" not in platform_menu:
+        errors.append('Platform Operations navigation must expose the Overview landing page')
+    if not (platform_menu.index('Overview') < platform_menu.index('Jobs &amp; Executions') < platform_menu.index('Data Lifecycle') < platform_menu.index('Kubernetes Administration')):
+        errors.append('Platform Operations navigation order must be Overview → Jobs & Executions → Data Lifecycle → Kubernetes Administration')
 
     k8s_index = read('app/templates/platform_operations/kubernetes/index.html')
     if 'components/framed_workspace_tabs.html' not in k8s_index or 'framed_workspace_tabs.render(' not in k8s_index:
@@ -451,11 +499,11 @@ def main() -> int:
         return 1
 
     print(
-        'KAORI Platform Operations Final Lock v1.9 passed: Kubernetes Administration and Jobs & Executions '
+        'KAORI Platform Operations Final Lock v2.0 passed: Kubernetes Administration and Jobs & Executions '
         'use shared tabs, Title Case, bounded execution attention, expandable execution evidence, worker readiness, '
         'activity-center background feedback, lean Job Configuration rendering, clear configuration surfaces, '
         'tri-state Secret Reveal live evidence, snapshot-backed namespace filtering, explicit credential readiness, '
-        'HTMX-owned registry controls, shared Secret Reveal policy authority, neutral-first protected-reveal dark surfaces, '
+        'read-only permission-scoped Platform Operations Overview, shared domain posture projections, HTMX-owned registry controls, shared Secret Reveal policy authority, neutral-first protected-reveal dark surfaces, '
         'Title Case reveal pagination with Rows labels, immediate HTMX mutation feedback, configured-only live namespace verification, explicit global kill-switch diagnostics with compact activation tips, natural-height Secret Reveal side panels, protected Secret Reveal guardrails, Platform Operations-owned Data Lifecycle routing/RBAC/shared tabs/archive evidence, canonical Jobs execution boundaries, and permanent legacy cleanup.'
     )
     return 0

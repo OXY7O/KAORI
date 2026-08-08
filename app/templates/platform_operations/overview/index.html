@@ -1,0 +1,121 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/operational_section_card.html" as operational_section %}
+{% import "components/section_link_button.html" as section_link_button %}
+{% block title %}Platform Operations · KAORI{% endblock %}
+{% block dashboard_content %}
+    <div class="space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('workflow', 'Platform Operations', 'panels-top-left') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Overview</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Operate KAORI's shared execution, lifecycle, and protected administration control planes from one read-only posture view.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('blocks', platform_overview.workspace_count ~ ' Available Workspaces') }}
+                            {{ page_hero.meta_label('triangle-alert', platform_overview.attention_workspace_count ~ ' Requiring Review') }}
+                            {{ page_hero.meta_label('activity', platform_overview.active_workspace_count ~ ' Active') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}" aria-label="Platform Operations posture">
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Operational Control Plane</p>
+                                <h2 class="{{ page_hero.context_panel_title_classes() }}">Cross-Domain Posture</h2>
+                            </div>
+                            {{ page_hero.context_status_badge(platform_overview.overall_status_label, platform_overview.overall_status_tone) }}
+                        </div>
+                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                            {{ page_hero.context_metric('blocks', 'Workspaces', platform_overview.workspace_count, 'Visible under your permissions') }}
+                            {{ page_hero.context_metric('triangle-alert', 'Review', platform_overview.attention_workspace_count, 'Workspaces needing attention') }}
+                        </div>
+                        {{ page_hero.context_info('shield-check', 'Overview is read-only; each domain remains authoritative for its own mutations and evidence.') }}
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        {% call operational_section.render(
+            'Operational Posture',
+            'Current control-plane state across the Platform Operations workspaces available to you.',
+            'gauge',
+            header_badge=table_label.status_indicator_label(platform_overview.overall_status_label, platform_overview.overall_status_tone),
+            body_classes='p-0'
+        ) %}
+            <div class="grid gap-px bg-outline-subtle lg:grid-cols-2 2xl:grid-cols-3">
+                {% for workspace in platform_overview.workspaces %}
+                    <article class="flex min-h-[19rem] flex-col bg-surface-card p-5 sm:p-6">
+                        <div class="flex items-start justify-between gap-4">
+                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary dark:text-kaori-accent" aria-hidden="true">
+                                <i data-lucide="{{ workspace.icon }}" class="h-5 w-5"></i>
+                            </span>
+                            {{ table_label.status_indicator_label(workspace.status_label, workspace.status_tone) }}
+                        </div>
+                        <h3 class="mt-4 text-base font-semibold text-content-primary">{{ workspace.label }}</h3>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">{{ workspace.description }}</p>
+                        <dl class="mt-5 grid grid-cols-3 gap-2">
+                            {% for icon, label, value in workspace.metrics %}
+                                <div class="min-w-0 rounded-lg border border-outline-default bg-surface-subtle p-3">
+                                    <dt class="flex min-w-0 items-center gap-1.5 text-xs font-semibold leading-5 text-content-muted">
+                                        <i data-lucide="{{ icon }}" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"></i>
+                                        <span class="truncate" title="{{ label }}">{{ label }}</span>
+                                    </dt>
+                                    <dd class="mt-1.5 text-base font-semibold leading-6 text-content-primary">{{ value }}</dd>
+                                </div>
+                            {% endfor %}
+                        </dl>
+                        <div class="mt-auto pt-5">
+                            {{ section_link_button.render(url_for(workspace.action_endpoint), workspace.action_label, icon='arrow-right') }}
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% endcall %}
+
+        {% call operational_section.render(
+            'Control Plane Boundaries',
+            'Platform Operations composes shared controls without collapsing domain ownership or duplicating runtime state.',
+            'waypoints',
+            body_classes='p-5 sm:p-6'
+        ) %}
+            <div class="grid gap-4 md:grid-cols-3">
+                <article class="rounded-xl border border-outline-default bg-surface-card p-4">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent" aria-hidden="true">
+                            <i data-lucide="list-checks" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h3 class="text-sm font-semibold text-content-primary">Execution Evidence</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Jobs &amp; Executions owns queue state, retries, cancellation, results, and worker evidence.</p>
+                        </div>
+                    </div>
+                </article>
+                <article class="rounded-xl border border-outline-default bg-surface-card p-4">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent" aria-hidden="true">
+                            <i data-lucide="archive-restore" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h3 class="text-sm font-semibold text-content-primary">Lifecycle Governance</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Data Lifecycle owns retention intent, verified archive evidence, and cleanup safety boundaries.</p>
+                        </div>
+                    </div>
+                </article>
+                <article class="rounded-xl border border-outline-default bg-surface-card p-4">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent" aria-hidden="true">
+                            <i data-lucide="server-cog" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h3 class="text-sm font-semibold text-content-primary">Protected Administration</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Kubernetes Administration owns setup and policy boundaries; live Secret values stay in Secret Management.</p>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        {% endcall %}
+    </div>
+{% endblock dashboard_content %}
