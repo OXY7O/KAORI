@@ -357,3 +357,31 @@ Prometheus `PromQL Capability Registry` and Alertmanager `Alert Management Capab
 - Every registry request targets that same indicator with `hx-indicator`; synthetic Alpine timers or page-local loading state are prohibited.
 - Server-side filtering and pagination use `app.integrations.capability_registry.build_capability_registry_view` and the canonical `(5, 10, 25, 50)` pagination contract.
 - Registry content swaps with `outerHTML`, keeping filters, table, pagination, loading state, and current-page detail modals in one reusable partial boundary.
+
+## Provider Capability Matrix Alignment
+
+Prometheus and Alertmanager validation workspaces follow the Kubernetes `Compatibility & Capability Matrix` composition:
+
+- one validation header with the canonical shared loading bar;
+- one horizontal provider capability-readiness surface before the registry;
+- coverage progress and three compact provider-specific evidence metrics;
+- an integrated operational-gate / evidence-boundary / next-action strip;
+- one full-width server-backed capability registry below the summary;
+- no persistent `Validation Decision` side rail or duplicate decision card;
+- capability detail remains behind the canonical `View More` modal boundary.
+
+The provider summary is owned by `integrations/components/_capability_readiness.html` so Prometheus and Alertmanager cannot drift independently.
+
+## Provider Runtime Alignment
+
+Prometheus and Alertmanager `Runtime Health & Diagnostics` use the Kubernetes runtime information architecture:
+
+- one full-width `Runtime Decision` surface;
+- Runtime Posture, Current Runtime Gate, Validation Readiness, and Observation Context as peer facts;
+- one compact `Operational Response` containing Primary Finding, Next Operational Action, and Evidence Handoff;
+- one full-width `Runtime Evidence` surface for provider contract context and concise diagnostic summaries;
+- no sticky/right-side Runtime Decision rail;
+- long diagnostic detail and remediation belong to `Recent Runtime Observations -> View More`;
+- the runtime observation modal must suppress a top-level observation message when it repeats a diagnostic detail already shown in `Diagnostic Review`.
+
+The provider decision shell is owned by `integrations/components/_runtime_decision.html`. Provider-specific runtime templates supply only context values and evidence rows.

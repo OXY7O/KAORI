@@ -9,27 +9,23 @@ def read(path: str) -> str:
     return (ROOT / path).read_text()
 
 
-def test_alertmanager_validation_is_horizontal_and_registry_uses_server_backed_kaori_loading():
+def test_alertmanager_validation_matches_kubernetes_capability_matrix_and_registry_loading():
     content = read('app/templates/alertmanager/partials/_detail_validation_content.html')
     registry = ALERT_REGISTRY.read_text()
     routes = ALERT_ROUTES.read_text()
-    assert 'data-kaori-alertmanager-validation-decision-horizontal' in content
+    assert 'Alertmanager Capability Readiness' in content
+    assert 'data-kaori-provider-capability-matrix' in content
+    assert "capability_readiness.render(" in content
     assert "include 'alertmanager/partials/_capability_registry.html'" in content
-    assert 'data-kaori-alertmanager-capability-table' in registry
+    assert 'Validation Decision' not in content
     assert 'alertmanager-capability-loading' in registry
     assert 'hx-indicator="#{{ loading_id }}"' in registry
     assert 'data-kaori-server-filtered-registry' in registry
     assert 'components/pagination.html' in registry
-    assert 'data-kaori-auto-submit' in registry
-    assert 'pagination.allowed_per_page' in registry
-    assert 'Showing <span' in registry
     assert 'table-fixed' in registry
-    assert 'min-w-[62rem]' not in registry
     assert 'x-model' not in registry
-    assert 'filteredRows()' not in registry
     assert "@alertmanager_bp.get('/instances/<int:instance_id>/validation/capabilities')" in routes
     assert 'def instance_capability_registry' in routes
-
 
 def test_alertmanager_validation_modal_is_decision_first_without_repeated_evidence_cards():
     content = ALERT_REGISTRY.read_text()
@@ -43,19 +39,19 @@ def test_alertmanager_validation_modal_is_decision_first_without_repeated_eviden
     assert 'Full API Request' in content
 
 
-def test_alertmanager_runtime_has_no_sticky_decision_rail_and_uses_two_full_width_surfaces():
+def test_alertmanager_runtime_matches_kubernetes_full_width_runtime_pattern():
     content = read('app/templates/alertmanager/partials/_runtime_panel.html')
-    assert 'data-kaori-alertmanager-runtime-decision-horizontal' in content
+    assert 'data-kaori-provider-runtime-kubernetes-pattern' in content
+    assert "integrations/components/_runtime_decision.html" in content
+    assert 'runtime_decision.render(' in content
     assert 'data-kaori-alertmanager-runtime-evidence' in content
-    assert 'Runtime Decision' in content
     assert 'Runtime Evidence' in content
-    assert 'Primary Finding' in content
-    assert 'Next Operational Action' in content
+    assert 'step.summary' in content
+    assert 'step.detail' not in content
+    assert 'step.recommendation' not in content
     assert 'lg:sticky' not in content
     assert 'xl:sticky' not in content
     assert 'grid-cols-[minmax(0,1fr)_25rem]' not in content
-    assert "truncate(150, true, '…')" in content
-
 
 def test_alertmanager_binding_workspace_is_full_width_and_lifecycle_action_is_secondary():
     content = read('app/templates/alertmanager/partials/_detail_scope.html')

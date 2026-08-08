@@ -7,22 +7,23 @@ def read(path: str) -> str:
     return (ROOT / path).read_text()
 
 
-def test_prometheus_runtime_uses_decision_layout_and_filtered_history() -> None:
+def test_prometheus_runtime_matches_kubernetes_layout_and_filtered_history() -> None:
     detail = read('app/templates/prometheus/partials/_detail_runtime.html')
     runtime = read('app/templates/prometheus/partials/_runtime_panel.html')
 
     assert 'runtime_history_filters_enabled=true' in detail
     assert "runtime_history_endpoint='prometheus.instance_runtime_history'" in detail
-    assert 'data-kaori-prometheus-runtime-layout' in runtime
-    assert 'Runtime Snapshot' in runtime
-    assert 'Diagnostic Evidence' in runtime
-    assert 'Runtime Decision' in runtime
-    assert 'Evidence Ownership' in runtime
-    assert 'Endpoint Context' in runtime
-    assert 'Operational Focus' in runtime
-    assert 'Next Operational Action' in runtime
+    assert 'data-kaori-provider-runtime-kubernetes-pattern' in runtime
+    assert "integrations/components/_runtime_decision.html" in runtime
+    assert 'runtime_decision.render(' in runtime
+    assert 'Runtime Evidence' in runtime
+    assert 'data-kaori-prometheus-runtime-evidence' in runtime
+    assert 'step.summary' in runtime
+    assert 'step.detail' not in runtime
+    assert 'step.recommendation' not in runtime
+    assert 'lg:sticky' not in runtime
+    assert 'xl:sticky' not in runtime
     assert 'workspace_summary_card' not in detail
-
 
 def test_prometheus_bindings_use_kaori_table_and_native_create_dialog() -> None:
     template = read('app/templates/prometheus/partials/_detail_scope.html')
@@ -31,12 +32,6 @@ def test_prometheus_bindings_use_kaori_table_and_native_create_dialog() -> None:
     assert 'Bound Kubernetes Scopes' in template
     assert 'Effective Consumer Resolution' in template
     assert 'Binding Decision' in template
-    assert 'data-kaori-binding-decision-horizontal' in template
-    assert 'data-kaori-consumer-resolution-full-width' in template
-    assert 'data-kaori-prometheus-lifecycle-horizontal' in template
-    assert 'Delete Connection' in template
-    assert 'lg:grid-cols-[minmax(0,1fr)_22rem]' not in template
-    assert 'lg:sticky lg:top-4' not in template
     assert 'table_ui.table_classes' in template
     assert 'integration_status(row.validation_status, display=\'indicator\')' in template
     assert '<dialog id="prometheus-create-binding-dialog"' in template

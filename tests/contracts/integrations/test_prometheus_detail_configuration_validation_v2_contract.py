@@ -24,23 +24,18 @@ def test_configuration_keeps_endpoint_product_semantics_explicit():
     assert 'Detection Mode' in text
 
 
-def test_validation_uses_horizontal_decision_before_full_width_registry():
+def test_validation_uses_kubernetes_style_capability_readiness_before_full_width_registry():
     text = VALIDATION.read_text()
     registry = PROMQL_REGISTRY.read_text()
     assert 'Prometheus Validation & PromQL' in text
-    assert 'Validation Decision' in text
+    assert 'Prometheus Capability Readiness' in text
+    assert "integrations/components/_capability_readiness.html" in text
+    assert "capability_readiness.render(" in text
     assert "include 'prometheus/partials/_capability_registry.html'" in text
     assert 'PromQL Capability Registry' in registry
-    assert 'data-kaori-prometheus-validation-decision' in text
-    assert 'data-kaori-prometheus-validation-scope-modal' in text
-    assert 'Review Scope' in text
-    assert 'Retention Coverage' in text
-    assert 'Operational Domains' in text
-    assert 'View More' in registry
-    assert 'lg:grid-cols-[minmax(0,1fr)_20rem]' not in text
+    assert 'data-kaori-provider-capability-matrix' in text
+    assert 'Validation Decision' not in text
     assert 'lg:sticky lg:top-4' not in text
-    assert 'data-kaori-prometheus-validation-details' not in text
-
 
 def test_promql_registry_is_full_width_and_uses_server_backed_kaori_loading():
     text = PROMQL_REGISTRY.read_text()

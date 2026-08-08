@@ -1,42 +1,64 @@
-{% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
-{% import "components/loading_bar.html" as loading_bar %}
-{% import "components/action_button.html" as action_button %}
+{% import "components/connection_validation_header.html" as connection_validation_header %}
+{% import "integrations/components/_runtime_decision.html" as runtime_decision %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-{% set health_tone = 'ready' if runtime_state.health_status == 'healthy' else ('degraded' if runtime_state.health_status == 'degraded' else ('blocked' if runtime_state.health_status == 'unhealthy' else 'not_observed')) %}
-{% set readiness_tone = runtime_state.readiness or 'validation_required' %}
-{% set attention_factors = runtime_state.factors or [] %}
-{% set runtime_gate = 'Runtime Operational' if runtime_state.health_status == 'healthy' else ('Review Required' if runtime_state.health_status == 'degraded' else ('Runtime Blocked' if runtime_state.health_status == 'unhealthy' else 'Observation Required')) %}
-{% set primary_factor = attention_factors|first if attention_factors else none %}
+
+{% set runtime_observed = runtime_state.observed_at is not none %}
+{% set health_tone = 'ready' if runtime_observed and runtime_state.health_status == 'healthy' else ('degraded' if runtime_observed and runtime_state.health_status in ['degraded', 'warning'] else ('blocked' if runtime_observed and runtime_state.health_status in ['unhealthy', 'failed'] else 'not_observed')) %}
+{% set attention_factors = runtime_state.attention_factors or runtime_state.factors or [] %}
+{% set runtime_gate_label = 'Observation Required' if not runtime_observed else ('Runtime Healthy' if runtime_state.health_status == 'healthy' else ('Runtime Blocked' if runtime_state.health_status in ['unhealthy', 'failed'] else 'Runtime Attention Required')) %}
+{% if runtime_state.diagnostics %}
+    {% set runtime_primary_finding = runtime_state.diagnostics[0].summary %}
+{% elif runtime_state.health_summary %}
+    {% set runtime_primary_finding = runtime_state.health_summary %}
+{% elif runtime_state.message %}
+    {% set runtime_primary_finding = runtime_state.message %}
+{% else %}
+    {% set runtime_primary_finding = 'No current runtime finding requires operator attention.' %}
+{% endif %}
+{% if not runtime_observed %}
+    {% set runtime_next_action = 'Run Runtime Refresh to establish persisted Alertmanager health evidence.' %}
+{% elif runtime_state.health_status in ['unhealthy', 'failed'] %}
+    {% set runtime_next_action = 'Restore Alertmanager endpoint reachability, refresh runtime evidence, and rerun Full Validation only when API v2 or authorization contracts changed.' %}
+{% elif runtime_state.readiness != 'ready' %}
+    {% set runtime_next_action = 'Resolve Full Validation blockers before relying on governed alert consumers.' %}
+{% elif attention_factors %}
+    {% set runtime_next_action = 'Review the active runtime finding, remediate it, then refresh persisted runtime evidence.' %}
+{% else %}
+    {% set runtime_next_action = 'No immediate remediation is required. Refresh runtime evidence after endpoint or infrastructure changes.' %}
+{% endif %}
+{% set observation_rows = [
+    ('Observed', runtime_state.observed_at_display),
+    ('Latency', runtime_state.latency_display),
+    ('Diagnostics', (runtime_state.diagnostics|length) ~ ' checks')
+] %}
 
 <section id="alertmanager-runtime-panel"
-         class="relative overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm font-sans"
+         class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm font-sans"
          data-kaori-alertmanager-runtime-v3
+         data-kaori-provider-runtime-kubernetes-pattern
          {% if runtime_refresh_job and runtime_refresh_job.is_active %}hx-get="{{ url_for('alertmanager.runtime_refresh_status', instance_id=instance.id, task_id=runtime_refresh_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML"{% endif %}>
-    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div class="flex min-w-0 items-start gap-3">
-                {{ integration_ui.palette_icon('activity', 'brand', size='lg') }}
-                <div class="min-w-0">
-                    <h2 class="text-base font-semibold text-content-primary">Runtime Health &amp; Diagnostics</h2>
-                    <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Review persisted Alertmanager health, concise diagnostic evidence, endpoint context, and the next controlled action.</p>
-                </div>
-            </div>
-            <button type="button"
-                    hx-post="{{ url_for('alertmanager.refresh_runtime', instance_id=instance.id) }}"
-                    hx-target="#alertmanager-runtime-panel"
-                    hx-swap="outerHTML"
-                    hx-disabled-elt="this"
-                    hx-indicator="#alertmanager-runtime-loading"
-                    {% if runtime_refresh_job and runtime_refresh_job.is_active %}disabled{% endif %}
-                    class="{{ action_button.classes('primary') }}">
-                <i data-lucide="{{ 'loader-circle' if runtime_refresh_job and runtime_refresh_job.is_active else 'refresh-cw' }}" class="h-4 w-4{% if runtime_refresh_job and runtime_refresh_job.is_active %} animate-spin{% endif %}" aria-hidden="true"></i>
-                {{ 'Refresh Running' if runtime_refresh_job and runtime_refresh_job.is_active else 'Refresh Runtime' }}
-            </button>
-        </div>
-        {{ loading_bar.render('alertmanager-runtime-loading', active=runtime_refresh_job and runtime_refresh_job.is_active, label='Refreshing Alertmanager runtime health') }}
-    </header>
+    {% call connection_validation_header.render(
+        'Runtime Health & Diagnostics',
+        'Review persisted provider health, concise diagnostics, endpoint context, and the boundary between Runtime Refresh and Full Validation.',
+        icon='activity',
+        loading_id='alertmanager-runtime-loading',
+        loading_active=runtime_refresh_job and runtime_refresh_job.is_active,
+        loading_label='Refreshing Alertmanager runtime health'
+    ) %}
+        <button type="button"
+                hx-post="{{ url_for('alertmanager.refresh_runtime', instance_id=instance.id) }}"
+                hx-target="#alertmanager-runtime-panel"
+                hx-swap="outerHTML"
+                hx-disabled-elt="this"
+                hx-indicator="#alertmanager-runtime-loading"
+                {% if runtime_refresh_job and runtime_refresh_job.is_active %}disabled{% endif %}
+                class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-wait disabled:opacity-70">
+            <i data-lucide="{{ 'loader-circle' if runtime_refresh_job and runtime_refresh_job.is_active else 'refresh-cw' }}" class="h-4 w-4{% if runtime_refresh_job and runtime_refresh_job.is_active %} animate-spin{% endif %}" aria-hidden="true"></i>
+            {{ 'Refresh Running' if runtime_refresh_job and runtime_refresh_job.is_active else 'Refresh Runtime' }}
+        </button>
+    {% endcall %}
 
     {% if runtime_refresh_job and runtime_refresh_job.is_active %}
         <div class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-subtle px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between">
@@ -45,75 +67,81 @@
         </div>
     {% endif %}
 
-    <div class="space-y-4 p-4 sm:p-5">
-        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card" aria-labelledby="alertmanager-runtime-decision-title" data-kaori-alertmanager-runtime-decision-horizontal>
-            <header class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div class="flex min-w-0 items-start gap-3">{{ integration_ui.palette_icon('gauge', 'brand', size='sm') }}<div class="min-w-0"><h3 id="alertmanager-runtime-decision-title" class="text-sm font-semibold text-content-primary">Runtime Decision</h3><p class="mt-1 text-xs leading-5 text-content-secondary">One current decision surface for runtime posture, validation context, observation evidence, and the next action.</p></div></div>
-                    {{ integration_status(health_tone, runtime_state.health_status_label, display='text') }}
+    <div class="space-y-4 p-4 sm:p-5" data-kaori-alertmanager-runtime-layout>
+        {{ runtime_decision.render(
+            health_tone,
+            runtime_state.health_status_label if runtime_observed else 'Not Observed',
+            runtime_state.health_score_display if runtime_observed else 'N/A',
+            'Persisted Runtime Refresh evidence',
+            runtime_gate_label,
+            'Health gate only; Full Validation readiness remains independent.',
+            runtime_state.readiness,
+            runtime_state.readiness_label,
+            (runtime_state.compatibility_profile or 'Compatibility not validated') ~ ' · ' ~ runtime_state.capability_count ~ ' observed capabilities',
+            observation_rows,
+            runtime_primary_finding,
+            attention_factors|length,
+            runtime_next_action,
+            'Full technical diagnostic detail and remediation stay in Recent Runtime Observations. This workspace keeps only the current operational summary.'
+        ) }}
+
+        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                 aria-labelledby="alertmanager-runtime-evidence-title"
+                 data-kaori-alertmanager-runtime-evidence>
+            <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+                <div class="flex min-w-0 items-start gap-3">
+                    {{ integration_ui.palette_icon('stethoscope', 'brand', size='md') }}
+                    <div class="min-w-0">
+                        <h3 id="alertmanager-runtime-evidence-title" class="text-sm font-semibold text-content-primary">Runtime Evidence</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Endpoint contract context and concise persisted diagnostics share one full-width evidence surface.</p>
+                    </div>
                 </div>
+                {{ table_label.metadata_label((runtime_state.diagnostics|length) ~ ' Checks') }}
             </header>
 
-            <div class="grid divide-y divide-outline-subtle lg:grid-cols-4 lg:divide-x lg:divide-y-0">
-                <section class="px-4 py-4 sm:px-5">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Runtime Posture</p>
-                    <div class="mt-2 flex flex-wrap items-end gap-2"><p class="text-2xl font-semibold tabular-nums text-content-primary">{{ runtime_state.health_score }}/100</p>{{ integration_status(health_tone, runtime_state.health_status_label, display='indicator') }}</div>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Persisted Runtime Refresh evidence</p>
-                </section>
-                <section class="px-4 py-4 sm:px-5">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Current Runtime Gate</p>
-                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ runtime_gate }}</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Health remains independent from Full Validation eligibility.</p>
-                </section>
-                <section class="px-4 py-4 sm:px-5">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Validation Readiness</p>
-                    <div class="mt-2">{{ integration_status(readiness_tone, runtime_state.readiness_label, display='indicator') }}</div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ runtime_state.capability_profile or 'Capability profile not observed' }}</p>
-                </section>
-                <section class="px-4 py-4 sm:px-5">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Observation Context</p>
-                    <dl class="mt-2 space-y-1.5 text-xs"><div class="flex items-start justify-between gap-3"><dt class="text-content-secondary">Observed</dt><dd class="text-right font-semibold text-content-primary">{{ runtime_state.observed_at_display }}</dd></div><div class="flex items-start justify-between gap-3"><dt class="text-content-secondary">Latency</dt><dd class="text-right font-semibold text-content-primary">{{ runtime_state.latency_display }}</dd></div><div class="flex items-start justify-between gap-3"><dt class="text-content-secondary">Diagnostics</dt><dd class="text-right font-semibold text-content-primary">{{ runtime_state.diagnostics|length }} checks</dd></div></dl>
-                </section>
+            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4" data-kaori-alertmanager-endpoint-contract>
+                {% for label, value, helper in [
+                    ('Detected Version', instance.detected_version or 'Not Observed', 'Observed Alertmanager version'),
+                    ('Compatibility Profile', instance.compatibility_profile or runtime_state.compatibility_profile or 'Validation Required', 'Full Validation compatibility contract'),
+                    ('Capability Profile', instance.capability_profile or runtime_state.capability_profile or 'Validation Required', 'Validated API v2 capability profile'),
+                    ('API Contract', 'Alertmanager API v2', 'Runtime and validation provider contract')
+                ] %}
+                    <div class="bg-surface-card px-4 py-3.5 sm:px-5">
+                        <p class="text-xs font-medium text-content-muted">{{ label }}</p>
+                        <p class="mt-1 text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</p>
+                    </div>
+                {% endfor %}
             </div>
 
-            <div class="grid gap-px bg-outline-subtle lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-                <div class="bg-surface-subtle px-4 py-3.5 sm:px-5">
-                    <div class="flex items-start gap-3">{{ integration_ui.palette_icon('scan-line', 'brand', size='sm') }}<div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><p class="text-xs font-semibold text-content-primary">Primary Finding</p>{{ table_label.metadata_label(attention_factors|length ~ (' Item' if attention_factors|length == 1 else ' Items')) }}</div><p class="mt-1 text-sm leading-6 text-content-secondary">{% if primary_factor %}{{ (primary_factor.detail or primary_factor.label)|truncate(150, true, '…') }}{% elif runtime_state.health_status == 'healthy' %}No current runtime factor requires operator review.{% else %}No detailed runtime finding has been persisted yet.{% endif %}</p></div></div>
+            <div class="border-t border-outline-subtle" data-kaori-alertmanager-diagnostic-list>
+                {% for step in runtime_state.diagnostics %}
+                    {% set step_tone = 'ready' if step.status == 'success' else ('degraded' if step.status == 'warning' else ('blocked' if step.status == 'failed' else 'validation_required')) %}
+                    <article class="grid gap-3 border-b border-outline-subtle px-4 py-4 last:border-b-0 sm:px-5 lg:grid-cols-12 lg:items-center">
+                        <div class="lg:col-span-3">
+                            <p class="text-sm font-semibold text-content-primary">{{ step.label }}</p>
+                            <p class="mt-0.5 text-xs text-content-muted">{{ step.category_label }}</p>
+                        </div>
+                        <p class="text-xs leading-5 text-content-secondary [overflow-wrap:anywhere] lg:col-span-6">{{ step.summary }}</p>
+                        <p class="text-xs font-semibold text-content-secondary lg:col-span-1">{{ step.duration_display }}</p>
+                        <div class="lg:col-span-2 lg:text-right">{{ integration_status(step_tone, step.status_label, display='indicator') }}</div>
+                    </article>
+                {% else %}
+                    <div class="px-5 py-10 text-center">
+                        <p class="text-sm font-semibold text-content-primary">No Diagnostic Evidence Yet</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Run Refresh Runtime to establish endpoint health and diagnostic evidence.</p>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <footer class="border-t border-outline-subtle bg-surface-hover px-4 py-3.5 sm:px-5">
+                <div class="flex items-start gap-3">
+                    {{ integration_ui.palette_icon('shield-check', 'brand', size='sm') }}
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold text-content-primary">Observation Boundary</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Runtime Refresh owns reachability, latency, current health, and diagnostics. Full Validation owns API v2 discovery, compatibility, routing, silence capability, and readiness.</p>
+                    </div>
                 </div>
-                <div class="bg-surface-subtle px-4 py-3.5 sm:px-5">
-                    <div class="flex items-start gap-3">{{ integration_ui.palette_icon('target', 'brand', size='sm') }}<div class="min-w-0"><p class="text-xs font-semibold text-content-primary">Next Operational Action</p><p class="mt-1 text-sm leading-6 text-content-secondary">{% if runtime_state.health_status in ['unhealthy', 'degraded'] %}Restore Alertmanager endpoint reachability or runtime health, refresh runtime evidence, and rerun Full Validation only if API compatibility or capability contracts changed.{% elif runtime_state.health_status == 'not_observed' %}Run Refresh Runtime to establish the first persisted health and diagnostic observation.{% else %}No immediate corrective action is required. Refresh runtime evidence after endpoint or infrastructure changes.{% endif %}</p></div></div>
-                </div>
-            </div>
-        </section>
-
-        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card" aria-labelledby="alertmanager-runtime-evidence-title" data-kaori-alertmanager-runtime-evidence>
-            <header class="border-b border-outline-subtle px-5 py-4">
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div class="flex items-start gap-3">{{ integration_ui.palette_icon('stethoscope', 'brand', size='md') }}<div><h3 id="alertmanager-runtime-evidence-title" class="text-sm font-semibold text-content-primary">Runtime Evidence</h3><p class="mt-1 text-xs leading-5 text-content-secondary">Endpoint context and concise diagnostics from the latest persisted observation. Full technical detail remains in Recent Runtime Observations.</p></div></div>{{ table_label.metadata_label(runtime_state.diagnostics|length ~ ' Checks') }}</div>
-            </header>
-
-            <div class="grid divide-y divide-outline-subtle md:grid-cols-3 md:divide-x md:divide-y-0">
-                <div class="px-5 py-4"><p class="text-xs font-semibold text-content-muted">Detected Version</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ instance.detected_version or 'Not Observed' }}</p></div>
-                <div class="px-5 py-4"><p class="text-xs font-semibold text-content-muted">Compatibility Profile</p><p class="mt-1 text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ instance.compatibility_profile or 'Validation Required' }}</p></div>
-                <div class="px-5 py-4"><p class="text-xs font-semibold text-content-muted">Capability Profile</p><p class="mt-1 text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ instance.capability_profile or 'Validation Required' }}</p></div>
-            </div>
-
-            <div class="overflow-hidden border-t border-outline-subtle">
-                <table class="{{ table_ui.table_classes() }} table-fixed">
-                    <colgroup><col class="w-[24%]"><col class="w-[50%]"><col class="w-[12%]"><col class="w-[14%]"></colgroup>
-                    <thead class="{{ table_ui.head_classes() }}"><tr><th class="px-4 py-3 text-left">Check</th><th class="px-3 py-3 text-left">Current Finding</th><th class="px-3 py-3 text-left">Duration</th><th class="px-3 py-3 text-right">Status</th></tr></thead>
-                    <tbody class="{{ table_ui.body_classes() }}">
-                        {% for step in runtime_state.diagnostics %}
-                            {% set step_tone = 'ready' if step.status == 'success' else ('blocked' if step.status == 'failed' else 'validation_required') %}
-                            <tr class="{{ table_ui.row_classes() }}"><td class="px-4 py-3 align-middle"><div class="flex min-w-0 items-start gap-3">{{ integration_ui.palette_icon('check-check', 'brand', size='sm') }}<div class="min-w-0"><p class="text-sm font-semibold text-content-primary">{{ step.label }}</p><p class="mt-0.5 text-xs text-content-muted">{{ step.category_label }}</p></div></div></td><td class="px-3 py-3 align-middle"><p class="text-sm leading-6 text-content-secondary">{{ (step.detail or 'No evidence recorded.')|truncate(150, true, '…') }}</p></td><td class="px-3 py-3 align-middle whitespace-nowrap text-xs font-semibold text-content-secondary">{{ step.duration_ms ~ ' ms' if step.duration_ms is not none else '—' }}</td><td class="px-3 py-3 align-middle text-right whitespace-nowrap">{{ integration_status(step_tone, 'Success' if step.status == 'success' else ('Failed' if step.status == 'failed' else 'Pending'), display='indicator') }}</td></tr>
-                        {% else %}
-                            <tr><td colspan="4" class="px-5 py-10 text-center"><p class="text-sm font-semibold text-content-primary">No Diagnostic Evidence Yet</p><p class="mt-1 text-xs leading-5 text-content-secondary">Run Refresh Runtime to establish endpoint health and diagnostic evidence.</p></td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <footer class="border-t border-outline-subtle bg-surface-subtle px-5 py-3.5">
-                <div class="flex items-start gap-3">{{ integration_ui.palette_icon('shield-check', 'brand', size='sm') }}<div class="min-w-0"><p class="text-xs font-semibold text-content-primary">Evidence Boundary</p><p class="mt-1 text-xs leading-5 text-content-secondary">Runtime Refresh owns reachability, latency, health score, and diagnostics. Full Validation owns API v2 discovery, compatibility, capability contracts, and readiness.</p></div></div>
             </footer>
         </section>
     </div>

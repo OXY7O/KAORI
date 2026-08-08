@@ -23,23 +23,26 @@ def test_alertmanager_configuration_uses_connection_contract_and_decision_panel(
     assert 'h-10 w-full' in content
 
 
-def test_alertmanager_validation_uses_capability_registry_and_decision_panel():
+def test_alertmanager_validation_uses_kubernetes_style_capability_readiness_and_registry():
     content = read('app/templates/alertmanager/partials/_detail_validation_content.html')
     registry = read('app/templates/alertmanager/partials/_capability_registry.html')
-    assert 'Validation Decision' in content
-    assert 'Operational Domains' in content
+    assert 'Alertmanager Capability Readiness' in content
+    assert "integrations/components/_capability_readiness.html" in content
+    assert 'data-kaori-provider-capability-matrix' in content
+    assert 'Validation Decision' not in content
     assert 'Alert Management Capability Registry' in registry
     assert 'View More' in registry
     assert 'table_ui.table_classes' in registry
 
 
-def test_alertmanager_runtime_uses_horizontal_runtime_decision_and_history_filters():
+def test_alertmanager_runtime_uses_kubernetes_layout_and_history_filters():
     panel = read('app/templates/alertmanager/partials/_runtime_panel.html')
     history = read('app/templates/alertmanager/partials/_runtime_history.html')
-    assert 'Runtime Decision' in panel
+    assert "integrations/components/_runtime_decision.html" in panel
+    assert 'runtime_decision.render(' in panel
     assert 'Runtime Evidence' in panel
-    assert 'Primary Finding' in panel
-    assert 'Evidence Boundary' in panel
+    assert 'data-kaori-alertmanager-runtime-evidence' in panel
+    assert 'step.summary' in panel
     assert 'lg:sticky' not in panel
     assert 'xl:sticky' not in panel
     assert 'runtime_history_filters_enabled = true' in history

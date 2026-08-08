@@ -1,8 +1,6 @@
-{% import "components/progress_bar.html" as progress_bar %}
-{% import "components/table_label.html" as table_label %}
 {% import "components/action_button.html" as action_button %}
-{% import "integrations/components/_workspace.html" as integration_ui %}
-{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% import "components/connection_validation_header.html" as connection_validation_header %}
+{% import "integrations/components/_capability_readiness.html" as capability_readiness %}
 
 {% set readiness = instance.readiness_status or 'validation_required' %}
 {% set validated_count = capability_summary.observed %}
@@ -17,102 +15,78 @@
         {% set domain_summary.attention = domain_summary.attention + 1 %}
     {% endif %}
 {% endfor %}
+{% set capability_metrics = [
+    {'icon': 'list-checks', 'tone': 'normal', 'label': 'Validated Capabilities', 'value': validated_count, 'description': 'Usable API v2, routing, silence, and consumer evidence.'},
+    {'icon': 'shield-x', 'tone': 'critical' if capability_summary.required_missing else 'normal', 'label': 'Required Blocks', 'value': capability_summary.required_missing, 'description': 'Required alert-management contracts blocked by missing evidence.'},
+    {'icon': 'network', 'tone': 'normal' if domain_summary.attention == 0 else 'warning', 'label': 'Operational Domains', 'value': domain_summary.ready ~ '/' ~ (module_readiness_rows|length), 'description': 'Consumer domains currently passing Alertmanager validation.'}
+] %}
+{% set capability_metadata = [
+    'Profile · ' ~ (instance.compatibility_profile or 'Validation Required'),
+    capability_summary.optional_missing ~ ' optional gap' ~ ('' if capability_summary.optional_missing == 1 else 's')
+] %}
+{% if capability_summary.required_missing %}
+    {% set next_action = 'Resolve required API v2 or authorization gaps, then rerun Full Validation before relying on governed alert consumers.' %}
+{% elif capability_summary.optional_missing %}
+    {% set next_action = 'Core alert consumers are eligible. Review optional gaps only where deeper routing or enrichment evidence is required.' %}
+{% else %}
+    {% set next_action = 'Capability evidence is complete. Refresh runtime health and confirm effective Alertmanager resolution for governed scopes.' %}
+{% endif %}
 
 <section id="alertmanager-validation-workspace"
          class="relative overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm font-sans"
-         data-kaori-alertmanager-validation-v3
-    <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div class="flex min-w-0 items-start gap-3">
-                {{ integration_ui.palette_icon('scan-search', 'brand', size='lg') }}
-                <div class="min-w-0">
-                    <h2 class="text-base font-semibold text-content-primary">Alertmanager Validation &amp; Capability Matrix</h2>
-                    <p class="mt-0.5 max-w-3xl text-xs leading-5 text-content-muted">Rebuild API v2 capability, compatibility, routing, silence, and downstream eligibility evidence.</p>
-                </div>
-            </div>
-            <form method="post"
-                  action="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
-                  hx-post="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
-                  hx-target="#alertmanager-validation-workspace"
-                  hx-swap="outerHTML"
-                  hx-disabled-elt="button"
-                  hx-indicator="#alertmanager-capability-loading">
-                {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                <button type="submit" {% if validation_job and validation_job.is_active %}disabled{% endif %} class="{{ action_button.classes('primary') }}">
-                    <i data-lucide="{{ 'loader-circle' if validation_job and validation_job.is_active else 'scan-line' }}" class="h-4 w-4{% if validation_job and validation_job.is_active %} animate-spin{% endif %}" aria-hidden="true"></i>
-                    {{ 'Validation Running' if validation_job and validation_job.is_active else 'Run Full Validation' }}
-                </button>
-            </form>
-        </div>
-    </header>
+         data-kaori-alertmanager-validation-v4
+         data-kaori-provider-capability-matrix
+         {% if validation_job and validation_job.is_active %}hx-get="{{ url_for('alertmanager.instance_validation_status', instance_id=instance.id, task_id=validation_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML"{% endif %}>
+    {% call connection_validation_header.render(
+        'Alertmanager Validation & Capability Matrix',
+        'Validate API v2 compatibility, routing, silence, and downstream consumer eligibility using the same decision-first matrix pattern as Kubernetes.',
+        icon='scan-search',
+        loading_id='alertmanager-validation-loading',
+        loading_active=validation_job and validation_job.is_active,
+        loading_label='Running Alertmanager full validation'
+    ) %}
+        <form method="post"
+              action="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
+              hx-post="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
+              hx-target="#alertmanager-validation-workspace"
+              hx-swap="outerHTML"
+              hx-disabled-elt="button"
+              hx-indicator="#alertmanager-validation-loading">
+            {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+            <button type="submit" {% if validation_job and validation_job.is_active %}disabled{% endif %} class="{{ action_button.classes('primary') }}">
+                <i data-lucide="{{ 'loader-circle' if validation_job and validation_job.is_active else 'scan-line' }}" class="h-4 w-4{% if validation_job and validation_job.is_active %} animate-spin{% endif %}" aria-hidden="true"></i>
+                {{ 'Validation Running' if validation_job and validation_job.is_active else 'Run Full Validation' }}
+            </button>
+        </form>
+    {% endcall %}
 
     {% if validation_job and validation_job.is_active %}
         <div class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-subtle px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between">
-            <span class="inline-flex items-center gap-2 font-semibold text-content-primary"><i data-lucide="loader-circle" class="h-3.5 w-3.5 animate-spin text-kaori-primary dark:text-kaori-accent" aria-hidden="true"></i>{{ validation_job.title or 'Alertmanager validation running' }}</span>
+            <span class="inline-flex items-center gap-2 font-semibold text-content-primary"><i data-lucide="loader-circle" class="h-3.5 w-3.5 animate-spin text-kaori-primary dark:text-kaori-accent" aria-hidden="true"></i>{{ validation_job.title or 'Alertmanager validation running in worker' }}</span>
             <span>Task {{ validation_job.task_id[:8] }} · {{ validation_job.state_label|title }} · {{ validation_job.elapsed_seconds }}s</span>
         </div>
     {% endif %}
 
     <div class="space-y-4 p-4 sm:p-5">
-        <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card" aria-labelledby="alertmanager-validation-decision-title" data-kaori-alertmanager-validation-decision-horizontal>
-            <header class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div class="flex min-w-0 items-start gap-3">
-                        {{ integration_ui.palette_icon('gauge', 'brand', size='sm') }}
-                        <div class="min-w-0">
-                            <h3 id="alertmanager-validation-decision-title" class="text-sm font-semibold text-content-primary">Validation Decision</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">One decision surface for capability coverage, consumer eligibility, domain posture, and the next controlled action.</p>
-                        </div>
-                    </div>
-                    {{ integration_status('ready' if required_ready else 'blocked', 'Ready' if required_ready else 'Blocked', display='text') }}
-                </div>
-            </header>
-
-            <div class="grid divide-y divide-outline-subtle lg:grid-cols-4 lg:divide-x lg:divide-y-0">
-                <section class="px-4 py-4 sm:px-5">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Capability Readiness</p>
-                    <div class="mt-2 flex items-end justify-between gap-3">
-                        <div><p class="text-lg font-semibold tabular-nums text-content-primary">{{ validated_count }} / {{ total_count }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">Validated capabilities</p></div>
-                        <p class="text-xl font-semibold tabular-nums text-content-primary">{{ readiness_percent }}%</p>
-                    </div>
-                    <div class="mt-3">{{ progress_bar.bar(readiness_percent, 'h-1.5 overflow-hidden rounded-full bg-surface-hover', 'h-full rounded-full bg-kaori-primary', 'Alertmanager capability readiness') }}</div>
-                </section>
-                <section class="px-4 py-4 sm:px-5">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Operational Gate</p>
-                    <div class="mt-3 flex items-start gap-3">
-                        {{ integration_ui.palette_icon('shield-check' if required_ready else 'shield-alert', 'normal' if required_ready else 'critical', size='sm') }}
-                        <div class="min-w-0"><p class="text-sm font-semibold text-content-primary">{{ 'Alert Consumers Eligible' if required_ready else 'Remediation Required' }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">Required API v2 contracts gate Alert Intelligence and governed silence operations.</p></div>
-                    </div>
-                </section>
-                <section class="px-4 py-4 sm:px-5">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Capability Gaps</p>
-                    <dl class="mt-3 grid grid-cols-2 gap-3">
-                        <div><dt class="text-xs text-content-secondary">Required</dt><dd class="mt-1 text-lg font-semibold tabular-nums text-content-primary">{{ capability_summary.required_missing }}</dd></div>
-                        <div><dt class="text-xs text-content-secondary">Optional</dt><dd class="mt-1 text-lg font-semibold tabular-nums text-content-primary">{{ capability_summary.optional_missing }}</dd></div>
-                    </dl>
-                </section>
-                <section class="px-4 py-4 sm:px-5">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Operational Domains</p>
-                    <dl class="mt-3 grid grid-cols-2 gap-3">
-                        <div><dt class="text-xs text-content-secondary">Ready</dt><dd class="mt-1 text-lg font-semibold tabular-nums text-content-primary">{{ domain_summary.ready }}</dd></div>
-                        <div><dt class="text-xs text-content-secondary">Attention</dt><dd class="mt-1 text-lg font-semibold tabular-nums text-content-primary">{{ domain_summary.attention }}</dd></div>
-                    </dl>
-                </section>
-            </div>
-
-            <div class="grid gap-px bg-outline-subtle lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-                <div class="bg-surface-subtle px-4 py-3.5 sm:px-5">
-                    <div class="flex items-start gap-3">{{ integration_ui.palette_icon('route', 'brand', size='sm') }}<div class="min-w-0"><p class="text-xs font-semibold text-content-primary">Evidence Boundary</p><p class="mt-1 text-xs leading-5 text-content-secondary">Full Validation owns API v2 capability and compatibility evidence. Runtime Refresh owns current endpoint health and latency.</p></div></div>
-                </div>
-                <div class="bg-surface-subtle px-4 py-3.5 sm:px-5">
-                    <div class="flex items-start gap-3">{{ integration_ui.palette_icon('target', 'brand', size='sm') }}<div class="min-w-0"><p class="text-xs font-semibold text-content-primary">Next Operational Action</p><p class="mt-1 text-xs leading-5 text-content-secondary">{% if capability_summary.required_missing %}Resolve required API or authorization gaps, then rerun Full Validation before relying on consumer resolution.{% elif capability_summary.optional_missing %}Core alert consumers are eligible. Review optional gaps only where deeper routing or enrichment evidence is required.{% else %}Capability evidence is complete. Refresh runtime health and confirm effective source resolution for governed scopes.{% endif %}</p></div></div>
-                </div>
-            </div>
-        </section>
+        {{ capability_readiness.render(
+            'Alertmanager Capability Readiness',
+            'Required API v2, routing, silence, authorization, and consumer evidence used by Alert Intelligence and governed alert operations.',
+            readiness,
+            readiness|replace('_', ' ')|title,
+            'Validated capability coverage',
+            validated_count ~ ' / ' ~ total_count,
+            readiness_percent,
+            capability_metadata,
+            capability_metrics,
+            'Alert Consumers Eligible' if required_ready else 'Remediation Required',
+            'Required API v2 contracts are usable; binding resolution remains an independent gate.' if required_ready else 'Restore required API or authorization evidence before treating this source as ready.',
+            'normal' if required_ready else 'critical',
+            'Full Validation owns API v2 capability, compatibility, routing, and silence eligibility. Runtime Refresh owns current endpoint reachability, latency, and provider health.',
+            next_action
+        ) }}
 
         {% include 'alertmanager/partials/_capability_registry.html' %}
     </div>
-
 </section>
 {% include 'components/operation_feedback_oob.html' %}
 {% if validation_scope_oob is defined and validation_scope_oob %}{% with scope_oob=true %}{% include 'alertmanager/partials/_detail_scope.html' %}{% endwith %}{% endif %}

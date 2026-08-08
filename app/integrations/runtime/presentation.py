@@ -29,7 +29,23 @@ def runtime_state_view(
         'health_status_label': present_key_label(state.health.status),
         'health_score': state.health.score,
         'health_summary': state.health.summary,
-        'diagnostics': state.diagnostics,
+        'diagnostics': [
+            {
+                'key': diagnostic.key,
+                'label': diagnostic.label,
+                'category': diagnostic.category,
+                'category_label': present_key_label(diagnostic.category or 'runtime'),
+                'status': diagnostic.status,
+                'status_label': present_key_label(diagnostic.status),
+                'detail': diagnostic.detail,
+                'summary': _diagnostic_summary(diagnostic.detail, label=diagnostic.label),
+                'duration_ms': diagnostic.duration_ms,
+                'duration_display': present_milliseconds(diagnostic.duration_ms),
+                'severity': diagnostic.severity,
+                'recommendation': diagnostic.recommendation or '',
+            }
+            for diagnostic in state.diagnostics
+        ],
         'factors': state.health.factors,
         'attention_factors': [
             {
@@ -102,7 +118,6 @@ def runtime_observation_state_view(
             'observed_at': None,
             'observed_at_display': 'Never',
             'message': 'No persisted Kubernetes runtime observation is available yet.',
-            'summary': 'No persisted runtime observation is available yet.',
             'latency_ms': None,
             'latency_display': 'N/A',
         }
@@ -148,7 +163,6 @@ def runtime_observation_state_view(
             observation.observed_at, empty='Not observed', include_seconds=True
         ),
         'message': observation.message or '',
-        'summary': _runtime_summary(observation.message or '', diagnostics, health_status),
         'latency_ms': observation.latency_ms,
         'latency_display': present_milliseconds(observation.latency_ms),
     }
@@ -214,8 +228,7 @@ def runtime_history_view(
                 'removed_capabilities': [present_key_label(value) for value in removed_capabilities],
                 'capability_changed': bool(added_capabilities or removed_capabilities),
                 'message': row.message,
-                'summary': _runtime_summary(row.message or '', diagnostics, row.health_status or 'not_observed'),
-                'standalone_message': (row.message or '') if not diagnostics else '',
+                'message_redundant': _message_repeats_diagnostic(row.message or '', diagnostics),
                 'diagnostics': diagnostics,
                 'diagnostic_count': len(diagnostics),
                 'lifecycle_context': lifecycle_context,
@@ -266,6 +279,38 @@ def _effective_runtime_posture(health_status: str | None, readiness: str | None)
         return 'ready'
     return 'validation_required'
 
+
+def _diagnostic_summary(detail: str, *, label: str = 'Diagnostic') -> str:
+    value = ' '.join(str(detail or '').split())
+    lowered = value.lower()
+    if not value:
+        return f'{label} evidence was not recorded.'
+    if 'could not resolve' in lowered or 'name or service not known' in lowered or 'temporary failure in name resolution' in lowered:
+        return 'Provider hostname could not be resolved.'
+    if 'connection refused' in lowered:
+        return 'Provider connection was refused.'
+    if 'timed out' in lowered or 'timeout' in lowered:
+        return 'Provider request timed out.'
+    if 'x509' in lowered or 'certificate verify failed' in lowered or 'tls certificate' in lowered:
+        return 'Provider TLS certificate validation failed.'
+    if len(value) <= 140:
+        return value
+    clipped = value[:137].rsplit(' ', 1)[0].rstrip(' ,;:.')
+    return f'{clipped}…'
+
+
+def _message_repeats_diagnostic(message: str, diagnostics: list[dict[str, object]]) -> bool:
+    normalized = ' '.join(str(message or '').split()).strip().lower()
+    if not normalized:
+        return False
+    for item in diagnostics:
+        detail = ' '.join(str(item.get('detail') or '').split()).strip().lower()
+        if not detail:
+            continue
+        if normalized == detail or normalized in detail or detail in normalized:
+            return True
+    return False
+
 def _diagnostic_rows(items: list[object]) -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
     for item in items:
@@ -280,7 +325,10 @@ def _diagnostic_rows(items: list[object]) -> list[dict[str, object]]:
                     'status': status,
                     'status_label': present_key_label(status),
                     'detail': str(item.get('detail') or 'No diagnostic detail was recorded.'),
-                    'summary': _concise_diagnostic_summary(str(item.get('detail') or 'No diagnostic detail was recorded.')),
+                    'summary': _diagnostic_summary(
+                        str(item.get('detail') or 'No diagnostic detail was recorded.'),
+                        label=str(item.get('label') or present_key_label(str(item.get('key') or 'Diagnostic'))),
+                    ),
                     'severity': str(item.get('severity') or 'info'),
                     'recommendation': str(item.get('recommendation') or ''),
                     'duration_ms': item.get('duration_ms'),
@@ -288,47 +336,6 @@ def _diagnostic_rows(items: list[object]) -> list[dict[str, object]]:
                 }
             )
     return rows
-
-
-def _runtime_summary(message: str, diagnostics: list[dict[str, object]], health_status: str) -> str:
-    priority = {'failed': 0, 'warning': 1, 'pending': 2, 'unknown': 3, 'success': 4}
-    candidates = sorted(
-        diagnostics,
-        key=lambda item: priority.get(str(item.get('status') or 'unknown'), 5),
-    )
-    if candidates:
-        summary = str(candidates[0].get('summary') or '').strip()
-        if summary:
-            return summary
-    if message.strip():
-        return _concise_diagnostic_summary(message)
-    if health_status in {'unhealthy', 'failed'}:
-        return 'Runtime health is blocked by the latest persisted observation.'
-    if health_status in {'degraded', 'warning'}:
-        return 'Runtime evidence requires operator review.'
-    if health_status == 'healthy':
-        return 'Runtime evidence is healthy.'
-    return 'Runtime health has not been observed yet.'
-
-
-def _concise_diagnostic_summary(detail: str, *, limit: int = 132) -> str:
-    compact = ' '.join(str(detail or '').split())
-    lowered = compact.lower()
-    if 'could not resolve' in lowered and ('hostname' in lowered or 'ip address' in lowered):
-        return 'Kubernetes API hostname could not be resolved.'
-    if 'connection refused' in lowered:
-        return 'Kubernetes API connection was refused.'
-    if 'timed out' in lowered or 'timeout' in lowered:
-        return 'Kubernetes API request timed out.'
-    if 'certificate' in lowered and ('verify' in lowered or 'x509' in lowered or 'tls' in lowered):
-        return 'Kubernetes API TLS certificate validation failed.'
-    first_sentence = compact.split('. ', 1)[0].rstrip('.')
-    if not first_sentence:
-        first_sentence = compact
-    if len(first_sentence) <= limit:
-        return first_sentence + ('.' if first_sentence and not first_sentence.endswith(('.', '!', '?')) else '')
-    shortened = first_sentence[: limit - 1].rsplit(' ', 1)[0].rstrip(' ,;:-')
-    return f'{shortened}…'
 
 
 def _kubernetes_lifecycle_context(provider: str, metadata: Mapping[str, Any] | None) -> dict[str, object] | None:
