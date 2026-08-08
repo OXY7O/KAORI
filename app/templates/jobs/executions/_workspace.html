@@ -32,7 +32,7 @@
             {% set overview_metrics = [
                 ('activity', 'Active Jobs', job_stats.active, 'Queued, running, or retrying', 'info'),
                 ('cpu', 'Running Now', job_stats.running, 'Currently owned by workers', 'violet'),
-                ('triangle-alert', 'Needs Attention', job_stats.attention, 'Retrying, failed, or partial', 'warning'),
+                ('triangle-alert', 'Needs Attention', job_stats.attention, 'Active intervention + terminal issues · 24H', 'warning'),
                 ('circle-check-big', 'Completed · 24H', job_stats.completed_24h, 'Terminal executions recorded', 'normal')
             ] %}
             {% for icon, label, value, description, tone in overview_metrics %}
@@ -87,7 +87,7 @@
                     </span>
                     <div>
                         <h2 id="execution-workspace-title" class="text-base font-semibold text-content-primary">Execution Workspace</h2>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">Monitor active work, search execution history, and compare queue demand.</p>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Monitor active work, inspect execution evidence, and compare queue demand with worker readiness.</p>
                     </div>
                 </div>
                 {{ workspace_tabs.render([('active', 'Active Work', 'activity', job_stats.active), ('registry', 'Registry', 'list-checks', job_stats.total), ('queues', 'Queues', 'network', job_stats.queues)], prefix='execution', aria_label='Execution Workspace Sections') }}

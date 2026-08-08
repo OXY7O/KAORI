@@ -47,9 +47,10 @@ def test_active_execution_progress_is_stable_and_compact() -> None:
 def test_queue_activity_uses_summary_strips_instead_of_nested_metric_cards() -> None:
     source = _read('partials/_queue_activity.html')
 
-    assert 'grid grid-cols-2 gap-3 sm:grid-cols-4' in source
+    assert 'grid grid-cols-2 gap-2 sm:grid-cols-4' in source
     assert 'Completed · 24H' in source
-    assert 'Execution records · not worker liveness' in source
+    assert 'Worker Readiness' in source
+    assert "fragment='queues'" in source
     assert 'rounded-lg border border-outline-subtle bg-surface-card p-3' not in source
 
 
@@ -75,6 +76,6 @@ def test_changed_execution_templates_parse_and_follow_source_hygiene() -> None:
 def test_htmx_fragments_remain_embedded_after_refresh() -> None:
     source = (ROOT / 'app' / 'jobs' / 'routes.py').read_text(encoding='utf-8')
 
-    assert "if fragment in {'active', 'registry'}" in source
+    assert "if fragment in {'active', 'registry', 'queues'}" in source
     assert "fragment_context['embedded'] = True" in source
     assert '**fragment_context' in source

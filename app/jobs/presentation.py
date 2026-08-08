@@ -5,6 +5,7 @@ from typing import Any
 
 from sqlalchemy import or_
 
+from app.common.celery_queue_health import get_queue_readiness, inspect_celery_topology
 from app.common.job_execution_presentation import present_job_execution_row
 from app.common.presentation import present_user_datetime
 from app.jobs.service import job_can_cancel
@@ -12,7 +13,8 @@ from app.models.job import JobExecution
 
 ALLOWED_PER_PAGE = (5, 10, 25, 50)
 _ACTIVE_STATUSES = ('queued', 'running', 'retrying', 'cancel_requested')
-_ATTENTION_STATUSES = ('retrying', 'cancel_requested', 'failed', 'partially_succeeded')
+_ACTIVE_ATTENTION_STATUSES = ('retrying', 'cancel_requested')
+_RECENT_ATTENTION_STATUSES = ('failed', 'partially_succeeded', 'expired')
 _TERMINAL_STATUSES = ('succeeded', 'partially_succeeded', 'failed', 'canceled', 'expired')
 _ALLOWED_TABS = ('active', 'registry', 'queues')
 
@@ -72,14 +74,31 @@ def _queue_icon(queue_name: str) -> str:
     return 'workflow'
 
 
+def _attention_counts(query: Any, cutoff: datetime) -> tuple[int, int, int]:
+    active_attention = query.filter(
+        JobExecution.status.in_(_ACTIVE_ATTENTION_STATUSES)
+    ).count()
+    recent_terminal_attention = query.filter(
+        JobExecution.status.in_(_RECENT_ATTENTION_STATUSES),
+        JobExecution.completed_at.isnot(None),
+        JobExecution.completed_at >= cutoff,
+    ).count()
+    return (
+        active_attention,
+        recent_terminal_attention,
+        active_attention + recent_terminal_attention,
+    )
+
+
 def _queue_activity(queue_names: list[str], cutoff: datetime) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
+    topology = inspect_celery_topology() if queue_names else None
     for queue_name in queue_names:
         query = JobExecution.query.filter(JobExecution.queue_name == queue_name)
         active = query.filter(JobExecution.status.in_(_ACTIVE_STATUSES)).count()
         queued = query.filter_by(status='queued').count()
         running = query.filter_by(status='running').count()
-        attention = query.filter(JobExecution.status.in_(_ATTENTION_STATUSES)).count()
+        active_attention, recent_attention_24h, attention = _attention_counts(query, cutoff)
         completed_24h = query.filter(
             JobExecution.status.in_(_TERMINAL_STATUSES),
             JobExecution.completed_at.isnot(None),
@@ -91,21 +110,36 @@ def _queue_activity(queue_names: list[str], cutoff: datetime) -> list[dict[str, 
             JobExecution.completed_at >= cutoff,
         ).count()
         latest = query.order_by(JobExecution.updated_at.desc(), JobExecution.id.desc()).first()
-        state = 'attention' if failed_24h or attention else ('active' if active else 'idle')
+        readiness = get_queue_readiness(queue_name, topology=topology)
+        readiness_tone = str(readiness.get('tone') or 'unknown')
+        if readiness_tone == 'critical':
+            posture_tone = 'critical'
+        elif attention or readiness.get('show_warning'):
+            posture_tone = 'warning'
+        elif active:
+            posture_tone = 'info'
+        else:
+            posture_tone = 'normal'
+        posture_label = 'Attention' if attention or readiness.get('show_warning') else ('Active' if active else 'Idle')
         rows.append(
             {
                 'name': queue_name,
                 'icon': _queue_icon(queue_name),
-                'state': state,
+                'state': 'attention' if attention else ('active' if active else 'idle'),
+                'posture_label': posture_label,
+                'posture_tone': posture_tone,
                 'active': active,
                 'queued': queued,
                 'running': running,
+                'active_attention': active_attention,
+                'recent_attention_24h': recent_attention_24h,
                 'attention': attention,
                 'completed_24h': completed_24h,
                 'failed_24h': failed_24h,
                 'latest_activity': present_user_datetime(latest.updated_at, empty='No activity')
                 if latest
                 else 'No activity',
+                'worker_readiness': readiness,
             }
         )
     return rows
@@ -117,23 +151,24 @@ def build_job_execution_status_context(*, tab: str = 'active') -> dict[str, Any]
     cutoff = datetime.now(UTC) - timedelta(hours=24)
     active_count = JobExecution.query.filter(JobExecution.status.in_(_ACTIVE_STATUSES)).count()
     running_count = JobExecution.query.filter_by(status='running').count()
-    attention_count = JobExecution.query.filter(JobExecution.status.in_(_ATTENTION_STATUSES)).count()
+    active_attention_count, recent_attention_24h_count, attention_count = _attention_counts(
+        JobExecution.query,
+        cutoff,
+    )
     completed_24h_count = JobExecution.query.filter(
         JobExecution.status.in_(_TERMINAL_STATUSES),
         JobExecution.completed_at.isnot(None),
         JobExecution.completed_at >= cutoff,
     ).count()
     total_count = JobExecution.query.count()
-    queue_count = (
-        JobExecution.query.with_entities(JobExecution.queue_name)
-        .distinct()
-        .count()
-    )
+    queue_count = JobExecution.query.with_entities(JobExecution.queue_name).distinct().count()
     return {
         'job_stats': {
             'total': total_count,
             'active': active_count,
             'running': running_count,
+            'active_attention': active_attention_count,
+            'recent_attention_24h': recent_attention_24h_count,
             'attention': attention_count,
             'completed_24h': completed_24h_count,
             'queues': queue_count,
@@ -141,6 +176,7 @@ def build_job_execution_status_context(*, tab: str = 'active') -> dict[str, Any]
         'selected_job_tab': selected_tab,
         'job_last_refreshed_at': present_user_datetime(datetime.now(UTC), empty='Just now'),
     }
+
 
 def build_job_execution_context(
     *,
@@ -151,6 +187,7 @@ def build_job_execution_context(
     queue: str = '',
     search: str = '',
     tab: str = 'active',
+    include_queue_activity: bool = True,
 ) -> dict[str, Any]:
     selected_per_page = per_page if per_page in ALLOWED_PER_PAGE else ALLOWED_PER_PAGE[0]
     selected_page = max(page, 1)
@@ -193,8 +230,15 @@ def build_job_execution_context(
     queued_count = JobExecution.query.filter_by(status='queued').count()
     running_count = JobExecution.query.filter_by(status='running').count()
     heavy_count = active_query.filter(JobExecution.workload_class.in_(('analytics', 'forecasting'))).count()
-    attention_count = JobExecution.query.filter(JobExecution.status.in_(_ATTENTION_STATUSES)).count()
-    failed_count = JobExecution.query.filter_by(status='failed').count()
+    active_attention_count, recent_attention_24h_count, attention_count = _attention_counts(
+        JobExecution.query,
+        cutoff,
+    )
+    failed_24h_count = JobExecution.query.filter(
+        JobExecution.status == 'failed',
+        JobExecution.completed_at.isnot(None),
+        JobExecution.completed_at >= cutoff,
+    ).count()
     completed_24h_count = JobExecution.query.filter(
         JobExecution.status.in_(_TERMINAL_STATUSES),
         JobExecution.completed_at.isnot(None),
@@ -208,7 +252,7 @@ def build_job_execution_context(
         .order_by(JobExecution.queue_name.asc())
         .all()
     ]
-    queue_rows = _queue_activity(queue_options, cutoff)
+    queue_rows = _queue_activity(queue_options, cutoff) if include_queue_activity else []
 
     start_item = ((current_page - 1) * selected_per_page) + 1 if total_items else 0
     return {
@@ -222,8 +266,10 @@ def build_job_execution_context(
             'queued': queued_count,
             'running': running_count,
             'heavy': heavy_count,
+            'active_attention': active_attention_count,
+            'recent_attention_24h': recent_attention_24h_count,
             'attention': attention_count,
-            'failed': failed_count,
+            'failed_24h': failed_24h_count,
             'completed_24h': completed_24h_count,
             'queues': len(queue_options),
         },

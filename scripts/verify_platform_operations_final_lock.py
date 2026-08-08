@@ -8,7 +8,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 LOCK_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1.md'
+LOCK_V1_1_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_1.md'
 AUDIT_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_AUDIT_2026_08_08.md'
+AUDIT_V1_1_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md'
 QUALITY_GATE = ROOT / 'scripts/quality_gate.sh'
 CLEANUP = ROOT / 'scripts/cleanup_obsolete_files.sh'
 CORE_UI_LOCK = ROOT / 'scripts/verify_core_workspace_ui_lock.py'
@@ -52,7 +54,7 @@ def template_files() -> list[Path]:
 def main() -> int:
     errors: list[str] = []
 
-    for doc in (LOCK_DOC, AUDIT_DOC):
+    for doc in (LOCK_DOC, LOCK_V1_1_DOC, AUDIT_DOC, AUDIT_V1_1_DOC):
         if not doc.exists():
             errors.append(f'missing lock artifact: {doc.relative_to(ROOT).as_posix()}')
 
@@ -103,6 +105,24 @@ def main() -> int:
         if f'id="execution-tab-count-{key}"' not in status_refresh:
             errors.append(f'Execution live OOB count missing: {key}')
 
+    active_jobs = read('app/templates/jobs/executions/partials/_active_jobs.html')
+    if 'hx-trigger="every 5s"' not in active_jobs or '{% if active_job_rows %}hx-get=' in active_jobs:
+        errors.append('Active Work polling must remain live even when no active execution is rendered')
+    if "('Active Attention', job_stats.active_attention)" not in active_jobs:
+        errors.append('Active Work must distinguish active intervention from recent terminal attention')
+
+    job_presentation = read('app/jobs/presentation.py')
+    for required in (
+        "_ACTIVE_ATTENTION_STATUSES = ('retrying', 'cancel_requested')",
+        "_RECENT_ATTENTION_STATUSES = ('failed', 'partially_succeeded', 'expired')",
+        'JobExecution.completed_at >= cutoff',
+        'topology = inspect_celery_topology() if queue_names else None',
+        'get_queue_readiness(queue_name, topology=topology)',
+        'include_queue_activity: bool = True',
+    ):
+        if required not in job_presentation:
+            errors.append(f'Jobs v1.1 operational semantics missing: {required}')
+
     registry = read('app/templates/jobs/executions/partials/_registry.html')
     for required in (
         'components/loading_bar.html',
@@ -116,9 +136,29 @@ def main() -> int:
         '<option value="10"',
         '<option value="25"',
         '<option value="50"',
+        'expandable_row.toggle_button(',
+        "url_for('jobs.execution_details'",
+        'data-detail-content',
     ):
         if required not in registry:
             errors.append(f'Execution Registry final contract missing: {required}')
+    if "('Total Records', job_stats.total)" in registry:
+        errors.append('Execution Registry must not reintroduce unfiltered global metric strips')
+
+    execution_detail = read('app/templates/jobs/executions/partials/_execution_details.html')
+    for required in ('Execution Identity', 'Scope & Ownership', 'Lifecycle', 'Result & Failure Evidence', 'Result Summary'):
+        if required not in execution_detail:
+            errors.append(f'Execution detail evidence contract missing: {required}')
+    if 'payload_json' in execution_detail:
+        errors.append('Execution detail must not render raw execution payloads')
+
+    queue_activity = read('app/templates/jobs/executions/partials/_queue_activity.html')
+    for required in ('Worker Readiness', "fragment='queues'", 'worker_readiness.description'):
+        if required not in queue_activity:
+            errors.append(f'Queue Activity worker-readiness contract missing: {required}')
+
+    if 'Operational Attention' not in jobs_index or 'job_stats.attention + configuration_stats.attention' not in jobs_index:
+        errors.append('Jobs hero must present combined Operational Attention')
 
     namespace_table = read('app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html')
     if 'min-w-[980px]' in namespace_table or '<div class="overflow-x-auto">' in namespace_table:
@@ -167,9 +207,9 @@ def main() -> int:
         return 1
 
     print(
-        'KAORI Platform Operations Final Lock v1 passed: Kubernetes Administration and Jobs & Executions '
-        'use shared tabs, Title Case, HTMX-owned registry controls, responsive namespace policy tables, '
-        'global KAORI status primitives, protected Secret Reveal guardrails, and permanent legacy cleanup.'
+        'KAORI Platform Operations Final Lock v1.1 passed: Kubernetes Administration and Jobs & Executions '
+        'use shared tabs, Title Case, bounded execution attention, expandable execution evidence, worker readiness, '
+        'HTMX-owned registry controls, protected Secret Reveal guardrails, and permanent legacy cleanup.'
     )
     return 0
 

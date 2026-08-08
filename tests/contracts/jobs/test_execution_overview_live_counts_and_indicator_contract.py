@@ -44,8 +44,10 @@ def test_execution_sections_use_refined_operational_layouts() -> None:
     queues = _read('partials/_queue_activity.html')
 
     assert "('Active', job_stats.active)" in active
-    assert "('Total Records', job_stats.total)" in registry
-    assert 'Execution records · not worker liveness' in queues
+    assert "('Active Attention', job_stats.active_attention)" in active
+    assert "('Total Records', job_stats.total)" not in registry
+    assert 'View Details' in registry
+    assert 'Worker Readiness' in queues
     assert '<table' not in registry
     assert 'overflow-x-auto' not in registry
 

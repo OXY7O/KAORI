@@ -3,6 +3,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/loading_bar.html" as loading_bar %}
+{% import "components/details/_expandable_row.html" as expandable_row %}
 <section id="job-execution-registry"
          class="{{ 'min-w-0' if embedded|default(false) else table_ui.block_classes() }}"
          aria-labelledby="job-execution-registry-title">
@@ -30,14 +31,6 @@
         {{ loading_bar.render('job-execution-loading', label='Refreshing Job Execution Registry') }}
     </header>
 
-    <div class="grid grid-cols-2 border-b border-outline-subtle bg-surface-card sm:grid-cols-4">
-        {% for label, value in [('Total Records', job_stats.total), ('Active', job_stats.active), ('Needs Attention', job_stats.attention), ('Completed · 24H', job_stats.completed_24h)] %}
-            <div class="px-5 py-3 {% if not loop.last %}border-r border-outline-subtle{% endif %}">
-                <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
-                <p class="mt-1 text-lg font-bold text-content-primary">{{ value }}</p>
-            </div>
-        {% endfor %}
-    </div>
 
     <form class="grid gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:grid-cols-2 xl:grid-cols-4 sm:px-6"
           hx-get="{{ url_for('jobs.executions') }}"
@@ -100,6 +93,9 @@
         </div>
         <div class="divide-y divide-outline-subtle">
             {% for row in job_rows %}
+                {% set detail_target_id = 'job-execution-detail-' ~ row.public_id %}
+                {% set detail_row_id = detail_target_id ~ '-row' %}
+                <div>
                 <article class="grid min-w-0 gap-4 px-5 py-4 sm:px-6 lg:grid-cols-12 lg:items-center">
                     <div class="flex min-w-0 items-start gap-3 lg:col-span-3">
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
@@ -164,7 +160,16 @@
                         </div>
                     </dl>
 
-                    <div class="flex justify-start lg:col-span-2 lg:justify-end">
+                    <div class="flex flex-wrap items-center justify-start gap-2 lg:col-span-2 lg:justify-end">
+                        {{ expandable_row.toggle_button(
+                            'job-execution-registry',
+                            row.public_id,
+                            url_for('jobs.execution_details', public_id=row.public_id),
+                            detail_target_id,
+                            detail_row_id,
+                            open_label='View Details',
+                            close_label='Close Details'
+                        ) }}
                         {% if current_user.has_permission('jobs.cancel') and row.can_cancel %}
                             <form method="post"
                                   action="{{ url_for('jobs.cancel_execution', public_id=row.public_id) }}"
@@ -193,11 +198,16 @@
                             {{ table_label.metadata_label('Protected', icon='shield-check') }}
                         {% elif row.can_cancel %}
                             {{ table_label.status_indicator_label('View Only', tone='unknown') }}
-                        {% else %}
-                            {{ table_label.status_indicator_label('No Action', tone='unknown') }}
                         {% endif %}
                     </div>
                 </article>
+                <div id="{{ detail_row_id }}" class="hidden border-t border-brand-outline/40 bg-kaori-mist/40">
+                    <div id="{{ detail_target_id }}"
+                         data-detail-content
+                         data-open="false"
+                         class="w-full min-w-0"></div>
+                </div>
+                </div>
             {% endfor %}
         </div>
     {% else %}

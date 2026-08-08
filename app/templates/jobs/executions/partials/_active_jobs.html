@@ -6,7 +6,12 @@
 <section id="active-job-workspace"
          class="{{ 'min-w-0' if embedded|default(false) else table_ui.block_classes() }}"
          aria-labelledby="active-job-workspace-title"
-         {% if active_job_rows %}hx-get="{{ active_refresh_url }}" hx-trigger="every 5s" hx-target="this" hx-swap="outerHTML swap:0ms settle:0ms" hx-indicator="#active-job-poll-indicator" hx-sync="this:replace"{% endif %}>
+         hx-get="{{ active_refresh_url }}"
+         hx-trigger="every 5s"
+         hx-target="this"
+         hx-swap="outerHTML swap:0ms settle:0ms"
+         hx-indicator="#active-job-poll-indicator"
+         hx-sync="this:replace">
     <span id="active-job-poll-indicator" class="htmx-indicator hidden" aria-hidden="true"></span>
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -39,7 +44,7 @@
     </header>
 
     <div class="grid grid-cols-2 border-b border-outline-subtle bg-surface-hover sm:grid-cols-4">
-        {% for label, value in [('Active', job_stats.active), ('Running', job_stats.running), ('Queued', job_stats.queued), ('Attention', job_stats.attention)] %}
+        {% for label, value in [('Active', job_stats.active), ('Running', job_stats.running), ('Queued', job_stats.queued), ('Active Attention', job_stats.active_attention)] %}
             <div class="px-5 py-3 {% if not loop.last %}border-r border-outline-subtle{% endif %}">
                 <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
                 <p class="mt-1 text-lg font-bold text-content-primary">{{ value }}</p>

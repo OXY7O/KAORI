@@ -137,6 +137,12 @@ Small summaries may be stored in `result_summary_json`. Large outputs must use `
 - **Executions** provides active work, the server-paginated registry, queue demand, progress, requester, timing, result, and safe cancellation controls.
 - **Job Configuration** provides the registered job catalog, automatic policy controls, manual execution, recent execution history, and domain safety boundaries.
 
+Execution attention is deliberately bounded. `retrying` and `cancel_requested` are active attention states. Terminal `failed`, `partially_succeeded`, and `expired` executions remain attention signals for 24 hours after completion; older terminal records remain searchable history but do not keep the current operational posture permanently degraded.
+
+The Registry exposes expandable execution evidence from the canonical `JobExecution` record, including identity, scope/ownership, lifecycle timestamps, result references, structured result summaries, and error evidence. Raw `payload_json`, deduplication keys, and parameter fingerprints are not rendered in the operator detail view.
+
+Queue Activity combines execution demand with Celery worker readiness. One short-lived topology snapshot is shared across all queues in a render so KAORI does not issue one Celery inspection broadcast per row. Registry and Active Work fragment refreshes skip queue topology inspection entirely.
+
 Inventory Sync is the first registered configuration. Future report, analytics, forecasting, retention, and reconciliation jobs must register here rather than introducing a new Settings page or parallel scheduler.
 
 ## Implementation boundaries

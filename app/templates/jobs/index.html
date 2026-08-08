@@ -3,6 +3,7 @@
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% block title %}Jobs &amp; Executions · KAORI{% endblock %}
 {% block dashboard_content %}
+    {% set operational_attention = job_stats.attention + configuration_stats.attention %}
     <div class="space-y-6"
          x-data="{ tabs: ['executions', 'configuration'], activeTab: '{{ active_jobs_section }}', setTab(tab) { if (!this.tabs.includes(tab)) return; this.activeTab = tab; const url = new URL(tab === 'executions' ? '{{ url_for('jobs.executions') }}' : '{{ url_for('jobs.configuration') }}?job_key={{ selected_job_key }}', window.location.origin); window.history.replaceState(null, '', url); }, moveTab(currentTab, direction, prefix = 'jobs-platform') { const currentIndex = this.tabs.indexOf(currentTab); if (currentIndex < 0) return; let nextIndex = currentIndex; if (direction === 'home') nextIndex = 0; else if (direction === 'end') nextIndex = this.tabs.length - 1; else nextIndex = (currentIndex + direction + this.tabs.length) % this.tabs.length; const nextTab = this.tabs[nextIndex]; this.setTab(nextTab); this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus()); } }">
         <section class="{{ page_hero.shell_classes() }}">
@@ -37,9 +38,9 @@
                             ) }}
                             {{ page_hero.context_metric(
                                 'triangle-alert',
-                                'Needs Attention',
-                                configuration_stats.attention,
-                                'Configured jobs requiring review'
+                                'Operational Attention',
+                                operational_attention,
+                                'Execution signals and configuration review'
                             ) }}
                         </div>
                         {{ page_hero.context_info(

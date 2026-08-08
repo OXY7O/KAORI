@@ -10,6 +10,7 @@ from flask_login import current_user
 from kombu.exceptions import OperationalError as KombuOperationalError
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.common.job_execution_presentation import present_job_execution_detail
 from app.extensions.db import db
 from app.jobs.configuration import build_job_configuration_context
 from app.jobs.definitions.base import JobDefinition
@@ -87,7 +88,7 @@ def _page_context(
     return context
 
 
-def _execution_context() -> dict[str, object]:
+def _execution_context(*, include_queue_activity: bool = True) -> dict[str, object]:
     return build_job_execution_context(
         page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
@@ -96,6 +97,7 @@ def _execution_context() -> dict[str, object]:
         queue=request.args.get('queue', '').strip(),
         search=request.args.get('search', '').strip(),
         tab=request.args.get('execution_tab', request.args.get('tab', 'active')).strip(),
+        include_queue_activity=include_queue_activity,
     )
 
 
@@ -104,9 +106,10 @@ def _render_execution_fragment(context: dict[str, object], fragment: str) -> str
         'registry': 'jobs/executions/partials/_registry.html',
         'active': 'jobs/executions/partials/_active_jobs.html',
         'status': 'jobs/executions/partials/_status_refresh.html',
+        'queues': 'jobs/executions/partials/_queue_activity.html',
     }
     fragment_context = dict(context)
-    if fragment in {'active', 'registry'}:
+    if fragment in {'active', 'registry', 'queues'}:
         fragment_context['embedded'] = True
     return render_template(
         template_by_fragment.get(fragment, 'jobs/executions/_workspace.html'),
@@ -171,7 +174,7 @@ def executions() -> ResponseReturnValue:
                 tab=request.args.get('execution_tab', request.args.get('tab', 'active')).strip()
             )
             if fragment == 'status'
-            else _execution_context()
+            else _execution_context(include_queue_activity=fragment not in {'active', 'registry'})
         )
         response = make_response(_render_execution_fragment(context, fragment))
         response.headers['Cache-Control'] = 'no-store, max-age=0'
@@ -180,6 +183,20 @@ def executions() -> ResponseReturnValue:
         'jobs/index.html',
         **_page_context(active_section='executions'),
     )
+
+
+@bp.get('/executions/<string:public_id>/details')
+@permission_required('jobs.view')
+def execution_details(public_id: str) -> ResponseReturnValue:
+    job = JobExecution.query.filter_by(public_id=public_id).first_or_404()
+    response = make_response(
+        render_template(
+            'jobs/executions/partials/_execution_details.html',
+            execution=present_job_execution_detail(job),
+        )
+    )
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    return response
 
 
 @bp.get('/configuration')
@@ -522,6 +539,7 @@ def cancel_execution(public_id: str) -> ResponseReturnValue:
         )
 
     if is_htmx:
+        fragment = request.form.get('fragment', 'workspace').strip()
         context = build_job_execution_context(
             page=request.form.get('page', 1, type=int) or 1,
             per_page=request.form.get('per_page', 5, type=int) or 5,
@@ -530,8 +548,9 @@ def cancel_execution(public_id: str) -> ResponseReturnValue:
             queue=request.form.get('queue', '').strip(),
             search=request.form.get('search', '').strip(),
             tab=request.form.get('execution_tab', 'active').strip(),
+            include_queue_activity=fragment not in {'active', 'registry'},
         )
         context['operation_feedback'] = feedback
         context['notification_context'] = get_navigation_notification_context(user_id=int(current_user.id))
-        return _render_execution_fragment(context, request.form.get('fragment', 'workspace').strip())
+        return _render_execution_fragment(context, fragment)
     return redirect(url_for('jobs.executions'))

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from app.common.presentation import present_user_datetime
@@ -140,6 +141,59 @@ def present_job_execution(job: JobExecution) -> dict[str, Any]:
                 or job.progress_total
                 or 0
             ),
+        }
+    )
+    return row
+
+
+def _present_result_summary(summary: dict[str, Any] | None) -> tuple[list[dict[str, str]], int]:
+    if not isinstance(summary, dict) or not summary:
+        return [], 0
+
+    rows: list[dict[str, str]] = []
+    for key, value in sorted(summary.items(), key=lambda item: str(item[0])):
+        if isinstance(value, (dict, list, tuple)):
+            rendered = json.dumps(value, ensure_ascii=False, sort_keys=True, default=str)
+        elif value is None:
+            rendered = '-'
+        elif isinstance(value, bool):
+            rendered = 'Yes' if value else 'No'
+        else:
+            rendered = str(value)
+        rows.append(
+            {
+                'label': str(key).replace('_', ' ').replace('-', ' ').title(),
+                'value': rendered,
+            }
+        )
+
+    visible_rows = rows[:12]
+    return visible_rows, max(len(rows) - len(visible_rows), 0)
+
+
+def present_job_execution_detail(job: JobExecution) -> dict[str, Any]:
+    """Return safe operator-facing execution evidence without exposing raw request payloads."""
+    row = present_job_execution(job)
+    result_summary, result_summary_remaining = _present_result_summary(job.result_summary_json)
+    row.update(
+        {
+            'scope_type': (job.scope_type or 'global').replace('_', ' ').title(),
+            'provider_instance': str(job.provider_instance_id) if job.provider_instance_id is not None else '-',
+            'resource_group': job.resource_group or '-',
+            'parent_public_id': job.parent.public_id if job.parent is not None else '-',
+            'heartbeat_at': present_user_datetime(job.heartbeat_at, empty='No heartbeat recorded'),
+            'cancel_requested_at': present_user_datetime(
+                job.cancel_requested_at,
+                empty='Not requested',
+            ),
+            'expires_at': present_user_datetime(job.expires_at, empty='No expiry recorded'),
+            'created_at': present_user_datetime(job.created_at, empty='Not recorded'),
+            'error_code': job.error_code or '-',
+            'error_message': job.error_message or 'No execution error was recorded.',
+            'result_type': (job.result_type or '-').replace('_', ' ').title() if job.result_type else '-',
+            'result_reference': job.result_reference or '-',
+            'result_summary': result_summary,
+            'result_summary_remaining': result_summary_remaining,
         }
     )
     return row
