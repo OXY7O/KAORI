@@ -110,11 +110,12 @@
               hx-swap="innerHTML"
               hx-push-url="true"
               hx-indicator="#secret-reveal-namespace-loading"
-              class="flex items-center">
+              class="flex items-center gap-2">
             <input type="hidden" name="cluster_id" value="{{ selected_cluster.id }}">
             <input type="hidden" name="namespace_q" value="{{ namespace_filters.query }}">
             <input type="hidden" name="namespace_policy" value="{{ namespace_filters.policy }}">
             <input type="hidden" name="page" value="1">
+            <span class="font-semibold text-content-secondary">Rows</span>
             <select name="per_page" aria-label="Rows Per Page" data-kaori-auto-submit class="{{ pagination_ui.page_size_classes() }}">
                 {% for option in namespace_per_page_options %}
                     <option value="{{ option }}" {% if namespace_pagination.per_page == option %}selected{% endif %}>{{ option }}</option>

@@ -123,9 +123,17 @@ Operational toasts remain correct here because Save Readiness and Set Policy are
 Platform Operations owns configuration only. `Kubernetes Operations → Protected Kubernetes Secret Reveal` consumes the same `reveal_policy.py` readiness and namespace-policy authority rather than maintaining a second copy.
 
 - target discovery requires current cluster readiness and configured enabled namespaces;
-- live namespace/Secret discovery is revalidated in Kubernetes before a request is created;
+- protected target discovery verifies only configured enabled namespaces with Kubernetes Namespace `GET`, then reads the selected Secret live;
 - request creation, approval, and one-time reveal re-check the current policy boundary;
 - readiness disablement and namespace-policy changes expire matching pending/approved requests;
 - administration snapshots optimize list rendering only and are never authorization evidence for plaintext reveal.
 
 Dark mode for both workspaces follows the neutral-first KAORI contract: informational panels, table headers, hover states, and callouts use semantic/neutral surfaces; Bright Violet is reserved for primary actions and compact accents.
+
+
+## v1.5 feedback and target discovery refinement
+
+- HTMX readiness and namespace-policy mutations render their operational toast immediately with OOB delivery; redirect fallback alone uses the session feedback queue.
+- The namespace-policy registry footer follows the canonical `Showing … Namespaces · Rows · page size` pattern.
+- Protected Reveal does not depend on broad Namespace `LIST` for target discovery. It starts from policy-enabled namespace records and verifies only those names live.
+- The Protected Reveal target selector explains global-disablement, cluster eligibility, missing policy configuration, and configured-but-not-live namespace states explicitly.

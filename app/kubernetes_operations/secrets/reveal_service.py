@@ -19,7 +19,6 @@ from app.kubernetes_operations.secrets.live_service import (
     LiveSecretSnapshot,
     best_effort_inventory_id,
     core_api,
-    list_live_namespaces,
     list_live_secrets,
     read_live_secret,
 )
@@ -27,6 +26,7 @@ from app.kubernetes_operations.secrets.reveal_policy import (
     REVEAL_NAMESPACE_POLICIES,
     cluster_reveal_readiness,
     get_configured_enabled_namespace_names,
+    get_enabled_namespace_names,
     get_namespace_policy,
 )
 from app.models import Cluster, SecretRevealRequest
@@ -191,16 +191,14 @@ def get_reveal_workspace(
     cluster = Cluster.query.filter_by(id=normalized_cluster_id).first() if normalized_cluster_id else None
 
     cluster_available = bool(_global_enabled() and cluster is not None and _cluster_ready(cluster))
+    configured_names: list[str] = []
     if cluster_available:
         configured_names = get_configured_enabled_namespace_names(normalized_cluster_id)
         try:
-            namespaces = list_live_namespaces(
-                normalized_cluster_id,
-                allowed_namespaces=configured_names,
-            )
+            namespaces = get_enabled_namespace_names(normalized_cluster_id)
         except ValueError as exc:
             selection_error = str(exc)
-            selection_error_title = 'Live namespace lookup failed'
+            selection_error_title = 'Enabled namespace verification failed'
             normalized_namespace = ''
             selected_secret_name = ''
         else:
@@ -228,6 +226,7 @@ def get_reveal_workspace(
         'cluster_id': normalized_cluster_id if cluster_available else '',
         'namespace': normalized_namespace,
         'namespaces': namespaces,
+        'configured_namespace_count': len(configured_names),
         'targets': targets,
         'selected_secret_name': selected_secret_name,
         'selected_cluster': cluster if cluster_available else None,

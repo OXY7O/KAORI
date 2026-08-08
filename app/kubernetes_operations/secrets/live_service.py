@@ -164,6 +164,55 @@ def verify_live_namespace(cluster: Cluster, namespace: str | None) -> str:
     return normalized
 
 
+def list_verified_namespaces(
+    cluster_id: str | None,
+    namespace_names: Iterable[str],
+) -> list[str]:
+    """Verify only configured namespaces without requiring a broad Namespace LIST permission."""
+    cluster = get_cluster(cluster_id)
+    candidates = sorted(
+        {
+            validate_resource_name(value, 'Namespace', namespace=True)
+            for value in namespace_names
+            if value and value.strip()
+        }
+    )
+    if not candidates:
+        return []
+
+    verified: list[str] = []
+    try:
+        with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
+            api = core_api(cluster)
+            for namespace in candidates:
+                try:
+                    api.read_namespace(name=namespace)
+                except ApiException as exc:
+                    status = getattr(exc, 'status', None)
+                    if status == 404:
+                        continue
+                    if status == 403:
+                        raise ValueError(
+                            'Kubernetes denied live Namespace verification. '
+                            'Grant get permission for the configured namespace without broad Secret list/watch access.'
+                        ) from exc
+                    if status == 401:
+                        raise ValueError('Kubernetes authentication failed for the selected cluster.') from exc
+                    if status == 429:
+                        raise ValueError('Kubernetes temporarily rate-limited Namespace verification. Retry later.') from exc
+                    raise ValueError('Kubernetes API could not verify the configured Reveal namespace.') from exc
+                verified.append(namespace)
+    except ConfigException as exc:
+        raise ValueError('The selected cluster kubeconfig is invalid or incomplete.') from exc
+    except (OSError, Urllib3HTTPError) as exc:
+        raise ValueError(
+            'KAORI could not reach the Kubernetes API while verifying configured Reveal namespaces. '
+            'Check cluster connectivity and kubeconfig settings.'
+        ) from exc
+
+    return verified
+
+
 def list_live_secrets(
     cluster_id: str | None,
     namespace: str | None,

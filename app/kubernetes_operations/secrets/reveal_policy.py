@@ -9,6 +9,7 @@ from app.extensions.db import db
 from app.integrations.kubernetes.resolver import kubeconfig_for_cluster
 from app.kubernetes_operations.secrets.live_service import (
     list_live_namespaces,
+    list_verified_namespaces,
     verify_live_namespace,
 )
 from app.models import (
@@ -112,14 +113,11 @@ def get_configured_enabled_namespace_names(cluster_id: str) -> list[str]:
 
 
 def get_enabled_namespace_names(cluster_id: str) -> list[str]:
-    """Return policy-enabled namespaces that still exist in live Kubernetes."""
+    """Return configured Reveal namespaces that can be verified live with namespace GET."""
     configured = get_configured_enabled_namespace_names(cluster_id)
     if not configured:
         return []
-    return list_live_namespaces(
-        cluster_id,
-        allowed_namespaces=configured,
-    )
+    return list_verified_namespaces(cluster_id, configured)
 
 
 def refresh_namespace_source_snapshot(cluster: Cluster) -> NamespaceSourceSnapshot:

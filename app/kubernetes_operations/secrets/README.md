@@ -93,7 +93,7 @@ Protected Reveal is the only plaintext-read workflow. It decodes one approved ke
 
 - Namespace policy rows are based on the live Kubernetes namespace list plus existing policy records.
 - New policy access can only be enabled for a namespace that currently exists live.
-- Reveal target namespaces are the intersection of enabled policy namespaces and live namespaces.
+- Reveal target namespaces start from configured enabled policies and verify only those namespace names live with Kubernetes `GET`; target discovery does not require broad Namespace `LIST`.
 - Secret and key selection is live.
 - Request creation revalidates the selected Secret and key live.
 - An optional `configuration_inventory_id` may be stored only as best-effort correlation; it is never a target gate.

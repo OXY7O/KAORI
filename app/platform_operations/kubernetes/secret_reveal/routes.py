@@ -23,6 +23,7 @@ from app.kubernetes_operations.secrets.reveal_policy import (
     update_cluster_reveal_readiness,
 )
 from app.models import Cluster
+from app.notifications.feedback import queue_operational_feedback
 from app.notifications.service import record_operational_activity
 from app.rbac.decorators import permission_required
 from app.platform_operations.kubernetes.secret_reveal.service import build_secret_reveal_settings_context
@@ -46,7 +47,7 @@ def _settings_request_args(cluster_id: str) -> dict[str, Any]:
     return settings_args
 
 
-def _settings_response(cluster_id: str):
+def _settings_response(cluster_id: str, operation_feedback: dict[str, Any] | None = None):
     settings_args = _settings_request_args(cluster_id)
     page_url = url_for(
         'platform_operations.kubernetes.index',
@@ -54,6 +55,8 @@ def _settings_response(cluster_id: str):
         **settings_args,
     )
     if request.headers.get('HX-Request') != 'true':
+        if operation_feedback is not None:
+            queue_operational_feedback(operation_feedback)
         return redirect(page_url)
 
     context = build_secret_reveal_settings_context(
@@ -66,12 +69,18 @@ def _settings_response(cluster_id: str):
     )
     context['workspace_partial'] = True
     context['posture_oob'] = True
-    response = make_response(
-        render_template(
-            'platform_operations/kubernetes/secret_reveal/_cluster_workspace.html',
-            **context,
-        )
+    workspace_html = render_template(
+        'platform_operations/kubernetes/secret_reveal/_cluster_workspace.html',
+        **context,
     )
+    feedback_html = ''
+    if operation_feedback is not None:
+        feedback_html = render_template(
+            'components/operational_toast.html',
+            **operation_feedback,
+            toast_oob=True,
+        )
+    response = make_response(workspace_html + feedback_html)
     response.headers['HX-Push-Url'] = page_url
     response.headers['HX-Trigger'] = json.dumps({'kaori:notifications-changed': True})
     return response
@@ -91,8 +100,8 @@ def _record_settings_activity(
     title: str,
     message: str,
     metadata: dict[str, object],
-) -> None:
-    record_operational_activity(
+) -> dict[str, Any]:
+    return record_operational_activity(
         user_id=current_user.id,
         event_type=event_type,
         status=status,
@@ -106,7 +115,7 @@ def _record_settings_activity(
             'secret_value_recorded': False,
             'kubeconfig_recorded': False,
         },
-        queue_feedback=True,
+        queue_feedback=False,
     )
 
 
@@ -161,6 +170,7 @@ def workspace():
 @bp.route('/cluster/<string:cluster_id>/readiness', methods=['POST'])
 @permission_required('kubernetes_secrets.manage_reveal')
 def update_readiness(cluster_id: str):
+    operation_feedback: dict[str, Any] | None = None
     try:
         _validate_csrf()
         cluster = _cluster_or_error(cluster_id)
@@ -173,7 +183,7 @@ def update_readiness(cluster_id: str):
         )
         readiness = cluster_reveal_readiness_evidence(cluster)
         ready = readiness['ready']
-        _record_settings_activity(
+        operation_feedback = _record_settings_activity(
             event_type='kubernetes_secret_reveal_cluster_readiness_updated',
             status='success' if ready else 'warning',
             title='Secret Reveal cluster readiness updated',
@@ -195,7 +205,7 @@ def update_readiness(cluster_id: str):
         )
     except ValueError as exc:
         db.session.rollback()
-        _record_settings_activity(
+        operation_feedback = _record_settings_activity(
             event_type='kubernetes_secret_reveal_cluster_readiness_failed',
             status='error',
             title='Secret Reveal readiness update failed',
@@ -205,19 +215,20 @@ def update_readiness(cluster_id: str):
     except Exception:
         db.session.rollback()
         current_app.logger.exception('Unexpected Secret Reveal readiness update failure.')
-        _record_settings_activity(
+        operation_feedback = _record_settings_activity(
             event_type='kubernetes_secret_reveal_cluster_readiness_failed',
             status='error',
             title='Secret Reveal readiness update failed',
             message='KAORI could not save the cluster security readiness settings.',
             metadata={'cluster_id': cluster_id},
         )
-    return _settings_response(cluster_id)
+    return _settings_response(cluster_id, operation_feedback)
 
 
 @bp.route('/cluster/<string:cluster_id>/namespace-policy', methods=['POST'])
 @permission_required('kubernetes_secrets.manage_reveal')
 def update_namespace_policy(cluster_id: str):
+    operation_feedback: dict[str, Any] | None = None
     namespace = (request.form.get('namespace') or '').strip()
     requested_policy = (request.form.get('policy') or 'disabled').strip().lower()
     try:
@@ -230,7 +241,7 @@ def update_namespace_policy(cluster_id: str):
             actor_user_id=current_user.id,
         )
         enabled = change.policy != 'disabled'
-        _record_settings_activity(
+        operation_feedback = _record_settings_activity(
             event_type='kubernetes_secret_reveal_namespace_policy_updated',
             status='success' if enabled else 'warning',
             title='Namespace Reveal policy updated',
@@ -250,7 +261,7 @@ def update_namespace_policy(cluster_id: str):
         )
     except ValueError as exc:
         db.session.rollback()
-        _record_settings_activity(
+        operation_feedback = _record_settings_activity(
             event_type='kubernetes_secret_reveal_namespace_policy_failed',
             status='error',
             title='Namespace Reveal policy update failed',
@@ -264,7 +275,7 @@ def update_namespace_policy(cluster_id: str):
     except Exception:
         db.session.rollback()
         current_app.logger.exception('Unexpected Secret Reveal namespace policy failure.')
-        _record_settings_activity(
+        operation_feedback = _record_settings_activity(
             event_type='kubernetes_secret_reveal_namespace_policy_failed',
             status='error',
             title='Namespace Reveal policy update failed',
@@ -275,4 +286,4 @@ def update_namespace_policy(cluster_id: str):
                 'requested_policy': requested_policy,
             },
         )
-    return _settings_response(cluster_id)
+    return _settings_response(cluster_id, operation_feedback)

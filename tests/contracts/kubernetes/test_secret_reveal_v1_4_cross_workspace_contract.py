@@ -19,10 +19,11 @@ def test_platform_configuration_and_protected_reveal_share_policy_authority() ->
 
     assert 'cluster_reveal_readiness,' in protected
     assert 'get_configured_enabled_namespace_names,' in protected
+    assert 'get_enabled_namespace_names,' in protected
     assert 'get_namespace_policy,' in protected
     assert 'return cluster_reveal_readiness(cluster)' in protected
     assert 'configured_names = get_configured_enabled_namespace_names(normalized_cluster_id)' in protected
-    assert 'allowed_namespaces=configured_names' in protected
+    assert 'namespaces = get_enabled_namespace_names(normalized_cluster_id)' in protected
 
 
 def test_protected_reveal_revalidates_policy_at_every_security_boundary() -> None:
