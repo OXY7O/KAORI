@@ -18,7 +18,7 @@ This produced a navigation/implementation ownership mismatch.
 - `app/access/overview` provides the permission-aware Access landing route.
 - `app/access/roles` owns role HTTP orchestration, forms, service helper, and presentation context.
 - `app/access/permissions` owns Permission Catalog HTTP/presentation.
-- Settings retains only redirect compatibility for historical URLs.
+- Settings contains no Access routes, templates, forms, redirect compatibility, or shim ownership.
 - User/provider, authentication, RBAC engine, and Activity Audit source ownership remain in their canonical domains.
 - Welcome and breadcrumb navigation resolve through Access ownership.
 
@@ -34,3 +34,7 @@ The following remain explicitly open for individual UI review before Access Fina
 - Activity Audit
 
 No page-specific visual redesign is approved by this structural refactor.
+
+## Legacy cleanup completion — 2026-08-09
+
+Before page-by-page UI review, the temporary Settings compatibility layer was removed. `/settings/roles*` and `/settings/permissions` are no longer registered routes; stale callers must use `/access/roles/` and `/access/permissions/`. Legacy Settings role/permission files are prohibited, while empty directories left behind by filesystem patch tools are treated as workspace residue rather than code ownership.

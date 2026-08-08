@@ -72,6 +72,6 @@ Data Lifecycle is no longer owned by Settings. The canonical operator workspace 
 
 Automatic schedules and manual background-job controls are owned by `app.jobs` under **Platform Operations → Jobs & Executions → Job Configuration**. Settings must not introduce job-specific scheduler pages or direct Celery dispatch routes.
 
-## Access compatibility boundary
+## Access ownership boundary
 
-Roles & Access and Permission Catalog are no longer owned by Settings. Their canonical operator routes live under `app/access/` at `/access/roles/` and `/access/permissions/`. Legacy `/settings/roles*` and `/settings/permissions` routes are redirect-only compatibility shims in `app/settings/access_compat.py`; role forms, templates, RBAC orchestration, and permission presentation must not return to Settings.
+Roles & Access and Permission Catalog are owned exclusively by `app/access/` at `/access/roles/` and `/access/permissions/`. Settings contains no role/permission routes, templates, forms, redirect shims, or compatibility wrappers. Historical `/settings/roles*` and `/settings/permissions` URLs are intentionally retired; stale bookmarks must use the canonical Access routes.

@@ -1,4 +1,4 @@
-# KAORI Access Ownership Baseline v1
+# KAORI Access Ownership Baseline v1.1
 
 Status: **Architecture baseline — UI not final locked**
 
@@ -25,6 +25,6 @@ Access
 5. `app/users` remains the user lifecycle and provider-administration domain.
 6. `app/auth` remains the protocol/authentication boundary.
 7. `app/notifications` remains the Activity Audit evidence owner.
-8. Old `/settings/roles*` and `/settings/permissions` URLs are redirect-only compatibility.
+8. Old `/settings/roles*` and `/settings/permissions` URLs are retired; Access has no Settings compatibility shim.
 9. Access Overview is read-only and permission-aware.
 10. Child-page UI is intentionally not final-locked until page-by-page review is complete.

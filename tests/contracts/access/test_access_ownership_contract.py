@@ -7,6 +7,15 @@ def read(path: str) -> str:
     return (ROOT / path).read_text()
 
 
+def legacy_files(path: str) -> list[Path]:
+    target = ROOT / path
+    if target.is_file():
+        return [target]
+    if not target.is_dir():
+        return []
+    return [item for item in target.rglob('*') if item.is_file()]
+
+
 def test_access_owns_roles_permissions_and_overview() -> None:
     bootstrap = read('app/bootstrap/blueprints.py')
     access_init = read('app/access/__init__.py')
@@ -17,20 +26,29 @@ def test_access_owns_roles_permissions_and_overview() -> None:
     assert "url_prefix='/permissions'" in access_init
 
 
-def test_settings_keeps_redirect_only_compatibility() -> None:
+def test_settings_has_no_access_compatibility_routes_or_shim() -> None:
     settings_routes = read('app/settings/routes.py')
-    compat = read('app/settings/access_compat.py')
-    assert "@bp.route('/roles')" not in settings_routes
-    assert "@bp.route('/permissions')" not in settings_routes
-    assert "access.roles.index" in compat
-    assert "access.permissions.index" in compat
-    assert '308 if request.method != \'GET\' else 302' in compat
+    settings_init = read('app/settings/__init__.py')
+    assert not (ROOT / 'app/settings/access_compat.py').exists()
+    for forbidden in (
+        "@bp.route('/roles')",
+        "@bp.route('/permissions')",
+        "@bp.get('/roles')",
+        "@bp.get('/permissions')",
+        'access_compat',
+        '/settings/roles',
+        '/settings/permissions',
+    ):
+        assert forbidden not in settings_routes
+        assert forbidden not in settings_init
 
 
-def test_settings_role_templates_and_forms_are_removed() -> None:
-    assert not (ROOT / 'app/settings/roles').exists()
-    assert not (ROOT / 'app/templates/settings/roles').exists()
-    assert not (ROOT / 'app/templates/settings/permissions').exists()
+def test_settings_role_permission_legacy_files_are_removed() -> None:
+    # Filesystem patch tools can leave empty parent directories behind. The contract
+    # guards code ownership: no legacy file may remain under these Settings paths.
+    assert legacy_files('app/settings/roles') == []
+    assert legacy_files('app/templates/settings/roles') == []
+    assert legacy_files('app/templates/settings/permissions') == []
     assert (ROOT / 'app/access/roles/forms.py').exists()
     assert (ROOT / 'app/templates/access/roles/index.html').exists()
     assert (ROOT / 'app/templates/access/permissions/index.html').exists()
@@ -49,7 +67,29 @@ def test_access_navigation_uses_canonical_endpoints() -> None:
     assert "('roles.view', 'access.overview.index')" in welcome
 
 
+
+def test_no_access_legacy_route_references_remain_in_runtime_code() -> None:
+    forbidden = (
+        'settings.access_compat',
+        "url_for('settings.roles",
+        'url_for("settings.roles',
+        "url_for('settings.permission",
+        'url_for("settings.permission',
+        "'/settings/roles",
+        '"/settings/roles',
+        "'/settings/permissions",
+        '"/settings/permissions',
+    )
+    for target in (ROOT / 'app').rglob('*'):
+        if not target.is_file() or target.suffix not in {'.py', '.html'}:
+            continue
+        text = target.read_text(errors='ignore')
+        for token in forbidden:
+            assert token not in text, f'{target.relative_to(ROOT)} contains {token!r}'
+
 def test_access_ui_is_not_final_locked_by_this_refactor() -> None:
     readme = read('app/access/README.md')
     assert 'not the Access UI Final Lock' in readme
     assert 'reviewed independently' in readme
+    assert 'redirect shims' in readme
+    assert 'Legacy Settings role/permission URLs are retired' in readme

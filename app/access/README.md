@@ -51,7 +51,7 @@ Canonical Access-owned URLs:
 
 User and provider URLs remain canonical under `/users/` until their page-by-page Access review determines whether a URL namespace cutover is useful. The current refactor intentionally avoids changing stable user/provider URLs only for cosmetic consistency.
 
-Legacy Settings URLs under `/settings/roles*` and `/settings/permissions` are redirect-only compatibility shims. Settings must not regain role or permission presentation/mutation logic.
+Legacy Settings role/permission URLs are retired. Settings must not contain redirect shims, compatibility wrappers, or role/permission presentation/mutation logic; callers must use the canonical Access routes.
 
 ## UI review boundary
 
