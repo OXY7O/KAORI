@@ -1,6 +1,6 @@
 # Integrations Workspace Standard
 
-> Status: canonical and implemented.
+> Status: Locked canonical baseline under **KAORI Integrations Lock v1** (`docs/design/KAORI_INTEGRATIONS_LOCK_V1.md`).
 
 ## Purpose
 
@@ -199,15 +199,15 @@ Kubernetes connection detail pages return to the canonical Kubernetes Integratio
 - Arbitrary micro typography, raw palette utilities, and page-local semantic badges are prohibited.
 - Primary metrics remain bright even when their semantic state is Warning or Critical; severity is carried by labels and operational copy.
 
-## Deliberate Technical-Matrix Exceptions
+## Deliberate Technical-Evidence Scrolling Exceptions
 
-The following layouts may retain minimum widths because simultaneous comparison is the core task:
+Canonical provider and capability registries must not force desktop horizontal scrolling. Internal scrolling is reserved for evidence whose exact side-by-side or literal syntax must be preserved, such as long PromQL/API requests, YAML/code blocks, or an explicitly documented dense technical matrix.
 
-- Prometheus registry compatibility/runtime/binding matrix;
-- Kubernetes capability and minimum-RBAC evidence matrices;
-- dense validation evidence tables.
+The Kubernetes Capability Registry is not an exception, and the Minimum Validation RBAC example is tabbed rather than side-by-side. Any technical evidence scroll container must remain bounded inside its owning surface and must never force the entire page to scroll.
 
-These exceptions must remain inside an owning `overflow-x-auto` region and must not force the entire page to scroll.
+## Final Lock Ownership
+
+The final frozen contract is documented in `docs/design/KAORI_INTEGRATIONS_LOCK_V1.md` and enforced by `scripts/verify_integrations_final_lock.py`. Structural changes to locked Integration workspaces require a coordinated documentation, verifier, and regression-test update; page-local exceptions are not accepted.
 
 ## Review Checklist
 
@@ -331,10 +331,10 @@ The final Integration refinement preserves the last approved KAORI workspace beh
 - **Alertmanager Validation & Capability Matrix** uses one horizontal `Validation Decision` surface above a full-width canonical KAORI capability table. The registry uses shared table/filter/loading/pagination primitives, defaults to 5 rows with 5/10/25/50 choices, numeric pages, Previous/Next, and `Showing x–y of z Capabilities`. `View More` is decision-first and keeps full API request evidence in Technical Verification without repeating the same evidence across multiple cards. Persistent Validation Decision side rails and forced desktop horizontal scroll are prohibited.
 - `View More` for persisted runtime observations and validation/capability registries uses the shared/native dialog pattern. Inline disclosure remains allowed only for intentionally local supporting evidence that is not a registry record-detail workflow.
 - **Kubernetes Capability Registry `View More`** uses a compact `standard` native dialog with one deliberate reading flow rather than a wall of nested cards: `Capability Decision` → `Contract Snapshot` → `Validation Evidence` → `Operational Decision` → `Verification Command`. The contract snapshot is a four-fact strip; validation evidence is a symmetric three-step row; operational impact and recommended action are peer decisions with a single governance boundary beneath them. The verification command is always visible and carries compact scope/stability/identity metadata instead of a second side panel. Do not nest another disclosure/accordion inside this modal; the modal is already the detail boundary.
-- **Kubernetes capability workspace** uses one horizontal `Kubernetes Capability Readiness` decision surface above the registry. It owns capability coverage, required-usable contracts, API stability, required blocks, the operational gate, and the next controlled action. Do not duplicate the same evidence in a second `Validation Decision` side rail. The `Capability Registry` is full-width and exposes separate `Capability`, `Resource`, `API Contract`, `Requirement`, `Status`, and `Details` columns so dense capability sets remain scan-friendly without sacrificing table width to a persistent side panel.
+- **Kubernetes capability workspace** renders `Kubernetes Capability Readiness` through the same shared `integrations/components/_capability_readiness.html` surface used by Prometheus and Alertmanager. Coverage, the three evidence metrics, Operational Gate, Evidence Boundary, and Next Operational Action therefore share the same light/dark tokens, spacing, icon treatment, and divider geometry across all three providers. Kubernetes supplies provider-specific API/RBAC data only; do not reintroduce a page-local readiness/decision surface. The `Capability Registry` remains full-width with separate `Capability`, `Resource`, `API Contract`, `Requirement`, `Status`, and `Details` columns.
 - **Kubernetes Capability Registry table** uses the canonical KAORI table, filter, loading, and pagination primitives. Default page size is 5 with 5/10/25/50 choices; the footer uses `Showing x–y of z Capabilities`, numeric pages, Previous/Next controls, and local filtering resets to page 1. The full-width table uses fixed proportional columns without a forced minimum width or desktop horizontal scroll.
 
-- **PromQL Capability Registry** follows the canonical KAORI data-table contract: shared table/filter/pagination primitives, default 5 rows, 5/10/25/50 options, numeric pages, Previous/Next controls, and `Showing x–y of z Capabilities`. Filtering resets to page 1. `View More` opens a decision-first modal with Validation Result, Latest Evidence, Contract Evaluation, Technical Verification, and Next Operational Action; evidence must not be repeated across multiple modal cards.
+- **PromQL Capability Registry** follows the canonical KAORI data-table contract: shared table/filter/pagination primitives, default 5 rows, 5/10/25/50 options, numeric pages, Previous/Next controls, and `Showing x–y of z Capabilities`. Filtering resets to page 1. `View More` uses the shared provider capability-detail architecture: Capability Contract → Validation Evidence / Operational Impact → Recommended Action → Technical Verification → Evidence Boundary. Evidence must not be repeated across multiple modal cards.
 - **Capability Registry loading ownership** uses one visible loading bar inside the registry header and the validation form targets that exact shared indicator id. Do not maintain a second hidden header indicator with a different id.
 - **Prometheus Binding Decision** is a full-width horizontal decision surface. Resolution posture, resolver contract, metrics identity boundary, and next action must not live in a sticky right rail. `Effective Consumer Resolution` and `Connection Lifecycle` follow below at full width. Destructive deletion remains secondary to the lifecycle explanation and must be disabled with KAORI disabled-state styling while guardrails block removal.
 - **Alertmanager Runtime Health & Diagnostics** uses two full-width surfaces: horizontal `Runtime Decision`, then `Runtime Evidence`. Runtime posture, gate, validation readiness, observation context, primary finding, and next action are consolidated in the decision surface. Endpoint context and concise diagnostics live in Runtime Evidence. Do not restore a sticky Runtime Decision rail; detailed provider errors belong in Recent Runtime Observations rather than being duplicated in the current workspace.
@@ -373,7 +373,7 @@ Prometheus and Alertmanager validation workspaces follow the Kubernetes `Compati
 - no persistent `Validation Decision` side rail or duplicate decision card;
 - capability detail remains behind the canonical `View More` modal boundary.
 
-The provider summary is owned by `integrations/components/_capability_readiness.html` so Prometheus and Alertmanager cannot drift independently.
+The capability summary is owned by `integrations/components/_capability_readiness.html` for Kubernetes, Prometheus, and Alertmanager so color, spacing, dark-mode behavior, evidence-boundary layout, and operational-action treatment cannot drift independently.
 
 ## Provider Runtime Alignment
 

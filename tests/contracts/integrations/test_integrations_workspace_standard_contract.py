@@ -117,7 +117,8 @@ def test_integrations_standard_is_implemented_not_draft() -> None:
     standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
     app_readme = read('app/integrations/README.md')
 
-    assert 'Status: canonical and implemented' in standard
+    assert 'Status: Locked canonical baseline' in standard
+    assert 'KAORI Integrations Lock v1' in standard
     assert 'Provider-local presentation wrappers are prohibited' in standard
     assert 'Technical matrices may use horizontal scrolling only' in standard
     assert 'Both documents are audit-only' not in app_readme

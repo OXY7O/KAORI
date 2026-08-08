@@ -92,10 +92,19 @@ def main() -> int:
     if 'whitespace-nowrap' not in labels:
         errors.append('app/templates/components/table_label.html: compact labels must remain single-line by default')
 
-    # Security boundary: baseline Kubernetes validation RBAC must never grant cluster-wide Secrets read.
+    # Security boundary: baseline Kubernetes validation RBAC must never grant
+    # cluster-wide Secrets read. A separate namespace-scoped optional Role is
+    # intentionally allowed for explicitly approved governance workflows.
     rbac = (ROOT / 'app/templates/integrations/kubernetes/partials/_minimum_validation_rbac.html').read_text(encoding='utf-8')
-    if re.search(r'resources:\s*\[[^\]]*"secrets"', rbac):
-        errors.append('Kubernetes minimum validation RBAC must not include cluster-wide Secrets access')
+    baseline_start = rbac.find('id="minimum-rbac-panel-baseline"')
+    optional_start = rbac.find('id="minimum-rbac-panel-secret"')
+    baseline_rbac = rbac[baseline_start:optional_start] if baseline_start >= 0 and optional_start > baseline_start else rbac
+    if re.search(r'resources:\s*\[[^\]]*"secrets"', baseline_rbac):
+        errors.append('Kubernetes baseline validation RBAC must not include cluster-wide Secrets access')
+    if optional_start >= 0:
+        optional_rbac = rbac[optional_start:]
+        if 'kind: Role' not in optional_rbac or 'kind: RoleBinding' not in optional_rbac:
+            errors.append('Optional Kubernetes Secret access must remain namespace-scoped via Role + RoleBinding')
 
     # Operational toast must remain script-owned and free from inline progress styles.
     toast = (ROOT / 'app/templates/components/operational_toast.html').read_text(encoding='utf-8')

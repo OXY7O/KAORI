@@ -61,7 +61,7 @@ def test_kubernetes_registry_uses_one_line_htmx_filters_and_inventory_table() ->
 
 def test_kubernetes_activity_is_navigation_and_capability_modal_scope_isolated() -> None:
     registry = read('app/templates/integrations/kubernetes/partials/_registry.html')
-    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html') + read('app/templates/integrations/kubernetes/partials/_capability_registry.html')
+    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html') + read('app/templates/integrations/kubernetes/partials/_capability_registry.html') + read('app/templates/integrations/components/_capability_readiness.html')
     modal = read('app/templates/integrations/components/_record_detail_modal.html')
     controller = read('app/static/js/native_dialogs.js')
 
@@ -101,7 +101,7 @@ def test_kubernetes_runtime_health_requires_persisted_observation() -> None:
 
 def test_kubernetes_actions_are_permission_aware() -> None:
     detail = read('app/templates/integrations/kubernetes/detail.html')
-    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html') + read('app/templates/integrations/kubernetes/partials/_capability_registry.html')
+    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html') + read('app/templates/integrations/kubernetes/partials/_capability_registry.html') + read('app/templates/integrations/components/_capability_readiness.html')
     runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
     connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
 
@@ -203,7 +203,7 @@ def test_secret_capability_is_optional_and_kept_out_of_baseline_readiness() -> N
     compatibility = read('app/integrations/kubernetes/compatibility.py')
     validation = read('app/integrations/kubernetes/validation.py')
     service = read('app/integrations/service.py')
-    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html') + read('app/templates/integrations/kubernetes/partials/_capability_registry.html')
+    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html') + read('app/templates/integrations/kubernetes/partials/_capability_registry.html') + read('app/templates/integrations/components/_capability_readiness.html')
 
     assert "FeatureContract('inventory.secrets', (ApiCandidate('', 'v1', 'secrets'),), required=False)" in compatibility
     assert "'optional_blocked_features'" in compatibility
@@ -227,13 +227,12 @@ def test_minimum_validation_rbac_uses_copy_friendly_modal() -> None:
 
 
 def test_capability_workspace_uses_registry_modal_and_consistent_typography() -> None:
-    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html') + read('app/templates/integrations/kubernetes/partials/_capability_registry.html')
+    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html') + read('app/templates/integrations/kubernetes/partials/_capability_registry.html') + read('app/templates/integrations/components/_capability_readiness.html')
     modal = read('app/templates/integrations/components/_record_detail_modal.html')
 
     for marker in (
         'data-kaori-capability-workspace-v8',
-        'data-kaori-capability-overview',
-        'data-kaori-capability-decision-summary',
+        'data-kaori-capability-readiness',
         'data-kaori-capability-explorer',
         'data-kaori-capability-matrix',
         'data-kaori-capability-matrix-header',
@@ -294,7 +293,7 @@ def test_capability_workspace_uses_registry_modal_and_consistent_typography() ->
 
 def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
     connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
-    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html') + read('app/templates/integrations/kubernetes/partials/_capability_registry.html')
+    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html') + read('app/templates/integrations/kubernetes/partials/_capability_registry.html') + read('app/templates/integrations/components/_capability_readiness.html')
     inventory = read('app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html')
     runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
 
@@ -311,7 +310,7 @@ def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
     assert 'font-mono' not in connection
 
     assert 'data-kaori-capability-workspace-v8' in capability
-    assert 'data-kaori-capability-overview' in capability
+    assert 'data-kaori-capability-readiness' in capability
     assert 'Capability Matrix' in capability
     assert 'data-kaori-capability-filters' in capability
     assert 'data-kaori-capability-record' in capability
@@ -420,7 +419,7 @@ def test_kubernetes_integration_uses_canonical_compact_label_roles() -> None:
     coverage = read('app/templates/integrations/kubernetes/partials/_integration_coverage.html')
     registry = read('app/templates/integrations/kubernetes/partials/_registry.html')
     connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
-    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html') + read('app/templates/integrations/kubernetes/partials/_capability_registry.html')
+    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html') + read('app/templates/integrations/kubernetes/partials/_capability_registry.html') + read('app/templates/integrations/components/_capability_readiness.html')
     runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
     inventory = read('app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html')
     history = read('app/templates/integrations/partials/_runtime_history.html')

@@ -141,9 +141,6 @@
     "app/templates/integrations/kubernetes/partials/_runtime_workspace.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/integrations/partials/_runtime_detail_content.html": {
-      "copied_standard_surface_shells": 1
-    },
     "app/templates/integrations/partials/_runtime_history.html": {
       "copied_standard_surface_shells": 1
     },
@@ -254,10 +251,6 @@
     },
     "app/templates/prometheus/instance_form.html": {
       "copied_standard_surface_shells": 1
-    },
-    "app/templates/prometheus/partials/_analytics_readiness.html": {
-      "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 2
     },
     "app/templates/prometheus/partials/_delete_confirmation_modal.html": {
       "semantic_border_utilities": 2

@@ -35,6 +35,8 @@ obsolete_paths=(
   'app/templates/integrations/kubernetes/partials/_runtime_history.html'
   'app/templates/integrations/partials/_binding_validation_posture.html'
   'app/templates/integrations/partials/_status_badge.html'
+  'app/templates/integrations/partials/_runtime_detail_content.html'
+  'app/templates/prometheus/partials/_analytics_readiness.html'
   'app/static/js/inventory/topology_bootstrap.js'
   'app/dashboards/kubernetes/snapshot_builder.py'
   'app/analytics/common/cache.py'

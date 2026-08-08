@@ -74,7 +74,7 @@ def test_operational_toast_countdown_has_visible_htmx_safe_animation() -> None:
 
     assert 'data-operational-toast-timer' in toast
     assert 'origin-left' in toast
-    assert 'scaleX(1)' in toast
+    assert 'style=' not in toast
     assert "timerBar.animate" in script
     assert 'void timerBar.offsetWidth' in script
     assert "timerBar.style.transform = 'scaleX(0)'" in script

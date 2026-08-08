@@ -12,7 +12,7 @@ This lock applies to the user-facing workspaces that are considered stable befor
 - Kubernetes Analytics
 - Kubernetes Operations
 - Kubernetes Governance
-- Integrations, including Kubernetes, Prometheus, and Alertmanager provider workspaces
+- Integrations, including Kubernetes, Prometheus, and Alertmanager provider workspaces (further frozen by `docs/design/KAORI_INTEGRATIONS_LOCK_V1.md`)
 
 The lock is intentionally narrower than the entire repository. Reports, Intelligence, Settings, Notifications, and Identity remain independently reviewable domains.
 
