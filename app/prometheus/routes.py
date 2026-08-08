@@ -10,6 +10,7 @@ from flask_login import current_user
 from app.cluster.service import get_cluster_by_id
 from app.common.http import is_htmx_request
 from app.extensions.db import db
+from app.integrations.capability_registry import build_capability_registry_view
 from app.integrations.deletion import DeletionBlocked
 from app.integrations.lifecycle import ensure_canonical_instance
 from app.integrations.prometheus.exceptions import PrometheusError
@@ -101,6 +102,10 @@ def _instance_detail_context(
         history_trigger=history_trigger,
         history_health=history_health,
         history_readiness=history_readiness,
+    )
+    context['capability_registry'] = build_capability_registry_view(
+        context.get('capability_rows', []),
+        search_fields=('label', 'category', 'source_owner'),
     )
     context['delete_instance_url'] = url_for(
         'prometheus.delete_instance',
@@ -1037,6 +1042,23 @@ def instance_test(instance_id: int) -> ResponseReturnValue:
             operation_feedback=feedback,
         )
     return redirect(url_for('prometheus.instance_detail', instance_id=instance.id) + '#validation')
+
+
+@prometheus_bp.get('/instances/<int:instance_id>/validation/capabilities')
+@permission_required('settings.manage_integrations')
+def instance_capability_registry(instance_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    context = _instance_detail_context(instance)
+    context['capability_registry'] = build_capability_registry_view(
+        context.get('capability_rows', []),
+        query=request.args.get('query', ''),
+        requirement=request.args.get('requirement', 'all'),
+        status=request.args.get('status', 'all'),
+        page=request.args.get('page', 1),
+        per_page=request.args.get('per_page', 5),
+        search_fields=('label', 'category', 'source_owner'),
+    )
+    return render_template('prometheus/partials/_capability_registry.html', **context)
 
 
 @prometheus_bp.post('/instances/<int:instance_id>/validate')

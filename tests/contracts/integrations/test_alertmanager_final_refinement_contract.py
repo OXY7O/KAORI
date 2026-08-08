@@ -1,33 +1,38 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
+ALERT_REGISTRY = ROOT / 'app/templates/alertmanager/partials/_capability_registry.html'
+ALERT_ROUTES = ROOT / 'app/alertmanager/routes.py'
 
 
 def read(path: str) -> str:
     return (ROOT / path).read_text()
 
 
-def test_alertmanager_validation_is_horizontal_and_registry_is_standard_kaori_table():
+def test_alertmanager_validation_is_horizontal_and_registry_uses_server_backed_kaori_loading():
     content = read('app/templates/alertmanager/partials/_detail_validation_content.html')
+    registry = ALERT_REGISTRY.read_text()
+    routes = ALERT_ROUTES.read_text()
     assert 'data-kaori-alertmanager-validation-decision-horizontal' in content
-    assert 'data-kaori-alertmanager-capability-table' in content
-    assert 'alertmanager-capability-loading' in content
-    assert 'hx-indicator="#alertmanager-capability-loading"' in content
-    assert 'components/pagination.html' in content
-    assert 'pageSize: 5' in content
-    assert '<option value="5">5</option>' in content
-    assert '<option value="10">10</option>' in content
-    assert '<option value="25">25</option>' in content
-    assert '<option value="50">50</option>' in content
-    assert 'Showing <span' in content
-    assert 'Capabilities</p>' in content
-    assert 'table-fixed' in content
-    assert 'min-w-[62rem]' not in content
-    assert 'xl:grid-cols-[minmax(0,1fr)_25rem]' not in content
+    assert "include 'alertmanager/partials/_capability_registry.html'" in content
+    assert 'data-kaori-alertmanager-capability-table' in registry
+    assert 'alertmanager-capability-loading' in registry
+    assert 'hx-indicator="#{{ loading_id }}"' in registry
+    assert 'data-kaori-server-filtered-registry' in registry
+    assert 'components/pagination.html' in registry
+    assert 'data-kaori-auto-submit' in registry
+    assert 'pagination.allowed_per_page' in registry
+    assert 'Showing <span' in registry
+    assert 'table-fixed' in registry
+    assert 'min-w-[62rem]' not in registry
+    assert 'x-model' not in registry
+    assert 'filteredRows()' not in registry
+    assert "@alertmanager_bp.get('/instances/<int:instance_id>/validation/capabilities')" in routes
+    assert 'def instance_capability_registry' in routes
 
 
 def test_alertmanager_validation_modal_is_decision_first_without_repeated_evidence_cards():
-    content = read('app/templates/alertmanager/partials/_detail_validation_content.html')
+    content = ALERT_REGISTRY.read_text()
     assert 'Validation Result' in content
     assert 'Latest Evidence' in content
     assert 'Success Criteria' in content

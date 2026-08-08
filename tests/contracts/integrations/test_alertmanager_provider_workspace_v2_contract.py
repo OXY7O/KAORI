@@ -25,11 +25,12 @@ def test_alertmanager_configuration_uses_connection_contract_and_decision_panel(
 
 def test_alertmanager_validation_uses_capability_registry_and_decision_panel():
     content = read('app/templates/alertmanager/partials/_detail_validation_content.html')
-    assert 'Alert Management Capability Registry' in content
+    registry = read('app/templates/alertmanager/partials/_capability_registry.html')
     assert 'Validation Decision' in content
     assert 'Operational Domains' in content
-    assert 'View More' in content
-    assert 'table_ui.table_classes' in content
+    assert 'Alert Management Capability Registry' in registry
+    assert 'View More' in registry
+    assert 'table_ui.table_classes' in registry
 
 
 def test_alertmanager_runtime_uses_horizontal_runtime_decision_and_history_filters():

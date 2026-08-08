@@ -29,6 +29,7 @@ from app.alertmanager.service import (
     update_alertmanager_binding_selector,
 )
 from app.common.http import is_htmx_request
+from app.integrations.capability_registry import build_capability_registry_view
 from app.integrations.deletion import DeletionBlocked
 from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
 from app.integrations.validation.web import (
@@ -58,6 +59,11 @@ def _htmx_redirect(location: str) -> ResponseReturnValue:
 
 def _instance_context(instance) -> dict:
     context = build_instance_context(instance)
+    context['capability_registry'] = build_capability_registry_view(
+        context.get('capability_rows', []),
+        search_fields=('label', 'category', 'description'),
+        distinguish_optional_gap=True,
+    )
     validation_task_id = get_active_validation_task_id(
         provider_type='alertmanager',
         operation='full_validation',
@@ -590,6 +596,26 @@ def validate_instance(instance_id: int) -> ResponseReturnValue:
             validation_scope_oob=True,
         )
     return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#validation')
+
+
+@alertmanager_bp.get('/instances/<int:instance_id>/validation/capabilities')
+@permission_required('settings.manage_integrations')
+def instance_capability_registry(instance_id: int) -> ResponseReturnValue:
+    instance = get_alertmanager_instance(instance_id)
+    if instance is None:
+        abort(404)
+    context = _instance_context(instance)
+    context['capability_registry'] = build_capability_registry_view(
+        context.get('capability_rows', []),
+        query=request.args.get('query', ''),
+        requirement=request.args.get('requirement', 'all'),
+        status=request.args.get('status', 'all'),
+        page=request.args.get('page', 1),
+        per_page=request.args.get('per_page', 5),
+        search_fields=('label', 'category', 'description'),
+        distinguish_optional_gap=True,
+    )
+    return render_template('alertmanager/partials/_capability_registry.html', **context)
 
 
 @alertmanager_bp.get('/instances/<int:instance_id>/validate/status/<string:task_id>')
