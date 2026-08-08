@@ -11,10 +11,12 @@ LOCK_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1.md'
 LOCK_V1_1_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_1.md'
 LOCK_V1_2_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_2.md'
 LOCK_V1_3_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_3.md'
+LOCK_V1_4_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_4.md'
 AUDIT_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_AUDIT_2026_08_08.md'
 AUDIT_V1_1_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md'
 AUDIT_V1_2_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_2_AUDIT_2026_08_08.md'
 AUDIT_V1_3_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_3_AUDIT_2026_08_08.md'
+AUDIT_V1_4_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_4_AUDIT_2026_08_08.md'
 QUALITY_GATE = ROOT / 'scripts/quality_gate.sh'
 CLEANUP = ROOT / 'scripts/cleanup_obsolete_files.sh'
 CORE_UI_LOCK = ROOT / 'scripts/verify_core_workspace_ui_lock.py'
@@ -58,7 +60,7 @@ def template_files() -> list[Path]:
 def main() -> int:
     errors: list[str] = []
 
-    for doc in (LOCK_DOC, LOCK_V1_1_DOC, LOCK_V1_2_DOC, LOCK_V1_3_DOC, AUDIT_DOC, AUDIT_V1_1_DOC, AUDIT_V1_2_DOC, AUDIT_V1_3_DOC):
+    for doc in (LOCK_DOC, LOCK_V1_1_DOC, LOCK_V1_2_DOC, LOCK_V1_3_DOC, LOCK_V1_4_DOC, AUDIT_DOC, AUDIT_V1_1_DOC, AUDIT_V1_2_DOC, AUDIT_V1_3_DOC, AUDIT_V1_4_DOC):
         if not doc.exists():
             errors.append(f'missing lock artifact: {doc.relative_to(ROOT).as_posix()}')
 
@@ -288,6 +290,39 @@ def main() -> int:
         if evidence.lower() not in cluster_workspace.lower() and evidence.lower() not in secret_workspace.lower():
             errors.append(f'Secret Reveal protected boundary evidence missing: {evidence}')
 
+    protected_reveal_service = read('app/kubernetes_operations/secrets/reveal_service.py')
+    for required in (
+        'cluster_reveal_readiness,',
+        'get_configured_enabled_namespace_names,',
+        'get_namespace_policy,',
+        'configured_names = get_configured_enabled_namespace_names(normalized_cluster_id)',
+        'allowed_namespaces=configured_names',
+        'namespace_policy = get_namespace_policy(cluster.id, target.namespace)',
+        'current_policy = get_namespace_policy(record.cluster_id, record.namespace)',
+        'current_policy != record.policy',
+    ):
+        if required not in protected_reveal_service:
+            errors.append(f'Secret Reveal v1.4 cross-workspace authority missing: {required}')
+
+    request_status = read('app/templates/kubernetes_operations/secrets/_reveal_request_status.html')
+    if "{{ 'Request' if my_reveal_pagination.total == 1 else 'Requests' }}" not in request_status:
+        errors.append('Protected Reveal pagination must use Title Case Request/Requests')
+    if 'aria-label="Rows Per Page"' not in request_status:
+        errors.append('Protected Reveal pagination must use Title Case Rows Per Page accessibility copy')
+    if 'uppercase tracking-wide' in request_status or 'hover:bg-kaori-soft' in request_status:
+        errors.append('Protected Reveal request registry must remain Title Case and neutral-first in dark mode')
+
+    request_form = read('app/templates/kubernetes_operations/secrets/_reveal_request_form.html')
+    if 'rounded-xl bg-kaori-primary text-white' in request_form:
+        errors.append('Protected Reveal informational request icon must not use a solid Bright Violet surface')
+    if 'space-y-1 text-xs leading-5 text-content-secondary' not in request_form:
+        errors.append('Protected Reveal request guidance must use neutral content text')
+
+    if 'bg-white/70' in secret_workspace:
+        errors.append('Secret Reveal administration must not use hardcoded light-only callout surfaces')
+    if 'hover:bg-kaori-soft/40' in namespace_section or 'bg-kaori-soft/70' in namespace_table or 'hover:bg-kaori-soft/40' in namespace_table:
+        errors.append('Secret Reveal administration tables and refresh controls must remain neutral-first in dark mode')
+
     for relative in OBSOLETE:
         if (ROOT / relative).exists():
             errors.append(f'obsolete Platform Operations path reintroduced: {relative}')
@@ -317,11 +352,12 @@ def main() -> int:
         return 1
 
     print(
-        'KAORI Platform Operations Final Lock v1.3 passed: Kubernetes Administration and Jobs & Executions '
+        'KAORI Platform Operations Final Lock v1.4 passed: Kubernetes Administration and Jobs & Executions '
         'use shared tabs, Title Case, bounded execution attention, expandable execution evidence, worker readiness, '
         'activity-center background feedback, lean Job Configuration rendering, clear configuration surfaces, '
         'tri-state Secret Reveal live evidence, snapshot-backed namespace filtering, explicit credential readiness, '
-        'HTMX-owned registry controls, protected Secret Reveal guardrails, and permanent legacy cleanup.'
+        'HTMX-owned registry controls, shared Secret Reveal policy authority, neutral-first protected-reveal dark surfaces, '
+        'Title Case reveal pagination, protected Secret Reveal guardrails, and permanent legacy cleanup.'
     )
     return 0
 

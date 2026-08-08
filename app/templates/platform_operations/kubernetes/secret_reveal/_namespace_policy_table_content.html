@@ -9,7 +9,7 @@
             <col class="w-[26%]">
         </colgroup>
         <thead>
-            <tr class="border-b border-brand-outline bg-kaori-soft/70 text-xs text-content-secondary">
+            <tr class="border-b border-outline-default bg-surface-hover text-xs text-content-secondary">
                 <th class="px-5 py-3 text-left">Namespace</th>
                 <th class="px-5 py-3 text-left">Live Namespace</th>
                 <th class="px-5 py-3 text-left">Current Policy</th>
@@ -21,7 +21,7 @@
                 {% set policy_tone = 'maintenance' if row.policy in ['approval_required', 'step_up'] else 'unknown' %}
                 {% set live_label = 'Available' if row.live_state == 'available' else 'Missing' if row.live_state == 'missing' else 'Unknown' %}
                 {% set live_tone = 'normal' if row.live_state == 'available' else 'warning' if row.live_state == 'missing' else 'unknown' %}
-                <tr class="border-t border-outline-default text-sm transition hover:bg-kaori-soft/40">
+                <tr class="border-t border-outline-default text-sm transition hover:bg-surface-hover">
                     <td class="px-5 py-3 align-middle">
                         <div class="flex max-w-[360px] items-center gap-2.5">
                             <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="box" class="h-4 w-4"></i></span>
@@ -115,7 +115,7 @@
             <input type="hidden" name="namespace_q" value="{{ namespace_filters.query }}">
             <input type="hidden" name="namespace_policy" value="{{ namespace_filters.policy }}">
             <input type="hidden" name="page" value="1">
-            <select name="per_page" aria-label="Rows per page" data-kaori-auto-submit class="{{ pagination_ui.page_size_classes() }}">
+            <select name="per_page" aria-label="Rows Per Page" data-kaori-auto-submit class="{{ pagination_ui.page_size_classes() }}">
                 {% for option in namespace_per_page_options %}
                     <option value="{{ option }}" {% if namespace_pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
                 {% endfor %}

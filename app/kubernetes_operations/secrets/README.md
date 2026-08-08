@@ -276,3 +276,8 @@ The canonical presentation is documented in `docs/design/patterns/KUBERNETES_CON
 - Protected Reveal polls only the active segmented workspace and renders one-time material through `components/protected_value_panel.html`.
 - Delete requires a final destructive confirmation modal after exact-name entry and non-destructive validation. The modal does not replace the signed receipt, RBAC preflight, target reread, or resourceVersion precondition.
 - Reveal registries and bulk TLS tables use scoped endpoint-aware HTMX pagination.
+
+
+### Protected Reveal configuration authority
+
+Protected Kubernetes Secret Reveal does not own a separate readiness or namespace-policy registry. It consumes `app/kubernetes_operations/secrets/reveal_policy.py`, the same authority configured from Platform Operations. Current readiness/policy is revalidated during request creation, approval, and one-time reveal, and configuration changes expire affected active requests. Platform Operations namespace snapshots are display optimizations only; live Kubernetes reads remain mandatory at the protected execution boundary.

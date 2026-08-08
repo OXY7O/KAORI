@@ -116,3 +116,16 @@ Operational toasts remain correct here because Save Readiness and Set Policy are
 - Namespace Policies exposes live-source state, last successful refresh, and an explicit Refresh action.
 - Table headers use Title Case and the fixed proportional column contract `38% / 16% / 20% / 26%`.
 - Shared semantic labels, pagination, dark-mode tokens, and KAORI Violet action hierarchy remain mandatory.
+
+
+## Cross-workspace execution contract
+
+Platform Operations owns configuration only. `Kubernetes Operations → Protected Kubernetes Secret Reveal` consumes the same `reveal_policy.py` readiness and namespace-policy authority rather than maintaining a second copy.
+
+- target discovery requires current cluster readiness and configured enabled namespaces;
+- live namespace/Secret discovery is revalidated in Kubernetes before a request is created;
+- request creation, approval, and one-time reveal re-check the current policy boundary;
+- readiness disablement and namespace-policy changes expire matching pending/approved requests;
+- administration snapshots optimize list rendering only and are never authorization evidence for plaintext reveal.
+
+Dark mode for both workspaces follows the neutral-first KAORI contract: informational panels, table headers, hover states, and callouts use semantic/neutral surfaces; Bright Violet is reserved for primary actions and compact accents.
