@@ -18,6 +18,14 @@ Presentation checks remain lock-free. Deactivate, delete, and edit paths that ca
 
 `AuditEvent` still has active consumers outside User Management. User Management therefore keeps the legacy primary-transaction event and the Notification-backed operational feedback until a cross-domain audit-ledger migration is designed.
 
+
+### Reset Password and right-rail standard
+
+- Reset Password now uses the same shared `page_hero.context_card(...)` grammar as Inventory and User Management instead of a page-local hero panel.
+- Reset Impact is a neutral operational evidence card covering password hash, preserved account/role state, Activity Audit evidence, and the currently open authenticated-session boundary.
+- The secure-delivery helper is compact: `Share the new password securely; administrator resets are not temporary.`
+- Access main-content right rails use one desktop contract: `xl:sticky xl:top-5`. Hero context panels are excluded because they remain part of the hero component rather than the scrolling content rail.
+
 ### Password reset session invalidation remains open
 
 Inactive/deleted users are rejected by the Flask-Login user loader. Password reset does not yet version-invalidate already authenticated sessions. This remains an explicit security follow-up before User Management Final Lock.
@@ -40,10 +48,3 @@ Inactive/deleted users are rejected by the Flask-Login user loader. Password res
 2. Review Add/Edit User form UI independently.
 3. Complete Identity Providers, Roles & Access, Permission Catalog, and Activity Audit reviews.
 4. Run full Access final-lock audit only after all child workspaces are accepted.
-
-
-## Add / Edit Form Rail Refinement
-
-- `Add User by Identity Provider` is collapsed by default so Local Database creation remains the primary form path while provider guidance stays available on demand.
-- The right-side guidance rail remains sticky at the existing KAORI desktop breakpoint for both Add User and Edit User.
-- Mobile and stacked layouts keep normal document flow; sticky behavior is only active once the form uses the two-column `xl` layout.

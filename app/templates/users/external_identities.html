@@ -218,7 +218,7 @@
                     </div>
                 </section>
             </main>
-            <aside class="space-y-5 xl:sticky xl:top-6 xl:col-span-4">
+            <aside class="space-y-5 xl:col-span-4 xl:sticky xl:top-5">
                 {% set provisioning_flow_steps = [('Prepare the Provider', 'Configure the LDAP endpoint, Base DN, bind identity, secret environment reference, search filter, and TLS mode.'), ('Find One Identity', 'Select the intended directory and search by username, email address, or display name. KAORI reads matching directory entries only.'), ('Assign KAORI Access', 'Choose the KAORI role and decide whether the projected account becomes active immediately.'), ('Provision and Authenticate', 'KAORI stores the external identity link and authorization state. The user continues signing in with LDAP-managed credentials.')] %}
                 {{ info_flow.render('How LDAP Provisioning Works',
                                 'Follow the controlled administrator workflow from provider readiness to LDAP-backed authentication.',

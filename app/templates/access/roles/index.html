@@ -353,7 +353,7 @@
                     </div>
                 </footer>
             </div>
-            <aside class="space-y-5">
+            <aside class="space-y-5 xl:sticky xl:top-5">
                 {% set role_assignment_flow = [('Permission Catalog', 'Code-owned permission keys define atomic KAORI capabilities.'), ('Role Composition', 'Default or custom roles package those keys into reusable access profiles.'), ('User Management', 'One active role is assigned to each account and evaluated by server-side guards.')] %}
                 {{ info_flow.render('Role Assignment Flow',
                                 'How backend capabilities become effective user access.',

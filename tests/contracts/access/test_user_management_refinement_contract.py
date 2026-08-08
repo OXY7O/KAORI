@@ -132,10 +132,38 @@ def test_password_reset_session_revocation_remains_explicit_pre_lock_follow_up()
     assert 'must be resolved before User Management Final Lock' in readme
 
 
-def test_user_form_identity_provider_guidance_starts_collapsed_and_right_rail_stays_sticky() -> None:
-    form = read('app/templates/users/form.html')
-    identity_section = form.split('Add User by Identity Provider', 1)[0].rsplit('<details', 1)[1]
-    assert ' open' not in identity_section.split('>', 1)[0]
-    assert form.count('aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5"') >= 2
-    assert "{% if mode == 'create' %}" in form
-    assert "{% else %}" in form
+def test_reset_password_matches_kaori_hero_impact_and_secure_delivery_contract() -> None:
+    template = read('app/templates/users/reset_password.html')
+    assert 'page_hero.context_card(' in template
+    assert 'page_hero.context_panel_classes()' not in template
+    assert "'Identity & Access'" in template
+    assert "'Reset Scope'" in template
+    assert "'Eligible'" in template
+    assert "('database', 'Credential Owner', 'KAORI'" in template
+    assert "'Account State'" in template
+    assert 'Credential, lifecycle, audit, and session effects.' in template
+    assert 'Password Hash' in template
+    assert 'Account &amp; Role' in template
+    assert 'Activity Audit' in template
+    assert 'Existing Sessions' in template
+    assert 'Remain Active' in template
+    assert 'Share the new password securely; administrator resets are not temporary.' in template
+    assert 'Deliver the new password through an approved secure channel.' not in template
+
+
+def test_access_main_right_rails_are_sticky_with_shared_desktop_offset() -> None:
+    required = {
+        'app/templates/users/form.html': 2,
+        'app/templates/users/reset_password.html': 1,
+        'app/templates/users/providers/index.html': 1,
+        'app/templates/users/providers/partials/_provider_guidance.html': 1,
+        'app/templates/users/external_identities.html': 1,
+        'app/templates/access/roles/index.html': 1,
+        'app/templates/access/roles/form.html': 1,
+        'app/templates/access/permissions/index.html': 1,
+    }
+    for path, minimum in required.items():
+        source = read(path)
+        assert source.count('xl:sticky xl:top-5') >= minimum, path
+    for path in required:
+        assert 'xl:top-6' not in read(path), path
