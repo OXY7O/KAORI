@@ -48,3 +48,5 @@ Inactive/deleted users are rejected by the Flask-Login user loader. Password res
 2. Review Add/Edit User form UI independently.
 3. Complete Identity Providers, Roles & Access, Permission Catalog, and Activity Audit reviews.
 4. Run full Access final-lock audit only after all child workspaces are accepted.
+
+- Reset Password `Reset Impact` uses the shared expandable-content shell and is collapsed by default so secondary impact evidence does not dominate the recovery form.

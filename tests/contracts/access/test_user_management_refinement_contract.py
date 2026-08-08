@@ -141,6 +141,11 @@ def test_reset_password_matches_kaori_hero_impact_and_secure_delivery_contract()
     assert "'Eligible'" in template
     assert "('database', 'Credential Owner', 'KAORI'" in template
     assert "'Account State'" in template
+    assert '{% import "components/view_more_content.html" as view_more %}' in template
+    assert "view_more.render(" in template
+    assert "'Reset Impact'" in template
+    assert 'open_by_default=false' in template
+    assert "closed_label='View Details'" in template
     assert 'Credential, lifecycle, audit, and session effects.' in template
     assert 'Password Hash' in template
     assert 'Account &amp; Role' in template
