@@ -27,7 +27,7 @@ def test_system_information_describes_release_2_1_0_capabilities() -> None:
         'Kubernetes Platform Operations',
         'Integration Runtime & Compatibility',
         'Jobs & Automation',
-        'Reporting & Data Lifecycle',
+        'Reporting & Artifact Delivery',
     }.issubset(capability_titles)
 
 

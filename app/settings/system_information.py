@@ -90,19 +90,18 @@ _RELEASE_FEATURES: tuple[dict[str, Any], ...] = (
         'features': (
             'Celery Beat scheduling with canonical job definitions and configurable policies',
             'Manual, scheduled, and recovery-triggered execution paths',
-            'Inventory, analytics, integration runtime, retention, and TLS synchronization workloads',
+            'Inventory, analytics, integration runtime, Data Lifecycle, and TLS synchronization workloads',
             'Job deduplication, progress reporting, partial-success handling, and execution history',
         ),
     },
     {
-        'title': 'Reporting & Data Lifecycle',
+        'title': 'Reporting & Artifact Delivery',
         'icon': 'file-chart-column',
-        'description': 'Template-driven report delivery, storage, scheduling, and centralized retention controls.',
+        'description': 'Template-driven report delivery, generated artifacts, scheduling, and governed storage.',
         'features': (
             'Existing system and custom report templates with configurable sections and ordering',
             'Canonical WeasyPrint HTML/PDF rendering',
             'Generated report management, schedules, local storage, and S3-compatible storage',
-            'Centralized data lifecycle policies, archive verification, and operational retention',
         ),
     },
     {

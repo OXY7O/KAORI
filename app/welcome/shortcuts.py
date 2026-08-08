@@ -107,7 +107,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'title': 'Platform Operations',
         'label': 'Execution & Administration',
         'description': (
-            'Monitor background executions and manage advanced Kubernetes administration controls across operational domains.'
+            'Monitor background executions, govern data lifecycle, and manage advanced Kubernetes administration controls.'
         ),
         'icon': 'workflow',
         'scope': 'Platform',
@@ -115,6 +115,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'targets': (
             ('jobs.view', 'jobs.executions'),
             ('jobs.configure', 'jobs.configuration'),
+            ('platform_operations.view_data_lifecycle', 'platform_operations.data_lifecycle.index'),
             ('kubernetes_secrets.manage_reveal', 'platform_operations.kubernetes.index'),
         ),
     },

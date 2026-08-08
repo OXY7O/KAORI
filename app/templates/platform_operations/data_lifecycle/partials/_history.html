@@ -8,24 +8,29 @@
         <div class="flex items-start gap-3">
             <span class="{{ table_ui.block_icon_classes() }}"><i data-lucide="history" class="h-5 w-5"></i></span>
             <div>
-                <h2 class="{{ table_ui.block_title_classes() }}">Lifecycle Execution History</h2>
-                <p class="{{ table_ui.block_description_classes() }}">Review archive, verification, and cleanup results across independent KAORI data domains.</p>
+                <h2 class="{{ table_ui.block_title_classes() }}">Archive History</h2>
+                <p class="{{ table_ui.block_description_classes() }}">Review verified archive artifacts and cleanup evidence across managed KAORI data domains.</p>
             </div>
         </div>
-        <a href="{{ url_for('settings.data_lifecycle.index', tab='history', archive_domain=filters.domain, archive_status=filters.status, archive_trigger=filters.trigger_type, archive_mode=filters.operation_mode, archive_storage=filters.storage_backend, archive_search=filters.search, archive_page=pager.page, archive_per_page=pager.per_page) }}"
-           hx-get="{{ url_for('settings.data_lifecycle.index', tab='history', archive_domain=filters.domain, archive_status=filters.status, archive_trigger=filters.trigger_type, archive_mode=filters.operation_mode, archive_storage=filters.storage_backend, archive_search=filters.search, archive_page=pager.page, archive_per_page=pager.per_page) }}"
-           hx-target="#data-lifecycle-history"
-           hx-swap="outerHTML"
-           hx-indicator="#data-lifecycle-history-loading"
-           class="{{ table_ui.action_classes() }}"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh</a>
+        <div class="flex flex-wrap items-center gap-2">
+            {% if current_user.has_permission('jobs.view') %}
+                <a href="{{ url_for('jobs.executions') }}" class="{{ table_ui.action_classes() }}"><i data-lucide="list-checks" class="h-4 w-4"></i>Jobs &amp; Executions</a>
+            {% endif %}
+            <a href="{{ url_for('platform_operations.data_lifecycle.index', tab='history', archive_domain=filters.domain, archive_status=filters.status, archive_trigger=filters.trigger_type, archive_mode=filters.operation_mode, archive_storage=filters.storage_backend, archive_search=filters.search, archive_page=pager.page, archive_per_page=pager.per_page) }}"
+               hx-get="{{ url_for('platform_operations.data_lifecycle.index', tab='history', archive_domain=filters.domain, archive_status=filters.status, archive_trigger=filters.trigger_type, archive_mode=filters.operation_mode, archive_storage=filters.storage_backend, archive_search=filters.search, archive_page=pager.page, archive_per_page=pager.per_page) }}"
+               hx-target="#data-lifecycle-history"
+               hx-swap="outerHTML"
+               hx-indicator="#data-lifecycle-history-loading"
+               class="{{ table_ui.action_classes() }}"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Refresh</a>
+        </div>
     </div>
     <div id="data-lifecycle-history-loading"
          class="{{ table_ui.loading_bar_classes() }}">
         <div class="notification-progress-indeterminate h-full bg-kaori-primary"></div>
     </div>
     <form method="get"
-          action="{{ url_for('settings.data_lifecycle.index') }}"
-          hx-get="{{ url_for('settings.data_lifecycle.index') }}"
+          action="{{ url_for('platform_operations.data_lifecycle.index') }}"
+          hx-get="{{ url_for('platform_operations.data_lifecycle.index') }}"
           hx-target="#data-lifecycle-history"
           hx-swap="outerHTML"
           hx-push-url="true"
@@ -128,12 +133,12 @@
                         </td>
                         <td class="{{ table_ui.cell_classes(true) }}">
                             <div class="flex justify-end gap-2">
-                                {% if archive.is_downloadable and current_user.has_permission('settings.export_data_lifecycle') %}<a href="{{ url_for('settings.data_lifecycle.download', archive_id=archive.id) }}"
+                                {% if archive.is_downloadable and current_user.has_permission('platform_operations.export_data_lifecycle') %}<a href="{{ url_for('platform_operations.data_lifecycle.download', archive_id=archive.id) }}"
    class="{{ table_ui.action_classes() }}"><i data-lucide="download" class="h-4 w-4"></i>Download</a>{% endif %}
-                                {% if archive.is_verifiable and current_user.has_permission('settings.manage_data_lifecycle') %}
+                                {% if archive.is_verifiable and current_user.has_permission('platform_operations.manage_data_lifecycle') %}
                                     <form method="post"
-                                          action="{{ url_for('settings.data_lifecycle.verify', archive_id=archive.id) }}"
-                                          hx-post="{{ url_for('settings.data_lifecycle.verify', archive_id=archive.id) }}"
+                                          action="{{ url_for('platform_operations.data_lifecycle.verify', archive_id=archive.id) }}"
+                                          hx-post="{{ url_for('platform_operations.data_lifecycle.verify', archive_id=archive.id) }}"
                                           hx-target="#data-lifecycle-history"
                                           hx-swap="outerHTML"
                                           hx-indicator="#data-lifecycle-history-loading">
@@ -148,7 +153,7 @@
                 {% else %}
                     <tr>
                         <td colspan="8" class="p-0">
-                            {% set empty_state_icon = "archive" %}{% set empty_state_label = "No Data" %}{% set empty_state_title = "No Lifecycle Executions Found" %}{% set empty_state_description = "Run a preview and archive from Retention Policies in KAORI." %}{% set empty_state_min_height = "min-h-[190px]" %}
+                            {% set empty_state_icon = "archive" %}{% set empty_state_label = "No Data" %}{% set empty_state_title = "No Archive History Found" %}{% set empty_state_description = "Run a preview or archive operation from Retention Policies." %}{% set empty_state_min_height = "min-h-[190px]" %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
@@ -158,10 +163,11 @@
     </div>
     <div class="flex flex-col gap-3 border-t border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex items-center gap-3">
-            <p class="text-xs text-content-muted">Showing {{ pager.start_item }}–{{ pager.end_item }} of {{ pager.total }} archives</p>
-            <select aria-label="Archives per page"
+            <p class="text-xs text-content-muted">Showing {{ pager.start_item }}–{{ pager.end_item }} of {{ pager.total }} {{ 'Archive' if pager.total == 1 else 'Archives' }}</p>
+            <span class="font-semibold text-content-secondary">Rows</span>
+            <select aria-label="Rows Per Page"
                     class="{{ pagination_ui.page_size_classes() }}"
-                    hx-get="{{ url_for('settings.data_lifecycle.index', tab='history', archive_domain=filters.domain, archive_status=filters.status, archive_trigger=filters.trigger_type, archive_mode=filters.operation_mode, archive_storage=filters.storage_backend, archive_search=filters.search, archive_page=1) }}"
+                    hx-get="{{ url_for('platform_operations.data_lifecycle.index', tab='history', archive_domain=filters.domain, archive_status=filters.status, archive_trigger=filters.trigger_type, archive_mode=filters.operation_mode, archive_storage=filters.storage_backend, archive_search=filters.search, archive_page=1) }}"
                     hx-target="#data-lifecycle-history"
                     hx-swap="outerHTML"
                     hx-push-url="true"
@@ -175,7 +181,7 @@
         <div class="flex items-center gap-2">
             {% if pager.has_prev %}
                 <a class="{{ pagination_ui.navigation_classes() }}"
-                   hx-get="{{ url_for('settings.data_lifecycle.index', tab='history', archive_domain=filters.domain, archive_status=filters.status, archive_trigger=filters.trigger_type, archive_mode=filters.operation_mode, archive_storage=filters.storage_backend, archive_search=filters.search, archive_page=pager.prev_num, archive_per_page=pager.per_page) }}"
+                   hx-get="{{ url_for('platform_operations.data_lifecycle.index', tab='history', archive_domain=filters.domain, archive_status=filters.status, archive_trigger=filters.trigger_type, archive_mode=filters.operation_mode, archive_storage=filters.storage_backend, archive_search=filters.search, archive_page=pager.prev_num, archive_per_page=pager.per_page) }}"
                    hx-target="#data-lifecycle-history"
                    hx-swap="outerHTML"
                    hx-push-url="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
@@ -186,7 +192,7 @@
             {{ pagination_ui.numeric_pages(pager.page,pager.pages) }}
             {% if pager.has_next %}
                 <a class="{{ pagination_ui.navigation_classes() }}"
-                   hx-get="{{ url_for('settings.data_lifecycle.index', tab='history', archive_domain=filters.domain, archive_status=filters.status, archive_trigger=filters.trigger_type, archive_mode=filters.operation_mode, archive_storage=filters.storage_backend, archive_search=filters.search, archive_page=pager.next_num, archive_per_page=pager.per_page) }}"
+                   hx-get="{{ url_for('platform_operations.data_lifecycle.index', tab='history', archive_domain=filters.domain, archive_status=filters.status, archive_trigger=filters.trigger_type, archive_mode=filters.operation_mode, archive_storage=filters.storage_backend, archive_search=filters.search, archive_page=pager.next_num, archive_per_page=pager.per_page) }}"
                    hx-target="#data-lifecycle-history"
                    hx-swap="outerHTML"
                    hx-push-url="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>

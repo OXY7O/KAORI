@@ -61,12 +61,12 @@ _ENDPOINT_LABELS: dict[str, str] = {
     # Platform operations
     'jobs.executions': 'Executions',
     'jobs.configuration': 'Job Configuration',
+    'platform_operations.data_lifecycle.index': 'Data Lifecycle',
     'platform_operations.kubernetes.index': 'Kubernetes Administration',
     'platform_operations.kubernetes.secret_reveal.index': 'Secret Reveal',
     # Settings
     'settings.general': 'General',
     'settings.account': 'Account',
-    'settings.data_lifecycle.index': 'Data Lifecycle',
     # Access
     'users.index': 'User Management',
     'settings.roles': 'Roles & Access',
@@ -168,6 +168,11 @@ def build_navigation_breadcrumb(endpoint: str | None, path: str = '') -> list[di
         items = [
             BreadcrumbItem('Platform Operations', 'workflow'),
             BreadcrumbItem(_leaf(endpoint, 'Jobs & Executions')),
+        ]
+    elif endpoint.startswith('platform_operations.data_lifecycle.'):
+        items = [
+            BreadcrumbItem('Platform Operations', 'workflow'),
+            BreadcrumbItem('Data Lifecycle'),
         ]
     elif endpoint.startswith('platform_operations.kubernetes.'):
         items = [

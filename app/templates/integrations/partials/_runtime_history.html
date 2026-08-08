@@ -31,8 +31,8 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                {% if current_user.has_permission('settings.view_data_lifecycle') %}
-                    <a href="{{ url_for('settings.data_lifecycle.index', tab='policies', domain='runtime_observation') }}"
+                {% if current_user.has_permission('platform_operations.view_data_lifecycle') %}
+                    <a href="{{ url_for('platform_operations.data_lifecycle.index', tab='policies', domain='runtime_observation') }}"
                        class="{{ action_button.classes() }}">
                         <i data-lucide="archive" class="h-4 w-4" aria-hidden="true"></i>
                         Manage Lifecycle

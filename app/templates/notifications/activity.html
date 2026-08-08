@@ -34,7 +34,7 @@
                                 <p class="{{ page_hero.context_metric_helper_classes() }}">Items requiring operator attention</p>
                             </div>
                         </div>
-                        {% if current_user.has_permission('settings.view_data_lifecycle') %}<a href="{{ url_for('settings.data_lifecycle.index', domain='operational_activity') }}"
+                        {% if current_user.has_permission('platform_operations.view_data_lifecycle') %}<a href="{{ url_for('platform_operations.data_lifecycle.index', domain='operational_activity') }}"
    class="{{ page_hero.context_single_action_classes() }}"><i data-lucide="archive-restore" class="h-4 w-4"></i>Open Data Lifecycle</a>{% endif %}
                     </div>
                 </aside>
@@ -42,9 +42,9 @@
         </section>
         {% include "notifications/partials/_activity_summary_cards.html" %}
         {% include "notifications/partials/_activity_table_card.html" %}
-        {% if current_user.has_permission('settings.view_data_lifecycle') %}
+        {% if current_user.has_permission('platform_operations.view_data_lifecycle') %}
             <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft px-5 py-4 text-xs leading-5 text-content-secondary"><span class="font-semibold text-content-primary">Retention moved:</span> Activity Audit retention, archive storage, verification, and cleanup are managed centrally in <a class="font-semibold text-kaori-primary hover:underline"
-    href="{{ url_for('settings.data_lifecycle.index', domain='operational_activity') }}">Settings → Data Lifecycle</a>.</div>
+    href="{{ url_for('platform_operations.data_lifecycle.index', domain='operational_activity') }}">Platform Operations → Data Lifecycle</a>.</div>
         {% endif %}
     </div>
 {% endblock dashboard_content %}

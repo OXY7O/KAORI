@@ -3,17 +3,20 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 
 
-def test_platform_operations_contains_jobs_and_kubernetes_administration() -> None:
+def test_platform_operations_contains_jobs_data_lifecycle_and_kubernetes_administration() -> None:
     menu = (ROOT / 'app/templates/components/navigation/platform_operations_menu.html').read_text()
     page = (ROOT / 'app/templates/jobs/index.html').read_text()
 
     assert '<details' in menu
     assert 'Platform Operations' in menu
     assert 'Jobs &amp; Executions' in menu
+    assert 'Data Lifecycle' in menu
     assert 'Kubernetes Administration' in menu
     assert "url_for('jobs.executions')" in menu
+    assert "url_for('platform_operations.data_lifecycle.index')" in menu
     assert "url_for('platform_operations.kubernetes.index')" in menu
     assert 'Inventory Sync' not in menu
+    assert menu.index('Jobs &amp; Executions') < menu.index('Data Lifecycle') < menu.index('Kubernetes Administration')
     assert 'Job Configuration' in page
     assert "url_for('jobs.configuration')" in page
 

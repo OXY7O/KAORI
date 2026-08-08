@@ -64,20 +64,10 @@ Local Database password changes use HTMX and replace `#account-authentication-pa
 Normal POST and redirect remain available only as progressive-enhancement fallback when HTMX is unavailable.
 
 
-## Data Lifecycle contract
+## Data Lifecycle compatibility boundary
 
-`/settings/data-lifecycle` is the centralized cross-domain control plane for KAORI retention, archive storage, cleanup, verification, and lifecycle execution history. Activity Audit no longer owns a retention tab; it links to this workspace instead.
-
-The page is deliberately domain-driven so growth does not create one menu per table:
-
-- a compact domain selector exposes only registered adapters;
-- the selected domain owns its policy detail and exact preview;
-- Archive Storage is shared across domains;
-- Execution History is filterable across all domains;
-- future domains appear only after their lifecycle adapter and safety boundaries exist.
-
-Policy changes and manual archive operations require `settings.manage_data_lifecycle`. Read-only users see disabled policy controls. Verified archive downloads require `settings.export_data_lifecycle`. Every change, request, completion, failure, and verification produces persistent KAORI operational feedback and Activity Audit evidence.
+Data Lifecycle is no longer owned by Settings. The canonical operator workspace is **Platform Operations → Data Lifecycle** at `/platform-operations/data-lifecycle/`. `/settings/data-lifecycle/` remains redirect-only compatibility for existing bookmarks and stale links; no lifecycle mutation or presentation logic may return to `app/settings/data_lifecycle_compat.py`.
 
 ## Background Job Boundary
 
-Automatic schedules and manual background-job controls are owned by `app.jobs` under **Platform Operations → Jobs & Executions → Job Configuration**. Settings must not introduce job-specific scheduler pages or direct Celery dispatch routes. Domain settings remain here only when they configure the application itself rather than asynchronous execution policy.
+Automatic schedules and manual background-job controls are owned by `app.jobs` under **Platform Operations → Jobs & Executions → Job Configuration**. Settings must not introduce job-specific scheduler pages or direct Celery dispatch routes.

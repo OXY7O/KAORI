@@ -1,10 +1,10 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% set selected = lifecycle.domains|selectattr('name','equalto',lifecycle.selected_domain)|first %}
-{% set can_manage = current_user.has_permission('settings.manage_data_lifecycle') %}
+{% set can_manage = current_user.has_permission('platform_operations.manage_data_lifecycle') %}
 <section id="data-lifecycle-domain-workspace"
          class="{{ table_ui.block_classes() }}"
-         {% if lifecycle.active_lifecycle_jobs %}hx-get="{{ url_for('settings.data_lifecycle.index', tab='policies', domain=lifecycle.selected_domain) }}" hx-trigger="every 4s" hx-target="this" hx-swap="outerHTML"{% endif %}>
+         {% if lifecycle.active_lifecycle_jobs %}hx-get="{{ url_for('platform_operations.data_lifecycle.index', tab='policies', domain=lifecycle.selected_domain) }}" hx-trigger="every 4s" hx-target="this" hx-swap="outerHTML"{% endif %}>
     <div class="{{ table_ui.block_header_classes() }}">
         <div class="flex min-w-0 items-start gap-3">
             <span class="{{ table_ui.block_icon_classes() }}"><i data-lucide="{{ selected.icon }}" class="h-5 w-5"></i></span>
@@ -49,8 +49,8 @@
             </div>
         {% endif %}
         <form method="post"
-              action="{{ url_for('settings.data_lifecycle.save_policy') }}"
-              hx-post="{{ url_for('settings.data_lifecycle.save_policy') }}"
+              action="{{ url_for('platform_operations.data_lifecycle.save_policy') }}"
+              hx-post="{{ url_for('platform_operations.data_lifecycle.save_policy') }}"
               hx-target="#data-lifecycle-domain-workspace"
               hx-swap="outerHTML"
               hx-indicator="#data-lifecycle-policy-loading"
@@ -188,16 +188,16 @@
             </fieldset>
         </form>
         <div class="flex flex-wrap items-center gap-2 border-t border-outline-subtle pt-5">
-            <a href="{{ url_for('settings.data_lifecycle.preview', domain=selected.name, tab='policies') }}"
-               hx-get="{{ url_for('settings.data_lifecycle.preview', domain=selected.name, tab='policies') }}"
+            <a href="{{ url_for('platform_operations.data_lifecycle.preview', domain=selected.name, tab='policies') }}"
+               hx-get="{{ url_for('platform_operations.data_lifecycle.preview', domain=selected.name, tab='policies') }}"
                hx-target="#data-lifecycle-domain-workspace"
                hx-swap="outerHTML"
                hx-indicator="#data-lifecycle-policy-loading"
                class="{{ table_ui.action_classes() }}"><i data-lucide="scan-search" class="h-4 w-4"></i>Preview</a>
             {% if can_manage %}
                 <form method="post"
-                      action="{{ url_for('settings.data_lifecycle.run') }}"
-                      hx-post="{{ url_for('settings.data_lifecycle.run') }}"
+                      action="{{ url_for('platform_operations.data_lifecycle.run') }}"
+                      hx-post="{{ url_for('platform_operations.data_lifecycle.run') }}"
                       hx-target="#data-lifecycle-domain-workspace"
                       hx-swap="outerHTML"
                       hx-indicator="#data-lifecycle-policy-loading">
@@ -208,8 +208,8 @@
                     <button class="{{ table_ui.action_classes() }}"><i data-lucide="archive" class="h-4 w-4"></i>Archive Only</button>
                 </form>
                 <form method="post"
-                      action="{{ url_for('settings.data_lifecycle.run') }}"
-                      hx-post="{{ url_for('settings.data_lifecycle.run') }}"
+                      action="{{ url_for('platform_operations.data_lifecycle.run') }}"
+                      hx-post="{{ url_for('platform_operations.data_lifecycle.run') }}"
                       hx-target="#data-lifecycle-domain-workspace"
                       hx-swap="outerHTML"
                       hx-indicator="#data-lifecycle-policy-loading">

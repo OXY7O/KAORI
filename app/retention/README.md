@@ -1,13 +1,14 @@
 # KAORI Data Lifecycle Foundation
 
-This package provides the shared archive-first lifecycle used by **Settings → Data Lifecycle**. The engine is domain-neutral: each source table supplies a small adapter, while policy persistence, archive writing, checksum verification, cleanup, scheduling, storage, canonical jobs, notifications, and execution history remain shared.
+This package provides the shared archive-first lifecycle used by **Platform Operations → Data Lifecycle**. The engine is domain-neutral: each source table supplies a small adapter, while policy persistence, archive writing, checksum verification, cleanup, scheduling, storage, canonical jobs, notifications, and execution history remain shared.
 
 ## Current managed domains
 
 - `operational_activity`: canonical Activity Audit records.
 - `job_execution`: terminal canonical worker executions and subscriber snapshots.
+- `runtime_observation`: append-only integration runtime observation history.
 
-Planned domains such as runtime observations, generated reports, analytics datasets, and forecast results should be added as adapters rather than separate retention subsystems.
+Future domains such as generated reports, analytics datasets, and forecast results should be added as adapters rather than separate retention subsystems.
 
 ## Safety invariants
 
@@ -47,11 +48,11 @@ Every archived record contains:
 
 ## UI and CLI
 
-The canonical UI is `/settings/data-lifecycle` with three workspaces:
+The canonical UI is `/platform-operations/data-lifecycle/` with three workspaces:
 
 - Retention Policies
 - Archive Storage
-- Execution History
+- Archive History
 
 No alternate Activity Audit retention route is registered; this workspace is the sole UI owner.
 
@@ -79,4 +80,4 @@ Restore/import remains an administrative capability and must include duplicate p
 
 ## Runtime observation lifecycle
 
-`integration_runtime_observations` is an active `runtime_observation` lifecycle domain. Runtime writes are append-only and no longer delete older rows through a per-connection rolling limit. Hot retention, archive verification, and cleanup are controlled centrally from **Settings → Data Lifecycle**. The default policy keeps 90 days in PostgreSQL, retains verified archives for 365 days, and schedules the domain separately from Activity Audit and JobExecution.
+`integration_runtime_observations` is an active `runtime_observation` lifecycle domain. Runtime writes are append-only and no longer delete older rows through a per-connection rolling limit. Hot retention, archive verification, and cleanup are controlled centrally from **Platform Operations → Data Lifecycle**. The default policy keeps 90 days in PostgreSQL, retains verified archives for 365 days, and schedules the domain separately from Activity Audit and JobExecution.

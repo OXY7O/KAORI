@@ -202,7 +202,7 @@ def _notify_requester(
         status=status,
         title=title,
         message=message,
-        detail='Review Settings → Data Lifecycle for archive status, checksum, and download actions.',
+        detail='Review Platform Operations → Data Lifecycle for archive status, checksum, and download actions.',
         metadata={
             'archive_id': result.get('archive_id'),
             'record_count': result.get('record_count', 0),
@@ -238,7 +238,7 @@ def _notify_failure(
         status='error',
         title=f'{_domain_label(domain_name)} retention failed',
         message='The archive-first retention job stopped before it could complete safely.',
-        detail='Database cleanup remains blocked. Review Settings → Data Lifecycle and Activity Audit Log before retrying.',
+        detail='Database cleanup remains blocked. Review Platform Operations → Data Lifecycle and Activity Audit Log before retrying.',
         metadata={
             'domain': domain_name,
             'cleanup_requested': cleanup,
@@ -268,7 +268,7 @@ def _safe_create_notification(
             title=title,
             message=message,
             detail=detail,
-            action_url='/settings/data-lifecycle?tab=history',
+            action_url='/platform-operations/data-lifecycle/?tab=history',
             metadata=metadata,
         )
     except Exception:

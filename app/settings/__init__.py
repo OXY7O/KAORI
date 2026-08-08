@@ -1,4 +1,4 @@
-from app.settings.data_lifecycle.routes import bp as data_lifecycle_bp
+from app.settings.data_lifecycle_compat import bp as data_lifecycle_bp
 
 from .routes import bp
 

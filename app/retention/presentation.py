@@ -243,20 +243,6 @@ def build_data_lifecycle_context(
             'enabled_domain_count': sum(1 for item in domain_cards if item['enabled']),
             'eligible_total': selected_preview_count,
             'active_archive_total': sum(int(item['active_count']) for item in domain_cards),
-            'planned_domains': [
-                {
-                    'name': 'generated_report',
-                    'label': 'Generated Reports',
-                    'icon': 'file-text',
-                    'description': 'Generated report artifacts and metadata.',
-                },
-                {
-                    'name': 'forecast_result',
-                    'label': 'Forecast Results',
-                    'icon': 'chart-spline',
-                    'description': 'Forecast outputs and analytical datasets.',
-                },
-            ],
             'history_archives': [
                 _serialize_archive(item)
                 | {

@@ -5,8 +5,13 @@ Platform Operations contains cross-cutting operational control planes that are n
 ## Navigation
 
 - Jobs & Executions remains owned by `app/jobs/`.
+- Data Lifecycle is owned by `app/platform_operations/data_lifecycle/` and uses `app/retention/` as its shared archive-first engine.
 - Kubernetes Administration is owned by `app/platform_operations/kubernetes/`.
 - Advanced Kubernetes controls are exposed as tabs inside Kubernetes Administration.
+
+## Data Lifecycle
+
+Data Lifecycle is the cross-domain operational control plane for retention policy, verified archive storage, safe cleanup, and archive evidence. It does not own worker execution state: manual and scheduled lifecycle work is recorded through canonical `JobExecution` and remains inspectable under Jobs & Executions. The legacy Settings route is redirect-only compatibility.
 
 ## Kubernetes Administration
 
@@ -20,7 +25,7 @@ Operational Secret values remain owned by `app/kubernetes_operations/secrets/`. 
 
 ## Architecture Rules
 
-- Do not add advanced Kubernetes setup back under Settings.
+- Do not add Data Lifecycle or advanced Kubernetes setup back under Settings.
 - Do not create proxy wrapper templates for ConfigMap or Secret UI components; import `components/kubernetes_operation_ui.html` directly.
 - New advanced Kubernetes controls should use a dedicated tab and domain package under `app/platform_operations/kubernetes/`.
 - Keep operational mutations, setup policy, and live Secret value access in separate modules.

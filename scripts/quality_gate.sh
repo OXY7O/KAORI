@@ -34,6 +34,7 @@ run_static() {
     python scripts/verify_core_workspace_ui_lock.py
     python scripts/verify_core_kubernetes_final_lock.py
     python scripts/verify_platform_operations_final_lock.py
+    python scripts/verify_data_lifecycle_final_lock.py
     python scripts/verify_integrations_final_lock.py
     python scripts/verify_hero_component_standard.py
     python scripts/verify_operational_dashboard_standard.py
