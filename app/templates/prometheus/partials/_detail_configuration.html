@@ -12,7 +12,7 @@
 {% set readiness = instance.readiness_status or 'validation_required' %}
 
 <div id="prometheus-configuration-workspace" class="space-y-4 font-sans" data-kaori-prometheus-configuration-v2>
-    <div class="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_25rem] 2xl:grid-cols-[minmax(0,1fr)_27rem]">
+    <div class="grid items-stretch gap-4 xl:grid-cols-[minmax(0,1fr)_25rem] 2xl:grid-cols-[minmax(0,1fr)_27rem]">
 
         <form id="prometheus-instance-form"
               method="post"
@@ -21,10 +21,10 @@
               hx-target="#prometheus-configuration-workspace"
               hx-swap="outerHTML"
               hx-disabled-elt="button[type='submit']"
-              class="min-w-0"
+              class="h-full min-w-0"
               x-data="{ authType: '{{ form.auth_type.data or 'none' }}', detectionMode: '{{ form.version_detection_mode.data or 'automatic' }}' }">
             {{ form.hidden_tag() }}
-            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+            <section class="flex h-full flex-col overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
                 <header class="border-b border-outline-subtle px-5 py-4">
                     <div class="flex items-start justify-between gap-3">
                         <div class="flex min-w-0 items-start gap-3">
@@ -46,7 +46,7 @@
                     </div>
                 {% endif %}
 
-                <div class="divide-y divide-outline-subtle">
+                <div class="flex-1 divide-y divide-outline-subtle">
                     <section class="px-5 py-5" aria-labelledby="prometheus-identity-title">
                         <div class="mb-4 flex items-start gap-3">
                             <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent" aria-hidden="true"><i data-lucide="id-card" class="h-4 w-4"></i></span>
@@ -173,7 +173,7 @@
                     </section>
                 </div>
 
-                {% call form_action_bar.render('Saving changes resets technical readiness until Full Validation succeeds.', aria_label='Prometheus Configuration Actions') %}
+                {% call form_action_bar.render('Saving changes resets technical readiness until Full Validation succeeds.', aria_label='Prometheus Configuration Actions', embedded=true) %}
                     <button type="submit" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60">
                         <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
                         Save Changes

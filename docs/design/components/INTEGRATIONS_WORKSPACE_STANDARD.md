@@ -410,3 +410,5 @@ Before final lock, Integrations use the following canonical composition rules:
 - **Top-level connection registries** — Kubernetes, Prometheus, and Alertmanager use responsive filter grids and full-width fixed-layout tables without forced desktop minimum widths (`min-w-[...]`) or registry-level horizontal scroll. Dense technical matrices remain the only horizontal-scroll exception.
 - **Hero metrics** — provider Hero context metrics use `page_hero.context_metric()` instead of copied metric-card markup.
 - **Style debt** — no new Integration verifier debt may be added. When an Integration file drops below its recorded debt ceiling, update the baseline in the same patch.
+
+- Configuration form and decision rail must stretch to the same desktop row height; use the embedded shared form action footer and avoid sticky positioning for the equal-height pair.

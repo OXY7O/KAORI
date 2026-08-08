@@ -12,7 +12,7 @@
 {% set deployment_label = (instance.deployment_type or 'external_managed')|replace('_', ' ')|title %}
 
 <div id="alertmanager-configuration-workspace" class="space-y-4 font-sans" data-kaori-alertmanager-configuration-v2>
-    <div class="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_25rem] 2xl:grid-cols-[minmax(0,1fr)_27rem]">
+    <div class="grid items-stretch gap-4 xl:grid-cols-[minmax(0,1fr)_25rem] 2xl:grid-cols-[minmax(0,1fr)_27rem]">
 
         <form id="alertmanager-instance-form"
               method="post"
@@ -21,17 +21,17 @@
               hx-target="#alertmanager-configuration-workspace"
               hx-swap="outerHTML"
               hx-disabled-elt="button[type='submit']"
-              class="min-w-0"
+              class="h-full min-w-0"
               x-data="{ authType: '{{ current_auth_type }}' }">
             {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
+            <section class="flex h-full flex-col overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
                 <header class="border-b border-outline-subtle px-5 py-4">
                     <div class="flex min-w-0 items-start gap-3">
                         <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent" aria-hidden="true"><i data-lucide="settings-2" class="h-4 w-4"></i></span>
                         <div class="min-w-0"><h3 class="text-sm font-semibold text-content-primary">Connection Configuration</h3><p class="mt-1 text-xs leading-5 text-content-secondary">Saved changes return readiness to Validation Required until Full Validation rebuilds provider evidence.</p></div>
                     </div>
                 </header>
-                <div class="divide-y divide-outline-subtle">
+                <div class="flex-1 divide-y divide-outline-subtle">
                     <section class="px-5 py-5">
                         <div class="mb-4 flex items-start gap-3"><span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"><i data-lucide="id-card" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Source Identity</h4><p class="mt-1 text-xs leading-5 text-content-secondary">Keep the provider identity stable while multiple scopes consume it.</p></div></div>
                         <div class="grid gap-4 lg:grid-cols-2">
@@ -65,7 +65,7 @@
                         </div>
                     </section>
                 </div>
-                {% call form_action_bar.render('Save changes, then run Full Validation.', aria_label='Alertmanager Configuration Actions') %}<button type="submit" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover"><i data-lucide="save" class="h-4 w-4"></i>Save Changes</button>{% endcall %}
+                {% call form_action_bar.render('Save changes, then run Full Validation.', aria_label='Alertmanager Configuration Actions', embedded=true) %}<button type="submit" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover"><i data-lucide="save" class="h-4 w-4"></i>Save Changes</button>{% endcall %}
             </section>
         </form>
 

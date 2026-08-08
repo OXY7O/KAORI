@@ -25,7 +25,10 @@ def test_alertmanager_configuration_uses_shared_side_decision_and_primary_form_w
     assert 'Controlled Flow' in shared
     assert 'data-kaori-configuration-decision-side' in shared
     assert 'grid-cols-[minmax(0,1fr)_25rem]' in content
-    assert 'xl:sticky xl:top-4' in shared
+    assert 'items-stretch' in content
+    assert 'embedded=true' in content
+    assert 'flex h-full min-h-full flex-col self-stretch' in shared
+    assert 'xl:sticky xl:top-4' not in shared
 
 
 def test_alertmanager_validation_uses_kubernetes_style_capability_readiness_and_registry():

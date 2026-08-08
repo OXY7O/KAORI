@@ -26,11 +26,14 @@ def test_provider_configuration_uses_shared_side_decision() -> None:
     shared = read('app/templates/integrations/components/_configuration_decision.html')
     assert 'data-kaori-configuration-decision-side' in shared
     assert 'Controlled Flow' in shared
-    assert 'xl:sticky xl:top-4' in shared
+    assert 'flex h-full min-h-full flex-col self-stretch' in shared
+    assert 'xl:sticky xl:top-4' not in shared
     for provider in ('prometheus', 'alertmanager'):
         source = read(f'app/templates/{provider}/partials/_detail_configuration.html')
         assert 'configuration_decision.side_panel(' in source
         assert 'grid-cols-[minmax(0,1fr)_25rem]' in source
+        assert 'items-stretch' in source
+        assert 'embedded=true' in source
 
 
 def test_provider_tabs_share_one_controller() -> None:

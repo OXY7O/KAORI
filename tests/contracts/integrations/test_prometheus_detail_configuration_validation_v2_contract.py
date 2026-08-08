@@ -16,7 +16,10 @@ def test_configuration_uses_shared_side_decision_and_primary_form_workspace():
     assert 'data-kaori-configuration-decision-side' in shared
     assert 'Controlled Flow' in shared
     assert "xl:grid-cols-[minmax(0,1fr)_25rem]" in text
-    assert 'xl:sticky xl:top-4' in shared
+    assert 'items-stretch' in text
+    assert 'embedded=true' in text
+    assert 'flex h-full min-h-full flex-col self-stretch' in shared
+    assert 'xl:sticky xl:top-4' not in shared
     assert 'Test Connection' in text
     assert 'Save Changes' in text
 
