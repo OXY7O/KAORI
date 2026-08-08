@@ -144,3 +144,26 @@ def test_notification_center_final_lock_is_documented_and_release_gated() -> Non
 def test_secret_management_filter_excludes_tls_certificate_events() -> None:
     queries = read('app/notifications/queries.py')
     assert "~Notification.event_type.like('kubernetes_tls_secret_%')" in queries
+
+
+def test_notification_center_service_forwards_all_filter_arguments() -> None:
+    service = read('app/notifications/service.py')
+
+    signature = service.split('def get_notification_center_page_context(', 1)[1].split(') -> dict[str, Any]:', 1)[0]
+    body = service.split('def get_notification_center_page_context(', 1)[1].split('def get_notification_activity_context(', 1)[0]
+
+    for token in (
+        "status: str = 'all'",
+        "read_state: str = 'all'",
+        "category: str = 'all'",
+        "search: str = ''",
+    ):
+        assert token in signature
+
+    for token in (
+        'status=status',
+        'read_state=read_state',
+        'category=category',
+        'search=search',
+    ):
+        assert token in body

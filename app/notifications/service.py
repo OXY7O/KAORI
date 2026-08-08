@@ -354,8 +354,12 @@ def get_notification_center_page_context(
     per_page: int,
     job_limit: int = ACTIVITY_CENTER_JOB_LIMIT,
     include_all_jobs: bool = False,
+    status: str = 'all',
+    read_state: str = 'all',
+    category: str = 'all',
+    search: str = '',
 ) -> dict[str, Any]:
-    """Build the full paginated Notification Center page context."""
+    """Build the full filtered and paginated Notification Center page context."""
 
     return _get_notification_center_page_context(
         user_id=user_id,
@@ -363,6 +367,10 @@ def get_notification_center_page_context(
         per_page=per_page,
         job_limit=job_limit,
         include_all_jobs=include_all_jobs,
+        status=status,
+        read_state=read_state,
+        category=category,
+        search=search,
     )
 
 
