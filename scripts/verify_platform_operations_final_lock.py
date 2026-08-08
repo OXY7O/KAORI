@@ -18,9 +18,11 @@ LOCK_V1_7_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_7.md'
 LOCK_V1_8_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_8.md'
 LOCK_V1_9_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V1_9.md'
 LOCK_V2_0_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V2_0.md'
+LOCK_V2_1_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_LOCK_V2_1.md'
 OVERVIEW_LOCK_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_OVERVIEW_LOCK_V1.md'
 DATA_LIFECYCLE_LOCK_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_LOCK_V1.md'
 DATA_LIFECYCLE_LOCK_V1_1_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_LOCK_V1_1.md'
+DATA_LIFECYCLE_LOCK_V1_2_DOC = ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_LOCK_V1_2.md'
 AUDIT_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_AUDIT_2026_08_08.md'
 AUDIT_V1_1_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md'
 AUDIT_V1_2_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_2_AUDIT_2026_08_08.md'
@@ -32,9 +34,11 @@ AUDIT_V1_7_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK
 AUDIT_V1_8_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_8_AUDIT_2026_08_08.md'
 AUDIT_V1_9_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V1_9_AUDIT_2026_08_08.md'
 AUDIT_V2_0_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V2_0_AUDIT_2026_08_08.md'
+AUDIT_V2_1_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V2_1_AUDIT_2026_08_08.md'
 OVERVIEW_AUDIT_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_OVERVIEW_FINAL_LOCK_AUDIT_2026_08_08.md'
 DATA_LIFECYCLE_AUDIT_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_AUDIT_2026_08_08.md'
 DATA_LIFECYCLE_AUDIT_V1_1_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md'
+DATA_LIFECYCLE_AUDIT_V1_2_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_2_AUDIT_2026_08_08.md'
 QUALITY_GATE = ROOT / 'scripts/quality_gate.sh'
 CLEANUP = ROOT / 'scripts/cleanup_obsolete_files.sh'
 CORE_UI_LOCK = ROOT / 'scripts/verify_core_workspace_ui_lock.py'
@@ -78,7 +82,7 @@ def template_files() -> list[Path]:
 def main() -> int:
     errors: list[str] = []
 
-    for doc in (LOCK_DOC, LOCK_V1_1_DOC, LOCK_V1_2_DOC, LOCK_V1_3_DOC, LOCK_V1_4_DOC, LOCK_V1_5_DOC, LOCK_V1_6_DOC, LOCK_V1_7_DOC, LOCK_V1_8_DOC, LOCK_V1_9_DOC, LOCK_V2_0_DOC, OVERVIEW_LOCK_DOC, DATA_LIFECYCLE_LOCK_DOC, DATA_LIFECYCLE_LOCK_V1_1_DOC, AUDIT_DOC, AUDIT_V1_1_DOC, AUDIT_V1_2_DOC, AUDIT_V1_3_DOC, AUDIT_V1_4_DOC, AUDIT_V1_5_DOC, AUDIT_V1_6_DOC, AUDIT_V1_7_DOC, AUDIT_V1_8_DOC, AUDIT_V1_9_DOC, AUDIT_V2_0_DOC, OVERVIEW_AUDIT_DOC, DATA_LIFECYCLE_AUDIT_DOC, DATA_LIFECYCLE_AUDIT_V1_1_DOC):
+    for doc in (LOCK_DOC, LOCK_V1_1_DOC, LOCK_V1_2_DOC, LOCK_V1_3_DOC, LOCK_V1_4_DOC, LOCK_V1_5_DOC, LOCK_V1_6_DOC, LOCK_V1_7_DOC, LOCK_V1_8_DOC, LOCK_V1_9_DOC, LOCK_V2_0_DOC, LOCK_V2_1_DOC, OVERVIEW_LOCK_DOC, DATA_LIFECYCLE_LOCK_DOC, DATA_LIFECYCLE_LOCK_V1_1_DOC, DATA_LIFECYCLE_LOCK_V1_2_DOC, AUDIT_DOC, AUDIT_V1_1_DOC, AUDIT_V1_2_DOC, AUDIT_V1_3_DOC, AUDIT_V1_4_DOC, AUDIT_V1_5_DOC, AUDIT_V1_6_DOC, AUDIT_V1_7_DOC, AUDIT_V1_8_DOC, AUDIT_V1_9_DOC, AUDIT_V2_0_DOC, AUDIT_V2_1_DOC, OVERVIEW_AUDIT_DOC, DATA_LIFECYCLE_AUDIT_DOC, DATA_LIFECYCLE_AUDIT_V1_1_DOC, DATA_LIFECYCLE_AUDIT_V1_2_DOC):
         if not doc.exists():
             errors.append(f'missing lock artifact: {doc.relative_to(ROOT).as_posix()}')
 
@@ -166,6 +170,20 @@ def main() -> int:
         errors.append('Data Lifecycle must expose only registered archive adapters, not Planned Domains placeholders')
     if "url_for('jobs.executions')" not in data_lifecycle_index:
         errors.append('Data Lifecycle must preserve Jobs & Executions as the canonical runtime evidence boundary')
+
+    data_lifecycle_workspace = read('app/templates/platform_operations/data_lifecycle/partials/_domain_workspace.html')
+    if 'Lifecycle Coverage' not in data_lifecycle_workspace:
+        errors.append('Data Lifecycle v1.2 must expose lifecycle coverage evidence')
+    retention_presentation = read('app/retention/presentation.py')
+    for required in (
+        "'label': 'Activity Audit Table'",
+        "'label': 'Notification Center'",
+        "'label': 'Kubernetes'",
+        "'label': 'Prometheus'",
+        "'label': 'Alertmanager'",
+    ):
+        if required not in retention_presentation:
+            errors.append(f'Platform Operations Data Lifecycle coverage lock missing: {required}')
 
     execution_workspace = read('app/templates/jobs/executions/_workspace.html')
     shared_tabs = read('app/templates/components/workspace_tabs.html')
@@ -499,12 +517,12 @@ def main() -> int:
         return 1
 
     print(
-        'KAORI Platform Operations Final Lock v2.0 passed: Kubernetes Administration and Jobs & Executions '
+        'KAORI Platform Operations Final Lock v2.1 passed: Kubernetes Administration and Jobs & Executions '
         'use shared tabs, Title Case, bounded execution attention, expandable execution evidence, worker readiness, '
         'activity-center background feedback, lean Job Configuration rendering, clear configuration surfaces, '
         'tri-state Secret Reveal live evidence, snapshot-backed namespace filtering, explicit credential readiness, '
         'read-only permission-scoped Platform Operations Overview, shared domain posture projections, HTMX-owned registry controls, shared Secret Reveal policy authority, neutral-first protected-reveal dark surfaces, '
-        'Title Case reveal pagination with Rows labels, immediate HTMX mutation feedback, configured-only live namespace verification, explicit global kill-switch diagnostics with compact activation tips, natural-height Secret Reveal side panels, protected Secret Reveal guardrails, Platform Operations-owned Data Lifecycle routing/RBAC/shared tabs/archive evidence, canonical Jobs execution boundaries, and permanent legacy cleanup.'
+        'Title Case reveal pagination with Rows labels, immediate HTMX mutation feedback, configured-only live namespace verification, explicit global kill-switch diagnostics with compact activation tips, natural-height Secret Reveal side panels, protected Secret Reveal guardrails, Platform Operations-owned Data Lifecycle routing/RBAC/shared tabs/archive evidence and explicit lifecycle coverage, personal Notification Center boundaries, canonical Jobs execution boundaries, and permanent legacy cleanup.'
     )
     return 0
 

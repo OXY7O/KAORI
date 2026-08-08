@@ -28,6 +28,9 @@ from app.notifications.queries import (
     get_notification_activity_context as _get_notification_activity_context,
 )
 from app.notifications.queries import (
+    get_notification_center_page_context as _get_notification_center_page_context,
+)
+from app.notifications.queries import (
     mark_all_notifications_read as _mark_all_notifications_read,
 )
 from app.notifications.queries import (
@@ -338,6 +341,25 @@ def get_activity_center_context(
         user_id=user_id,
         job_limit=job_limit,
         notification_limit=notification_limit,
+        include_all_jobs=include_all_jobs,
+    )
+
+
+def get_notification_center_page_context(
+    *,
+    user_id: int,
+    page: int,
+    per_page: int,
+    job_limit: int = ACTIVITY_CENTER_JOB_LIMIT,
+    include_all_jobs: bool = False,
+) -> dict[str, Any]:
+    """Build the full paginated Notification Center page context."""
+
+    return _get_notification_center_page_context(
+        user_id=user_id,
+        page=page,
+        per_page=per_page,
+        job_limit=job_limit,
         include_all_jobs=include_all_jobs,
     )
 

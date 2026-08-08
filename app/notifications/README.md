@@ -101,8 +101,8 @@ badge count. Both indicators are absolutely positioned so header width never cha
 
 The bell opens a full-height slide-over deck from the right with two sections:
 
-- **Activity** shows canonical jobs and short-lived in-browser HTMX operations.
-- **Notifications** shows the same persistent records used by the full Notifications page.
+- **Active Work** shows canonical jobs and short-lived in-browser HTMX operations.
+- **Notifications** shows the same persistent records used by the full Notification Center page.
 
 Opening the deck does not mark records as read. Records become read only through an
 explicit item action or **Mark all read**. Background refresh replaces only the inner contents of the stable Activity and
@@ -159,13 +159,9 @@ The deck uses only utilities present in the committed Tailwind build: `fixed ins
 
 ### Notification Deck tab and refresh standard
 
-The deck and `/notifications/` use the same segmented-control geometry as the
-Reports **Report Type Guide**: a violet-soft `rounded-xl` track with compact
-`rounded-lg` text tabs, a white active surface, and no oversized tab cards.
-Activity and Notifications remain separate semantic views but share one visual
-contract.
+The deck uses a compact neutral segmented control; the full `/notifications/` page uses the KAORI framed workspace-tab geometry. Brand color is limited to the active label and small accents, while the track uses semantic surface tokens so dark mode remains quiet. The two user-facing views are **Notifications** and **Active Work**; the word **Activity** is reserved for the administrative Activity Audit context rather than used as a user-inbox tab label.
 
-The Activity panel must always render one of the following: local foreground
+The Active Work panel must always render one of the following: local foreground
 activity, canonical `JobExecution` cards, or the explicit empty state. Inventory
 synchronization is not rendered through a second nested polling source; it remains
 part of the canonical job list. This prevents activity cards from disappearing and
@@ -177,14 +173,14 @@ Deck, changes its selected tab, creates a local foreground Activity card, or for
 immediate snapshot request. The button may show request-local disabled/spinner feedback
 while the enqueue HTTP request is in flight; this is not Activity Center state.
 
-The Activity tab is updated exclusively from committed `JobExecution` rows through the
+The Active Work tab is updated exclusively from committed `JobExecution` rows through the
 normal 15-second snapshot cycle. Successful dispatch does not create a duplicate
 "queued" notification because the job row is already the authoritative activity source.
 Blocked, skipped, and failed dispatches remain persistent Notifications and appear on the
 next automatic snapshot. Never target the removed `#quick-sync-feedback` element or
 reintroduce a forced drawer-open/event-refresh flow.
 
-Activity and Notifications use one read-only JSON snapshot every 15 seconds. The
+Active Work and Notifications use one read-only JSON snapshot every 15 seconds. The
 snapshot reads current `JobExecution` and `Notification` rows only; it never waits for
 a queued or running worker to complete. Opening the deck also requests a snapshot so
 the user does not wait for the next interval. The response updates the two stable
@@ -200,3 +196,9 @@ block later intervals. On failure, existing
 content remains visible and the footer shows a quiet reconnecting state; no toast or
 blocking error is emitted. A queued job remains visible as **Queued / Waiting** with a
 static progress marker and never controls polling state.
+
+## Full Notification Center page
+
+`/notifications/` remains a dedicated personal operational inbox because it serves a different audience and purpose from **Activity Audit**. It is login-scoped, shows only deck-visible records targeted to the current user, provides standard 5/10/25/50 pagination, explicit read actions, and a synchronized **Active Work** view. Activity Audit remains permission-gated and system-wide. The page never becomes a second execution registry: Active Work reads canonical `JobExecution` records and links to Jobs & Executions for full evidence.
+
+Persistent Notification Center rows and Activity Audit rows share the `notifications` table and therefore the same **Platform Operations → Data Lifecycle → Activity Audit** archive-first policy. Audit-only rows remain outside the personal inbox through `deck_visible=false` but are still lifecycle-managed. Transient request-local toasts are not persisted and are intentionally excluded from retention and archive.

@@ -157,6 +157,58 @@ def get_activity_center_context(
     }
 
 
+def get_notification_center_page_context(
+    *,
+    user_id: int,
+    page: int,
+    per_page: int,
+    job_limit: int = ACTIVITY_CENTER_JOB_LIMIT,
+    include_all_jobs: bool = False,
+) -> dict[str, Any]:
+    """Return the full Notification Center page with standard pagination."""
+
+    base_context = get_activity_center_context(
+        user_id=user_id,
+        job_limit=job_limit,
+        notification_limit=1,
+        include_all_jobs=include_all_jobs,
+    )
+    normalized_page = max(page, 1)
+    normalized_per_page = per_page if per_page in ACTIVITY_PER_PAGE_OPTIONS else ACTIVITY_PER_PAGE_OPTIONS[0]
+    pagination = (
+        _user_notification_query(user_id)
+        .order_by(Notification.created_at.desc(), Notification.id.desc())
+        .paginate(page=normalized_page, per_page=normalized_per_page, error_out=False)
+    )
+    total = int(pagination.total or 0)
+    base_context.update(
+        {
+            'history_items': [
+                _serialize_notification(notification, include_metadata=False)
+                for notification in pagination.items
+            ],
+            'items': [
+                _serialize_notification(notification, include_metadata=False)
+                for notification in pagination.items
+            ],
+            'notification_pagination': {
+                'page': pagination.page,
+                'per_page': pagination.per_page,
+                'total': total,
+                'pages': max(int(pagination.pages or 0), 1),
+                'start_item': ((pagination.page - 1) * pagination.per_page + 1) if total else 0,
+                'end_item': min(pagination.page * pagination.per_page, total),
+                'has_prev': pagination.has_prev,
+                'has_next': pagination.has_next,
+                'prev_num': pagination.prev_num,
+                'next_num': pagination.next_num,
+                'allowed_per_page': ACTIVITY_PER_PAGE_OPTIONS,
+            },
+        }
+    )
+    return base_context
+
+
 def _normalize_user_filter(user_id: int | None) -> int | None:
     if user_id is None or user_id <= 0:
         return None

@@ -72,7 +72,7 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'users.index': 'User Management',
     'settings.roles': 'Roles & Access',
     'settings.permission_catalog': 'Permission Catalog',
-    'notifications.center': 'Notifications',
+    'notifications.center': 'Notification Center',
     'notifications.activity_log': 'Activity Audit Log',
 }
 
@@ -205,7 +205,7 @@ def build_navigation_breadcrumb(endpoint: str | None, path: str = '') -> list[di
         items = [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem('User Management')]
         items = _append_workflow(items, endpoint)
     elif endpoint == 'notifications.center':
-        items = [BreadcrumbItem('Notifications', 'bell')]
+        items = [BreadcrumbItem('Notification Center', 'bell')]
     elif endpoint.startswith('notifications.'):
         items = [BreadcrumbItem('Access', 'users-round'), BreadcrumbItem(_leaf(endpoint, 'Activity Audit Log'))]
     elif endpoint.startswith('settings.roles') or endpoint in {

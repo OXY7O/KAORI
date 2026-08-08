@@ -43,8 +43,8 @@
         {% include "notifications/partials/_activity_summary_cards.html" %}
         {% include "notifications/partials/_activity_table_card.html" %}
         {% if current_user.has_permission('platform_operations.view_data_lifecycle') %}
-            <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft px-5 py-4 text-xs leading-5 text-content-secondary"><span class="font-semibold text-content-primary">Retention moved:</span> Activity Audit retention, archive storage, verification, and cleanup are managed centrally in <a class="font-semibold text-kaori-primary hover:underline"
-    href="{{ url_for('platform_operations.data_lifecycle.index', domain='operational_activity') }}">Platform Operations → Data Lifecycle</a>.</div>
+            <div class="rounded-xl border border-outline-default bg-surface-subtle px-5 py-4 text-xs leading-5 text-content-secondary"><span class="font-semibold text-content-primary">Lifecycle boundary:</span> Activity Audit and persistent Notification Center records share the same archive-first policy in <a class="font-semibold text-kaori-primary hover:underline dark:text-kaori-accent"
+    href="{{ url_for('platform_operations.data_lifecycle.index', tab='policies', domain='operational_activity') }}">Platform Operations → Data Lifecycle</a>. Transient toasts are not persisted.</div>
         {% endif %}
     </div>
 {% endblock dashboard_content %}

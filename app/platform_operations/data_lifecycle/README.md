@@ -18,7 +18,7 @@ The page contains three controlled workspaces:
 2. **Archive History** — verified archive artifacts and cleanup evidence. Canonical worker runtime remains under Jobs & Executions.
 3. **Archive Storage** — shared target posture, verification evidence, worker dependency, and archive-first safety boundary.
 
-Only registered archive adapters are displayed. Future domains are not advertised as placeholders before their adapter and safety contract exist.
+Only registered archive adapters are displayed. Future domains are not advertised as placeholders before their adapter and safety contract exist. The policy workspace also exposes **Lifecycle Coverage** so operators can see which product surfaces share each source model: Activity Audit and persistent Notification Center rows share `operational_activity`, while Kubernetes, Prometheus/Thanos, and Alertmanager Recent Runtime Observations share `runtime_observation`.
 
 ## RBAC
 

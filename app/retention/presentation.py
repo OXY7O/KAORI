@@ -97,6 +97,9 @@ def build_domain_retention_context(
         'domain_label': _domain_label(domain.name),
         'domain_icon': _domain_icon(domain.name),
         'source_model': domain.source_model,
+        'coverage': _domain_coverage(domain.name),
+        'coverage_note': _domain_coverage_note(domain.name),
+        'exclusion_note': _domain_exclusion_note(domain.name),
         'operation_mode': stored_policy.operation_mode,
         'enabled': policy.enabled,
         'retention_days': policy.retention_days,
@@ -193,6 +196,8 @@ def build_data_lifecycle_context(
                 'icon': _domain_icon(domain_name),
                 'description': _domain_description(domain_name),
                 'source_model': domain.source_model,
+                'coverage': _domain_coverage(domain_name),
+                'coverage_note': _domain_coverage_note(domain_name),
                 'enabled': stored.enabled,
                 'hot_retention_days': stored.hot_retention_days,
                 'archive_retention_days': stored.archive_retention_days,
@@ -294,10 +299,72 @@ def _domain_icon(name: str) -> str:
 
 def _domain_description(name: str) -> str:
     return {
-        'operational_activity': 'Administrative activity and security-sensitive operational evidence.',
+        'operational_activity': 'Activity Audit and persistent user notifications.',
         'job_execution': 'Canonical queue, progress, results, and worker metadata.',
-        'runtime_observation': 'Provider health, readiness, latency, and capability-drift evidence.',
+        'runtime_observation': 'Kubernetes, Prometheus, and Alertmanager runtime evidence.',
     }.get(name, 'KAORI operational data domain.')
+
+
+def _domain_coverage(name: str) -> tuple[dict[str, str], ...]:
+    return {
+        'operational_activity': (
+            {
+                'icon': 'scroll-text',
+                'label': 'Activity Audit Table',
+                'description': 'All persisted administrative and operational activity records.',
+            },
+            {
+                'icon': 'bell',
+                'label': 'Notification Center',
+                'description': 'Persistent user-targeted notifications share the same source table.',
+            },
+            {
+                'icon': 'shield-check',
+                'label': 'Authentication Audit',
+                'description': 'Authentication events remain lifecycle-managed with the audit stream.',
+            },
+        ),
+        'job_execution': (
+            {
+                'icon': 'workflow',
+                'label': 'Jobs & Executions',
+                'description': 'Terminal execution records, subscribers, results, and worker evidence.',
+            },
+        ),
+        'runtime_observation': (
+            {
+                'icon': 'boxes',
+                'label': 'Kubernetes',
+                'description': 'Recent Runtime Observations for Kubernetes integration targets.',
+            },
+            {
+                'icon': 'gauge',
+                'label': 'Prometheus',
+                'description': 'Recent Runtime Observations for Prometheus and Thanos query sources.',
+            },
+            {
+                'icon': 'bell-ring',
+                'label': 'Alertmanager',
+                'description': 'Recent Runtime Observations for Alertmanager integration targets.',
+            },
+        ),
+    }.get(name, ())
+
+
+def _domain_coverage_note(name: str) -> str | None:
+    return {
+        'operational_activity': 'One retention policy governs the shared notifications table; the user inbox and Activity Audit are different views over the same persisted records.',
+        'job_execution': 'Execution payloads remain domain-owned; lifecycle archives canonical execution metadata and result references.',
+        'runtime_observation': 'The policy is provider-neutral. Future integrations using IntegrationRuntimeObservation inherit the same lifecycle boundary.',
+    }.get(name)
+
+
+def _domain_exclusion_note(name: str) -> str | None:
+    return {
+        'operational_activity': 'Transient toasts are not persisted and therefore are not lifecycle-managed.',
+        'job_execution': 'Domain datasets referenced by a job are not deleted by the Job Executions retention policy.',
+        'runtime_observation': 'Full provider configuration and credentials are not part of runtime-observation archives.',
+    }.get(name)
 
 
 def _normalize_archive_filters(

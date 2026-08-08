@@ -19,19 +19,22 @@ def test_topbar_uses_one_stable_bell_and_viewport_slider() -> None:
     assert 'class="fixed inset-0 z-50"' in shell
 
 
-def test_tabs_match_report_type_guide_segmented_control() -> None:
+def test_deck_and_page_tabs_use_quiet_kaori_surfaces() -> None:
     shell = read('app/templates/components/navigation/_notification_center.html')
     page = read('app/templates/notifications/partials/_center_page_content.html')
+    framed_tabs = read('app/templates/components/framed_workspace_tabs.html')
 
-    expected_track = 'rounded-xl border border-kaori-primary/20 bg-kaori-soft p-1'
-    expected_active = "bg-surface-card text-kaori-primary shadow-sm"
+    expected_track = 'rounded-xl border border-outline-default bg-surface-hover p-1'
 
     assert expected_track in shell
-    assert expected_track in page
-    assert expected_active in shell
-    assert expected_active in page
+    assert 'components/framed_workspace_tabs.html' in page
+    assert 'framed_workspace_tabs.render_navigation(' in page
+    assert 'border-b border-outline-default bg-surface-hover px-4 pt-4' in framed_tabs
+    assert 'bg-surface-card text-kaori-primary' in shell
+    assert 'bg-surface-card text-kaori-primary' in framed_tabs
     assert 'role="tablist"' in shell
-    assert 'aria-label="Notification center sections"' in page
+    assert "aria_label='Notification Center sections'" in page
+    assert 'role="tablist"' not in page
 
 
 def test_deck_auto_refreshes_one_snapshot_every_15_seconds() -> None:
@@ -166,7 +169,7 @@ def test_queued_jobs_do_not_look_like_a_never_ending_refresh() -> None:
     component = read('app/templates/notifications/components/_activity_center_items.html')
     presentation = read('app/common/job_execution_presentation.py')
 
-    assert "elif job.progress_mode == 'queued'" in component
+    assert "job.progress_mode == 'queued'" in component
     assert 'w-1/3 rounded-full bg-kaori-primary/60' in component
     assert "if job.status == 'queued':\n        return 'Waiting'" in presentation
     assert 'job.queue_health.show_warning' in component

@@ -17,8 +17,10 @@ REQUIRED = (
     'app/templates/platform_operations/data_lifecycle/partials/_history.html',
     'docs/design/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_LOCK_V1.md',
     'docs/design/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_LOCK_V1_1.md',
+    'docs/design/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_LOCK_V1_2.md',
     'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_AUDIT_2026_08_08.md',
     'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md',
+    'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_2_AUDIT_2026_08_08.md',
     'migrations/versions/20260808_data_lifecycle_platform_operations.py',
     'app/settings/data_lifecycle_compat.py',
 )
@@ -127,6 +129,41 @@ def main() -> int:
             errors.append(f'Retention Policies operational contract missing: {required}')
     if 'notification-progress-indeterminate' in domain_workspace:
         errors.append('Retention Policies must use the shared KAORI loading bar, not the legacy notification progress segment')
+
+    for required in (
+        'Lifecycle Coverage',
+        'Records covered by this retention, archive, and cleanup policy.',
+        'Coverage:',
+        'Excluded:',
+    ):
+        if required not in domain_workspace:
+            errors.append(f'Data Lifecycle v1.2 coverage presentation missing: {required}')
+
+    retention_presentation = read('app/retention/presentation.py')
+    for required in (
+        "'label': 'Activity Audit Table'",
+        "'label': 'Notification Center'",
+        "'label': 'Authentication Audit'",
+        "'label': 'Kubernetes'",
+        "'label': 'Prometheus'",
+        "'label': 'Alertmanager'",
+        'Future integrations using IntegrationRuntimeObservation inherit the same lifecycle boundary.',
+        'Transient toasts are not persisted and therefore are not lifecycle-managed.',
+    ):
+        if required not in retention_presentation:
+            errors.append(f'Data Lifecycle v1.2 coverage semantics missing: {required}')
+
+    runtime_domain = read('app/retention/domains/runtime_observation.py')
+    if 'IntegrationRuntimeObservation.query.filter(' not in runtime_domain:
+        errors.append('Runtime Observation archive domain must read the canonical integration runtime model')
+    if "IntegrationRuntimeObservation.provider ==" in runtime_domain or 'filter_by(provider=' in runtime_domain:
+        errors.append('Runtime Observation lifecycle must remain provider-neutral; do not split Kubernetes/Prometheus/Alertmanager retention')
+
+    activity_domain = read('app/retention/domains/operational_activity.py')
+    if 'Notification.query.filter(Notification.id.in_(record_ids))' not in activity_domain:
+        errors.append('Operational Activity lifecycle must continue cleaning the canonical Notification source table')
+    if 'deck_visible' in activity_domain:
+        errors.append('Operational Activity retention must not filter by deck visibility; audit-only and user notifications share one lifecycle')
 
     for required in (
         'Archive Target Contract',
@@ -240,10 +277,11 @@ def main() -> int:
         return 1
 
     print(
-        'KAORI Data Lifecycle Final Lock v1.1 passed: Platform Operations owns route, template, RBAC, navigation, '
+        'KAORI Data Lifecycle Final Lock v1.2 passed: Platform Operations owns route, template, RBAC, navigation, '
         'feedback and presentation boundaries; Settings is redirect-only; archive-first retention remains shared; '
-        'Jobs & Executions remains canonical runtime evidence; shared tabs, dark-mode-safe surfaces, Archive History '
-        'pagination and compatibility migration are frozen.'
+        'Jobs & Executions remains canonical runtime evidence; Lifecycle Coverage explicitly maps Activity Audit, persistent '
+        'Notification Center records, authentication audit, and provider-neutral Kubernetes/Prometheus/Alertmanager '
+        'runtime observations; shared tabs, dark-mode-safe surfaces, Archive History pagination and compatibility migration are frozen.'
     )
     return 0
 

@@ -4,9 +4,9 @@ This package provides the shared archive-first lifecycle used by **Platform Oper
 
 ## Current managed domains
 
-- `operational_activity`: canonical Activity Audit records.
+- `operational_activity`: canonical Activity Audit records plus persistent user Notification Center rows from the shared `notifications` table; transient toasts are excluded because they are not persisted.
 - `job_execution`: terminal canonical worker executions and subscriber snapshots.
-- `runtime_observation`: append-only integration runtime observation history.
+- `runtime_observation`: append-only Recent Runtime Observations for Kubernetes, Prometheus/Thanos, Alertmanager, and future providers using the shared `IntegrationRuntimeObservation` model.
 
 Future domains such as generated reports, analytics datasets, and forecast results should be added as adapters rather than separate retention subsystems.
 
@@ -53,8 +53,8 @@ Every archived record contains:
 The canonical UI is `/platform-operations/data-lifecycle/` with three workspaces:
 
 - Retention Policies
-- Archive Storage
 - Archive History
+- Archive Storage
 
 No alternate Activity Audit retention route is registered; this workspace is the sole UI owner.
 
@@ -82,4 +82,8 @@ Restore/import remains an administrative capability and must include duplicate p
 
 ## Runtime observation lifecycle
 
-`integration_runtime_observations` is an active `runtime_observation` lifecycle domain. Runtime writes are append-only and no longer delete older rows through a per-connection rolling limit. Hot retention, archive verification, and cleanup are controlled centrally from **Platform Operations → Data Lifecycle**. The default policy keeps 90 days in PostgreSQL, retains verified archives for 365 days, and schedules the domain separately from Activity Audit and JobExecution.
+`integration_runtime_observations` is an active `runtime_observation` lifecycle domain. Kubernetes, Prometheus/Thanos, and Alertmanager Recent Runtime Observations all persist into this provider-neutral model, so one lifecycle policy covers the three current integration families without provider-specific cleanup jobs. Runtime writes are append-only and no longer delete older rows through a per-connection rolling limit. Hot retention, archive verification, and cleanup are controlled centrally from **Platform Operations → Data Lifecycle**. The default policy keeps 90 days in PostgreSQL, retains verified archives for 365 days, and schedules the domain separately from Activity Audit and JobExecution.
+
+## Operational activity lifecycle
+
+`notifications` is the canonical persisted source for both the administrative **Activity Audit** and deck-visible **Notification Center** records. The `operational_activity` adapter archives every persisted row regardless of `deck_visible`, so audit-only events, user notifications, and authentication events remain under one archive-first policy. `protect_unreviewed` may extend hot retention for unread persisted records. Request-local transient toasts created without persistence are intentionally outside Data Lifecycle.

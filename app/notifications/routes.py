@@ -6,9 +6,9 @@ from flask_login import current_user, login_required
 
 from app.notifications.constants import ACTIVITY_CENTER_PAGE_LIMIT
 from app.notifications.service import (
-    get_activity_center_context,
     get_navigation_notification_context,
     get_notification_activity_context,
+    get_notification_center_page_context,
     mark_all_notifications_read,
     mark_notification_read,
 )
@@ -81,13 +81,18 @@ def _render_status_snapshot() -> ResponseReturnValue:
     return response
 
 
-def _render_center_page_content() -> str:
-    context = get_activity_center_context(
+def _center_page_context() -> dict[str, object]:
+    return get_notification_center_page_context(
         user_id=current_user.id,
+        page=_request_int('page', 1),
+        per_page=_request_int('per_page', 5),
         job_limit=ACTIVITY_CENTER_PAGE_LIMIT,
-        notification_limit=ACTIVITY_CENTER_PAGE_LIMIT,
         include_all_jobs=current_user.has_permission('jobs.view'),
     )
+
+
+def _render_center_page_content() -> str:
+    context = _center_page_context()
     return render_template(
         'notifications/partials/_center_page_content.html',
         activity_center=context,
@@ -114,12 +119,7 @@ def _render_mutation_response() -> ResponseReturnValue:
 @notifications_bp.get('/')
 @login_required
 def center() -> ResponseReturnValue:
-    context = get_activity_center_context(
-        user_id=current_user.id,
-        job_limit=ACTIVITY_CENTER_PAGE_LIMIT,
-        notification_limit=ACTIVITY_CENTER_PAGE_LIMIT,
-        include_all_jobs=current_user.has_permission('jobs.view'),
-    )
+    context = _center_page_context()
     if request.headers.get('HX-Request') == 'true':
         return render_template(
             'notifications/partials/_center_page_content.html',
