@@ -53,7 +53,7 @@ def test_topology_registers_compact_segmented_tab_style() -> None:
     component = _read('app/templates/components/segmented_tabs.html')
     registry = _read('docs/design/components/TAB_STYLES.md')
 
-    assert 'Tab Style 2 — Compact Segmented Tabs' in registry
+    assert 'Tab Style 3 — Compact Segmented Tabs' in registry
     assert '`compact-segmented`' in registry
     assert 'data-kaori-tab-variant="compact-segmented"' in component
     assert "[('graph', 'Graph', 'share-2'), ('list', 'Resource List', 'list-tree')]" in workspace

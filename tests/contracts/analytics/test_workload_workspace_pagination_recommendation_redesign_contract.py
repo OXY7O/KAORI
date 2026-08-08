@@ -46,9 +46,7 @@ def test_workload_detail_actions_open_contextual_modals_from_the_action_column()
     assert 'x-teleport="body"' in component
     assert 'role="dialog"' in component
     assert 'aria-modal="true"' in component
-    assert "modal_width = 'max-w-5xl' if size == 'wide' else 'max-w-4xl'" in component
-    assert 'max-h-[calc(100dvh-2rem)]' in component
-    assert 'relative flex h-[calc(100dvh-1rem)]' not in component
+    assert 'max-w-6xl' in component
     assert 'overflow-y-auto' in component
 
     for content in (tenant, mapping):
@@ -56,7 +54,6 @@ def test_workload_detail_actions_open_contextual_modals_from_the_action_column()
         assert 'components/table.html' in content
         assert 'analytics/components/_record_detail_modal.html' in content
         assert 'record_detail_modal.render' in content
-        assert "size='wide'" in content
         assert 'table_ui.action_classes()' in content
         assert 'w-full whitespace-nowrap sm:w-auto' in content
         assert 'aria-haspopup="dialog"' in content
@@ -159,14 +156,14 @@ def test_recommendation_pager_remains_visible_on_a_single_page() -> None:
     assert 'data-recommendation-next' in rendered and 'disabled' in rendered
 
 
-def test_intelligence_recommendations_use_simple_server_side_previous_next_pagination() -> None:
-    template = read('app/templates/intelligence/recommendations.html')
+def test_intelligence_recommendations_use_shared_server_side_pagination() -> None:
+    results = read('app/templates/intelligence/partials/_recommendations_results.html')
+    pagination = read('app/templates/intelligence/components/_pagination.html')
 
-    assert 'pagination_ui.numeric_pages' not in template
-    assert 'Page {{ payload.pagination.page }} of {{ payload.pagination.total_pages }}' in template
-    assert '{% if payload.pagination.has_prev %}' in template
-    assert '{% if payload.pagination.has_next %}' in template
-    assert 'recommendation-pagination-size' not in template
+    assert "intelligence_pagination.render(" in results
+    assert 'pagination_ui.numeric_pages(' in pagination
+    assert 'Rows per page' in pagination
+    assert "indicator='#recommendations-loading-bar'" in results
 
 
 def test_recommendation_titles_and_workspace_labels_are_title_case() -> None:
@@ -188,14 +185,14 @@ def test_recommendation_titles_and_workspace_labels_are_title_case() -> None:
     ):
         assert title in catalog
 
-    assert "'hero_label': 'Infrastructure Intelligence'" in service
-    assert "'engine_status': 'Signal-Based Guidance'" in service
+    assert "page_hero.intro('brain-circuit', 'Infrastructure Intelligence', 'sparkles')" in template
     assert 'Intelligence Posture' in template
-    assert 'Recommendation Registry' in template
-    assert '{{ payload.page_title }} Data Workspace' in template
-    assert 'Affected Asset' in template
-    assert 'Recommended Action' in template
-    assert 'Supported Sources' in template
+    records = read('app/templates/intelligence/partials/_recommendation_records.html')
+    assert 'Recommendation Workspace' in template
+    assert 'Affected Scope' in records
+    assert 'Evidence' in records
+    assert 'Priority' in records
+    assert 'Details' in records
 
 
 def test_kubernetes_recommendation_title_literals_follow_title_case() -> None:

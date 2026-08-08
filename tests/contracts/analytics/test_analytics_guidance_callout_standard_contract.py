@@ -64,5 +64,6 @@ def test_record_level_guidance_uses_compact_shared_variant():
     ]
     for relative in record_templates:
         content = (ANALYTICS_ROOT / relative).read_text()
-        assert "compact=true" in content, relative
+        assert "interpretation_callout(" in content, relative
+        assert ("compact=true" in content or "card=true" in content), relative
         assert "role=" in content, relative

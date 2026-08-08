@@ -8,6 +8,7 @@ Date: 2026-08-07
 This lock applies to the user-facing workspaces that are considered stable before KAORI proceeds to additional product areas:
 
 - Welcome
+- Kubernetes Dashboard
 - Kubernetes Inventory
 - Kubernetes Analytics
 - Kubernetes Operations
@@ -66,3 +67,8 @@ python scripts/verify_ui_reuse.py
 ```
 
 Domain-specific Inventory, Analytics, Operations, Governance, and Integration contract tests remain additional release gates.
+
+
+## Focused Core Kubernetes Lock
+
+The six core product areas are further frozen by `docs/design/KAORI_CORE_KUBERNETES_LOCK_V1.md`.

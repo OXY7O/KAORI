@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 LOCKED_TEMPLATE_PREFIXES = (
     'app/templates/welcome/',
+    'app/templates/dashboards/kubernetes/',
     'app/templates/inventory/',
     'app/templates/analytics/',
     'app/templates/kubernetes_operations/',
@@ -138,7 +139,7 @@ def main() -> int:
 
     print(
         'KAORI core workspace UI lock passed across '
-        f'{checked} templates: Welcome, Kubernetes Inventory, Analytics, Operations, Governance, '
+        f'{checked} templates: Welcome, Kubernetes Dashboard, Kubernetes Inventory, Analytics, Operations, Governance, '
         'and Integrations are protected against raw palette drift, arbitrary typography, inline UI debt, '
         'page-local tablists, compact pill labels, known compatibility wrappers, and RBAC regression.'
     )

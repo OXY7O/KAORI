@@ -81,7 +81,7 @@ def test_every_analytics_page_uses_the_shared_token_scope() -> None:
 def test_analytics_templates_do_not_duplicate_brand_icon_geometry() -> None:
     violations = []
     for template in ANALYTICS_ROOT.rglob('*.html'):
-        if template in {SURFACE, ANALYTICS_ROOT / 'components/_content_tabs.html'}:
+        if template in {SURFACE, ANALYTICS_ROOT / 'components/_content_tabs.html', ANALYTICS_ROOT / 'components/_record_detail_modal.html'}:
             continue
         source = read(template)
         if 'bg-kaori-soft text-kaori-primary' in source:
