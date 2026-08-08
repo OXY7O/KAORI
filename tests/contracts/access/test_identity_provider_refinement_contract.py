@@ -99,6 +99,7 @@ def test_identity_provider_index_uses_full_width_registry_and_directory_workflow
     assert "'Validate Provider'" in strip
     assert "'Find Identity'" in strip
     assert "'Assign Role'" in strip
+    assert 'Credentials Stay Directory-Owned' not in strip
     assert "'Provision Account'" in strip
     assert 'operational_flow_steps.render' not in strip
     assert 'arrow-right' not in strip

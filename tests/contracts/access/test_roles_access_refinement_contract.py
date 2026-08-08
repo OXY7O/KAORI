@@ -78,6 +78,10 @@ def test_roles_access_detail_modal_exposes_role_specific_coverage_and_boundaries
     assert 'build_role_detail_context' in routes
     assert 'def build_role_detail_context' in presentation
 
+    # Keep the technical role key in the primary identity/status cluster.
+    assert "{{ table_label.metadata_label(role.name, 'key-round') }}" in detail
+    assert 'self-start sm:self-auto' not in detail
+
 
 def test_role_mutations_are_serialized_and_version_checked() -> None:
     service = read('app/access/roles/service.py')

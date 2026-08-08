@@ -12,11 +12,11 @@
                         <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ role.display_name }}</h3>
                         {{ table_label.metadata_label(detail.type_short, detail.type_icon) }}
                         {{ table_label.status_label(detail.state_label, detail.state_tone, detail.state_icon, 'detail') }}
+                        {{ table_label.metadata_label(role.name, 'key-round') }}
                     </div>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Role identity, assignment impact, permission coverage, and administrative boundary from the current RBAC registry.</p>
                 </div>
             </div>
-            <div class="self-start sm:self-auto">{{ table_label.metadata_label(role.name, 'key-round') }}</div>
         </header>
 
         {{ detail_ui.summary_strip([

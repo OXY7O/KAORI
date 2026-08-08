@@ -13,6 +13,7 @@ This refinement keeps `app/access/roles/` as the HTTP and presentation owner whi
 - The index uses the KAORI Hero, Role Registry Overview, compact Role Assignment Flow, and a shared-table Role Registry.
 - Role filters are server/HTMX owned and use the shared loading bar and 5/10/25/50 pagination contract. The loading bar sits in a full-width block header so it remains visible during filter and pagination requests.
 - Role detail opens in the shared KAORI resource-detail modal and exposes role identity, assignment impact, role-specific permission coverage, administrative ownership, and deletion eligibility.
+- The role key is grouped inline with the role name/type/state header metadata so technical identity does not render as a detached label.
 - Custom-role deletion uses the shared destructive-confirmation modal and is still revalidated server-side.
 - Role edit/delete mutations acquire a database row lock and carry a version token to prevent silent stale-form overwrite or stale deletion.
 - Permission dependencies remain normalized by the RBAC service; the form now marks permissions that are required by the current effective scope.
