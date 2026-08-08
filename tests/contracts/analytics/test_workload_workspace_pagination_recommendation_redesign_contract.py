@@ -46,7 +46,9 @@ def test_workload_detail_actions_open_contextual_modals_from_the_action_column()
     assert 'x-teleport="body"' in component
     assert 'role="dialog"' in component
     assert 'aria-modal="true"' in component
-    assert 'max-w-6xl' in component
+    assert "modal_width = 'max-w-5xl' if size == 'wide' else 'max-w-4xl'" in component
+    assert 'max-h-[calc(100dvh-2rem)]' in component
+    assert 'relative flex h-[calc(100dvh-1rem)]' not in component
     assert 'overflow-y-auto' in component
 
     for content in (tenant, mapping):

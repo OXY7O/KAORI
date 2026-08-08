@@ -26,6 +26,7 @@ def test_core_kubernetes_final_lock_is_documented_and_quality_gated() -> None:
     assert 'Default table page size is 5' in lock
     assert '5 / 10 / 25 / 50' in lock
     assert 'verify_core_kubernetes_final_lock.py' in gate
+    assert 'verify_analytics_compact_label_standard.py' in gate
     assert "'app/templates/dashboards/kubernetes/'" in ui_lock
 
 
