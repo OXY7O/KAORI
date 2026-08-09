@@ -23,5 +23,6 @@ def render_reports_unavailable(
         'action_label': action_label,
         'overview_url': url_for('reports.overview'),
         'storage_url': url_for('reports.storage'),
+        'storage_verify_url': url_for('reports.storage', verify=1),
     }
     return render_template('reports/_unavailable.html', payload=payload), status_code

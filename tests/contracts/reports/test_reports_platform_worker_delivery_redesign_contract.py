@@ -97,6 +97,12 @@ def test_reports_blueprint_and_page_routes_hide_raw_dependency_errors() -> None:
     assert 'render_reports_unavailable(' in reports_routes
     assert 'Raw Error Hidden' in unavailable
     assert 'technical exception in server logs' in unavailable
+    assert 'data-reports-recovery-panel="unified"' in unavailable
+    assert 'Operational Impact' in unavailable
+    assert 'Recommended Checks' in unavailable
+    assert 'Retry Storage Check' in unavailable
+    assert 'What Happened' not in unavailable
+    assert 'Recommended Check</h2>' not in unavailable
     assert 'Traceback' not in unavailable
     assert 'ClientError' not in unavailable
 
