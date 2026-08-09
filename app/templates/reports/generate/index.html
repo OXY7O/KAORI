@@ -345,18 +345,12 @@
                          data-generate-step="summary">
                     <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                         <div class="min-w-0 flex-1">
-                            <div class="flex items-start justify-between gap-4" data-generate-section-header="review-queue">
-                                <div class="flex min-w-0 items-start gap-3">
-                                    {{ workflow_number('05') }}
-                                    <div class="min-w-0">
-                                        <h3 id="request-summary-title" class="text-base font-bold text-content-primary">Review & Queue</h3>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">Review the request summary before it is queued for artifact generation.</p>
-                                    </div>
+                            <div class="flex items-start gap-3" data-generate-section-header="review-queue">
+                                {{ workflow_number('05') }}
+                                <div class="min-w-0">
+                                    <h3 id="request-summary-title" class="text-base font-bold text-content-primary">Review & Queue</h3>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Review the request summary before it is queued for artifact generation.</p>
                                 </div>
-                                <span id="preview-eligibility-status" class="inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold leading-4 {% if initial_request_ready %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% else %}border-status-warning-border bg-status-warning-soft text-status-warning-text{% endif %}">
-                                    <i id="preview-eligibility-icon" data-lucide="{{ 'circle-check' if initial_request_ready else 'triangle-alert' }}" class="h-3 w-3 shrink-0 {% if initial_request_ready %}text-status-normal{% else %}text-status-warning{% endif %}" aria-hidden="true"></i>
-                                    <span id="preview-eligibility-label">{{ 'Ready to Queue' if initial_request_ready else 'Action Required' }}</span>
-                                </span>
                             </div>
 
                             <div class="mt-3 grid gap-3 sm:grid-cols-3">
@@ -380,7 +374,11 @@
                             <p id="preview-included-sections" class="sr-only">{{ payload.selected_section_options|map(attribute='label')|join(', ') }}</p>
                         </div>
 
-                        <div class="flex flex-wrap items-center gap-2 lg:justify-end">
+                        <div class="flex flex-wrap items-center gap-2 lg:justify-end" aria-label="Request readiness">
+                            <span id="preview-eligibility-status" class="inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold leading-4 {% if initial_request_ready %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% else %}border-status-warning-border bg-status-warning-soft text-status-warning-text{% endif %}">
+                                <i id="preview-eligibility-icon" data-lucide="{{ 'circle-check' if initial_request_ready else 'triangle-alert' }}" class="h-3 w-3 shrink-0 {% if initial_request_ready %}text-status-normal{% else %}text-status-warning{% endif %}" aria-hidden="true"></i>
+                                <span id="preview-eligibility-label">{{ 'Ready to Queue' if initial_request_ready else 'Action Required' }}</span>
+                            </span>
                             <span id="readiness-scope-status" class="inline-flex min-h-6 items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold leading-4 {% if initial_scope_ready %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% else %}border-status-warning-border bg-status-warning-soft text-status-warning-text{% endif %}">
                                 <i data-readiness-status-icon data-lucide="{{ 'check' if initial_scope_ready else 'triangle-alert' }}" class="h-3 w-3 shrink-0" aria-hidden="true"></i>
                                 <span data-readiness-status-label>{{ 'Scope Ready' if initial_scope_ready else 'Select Cluster' }}</span>
@@ -405,10 +403,12 @@
                             <a href="{{ url_for('reports.generated_reports') }}" class="inline-flex min-h-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-kaori-primary/40 hover:text-kaori-primary">Cancel</a>
                             <button type="submit"
                                     id="generate-report-button"
+                                    data-operation-submit
+                                    data-loading-label="Queueing report..."
                                     {% if not initial_request_ready %}disabled{% endif %}
                                     class="inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-kaori-soft disabled:text-content-muted">
                                 <i data-lucide="file-plus-2" class="h-4 w-4" aria-hidden="true"></i>
-                                Create & Queue Report
+                                <span data-operation-submit-label>Create & Queue Report</span>
                             </button>
                         </div>
                     </div>

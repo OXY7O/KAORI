@@ -84,6 +84,7 @@ def get_generated_reports_payload(
 
     reports, total_items = get_reports(
         selected_filters,
+        backend_status=backend_status,
     )
 
     focus_report_id = _safe_int(selected_filters.get('focus', ''), 0)
@@ -124,10 +125,7 @@ def get_generated_reports_payload(
             selected_filters,
             total_items,
         ),
-        'lifecycle_status': get_lifecycle_status(),
-        'storage_context': get_storage_context(),
         'backend_status': backend_status,
-        'hero_posture': get_hero_posture(),
         'storage_notice': storage_notice,
         'focus_report_id': focus_report_id,
         'has_pending_reports': has_pending_reports,
@@ -446,6 +444,8 @@ def get_selected_filters(
 
 def get_reports(
     selected_filters: dict[str, str],
+    *,
+    backend_status: Mapping[str, Any] | None = None,
 ) -> tuple[list[dict[str, Any]], int]:
     page = _safe_int(
         selected_filters.get(
@@ -525,6 +525,8 @@ def get_reports(
             report,
             cluster_map,
             user_map,
+            verify_artifact=False,
+            active_backend_status=backend_status,
         )
         for report in report_items
     ], total_items
@@ -920,13 +922,21 @@ def _serialize_report(
     report: Report,
     cluster_map: dict[str, str],
     user_map: dict[int, dict[str, Any]],
+    *,
+    verify_artifact: bool = True,
+    active_backend_status: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     status_meta = _get_status_meta(
         report.status,
     )
 
-    artifact_access = _probe_report_file(
-        report.file_path,
+    artifact_access = (
+        _probe_report_file(report.file_path)
+        if verify_artifact
+        else _summarize_report_file_reference(
+            report.file_path,
+            active_backend_status=active_backend_status,
+        )
     )
     file_exists = bool(artifact_access['exists'])
 
@@ -938,7 +948,9 @@ def _serialize_report(
         report.file_path,
     )
     artifact_format = get_report_artifact_format(report.output_format)
-    active_backend_status = get_report_storage_backend_status()
+    active_backend_status = dict(
+        active_backend_status or get_report_storage_backend_status()
+    )
     can_generate_artifact = (
         report.status in ['requested', 'failed', 'ready']
         and bool(active_backend_status.get('write_available', False))
@@ -1029,6 +1041,64 @@ def _serialize_report(
         'can_download_artifact': can_download_artifact,
     }
 
+
+def _summarize_report_file_reference(
+    file_path: str | None,
+    *,
+    active_backend_status: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Return list-safe artifact state without per-row object-storage HEAD checks.
+
+    Generated Reports is a registry view. Exact object existence is verified on the
+    detail/download/storage paths where it is actionable. Keeping the list metadata-
+    first avoids one remote exists() request per visible report and prevents periodic
+    HTMX refreshes from repeatedly probing object storage.
+    """
+
+    if not file_path:
+        return {
+            'exists': False,
+            'reachable': True,
+            'backend': 'none',
+            'backend_label': 'Report Storage',
+            'state': 'not_generated',
+            'verified': False,
+        }
+
+    storage_location = _parse_storage_location(file_path)
+    backend_name = str(storage_location.get('backend') or '').lower().strip()
+    if not backend_name or backend_name == 'unknown':
+        return {
+            'exists': False,
+            'reachable': True,
+            'backend': 'invalid',
+            'backend_label': 'Invalid storage reference',
+            'state': 'invalid',
+            'verified': False,
+        }
+
+    if (
+        active_backend_status is not None
+        and backend_name == _get_active_storage_backend_name()
+    ):
+        backend_status = dict(active_backend_status)
+    else:
+        backend_status = get_report_storage_backend_status(backend_name)
+
+    reachable = bool(backend_status.get('reachable', False))
+    return {
+        # For the registry, a retained URI is enough to expose the download action.
+        # The download route performs the authoritative existence probe.
+        'exists': bool(file_path and reachable),
+        'reachable': reachable,
+        'backend': backend_name,
+        'backend_label': (
+            storage_location.get('backend_label')
+            or _format_storage_backend_label(backend_name)
+        ),
+        'state': 'referenced' if reachable else 'unavailable',
+        'verified': False,
+    }
 
 def _get_status_meta(
     status: str,
