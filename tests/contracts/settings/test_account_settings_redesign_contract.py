@@ -67,8 +67,16 @@ def test_profile_workspace_is_full_width_without_right_information_column() -> N
     assert "Read-Only Account View" in profile
 
 
-def test_authentication_activity_keeps_summary_and_table_together() -> None:
+def test_authentication_activity_is_full_width_with_inline_evidence_boundary() -> None:
+    page = read("app/templates/settings/account/partials/_page_content.html")
     activity = read("app/templates/settings/account/partials/_recent_login_activity.html")
+
+    assert "active_tab == 'activity'" in page
+    assert 'data-account-activity-full-width="true"' in page
+    assert 'include "settings/account/partials/_recent_login_activity.html"' in page
+    assert 'include "settings/account/partials/_activity_information.html"' not in page
+
+    assert 'data-authentication-activity-layout="full-width"' in activity
     assert "Successful Sign-Ins" in activity
     assert "Failed Sign-Ins" in activity
     assert "Sign-Out Events" in activity
@@ -77,16 +85,15 @@ def test_authentication_activity_keeps_summary_and_table_together() -> None:
     assert "table_label.status_indicator_label('Failed', 'critical')" in activity
     assert "category='access', search=current_user.username" in activity
 
-
-def test_activity_context_is_evidence_and_privacy_only() -> None:
-    context = read("app/templates/settings/account/partials/_activity_information.html")
-    assert "Recorded Evidence" in context
-    assert "Result Interpretation" in context
-    assert "Audit Privacy Boundary" in context
-    assert "category='access', search=current_user.username" in context
-    assert "event_type='authentication'" not in context
-    assert "user_id=current_user.id" not in context
-    assert "Passwords, LDAP bind secrets" in context
+    assert 'data-authentication-evidence-boundary="inline"' in activity
+    assert "Authentication Evidence Boundary" in activity
+    assert "Identity & Provider" in activity
+    assert "Connection Context" in activity
+    assert "Result & Time" in activity
+    assert "Passwords, LDAP bind secrets" in activity
+    assert "Recorded Evidence" not in activity
+    assert "Result Interpretation" not in activity
+    assert "Audit Privacy Boundary" not in activity
 
 
 def test_credential_workspace_uses_security_posture_then_two_stage_form() -> None:

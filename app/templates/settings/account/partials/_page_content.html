@@ -11,21 +11,17 @@
             <div class="p-5 xl:p-6" data-account-profile-full-width="true">
                 {% include "settings/account/partials/_profile_cards.html" %}
             </div>
+        {% elif active_tab == 'activity' %}
+            <div class="p-5 xl:p-6" data-account-activity-full-width="true">
+                {% include "settings/account/partials/_recent_login_activity.html" %}
+            </div>
         {% else %}
             <div class="grid gap-6 p-5 xl:grid-cols-12 xl:items-start xl:p-6">
                 <main class="min-w-0 xl:col-span-8">
-                    {% if active_tab == 'activity' %}
-                        {% include "settings/account/partials/_recent_login_activity.html" %}
-                    {% else %}
-                        {% include "settings/account/partials/_change_password.html" %}
-                    {% endif %}
+                    {% include "settings/account/partials/_change_password.html" %}
                 </main>
                 <aside class="min-w-0 space-y-5 xl:col-span-4">
-                    {% if active_tab == 'activity' %}
-                        {% include "settings/account/partials/_activity_information.html" %}
-                    {% else %}
-                        {% include "settings/account/partials/_credential_information.html" %}
-                    {% endif %}
+                    {% include "settings/account/partials/_credential_information.html" %}
                 </aside>
             </div>
         {% endif %}
