@@ -46,7 +46,13 @@ def test_reporting_posture_is_embedded_in_the_hero() -> None:
     presentation = read(PRESENTATION)
 
     assert 'aria-label="Reporting posture"' in source
+    assert 'data-reports-hero-layout="compact-posture"' in source
     assert 'payload.summary_cards' in source
+    assert 'kaori-hero-tile rounded-xl border px-4 py-3' not in source
+    assert 'border-t border-white/20' in source
+    assert 'sm:divide-x sm:divide-white/20' in source
+    assert 'min-h-[13rem]' not in source
+    assert 'lg:min-h-[14.5rem]' not in source
     for label in ('Generated', 'Ready', 'In Progress', 'Failed'):
         assert f"'label': '{label}'" in service
         assert f"'label': '{label}'" in presentation
