@@ -200,8 +200,8 @@
                                 </select>
                             </label>
 
-                            <div class="block">
-                                <div class="flex items-center justify-between gap-2">
+                            <div class="min-w-0" data-scope-filter="namespace">
+                                <div class="flex min-h-5 items-center justify-between gap-2">
                                     <label for="namespace-select" class="text-sm font-semibold text-content-primary">Namespace</label>
                                     <span id="namespace-option-count" class="text-xs font-medium text-content-muted {% if not payload.form_state.cluster_id %}hidden{% endif %}">{% if payload.form_state.cluster_id %}{{ payload.selected_namespace_options|length }} available{% endif %}</span>
                                 </div>
@@ -216,8 +216,11 @@
                                 </select>
                             </div>
 
-                            <label class="block">
-                                <span class="text-sm font-semibold text-content-primary">Period</span>
+                            <div class="min-w-0" data-scope-filter="period">
+                                <div class="flex min-h-5 items-center justify-between gap-2">
+                                    <label for="period-select" class="text-sm font-semibold text-content-primary">Period</label>
+                                    <span id="period-mode-label" class="text-xs font-medium text-content-muted">{% if payload.selected_report_type.family == 'inventory' %}Snapshot{% else %}Time Range{% endif %}</span>
+                                </div>
                                 <select name="period"
                                         id="period-select"
                                         class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
@@ -228,12 +231,19 @@
                                                 {% if not period_allowed %}hidden{% endif %}>{{ option.label }}</option>
                                     {% endfor %}
                                 </select>
-                            </label>
+                            </div>
                         </div>
 
-                        <div id="cluster-guard" class="mt-2 hidden flex items-center gap-1.5 text-xs font-semibold text-status-warning-text">
-                            <i data-lucide="triangle-alert" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"></i>
-                            <span>Select a cluster before queueing.</span>
+                        <div class="mt-4 flex items-start gap-3 rounded-xl border border-kaori-primary/20 bg-kaori-soft/45 px-4 py-3"
+                             role="note"
+                             data-generate-scope-tip="true">
+                            <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary ring-1 ring-kaori-primary/15">
+                                <i data-lucide="lightbulb" class="h-4 w-4" aria-hidden="true"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">Scope Tip</p>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">Choose a cluster to unlock namespace selection. Keep <span class="font-semibold text-content-secondary">All Namespaces</span> for a cluster-wide report.</p>
+                            </div>
                         </div>
                     </section>
                 </div>
@@ -401,13 +411,13 @@
 
                 const reportTypeSelect = document.getElementById('report-type-select');
                 const periodSelect = document.getElementById('period-select');
+                const periodModeLabel = document.getElementById('period-mode-label');
                 const outputFormatSelect = document.getElementById('output-format-select');
                 const outputFormatContract = document.getElementById('output-format-contract');
                 const clusterSelect = document.getElementById('cluster-select');
                 const namespaceSelect = document.getElementById('namespace-select');
                 const namespaceOptionCount = document.getElementById('namespace-option-count');
                 const reportNameInput = document.getElementById('report-name-input');
-                const clusterGuard = document.getElementById('cluster-guard');
                 const generateButton = document.getElementById('generate-report-button');
                 const storageGenerationReady = {{ payload.generation_allowed|tojson }};
                 const selectedSectionList = document.getElementById('selected-section-list');
@@ -799,6 +809,10 @@
                         periodSelect.value = '30d';
                     }
 
+                    if (periodModeLabel) {
+                        periodModeLabel.textContent = isInventoryReport ? 'Snapshot' : 'Time Range';
+                    }
+
                     if (previewPeriod && periodSelect.options[periodSelect.selectedIndex]) {
                         previewPeriod.textContent = periodSelect.options[periodSelect.selectedIndex].text.trim();
                     }
@@ -922,8 +936,6 @@
                     const namespaceValue = namespaceSelect && namespaceSelect.value
                         ? namespaceSelect.options[namespaceSelect.selectedIndex].text.trim()
                         : 'All Namespaces';
-
-                    setElementVisibility(clusterGuard, shouldBlockCluster);
 
                     setReadinessItemTone(
                         readinessScopeIcon,

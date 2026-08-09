@@ -193,3 +193,21 @@ def test_generate_report_typography_and_summary_are_visually_hierarchical() -> N
     assert 'id="namespace-select-help"' not in source
     assert 'Supported Formats' in source
     assert 'id="output-format-contract"' in source
+
+
+def test_scope_filters_are_symmetric_and_use_guidance_instead_of_inline_warning() -> None:
+    source = read(TEMPLATE)
+
+    assert 'data-scope-filter="namespace"' in source
+    assert 'data-scope-filter="period"' in source
+    assert source.count('flex min-h-5 items-center justify-between gap-2') >= 2
+    assert 'id="period-mode-label"' in source
+    assert "periodModeLabel.textContent = isInventoryReport ? 'Snapshot' : 'Time Range';" in source
+    assert 'data-generate-scope-tip="true"' in source
+    assert 'Scope Tip' in source
+    assert 'Choose a cluster to unlock namespace selection.' in source
+    assert 'All Namespaces' in source
+    assert 'Select a cluster before queueing.' not in source
+    assert 'id="cluster-guard"' not in source
+    assert "const clusterGuard = document.getElementById('cluster-guard');" not in source
+    assert 'setElementVisibility(clusterGuard, shouldBlockCluster);' not in source
