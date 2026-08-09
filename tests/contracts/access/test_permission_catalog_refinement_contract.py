@@ -59,8 +59,8 @@ def test_permission_catalog_uses_kaori_hero_overview_tabs_tables_loading_and_pag
         assert 'hx-indicator=' in template
 
     assert 'table_ui.inventory_filter_bar_classes()' in registry
-    assert 'grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4' in registry
-    assert 'sm:col-span-2 lg:col-span-2' in registry
+    assert 'grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-3' in registry
+    assert 'sm:col-span-2 lg:col-span-1' in registry
     assert 'table_ui.inventory_filter_bar_classes()' in coverage
     assert 'grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4' in coverage
     assert 'Search Permission' in registry

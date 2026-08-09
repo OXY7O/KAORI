@@ -46,3 +46,8 @@ Permission Catalog is not Final Locked yet. Directory Provisioning, Activity Aud
 
 - Permission Registry and Role Coverage filter bars now use the full workspace width instead of the generic flex filter primitive, with desktop-aligned columns matching other KAORI registers.
 - Permission Details uses an opt-in content-driven shared resource-detail modal at `max-w-5xl`; other shared modal consumers retain the existing viewport-height default.
+## v1.22 Filter Proportion Refinement
+
+- Permission Registry desktop filters use three equal-width columns: Search Permission, Control Module, and Coverage.
+- Role Coverage retains four equal-width columns because it has four filters.
+- No RBAC or query semantics changed.
