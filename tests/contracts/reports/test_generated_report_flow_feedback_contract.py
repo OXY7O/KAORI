@@ -63,8 +63,18 @@ def test_generated_registry_is_compact_focused_and_auto_refreshes_pending_work()
     assert 'data-generated-report-registry="true"' in template
     assert 'data-generated-registry-table="true"' in template
     assert 'data-focused-report="true"' in template
-    assert 'Auto-Refreshing' in template
+    assert 'Live Updates' in template
     assert 'hx-trigger="every {{ payload.poll_interval_seconds }}s"' in template
+    polling_block = template.split('hx-trigger="every {{ payload.poll_interval_seconds }}s"', 1)[1].split('{% endif %}', 1)[0]
+    assert 'hx-indicator="#generated-report-loading"' not in polling_block
+    assert 'data-generated-registry-guide="true"' in template
+    assert 'Artifact Registry Guide' in template
+    assert 'Active work refreshes silently' in template
+    assert 'xl:grid-cols-[minmax(13rem,1.4fr)' in template
+    assert '>Previous<' in template or 'Previous\n' in template
+    assert '>Next<' in template or 'Next\n' in template
+    assert 'pagination_ui.navigation_classes(false)' in template
+    assert 'pagination_ui.navigation_classes(true)' in template
     assert 'table_label.status_indicator_label(report.status' in template
     assert '>Report</th>' in template
     assert '>Scope</th>' in template

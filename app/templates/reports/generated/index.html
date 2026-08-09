@@ -73,6 +73,27 @@
             </section>
         {% endif %}
 
+        <section class="rounded-2xl border border-kaori-primary/15 bg-kaori-soft/35 px-5 py-4 shadow-sm"
+                 data-generated-registry-guide="true">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm" aria-hidden="true">
+                        <i data-lucide="info" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h2 class="text-sm font-semibold text-content-primary">Artifact Registry Guide</h2>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">
+                            Track report requests from Requested through Ready or Failed. Active work refreshes silently, while report metadata remains readable when artifact storage is degraded.
+                        </p>
+                    </div>
+                </div>
+                <div class="flex shrink-0 flex-wrap items-center gap-2 text-xs">
+                    {{ table_label.metadata_label('Rows 5 / 10 / 25 / 50', 'rows-3') }}
+                    {{ table_label.metadata_label('Storage-Aware Downloads', 'hard-drive-download') }}
+                </div>
+            </div>
+        </section>
+
         <section id="generated-report-registry"
                  data-generated-report-registry="true"
                  {% if payload.has_pending_reports %}
@@ -91,7 +112,6 @@
                      hx-target="this"
                      hx-select="#generated-report-registry"
                      hx-swap="outerHTML"
-                     hx-indicator="#generated-report-loading"
                  {% endif %}
                  class="{{ table_ui.block_classes() }}">
             <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
@@ -104,7 +124,7 @@
                             <div class="flex flex-wrap items-center gap-2">
                                 <h2 class="{{ table_ui.block_title_classes() }}">Artifact Registry</h2>
                                 {% if payload.has_pending_reports %}
-                                    {{ table_label.status_indicator_label('Auto-Refreshing', 'info') }}
+                                    {{ table_label.status_indicator_label('Live Updates', 'info') }}
                                 {% endif %}
                             </div>
                             <p class="{{ table_ui.block_description_classes() }}">
@@ -141,11 +161,11 @@
                   hx-swap="outerHTML"
                   hx-push-url="true"
                   hx-indicator="#generated-report-loading"
-                  class="{{ table_ui.inventory_filter_bar_classes() }} grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-[minmax(16rem,1.5fr)_repeat(5,minmax(0,1fr))] 2xl:items-end">
+                  class="{{ table_ui.inventory_filter_bar_classes() }} grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(13rem,1.4fr)_minmax(9rem,1fr)_minmax(11rem,1.1fr)_minmax(8rem,0.85fr)_minmax(7rem,0.75fr)_minmax(8rem,0.85fr)] xl:items-end">
                 <input type="hidden" name="page" value="1">
                 <input type="hidden" name="per_page" value="{{ payload.selected_filters.per_page }}">
 
-                <label class="block 2xl:col-span-1">
+                <label class="block">
                     <span class="{{ table_ui.filter_label_classes() }}">Search</span>
                     <div class="relative mt-1.5">
                         <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted" aria-hidden="true"></i>
@@ -346,7 +366,28 @@
                         </select>
                     </form>
                 </div>
-                <div class="{{ pagination_ui.navigation_group_classes() }}">
+                <div class="{{ pagination_ui.navigation_group_classes() }}"
+                     hx-select="#generated-report-registry"
+                     hx-push-url="true">
+                    {% set previous_query = registry_query.copy() %}
+                    {% set _ = previous_query.update({'page': payload.pagination.prev_page}) %}
+                    {% if payload.pagination.has_prev %}
+                        <a href="{{ url_for('reports.generated_reports', **previous_query) }}"
+                           hx-get="{{ url_for('reports.generated_reports', **previous_query) }}"
+                           hx-target="#generated-report-registry"
+                           hx-swap="outerHTML"
+                           hx-indicator="#generated-report-loading"
+                           class="{{ pagination_ui.navigation_classes(false) }}">
+                            <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
+                            Previous
+                        </a>
+                    {% else %}
+                        <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">
+                            <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
+                            Previous
+                        </span>
+                    {% endif %}
+
                     {{ pagination_ui.numeric_pages(
                         payload.pagination.page,
                         payload.pagination.total_pages,
@@ -358,6 +399,25 @@
                         hx_swap='outerHTML',
                         href_endpoint='reports.generated_reports'
                     ) }}
+
+                    {% set next_query = registry_query.copy() %}
+                    {% set _ = next_query.update({'page': payload.pagination.next_page}) %}
+                    {% if payload.pagination.has_next %}
+                        <a href="{{ url_for('reports.generated_reports', **next_query) }}"
+                           hx-get="{{ url_for('reports.generated_reports', **next_query) }}"
+                           hx-target="#generated-report-registry"
+                           hx-swap="outerHTML"
+                           hx-indicator="#generated-report-loading"
+                           class="{{ pagination_ui.navigation_classes(false) }}">
+                            Next
+                            <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
+                        </a>
+                    {% else %}
+                        <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">
+                            Next
+                            <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
+                        </span>
+                    {% endif %}
                 </div>
             </footer>
         </section>
