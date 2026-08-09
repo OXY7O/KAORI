@@ -1,3 +1,4 @@
+{% import "components/table_label.html" as table_label %}
 <form method="POST"
       action="{{ url_for('settings.general', tab='time-locale') }}"
       hx-post="{{ url_for('settings.general', tab='time-locale') }}"
@@ -6,93 +7,126 @@
       hx-push-url="true"
       class="space-y-5">
     {{ timezone_form.hidden_tag() }}
-    <section class="rounded-2xl border border-outline-default bg-surface-card">
-        <header class="border-b border-outline-default px-5 py-4">
+    <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card">
+        <header class="flex flex-col gap-4 border-b border-outline-default px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
             <div class="flex items-start gap-3">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
                     <i data-lucide="map-pinned" class="h-5 w-5"></i>
                 </span>
                 <div>
-                    <h2 class="text-base font-bold text-content-primary">Time Zone Source</h2>
+                    <h2 class="text-base font-bold text-content-primary">Time Zone</h2>
                     <p class="mt-1 text-sm leading-6 text-content-muted">
-                        Use browser detection for mobile users and travel, or pin a specific IANA timezone for a fixed operational context.
+                        Choose automatic browser detection for mobility or pin a fixed IANA timezone for a stable operational context.
                     </p>
                 </div>
             </div>
+            {{ table_label.metadata_label('Personal Preference', 'user-round-cog') }}
         </header>
-        <div class="space-y-5 p-5">
-            <div class="grid gap-3 md:grid-cols-2">
-                {% for value, label in timezone_form.timezone_mode.choices %}
-                    <label class="group cursor-pointer rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm transition hover:border-kaori-accent/70 has-[:checked]:border-kaori-primary has-[:checked]:bg-kaori-soft/70 has-[:checked]:ring-2 has-[:checked]:ring-kaori-primary/15">
+
+        <div class="space-y-6 p-5">
+            <section aria-labelledby="timezone-selection-mode">
+                <div class="mb-3">
+                    <h3 id="timezone-selection-mode" class="text-sm font-bold text-content-primary">Selection Mode</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Select how KAORI resolves the effective timezone for this account.</p>
+                </div>
+                <div class="grid gap-3 md:grid-cols-2">
+                    {% for value, label in timezone_form.timezone_mode.choices %}
+                        <label class="group cursor-pointer rounded-xl border border-outline-default bg-surface-card p-4 transition hover:border-kaori-accent/70 hover:bg-surface-subtle has-[:checked]:border-kaori-primary has-[:checked]:bg-kaori-soft/70 has-[:checked]:ring-2 has-[:checked]:ring-kaori-primary/15">
+                            <div class="flex items-start gap-3">
+                                <input type="radio"
+                                       name="{{ timezone_form.timezone_mode.name }}"
+                                       value="{{ value }}"
+                                       class="mt-1 h-4 w-4 border-outline-default text-kaori-primary focus:ring-kaori-primary"
+                                       {% if timezone_form.timezone_mode.data == value %}checked{% endif %}>
+                                <span class="min-w-0">
+                                    <span class="flex items-center gap-2 text-sm font-bold text-content-primary">
+                                        <i data-lucide="{{ 'locate-fixed' if value == 'automatic' else 'pin' }}"
+                                           class="h-4 w-4 text-kaori-primary"></i>
+                                        {{ label }}
+                                    </span>
+                                    <span class="mt-1 block text-xs leading-5 text-content-muted">
+                                        {% if value == 'automatic' %}
+                                            Follow the current browser IANA timezone when this account opens KAORI.
+                                        {% else %}
+                                            Always render timestamps using one selected timezone, independent of browser location.
+                                        {% endif %}
+                                    </span>
+                                </span>
+                            </div>
+                        </label>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <div class="grid gap-4 lg:grid-cols-2">
+                <section class="rounded-xl border border-outline-default bg-surface-subtle p-4" aria-labelledby="browser-detection-title">
+                    <div class="flex items-start justify-between gap-3">
                         <div class="flex items-start gap-3">
-                            <input type="radio"
-                                   name="{{ timezone_form.timezone_mode.name }}"
-                                   value="{{ value }}"
-                                   class="mt-1 h-4 w-4 border-outline-default text-kaori-primary focus:ring-kaori-primary"
-                                   {% if timezone_form.timezone_mode.data == value %}checked{% endif %}>
-                            <span class="min-w-0">
-                                <span class="flex items-center gap-2 text-sm font-bold text-content-primary">
-                                    <i data-lucide="{{ 'locate-fixed' if value == 'automatic' else 'pin' }}"
-                                       class="h-4 w-4 text-kaori-primary"></i>
-                                    {{ label }}
-                                </span>
-                                <span class="mt-1 block text-xs leading-5 text-content-muted">
-                                    {% if value == 'automatic' %}
-                                        KAORI synchronizes the browser IANA timezone when this account opens KAORI.
-                                    {% else %}
-                                        KAORI always renders timestamps using the selected timezone, regardless of browser location.
-                                    {% endif %}
-                                </span>
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
+                                <i data-lucide="locate-fixed" class="h-4 w-4"></i>
                             </span>
+                            <div>
+                                <h3 id="browser-detection-title" class="text-sm font-bold text-content-primary">Browser Detection</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Timezone reported by the current browser.</p>
+                            </div>
                         </div>
-                    </label>
-                {% endfor %}
-            </div>
-            <div id="browser-timezone-panel"
-                 class="rounded-xl border border-kaori-primary/25 bg-kaori-soft/60 p-4">
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <p class="text-xs font-bold uppercase tracking-wider text-kaori-primary">Detected browser timezone</p>
-                        <p id="browser-timezone-label"
-                           class="mt-1 text-sm font-bold text-content-primary">Detecting…</p>
+                    </div>
+                    <div class="mt-4 rounded-lg border border-outline-default bg-surface-card p-3">
+                        <p class="text-xs font-semibold text-content-muted">Detected Time Zone</p>
+                        <p id="browser-timezone-label" class="mt-1 text-sm font-bold text-kaori-primary">Detecting…</p>
                     </div>
                     <button id="detect-browser-timezone"
                             type="button"
-                            class="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary">
+                            class="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary">
                         <i data-lucide="refresh-cw" class="h-4 w-4"></i>
-                        Detect again
+                        Detect Again
                     </button>
-                </div>
+                </section>
+
+                <section id="manual-timezone-panel"
+                         class="rounded-xl border border-outline-default bg-surface-subtle p-4 transition"
+                         aria-labelledby="manual-timezone-title">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
+                            <i data-lucide="pin" class="h-4 w-4"></i>
+                        </span>
+                        <div>
+                            <h3 id="manual-timezone-title" class="text-sm font-bold text-content-primary">Manual Time Zone</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Pin one IANA timezone for this account.</p>
+                        </div>
+                    </div>
+                    <label for="{{ timezone_form.timezone.id }}"
+                           class="mt-4 block text-xs font-semibold text-content-primary">IANA Time Zone</label>
+                    <select id="{{ timezone_form.timezone.id }}"
+                            name="{{ timezone_form.timezone.name }}"
+                            class="mt-2 h-11 w-full rounded-xl border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
+                        {% for group_label, timezone_names in timezone_choice_groups %}
+                            <optgroup label="{{ group_label }}">
+                                {% for timezone_name in timezone_names %}
+                                    <option value="{{ timezone_name }}"
+                                            {% if timezone_form.timezone.data == timezone_name %}selected{% endif %}>
+                                        {{ timezone_name }}
+                                    </option>
+                                {% endfor %}
+                            </optgroup>
+                        {% endfor %}
+                    </select>
+                    <p class="mt-2 text-xs leading-5 text-content-muted">
+                        Examples: Asia/Jakarta, Asia/Makassar, Asia/Jayapura, Europe/London, America/New_York.
+                    </p>
+                </section>
             </div>
-            <div id="manual-timezone-panel">
-                <label for="{{ timezone_form.timezone.id }}"
-                       class="text-sm font-semibold text-content-primary">Manual IANA timezone</label>
-                <select id="{{ timezone_form.timezone.id }}"
-                        name="{{ timezone_form.timezone.name }}"
-                        class="mt-2 h-11 w-full rounded-xl border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
-                    {% for group_label, timezone_names in timezone_choice_groups %}
-                        <optgroup label="{{ group_label }}">
-                            {% for timezone_name in timezone_names %}
-                                <option value="{{ timezone_name }}"
-                                        {% if timezone_form.timezone.data == timezone_name %}selected{% endif %}>
-                                    {{ timezone_name }}
-                                </option>
-                            {% endfor %}
-                        </optgroup>
-                    {% endfor %}
-                </select>
-                <p class="mt-2 text-xs leading-5 text-content-muted">
-                    Examples: Asia/Jakarta, Asia/Makassar, Asia/Jayapura, Europe/London, and America/New_York.
-                </p>
-            </div>
+
             {% for error in timezone_form.timezone.errors %}
                 <p class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{{ error }}</p>
             {% endfor %}
         </div>
+
         <footer class="flex flex-col gap-3 border-t border-outline-default bg-surface-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p class="text-xs leading-5 text-content-muted">
-                Effective timezone: <span class="font-bold text-content-primary">{{ current_timezone }}</span>
-            </p>
+            <div class="flex items-center gap-2 text-xs text-content-muted">
+                <i data-lucide="circle-check" class="h-4 w-4 text-kaori-primary"></i>
+                <span>Effective Time Zone: <strong class="text-content-primary">{{ current_timezone }}</strong></span>
+            </div>
             <button type="submit"
                     name="{{ timezone_form.submit_timezone.name }}"
                     value="1"
@@ -100,7 +134,7 @@
                     data-loading-label="Saving..."
                     class="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus cursor-pointer disabled:cursor-wait disabled:opacity-75">
                 <i data-lucide="save" class="h-4 w-4 shrink-0"></i>
-                <span data-operation-submit-label>Save</span>
+                <span data-operation-submit-label>Save Time Zone</span>
             </button>
         </footer>
     </section>

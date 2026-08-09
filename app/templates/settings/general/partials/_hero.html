@@ -7,22 +7,22 @@
                 <h1 class="{{ page_hero.title_classes() }}">General Settings</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">
                     {% if active_tab == 'system-information' %}
-                        Review the KAORI {{ system_information.version }} release identity, build reference, release highlights, and capabilities included with this deployment.
+                        Review the KAORI release identity, build traceability, and capabilities included with this deployment.
                     {% elif active_tab == 'compatibility-versions' %}
-                        Review the minimum compatible and recommended integration baselines used by KAORI readiness validation.
+                        Review supported integration baselines and the validation policy KAORI uses before a provider is considered ready.
                     {% else %}
-                        Configure per-user time zone and regional presentation preferences without changing canonical UTC data or external system clocks.
+                        Configure how KAORI presents time and regional information for your account without changing canonical operational data.
                     {% endif %}
                 </p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {% if active_tab == 'system-information' %}
                         {{ page_hero.meta_label('tag', 'Version ' ~ system_information.version) }}
                         {{ page_hero.meta_label('container', system_information.environment) }}
-                        {{ page_hero.meta_label('blocks', system_information.feature_group_count ~ ' Capability Areas') }}
+                        {{ page_hero.meta_label('lock-keyhole', 'Read-Only Metadata') }}
                     {% elif active_tab == 'compatibility-versions' %}
                         {{ page_hero.meta_label('unplug', system_information.compatibility_product_count ~ ' Integration Products') }}
                         {{ page_hero.meta_label('layers-3', system_information.compatibility_profile_count ~ ' Compatibility Profiles') }}
-                        {{ page_hero.meta_label('shield-check', 'Capability Validation Required') }}
+                        {{ page_hero.meta_label('scan-search', 'Live Validation Required') }}
                     {% else %}
                         {{ page_hero.meta_label('clock-3', current_timezone) }}
                         {{ page_hero.meta_label('languages', current_locale) }}
@@ -34,51 +34,34 @@
         <aside class="{{ page_hero.aside_classes() }}">
             <div class="{{ page_hero.context_panel_classes() }}">
                 {% if active_tab == 'system-information' %}
-                    <div>
-                        <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Deployed Release</p>
-                        <p class="mt-2 text-2xl font-bold text-brand-foreground">v{{ system_information.version }}</p>
+                    {{ page_hero.context_header('Release Identity', 'KAORI v' ~ system_information.version, 'package-check') }}
+                    <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                        {{ page_hero.context_metric('container', 'Environment', system_information.environment, 'Deployment label', 'text-sm font-semibold leading-6') }}
+                        {{ page_hero.context_metric('blocks', 'Capability Areas', system_information.feature_group_count, 'Shipped capability groups') }}
                     </div>
-                    <div class="{{ page_hero.metadata_row_classes() }}">
-                        <span class="inline-flex h-9 items-center gap-2 rounded-lg border border-brand-outline bg-brand-surface-strong px-3 text-xs font-semibold text-brand-foreground">
-                            <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
-                            Safe Product Metadata
-                        </span>
-                        <span class="inline-flex h-9 items-center gap-2 rounded-lg border border-brand-outline bg-brand-surface-strong px-3 text-xs font-semibold text-brand-foreground">
-                            <i data-lucide="sparkles" class="h-3.5 w-3.5"></i>
-                            {{ system_information.release_highlight_count }} Release Highlights
-                        </span>
-                    </div>
+                    {{ page_hero.context_info('shield-check', 'Only safe product and build metadata is exposed on this page.') }}
                 {% elif active_tab == 'compatibility-versions' %}
-                    <div>
-                        <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Compatibility Policy</p>
-                        <p class="mt-2 text-lg font-bold text-brand-foreground">Current Integration Baselines</p>
+                    {{ page_hero.context_header('Compatibility Policy', 'Validated Integration Baselines', 'badge-check') }}
+                    <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                        {{ page_hero.context_metric('unplug', 'Products', system_information.compatibility_product_count, 'Registered integrations') }}
+                        {{ page_hero.context_metric('layers-3', 'Profiles', system_information.compatibility_profile_count, 'Versioned runtime contracts') }}
                     </div>
-                    <div class="{{ page_hero.metadata_row_classes() }}">
-                        <span class="inline-flex h-9 items-center gap-2 rounded-lg border border-brand-outline bg-brand-surface-strong px-3 text-xs font-semibold text-brand-foreground">
-                            <i data-lucide="badge-check" class="h-3.5 w-3.5"></i>
-                            Current Profiles Available
-                        </span>
-                        <span class="inline-flex h-9 items-center gap-2 rounded-lg border border-brand-outline bg-brand-surface-strong px-3 text-xs font-semibold text-brand-foreground">
-                            <i data-lucide="scan-search" class="h-3.5 w-3.5"></i>
-                            Live Evidence Required
-                        </span>
-                    </div>
+                    {{ page_hero.context_info('scan-search', 'A compatible version still requires live API, metric, label, and permission evidence.') }}
                 {% else %}
-                    <div>
-                        <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Current Rendered Time</p>
-                        <p id="general-current-time"
-                           class="mt-2 text-lg font-bold text-brand-foreground">{{ current_time_display }}</p>
+                    {{ page_hero.context_header('Current Presentation', 'Account Preference', 'user-round-cog') }}
+                    <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                        <div class="{{ page_hero.context_metric_card_classes() }}">
+                            <div class="flex items-center gap-2 text-brand-foreground">
+                                <i data-lucide="clock-3" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                <p class="{{ page_hero.context_metric_label_classes() }}">Rendered Time</p>
+                            </div>
+                            <p id="general-current-time"
+                               class="mt-1.5 break-words text-sm font-semibold leading-6 text-brand-foreground">{{ current_time_display }}</p>
+                            <p class="{{ page_hero.context_metric_helper_classes() }}">Preview in your effective timezone</p>
+                        </div>
+                        {{ page_hero.context_metric('map-pinned', 'Time Zone', current_timezone, 'Effective account timezone', 'text-sm font-semibold leading-6') }}
                     </div>
-                    <div class="{{ page_hero.metadata_row_classes() }}">
-                        <span class="inline-flex h-9 items-center gap-2 rounded-lg border border-brand-outline bg-brand-surface-strong px-3 text-xs font-semibold text-brand-foreground">
-                            <i data-lucide="database" class="h-3.5 w-3.5"></i>
-                            UTC Canonical Storage
-                        </span>
-                        <span class="inline-flex h-9 items-center gap-2 rounded-lg border border-brand-outline bg-brand-surface-strong px-3 text-xs font-semibold text-brand-foreground">
-                            <i data-lucide="monitor-cog" class="h-3.5 w-3.5"></i>
-                            User Presentation
-                        </span>
-                    </div>
+                    {{ page_hero.context_info('database', 'Canonical operational timestamps remain UTC; these settings change presentation only.') }}
                 {% endif %}
             </div>
         </aside>

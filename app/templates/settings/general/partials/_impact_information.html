@@ -8,9 +8,9 @@
                     <i data-lucide="workflow" class="h-5 w-5"></i>
                 </span>
                 <div class="min-w-0">
-                    <h2 class="text-base font-semibold text-content-primary">Where This Applies</h2>
+                    <h2 class="text-base font-bold text-content-primary">Presentation Scope</h2>
                     <p class="mt-1 text-sm leading-6 text-content-muted">
-                        Features that use this account's time and regional presentation preferences.
+                        Where your time and regional preferences are used throughout KAORI.
                     </p>
                 </div>
             </div>
@@ -21,17 +21,14 @@
             </span>
         </summary>
         <div class="border-t border-outline-default px-5 pb-5 pt-4">
-            <p class="mb-4 text-xs leading-5 text-content-muted">
-                The preference is resolved for the authenticated user and applied by the shared KAORI time presentation layer.
-            </p>
-            <div class="space-y-3">
+            <div class="divide-y divide-outline-subtle rounded-xl border border-outline-default bg-surface-subtle px-4">
                 {% for icon, title, text in [
                     ('boxes', 'Inventory & Analytics', 'Collection, validation, synchronization, alert, forecast, and resource timestamps.'),
                     ('scroll-text', 'Activity & Authentication Audit', 'Login, logout, failure, administrative action, archive, and retention timestamps.'),
                     ('shield-check', 'Governance & Operations', 'Certificate validity, reveal windows, approvals, mutation records, and operational status times.'),
                     ('file-text', 'Reports', 'Interactive report lists and user-facing timestamps. Schedule execution timezone remains an explicit schedule setting.'),
                     ] %}
-                    <div class="flex items-start gap-3 rounded-xl border border-outline-default bg-surface-subtle p-3.5">
+                    <div class="flex items-start gap-3 py-3.5">
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary">
                             <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                         </span>
@@ -44,6 +41,7 @@
             </div>
         </div>
     </details>
+
     <details class="group overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
         <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 transition hover:bg-kaori-soft/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
             <div class="flex min-w-0 items-start gap-3">
@@ -51,9 +49,9 @@
                     <i data-lucide="database-backup" class="h-5 w-5"></i>
                 </span>
                 <div class="min-w-0">
-                    <h2 class="text-base font-semibold text-content-primary">Storage & Execution Boundary</h2>
+                    <h2 class="text-base font-bold text-content-primary">Data & Execution Boundary</h2>
                     <p class="mt-1 text-sm leading-6 text-content-muted">
-                        What these presentation preferences change and what remains authoritative.
+                        Presentation preferences never become an operational source of truth.
                     </p>
                 </div>
             </div>
@@ -64,29 +62,24 @@
             </span>
         </summary>
         <div class="border-t border-outline-default px-5 pb-5 pt-4">
-            <p class="mb-4 text-xs leading-5 text-content-muted">
-                Presentation settings never rewrite operational source data or change execution schedules.
-            </p>
-            <dl class="space-y-3 text-xs">
-                <div class="rounded-xl border border-outline-default bg-surface-subtle p-3.5">
-                    <dt class="font-semibold text-content-primary">Stored timestamps</dt>
-                    <dd class="mt-1 leading-5 text-content-muted">
-                        Remain canonical UTC values in PostgreSQL and normalized data stores.
-                    </dd>
+            <dl class="divide-y divide-outline-subtle rounded-xl border border-outline-default bg-surface-subtle px-4 text-xs">
+                <div class="py-3.5">
+                    <dt class="font-semibold text-content-primary">Canonical Storage</dt>
+                    <dd class="mt-1 leading-5 text-content-muted">Operational timestamps remain stored and exchanged in UTC.</dd>
                 </div>
-                <div class="rounded-xl border border-outline-default bg-surface-subtle p-3.5">
-                    <dt class="font-semibold text-content-primary">Relative ages</dt>
-                    <dd class="mt-1 leading-5 text-content-muted">
-                        Values such as 3h, 12d, and certificate days remaining are timezone independent.
-                    </dd>
+                <div class="py-3.5">
+                    <dt class="font-semibold text-content-primary">Execution Schedules</dt>
+                    <dd class="mt-1 leading-5 text-content-muted">Report schedules, jobs, and external automation keep their own explicit execution timezone.</dd>
                 </div>
-                <div class="rounded-xl border border-outline-default bg-surface-subtle p-3.5">
-                    <dt class="font-semibold text-content-primary">Schedules and external systems</dt>
-                    <dd class="mt-1 leading-5 text-content-muted">
-                        Report schedules, Kubernetes, Prometheus, Alertmanager, LDAP, and OAuth provider clocks retain their own authoritative configuration.
-                    </dd>
+                <div class="py-3.5">
+                    <dt class="font-semibold text-content-primary">External Systems</dt>
+                    <dd class="mt-1 leading-5 text-content-muted">Prometheus, Kubernetes, Alertmanager, databases, and other integrations are never reconfigured by this page.</dd>
                 </div>
             </dl>
+            <div class="mt-4 flex items-start gap-2 rounded-xl border border-kaori-primary/20 bg-kaori-soft/60 p-3.5 text-xs leading-5 text-content-secondary">
+                <i data-lucide="shield-check" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                <p><strong class="text-content-primary">Presentation only.</strong> Saving these preferences changes what you see, not what KAORI stores or executes.</p>
+            </div>
         </div>
     </details>
 </div>

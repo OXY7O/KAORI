@@ -1,41 +1,53 @@
+{% import "components/table_label.html" as table_label %}
 <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card">
-    <header class="border-b border-outline-default px-5 py-4">
+    <header class="flex flex-col gap-4 border-b border-outline-default px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
         <div class="flex items-start gap-3">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
                 <i data-lucide="badge-info" class="h-5 w-5"></i>
             </span>
             <div>
-                <h2 class="text-base font-bold text-content-primary">KAORI Release Information</h2>
+                <h2 class="text-base font-bold text-content-primary">Release Identity</h2>
                 <p class="mt-1 text-sm leading-6 text-content-muted">
                     Safe product and build metadata for the KAORI instance currently serving this account.
                 </p>
             </div>
         </div>
+        {{ table_label.special_label('Read-Only Metadata', 'info', 'lock-keyhole') }}
     </header>
-    <div class="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-4">
-        {% for icon, label, value in [
-            ('box', 'Product', system_information.product_name),
-            ('tag', 'Version', 'v' ~ system_information.version),
-            ('container', 'Environment', system_information.environment),
-            ('blocks', 'Capability Areas', system_information.feature_group_count),
-            ] %}
-            <div class="rounded-xl border border-outline-default bg-surface-subtle p-4">
-                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
-                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-                </span>
-                <p class="mt-3 text-xs font-bold uppercase tracking-wider text-content-muted">{{ label }}</p>
-                <p class="mt-1 break-words text-sm font-bold text-content-primary">{{ value }}</p>
+
+    <div class="p-5">
+        <dl class="grid overflow-hidden rounded-xl border border-outline-default bg-surface-subtle sm:grid-cols-2 xl:grid-cols-4">
+            {% for icon, label, value in [
+                ('box', 'Product', system_information.product_name),
+                ('tag', 'Version', 'v' ~ system_information.version),
+                ('container', 'Environment', system_information.environment),
+                ('blocks', 'Capability Areas', system_information.feature_group_count),
+                ] %}
+                <div class="border-b border-outline-subtle p-4 last:border-b-0 sm:[&:nth-child(odd)]:border-r xl:border-b-0 xl:border-r xl:last:border-r-0">
+                    <dt class="flex items-center gap-2 text-xs font-semibold text-content-muted">
+                        <i data-lucide="{{ icon }}" class="h-4 w-4 text-kaori-primary"></i>
+                        {{ label }}
+                    </dt>
+                    <dd class="mt-2 break-words text-sm font-bold text-content-primary">{{ value }}</dd>
+                </div>
+            {% endfor %}
+        </dl>
+
+        <div class="mt-4 grid gap-4 rounded-xl border border-kaori-primary/20 bg-kaori-soft/55 p-4 sm:grid-cols-2">
+            <div class="min-w-0">
+                <p class="flex items-center gap-2 text-xs font-semibold text-kaori-primary">
+                    <i data-lucide="git-commit-horizontal" class="h-4 w-4"></i>
+                    Build Reference
+                </p>
+                <p class="mt-2 break-all font-mono text-xs font-semibold text-content-primary">{{ system_information.build_sha }}</p>
             </div>
-        {% endfor %}
-    </div>
-    <div class="mx-5 mb-5 grid gap-3 rounded-xl border border-kaori-primary/20 bg-kaori-soft/55 p-4 sm:grid-cols-2">
-        <div>
-            <p class="text-xs font-bold uppercase tracking-wider text-kaori-primary">Build Reference</p>
-            <p class="mt-1 break-all font-mono text-xs font-semibold text-content-primary">{{ system_information.build_sha }}</p>
-        </div>
-        <div>
-            <p class="text-xs font-bold uppercase tracking-wider text-kaori-primary">Build Date</p>
-            <p class="mt-1 text-xs font-semibold text-content-primary">{{ system_information.build_date }}</p>
+            <div>
+                <p class="flex items-center gap-2 text-xs font-semibold text-kaori-primary">
+                    <i data-lucide="calendar-clock" class="h-4 w-4"></i>
+                    Build Date
+                </p>
+                <p class="mt-2 text-xs font-semibold text-content-primary">{{ system_information.build_date }}</p>
+            </div>
         </div>
     </div>
 </section>
@@ -49,15 +61,15 @@
             <div>
                 <h2 class="text-base font-bold text-content-primary">Release {{ system_information.version }} Focus</h2>
                 <p class="mt-1 text-sm leading-6 text-content-muted">
-                    The release consolidates resilient operations, registered background execution, and modern report delivery.
+                    Key operational themes delivered by the currently deployed KAORI release.
                 </p>
             </div>
         </div>
     </header>
     <div class="grid gap-4 p-5 lg:grid-cols-3">
         {% for highlight in system_information.release_highlights %}
-            <article class="rounded-xl border border-outline-default bg-surface-subtle p-4">
-                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+            <article class="rounded-xl border border-outline-default bg-surface-subtle p-4 transition hover:border-kaori-accent/60">
+                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
                     <i data-lucide="{{ highlight.icon }}" class="h-4 w-4"></i>
                 </span>
                 <h3 class="mt-3 text-sm font-bold text-content-primary">{{ highlight.title }}</h3>
@@ -68,48 +80,45 @@
 </section>
 
 <section class="mt-5 overflow-hidden rounded-2xl border border-outline-default bg-surface-card">
-    <header class="border-b border-outline-default px-5 py-4">
+    <header class="flex flex-col gap-3 border-b border-outline-default px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
         <div class="flex items-start gap-3">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
                 <i data-lucide="blocks" class="h-5 w-5"></i>
             </span>
             <div>
-                <h2 class="text-base font-bold text-content-primary">Capabilities Included in This Release</h2>
+                <h2 class="text-base font-bold text-content-primary">Capability Catalog</h2>
                 <p class="mt-1 text-sm leading-6 text-content-muted">
-                    {{ system_information.feature_count }} shipped capabilities across {{ system_information.feature_group_count }} areas. Provider configuration and RBAC still determine which workflows are available to each user.
+                    Shipped capabilities in this release. Provider readiness and RBAC still determine which workflows are available to each user.
                 </p>
             </div>
         </div>
+        {{ table_label.metadata_label(system_information.feature_count ~ ' Capabilities', 'blocks') }}
     </header>
     <div class="grid items-start gap-4 p-5 lg:grid-cols-2">
         {% for group in system_information.feature_groups %}
             <details class="group overflow-hidden rounded-xl border border-outline-default bg-surface-subtle transition open:border-kaori-primary/35 open:bg-surface-card open:shadow-sm">
                 <summary class="flex cursor-pointer list-none items-start gap-3 p-4 outline-none transition hover:bg-kaori-soft/45 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-kaori-primary/30 [&::-webkit-details-marker]:hidden">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
                         <i data-lucide="{{ group.icon }}" class="h-4 w-4"></i>
                     </span>
                     <span class="min-w-0 flex-1">
                         <span class="flex flex-wrap items-center gap-2">
                             <span class="text-sm font-bold text-content-primary">{{ group.title }}</span>
-                            <span class="inline-flex min-h-6 items-center rounded-md border border-kaori-primary/20 bg-kaori-soft px-2 py-0.5 text-xs font-semibold text-kaori-primary">
-                                {{ group.features|length }} Capabilities
-                            </span>
+                            {{ table_label.metadata_label(group.features|length ~ ' Capabilities') }}
                         </span>
                         <span class="mt-1 block text-xs leading-5 text-content-muted">{{ group.description }}</span>
                     </span>
                     <span class="ml-2 flex shrink-0 items-center gap-1.5 pt-0.5 text-xs font-semibold text-content-muted transition group-hover:text-kaori-primary">
                         <span class="group-open:hidden">Details</span>
                         <span class="hidden group-open:inline">Collapse</span>
-                        <i data-lucide="chevron-down"
-                           class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
+                        <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
                     </span>
                 </summary>
                 <div class="border-t border-outline-default bg-surface-card px-4 py-4">
                     <ul class="space-y-2.5">
                         {% for feature in group.features %}
                             <li class="flex items-start gap-2.5 text-xs leading-5 text-content-secondary">
-                                <i data-lucide="circle-check"
-                                   class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
+                                <i data-lucide="circle-check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
                                 <span>{{ feature }}</span>
                             </li>
                         {% endfor %}

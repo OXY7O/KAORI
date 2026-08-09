@@ -13,6 +13,15 @@ Current tabs:
 
 The former standalone `/settings/time-locale` and `/settings/system-info` pages have been removed. General Settings is the canonical location for personal presentation preferences and safe release information.
 
+### General Settings presentation contract
+
+- Keep the shared KAORI Violet page hero and use its right-side context panel for current preference or safe system metadata, not duplicate actions.
+- Time Zone follows a stable sequence: Selection Mode → Browser Detection / Manual Time Zone → Effective Time Zone → Save.
+- Regional Format presents Locale, Date Format, and Time Format as equal configuration controls with one persisted-value preview.
+- The right-side preference context explains Presentation Scope and the Data & Execution Boundary; preference UI must never imply that canonical UTC data, schedules, or external systems are mutated.
+- System Information and Compatibility Versions are read-only workspaces. Use the shared semantic label primitives for read-only and validation posture.
+- Keep long capability catalogs expandable and keep the supported-version matrix on the shared KAORI table primitive.
+
 ## Save and notification contract
 
 - General tab navigation and the timezone/regional-format forms use HTMX and replace the General Settings workspace without a full-page reload.
