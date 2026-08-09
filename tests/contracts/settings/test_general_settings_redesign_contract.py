@@ -44,14 +44,30 @@ def test_time_zone_workspace_has_clear_configuration_sequence() -> None:
     assert "pointer-events-none" in template
 
 
-def test_regional_format_uses_three_equal_controls_and_one_preview() -> None:
+def test_regional_format_is_one_full_width_workspace_with_inline_boundary() -> None:
     template = read("app/templates/settings/general/partials/_regional_format.html")
-    assert "Regional Locale" in template
-    assert "Date Format" in template
-    assert "Time Format" in template
-    assert "Current Presentation Preview" in template
-    assert "Save Regional Format" in template
-    assert template.count("rounded-xl border border-outline-default bg-surface-subtle p-4") >= 3
+    page = read("app/templates/settings/general/partials/_page_content.html")
+    for token in (
+        "Format Controls",
+        "Regional Locale",
+        "Date Format",
+        "Time Format",
+        "Current Presentation Preview",
+        "Preference Scope &amp; Boundary",
+        "Presentation Scope",
+        "Interface Language",
+        "Data &amp; Execution",
+        "Display preference only.",
+        "Effective Format:",
+        "Save Regional Format",
+    ):
+        assert token in template
+    assert 'data-regional-format-workspace-layout="full-width"' in page
+    assert 'data-regional-format-workspace="unified"' in template
+    assert 'data-regional-format-controls="inline-grid"' in template
+    assert 'data-regional-preference-boundary="inline"' in template
+    assert "settings/general/partials/_impact_information.html" not in page
+    assert template.count("rounded-xl border border-outline-default bg-surface-subtle p-4") == 0
 
 
 def test_personal_preference_context_explains_scope_and_boundary() -> None:

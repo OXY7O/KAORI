@@ -8,12 +8,15 @@
                  data-timezone-workspace-layout="full-width">
                 {% include "settings/general/partials/_time_locale.html" %}
             </div>
+        {% elif active_tab == 'regional-format' %}
+            <div class="p-5 xl:p-6"
+                 data-regional-format-workspace-layout="full-width">
+                {% include "settings/general/partials/_regional_format.html" %}
+            </div>
         {% else %}
             <div class="grid gap-6 p-5 xl:grid-cols-12 xl:p-6">
                 <div class="xl:col-span-8">
-                    {% if active_tab == 'regional-format' %}
-                        {% include "settings/general/partials/_regional_format.html" %}
-                    {% elif active_tab == 'system-information' %}
+                    {% if active_tab == 'system-information' %}
                         {% include "settings/general/partials/_system_information.html" %}
                     {% elif active_tab == 'compatibility-versions' %}
                         {% include "settings/general/partials/_compatibility_versions.html" %}
@@ -24,8 +27,6 @@
                         {% include "settings/general/partials/_system_information_context.html" %}
                     {% elif active_tab == 'compatibility-versions' %}
                         {% include "settings/general/partials/_compatibility_versions_context.html" %}
-                    {% else %}
-                        {% include "settings/general/partials/_impact_information.html" %}
                     {% endif %}
                 </aside>
             </div>
