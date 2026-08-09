@@ -94,14 +94,19 @@ def test_activity_detail_uses_content_driven_modal_and_curated_evidence() -> Non
     assert 'def get_notification_activity_detail(' in service
 
     for token in (
-        'Activity Identity',
-        'Actor Context',
-        'Target Context',
-        'Change Evidence',
+        'Activity Summary',
+        'Actor & Access',
+        'Execution & Trace',
+        'Context & Target',
+        'Recorded Changes',
         'Operational Metadata',
         'item.created_at|user_datetime',
     ):
         assert token in detail
+
+    assert 'xl:grid-cols-3' in detail
+    assert 'Before' in detail and 'After' in detail
+    assert 'text-status-critical-text' in detail
 
 
 def test_activity_audit_suppresses_sensitive_metadata_and_keeps_lifecycle_boundary() -> None:

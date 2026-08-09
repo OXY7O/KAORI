@@ -25,7 +25,7 @@ Desktop filter order is: Search Activity, Category, Status, Actor, Time Range. R
 
 ## Evidence Detail
 
-The Activity Details modal shows Activity Identity, Actor Context, Target Context, recorded Change Evidence when present, and curated Operational Metadata. It does not reconstruct values that were not persisted and never renders protected credential material.
+The Activity Details modal uses the established KAORI evidence layout: Activity Summary, three balanced context cards (Actor & Access, Execution & Trace, Context & Target), Recorded Changes with before/after evidence when present, and curated Operational Metadata. The modal remains content-driven, does not reconstruct values that were not persisted, and never renders protected credential material.
 
 ## Remaining Access Work
 
