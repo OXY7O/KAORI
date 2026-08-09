@@ -140,7 +140,7 @@ def test_credential_workspace_uses_balanced_equal_height_columns() -> None:
     assert "flex h-full flex-col" in context
 
 
-def test_credential_context_is_one_security_flow_box_with_session_outcomes() -> None:
+def test_credential_context_is_one_security_flow_box_without_redundant_session_outcome() -> None:
     context = read("app/templates/settings/account/partials/_credential_information.html")
     assert "Credential Security Flow" in context
     assert "Credential Owner" in context
@@ -151,11 +151,13 @@ def test_credential_context_is_one_security_flow_box_with_session_outcomes() -> 
     assert "Validate & Replace" in context
     assert "Rotate Sessions" in context
     assert "Record Audit Event" in context
-    assert "Session Outcome" in context
-    assert "Current Browser" in context
-    assert "Other Active Sessions" in context
-    assert "Remembered Sign-Ins" in context
-    assert "Security Audit" in context
+    assert "Session Outcome" not in context
+    assert "Current Browser" not in context
+    assert "Other Active Sessions" not in context
+    assert "Remembered Sign-Ins" not in context
+    assert "Security Audit" not in context
+    assert 'data-credential-flow-step="true"' in context
+    assert 'data-credential-flow-step-icon' not in context
     assert "Credential Evidence Boundary" in context
     assert "Credential lifecycle, session impact, and audit handling." in context
     assert "Confirm the current password." in context
