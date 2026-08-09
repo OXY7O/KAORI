@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, case, func, or_
 from sqlalchemy.orm import joinedload
 
 from app.common.celery_queue_health import get_queue_readiness, inspect_celery_topology
@@ -34,6 +34,34 @@ _CENTER_CATEGORY_ORDER = (
     'access',
     'settings',
 )
+
+
+_AUDIT_CATEGORY_ORDER = (*_CENTER_CATEGORY_ORDER, 'operations')
+_ACTIVITY_TIME_RANGES = {
+    '24h': timedelta(hours=24),
+    '7d': timedelta(days=7),
+    '30d': timedelta(days=30),
+    '90d': timedelta(days=90),
+    'all': None,
+}
+
+
+def _activity_category_condition(category: str):
+    if category == 'operations':
+        known_conditions = [
+            condition
+            for key in _CENTER_CATEGORY_ORDER
+            if (condition := _notification_category_condition(key)) is not None
+        ]
+        return ~or_(*known_conditions) if known_conditions else None
+    return _notification_category_condition(category)
+
+
+def _activity_cutoff(time_range: str) -> datetime | None:
+    delta = _ACTIVITY_TIME_RANGES.get(time_range)
+    if delta is None:
+        return None
+    return datetime.now(UTC) - delta
 
 
 def _notification_category_condition(category: str):
@@ -325,15 +353,16 @@ def get_notification_activity_context(
     page: int,
     per_page: int,
     status: str,
-    event_type: str,
-    read_state: str,
+    category: str,
+    time_range: str,
     search: str,
+    include_summary: bool = True,
 ) -> dict[str, Any]:
     normalized_page = max(page, 1)
     normalized_per_page = per_page if per_page in ACTIVITY_PER_PAGE_OPTIONS else ACTIVITY_PER_PAGE_OPTIONS[0]
     normalized_status = status if status in ALLOWED_STATUSES else 'all'
-    normalized_event_type = event_type.strip() or 'all'
-    normalized_read_state = read_state if read_state in {'all', 'read', 'unread'} else 'all'
+    normalized_category = category if category in _AUDIT_CATEGORY_ORDER else 'all'
+    normalized_time_range = time_range if time_range in _ACTIVITY_TIME_RANGES else '7d'
     normalized_search = search.strip()
     normalized_user_id = _normalize_user_filter(user_id)
 
@@ -343,37 +372,19 @@ def get_notification_activity_context(
     )
 
     if normalized_user_id is not None:
-        filtered_query = filtered_query.filter(
-            Notification.user_id == normalized_user_id,
-        )
-
-    event_type_query = db.session.query(Notification.event_type).outerjoin(
-        User,
-        User.id == Notification.user_id,
-    )
-    if normalized_user_id is not None:
-        event_type_query = event_type_query.filter(
-            Notification.user_id == normalized_user_id,
-        )
+        filtered_query = filtered_query.filter(Notification.user_id == normalized_user_id)
 
     if normalized_status != 'all':
-        filtered_query = filtered_query.filter(
-            Notification.status == normalized_status,
-        )
+        filtered_query = filtered_query.filter(Notification.status == normalized_status)
 
-    if normalized_event_type != 'all':
-        filtered_query = filtered_query.filter(
-            Notification.event_type == normalized_event_type,
-        )
+    if normalized_category != 'all':
+        category_condition = _activity_category_condition(normalized_category)
+        if category_condition is not None:
+            filtered_query = filtered_query.filter(category_condition)
 
-    if normalized_read_state == 'read':
-        filtered_query = filtered_query.filter(
-            Notification.read_at.is_not(None),
-        )
-    elif normalized_read_state == 'unread':
-        filtered_query = filtered_query.filter(
-            Notification.read_at.is_(None),
-        )
+    cutoff = _activity_cutoff(normalized_time_range)
+    if cutoff is not None:
+        filtered_query = filtered_query.filter(Notification.created_at >= cutoff)
 
     if normalized_search:
         pattern = f'%{normalized_search}%'
@@ -402,47 +413,23 @@ def get_notification_activity_context(
     page_users = User.query.filter(User.id.in_(page_user_ids)).all() if page_user_ids else []
     users_by_id = {user.id: user for user in page_users}
 
-    event_types = [row[0] for row in (event_type_query.distinct().order_by(Notification.event_type.asc()).all())]
-
-    all_notifications_query = Notification.query
-    total_count = all_notifications_query.count()
-    unread_count = all_notifications_query.filter(
-        Notification.read_at.is_(None),
-    ).count()
-    success_count = all_notifications_query.filter(
-        Notification.status == 'success',
-    ).count()
-    attention_count = all_notifications_query.filter(
-        Notification.status.in_(['warning', 'error']),
-    ).count()
+    user_options = User.query.order_by(User.username.asc(), User.id.asc()).all()
     pagination_total = int(pagination.total or 0)
-    pagination_pages = max(int(pagination.pages or 0), 1)
 
-    user_options = User.query.order_by(
-        User.username.asc(),
-        User.id.asc(),
-    ).all()
-
-    return {
+    context: dict[str, Any] = {
         'items': [
             _serialize_notification(
                 notification,
-                include_metadata=True,
+                include_metadata=False,
                 user=users_by_id.get(notification.user_id),
             )
             for notification in pagination.items
         ],
-        'summary': {
-            'total_count': total_count,
-            'unread_count': unread_count,
-            'success_count': success_count,
-            'attention_count': attention_count,
-        },
         'filters': {
             'user_id': normalized_user_id,
             'status': normalized_status,
-            'event_type': normalized_event_type,
-            'read_state': normalized_read_state,
+            'category': normalized_category,
+            'time_range': normalized_time_range,
             'search': normalized_search,
         },
         'user_options': [
@@ -453,27 +440,60 @@ def get_notification_activity_context(
             }
             for user in user_options
         ],
-        'event_types': [
-            {
-                'value': value,
-                'label': event_label(value),
-            }
-            for value in event_types
+        'category_options': [
+            {'key': key, 'label': CATEGORY_LABELS[key]}
+            for key in _AUDIT_CATEGORY_ORDER
+        ],
+        'time_range_options': [
+            ('24h', '24 Hours'),
+            ('7d', '7 Days'),
+            ('30d', '30 Days'),
+            ('90d', '90 Days'),
+            ('all', 'All Retained'),
         ],
         'pagination': {
             'page': pagination.page,
             'per_page': pagination.per_page,
-            'total_items': pagination_total,
-            'total_pages': pagination_pages,
+            'total': pagination_total,
+            'pages': max(int(pagination.pages or 0), 1),
             'start_item': ((pagination.page - 1) * pagination.per_page + 1) if pagination_total else 0,
             'end_item': min(pagination.page * pagination.per_page, pagination_total),
             'has_prev': pagination.has_prev,
             'has_next': pagination.has_next,
-            'prev_page': pagination.prev_num,
-            'next_page': pagination.next_num,
+            'prev_num': pagination.prev_num,
+            'next_num': pagination.next_num,
             'allowed_per_page': ACTIVITY_PER_PAGE_OPTIONS,
         },
     }
+
+    if include_summary:
+        cutoff_24h = datetime.now(UTC) - timedelta(hours=24)
+        events_24h, success_24h, attention_24h, actors_24h = db.session.query(
+            func.count(Notification.id),
+            func.coalesce(func.sum(case((Notification.status == 'success', 1), else_=0)), 0),
+            func.coalesce(func.sum(case((Notification.status.in_(['warning', 'error']), 1), else_=0)), 0),
+            func.count(func.distinct(func.coalesce(Notification.user_id, 0))),
+        ).filter(Notification.created_at >= cutoff_24h).one()
+
+        context['summary'] = {
+            'events_24h': int(events_24h or 0),
+            'success_24h': int(success_24h or 0),
+            'attention_24h': int(attention_24h or 0),
+            'actors_24h': int(actors_24h or 0),
+            'posture_label': 'Needs Review' if int(attention_24h or 0) else 'Available',
+            'posture_tone': 'warning' if int(attention_24h or 0) else 'normal',
+        }
+
+    return context
+
+
+def get_notification_activity_detail(*, notification_id: int) -> dict[str, Any] | None:
+    notification = Notification.query.filter(Notification.id == notification_id).first()
+    if notification is None:
+        return None
+
+    user = User.query.filter(User.id == notification.user_id).first() if notification.user_id is not None else None
+    return _serialize_notification(notification, include_metadata=True, user=user)
 
 
 def mark_notification_read(

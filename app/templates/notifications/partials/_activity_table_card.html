@@ -1,103 +1,66 @@
-<section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm dark:border-outline-default dark:bg-surface-card">
-    <div class="border-b border-outline-default px-6 py-5 dark:border-outline-default">
-        <div class="flex items-center gap-3">
-            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary dark:bg-kaori-soft dark:text-kaori-primary">
-                <i data-lucide="list-filter" class="h-5 w-5"></i>
-            </span>
-            <div>
-                <h2 class="text-lg font-semibold text-content-primary dark:text-white">Activity Audit Table</h2>
-                <p class="mt-1 text-sm text-content-muted dark:text-content-muted">Filter cross-user background actions and inspect complete execution details without mixing the table with summary information cards.</p>
-            </div>
-        </div>
-        <div id="operational-activity-loading"
-             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft dark:bg-kaori-soft">
-            <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary dark:bg-kaori-primary"></div>
-        </div>
-    </div>
-    <div class="border-b border-outline-default px-6 py-4 dark:border-outline-default">
-        <form id="operational-activity-filter-form"
-              hx-get="{{ url_for('notifications.activity_log') }}"
-              hx-target="#operational-activity-content"
-              hx-swap="innerHTML"
-              hx-push-url="true"
-              hx-trigger="change from:select, keyup changed delay:500ms from:input[name='search']"
-              hx-indicator="#operational-activity-loading"
-              class="grid gap-3 lg:grid-cols-[minmax(10rem,1.1fr)_minmax(8rem,0.72fr)_minmax(10rem,1fr)_minmax(8rem,0.72fr)_minmax(15rem,1.35fr)_auto] lg:items-end">
-            <input type="hidden" name="page" value="1">
-            <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
-            <div>
-                <label class="mb-1.5 block text-xs font-semibold text-content-secondary dark:text-slate-300">User</label>
-                <select name="user_id"
-                        class="h-10 w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
-                    <option value="">All Users</option>
-                    {% for option in user_options %}
-                        <option value="{{ option.id }}"
-                                {% if filters.user_id == option.id %}selected{% endif %}>{{ option.label }} · {{ option.email }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label class="mb-1.5 block text-xs font-semibold text-content-secondary dark:text-slate-300">Status</label>
-                <select name="status"
-                        class="h-10 w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
-                    {% for value, label in [('all', 'All Status'), ('success', 'Success'), ('warning', 'Warning'), ('error', 'Error'), ('info', 'Information')] %}
-                        <option value="{{ value }}"
-                                {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label class="mb-1.5 block text-xs font-semibold text-content-secondary dark:text-slate-300">Activity Type</label>
-                <select name="event_type"
-                        class="h-10 w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
-                    <option value="all">All Activity Types</option>
-                    {% for option in event_types %}
-                        <option value="{{ option.value }}"
-                                {% if filters.event_type == option.value %}selected{% endif %}>{{ option.label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label class="mb-1.5 block text-xs font-semibold text-content-secondary dark:text-slate-300">Read State</label>
-                <select name="read_state"
-                        class="h-10 w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
-                    {% for value, label in [('all', 'All States'), ('unread', 'Unread'), ('read', 'Read')] %}
-                        <option value="{{ value }}"
-                                {% if filters.read_state == value %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label class="mb-1.5 block text-xs font-semibold text-content-secondary dark:text-slate-300">Search Activity</label>
-                <div class="relative">
-                    <i data-lucide="search"
-                       class="absolute left-3 top-3 h-4 w-4 text-content-muted dark:text-content-muted"></i>
-                    <input type="search"
-                           name="search"
-                           value="{{ filters.search }}"
-                           placeholder="Search user, message, detail, or type..."
-                           class="h-10 w-full rounded-xl border border-outline-default bg-surface-card py-2 pr-3 pl-10 text-sm text-content-primary transition outline-none placeholder:text-content-muted focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:border-outline-default dark:bg-surface-card dark:text-content-primary dark:placeholder:text-content-muted dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
+{% import "components/table.html" as table_ui %}
+{% import "components/loading_bar.html" as loading_bar %}
+<section id="activity-register-workspace" class="{{ table_ui.block_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="list-filter" class="h-5 w-5"></i></span>
+                <div class="min-w-0">
+                    <h2 class="{{ table_ui.block_title_classes() }}">Activity Register</h2>
+                    <p class="{{ table_ui.block_description_classes() }}">Filter system-wide evidence by category, outcome, actor, and retained time range.</p>
                 </div>
             </div>
+            <span class="inline-flex min-h-7 items-center rounded-md border border-outline-subtle bg-surface-hover px-2.5 text-xs font-semibold text-content-secondary">{{ pagination.total }} Matching {{ 'Activity' if pagination.total == 1 else 'Activities' }}</span>
+        </div>
+        {{ loading_bar.render('operational-activity-loading', label='Refreshing Activity Register') }}
+    </header>
+
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        <form id="operational-activity-filter-form"
+              hx-get="{{ url_for('notifications.activity_log') }}"
+              hx-target="#activity-register-workspace"
+              hx-swap="outerHTML"
+              hx-push-url="true"
+              hx-trigger="change from:select, keyup changed delay:450ms from:input[name='search']"
+              hx-indicator="#operational-activity-loading"
+              class="grid w-full gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
+
             <div>
-                <span class="mb-1.5 block text-xs font-semibold text-transparent"
-                      aria-hidden="true">Refresh</span>
-                <button type="button"
-                        title="Refresh activity table"
-                        aria-label="Refresh activity table"
-                        hx-get="{{ url_for('notifications.activity_log') }}"
-                        hx-include="#operational-activity-filter-form"
-                        hx-target="#operational-activity-content"
-                        hx-swap="innerHTML"
-                        hx-push-url="false"
-                        hx-indicator="#operational-activity-loading"
-                        hx-disabled-elt="this"
-                        class="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-kaori-primary bg-kaori-primary px-4 text-sm font-semibold text-white shadow-sm transition hover:border-kaori-primary-hover hover:bg-kaori-primary-hover active:border-kaori-primary-dark active:bg-kaori-primary-dark disabled:cursor-not-allowed disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
-                    <i data-lucide="refresh-cw" class="h-4 w-4"></i>
-                    <span>Refresh</span>
-                </button>
+                <label class="{{ table_ui.filter_label_classes() }}" for="activity-search">Search Activity</label>
+                {{ table_ui.search_field('search', filters.search, 'Title, event, message, or actor', 'activity-search') }}
+            </div>
+            <div>
+                <label class="{{ table_ui.filter_label_classes() }}" for="activity-category">Category</label>
+                <select id="activity-category" name="category" class="{{ table_ui.filter_select_classes() }}">
+                    <option value="all">All Categories</option>
+                    {% for option in category_options %}<option value="{{ option.key }}" {% if filters.category == option.key %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="{{ table_ui.filter_label_classes() }}" for="activity-status">Status</label>
+                <select id="activity-status" name="status" class="{{ table_ui.filter_select_classes() }}">
+                    {% for value, label in [('all', 'All Statuses'), ('success', 'Success'), ('warning', 'Warning'), ('error', 'Failed'), ('info', 'Information')] %}
+                        <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="{{ table_ui.filter_label_classes() }}" for="activity-actor">Actor</label>
+                <select id="activity-actor" name="user_id" class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Actors</option>
+                    {% for option in user_options %}<option value="{{ option.id }}" {% if filters.user_id == option.id %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="{{ table_ui.filter_label_classes() }}" for="activity-time-range">Time Range</label>
+                <select id="activity-time-range" name="time_range" class="{{ table_ui.filter_select_classes() }}">
+                    {% for value, label in time_range_options %}<option value="{{ value }}" {% if filters.time_range == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
             </div>
         </form>
     </div>
-    <div id="operational-activity-content">{% include "notifications/partials/_activity_table_content.html" %}</div>
+
+    {% include "notifications/partials/_activity_table_content.html" %}
 </section>

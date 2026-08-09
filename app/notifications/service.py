@@ -26,6 +26,7 @@ from app.notifications.queries import (
 )
 from app.notifications.queries import (
     get_notification_activity_context as _get_notification_activity_context,
+    get_notification_activity_detail as _get_notification_activity_detail,
 )
 from app.notifications.queries import (
     get_notification_center_page_context as _get_notification_center_page_context,
@@ -380,9 +381,10 @@ def get_notification_activity_context(
     page: int,
     per_page: int,
     status: str,
-    event_type: str,
-    read_state: str,
+    category: str,
+    time_range: str,
     search: str,
+    include_summary: bool = True,
 ) -> dict[str, Any]:
     """Build the filtered administrative activity-audit context."""
     return _get_notification_activity_context(
@@ -390,10 +392,16 @@ def get_notification_activity_context(
         page=page,
         per_page=per_page,
         status=status,
-        event_type=event_type,
-        read_state=read_state,
+        category=category,
+        time_range=time_range,
         search=search,
+        include_summary=include_summary,
     )
+
+
+def get_notification_activity_detail(*, notification_id: int) -> dict[str, Any] | None:
+    """Read one administrative activity record for the shared detail modal."""
+    return _get_notification_activity_detail(notification_id=notification_id)
 
 
 def mark_notification_read(*, notification_id: int, user_id: int) -> None:

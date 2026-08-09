@@ -1,0 +1,95 @@
+{% import "components/table_label.html" as table_label %}
+{% import "components/details/_detail_content.html" as detail_ui %}
+{% import "components/table.html" as table_ui %}
+<div data-kaori-detail-variant="full-workspace-modal" data-kaori-detail-density="adaptive-stacks" class="{{ detail_ui.expanded_workspace_outer_classes() }}">
+    <div class="{{ detail_ui.expanded_workspace_shell_classes() }}">
+        <header data-resource-detail-header class="{{ detail_ui.expanded_workspace_header_classes() }}">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ detail_ui.expanded_workspace_icon_classes() }}" aria-hidden="true"><i data-lucide="{{ item.event_icon }}" class="h-5 w-5"></i></span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.title }}</h3>
+                        {{ table_label.metadata_label(item.category_label, item.category_icon) }}
+                        {{ table_label.status_label(item.status_label, item.status, none, 'detail') }}
+                        {{ table_label.metadata_label(item.event_label, 'history') }}
+                    </div>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Administrative identity, actor context, target evidence, recorded changes, and curated operational metadata.</p>
+                </div>
+            </div>
+        </header>
+
+        {{ detail_ui.summary_strip([
+            ('Category', item.category_label, 'Administrative evidence domain'),
+            ('Actor', item.user_label, item.user_role),
+            ('Target', item.target_name, item.target_type),
+            ('Recorded', item.created_at|user_datetime, item.created_label)
+        ], compact=true) }}
+
+        <div class="grid items-start gap-4 p-5 xl:grid-cols-2">
+            {% call detail_ui.detail_card('Activity Identity', 'badge-info', item.status_label, badge_type='status', badge_tone=item.status, badge_size='detail', stretch=false, density='compact') %}
+                {{ detail_ui.detail_row('Event', item.event_label) }}
+                {{ detail_ui.technical_row('Event Key', item.event_type, break_all=false) }}
+                {{ detail_ui.detail_row('Category', item.category_label) }}
+                {{ detail_ui.detail_row('Recorded', item.created_at|user_datetime) }}
+                {{ detail_ui.stacked_detail_row('Message', item.message) }}
+                {% if item.detail %}{{ detail_ui.stacked_detail_row('Detail', item.detail) }}{% endif %}
+            {% endcall %}
+
+            {% call detail_ui.detail_card('Actor Context', 'user-round', item.user_auth_source, badge_size='detail', stretch=false, density='compact') %}
+                {{ detail_ui.detail_row('Actor', item.user_label) }}
+                {{ detail_ui.detail_row('Email', item.user_email or '-') }}
+                {{ detail_ui.detail_row('Role', item.user_role) }}
+                {{ detail_ui.detail_row('Authentication Source', item.user_auth_source) }}
+            {% endcall %}
+
+            {% call detail_ui.detail_card('Target Context', 'crosshair', item.target_type, badge_size='detail', stretch=false, density='compact', class_name='xl:col-span-2') %}
+                <div class="grid gap-3 sm:grid-cols-2">
+                    {{ detail_ui.detail_row('Module', item.module_label) }}
+                    {{ detail_ui.detail_row('Target Type', item.target_type) }}
+                    {{ detail_ui.detail_row('Target Name', item.target_name) }}
+                    {{ detail_ui.detail_row('Source', item.source_label ~ ' · ' ~ item.source_detail) }}
+                </div>
+            {% endcall %}
+
+            {% if item.changed_fields %}
+                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card xl:col-span-2">
+                    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="diff" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <h4 class="text-sm font-semibold text-content-primary">Change Evidence</h4>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Fields whose recorded before and after values differ.</p>
+                            </div>
+                        </div>
+                        {{ table_label.metadata_label(item.changed_fields|length ~ ' ' ~ ('Change' if item.changed_fields|length == 1 else 'Changes'), 'diff') }}
+                    </header>
+                    <div class="overflow-x-auto">
+                        <table class="{{ table_ui.table_classes('min-w-[44rem]') }}">
+                            <thead class="{{ table_ui.head_classes() }}"><tr><th class="{{ table_ui.header_cell_classes() }}">Field</th><th class="{{ table_ui.header_cell_classes() }}">Before</th><th class="{{ table_ui.header_cell_classes() }}">After</th></tr></thead>
+                            <tbody class="{{ table_ui.body_classes() }}">
+                                {% for field in item.changed_fields %}
+                                    <tr class="{{ table_ui.row_classes() }}"><td class="{{ table_ui.cell_classes() }}"><span class="font-semibold text-content-primary">{{ field.label }}</span></td><td class="{{ table_ui.cell_classes() }}">{{ field.before }}</td><td class="{{ table_ui.cell_classes() }}"><span class="font-semibold text-content-primary">{{ field.after }}</span></td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            {% endif %}
+
+            {% call detail_ui.detail_card('Operational Metadata', 'list-tree', item.metadata_items|length ~ ' Fields', badge_size='detail', stretch=false, density='compact', class_name='xl:col-span-2') %}
+                {% if item.metadata_items %}
+                    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {% for metadata in item.metadata_items %}
+                            <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                                <p class="text-xs text-content-muted">{{ metadata.label }}</p>
+                                <p class="mt-1 break-words text-sm font-semibold {{ 'text-status-critical-text' if metadata.tone == 'rose' else 'text-content-primary' }} [overflow-wrap:anywhere]" title="{{ metadata.value }}">{{ metadata.value }}</p>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ detail_ui.empty_evidence('No Additional Metadata', 'The core activity record contains all evidence required for this event.', 'list-tree') }}
+                {% endif %}
+            {% endcall %}
+        </div>
+    </div>
+</div>

@@ -1,50 +1,68 @@
 {% extends "layouts/app.html" %}
-{% set page_title = "Activity Audit Log" %}
-{% block title %}Activity Audit Log{% endblock title %}
+{% set page_title = "Activity Audit" %}
+{% block title %}Activity Audit{% endblock title %}
 {% block dashboard_content %}
+{# Activity Audit and persistent Notification Center records share the same archive-first policy in Data Lifecycle. #}
     {% import "components/page_hero.html" as page_hero %}
-    {% import "components/table_label.html" as table_label %}
+    {% import "components/resource_detail_modal.html" as resource_detail_modal %}
     <div class="space-y-6">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro('history', 'Administrative activity audit', 'shield-check') %}
-                        <h1 class="{{ page_hero.title_classes() }}">Activity Audit Log</h1>
-                        <p class="{{ page_hero.description_classes() }}">Review cross-user actions, security-sensitive administration, and background operational outcomes recorded by KAORI.</p>
+                    {% call page_hero.intro('history', 'Access', 'shield-check') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Activity Audit</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review system-wide administrative, authentication, and operational evidence recorded by KAORI.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('list-checks', summary.total_count ~ ' Activities') }}
-                            {{ page_hero.meta_label('check-circle-2', summary.success_count ~ ' Successful') }}
-                            {{ page_hero.meta_label('triangle-alert', summary.attention_count ~ ' Need Attention') }}
+                            {{ page_hero.meta_label('list-checks', summary.events_24h ~ ' Events · 24H') }}
+                            {{ page_hero.meta_label('users-round', summary.actors_24h ~ ' Actors · 24H') }}
+                            {{ page_hero.meta_label('lock-keyhole', 'Read Only') }}
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="{{ page_hero.aside_classes() }}"
-                       aria-label="Activity review posture">
-                    <div class="{{ page_hero.context_panel_classes() }}">
-                        <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Review Posture</p>
-                        <div class="mt-3 grid grid-cols-2 gap-3">
-                            <div class="{{ page_hero.context_metric_card_classes() }}">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-brand-foreground-muted">Unread</p>
-                                <p class="mt-1 text-xl font-bold text-brand-foreground">{{ summary.unread_count }}</p>
-                                <p class="{{ page_hero.context_metric_helper_classes() }}">Notifications not yet reviewed</p>
-                            </div>
-                            <div class="{{ page_hero.context_metric_card_classes() }}">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-brand-foreground-muted">Attention</p>
-                                <p class="mt-1 text-xl font-bold text-brand-foreground">{{ summary.attention_count }}</p>
-                                <p class="{{ page_hero.context_metric_helper_classes() }}">Items requiring operator attention</p>
-                            </div>
-                        </div>
-                        {% if current_user.has_permission('platform_operations.view_data_lifecycle') %}<a href="{{ url_for('platform_operations.data_lifecycle.index', domain='operational_activity') }}"
-   class="{{ page_hero.context_single_action_classes() }}"><i data-lucide="archive-restore" class="h-4 w-4"></i>Open Data Lifecycle</a>{% endif %}
-                    </div>
-                </aside>
+                {% if current_user.has_permission('platform_operations.view_data_lifecycle') %}
+                    {{ page_hero.context_card(
+                        'Administrative evidence posture',
+                        'Administrative Evidence',
+                        'Audit Posture',
+                        summary.posture_label,
+                        summary.posture_tone,
+                        [
+                            ('activity', 'Events · 24H', summary.events_24h, 'Recorded evidence'),
+                            ('triangle-alert', 'Attention · 24H', summary.attention_24h, 'Warning or failed outcomes')
+                        ],
+                        'Open Data Lifecycle',
+                        url_for('platform_operations.data_lifecycle.index', tab='policies', domain='operational_activity'),
+                        'archive-restore'
+                    ) }}
+                {% else %}
+                    {{ page_hero.context_card(
+                        'Administrative evidence posture',
+                        'Administrative Evidence',
+                        'Audit Posture',
+                        summary.posture_label,
+                        summary.posture_tone,
+                        [
+                            ('activity', 'Events · 24H', summary.events_24h, 'Recorded evidence'),
+                            ('triangle-alert', 'Attention · 24H', summary.attention_24h, 'Warning or failed outcomes')
+                        ],
+                        'Open Notification Center',
+                        url_for('notifications.center'),
+                        'bell'
+                    ) }}
+                {% endif %}
             </div>
         </section>
+
         {% include "notifications/partials/_activity_summary_cards.html" %}
         {% include "notifications/partials/_activity_table_card.html" %}
-        {% if current_user.has_permission('platform_operations.view_data_lifecycle') %}
-            <div class="rounded-xl border border-outline-default bg-surface-subtle px-5 py-4 text-xs leading-5 text-content-secondary"><span class="font-semibold text-content-primary">Lifecycle boundary:</span> Activity Audit and persistent Notification Center records share the same archive-first policy in <a class="font-semibold text-kaori-primary hover:underline dark:text-kaori-accent"
-    href="{{ url_for('platform_operations.data_lifecycle.index', tab='policies', domain='operational_activity') }}">Platform Operations → Data Lifecycle</a>. Transient toasts are not persisted.</div>
-        {% endif %}
+
+        {{ resource_detail_modal.host(
+            'Activity',
+            url_for('notifications.activity_detail', notification_id=0),
+            footer_text='Activity evidence reflects the committed administrative record captured by KAORI.',
+            context_label='Access',
+            dialog_max_width='max-w-5xl',
+            content_driven=true
+        ) }}
     </div>
 {% endblock dashboard_content %}

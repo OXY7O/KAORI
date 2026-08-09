@@ -205,3 +205,9 @@ Default Rows is 5 with 5/10/25/50 choices. Pagination must render **Previous**, 
 The page is login-scoped and shows only deck-visible records targeted to the current user. **Active Work** mirrors canonical `JobExecution` state and links to Jobs & Executions for full evidence; it never becomes a second execution registry. Activity Audit remains permission-gated and system-wide.
 
 Persistent Notification Center rows and Activity Audit rows share the `notifications` table and therefore the same **Platform Operations → Data Lifecycle → Activity Audit** archive-first policy. Audit-only rows remain outside the personal inbox through `deck_visible=false` but are still lifecycle-managed. Transient request-local toasts are not persisted and remain outside Data Lifecycle.
+
+## Activity Audit refinement boundary
+
+Activity Audit is the permission-gated, system-wide administrative evidence view. Its hero and overview use bounded 24-hour posture, while the register defaults to a seven-day retained window and supports Category, Status, Actor, Time Range, and free-text search filters. Read/unread state remains a Notification Center delivery concern and is intentionally absent from Activity Audit.
+
+The Activity Register uses shared KAORI loading, table, status-label, modal, and pagination components. Activity details expose normalized actor, target, change, and curated operational metadata only. Sensitive keys such as passwords, raw Secret values, tokens, private keys, kubeconfig content, and credential values are suppressed defensively even though producers are already required not to persist them.

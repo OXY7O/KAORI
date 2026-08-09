@@ -6,6 +6,32 @@ from typing import Any
 from app.notifications.normalization import standardize_activity_text
 
 
+_SENSITIVE_METADATA_TOKENS = (
+    'password',
+    'secret',
+    'token',
+    'private_key',
+    'kubeconfig',
+    'credential_value',
+)
+_SAFE_SENSITIVE_SUFFIXES = (
+    '_env',
+    '_env_var',
+    '_reference',
+    '_ref',
+    '_name',
+    '_id',
+    '_recorded',
+)
+
+
+def _sensitive_metadata_key(key: str) -> bool:
+    normalized = key.strip().lower()
+    if normalized.endswith(_SAFE_SENSITIVE_SUFFIXES):
+        return False
+    return any(token in normalized for token in _SENSITIVE_METADATA_TOKENS)
+
+
 def changed_fields(metadata: dict[str, Any]) -> list[dict[str, str]]:
     changed_items: list[dict[str, str]] = []
     label_overrides = {
@@ -23,6 +49,9 @@ def changed_fields(metadata: dict[str, Any]) -> list[dict[str, str]]:
             continue
 
         base_key = key.removeprefix('previous_')
+        if _sensitive_metadata_key(base_key):
+            continue
+
         current_candidates = [base_key, f'submitted_{base_key}']
         if base_key == 'name':
             current_candidates.insert(0, 'cluster_name')
@@ -185,7 +214,7 @@ def metadata_items(
 
     visible_metadata: dict[str, Any] = {'event_key': event_type}
     for key, value in metadata.items():
-        if key.startswith('previous_') or key in context_keys:
+        if key.startswith('previous_') or key in context_keys or _sensitive_metadata_key(key):
             continue
         if key.startswith('submitted_') and key.removeprefix('submitted_') in metadata:
             continue
