@@ -94,11 +94,13 @@ def test_generated_registry_is_compact_focused_and_auto_refreshes_pending_work()
     assert 'Report Lifecycle' not in template
     assert 'Storage Context' not in template
     assert 'reports/components/_summary_strip.html' not in template
-    assert 'id="generated-report-registry-request-scope"' in template
-    assert 'hx-sync="#generated-report-registry-request-scope:abort"' in template
-    assert template.count('hx-sync="#generated-report-registry-request-scope:replace"') >= 3
+    assert 'id="generated-report-registry-request-scope"' not in template
+    assert 'hx-sync="this:abort"' in template
+    assert template.count('hx-sync="closest section:replace"') >= 3
     assert 'data-kaori-page-size-control="generated-reports"' in template
-    assert 'hx-trigger="change from:select"' in template
+    assert 'hx-trigger="change, input delay:450ms"' in template
+    assert 'from:select' not in template
+    assert 'from:input' not in template
     assert 'GENERATED_PER_PAGE_OPTIONS = (5, 10, 25, 50)' in service
     assert 'def normalize_generated_per_page(value: str | int | None) -> int:' in service
     assert "'per_page': str(normalize_generated_per_page(query_args.get('per_page')))" in service

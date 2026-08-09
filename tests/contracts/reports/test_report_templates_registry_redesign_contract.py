@@ -46,9 +46,11 @@ def test_template_registry_uses_full_width_kaori_workspace() -> None:
     assert '<input type="hidden" name="per_page" value="{{ payload.pagination.per_page }}">' in template
     assert 'data-template-page-size-form="true"' in template
     assert 'data-kaori-page-size-control="report-templates"' in template
-    assert 'id="templates-registry-request-scope"' in template
-    assert template.count('hx-sync="#templates-registry-request-scope:replace"') >= 3
-    assert 'hx-trigger="change from:select"' in template
+    assert 'id="templates-registry-request-scope"' not in template
+    assert template.count('hx-sync="closest section:replace"') >= 3
+    assert 'hx-trigger="change, input delay:450ms"' in template
+    assert 'from:select' not in template
+    assert 'from:input' not in template
     assert 'hx-include="closest form"' not in template
     assert 'htmx-indicator h-0.5 overflow-hidden bg-kaori-soft' not in template
     assert 'xl:grid-cols-[minmax(0,1fr)_420px]' not in template

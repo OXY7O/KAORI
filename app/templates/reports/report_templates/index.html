@@ -152,7 +152,6 @@
             </div>
         </section>
 
-        <div id="templates-registry-request-scope" data-kaori-registry-request-scope="report-templates">
         <section id="templates-registry" class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm" data-template-registry="true">
             <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -193,8 +192,8 @@
                   hx-swap="outerHTML"
                   hx-push-url="true"
                   hx-indicator="#templates-registry-loading"
-                  hx-sync="#templates-registry-request-scope:replace"
-                  hx-trigger="change from:select, keyup changed delay:450ms from:input[name='search']"
+                  hx-sync="closest section:replace"
+                  hx-trigger="change, input delay:450ms"
                   class="grid grid-cols-1 gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:grid-cols-2 xl:grid-cols-6 sm:px-6"
                   data-template-filters="true">
                 <input type="hidden" name="page" value="1">
@@ -383,13 +382,13 @@
                     <form method="GET"
                           action="{{ url_for('reports.report_templates') }}"
                           hx-get="{{ url_for('reports.report_templates') }}"
-                          hx-trigger="change from:select"
+                          hx-trigger="change"
                           hx-target="#templates-registry"
                           hx-select="#templates-registry"
                           hx-swap="outerHTML"
                           hx-push-url="true"
                           hx-indicator="#templates-registry-loading"
-                          hx-sync="#templates-registry-request-scope:replace"
+                          hx-sync="closest section:replace"
                           class="{{ pagination_ui.rows_group_classes() }}"
                           data-template-page-size-form="true"
                           data-kaori-page-size-control="report-templates">
@@ -403,7 +402,7 @@
                 </div>
                 <nav class="{{ pagination_ui.navigation_group_classes() }}"
                      aria-label="Template Registry Pagination"
-                     hx-sync="#templates-registry-request-scope:replace">
+                     hx-sync="closest section:replace">
                     {% if payload.pagination.has_previous %}<a href="{{ payload.pagination.previous_href }}" hx-get="{{ payload.pagination.previous_href }}" hx-target="#templates-registry" hx-select="#templates-registry" hx-swap="outerHTML" hx-push-url="true" hx-indicator="#templates-registry-loading" class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous</a>{% else %}<span class="{{ pagination_ui.navigation_classes(true) }}"><i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous</span>{% endif %}
                     {% for item in payload.pagination.page_items %}
                         {% if item is none %}<span class="px-1 text-content-muted" aria-hidden="true">…</span>{% elif item.current %}<span class="{{ pagination_ui.current_page_classes() }}" aria-current="page">{{ item.page }}</span>{% else %}<a href="{{ item.href }}" hx-get="{{ item.href }}" hx-target="#templates-registry" hx-select="#templates-registry" hx-swap="outerHTML" hx-push-url="true" hx-indicator="#templates-registry-loading" class="{{ pagination_ui.navigation_classes(false) }} min-w-9 px-2">{{ item.page }}</a>{% endif %}
@@ -412,7 +411,6 @@
                 </nav>
             </footer>
         </section>
-        </div>
 
         {% call record_modal.render(
             'template-form-dialog',
