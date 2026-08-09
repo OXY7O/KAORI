@@ -2133,12 +2133,6 @@
       border-color: color-mix(in oklab, var(--color-white) 15%, transparent);
     }
   }
-  .border-white\/20 {
-    border-color: color-mix(in srgb, #fff 20%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      border-color: color-mix(in oklab, var(--color-white) 20%, transparent);
-    }
-  }
   .border-white\/35 {
     border-color: color-mix(in srgb, #fff 35%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
@@ -2875,12 +2869,6 @@
   }
   .text-brand-foreground-muted {
     color: var(--kaori-brand-foreground-muted);
-  }
-  .text-brand-foreground\/85 {
-    color: var(--kaori-brand-foreground);
-    @supports (color: color-mix(in lab, red, red)) {
-      color: color-mix(in oklab, var(--kaori-brand-foreground) 85%, transparent);
-    }
   }
   .text-content-disabled {
     color: var(--kaori-content-disabled);
@@ -3935,16 +3923,6 @@
       }
     }
   }
-  .hover\:bg-white\/10 {
-    &:hover {
-      @media (hover: hover) {
-        background-color: color-mix(in srgb, #fff 10%, transparent);
-        @supports (color: color-mix(in lab, red, red)) {
-          background-color: color-mix(in oklab, var(--color-white) 10%, transparent);
-        }
-      }
-    }
-  }
   .hover\:bg-white\/15 {
     &:hover {
       @media (hover: hover) {
@@ -4379,6 +4357,11 @@
       border-color: var(--kaori-status-disabled-border);
     }
   }
+  .disabled\:bg-kaori-soft {
+    &:disabled {
+      background-color: var(--kaori-brand-soft);
+    }
+  }
   .disabled\:bg-status-disabled-soft {
     &:disabled {
       background-color: var(--kaori-status-disabled-soft);
@@ -4799,16 +4782,6 @@
       }
     }
   }
-  .sm\:divide-white\/20 {
-    @media (width >= 40rem) {
-      :where(& > :not(:last-child)) {
-        border-color: color-mix(in srgb, #fff 20%, transparent);
-        @supports (color: color-mix(in lab, red, red)) {
-          border-color: color-mix(in oklab, var(--color-white) 20%, transparent);
-        }
-      }
-    }
-  }
   .sm\:self-auto {
     @media (width >= 40rem) {
       align-self: auto;
@@ -4944,20 +4917,6 @@
     @media (width >= 40rem) {
       font-size: var(--text-4xl);
       line-height: var(--tw-leading, var(--text-4xl--line-height));
-    }
-  }
-  .first\:sm\:pl-0 {
-    &:first-child {
-      @media (width >= 40rem) {
-        padding-left: 0;
-      }
-    }
-  }
-  .last\:sm\:pr-0 {
-    &:last-child {
-      @media (width >= 40rem) {
-        padding-right: 0;
-      }
     }
   }
   .md\:col-span-2 {
@@ -5814,6 +5773,11 @@
       max-width: var(--container-xl);
     }
   }
+  .xl\:shrink-0 {
+    @media (width >= 80rem) {
+      flex-shrink: 0;
+    }
+  }
   .xl\:grid-cols-1 {
     @media (width >= 80rem) {
       grid-template-columns: repeat(1, minmax(0, 1fr));
@@ -5932,11 +5896,6 @@
   .xl\:grid-cols-\[minmax\(0\,1fr\)_380px\] {
     @media (width >= 80rem) {
       grid-template-columns: minmax(0,1fr) 380px;
-    }
-  }
-  .xl\:grid-cols-\[minmax\(0\,1fr\)_390px\] {
-    @media (width >= 80rem) {
-      grid-template-columns: minmax(0,1fr) 390px;
     }
   }
   .xl\:grid-cols-\[minmax\(0\,1fr\)_420px\] {

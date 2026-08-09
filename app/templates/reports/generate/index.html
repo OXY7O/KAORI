@@ -1,69 +1,102 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
-{% import "components/info_flow.html" as info_flow %}
-{% import "components/related_page_card.html" as related_page_card %}
+{% import "components/table_label.html" as table_label %}
 {% block title %}Generate Report{% endblock title %}
 {% block dashboard_content %}
+    {% set initial_scope_ready = payload.has_clusters and payload.form_state.cluster_id %}
+    {% set initial_sections_ready = payload.form_state.sections|length > 0 %}
+    {% set initial_request_ready = initial_scope_ready and initial_sections_ready and payload.generation_allowed %}
+    {% set hero_status_label = 'Ready' if initial_request_ready else ('Storage Degraded' if not payload.generation_allowed else 'Action Required') %}
+    {% set hero_status_tone = 'normal' if initial_request_ready else 'warning' %}
     <div class="space-y-6">
-        <!-- Hero -->
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro('wand-sparkles', 'Generate Report', 'plus-circle') %}
+                    {% call page_hero.intro('wand-sparkles', 'Generate Report', 'file-plus-2') %}
                         <h1 class="{{ page_hero.title_classes() }}">{{ payload.page_title }}</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">{{ payload.page_subtitle }}</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('layout-template', 'Reusable Templates') }}
-                            {{ page_hero.meta_label('layers-3', 'Selectable Sections') }}
-                            {{ page_hero.meta_label(payload.worker_context.icon, 'Worker ' ~ payload.worker_context.label) }}
-                            {{ page_hero.meta_label('hard-drive', payload.storage_context.label) }}
+                            {{ page_hero.meta_label('crosshair', 'Single Cluster Scope') }}
+                            {{ page_hero.meta_label('book-open-check', 'Catalog-Driven Contract') }}
+                            {{ page_hero.meta_label('file-clock', 'Queued Artifact Generation') }}
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="{{ page_hero.aside_classes() }}" aria-label="Report request builder summary">
-                    <div class="{{ page_hero.context_panel_classes() }}">
-                        <div class="flex items-start justify-between gap-3">
-                            <div>
-                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Request Builder</p>
-                                <h2 class="{{ page_hero.context_panel_title_classes() }}">Create a Report Request</h2>
-                            </div>
-                            {{ page_hero.context_status_badge('Ready' if payload.has_clusters else 'Setup Required', 'normal' if payload.has_clusters else 'warning') }}
-                        </div>
-                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                            {{ page_hero.context_metric('files', 'Report Types', payload.report_type_options|length, 'Available contracts') }}
-                            {{ page_hero.context_metric('list-checks', 'Selected Sections', payload.form_state.sections|length, 'Current request') }}
-                        </div>
-                        <div class="{{ page_hero.context_actions_classes() }}">
-                            <a href="{{ url_for('reports.report_templates') }}" class="{{ page_hero.context_action_classes() }}"><i data-lucide="layout-template" class="h-4 w-4"></i>Templates</a>
-                            <a href="{{ url_for('reports.generated_reports') }}" class="{{ page_hero.context_action_classes() }}"><i data-lucide="files" class="h-4 w-4"></i>Generated Reports</a>
-                        </div>
-                    </div>
-                </aside>
+                {{ page_hero.context_card(
+                    'Report request readiness',
+                    'Request Readiness',
+                    'Governed Report Request',
+                    hero_status_label,
+                    hero_status_tone,
+                    [
+                        ('files', 'Report Types', payload.report_type_options|length, 'Catalog contracts'),
+                        ('hard-drive', 'Artifact Storage', payload.storage_context.status, payload.storage_context.label)
+                    ],
+                    'Open Templates',
+                    url_for('reports.report_templates'),
+                    'layout-template'
+                ) }}
             </div>
         </section>
+
         {% if payload.worker_context.show_warning %}
             <section class="rounded-xl border p-4 {% if payload.worker_context.tone == 'critical' %}border-status-critical-border bg-status-critical-soft{% else %}border-status-warning-border bg-status-warning-soft{% endif %}"
                      role="status"
-                     aria-label="Reports worker unavailable">
-                <div class="flex items-start gap-3">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border bg-surface-card {% if payload.worker_context.tone == 'critical' %}border-status-critical-border text-status-critical-text{% else %}border-status-warning-border text-status-warning-text{% endif %}">
-                        <i data-lucide="{{ payload.worker_context.icon }}" class="h-4 w-4" aria-hidden="true"></i>
-                    </span>
-                    <div class="min-w-0">
-                        <p class="text-sm font-semibold {% if payload.worker_context.tone == 'critical' %}text-status-critical-text{% else %}text-status-warning-text{% endif %}">Reports worker is not consuming the queue</p>
-                        <p class="mt-1 text-xs leading-5 {% if payload.worker_context.tone == 'critical' %}text-status-critical-text{% else %}text-status-warning-text{% endif %}">{{ payload.worker_context.description }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">A submitted request remains queued until <span class="font-semibold">reports-worker</span> is online.</p>
+                     aria-label="Reports worker queue state">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border bg-surface-card {% if payload.worker_context.tone == 'critical' %}border-status-critical-border text-status-critical-text{% else %}border-status-warning-border text-status-warning-text{% endif %}">
+                            <i data-lucide="{{ payload.worker_context.icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <p class="text-sm font-semibold text-content-primary">Reports Worker Offline</p>
+                                {{ table_label.status_indicator_label('Queuing Available', 'warning') }}
+                            </div>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Requests can still be queued; artifact generation starts after <span class="font-semibold text-content-secondary">reports-worker</span> reconnects.</p>
+                        </div>
                     </div>
                 </div>
             </section>
         {% endif %}
+
+        {% if not payload.generation_allowed %}
+            <section class="rounded-xl border border-status-warning-border bg-status-warning-soft p-4"
+                     role="status"
+                     aria-label="Artifact storage unavailable">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-status-warning-border bg-surface-card text-status-warning-text">
+                            <i data-lucide="hard-drive-off" class="h-4 w-4" aria-hidden="true"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <p class="text-sm font-semibold text-content-primary">Artifact Storage Needs Review</p>
+                                {{ table_label.status_indicator_label(payload.storage_context.status, 'warning') }}
+                            </div>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">The request workspace remains available, but new artifact generation is paused until storage write readiness recovers.</p>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('reports.storage') }}"
+                       class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-status-warning-border bg-surface-card px-4 text-sm font-semibold text-content-primary transition hover:border-kaori-primary/40 hover:text-kaori-primary">
+                        <i data-lucide="hard-drive" class="h-4 w-4" aria-hidden="true"></i>
+                        Open Storage
+                    </a>
+                </div>
+            </section>
+        {% endif %}
+
         {% if payload.errors %}
-            <section class="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 shadow-sm dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200">
+            <section class="rounded-xl border border-status-critical-border bg-status-critical-soft p-4"
+                     role="alert"
+                     aria-label="Unable to create report request">
                 <div class="flex items-start gap-3">
-                    <i data-lucide="triangle-alert" class="mt-0.5 h-5 w-5 shrink-0"></i>
-                    <div>
-                        <div class="font-semibold">Unable to Create Report Request</div>
-                        <ul class="mt-2 list-disc space-y-1 pl-5">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-status-critical-border bg-surface-card text-status-critical-text">
+                        <i data-lucide="triangle-alert" class="h-4 w-4" aria-hidden="true"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-status-critical-text">Unable to Create Report Request</p>
+                        <ul class="mt-2 list-disc space-y-1 pl-5 text-xs leading-5 text-status-critical-text">
                             {% for error in payload.errors %}
                                 <li>{{ error }}</li>
                             {% endfor %}
@@ -72,564 +105,336 @@
                 </div>
             </section>
         {% endif %}
-        <section class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <div class="space-y-5">
-                <form method="POST"
-                      action="{{ url_for('reports.generate_report') }}"
-                      id="generate-report-form"
-                      class="space-y-5">
-                    {% if csrf_token is defined %}
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    {% endif %}
-                    <!-- Configuration -->
-                    <section id="report-configuration"
-                             class="rounded-2xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                        <div class="mb-5 flex items-center gap-3">
-                            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                <i data-lucide="settings-2" class="h-4 w-4"></i>
+
+        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+                 data-generate-report-workspace="governed-request">
+            <form method="POST"
+                  action="{{ url_for('reports.generate_report') }}"
+                  id="generate-report-form">
+                {% if csrf_token is defined %}
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {% endif %}
+
+                <header class="flex flex-col gap-3 border-b border-outline-default px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                            <i data-lucide="file-cog" class="h-5 w-5" aria-hidden="true"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h2 class="text-base font-bold text-content-primary">Governed Report Request</h2>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Choose one report contract, bind it to one cluster, define the artifact, then review the request before queueing.</p>
+                        </div>
+                    </div>
+                    {{ table_label.metadata_label('Canonical Request', 'file-check-2') }}
+                </header>
+
+                <section id="report-configuration"
+                         class="border-b border-outline-default px-5 py-5 sm:px-6"
+                         data-generate-step="report">
+                    <div class="mb-4 flex items-start gap-3">
+                        <span class="pt-0.5 text-xs font-extrabold tracking-[0.14em] text-kaori-primary">01</span>
+                        <div>
+                            <h3 class="text-sm font-bold text-content-primary">Report</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Select the canonical report contract and optional display name.</p>
+                        </div>
+                    </div>
+                    <div class="grid gap-4 lg:grid-cols-2">
+                        <label class="block">
+                            <span class="text-xs font-semibold text-content-secondary">Report Type</span>
+                            <select name="report_type"
+                                    id="report-type-select"
+                                    class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
+                                {% for family_key, family_label in [('analytics', 'Kubernetes Analytics'), ('inventory', 'Kubernetes Inventory')] %}
+                                    <optgroup label="{{ family_label }}">
+                                        {% for option in payload.report_type_options if option.family == family_key %}
+                                            <option value="{{ option.value }}" {% if payload.form_state.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                        {% endfor %}
+                                    </optgroup>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <label class="block">
+                            <span class="text-xs font-semibold text-content-secondary">Report Name</span>
+                            <input type="text"
+                                   name="name"
+                                   id="report-name-input"
+                                   value="{{ payload.form_state.name }}"
+                                   placeholder="Auto-generated if left empty"
+                                   class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
+                        </label>
+                    </div>
+                    <div id="selected-template-summary"
+                         class="mt-4 flex flex-col gap-3 rounded-xl border border-kaori-primary/20 bg-kaori-soft/55 p-4 sm:flex-row sm:items-start">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-card text-kaori-primary shadow-sm">
+                            <i id="selected-report-icon" data-lucide="{{ payload.selected_report_type.icon }}" class="h-5 w-5" aria-hidden="true"></i>
+                        </span>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <p id="selected-report-label" class="text-sm font-bold text-content-primary">{{ payload.selected_report_type.label }}</p>
+                                <span id="selected-report-scope" class="inline-flex min-h-6 items-center rounded-md border border-kaori-primary/20 bg-surface-card px-2 text-xs font-semibold text-kaori-primary">{{ payload.selected_report_type.cluster_scope_label }}</span>
+                                <span id="selected-report-count" class="inline-flex min-h-6 items-center rounded-md border border-kaori-primary/20 bg-surface-card px-2 text-xs font-semibold text-kaori-primary">{{ payload.selected_report_type.section_count }} Sections</span>
                             </div>
+                            <p id="selected-report-description" class="mt-1 text-xs leading-5 text-content-secondary">{{ payload.selected_report_type.description }}</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="border-b border-outline-default px-5 py-5 sm:px-6"
+                         data-generate-step="scope">
+                    <div class="mb-4 flex items-start gap-3">
+                        <span class="pt-0.5 text-xs font-extrabold tracking-[0.14em] text-kaori-primary">02</span>
+                        <div>
+                            <h3 class="text-sm font-bold text-content-primary">Scope</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Bind the artifact to one explicit cluster and an optional namespace boundary.</p>
+                        </div>
+                    </div>
+                    <div class="grid gap-4 lg:grid-cols-3">
+                        <label class="block">
+                            <span class="text-xs font-semibold text-content-secondary">Cluster <span class="text-status-critical-text">*</span></span>
+                            <select name="cluster_id"
+                                    id="cluster-select"
+                                    class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
+                                <option value="" disabled {% if not payload.form_state.cluster_id %}selected{% endif %}>Select Cluster</option>
+                                {% for cluster in payload.clusters %}
+                                    <option value="{{ cluster.value }}" {% if payload.form_state.cluster_id == cluster.value %}selected{% endif %}>{{ cluster.label }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                        <div class="block">
+                            <div class="flex items-center justify-between gap-2">
+                                <label for="namespace-select" class="text-xs font-semibold text-content-secondary">Namespace</label>
+                                <span id="namespace-option-count" class="inline-flex min-h-6 items-center rounded-md border border-outline-default bg-surface-card px-2 text-[11px] font-semibold text-content-muted">
+                                    {% if payload.form_state.cluster_id %}{{ payload.selected_namespace_options|length }} Available{% else %}Select Cluster{% endif %}
+                                </span>
+                            </div>
+                            <select name="namespace"
+                                    id="namespace-select"
+                                    aria-describedby="namespace-select-help"
+                                    {% if not payload.form_state.cluster_id %}disabled{% endif %}
+                                    class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-secondary shadow-sm disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-muted focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
+                                <option value="">All Namespaces</option>
+                                {% for namespace in payload.selected_namespace_options %}
+                                    <option value="{{ namespace }}" {% if payload.form_state.namespace == namespace %}selected{% endif %}>{{ namespace }}</option>
+                                {% endfor %}
+                            </select>
+                            <p id="namespace-select-help" class="mt-1.5 text-xs leading-5 text-content-muted">
+                                {% if payload.form_state.cluster_id %}Loaded from the latest Namespace Inventory snapshot for the selected cluster.{% else %}Select a specific cluster to load namespace options.{% endif %}
+                            </p>
+                        </div>
+                        <label class="block">
+                            <span class="text-xs font-semibold text-content-secondary">Period</span>
+                            <select name="period"
+                                    id="period-select"
+                                    class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
+                                {% for option in payload.period_options %}
+                                    {% set period_allowed = (payload.selected_report_type.family == 'inventory' and option.value == 'snapshot') or (payload.selected_report_type.family != 'inventory' and option.value != 'snapshot') %}
+                                    <option value="{{ option.value }}"
+                                            {% if payload.form_state.period == option.value %}selected{% endif %}
+                                            {% if not period_allowed %}hidden{% endif %}>{{ option.label }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                    </div>
+                    <div id="cluster-guard" class="mt-4 hidden rounded-xl border border-status-warning-border bg-status-warning-soft p-4">
+                        <div class="flex items-start gap-3">
+                            <i data-lucide="shield-alert" class="mt-0.5 h-4 w-4 shrink-0 text-status-warning-text" aria-hidden="true"></i>
                             <div>
-                                <h2 class="text-base font-semibold text-content-primary">Report Configuration</h2>
-                                <p class="text-xs text-content-muted">Define report scope, category, period, and output format.</p>
+                                <p class="text-sm font-semibold text-status-warning-text">Selected Cluster Required</p>
+                                <p class="mt-1 text-xs leading-5 text-status-warning-text">Every report artifact is bound to one explicit Kubernetes cluster. Select a cluster before creating the request.</p>
                             </div>
                         </div>
-                        <div class="grid gap-4 lg:grid-cols-2">
-                            <label class="block lg:col-span-2">
-                                <span class="text-xs font-medium text-content-muted">Report Name</span>
-                                <input type="text"
-                                       name="name"
-                                       id="report-name-input"
-                                       value="{{ payload.form_state.name }}"
-                                       placeholder="Auto-generated if left empty"
-                                       class="mt-1 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
-                            </label>
+                    </div>
+                </section>
+
+                <section class="border-b border-outline-default px-5 py-5 sm:px-6"
+                         data-generate-step="artifact">
+                    <div class="mb-4 flex items-start gap-3">
+                        <span class="pt-0.5 text-xs font-extrabold tracking-[0.14em] text-kaori-primary">03</span>
+                        <div>
+                            <h3 class="text-sm font-bold text-content-primary">Artifact</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Choose an allowed output format and the content included in the artifact contract.</p>
+                        </div>
+                    </div>
+                    <div class="grid gap-5 xl:grid-cols-[minmax(15rem,0.34fr)_minmax(0,0.66fr)]">
+                        <div>
                             <label class="block">
-                                <span class="text-xs font-medium text-content-muted">Cluster</span>
-                                <select name="cluster_id"
-                                        id="cluster-select"
-                                        class="mt-1 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
-                                    <option value="" disabled {% if not payload.form_state.cluster_id %}selected{% endif %}>Select Cluster</option>
-                                    {% for cluster in payload.clusters %}
-                                        <option value="{{ cluster.value }}"
-                                                {% if payload.form_state.cluster_id == cluster.value %}selected{% endif %}>
-                                            {{ cluster.label }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            </label>
-                            <div class="block">
-                                <div class="flex items-center justify-between gap-2">
-                                    <label for="namespace-select" class="text-xs font-medium text-content-muted">Namespace</label>
-                                    <span id="namespace-option-count"
-                                          class="inline-flex min-h-6 items-center rounded-md border border-outline-default bg-surface-card px-2 text-xs font-semibold text-content-secondary">
-                                        {% if payload.form_state.cluster_id %}
-                                            {{ payload.selected_namespace_options|length }} Available
-                                        {% else %}
-                                            Select Cluster
-                                        {% endif %}
-                                    </span>
-                                </div>
-                                <select name="namespace"
-                                        id="namespace-select"
-                                        aria-describedby="namespace-select-help"
-                                        {% if not payload.form_state.cluster_id %}disabled{% endif %}
-                                        class="mt-1 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-secondary shadow-sm disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-muted focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
-                                    <option value="">All Namespaces</option>
-                                    {% for namespace in payload.selected_namespace_options %}
-                                        <option value="{{ namespace }}"
-                                                {% if payload.form_state.namespace == namespace %}selected{% endif %}>
-                                            {{ namespace }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                                <p id="namespace-select-help" class="mt-1.5 text-xs leading-5 text-content-muted">
-                                    {% if payload.form_state.cluster_id %}
-                                        Loaded from the latest Namespace Inventory snapshot for the selected cluster.
-                                    {% else %}
-                                        Select a specific cluster to load namespace options.
-                                    {% endif %}
-                                </p>
-                            </div>
-                            <label class="block lg:col-span-2">
-                                <span class="text-xs font-medium text-content-muted">Report Type</span>
-                                <select name="report_type"
-                                        id="report-type-select"
-                                        class="mt-1 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
-                                    {% for family_key, family_label in [('analytics', 'Kubernetes Analytics'), ('inventory', 'Kubernetes Inventory')] %}
-                                        <optgroup label="{{ family_label }}">
-                                            {% for option in payload.report_type_options if option.family == family_key %}
-                                                <option value="{{ option.value }}"
-                                                        {% if payload.form_state.report_type == option.value %}selected{% endif %}>
-                                                    {{ option.label }}
-                                                </option>
-                                            {% endfor %}
-                                        </optgroup>
-                                    {% endfor %}
-                                </select>
-                            </label>
-                            <div id="selected-template-summary"
-                                 class="lg:col-span-2 rounded-xl border border-kaori-primary/20 bg-kaori-soft p-4">
-                                <div class="flex items-start gap-3">
-                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary">
-                                        <i id="selected-report-icon"
-                                           data-lucide="{{ payload.selected_report_type.icon }}"
-                                           class="h-5 w-5"></i>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <div class="flex flex-wrap items-center gap-2">
-                                            <p id="selected-report-label"
-                                               class="font-semibold text-content-primary dark:text-content-primary">{{ payload.selected_report_type.label }}</p>
-                                            <span id="selected-report-scope"
-                                                  class="inline-flex min-h-6 items-center rounded-md border border-kaori-primary/20 bg-surface-card px-2 text-xs font-semibold text-kaori-primary">
-                                                {{ payload.selected_report_type.cluster_scope_label }}
-                                            </span>
-                                            <span id="selected-report-count"
-                                                  class="inline-flex min-h-6 items-center rounded-md border border-kaori-primary/20 bg-surface-card px-2 text-xs font-semibold text-kaori-primary">
-                                                {{ payload.selected_report_type.section_count }} Sections
-                                            </span>
-                                        </div>
-                                        <p id="selected-report-description"
-                                           class="mt-1 text-sm leading-6 text-content-secondary">
-                                            {{ payload.selected_report_type.description }}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div id="cluster-guard"
-                                 class="hidden lg:col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
-                                <div class="flex items-start gap-3">
-                                    <i data-lucide="shield-alert" class="mt-0.5 h-5 w-5 shrink-0"></i>
-                                    <div>
-                                        <p class="font-semibold">Selected Cluster Required</p>
-                                        <p class="mt-1 leading-6">
-                                            Every report artifact is bound to one explicit Kubernetes cluster. Select a cluster before creating the report request.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                            <label class="block">
-                                <span class="text-xs font-medium text-content-muted">Period</span>
-                                <select name="period"
-                                        id="period-select"
-                                        class="mt-1 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
-                                    {% for option in payload.period_options %}
-                                        <option value="{{ option.value }}"
-                                                {% if payload.form_state.period == option.value %}selected{% endif %}>
-                                            {{ option.label }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            </label>
-                            <label class="block">
-                                <span class="text-xs font-medium text-content-muted">Output Format</span>
+                                <span class="text-xs font-semibold text-content-secondary">Output Format</span>
                                 <select name="output_format"
                                         id="output-format-select"
-                                        class="mt-1 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
+                                        class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
                                     {% for option in payload.output_format_options %}
+                                        {% set format_allowed = option.value in payload.selected_report_type.allowed_formats %}
                                         <option value="{{ option.value }}"
-                                                {% if payload.form_state.output_format == option.value %}selected{% endif %}>
-                                            {{ option.label }}
-                                        </option>
+                                                {% if payload.form_state.output_format == option.value %}selected{% endif %}
+                                                {% if not format_allowed %}disabled hidden{% endif %}>{{ option.label }}</option>
                                     {% endfor %}
                                 </select>
-                                <span class="mt-1 block text-[11px] leading-4 text-content-muted">Analytics supports PDF or CSV. Inventory supports Excel or CSV.</span>
                             </label>
-                        </div>
-                    </section>
-                    <!-- Sections -->
-                    <section class="rounded-2xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                        <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                    <i data-lucide="list-checks" class="h-4 w-4"></i>
-                                </div>
-                                <div>
-                                    <h2 class="text-base font-semibold text-content-primary">Report Section Selector</h2>
-                                    <p class="text-xs text-content-muted">
-                                        Choose the sections included in this request. Default selection follows the selected system template.
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="flex flex-wrap items-center gap-2">
-                                <button type="button"
-                                        id="select-all-sections"
-                                        class="inline-flex min-h-8 items-center gap-1 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-kaori-primary/40 hover:text-kaori-primary">
-                                    <i data-lucide="check-check" class="h-3.5 w-3.5"></i>
-                                    Select All
-                                </button>
-                                <button type="button"
-                                        id="reset-default-sections"
-                                        class="inline-flex min-h-8 items-center gap-1 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-kaori-primary/40 hover:text-kaori-primary">
-                                    <i data-lucide="rotate-ccw" class="h-3.5 w-3.5"></i>
-                                    Reset Defaults
-                                </button>
-                                <span id="selected-section-count-badge"
-                                      class="inline-flex min-h-8 items-center rounded-md border border-kaori-primary/20 bg-kaori-soft px-3 text-xs font-semibold text-kaori-primary">
-                                    {{ payload.form_state.sections|length }} Selected
-                                </span>
+                            <div class="mt-3 rounded-xl border border-outline-subtle bg-surface-hover p-3">
+                                <p class="text-xs font-semibold text-content-primary">Format Contract</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Analytics produces PDF or CSV. Inventory produces XLSX or CSV from the current snapshot.</p>
                             </div>
                         </div>
-                        <div id="selected-section-validation"
-                             class="mb-4 hidden rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200">
-                            Select at least one section before creating the report request.
-                        </div>
-                        <div id="selected-section-list" class="grid gap-3 lg:grid-cols-2">
-                            {% for section in payload.selected_section_options %}
-                                <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-kaori-primary/20 bg-kaori-soft/60 p-3 transition hover:border-kaori-primary/40 hover:bg-kaori-soft">
-                                    <input type="checkbox"
-                                           name="sections"
-                                           value="{{ section.value }}"
-                                           checked
-                                           class="mt-1 h-4 w-4 rounded border-outline-default bg-surface-card text-kaori-primary focus:ring-kaori-primary/20">
-                                    <span>
-                                        <span class="block text-sm font-semibold text-content-primary dark:text-content-primary">{{ section.label }}</span>
-                                        <span class="mt-1 block text-xs leading-5 text-content-muted">{{ section.description }}</span>
-                                    </span>
-                                </label>
-                            {% endfor %}
-                        </div>
-                    </section>
-                    <!-- Report Type Guide -->
-                    <section x-data="{ activeTab: 'kubernetes_analytics' }"
-                             class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-                        <header class="flex flex-col gap-4 border-b border-outline-default px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
-                            <div class="flex items-start gap-3">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                    <i data-lucide="book-open" class="h-[18px] w-[18px]"></i>
-                                </span>
-                                <div>
-                                    <h2 class="text-base font-semibold text-content-primary">Report Type Guide</h2>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Review available system report types and reserved infrastructure families before creating a request.</p>
-                                </div>
-                            </div>
-                            <span class="inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border border-brand-outline bg-kaori-soft px-2 py-0.5 text-xs font-semibold leading-4 text-kaori-primary-dark">
-                                <i data-lucide="files" class="h-3 w-3 shrink-0 text-kaori-primary" aria-hidden="true"></i>
-                                {{ payload.report_type_options|length }} Report Types
-                            </span>
-                        </header>
-                        <div class="p-5">
-                            <nav class="inline-flex w-full rounded-xl border border-kaori-primary/20 bg-kaori-soft p-1 sm:w-auto"
-                                 aria-label="Report type families">
-                                {% for family in payload.report_type_guide_groups %}
-                                    <button type="button"
-                                            @click="activeTab = '{{ family.key }}'"
-                                            :class="activeTab === '{{ family.key }}' ? 'bg-surface-card text-kaori-primary shadow-sm' : 'text-content-secondary hover:text-kaori-primary'"
-                                            class="inline-flex min-h-9 flex-1 items-center justify-center rounded-lg px-4 text-xs font-semibold transition sm:flex-none">
-                                        {{ family.label }}
-                                    </button>
-                                {% endfor %}
-                            </nav>
-                            {% for family in payload.report_type_guide_groups %}
-                                <div x-show="activeTab === '{{ family.key }}'" class="mt-5">
-                                    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                                        <div>
-                                            <h3 class="text-sm font-semibold text-content-primary">{{ family.label }}</h3>
-                                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ family.description }}</p>
-                                        </div>
-                                        <span class="inline-flex min-h-6 shrink-0 items-center gap-1 self-start rounded-md border border-outline-default bg-surface-card px-2 py-0.5 text-xs font-semibold leading-4 text-content-secondary">
-                                            <i data-lucide="files" class="h-3 w-3 shrink-0 text-content-muted" aria-hidden="true"></i>
-                                            {{ family['items']|length }} Report Types
-                                        </span>
-                                    </div>
-                                    <div class="mt-4 grid gap-3 md:grid-cols-2">
-                                        {% for item in family['items'] %}
-                                            {% set item_ready = item.status == 'System Template' %}
-                                            <article class="rounded-xl border {% if item_ready %}border-kaori-primary/20 bg-kaori-soft/60{% else %}border-outline-subtle bg-surface-hover{% endif %} p-4">
-                                                <div class="flex items-start gap-3">
-                                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {% if item_ready %}bg-surface-card text-kaori-primary{% else %}bg-surface-card text-content-muted{% endif %}">
-                                                        <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
-                                                    </span>
-                                                    <div class="min-w-0 flex-1">
-                                                        <div class="flex flex-wrap items-center justify-between gap-2">
-                                                            <h4 class="text-sm font-semibold text-content-primary">{{ item.label }}</h4>
-                                                            <span class="inline-flex min-h-6 items-center rounded-md px-2 text-xs font-semibold {% if item_ready %}border border-kaori-primary/20 bg-surface-card text-kaori-primary{% else %}border border-outline-default bg-surface-card text-content-muted{% endif %}">
-                                                                {{ item.status }}
-                                                            </span>
-                                                        </div>
-                                                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.description }}</p>
-                                                    </div>
-                                                </div>
-                                            </article>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    </section>
-                    <!-- Preview -->
-                    {% set initial_request_ready = payload.has_clusters and payload.form_state.sections|length > 0 and payload.form_state.cluster_id %}
-                    <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-                        <header class="flex flex-col gap-3 border-b border-outline-default px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
-                            <div class="flex items-start gap-3">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                    <i data-lucide="clipboard-list" class="h-[18px] w-[18px]"></i>
-                                </span>
-                                <div>
-                                    <h2 class="text-base font-semibold text-content-primary">Request Preview</h2>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Confirm the request contract, scope, sections, and output lifecycle.</p>
-                                </div>
-                            </div>
-                            <span id="preview-eligibility-status"
-                                  class="inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold leading-4 {% if initial_request_ready %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% else %}border-status-warning-border bg-status-warning-soft text-status-warning-text{% endif %}">
-                                <i id="preview-eligibility-icon"
-                                   data-lucide="{{ 'circle-check' if initial_request_ready else 'triangle-alert' }}"
-                                   class="h-3 w-3 shrink-0 {{ 'text-status-normal' if initial_request_ready else 'text-status-warning' }}"></i>
-                                <span id="preview-eligibility-label">{{ 'Ready to Create' if initial_request_ready else 'Action Required' }}</span>
-                            </span>
-                        </header>
-                        <div class="divide-y divide-outline-default">
-                            <section class="p-5">
-                                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                                    <div class="flex min-w-0 items-start gap-3">
-                                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/20 bg-kaori-soft text-kaori-primary">
-                                            <i id="preview-report-icon"
-                                               data-lucide="{{ payload.selected_report_type.icon }}"
-                                               class="h-5 w-5"></i>
-                                        </span>
-                                        <div class="min-w-0">
-                                            <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Selected Report Contract</p>
-                                            <h3 id="preview-report-type" class="mt-1 text-sm font-semibold text-content-primary">{{ payload.selected_report_type.label }}</h3>
-                                            <p id="preview-report-description" class="mt-1 max-w-3xl text-xs leading-5 text-content-muted">{{ payload.selected_report_type.description }}</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex shrink-0 flex-wrap gap-2 sm:max-w-[15rem] sm:justify-end">
-                                        <span id="preview-report-scope-requirement"
-                                              class="inline-flex min-h-6 items-center rounded-md border border-kaori-primary/20 bg-kaori-soft px-2 text-xs font-semibold text-kaori-primary">
-                                            {{ payload.selected_report_type.cluster_scope_label }}
-                                        </span>
-                                        <span id="preview-report-section-count"
-                                              class="inline-flex min-h-6 items-center rounded-md border border-outline-default bg-surface-card px-2 text-xs font-semibold text-content-secondary">
-                                            {{ payload.form_state.sections|length }} Sections
-                                        </span>
-                                    </div>
-                                </div>
-                            </section>
-                            <section class="grid gap-6 p-5 lg:grid-cols-2">
-                                <div>
-                                    <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Request Identity</p>
-                                    <dl class="mt-2 divide-y divide-outline-subtle">
-                                        <div class="flex items-start justify-between gap-4 py-2.5">
-                                            <dt class="text-xs text-content-muted">Report Name</dt>
-                                            <dd id="preview-report-name" class="max-w-[65%] break-words text-right text-xs font-semibold text-content-primary">
-                                                {{ payload.preview_report_name }}
-                                            </dd>
-                                        </div>
-                                        <div class="flex items-center justify-between gap-4 py-2.5">
-                                            <dt class="text-xs text-content-muted">Created Status</dt>
-                                            <dd>
-                                                <span class="inline-flex min-h-6 items-center gap-1 rounded-md border border-status-info-border bg-status-info-soft px-2 py-0.5 text-xs font-semibold leading-4 text-status-info-text">
-                                                    <i data-lucide="clock-3" class="h-3 w-3 shrink-0 text-status-info"></i>
-                                                    Queued Automatically
-                                                </span>
-                                            </dd>
-                                        </div>
-                                        <div class="flex items-start justify-between gap-4 py-2.5">
-                                            <dt class="text-xs text-content-muted">Generation Mode</dt>
-                                            <dd class="max-w-[65%] text-right text-xs font-semibold text-content-primary">Automatic Reports worker job</dd>
-                                        </div>
-                                    </dl>
-                                </div>
-                                <div>
-                                    <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Scope and Data Window</p>
-                                    <dl class="mt-2 divide-y divide-outline-subtle">
-                                        <div class="flex items-start justify-between gap-4 py-2.5">
-                                            <dt class="text-xs text-content-muted">Cluster</dt>
-                                            <dd id="preview-cluster" class="max-w-[65%] break-words text-right text-xs font-semibold text-content-primary">Select Cluster</dd>
-                                        </div>
-                                        <div class="flex items-start justify-between gap-4 py-2.5">
-                                            <dt class="text-xs text-content-muted">Namespace</dt>
-                                            <dd id="preview-namespace" class="max-w-[65%] break-words text-right text-xs font-semibold text-content-primary">All Namespaces</dd>
-                                        </div>
-                                        <div class="flex items-start justify-between gap-4 py-2.5">
-                                            <dt class="text-xs text-content-muted">Reporting Period</dt>
-                                            <dd id="preview-period" class="max-w-[65%] text-right text-xs font-semibold text-content-primary">{{ payload.form_state.period }}</dd>
-                                        </div>
-                                    </dl>
-                                </div>
-                            </section>
-                            <section class="p-5">
-                                <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Output Plan</p>
-                                <dl class="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-3">
-                                    <div class="flex items-start gap-2.5">
-                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                            <i data-lucide="file-type-2" class="h-4 w-4"></i>
-                                        </span>
-                                        <div>
-                                            <dt class="text-xs font-semibold uppercase tracking-wide text-content-muted">Format</dt>
-                                            <dd id="preview-output-format" class="mt-1 text-xs font-semibold text-content-primary">{{ payload.form_state.output_format|upper }}</dd>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-start gap-2.5">
-                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                            <i data-lucide="list-checks" class="h-4 w-4"></i>
-                                        </span>
-                                        <div>
-                                            <dt class="text-xs font-semibold uppercase tracking-wide text-content-muted">Sections</dt>
-                                            <dd id="preview-sections" class="mt-1 text-xs font-semibold text-content-primary">{{ payload.form_state.sections|length }} Selected</dd>
-                                        </div>
-                                    </div>
-                                    <div class="flex items-start gap-2.5">
-                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                            <i data-lucide="hard-drive" class="h-4 w-4"></i>
-                                        </span>
-                                        <div>
-                                            <dt class="text-xs font-semibold uppercase tracking-wide text-content-muted">Storage</dt>
-                                            <dd id="preview-storage" class="mt-1 text-xs font-semibold text-content-primary">{{ payload.storage_context.label }}</dd>
-                                        </div>
-                                    </div>
-                                </dl>
-                                <div class="mt-4 border-t border-outline-subtle pt-4">
-                                    <p class="text-xs font-semibold text-content-primary">Included Sections</p>
-                                    <p id="preview-included-sections" class="mt-1 text-xs leading-5 text-content-muted">
-                                        {% if payload.selected_section_options %}
-                                            {{ payload.selected_section_options|map(attribute='label')|join(', ') }}
-                                        {% else %}
-                                            No sections selected.
-                                        {% endif %}
-                                    </p>
-                                </div>
-                            </section>
-                            <footer id="preview-next-step"
-                                    class="flex items-start gap-3 bg-kaori-soft/60 px-5 py-4">
-                                <span id="preview-next-step-icon"
-                                      class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary">
-                                    <i data-lucide="{{ 'arrow-right' if initial_request_ready else 'list-checks' }}" class="h-4 w-4"></i>
-                                </span>
-                                <div>
-                                    <p id="preview-next-step-title" class="text-xs font-semibold text-content-primary">
-                                        {{ 'Next Step: Create & Queue the Report' if initial_request_ready else 'Complete the Required Inputs' }}
-                                    </p>
-                                    <p id="preview-next-step-description" class="mt-1 text-xs leading-5 text-content-muted">
-                                        {% if initial_request_ready %}
-                                            The request will be saved and one canonical artifact-generation job will be queued automatically.
-                                        {% else %}
-                                            Resolve the cluster scope or section selection before creating the request.
-                                        {% endif %}
-                                    </p>
-                                </div>
-                            </footer>
-                        </div>
-                    </section>
-                    <!-- Actions -->
-                    <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-                        <div class="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
-                            <div class="flex items-start gap-3">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-primary text-white">
-                                    <i data-lucide="file-plus-2" class="h-[18px] w-[18px]"></i>
-                                </span>
+                        <div>
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                 <div>
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <h2 class="text-base font-semibold text-content-primary">Create & Queue Report</h2>
-                                        <span class="inline-flex min-h-6 items-center gap-1 rounded-md border border-status-info-border bg-status-info-soft px-2 py-0.5 text-xs font-semibold leading-4 text-status-info-text">
-                                            <i data-lucide="clock-3" class="h-3 w-3 shrink-0 text-status-info" aria-hidden="true"></i>
-                                            Queued Automatically
-                                        </span>
+                                        <p class="text-xs font-semibold text-content-secondary">Included Sections</p>
+                                        <span id="selected-section-count-badge" class="inline-flex min-h-6 items-center rounded-md border border-kaori-primary/20 bg-kaori-soft px-2 text-xs font-semibold text-kaori-primary">{{ payload.form_state.sections|length }} Selected</span>
                                     </div>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">KAORI records the selected contract and immediately queues PDF, Excel, or CSV artifact generation on the dedicated Reports worker.</p>
+                                    <p id="section-contract-note" class="mt-1 text-xs leading-5 text-content-muted">
+                                        {% if payload.selected_report_type.family == 'inventory' %}Inventory workbook structure is locked by the report contract.{% else %}Choose the analytics sections included in this artifact.{% endif %}
+                                    </p>
+                                </div>
+                                <div id="section-selection-actions" class="flex shrink-0 flex-wrap items-center gap-2 {% if payload.selected_report_type.family == 'inventory' %}hidden{% endif %}">
+                                    <button type="button" id="select-all-sections" class="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-kaori-primary/40 hover:text-kaori-primary">
+                                        <i data-lucide="check-check" class="h-3.5 w-3.5" aria-hidden="true"></i>Select All
+                                    </button>
+                                    <button type="button" id="reset-default-sections" class="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-kaori-primary/40 hover:text-kaori-primary">
+                                        <i data-lucide="rotate-ccw" class="h-3.5 w-3.5" aria-hidden="true"></i>Reset Defaults
+                                    </button>
                                 </div>
                             </div>
-                        </div>
-                        <div class="flex flex-col gap-3 border-t border-outline-default bg-surface-hover px-5 py-4 md:flex-row md:items-center md:justify-between">
-                            <p class="max-w-2xl text-xs leading-5 text-content-secondary">
-                                Select one validated cluster and at least one section to continue.
-                            </p>
-                            <div class="flex shrink-0 flex-wrap items-center gap-3">
-                                <a href="{{ url_for('reports.generated_reports') }}"
-                                   class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-kaori-primary/40 hover:text-kaori-primary">
-                                    Cancel
-                                </a>
-                                <button type="submit"
-                                        id="generate-report-button"
-                                        {% if not payload.generation_allowed %}disabled{% endif %}
-                                        class="inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-kaori-soft disabled:text-content-muted">
-                                    <i data-lucide="file-plus-2" class="h-4 w-4"></i>
-                                    Create & Queue Report
-                                </button>
+                            <div id="selected-section-validation" class="mt-3 hidden rounded-lg border border-status-critical-border bg-status-critical-soft px-4 py-3 text-xs font-semibold text-status-critical-text">Select at least one section before creating the report request.</div>
+                            <div id="selected-section-list" class="mt-3 {% if payload.selected_report_type.family == 'inventory' %}divide-y divide-outline-subtle rounded-xl border border-outline-subtle bg-surface-hover p-4{% else %}grid gap-3 lg:grid-cols-2{% endif %}">
+                                {% for section in payload.selected_section_options %}
+                                    {% if payload.selected_report_type.family == 'inventory' %}
+                                        <div class="flex items-start gap-3 border-b border-outline-subtle py-3 last:border-b-0 last:pb-0 first:pt-0">
+                                            <span class="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                                <i data-lucide="file-spreadsheet" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                            </span>
+                                            <input type="hidden" name="sections" value="{{ section.value }}">
+                                            <div class="min-w-0">
+                                                <p class="text-sm font-semibold text-content-primary">{{ section.label }}</p>
+                                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ section.description }}</p>
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3 transition hover:border-kaori-primary/40 hover:bg-kaori-soft/40">
+                                            <input type="checkbox" name="sections" value="{{ section.value }}" checked class="mt-1 h-4 w-4 rounded border-outline-default bg-surface-card text-kaori-primary focus:ring-kaori-primary/20">
+                                            <span>
+                                                <span class="block text-sm font-semibold text-content-primary">{{ section.label }}</span>
+                                                <span class="mt-1 block text-xs leading-5 text-content-muted">{{ section.description }}</span>
+                                            </span>
+                                        </label>
+                                    {% endif %}
+                                {% endfor %}
                             </div>
                         </div>
-                    </section>
-                </form>
-            </div>
-            <!-- Right Panel -->
-            <aside class="space-y-5 xl:sticky xl:top-5 xl:self-start">
-                {{ info_flow.render(
-                    'Generation Guide',
-                    'Follow the governed request-to-artifact flow.',
-                    payload.generation_flow,
-                    icon='route',
-                    note='Creating a request records the contract and immediately queues PDF, Excel, or CSV generation on the dedicated Reports worker.',
-                    note_icon='file-clock',
-                    open_by_default=true
-                ) }}
-
-                {{ related_page_card.render(
-                    payload.storage_context.label,
-                    payload.storage_context.description,
-                    url_for('reports.storage'),
-                    'Open Reports Storage',
-                    icon='hard-drive',
-                    eyebrow='Storage Context',
-                    boundary='Status: ' ~ payload.storage_context.status ~ '. Generated report artifacts are saved to this backend.'
-                ) }}
-
-                {% set request_ready = payload.readiness[0].tone == 'blue' and payload.readiness[1].tone == 'blue' and payload.generation_allowed %}
-                <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-                    <header class="flex items-start justify-between gap-3 border-b border-outline-default px-5 py-4">
-                        <div class="flex items-start gap-3">
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                <i data-lucide="shield-check" class="h-[18px] w-[18px]"></i>
-                            </span>
-                            <div>
-                                <h2 class="text-base font-semibold text-content-primary">Generation Readiness</h2>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Required request checks and downstream generation status.</p>
-                            </div>
-                        </div>
-                        <span id="readiness-overall-status"
-                              class="inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold leading-4 {% if request_ready %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% else %}border-status-warning-border bg-status-warning-soft text-status-warning-text{% endif %}">
-                            <i id="readiness-overall-icon"
-                               data-lucide="{{ 'circle-check' if request_ready else 'triangle-alert' }}"
-                               class="h-3 w-3 shrink-0 {% if request_ready %}text-status-normal{% else %}text-status-warning{% endif %}"
-                               aria-hidden="true"></i>
-                            <span id="readiness-overall-label">{{ 'Ready to Request' if request_ready else 'Action Required' }}</span>
-                        </span>
-                    </header>
-                    <div class="divide-y divide-outline-default">
-                        {% for item in payload.readiness %}
-                            {% set ready = item.tone == 'blue' %}
-                            <article id="readiness-{{ item.key }}-card" class="flex items-start gap-3 px-5 py-4">
-                                <span id="readiness-{{ item.key }}-icon"
-                                      class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {% if ready %}bg-status-normal-soft text-status-normal{% else %}bg-status-warning-soft text-status-warning{% endif %}">
-                                    <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
-                                </span>
-                                <div class="min-w-0 flex-1">
-                                    <div class="flex flex-wrap items-start justify-between gap-2">
-                                        <h3 class="text-sm font-semibold text-content-primary">{{ item.label }}</h3>
-                                        <span id="readiness-{{ item.key }}-status"
-                                              class="inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold leading-4 {% if ready %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% else %}border-status-warning-border bg-status-warning-soft text-status-warning-text{% endif %}">
-                                            <i data-readiness-status-icon
-                                               data-lucide="{{ 'check' if ready else 'triangle-alert' }}"
-                                               class="h-3 w-3 shrink-0 {% if ready %}text-status-normal{% else %}text-status-warning{% endif %}"
-                                               aria-hidden="true"></i>
-                                            <span data-readiness-status-label>{{ item.status }}</span>
-                                        </span>
-                                    </div>
-                                    <p id="readiness-{{ item.key }}-description" class="mt-1 text-xs leading-5 text-content-muted">{{ item.description }}</p>
-                                </div>
-                            </article>
-                        {% endfor %}
                     </div>
-                    <footer id="readiness-summary"
-                            class="flex items-start gap-2.5 border-t px-5 py-3 text-xs leading-5 {% if request_ready %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% else %}border-status-warning-border bg-status-warning-soft text-status-warning-text{% endif %}">
-                        <i id="readiness-summary-icon"
-                           data-lucide="{{ 'circle-check' if request_ready else 'circle-alert' }}"
-                           class="mt-0.5 h-4 w-4 shrink-0 {% if request_ready %}text-status-normal{% else %}text-status-warning{% endif %}"
-                           aria-hidden="true"></i>
-                        <p id="readiness-summary-text">
-                            {{ 'Scope and section requirements are valid. The request can be created.' if request_ready else 'Resolve the required scope or section checks before creating the request.' }}
-                        </p>
+                </section>
+
+                <section class="px-5 py-5 sm:px-6"
+                         aria-labelledby="request-summary-title"
+                         data-generate-step="summary">
+                    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <h3 id="request-summary-title" class="text-sm font-bold text-content-primary">Request Summary</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Confirm the contract, scope, artifact, and readiness before queueing.</p>
+                        </div>
+                        <span id="preview-eligibility-status" class="inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold leading-4 {% if initial_request_ready %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% else %}border-status-warning-border bg-status-warning-soft text-status-warning-text{% endif %}">
+                            <i id="preview-eligibility-icon" data-lucide="{{ 'circle-check' if initial_request_ready else 'triangle-alert' }}" class="h-3 w-3 shrink-0 {% if initial_request_ready %}text-status-normal{% else %}text-status-warning{% endif %}" aria-hidden="true"></i>
+                            <span id="preview-eligibility-label">{{ 'Ready to Create' if initial_request_ready else 'Action Required' }}</span>
+                        </span>
+                    </div>
+
+                    <div class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
+                        <div class="flex items-start gap-3 border-b border-outline-subtle pb-4">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                                <i id="preview-report-icon" data-lucide="{{ payload.selected_report_type.icon }}" class="h-5 w-5" aria-hidden="true"></i>
+                            </span>
+                            <div class="min-w-0 flex-1">
+                                <p id="preview-report-type" class="text-sm font-bold text-content-primary">{{ payload.selected_report_type.label }}</p>
+                                <p id="preview-report-name" class="mt-0.5 text-xs font-semibold text-kaori-primary">{{ payload.preview_report_name }}</p>
+                                <p id="preview-report-description" class="mt-1 text-xs leading-5 text-content-muted">{{ payload.selected_report_type.description }}</p>
+                            </div>
+                        </div>
+
+                        <div class="grid gap-4 py-4 md:grid-cols-3">
+                            <div class="min-w-0">
+                                <div class="flex items-center justify-between gap-2">
+                                    <p class="text-xs font-semibold text-content-primary">Scope</p>
+                                    <span id="readiness-scope-status" class="inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold leading-4 {% if initial_scope_ready %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% else %}border-status-warning-border bg-status-warning-soft text-status-warning-text{% endif %}">
+                                        <i data-readiness-status-icon data-lucide="{{ 'check' if initial_scope_ready else 'triangle-alert' }}" class="h-3 w-3 shrink-0 {% if initial_scope_ready %}text-status-normal{% else %}text-status-warning{% endif %}" aria-hidden="true"></i>
+                                        <span data-readiness-status-label>{{ 'Ready' if initial_scope_ready else 'Select Cluster' }}</span>
+                                    </span>
+                                </div>
+                                <p id="readiness-scope-description" class="mt-2 text-xs leading-5 text-content-muted">{{ 'The report is bound to the selected cluster scope.' if initial_scope_ready else 'Select one validated Kubernetes cluster for this report.' }}</p>
+                                <dl class="mt-2 space-y-1 text-xs">
+                                    <div class="flex items-start justify-between gap-3"><dt class="text-content-muted">Cluster</dt><dd id="preview-cluster" class="max-w-[65%] break-words text-right font-semibold text-content-secondary">{{ payload.form_state.cluster_id or 'Select Cluster' }}</dd></div>
+                                    <div class="flex items-start justify-between gap-3"><dt class="text-content-muted">Namespace</dt><dd id="preview-namespace" class="max-w-[65%] break-words text-right font-semibold text-content-secondary">{{ payload.form_state.namespace or 'All Namespaces' }}</dd></div>
+                                    <div class="flex items-start justify-between gap-3"><dt class="text-content-muted">Period</dt><dd id="preview-period" class="max-w-[65%] break-words text-right font-semibold text-content-secondary">{{ payload.form_state.period }}</dd></div>
+                                </dl>
+                            </div>
+
+                            <div class="min-w-0 border-t border-outline-subtle pt-4 md:border-l md:border-t-0 md:pl-4 md:pt-0">
+                                <div class="flex items-center justify-between gap-2">
+                                    <p class="text-xs font-semibold text-content-primary">Artifact</p>
+                                    <span id="readiness-sections-status" class="inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold leading-4 {% if initial_sections_ready %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% else %}border-status-warning-border bg-status-warning-soft text-status-warning-text{% endif %}">
+                                        <i data-readiness-status-icon data-lucide="{{ 'check' if initial_sections_ready else 'triangle-alert' }}" class="h-3 w-3 shrink-0 {% if initial_sections_ready %}text-status-normal{% else %}text-status-warning{% endif %}" aria-hidden="true"></i>
+                                        <span data-readiness-status-label>{{ payload.form_state.sections|length }} Selected</span>
+                                    </span>
+                                </div>
+                                <p id="readiness-sections-description" class="mt-2 text-xs leading-5 text-content-muted">At least one report section is selected for this request.</p>
+                                <dl class="mt-2 space-y-1 text-xs">
+                                    <div class="flex items-start justify-between gap-3"><dt class="text-content-muted">Format</dt><dd id="preview-output-format" class="font-semibold text-content-secondary">{{ payload.form_state.output_format|upper }}</dd></div>
+                                    <div class="flex items-start justify-between gap-3"><dt class="text-content-muted">Sections</dt><dd id="preview-sections" class="font-semibold text-content-secondary">{{ payload.form_state.sections|length }} Selected</dd></div>
+                                </dl>
+                                <p id="preview-included-sections" class="mt-2 line-clamp-2 text-[11px] leading-4 text-content-muted">{{ payload.selected_section_options|map(attribute='label')|join(', ') }}</p>
+                            </div>
+
+                            <div class="min-w-0 border-t border-outline-subtle pt-4 md:border-l md:border-t-0 md:pl-4 md:pt-0">
+                                <p class="text-xs font-semibold text-content-primary">Delivery</p>
+                                <div class="mt-2 space-y-3">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <span class="text-xs text-content-muted">Artifact Storage</span>
+                                        {{ table_label.status_indicator_label(payload.storage_context.status, 'normal' if payload.generation_allowed else 'warning') }}
+                                    </div>
+                                    <div class="flex items-center justify-between gap-3">
+                                        <span class="text-xs text-content-muted">Reports Worker</span>
+                                        {{ table_label.status_indicator_label(payload.worker_context.label, 'normal' if payload.worker_context.ready else 'warning') }}
+                                    </div>
+                                    <p class="text-[11px] leading-4 text-content-muted">The request is persisted first, then one canonical artifact-generation job is queued.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="hidden" aria-hidden="true">
+                            <span id="preview-report-scope-requirement">{{ payload.selected_report_type.cluster_scope_label }}</span>
+                            <span id="preview-report-section-count">{{ payload.form_state.sections|length }} Sections</span>
+                        </div>
+                    </div>
+
+                    <div id="readiness-summary" class="mt-4 flex items-start gap-2.5 rounded-xl border px-4 py-3 text-xs leading-5 {% if initial_request_ready %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% else %}border-status-warning-border bg-status-warning-soft text-status-warning-text{% endif %}">
+                        <i id="readiness-summary-icon" data-lucide="{{ 'circle-check' if initial_request_ready else 'circle-alert' }}" class="mt-0.5 h-4 w-4 shrink-0 {% if initial_request_ready %}text-status-normal{% else %}text-status-warning{% endif %}" aria-hidden="true"></i>
+                        <div class="min-w-0">
+                            <p id="readiness-summary-text">{{ 'Scope and section requirements are valid. The request can be created.' if initial_request_ready else ('Artifact storage is unavailable. Restore storage connectivity before creating a report.' if not payload.generation_allowed else 'Resolve the required scope or section checks before creating the request.') }}</p>
+                            <div class="mt-1 hidden" aria-hidden="true">
+                                <span id="readiness-overall-status"></span>
+                                <span id="readiness-overall-icon"></span>
+                                <span id="readiness-overall-label"></span>
+                                <span id="preview-next-step-icon"><i data-lucide="arrow-right"></i></span>
+                                <span id="preview-next-step-title"></span>
+                                <span id="preview-next-step-description"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <footer class="mt-4 flex flex-col gap-3 border-t border-outline-default pt-4 sm:flex-row sm:items-center sm:justify-between">
+                        <p class="max-w-2xl text-xs leading-5 text-content-muted">Creating the request records the governed contract and queues artifact generation. Raw storage or worker exceptions are never exposed here.</p>
+                        <div class="flex shrink-0 flex-wrap items-center gap-3">
+                            <a href="{{ url_for('reports.generated_reports') }}" class="inline-flex min-h-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-kaori-primary/40 hover:text-kaori-primary">Cancel</a>
+                            <button type="submit"
+                                    id="generate-report-button"
+                                    {% if not initial_request_ready %}disabled{% endif %}
+                                    class="inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-kaori-soft disabled:text-content-muted">
+                                <i data-lucide="file-plus-2" class="h-4 w-4" aria-hidden="true"></i>
+                                Create & Queue Report
+                            </button>
+                        </div>
                     </footer>
                 </section>
-            </aside>
+            </form>
         </section>
     </div>
     <script>
@@ -808,15 +613,15 @@
 
                     if (previewNextStepTitle) {
                         previewNextStepTitle.textContent = isReady
-                            ? 'Next Step: Create & Queue the Report'
-                            : 'Complete the Required Inputs';
+                            ? 'Ready to Create & Queue'
+                            : 'Complete Required Inputs';
                     }
 
                     if (previewNextStepDescription) {
                         previewNextStepDescription.textContent = isReady
-                            ? 'The request will be saved and one canonical artifact-generation job will be queued automatically.'
+                            ? 'The governed request will be saved and queued on the canonical Reports worker.'
                             : (storageGenerationReady
-                                ? 'Resolve the cluster scope or section selection before creating the request.'
+                                ? 'Resolve the required scope or section selection before continuing.'
                                 : 'Restore artifact storage connectivity before creating and queueing a report.');
                     }
                 }
@@ -911,27 +716,54 @@
                     const selectedSections = new Set(getSelectedSections());
                     const selectedOptions = sectionOptionsByReportType[reportTypeSelect.value] || [];
 
+                    selectedSectionList.className = inventoryContractLocked
+                        ? 'mt-3 divide-y divide-outline-subtle rounded-xl border border-outline-subtle bg-surface-hover p-4'
+                        : 'mt-3 grid gap-3 lg:grid-cols-2';
                     selectedSectionList.innerHTML = '';
 
                     selectedOptions.forEach(function (section) {
+                        if (inventoryContractLocked) {
+                            const row = document.createElement('div');
+                            row.className = 'flex items-start gap-3 border-b border-outline-subtle py-3 last:border-b-0 last:pb-0 first:pt-0';
+
+                            const marker = document.createElement('span');
+                            marker.className = 'mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary';
+                            marker.innerHTML = '<i data-lucide="file-spreadsheet" class="h-3.5 w-3.5" aria-hidden="true"></i>';
+
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = 'sections';
+                            input.value = section.value;
+
+                            const content = document.createElement('div');
+                            content.className = 'min-w-0';
+                            content.innerHTML = '<p class="text-sm font-semibold text-content-primary"></p>'
+                                + '<p class="mt-1 text-xs leading-5 text-content-muted"></p>';
+                            content.querySelector('p').textContent = section.label;
+                            content.querySelectorAll('p')[1].textContent = section.description;
+
+                            row.appendChild(marker);
+                            row.appendChild(input);
+                            row.appendChild(content);
+                            selectedSectionList.appendChild(row);
+                            return;
+                        }
+
                         const label = document.createElement('label');
-                        label.className = inventoryContractLocked
-                            ? 'flex cursor-default items-start gap-3 rounded-xl border border-kaori-primary/20 bg-kaori-soft/60 p-3'
-                            : 'flex cursor-pointer items-start gap-3 rounded-xl border border-kaori-primary/20 bg-kaori-soft/60 p-3 transition hover:border-kaori-primary/40 hover:bg-kaori-soft';
+                        label.className = 'flex cursor-pointer items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3 transition hover:border-kaori-primary/40 hover:bg-kaori-soft/40';
 
                         const input = document.createElement('input');
                         input.type = 'checkbox';
                         input.name = 'sections';
                         input.value = section.value;
-                        input.checked = inventoryContractLocked || selectedSections.has(section.value);
-                        input.disabled = inventoryContractLocked;
-                        input.className = 'mt-1 h-4 w-4 rounded border-outline-default bg-surface-card text-kaori-primary focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:opacity-70';
+                        input.checked = selectedSections.has(section.value);
+                        input.className = 'mt-1 h-4 w-4 rounded border-outline-default bg-surface-card text-kaori-primary focus:ring-kaori-primary/20';
                         input.addEventListener('change', function () {
                             updateSelectedSectionFromCheckbox(input);
                         });
 
                         const content = document.createElement('span');
-                        content.innerHTML = '<span class="block text-sm font-semibold text-content-primary dark:text-content-primary"></span>'
+                        content.innerHTML = '<span class="block text-sm font-semibold text-content-primary"></span>'
                             + '<span class="mt-1 block text-xs leading-5 text-content-muted"></span>';
                         content.querySelector('span').textContent = section.label;
                         content.querySelectorAll('span')[1].textContent = section.description;
@@ -940,6 +772,15 @@
                         label.appendChild(content);
                         selectedSectionList.appendChild(label);
                     });
+
+                    const selectionActions = document.getElementById('section-selection-actions');
+                    const contractNote = document.getElementById('section-contract-note');
+                    setElementVisibility(selectionActions, !inventoryContractLocked);
+                    if (contractNote) {
+                        contractNote.textContent = inventoryContractLocked
+                            ? 'Inventory workbook structure is locked by the report contract.'
+                            : 'Choose the analytics sections included in this artifact.';
+                    }
 
                     syncSectionCount();
 

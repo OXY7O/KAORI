@@ -80,15 +80,16 @@ def test_report_workspaces_surface_actual_worker_queue_readiness() -> None:
 
 
 def test_generate_report_copy_matches_automatic_worker_dispatch() -> None:
-    generate = read('app/reports/generate/service.py')
+    routes = read('app/reports/generate/routes.py')
     template = read('app/templates/reports/generate/index.html')
     pipeline = read('app/templates/reports/overview/partials/_pipeline_status.html')
 
-    assert 'Create & Queue Request' in generate
+    assert 'enqueue_report_generation(' in routes
+    assert "trigger_type='manual'" in routes
     assert 'Create & Queue Report' in template
-    assert 'queued automatically' in template.lower()
+    assert 'Queued Artifact Generation' in template
+    assert 'one canonical artifact-generation job is queued' in template
     assert 'generation starts separately from Generated Reports' not in template
-    assert 'request-to-artifact flow' in template
     assert 'manual and scheduled requests both create a report record' in pipeline
 
 

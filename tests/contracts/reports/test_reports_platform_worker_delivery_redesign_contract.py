@@ -20,53 +20,45 @@ def test_reports_pages_use_standard_heroes_and_compact_summary_strips() -> None:
     generate = read(REPORT_TEMPLATES / 'generate' / 'index.html')
     generate_service = read(ROOT / 'app' / 'reports' / 'generate' / 'service.py')
 
-    assert 'Generation Readiness' in generate
-    assert 'Generation Guide' in generate
-    assert 'Follow the governed request-to-artifact flow.' in generate
-    assert '{% import "components/info_flow.html" as info_flow %}' in generate
-    assert '{{ info_flow.render(' in generate
-    assert 'Storage Context' in generate
-    assert '{% import "components/related_page_card.html" as related_page_card %}' in generate
-    assert '{{ related_page_card.render(' in generate
-    assert 'Request Preview' in generate
+    assert 'page_hero.shell_classes()' in generate
+    assert 'page_hero.layout_classes()' in generate
+    assert 'page_hero.content_classes()' in generate
+    assert 'page_hero.context_card(' in generate
+    assert 'Single Cluster Scope' in generate
+    assert 'Catalog-Driven Contract' in generate
+    assert 'Queued Artifact Generation' in generate
+    assert 'data-generate-report-workspace="governed-request"' in generate
+    assert 'data-generate-step="report"' in generate
+    assert 'data-generate-step="scope"' in generate
+    assert 'data-generate-step="artifact"' in generate
+    assert 'data-generate-step="summary"' in generate
+    assert 'Request Summary' in generate
     assert 'id="namespace-select"' in generate
     assert 'namespaceOptionsByCluster' in generate
     assert 'Select a specific cluster to load namespace options.' in generate
     assert 'id="namespace-input"' not in generate
-    assert 'Request Identity' in generate
-    assert 'Scope and Data Window' in generate
-    assert 'Output Plan' in generate
-    assert 'Included Sections' in generate
     assert 'id="preview-report-name"' in generate
     assert 'syncPreviewReportName' in generate
     assert 'Ready to Create' in generate
-    assert 'Confirm the request contract, scope, sections, and output lifecycle.' in generate
-    assert 'border-status-info-border bg-status-info-soft' in generate
-    assert 'Create Report Request' in generate
-    assert 'Select one validated cluster and at least one section to continue.' in generate
-    assert 'Report Type Guide' in generate
-    assert 'Available Types' not in generate
-    assert 'Metrics-backed report types require one validated cluster.' not in generate
-    assert 'Ready to Request' in generate
-    assert 'Action Required' in generate
-    assert 'xl:sticky xl:top-5 xl:self-start' in generate
-    assert 'x-collapse' not in generate
-    assert 'Data Source Context' not in generate
-    assert 'Report Output Readiness' not in generate
-    assert 'Create report request' not in generate
-    assert 'Specific cluster required' not in generate
-    assert 'Select all' not in generate
-    assert 'Reset default' not in generate
-    assert 'rounded-full' not in generate
-    assert "'generation_flow': _get_generation_flow()" in generate_service
+    assert 'Create & Queue Report' in generate
+    assert 'Report Type Guide' not in generate
+    assert 'Generation Guide' not in generate
+    assert 'Storage Context' not in generate
+    assert 'Generation Readiness' not in generate
+    assert 'Request Preview' not in generate
+    assert 'xl:sticky xl:top-5 xl:self-start' not in generate
+    assert '{% import "components/info_flow.html" as info_flow %}' not in generate
+    assert '{% import "components/related_page_card.html" as related_page_card %}' not in generate
+    assert 'border-rose-200' not in generate
+    assert 'border-amber-200' not in generate
+    assert "'generation_flow': _get_generation_flow()" not in generate_service
+    assert "'report_type_guide_groups': _get_report_type_guide_groups()" not in generate_service
+    assert "'recommended_actions': _get_recommended_actions()" not in generate_service
+    assert "'readiness': _get_generation_readiness(" not in generate_service
     assert "'namespace_options_by_cluster': namespace_options_by_cluster" in generate_service
     assert "'preview_report_name': form_state['name'].strip() or build_default_report_name(form_state)" in generate_service
     assert 'def _get_namespace_options_by_cluster()' in generate_service
     assert 'NamespaceInventory.namespace == namespace' in generate_service
-    assert "'data_source_context'" not in generate_service
-    assert "'report_output_readiness'" not in generate_service
-    assert 'def _get_data_source_context' not in generate_service
-    assert 'def _get_report_output_readiness' not in generate_service
     assert 'MVP2' not in generate
 
 
@@ -234,13 +226,14 @@ def test_generate_report_uses_the_canonical_family_format_and_scope_contract() -
     assert 'filter_current_generation(query, model)' in inventory_payload
     assert 'query = query.filter(model.cluster_id == cluster_id)' in inventory_payload
 
-    assert "'key': 'kubernetes_analytics'" in generate_service
-    assert "'key': 'kubernetes_inventory'" in generate_service
+    assert "('analytics', 'Kubernetes Analytics')" in generate_template
+    assert "('inventory', 'Kubernetes Inventory')" in generate_template
     assert "'value': 'snapshot'" in generate_service
     assert 'A selected Kubernetes cluster is required for every report artifact.' in generate_service
     assert "reportType.family === 'inventory'" in generate_template
     assert 'allowed_formats' in generate_template
-    assert 'Generated report artifacts are saved to this backend.' in generate_template
+    assert 'Artifact Storage Needs Review' in generate_template
+    assert 'Output Format' in generate_template
     assert "get_report_type_spec(report_type).family == REPORT_FAMILY_INVENTORY" in template_service
 
 

@@ -61,14 +61,28 @@ Rendering failures are logged with technical evidence and returned to users as s
 
 ## Reports Overview presentation contract
 
-Reports Overview is the operational landing workspace for the Reports domain. It is full-width and does not use a secondary right sidebar. The hierarchy is fixed to:
+Reports Overview is the operational landing workspace for the Reports domain. Its hero uses the canonical KAORI `page_hero` 7/5 structure: identity/scope on the left and a two-metric reporting-posture context panel on the right. Detailed degraded-state remediation belongs below the hero. The workspace beneath the hero is full-width and does not use a secondary right sidebar.
 
-1. Reporting posture in the violet hero: Generated, Ready, In Progress, and Failed.
+The overview hierarchy is fixed to:
+
+1. Canonical Reports hero with reporting posture and one contextual action.
 2. Reporting Operations: Reports worker/queue readiness, active schedules, and artifact storage readiness.
 3. Recent Generated Reports: a compact canonical table with Report, Cluster, Format, Status, Generated, Size, and Action.
 4. Reporting Coverage: Analytics (PDF/CSV) and Inventory (XLSX/CSV) families derived from `REPORT_TYPE_SPECS`.
 
 Overview must not expose storage credentials, storage paths, retention configuration, cron definitions, or other configuration-level detail. Those remain owned by their dedicated Reports workspaces.
+
+## Generate Report presentation contract
+
+Generate Report is one full-width governed request workspace. It does not use a sticky right sidebar, report-type catalog browser, duplicate request preview, generation guide, or separate storage/readiness cards. The fixed request hierarchy is:
+
+1. **Report**: select one catalog-backed report type and optional report name.
+2. **Scope**: bind the request to one explicit Kubernetes cluster, optional namespace, and the report contract's period mode.
+3. **Artifact**: select only output formats allowed by the catalog and configure content. Analytics sections are selectable; Inventory workbook sections are contract-locked and render as structure rows rather than disabled checkboxes.
+4. **Request Summary**: show concise scope, artifact, storage, worker, and create-readiness evidence.
+5. **Actions**: cancel or create and queue the governed request.
+
+The Generate hero uses the canonical KAORI `page_hero` geometry. Hero metadata describes identity/scope only; worker/storage operational state belongs in the context panel or compact degraded-state strips below the hero. Storage unavailability keeps the workspace readable but disables submission and remains enforced server-side before a `Report` row is created.
 
 ## Shared report-storage readiness and degraded mode
 
