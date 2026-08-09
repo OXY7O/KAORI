@@ -16,9 +16,10 @@ The former standalone `/settings/time-locale` and `/settings/system-info` pages 
 ## Save and notification contract
 
 - General tab navigation and the timezone/regional-format forms use HTMX and replace the General Settings workspace without a full-page reload.
-- Successful saves create a personal `user_preference` notification for the authenticated user.
-- Preference saves do not use Flask flash messages or operational toast feedback.
-- The response triggers `kaori:notifications-changed`, allowing the top Notification Center to refresh immediately.
+- Successful saves persist a `user_preference` Activity Audit record for the authenticated user.
+- Preference saves use the shared KAORI operational result toast and do not use Flask flash messages.
+- Preference audit events use `AUDIT_ONLY`, so routine preference changes do not create unread Notification Center items.
+- HTMX responses trigger `kaori:general-settings-saved`; `kaori:notifications-changed` is emitted only when a delivery policy actually creates a visible Notification Center item.
 - Normal form POST and redirect remain as progressive-enhancement fallback when HTMX is unavailable.
 
 ## Time presentation contract

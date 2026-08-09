@@ -1,3 +1,5 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
     <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex items-center gap-3">
@@ -19,46 +21,40 @@
     </header>
     {% if recent_login_events %}
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-outline-subtle text-sm">
-                <thead class="bg-surface-elevated">
-                    <tr class="text-xs font-semibold uppercase tracking-wider text-content-muted">
-                        <th class="px-5 py-3 text-left">Time</th>
-                        <th class="px-5 py-3 text-left">Action</th>
-                        <th class="px-5 py-3 text-left">Provider</th>
-                        <th class="px-5 py-3 text-left">Result</th>
-                        <th class="px-5 py-3 text-left">IP Address</th>
-                        <th class="px-5 py-3 text-left">Context</th>
+            <table class="{{ table_ui.table_classes('min-w-[58rem]') }}">
+                <thead class="{{ table_ui.head_classes() }}">
+                    <tr>
+                        <th class="{{ table_ui.header_cell_classes() }}">Time</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Action</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Provider</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Result</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">IP Address</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Context</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-outline-subtle bg-surface-card">
+                <tbody class="{{ table_ui.body_classes() }}">
                     {% for event in recent_login_events %}
                         {% set metadata = event.metadata_json or {} %}
                         {% set action = metadata.get('access_action') or ('logout' if event.title == 'User signed out' else 'login') %}
-                        <tr class="align-top transition hover:bg-surface-elevated">
-                            <td class="whitespace-nowrap px-5 py-3.5 font-medium text-content-secondary">{{ event.created_at|user_datetime(include_seconds=true) }}</td>
-                            <td class="whitespace-nowrap px-5 py-3.5">
+                        <tr class="{{ table_ui.row_classes() }} align-top">
+                            <td class="{{ table_ui.cell_classes() }} whitespace-nowrap font-medium text-content-secondary">{{ event.created_at|user_datetime(include_seconds=true) }}</td>
+                            <td class="{{ table_ui.cell_classes() }} whitespace-nowrap">
                                 <span class="inline-flex items-center gap-1.5 text-sm font-semibold text-content-primary">
                                     <i data-lucide="{{ 'log-out' if action == 'logout' else 'log-in' }}"
                                        class="h-3.5 w-3.5 text-kaori-primary"></i>
                                     {{ 'Sign out' if action == 'logout' else 'Sign in' }}
                                 </span>
                             </td>
-                            <td class="whitespace-nowrap px-5 py-3.5 text-content-secondary">{{ metadata.get("authentication_provider") or metadata.get('auth_source') or '-' }}</td>
-                            <td class="whitespace-nowrap px-5 py-3.5">
+                            <td class="{{ table_ui.cell_classes() }} whitespace-nowrap text-content-secondary">{{ metadata.get("authentication_provider") or metadata.get('auth_source') or '-' }}</td>
+                            <td class="{{ table_ui.cell_classes() }} whitespace-nowrap">
                                 {% if event.status == 'success' %}
-                                    <span class="inline-flex items-center gap-1.5 rounded-md border border-status-normal-border bg-status-normal-soft px-2.5 py-1 text-xs font-semibold text-status-normal-text">
-                                        <span class="h-1.5 w-1.5 rounded-full bg-status-normal"></span>
-                                        Success
-                                    </span>
+                                    {{ table_label.status_indicator_label('Success', 'normal') }}
                                 {% else %}
-                                    <span class="inline-flex items-center gap-1.5 rounded-md border border-status-critical-border bg-status-critical-soft px-2.5 py-1 text-xs font-semibold text-status-critical-text">
-                                        <span class="h-1.5 w-1.5 rounded-full bg-status-critical"></span>
-                                        Failed
-                                    </span>
+                                    {{ table_label.status_indicator_label('Failed', 'critical') }}
                                 {% endif %}
                             </td>
-                            <td class="whitespace-nowrap px-5 py-3.5 text-content-secondary">{{ metadata.get("ip_address") or '-' }}</td>
-                            <td class="min-w-64 px-5 py-3.5 text-xs leading-5 text-content-muted">{{ metadata.get("result_reason") or event.detail or '-' }}</td>
+                            <td class="{{ table_ui.cell_classes() }} whitespace-nowrap text-content-secondary">{{ metadata.get("ip_address") or '-' }}</td>
+                            <td class="{{ table_ui.cell_classes() }} min-w-64 text-xs leading-5 text-content-muted">{{ metadata.get("result_reason") or event.detail or '-' }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>

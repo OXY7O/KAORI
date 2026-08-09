@@ -1,6 +1,6 @@
-<nav class="border-b border-outline-default bg-surface-subtle px-3 pt-3 sm:px-5 sm:pt-4"
+<nav class="border-b border-outline-default bg-surface-subtle px-5 pt-4"
      aria-label="Account and authentication sections">
-    <div class="flex gap-1 overflow-x-auto" role="tablist">
+    <div class="flex gap-2 overflow-x-auto" role="tablist">
         <a href="{{ url_for('settings.account', tab='profile') }}"
            hx-get="{{ url_for('settings.account', tab='profile') }}"
            hx-target="#account-authentication-page"
@@ -8,7 +8,7 @@
            hx-push-url="true"
            role="tab"
            aria-selected="{{ 'true' if active_tab == 'profile' else 'false' }}"
-           class="inline-flex min-w-max items-center gap-2 rounded-t-xl border-x border-t px-4 py-3 text-sm font-semibold transition {{ 'border-outline-default bg-surface-card text-kaori-primary shadow-sm' if active_tab == 'profile' else 'border-transparent text-content-muted hover:border-outline-subtle hover:bg-surface-elevated hover:text-content-primary' }}">
+           class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition {{ 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px' if active_tab == 'profile' else 'border-transparent text-content-muted hover:bg-kaori-soft hover:text-kaori-primary' }}">
             <i data-lucide="id-card" class="h-4 w-4 shrink-0"></i>
             <span>Account Profile & Access</span>
             <span class="rounded-md border px-2 py-0.5 text-xs font-semibold {{ 'border-brand-outline bg-kaori-soft text-kaori-primary' if active_tab == 'profile' else 'border-outline-subtle bg-surface-card text-content-muted' }}">
@@ -22,7 +22,7 @@
            hx-push-url="true"
            role="tab"
            aria-selected="{{ 'true' if active_tab == 'activity' else 'false' }}"
-           class="inline-flex min-w-max items-center gap-2 rounded-t-xl border-x border-t px-4 py-3 text-sm font-semibold transition {{ 'border-outline-default bg-surface-card text-kaori-primary shadow-sm' if active_tab == 'activity' else 'border-transparent text-content-muted hover:border-outline-subtle hover:bg-surface-elevated hover:text-content-primary' }}">
+           class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition {{ 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px' if active_tab == 'activity' else 'border-transparent text-content-muted hover:bg-kaori-soft hover:text-kaori-primary' }}">
             <i data-lucide="activity" class="h-4 w-4 shrink-0"></i>
             <span>Recent Authentication Activity</span>
             <span class="rounded-md border px-2 py-0.5 text-xs font-semibold {{ 'border-brand-outline bg-kaori-soft text-kaori-primary' if active_tab == 'activity' else 'border-outline-subtle bg-surface-card text-content-muted' }}">
@@ -36,7 +36,7 @@
            hx-push-url="true"
            role="tab"
            aria-selected="{{ 'true' if active_tab == 'credentials' else 'false' }}"
-           class="inline-flex min-w-max items-center gap-2 rounded-t-xl border-x border-t px-4 py-3 text-sm font-semibold transition {{ 'border-outline-default bg-surface-card text-kaori-primary shadow-sm' if active_tab == 'credentials' else 'border-transparent text-content-muted hover:border-outline-subtle hover:bg-surface-elevated hover:text-content-primary' }}">
+           class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition {{ 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px' if active_tab == 'credentials' else 'border-transparent text-content-muted hover:bg-kaori-soft hover:text-kaori-primary' }}">
             <i data-lucide="key-round" class="h-4 w-4 shrink-0"></i>
             <span>Credential Management</span>
             <span class="rounded-md border px-2 py-0.5 text-xs font-semibold {{ 'border-brand-outline bg-kaori-soft text-kaori-primary' if active_tab == 'credentials' else 'border-outline-subtle bg-surface-card text-content-muted' }}">
