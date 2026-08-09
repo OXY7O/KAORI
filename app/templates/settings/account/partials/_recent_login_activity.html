@@ -8,7 +8,7 @@
             </span>
             <div>
                 <h2 class="text-base font-bold text-content-primary">Recent Authentication Activity</h2>
-                <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted">Latest five sign-in, failed sign-in, and sign-out events recorded for this account.</p>
+                <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted">Latest five authentication events for this account.</p>
             </div>
         </div>
         {% if current_user.has_permission('settings.view_operational_activity') %}
@@ -28,7 +28,7 @@
                     {{ table_label.status_indicator_label('Success', 'normal') }}
                 </div>
                 <p class="mt-2 text-2xl font-bold text-content-primary">{{ activity_summary.success }}</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Identity verified and KAORI access granted.</p>
+                <p class="mt-1 text-xs text-content-muted">Access granted.</p>
             </article>
             <article class="rounded-xl border border-outline-default bg-surface-card p-4">
                 <div class="flex items-center justify-between gap-3">
@@ -36,7 +36,7 @@
                     {{ table_label.status_indicator_label('Review', 'critical') }}
                 </div>
                 <p class="mt-2 text-2xl font-bold text-content-primary">{{ activity_summary.failed }}</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Rejected attempts retained with normalized failure context.</p>
+                <p class="mt-1 text-xs text-content-muted">Sign-in rejected.</p>
             </article>
             <article class="rounded-xl border border-outline-default bg-surface-card p-4">
                 <div class="flex items-center justify-between gap-3">
@@ -44,21 +44,19 @@
                     {{ table_label.metadata_label('Session Close', 'log-out') }}
                 </div>
                 <p class="mt-2 text-2xl font-bold text-content-primary">{{ activity_summary.sign_out }}</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Explicit KAORI session termination events.</p>
+                <p class="mt-1 text-xs text-content-muted">Session ended.</p>
             </article>
         </div>
     </div>
 
     {% if recent_login_events %}
         <div class="overflow-x-auto">
-            <table class="{{ table_ui.table_classes('min-w-[64rem]') }}">
+            <table class="{{ table_ui.table_classes('min-w-[48rem]') }}" data-authentication-activity-table="compact-events">
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
-                        <th class="{{ table_ui.header_cell_classes() }}">Time</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Action</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Provider</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Event</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Source</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Result</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">IP Address</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Context</th>
                     </tr>
                 </thead>
@@ -67,24 +65,48 @@
                         {% set metadata = event.metadata_json or {} %}
                         {% set action = metadata.get('access_action') or ('logout' if event.title == 'User signed out' else 'login') %}
                         {% set provider_value = metadata.get('authentication_provider') or metadata.get('auth_source') or '-' %}
-                        <tr class="{{ table_ui.row_classes() }} align-top">
-                            <td class="{{ table_ui.cell_classes() }} whitespace-nowrap font-medium text-content-secondary">{{ event.created_at|user_datetime(include_seconds=true) }}</td>
-                            <td class="{{ table_ui.cell_classes() }} whitespace-nowrap">
-                                <span class="inline-flex items-center gap-1.5 text-sm font-semibold text-content-primary">
-                                    <i data-lucide="{{ 'log-out' if action == 'logout' else 'log-in' }}" class="h-3.5 w-3.5 text-kaori-primary"></i>
-                                    {{ 'Sign Out' if action == 'logout' else 'Sign In' }}
-                                </span>
+                        {% set is_logout = action == 'logout' %}
+                        {% set is_success = event.status == 'success' %}
+                        <tr class="{{ table_ui.row_classes() }} align-middle">
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                        <i data-lucide="{{ 'log-out' if is_logout else 'log-in' }}" class="h-4 w-4"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-bold text-content-primary">{{ 'Sign Out' if is_logout else 'Sign In' }}</p>
+                                        <p class="mt-0.5 whitespace-nowrap text-xs text-content-muted">{{ event.created_at|user_datetime(include_seconds=true) }}</p>
+                                    </div>
+                                </div>
                             </td>
-                            <td class="{{ table_ui.cell_classes() }} whitespace-nowrap text-content-secondary">{{ provider_value|replace('_', ' ')|title if '_' in provider_value else provider_value }}</td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <p class="whitespace-nowrap text-sm font-semibold text-content-secondary">
+                                    {{ provider_value|replace('_', ' ')|title if '_' in provider_value else provider_value }}
+                                </p>
+                                <p class="mt-1 inline-flex items-center gap-1.5 whitespace-nowrap text-xs text-content-muted">
+                                    <i data-lucide="network" class="h-3.5 w-3.5 text-content-disabled"></i>
+                                    {{ metadata.get('ip_address') or 'IP unavailable' }}
+                                </p>
+                            </td>
                             <td class="{{ table_ui.cell_classes() }} whitespace-nowrap">
-                                {% if event.status == 'success' %}
+                                {% if is_success %}
                                     {{ table_label.status_indicator_label('Success', 'normal') }}
                                 {% else %}
                                     {{ table_label.status_indicator_label('Failed', 'critical') }}
                                 {% endif %}
                             </td>
-                            <td class="{{ table_ui.cell_classes() }} whitespace-nowrap text-content-secondary">{{ metadata.get('ip_address') or '-' }}</td>
-                            <td class="{{ table_ui.cell_classes() }} min-w-72 text-xs leading-5 text-content-muted">{{ metadata.get('result_reason') or event.detail or '-' }}</td>
+                            <td class="{{ table_ui.cell_classes() }} min-w-56">
+                                {% if is_logout %}
+                                    <p class="text-sm font-semibold text-content-secondary">Session Ended</p>
+                                    <p class="mt-0.5 text-xs text-content-muted">User initiated</p>
+                                {% elif is_success %}
+                                    <p class="text-sm font-semibold text-content-secondary">Access Granted</p>
+                                    <p class="mt-0.5 text-xs text-content-muted">Authentication accepted</p>
+                                {% else %}
+                                    <p class="text-sm font-semibold text-content-secondary">Sign-In Rejected</p>
+                                    <p class="mt-0.5 text-xs text-content-muted">Credentials not accepted</p>
+                                {% endif %}
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -96,24 +118,24 @@
                 <i data-lucide="scroll-text" class="h-5 w-5"></i>
             </div>
             <h3 class="mt-3 text-sm font-bold text-content-primary">No Authentication Activity Recorded</h3>
-            <p class="mx-auto mt-1 max-w-lg text-xs leading-5 text-content-muted">Successful sign-ins, failed attempts, and sign-outs will appear here after the unified authentication audit records them.</p>
+            <p class="mx-auto mt-1 max-w-lg text-xs leading-5 text-content-muted">Authentication events will appear here after they are recorded.</p>
         </div>
     {% endif %}
 
     <footer class="border-t border-outline-default bg-kaori-soft/40 px-5 py-4" data-authentication-evidence-boundary="inline">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div class="flex min-w-0 items-start gap-3">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex min-w-0 items-center gap-3">
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
                     <i data-lucide="shield-check" class="h-4 w-4"></i>
                 </span>
                 <div class="min-w-0">
-                    <h3 class="text-sm font-bold text-content-primary">Authentication Evidence Boundary</h3>
-                    <p class="mt-1 max-w-4xl text-xs leading-5 text-content-muted">This personal view retains identity and provider context, connection evidence, normalized result context, and event time. Passwords, LDAP bind secrets, OAuth client secrets, authorization codes, and provider tokens are never stored in authentication audit metadata.</p>
+                    <h3 class="text-sm font-bold text-content-primary">Authentication Evidence</h3>
+                    <p class="mt-0.5 text-xs text-content-muted">Identity, source, result, and connection context only. Secrets are excluded.</p>
                 </div>
             </div>
             <div class="flex shrink-0 flex-wrap gap-2" aria-label="Authentication evidence categories">
-                {{ table_label.metadata_label('Identity & Provider', 'badge-check') }}
-                {{ table_label.metadata_label('Connection Context', 'network') }}
+                {{ table_label.metadata_label('Identity & Source', 'badge-check') }}
+                {{ table_label.metadata_label('Connection', 'network') }}
                 {{ table_label.metadata_label('Result & Time', 'clock-3') }}
             </div>
         </div>

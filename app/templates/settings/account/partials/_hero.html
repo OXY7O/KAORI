@@ -6,17 +6,17 @@
                 {% set eyebrow_label = 'Authentication Evidence' %}
                 {% set eyebrow_icon = 'activity' %}
                 {% set leading_icon = 'scroll-text' %}
-                {% set summary = 'Review the latest personal authentication events captured by KAORI without exposing credential material.' %}
+                {% set summary = 'Review recent authentication events for this account.' %}
             {% elif active_tab == 'credentials' %}
                 {% set eyebrow_label = 'Credential Security' %}
                 {% set eyebrow_icon = 'key-round' %}
                 {% set leading_icon = 'shield-check' %}
-                {% set summary = 'Manage the credential boundary for this account while preserving KAORI lifecycle, authorization, and audit controls.' %}
+                {% set summary = 'Manage credentials, session impact, and audit controls.' %}
             {% else %}
                 {% set eyebrow_label = 'Identity & Access' %}
                 {% set eyebrow_icon = 'id-card' %}
                 {% set leading_icon = 'user-round-cog' %}
-                {% set summary = 'Review your account identity, authoritative authentication source, authorization posture, and most recent verified sign-in.' %}
+                {% set summary = 'Review account identity, access posture, and recent sign-in state.' %}
             {% endif %}
 
             {% call page_hero.intro(eyebrow_icon, eyebrow_label, leading_icon) %}
@@ -38,17 +38,17 @@
                         {{ page_hero.context_metric('circle-check', 'Successful', activity_summary.success, 'Verified sign-ins') }}
                         {{ page_hero.context_metric('circle-x', 'Failed', activity_summary.failed, 'Rejected attempts') }}
                     </div>
-                    {{ page_hero.context_info('shield-check', 'This tab is the personal authentication view; system-wide administrative evidence remains in Activity Audit.') }}
+                    {{ page_hero.context_info('shield-check', 'Personal view only; full evidence remains in Activity Audit.') }}
                 {% elif active_tab == 'credentials' %}
                     {{ page_hero.context_header('Credential Posture', identity_context.credential_owner, 'key-round') }}
                     <div class="{{ page_hero.context_panel_metrics_classes() }}">
                         {{ page_hero.context_metric(identity_context.icon, 'Ownership', 'KAORI Local' if can_change_password else 'Provider Managed', identity_context.type_label, 'text-sm font-semibold leading-6') }}
-                        {{ page_hero.context_metric('shield-off' if can_change_password else 'external-link', 'Session Effect', 'Revoke Others' if can_change_password else 'External Recovery', 'Current browser preserved for local change' if can_change_password else 'Credential reset occurs outside KAORI', 'text-sm font-semibold leading-6') }}
+                        {{ page_hero.context_metric('shield-off' if can_change_password else 'external-link', 'Session Effect', 'Revoke Others' if can_change_password else 'External Recovery', 'Current browser stays active' if can_change_password else 'Provider-managed recovery', 'text-sm font-semibold leading-6') }}
                     </div>
                     {% if can_change_password %}
-                    {{ page_hero.context_info('lock-keyhole', 'A Local Database password change revokes other sessions and remembered sign-ins while preserving the current browser; credential values remain excluded from audit metadata.') }}
+                    {{ page_hero.context_info('lock-keyhole', 'Other sessions are revoked; secrets stay out of audit.') }}
                     {% else %}
-                    {{ page_hero.context_info('lock-keyhole', 'External recovery follows provider-managed credential recovery outside KAORI; role, lifecycle, and authorization controls remain governed locally.') }}
+                    {{ page_hero.context_info('lock-keyhole', 'Recovery stays with the provider; KAORI retains access controls.') }}
                     {% endif %}
                 {% else %}
                     {{ page_hero.context_header('Account Posture', current_user.display_label, 'badge-check') }}
@@ -56,7 +56,7 @@
                         {{ page_hero.context_metric(identity_context.icon, 'Identity Source', identity_context.type_label, identity_context.provider_name, 'text-sm font-semibold leading-6') }}
                         {{ page_hero.context_metric('shield', 'Access Role', user_role, 'KAORI authorization role', 'text-sm font-semibold leading-6') }}
                     </div>
-                    {{ page_hero.context_info('workflow', 'The provider verifies identity; KAORI applies account lifecycle, RBAC authorization, and administrative safeguards.') }}
+                    {{ page_hero.context_info('workflow', 'Provider verifies identity; KAORI enforces lifecycle and RBAC.') }}
                 {% endif %}
             </div>
         </aside>

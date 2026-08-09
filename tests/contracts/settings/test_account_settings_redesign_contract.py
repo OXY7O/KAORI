@@ -81,16 +81,30 @@ def test_authentication_activity_is_full_width_with_inline_evidence_boundary() -
     assert "Failed Sign-Ins" in activity
     assert "Sign-Out Events" in activity
     assert "table_ui.table_classes" in activity
+    assert 'data-authentication-activity-table="compact-events"' in activity
+    assert ">Event</th>" in activity
+    assert ">Source</th>" in activity
+    assert ">Result</th>" in activity
+    assert ">Context</th>" in activity
+    assert ">Time</th>" not in activity
+    assert ">Action</th>" not in activity
+    assert ">Provider</th>" not in activity
+    assert ">IP Address</th>" not in activity
+    assert "Access Granted" in activity
+    assert "Sign-In Rejected" in activity
+    assert "Session Ended" in activity
+    assert "metadata.get('result_reason')" not in activity
     assert "table_label.status_indicator_label('Success', 'normal')" in activity
     assert "table_label.status_indicator_label('Failed', 'critical')" in activity
     assert "category='access', search=current_user.username" in activity
 
     assert 'data-authentication-evidence-boundary="inline"' in activity
-    assert "Authentication Evidence Boundary" in activity
-    assert "Identity & Provider" in activity
-    assert "Connection Context" in activity
+    assert "Authentication Evidence" in activity
+    assert "Identity & Source" in activity
+    assert "Connection" in activity
     assert "Result & Time" in activity
-    assert "Passwords, LDAP bind secrets" in activity
+    assert "Secrets are excluded" in activity
+    assert "Authentication Evidence Boundary" not in activity
     assert "Recorded Evidence" not in activity
     assert "Result Interpretation" not in activity
     assert "Audit Privacy Boundary" not in activity
@@ -129,22 +143,27 @@ def test_credential_workspace_uses_balanced_equal_height_columns() -> None:
 def test_credential_context_is_one_security_flow_box_with_session_outcomes() -> None:
     context = read("app/templates/settings/account/partials/_credential_information.html")
     assert "Credential Security Flow" in context
-    assert "Authoritative Credential Owner" in context
+    assert "Credential Owner" in context
     assert "Password Replacement Flow" in context
     assert "Provider Recovery Flow" in context
     assert 'data-credential-security-flow="true"' in context
     assert "Verify Current Credential" in context
     assert "Validate & Replace" in context
-    assert "Rotate Session Generation" in context
-    assert "Record Security Evidence" in context
+    assert "Rotate Sessions" in context
+    assert "Record Audit Event" in context
     assert "Session Outcome" in context
     assert "Current Browser" in context
     assert "Other Active Sessions" in context
     assert "Remembered Sign-Ins" in context
-    assert "Account Security Evidence" in context
+    assert "Security Audit" in context
     assert "Credential Evidence Boundary" in context
+    assert "Credential lifecycle, session impact, and audit handling." in context
+    assert "Confirm the current password." in context
+    assert "Apply password policy and replace the stored hash." in context
+    assert "Other sessions are revoked; secrets stay out of audit." not in context
+    assert "credential values remain excluded from audit metadata" not in context
     assert "Passwords values" not in context
-    assert "Password values, LDAP bind secrets" in context
+    assert "Credential values and secrets are never stored in audit metadata." in context
     assert "<details" not in context
     assert "Credential Ownership" not in context
     assert "Change Impact" not in context
