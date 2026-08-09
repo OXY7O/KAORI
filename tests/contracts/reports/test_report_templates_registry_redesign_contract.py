@@ -24,6 +24,8 @@ def test_template_registry_uses_full_width_kaori_workspace() -> None:
     assert 'data-template-governance-coverage="true"' in template
     assert 'Catalog Coverage' in template
     assert 'Customization State' in template
+    assert 'Tip: Use custom templates only for reusable reporting defaults.' in template
+    assert 'Custom templates remain optional.' not in template
     assert 'data-template-registry="true"' in template
     assert 'data-template-filters="true"' in template
     assert 'xl:grid-cols-6' in template
