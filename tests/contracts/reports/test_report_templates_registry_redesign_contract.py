@@ -43,7 +43,10 @@ def test_template_registry_uses_full_width_kaori_workspace() -> None:
     assert 'hx-indicator="#templates-registry-loading"' in template
     assert '<input type="hidden" name="per_page" value="{{ payload.pagination.per_page }}">' in template
     assert 'data-template-page-size-form="true"' in template
-    assert 'hx-trigger="change"' in template
+    assert 'data-kaori-page-size-control="report-templates"' in template
+    assert 'id="templates-registry-request-scope"' in template
+    assert template.count('hx-sync="#templates-registry-request-scope:replace"') >= 3
+    assert 'hx-trigger="change from:select"' in template
     assert 'hx-include="closest form"' not in template
     assert 'htmx-indicator h-0.5 overflow-hidden bg-kaori-soft' not in template
     assert 'xl:grid-cols-[minmax(0,1fr)_420px]' not in template
@@ -86,6 +89,8 @@ def test_template_service_is_catalog_driven_and_filterable() -> None:
     assert "'supported_formats_label': ' · '.join(supported_formats)" in service
     assert 'def normalize_templates_per_page(value: str | int | None) -> int:' in service
     assert 'requested_per_page = normalize_templates_per_page' in service
+    assert "params: dict[str, str] = {'page': str(page), 'per_page': str(per_page)}" in service
+    assert "for key in ('family', 'report_type', 'ownership', 'status', 'output_format', 'search')" in service
 
 
 def test_template_feedback_titles_follow_title_case() -> None:

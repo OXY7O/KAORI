@@ -24,6 +24,8 @@ from app.reports.storage.service import (
 
 REPORT_TYPE_LABELS = {spec.value: spec.label for spec in REPORT_TYPE_SPECS}
 
+GENERATED_PER_PAGE_OPTIONS = (5, 10, 25, 50)
+
 STATUS_LABELS = {
     'requested': 'Requested',
     'queued': 'Queued',
@@ -377,23 +379,29 @@ def get_filter_options() -> dict[str, list[dict[str, str]]]:
         ],
         'per_page_options': [
             {
-                'value': '5',
-                'label': '5',
-            },
-            {
-                'value': '10',
-                'label': '10',
-            },
-            {
-                'value': '25',
-                'label': '25',
-            },
-            {
-                'value': '50',
-                'label': '50',
-            },
+                'value': str(option),
+                'label': str(option),
+            }
+            for option in GENERATED_PER_PAGE_OPTIONS
         ],
     }
+
+
+def normalize_generated_per_page(value: str | int | None) -> int:
+    default = GENERATED_PER_PAGE_OPTIONS[0]
+    try:
+        normalized = int(value) if value is not None else default
+    except (TypeError, ValueError):
+        return default
+    return normalized if normalized in GENERATED_PER_PAGE_OPTIONS else default
+
+
+def normalize_generated_page(value: str | int | None) -> int:
+    try:
+        normalized = int(value) if value is not None else 1
+    except (TypeError, ValueError):
+        return 1
+    return max(normalized, 1)
 
 
 def get_selected_filters(
@@ -431,14 +439,8 @@ def get_selected_filters(
             'search',
             '',
         ),
-        'page': query_args.get(
-            'page',
-            '1',
-        ),
-        'per_page': query_args.get(
-            'per_page',
-            '5',
-        ),
+        'page': str(normalize_generated_page(query_args.get('page'))),
+        'per_page': str(normalize_generated_per_page(query_args.get('per_page'))),
     }
 
 
@@ -447,32 +449,8 @@ def get_reports(
     *,
     backend_status: Mapping[str, Any] | None = None,
 ) -> tuple[list[dict[str, Any]], int]:
-    page = _safe_int(
-        selected_filters.get(
-            'page',
-            '1',
-        ),
-        1,
-    )
-    per_page = _safe_int(
-        selected_filters.get(
-            'per_page',
-            '5',
-        ),
-        5,
-    )
-
-    page = max(
-        page,
-        1,
-    )
-    per_page = min(
-        max(
-            per_page,
-            1,
-        ),
-        100,
-    )
+    page = normalize_generated_page(selected_filters.get('page'))
+    per_page = normalize_generated_per_page(selected_filters.get('per_page'))
 
     statement = select(
         Report,
@@ -493,6 +471,9 @@ def get_reports(
         )
         or 0
     )
+
+    total_pages = max((total_items + per_page - 1) // per_page, 1)
+    page = min(page, total_pages)
 
     statement = (
         statement.order_by(
@@ -536,32 +517,8 @@ def get_pagination(
     selected_filters: dict[str, str],
     total_items: int,
 ) -> dict[str, int | str | bool]:
-    page = _safe_int(
-        selected_filters.get(
-            'page',
-            '1',
-        ),
-        1,
-    )
-    per_page = _safe_int(
-        selected_filters.get(
-            'per_page',
-            '5',
-        ),
-        5,
-    )
-
-    page = max(
-        page,
-        1,
-    )
-    per_page = min(
-        max(
-            per_page,
-            1,
-        ),
-        100,
-    )
+    page = normalize_generated_page(selected_filters.get('page'))
+    per_page = normalize_generated_per_page(selected_filters.get('per_page'))
 
     total_pages = max(
         (total_items + per_page - 1) // per_page,

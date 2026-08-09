@@ -123,8 +123,10 @@
             </footer>
         </section>
 
+        <div id="generated-report-registry-request-scope" data-kaori-registry-request-scope="generated-reports">
         <section id="generated-report-registry"
                  data-generated-report-registry="true"
+                 hx-sync="#generated-report-registry-request-scope:abort"
                  {% if payload.has_pending_reports %}
                      hx-get="{{ url_for(
                          'reports.generated_reports',
@@ -190,6 +192,7 @@
                   hx-swap="outerHTML"
                   hx-push-url="true"
                   hx-indicator="#generated-report-loading"
+                  hx-sync="#generated-report-registry-request-scope:replace"
                   class="{{ table_ui.inventory_filter_bar_classes() }} grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6 xl:items-end">
                 <input type="hidden" name="page" value="1">
                 <input type="hidden" name="per_page" value="{{ payload.selected_filters.per_page }}">
@@ -381,13 +384,15 @@
                     <form method="GET"
                           action="{{ url_for('reports.generated_reports') }}"
                           hx-get="{{ url_for('reports.generated_reports') }}"
-                          hx-trigger="change"
+                          hx-trigger="change from:select"
                           hx-target="#generated-report-registry"
                           hx-select="#generated-report-registry"
                           hx-swap="outerHTML"
                           hx-push-url="true"
                           hx-indicator="#generated-report-loading"
-                          class="{{ pagination_ui.rows_group_classes() }}">
+                          hx-sync="#generated-report-registry-request-scope:replace"
+                          class="{{ pagination_ui.rows_group_classes() }}"
+                          data-kaori-page-size-control="generated-reports">
                         <input type="hidden" name="cluster_id" value="{{ payload.selected_filters.cluster_id }}">
                         <input type="hidden" name="report_type" value="{{ payload.selected_filters.report_type }}">
                         <input type="hidden" name="status" value="{{ payload.selected_filters.status }}">
@@ -405,7 +410,8 @@
                 </div>
                 <div class="{{ pagination_ui.navigation_group_classes() }}"
                      hx-select="#generated-report-registry"
-                     hx-push-url="true">
+                     hx-push-url="true"
+                     hx-sync="#generated-report-registry-request-scope:replace">
                     {% set previous_query = registry_query.copy() %}
                     {% set _ = previous_query.update({'page': payload.pagination.prev_page}) %}
                     {% if payload.pagination.has_prev %}
@@ -458,5 +464,6 @@
                 </div>
             </footer>
         </section>
+        </div>
     </div>
 {% endblock dashboard_content %}
