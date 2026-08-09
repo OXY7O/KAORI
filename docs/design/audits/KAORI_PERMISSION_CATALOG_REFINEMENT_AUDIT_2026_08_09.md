@@ -51,3 +51,10 @@ Permission Catalog is not Final Locked yet. Directory Provisioning, Activity Aud
 - Permission Registry desktop filters use three equal-width columns: Search Permission, Control Module, and Coverage.
 - Role Coverage retains four equal-width columns because it has four filters.
 - No RBAC or query semantics changed.
+
+## v1.23 Filter Vertical Alignment
+
+- Permission Registry search/select controls now share one label-to-control spacing owner.
+- Local `mt-1.5` offsets were removed from the search wrapper and selects because `filter_label_classes()` already provides the canonical bottom spacing.
+- This removes browser-specific margin-collapse differences that could place the Search Permission control slightly above the Control Module and Coverage selects.
+- Desktop geometry remains three equal-width columns; this refinement changes vertical alignment only.
