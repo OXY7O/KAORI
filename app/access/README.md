@@ -64,3 +64,14 @@ Roles & Access now uses the KAORI operational registry pattern: read-only postur
 Custom-role edit/delete mutations are serialized with a database row lock and protected by a role version token so stale administrative forms do not silently overwrite a newer role state. Delete blockers for user assignments and Identity Provider defaults are rechecked at mutation time.
 
 This remains a refinement baseline, not the Access Final Lock. RBAC seed/convergence ownership is intentionally deferred to Permission Catalog review.
+
+## Permission Catalog review status
+
+Permission Catalog is a read-only Access workspace. HTTP GET routes no longer call `seed_default_rbac()` or perform RBAC convergence. Code-to-database alignment is presented as registry evidence (`Canonical`, `Missing From Registry`, `Metadata Drift`, or `Database Only`), while synchronization remains an explicit deployment/administrative step through `flask seed-rbac`.
+
+The catalog owns two views:
+
+- **Permission Registry** — code-owned contracts, dependencies, current role mapping count, registry drift, shared filters/loading, and standard pagination.
+- **Role Coverage** — cross-role effective permission comparison. Roles & Access intentionally keeps only role-specific permission coverage in its detail modal.
+
+This remains a refinement baseline, not the Access Final Lock.

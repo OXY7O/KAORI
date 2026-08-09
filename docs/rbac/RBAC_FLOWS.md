@@ -178,19 +178,23 @@ engineer adds permission to app/rbac/defaults.py
 A permission must not be added only to the UI or only to the default-role seed.
 
 
-## 12. Role registry and mapping matrix render
+## 12. Role and permission read paths
 
 ```text
 GET /access/roles/
-  -> seed/converge default RBAC
-  -> query every current role
-  -> query grouped permission registry
-  -> build role_id -> permission-key set
-  -> render Role Registry tab
-  -> render Role-Permission Matrix tab from the same live result set
+  -> read current persisted roles and permission mappings
+  -> render role-specific coverage and assignment evidence
+  -> never run RBAC seed/convergence
+
+GET /access/permissions/
+  -> load DEFAULT_PERMISSIONS from application code
+  -> compare with persisted permission rows
+  -> classify Canonical / Missing / Metadata Drift / Database Only
+  -> render Permission Registry or cross-role Role Coverage
+  -> never mutate the registry
 ```
 
-The matrix has no independent cached mapping. Adding, cloning, updating, or deleting a role changes the matrix on the next Roles & Access render.
+Cross-role comparison is owned by Permission Catalog. `flask seed-rbac` remains the explicit convergence step used after approved code changes.
 
 ## 13. Authorization denial presentation
 

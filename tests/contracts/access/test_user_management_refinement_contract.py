@@ -158,17 +158,23 @@ def test_reset_password_matches_kaori_hero_impact_and_secure_delivery_contract()
 
 
 def test_access_main_right_rails_are_sticky_with_shared_desktop_offset() -> None:
+    # Sticky is required when a page intentionally keeps a main-content right rail.
+    # Full-width registry pages must not retain an empty rail only to satisfy this contract.
     required = {
         'app/templates/users/form.html': 2,
         'app/templates/users/reset_password.html': 1,
         'app/templates/users/providers/partials/_provider_guidance.html': 1,
         'app/templates/users/external_identities.html': 1,
-        'app/templates/access/roles/index.html': 1,
         'app/templates/access/roles/form.html': 1,
-        'app/templates/access/permissions/index.html': 1,
     }
     for path, minimum in required.items():
         source = read(path)
         assert source.count('xl:sticky xl:top-5') >= minimum, path
     for path in required:
         assert 'xl:top-6' not in read(path), path
+
+    for full_width_page in (
+        'app/templates/access/roles/index.html',
+        'app/templates/access/permissions/index.html',
+    ):
+        assert 'xl:sticky xl:top-5' not in read(full_width_page), full_width_page

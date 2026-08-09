@@ -380,6 +380,9 @@
     function detailUrlFromTemplate(modalHost, detailId) {
         const template = modalHost.dataset.detailUrlTemplate || ''
         if (!template) return ''
+        if (template.includes('__detail__')) {
+            return template.replace('__detail__', encodeURIComponent(detailId))
+        }
         return template.replace(/\/0\/details(?:\?.*)?$/, `/${encodeURIComponent(detailId)}/details`)
     }
 

@@ -135,3 +135,19 @@ def test_resource_detail_modal_supports_access_context_without_breaking_inventor
     assert "context_label='Inventory'" in component
     assert "dialog_max_width='max-w-[100rem]'" in component
     assert "{{ _host(resource_type, detail_url_template, footer_text, context_label, dialog_max_width, 'modal') }}" in component
+
+
+def test_role_registry_overview_matches_kaori_registry_overview_visual_grammar() -> None:
+    index = read('app/templates/access/roles/index.html')
+    for required in (
+        'overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm',
+        'text-3xl font-bold tracking-tight text-content-primary',
+        'min-h-[11rem]',
+        'border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6',
+        'Protected Defaults',
+        'Custom Role Ownership',
+        'Permission Dependencies',
+        'Effective Authorization',
+    ):
+        assert required in index
+    assert "operational_section.render(\n            'Role Registry Overview'" not in index

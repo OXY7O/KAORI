@@ -107,21 +107,18 @@ Mode must be clear in the hero, supporting notice, field state, permission matri
 - present Role Configuration as three proportional groups: role identity, operational purpose, and assignment availability;
 - present Role Summary as one primary effective-coverage panel plus compact lifecycle and assignment facts instead of a flat grid of equally weighted counters;
 - align the final create/update action card to the same primary content column used by Role Configuration and Permission Matrix;
-- present Access Guardrails as a native expandable section with `open` set by default;
+- present Access Guardrails as an always-visible compact evidence card in the sticky role-impact rail;
 - explain responsibility-based role design, dependency normalization, assignment impact, and the separate Super Admin boundary.
 
 ## 6. Permission Catalog
 
-Role Coverage in Permission Catalog is supporting context rather than the primary registry. Render it as a native disclosure closed by default so the catalog remains compact while still exposing dynamic role counts on demand.
-
-
-Permission Catalog is the read-only UI projection of the backend-owned permission registry. Permission definitions originate in `app/rbac/defaults.py` and are synchronized to the database through `flask seed-rbac`.
+Permission Catalog is the read-only projection of the code-owned authorization registry. HTTP GET requests must never run `seed_default_rbac()` or otherwise converge the database. `flask seed-rbac` remains an explicit deployment/administrative command.
 
 The ownership chain is:
 
 ```text
 Permission Catalog
-  -> defines atomic capabilities
+  -> defines atomic capabilities and cross-role coverage
 Roles & Access
   -> bundles selected capabilities into reusable roles
 User Management
@@ -130,28 +127,32 @@ Authorization runtime
   -> enforces the effective permission set on the server
 ```
 
-Permission Catalog should answer:
+Permission Catalog owns two framed workspaces:
 
-- what capability a key grants;
-- which module/action it belongs to;
-- which roles currently use it;
-- whether it is unassigned;
-- that permission creation is a code change.
+- **Permission Registry** — code-owned contracts, module/action metadata, dependency links, role mapping count, and registry drift.
+- **Role Coverage** — effective permission inclusion across default and custom roles.
 
-It must not offer rename, delete, inline edit, or direct role mutation controls. Roles & Access owns permission-to-role composition; User Management owns role-to-user assignment. Identity Provider configuration may choose a default role for JIT-provisioned users, but it does not create permission keys or grant Super Admin.
+The Permission Registry uses the global KAORI table contract:
 
-The registry uses the global KAORI pagination contract because permission volume is expected to grow. Its pagination unit is the top-level permission section/module, not individual permission cards:
+- server-owned HTMX search/module/coverage filters;
+- shared loading bar;
+- one permission per table row;
+- default `5` rows with `5`, `10`, `25`, and `50` choices;
+- `Previous`, numeric pages, and `Next`;
+- modal `View Details` for dependency, role-coverage, and code-to-registry evidence.
 
-- default `5` module sections per page;
-- selectable `5`, `10`, `25`, and `50` sections;
-- every visible module keeps all matching permission cards together on the same page;
-- a module is never split across two pages;
-- search and module filters reset to page 1;
-- search may reduce the permission cards shown inside a module, while pagination continues to count the matching modules;
-- empty filtered results show an explicit no-match state;
-- the footer reads `Showing 1–5 of 12 sections`, followed by the numeric page-size selector;
-- the registry/content column uses top alignment so a taller context rail cannot create blank space below its footer;
-- the authorization boundary explanation is presented in a violet distinction block.
+Registry drift is evidence, not an implicit mutation:
+
+- **Canonical** — code and persisted metadata match;
+- **Missing From Registry** — code contract has no persisted row;
+- **Metadata Drift** — persisted metadata differs from the code contract;
+- **Database Only** — a persisted key is no longer part of the current code baseline.
+
+Database-only permissions must not be silently deleted from a read page. Review role mappings before controlled cleanup. Unused canonical permission contracts are neutral evidence and do not automatically represent a security failure.
+
+Role Coverage is a full-width horizontally scrollable matrix owned only by Permission Catalog. Roles & Access shows role-specific permission coverage in its role-detail modal and does not duplicate the cross-role matrix.
+
+Permission Catalog must not offer rename, delete, inline edit, direct role mutation, or an HTTP `Sync` button.
 
 ## 7. Copy standards
 

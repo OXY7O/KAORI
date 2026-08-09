@@ -31,3 +31,7 @@ Super Admin remains separate from normal roles and permissions.
 `seed_default_rbac()` still performs convergent seeding when selected Access surfaces are opened. This is a cross-RBAC/Permission Catalog bootstrap concern and should be decided during Permission Catalog review rather than changed only from Roles & Access.
 
 Roles & Access is not final-locked yet; Permission Catalog, Activity Audit, Directory Provisioning, and the remaining Access-wide security decisions must be reviewed first.
+
+## v1.20 visual alignment
+
+Role Registry Overview keeps the same role metrics and ownership boundaries, but its visual grammar is aligned with Account & Identity Posture and Permission Registry Overview: rounded-2xl registry shell, compact header, 11rem metric cells, 3xl primary values, semantic icon surfaces, and neutral boundary cards. This is a presentation alignment only; role semantics are unchanged.

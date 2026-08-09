@@ -64,7 +64,7 @@ Permission creation and renaming are code changes. They are not administrative U
 
 The administrative ownership boundary is explicit:
 
-- **Permission Catalog** presents the backend-owned registry synchronized by `flask seed-rbac`;
+- **Permission Catalog** reads the code-owned contract registry and compares it with the persisted database without mutating on GET; `flask seed-rbac` is the explicit synchronization command;
 - **Roles & Access** composes permission keys into protected default roles and editable custom roles;
 - **User Management** assigns one active role to a local user account;
 - **Identity Provider configuration** may map a default role for JIT provisioning;
@@ -87,7 +87,7 @@ Default roles:
 - can be cloned into a custom role;
 - are restored to the canonical definition by `seed_default_rbac()`.
 
-The seed is convergent. It adds missing default assignments and removes assignments that are not present in the current code baseline.
+The seed is convergent and command-owned. It adds missing default assignments and removes assignments that are not present in the current code baseline. Access HTTP GET routes never invoke the seed implicitly.
 
 ### 4.2 Custom role
 

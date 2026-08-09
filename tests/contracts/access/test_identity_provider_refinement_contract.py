@@ -130,13 +130,12 @@ def test_identity_provider_form_uses_shared_hero_live_test_and_standard_guidance
     assert 'Technical Runbook' in guidance
     assert 'Identity Provider Technical Runbook' in guidance
     assert 'docs/authentication/IDENTITY_PROVIDER_CONFIGURATION.md' in guidance
-    assert 'name="form_action"' in form
-    assert 'value="test"' in form
-    assert 'Test Configuration' in form
-    assert 'Test Connection' in script
-    assert 'operation_result.render(validation_result)' in form
-    assert 'def _test_identity_provider_form(' in routes
-    assert 'validate_identity_provider(draft)' in routes
+    assert "formaction=\"{{ url_for('users.test_provider_configuration'" in form
+    assert 'Test Connection' in form
+    assert 'test_result' in form
+    assert "@bp.post('/providers/test')" in routes
+    assert 'def test_provider_configuration(' in routes
+    assert 'validate_identity_provider(candidate)' in routes
     assert 'font-mono text-xs text-content-primary' not in ldap_config
 
 

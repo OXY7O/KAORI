@@ -75,3 +75,9 @@ Owns RBAC business rules:
 ## Operational feedback rule
 
 RBAC routes do not use Flask flash messages. Mutation outcomes are recorded through `role_access_feedback()`, which produces both the standard persistent toast and the Activity Audit notification record. Successful mutations continue to write `AuditEvent` rows before the primary transaction commits.
+
+## RBAC convergence boundary
+
+`seed_default_rbac()` is a governed command/bootstrap operation, not an HTTP read-path side effect. Access pages must never call it from GET routes or presentation builders. Permission Catalog compares `DEFAULT_PERMISSIONS` with the persisted registry and reports drift without mutating it.
+
+`flask seed-rbac` may create missing canonical permissions, synchronize canonical metadata, converge protected default roles, and normalize default-role mappings. Database-only permission rows are not silently deleted by Permission Catalog; operators must review role usage before any controlled cleanup migration.

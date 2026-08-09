@@ -13,7 +13,6 @@ from app.auth.sso import SsoAdmissionError
 from app.extensions.db import db
 from app.models import IdentityProvider, Role, User
 from app.rbac.decorators import permission_required
-from app.rbac.service import seed_default_rbac
 from app.users.external import (
     IdentityProjectionError,
     assign_projection_role_choices,
@@ -99,7 +98,6 @@ def index():
 @bp.route('/new', methods=['GET', 'POST'])
 @permission_required('users.manage')
 def create():
-    seed_default_rbac()
     actor = cast(User, current_user)
     form = UserForm()
     assign_user_form_choices(form, include_admin_roles=actor.is_super_admin)

@@ -30,7 +30,6 @@ from app.rbac.service import (
     normalize_role_slug,
     replace_role_permissions,
     role_slug_exists,
-    seed_default_rbac,
 )
 from app.users.service import record_admin_event
 
@@ -40,10 +39,6 @@ bp = Blueprint('roles', __name__)
 @bp.get('/')
 @permission_required('roles.view')
 def index():
-    # Kept intentionally for now because the RBAC registry still uses convergent
-    # seeding across Access surfaces. The ownership of that convergence will be
-    # decided together with Permission Catalog before the Access final lock.
-    seed_default_rbac()
     actor = cast(User, current_user._get_current_object())
     filters = normalize_role_filters(request.args.to_dict())
     payload = build_roles_index_context(
@@ -58,7 +53,6 @@ def index():
 @bp.route('/new', methods=['GET', 'POST'])
 @permission_required('roles.manage')
 def create():
-    seed_default_rbac()
     form = RoleForm()
     if request.method == 'GET':
         form.is_active.data = True
@@ -103,7 +97,6 @@ def create():
 @bp.route('/<int:role_id>/clone', methods=['GET', 'POST'])
 @permission_required('roles.manage')
 def clone(role_id: int):
-    seed_default_rbac()
     source_role = db.session.get(Role, role_id)
     if source_role is None or not source_role.is_system:
         role_access_feedback(
@@ -166,7 +159,6 @@ def clone(role_id: int):
 @bp.get('/<int:role_id>')
 @permission_required('roles.view')
 def detail(role_id: int):
-    seed_default_rbac()
     role = db.session.get(Role, role_id)
     if role is None:
         role_access_feedback(
@@ -196,7 +188,6 @@ def detail(role_id: int):
 @bp.get('/<int:role_id>/details')
 @permission_required('roles.view')
 def modal_details(role_id: int):
-    seed_default_rbac()
     role = db.session.get(Role, role_id)
     if role is None:
         return 'Role details unavailable.', 404

@@ -1,0 +1,150 @@
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/pagination.html" as pagination_ui %}
+<header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="table-properties" class="h-5 w-5"></i></span>
+            <div class="min-w-0">
+                <h2 class="{{ table_ui.block_title_classes() }}">Role Coverage</h2>
+                <p class="{{ table_ui.block_description_classes() }}">Compare effective permission inclusion across default and custom roles.</p>
+            </div>
+        </div>
+        {{ table_label.metadata_label(matching_count ~ ' Matching ' ~ ('Permission' if matching_count == 1 else 'Permissions'), 'key-round') }}
+    </div>
+    {{ loading_bar.render('permission-coverage-loading', label='Refreshing Role Coverage') }}
+</header>
+
+<form id="permission-coverage-filter-form"
+      class="{{ table_ui.filter_bar_classes() }}"
+      method="get"
+      action="{{ url_for('access.permissions.index') }}"
+      hx-get="{{ url_for('access.permissions.index') }}"
+      hx-trigger="keyup changed delay:450ms from:input[name='search'], change from:select[name='module'], change from:select[name='role_type'], change from:select[name='role_state']"
+      hx-target="#permission-workspace"
+      hx-swap="outerHTML"
+      hx-push-url="true"
+      hx-indicator="#permission-coverage-loading">
+    <input type="hidden" name="view" value="coverage">
+    <div class="grid gap-3 lg:grid-cols-4">
+        <label class="block min-w-0">
+            <span class="{{ table_ui.filter_label_classes() }}">Search Permission</span>
+            <div class="relative mt-1.5">
+                <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted" aria-hidden="true"></i>
+                <input type="search" name="search" value="{{ filters.search }}" placeholder="Permission key, action, or description" class="{{ table_ui.filter_input_classes() }} pl-9">
+            </div>
+        </label>
+        <label class="block min-w-0">
+            <span class="{{ table_ui.filter_label_classes() }}">Control Module</span>
+            <select name="module" class="mt-1.5 {{ table_ui.filter_select_classes() }}">
+                <option value="all"{% if filters.module == 'all' %} selected{% endif %}>All Modules</option>
+                {% for option in module_options %}<option value="{{ option.key }}"{% if filters.module == option.key %} selected{% endif %}>{{ option.label }}</option>{% endfor %}
+            </select>
+        </label>
+        <label class="block min-w-0">
+            <span class="{{ table_ui.filter_label_classes() }}">Role Type</span>
+            <select name="role_type" class="mt-1.5 {{ table_ui.filter_select_classes() }}">
+                <option value="all"{% if filters.role_type == 'all' %} selected{% endif %}>All Types</option>
+                <option value="system"{% if filters.role_type == 'system' %} selected{% endif %}>Default Roles</option>
+                <option value="custom"{% if filters.role_type == 'custom' %} selected{% endif %}>Custom Roles</option>
+            </select>
+        </label>
+        <label class="block min-w-0">
+            <span class="{{ table_ui.filter_label_classes() }}">Role State</span>
+            <select name="role_state" class="mt-1.5 {{ table_ui.filter_select_classes() }}">
+                <option value="all"{% if filters.role_state == 'all' %} selected{% endif %}>All States</option>
+                <option value="active"{% if filters.role_state == 'active' %} selected{% endif %}>Active</option>
+                <option value="inactive"{% if filters.role_state == 'inactive' %} selected{% endif %}>Inactive</option>
+            </select>
+        </label>
+    </div>
+</form>
+
+<div class="overflow-x-auto">
+    <table class="{{ table_ui.table_classes('min-w-[70rem]') }}">
+        <thead class="{{ table_ui.head_classes() }}">
+            <tr>
+                <th class="sticky left-0 z-20 min-w-[18rem] {{ table_ui.header_cell_classes() }} bg-surface-hover">Permission</th>
+                <th class="min-w-[10rem] {{ table_ui.header_cell_classes() }}">Module</th>
+                {% for role in coverage_roles %}
+                    <th class="min-w-[10rem] {{ table_ui.header_cell_classes() }} text-center">
+                        <div class="flex flex-col items-center gap-1">
+                            <span class="text-xs font-semibold text-content-primary">{{ role.display_name }}</span>
+                            <span class="text-xs font-normal text-content-muted">{{ 'Default' if role.is_system else 'Custom' }} · {{ 'Active' if role.is_active else 'Inactive' }}</span>
+                        </div>
+                    </th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody class="{{ table_ui.body_classes() }}">
+            {% for permission in coverage_rows %}
+                <tr class="{{ table_ui.row_classes() }}">
+                    <td class="sticky left-0 z-10 bg-surface-card {{ table_ui.cell_classes() }}">{{ table_ui.title_cell(permission.title, permission.key, 'key-round') }}</td>
+                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(permission.module_label, 'boxes') }}</td>
+                    {% for role in coverage_roles %}
+                        <td class="{{ table_ui.cell_classes() }} text-center">
+                            {% if permission.key in role_permission_keys.get(role.id, []) %}
+                                <span class="inline-flex h-7 w-7 items-center justify-center rounded-md bg-status-normal-soft text-status-normal-text" title="Included"><i data-lucide="check" class="h-4 w-4" aria-hidden="true"></i><span class="sr-only">Included</span></span>
+                            {% else %}
+                                <span class="text-sm font-semibold text-content-muted" title="Not Included">—<span class="sr-only">Not Included</span></span>
+                            {% endif %}
+                        </td>
+                    {% else %}
+                        <td class="{{ table_ui.cell_classes() }} text-sm text-content-muted">No roles match the current role filters.</td>
+                    {% endfor %}
+                </tr>
+            {% else %}
+                <tr><td colspan="{{ 2 + (coverage_roles|length if coverage_roles else 1) }}" class="px-5 py-12 text-center text-sm text-content-muted">No permissions match the current coverage filters.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<footer class="{{ pagination_ui.footer_classes() }}">
+    <div class="{{ pagination_ui.summary_group_classes() }}">
+        <span>Showing <strong class="font-semibold text-content-primary">{{ pagination.start_item }}–{{ pagination.end_item }}</strong> of <strong class="font-semibold text-content-primary">{{ pagination.total_items }}</strong> {{ pagination_ui.resource_name('Permissions', pagination.total_items) }}</span>
+        <label class="{{ pagination_ui.rows_group_classes() }}">
+            <span class="font-semibold text-content-secondary">Rows</span>
+            <select name="per_page"
+                    form="permission-coverage-filter-form"
+                    aria-label="Rows Per Page"
+                    class="{{ pagination_ui.page_size_classes() }}"
+                    hx-get="{{ url_for('access.permissions.index') }}"
+                    hx-include="#permission-coverage-filter-form"
+                    hx-target="#permission-workspace"
+                    hx-swap="outerHTML"
+                    hx-push-url="true"
+                    hx-indicator="#permission-coverage-loading">
+                {% for option in per_page_options %}<option value="{{ option }}"{% if filters.per_page == option %} selected{% endif %}>{{ option }}</option>{% endfor %}
+            </select>
+        </label>
+    </div>
+    <nav class="{{ pagination_ui.navigation_group_classes() }}" aria-label="Role Coverage Pagination">
+        {% if pagination.has_prev %}
+            <a href="{{ url_for('access.permissions.index', view='coverage', search=filters.search, module=filters.module, role_type=filters.role_type, role_state=filters.role_state, per_page=filters.per_page, page=pagination.prev_page) }}"
+               hx-get="{{ url_for('access.permissions.index', view='coverage', search=filters.search, module=filters.module, role_type=filters.role_type, role_state=filters.role_state, per_page=filters.per_page, page=pagination.prev_page) }}"
+               hx-target="#permission-workspace" hx-swap="outerHTML" hx-push-url="true" hx-indicator="#permission-coverage-loading"
+               class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+        {% else %}
+            <span class="{{ pagination_ui.navigation_classes(true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+        {% endif %}
+        {{ pagination_ui.numeric_pages(
+            pagination.page,
+            pagination.total_pages,
+            hx_target='#permission-workspace',
+            hx_indicator='#permission-coverage-loading',
+            endpoint='access.permissions.index',
+            query_params=pagination_query,
+            hx_swap='outerHTML'
+        ) }}
+        {% if pagination.has_next %}
+            <a href="{{ url_for('access.permissions.index', view='coverage', search=filters.search, module=filters.module, role_type=filters.role_type, role_state=filters.role_state, per_page=filters.per_page, page=pagination.next_page) }}"
+               hx-get="{{ url_for('access.permissions.index', view='coverage', search=filters.search, module=filters.module, role_type=filters.role_type, role_state=filters.role_state, per_page=filters.per_page, page=pagination.next_page) }}"
+               hx-target="#permission-workspace" hx-swap="outerHTML" hx-push-url="true" hx-indicator="#permission-coverage-loading"
+               class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+        {% else %}
+            <span class="{{ pagination_ui.navigation_classes(true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+        {% endif %}
+    </nav>
+</footer>

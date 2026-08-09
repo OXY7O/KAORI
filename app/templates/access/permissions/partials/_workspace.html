@@ -1,0 +1,23 @@
+{% import "components/framed_workspace_tabs.html" as framed_tabs %}
+<section id="permission-workspace" class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+    {% set workspace_tabs = [
+        ('registry', 'Permission Registry', 'list-tree', url_for('access.permissions.index', view='registry'), summary.canonical_permissions),
+        ('coverage', 'Role Coverage', 'table-properties', url_for('access.permissions.index', view='coverage'), roles|length)
+    ] %}
+    {{ framed_tabs.render_navigation(
+        workspace_tabs,
+        active_view,
+        prefix='permission-workspace',
+        aria_label='Permission Catalog Workspace',
+        hx_target='#permission-workspace',
+        hx_swap='outerHTML',
+        hx_push_url='true'
+    ) }}
+    <div id="permission-workspace-content">
+        {% if active_view == 'coverage' %}
+            {% include "access/permissions/partials/_coverage.html" %}
+        {% else %}
+            {% include "access/permissions/partials/_registry.html" %}
+        {% endif %}
+    </div>
+</section>
