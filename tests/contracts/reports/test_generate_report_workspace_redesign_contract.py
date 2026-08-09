@@ -11,7 +11,7 @@ def read(path: Path) -> str:
     return path.read_text(encoding='utf-8')
 
 
-def test_generate_report_uses_canonical_hero_and_guided_full_width_builder() -> None:
+def test_generate_report_uses_canonical_hero_and_compact_operator_workspace() -> None:
     source = read(TEMPLATE)
 
     assert 'page_hero.shell_classes()' in source
@@ -21,30 +21,29 @@ def test_generate_report_uses_canonical_hero_and_guided_full_width_builder() -> 
     assert 'Single Cluster Scope' in source
     assert 'Catalog-Driven Contract' in source
     assert 'Queued Artifact Generation' in source
-    assert 'data-generate-report-workspace="guided-builder"' in source
-    assert 'data-report-builder-progress="true"' in source
-    assert 'Report Builder' in source
+    assert 'data-generate-report-workspace="compact-operator-workspace"' in source
+    assert 'Configure Report Request' in source
+    assert 'data-report-builder-progress="true"' not in source
+    assert 'Report Builder' not in source
     assert 'xl:grid-cols-[minmax(0,1fr)_360px]' not in source
     assert 'xl:sticky xl:top-5 xl:self-start' not in source
 
 
-def test_generate_report_uses_visual_family_and_report_contract_selection() -> None:
+def test_report_selection_is_compact_catalog_select_not_card_wall() -> None:
     source = read(TEMPLATE)
 
-    assert 'data-report-family-filter="analytics"' in source
-    assert 'data-report-family-filter="inventory"' in source
-    assert 'data-report-type-card="{{ option.value }}"' in source
-    assert 'data-report-family="{{ option.family }}"' in source
-    assert 'id="report-type-card-grid"' in source
     assert 'id="report-type-select"' in source
-    assert 'class="sr-only"' in source
-    assert 'syncReportFamilyView' in source
-    assert 'syncReportTypeCards' in source
-    assert "reportTypeSelect.value = card.dataset.reportTypeCard;" in source
+    assert "('analytics', 'Kubernetes Analytics')" in source
+    assert "('inventory', 'Kubernetes Inventory')" in source
+    assert 'id="selected-template-summary"' in source
+    assert 'data-report-type-card=' not in source
+    assert 'data-report-family-filter=' not in source
+    assert 'id="report-type-card-grid"' not in source
+    assert 'class="sr-only"' not in source.split('id="report-type-select"', 1)[0][-300:]
     assert 'Report Type Guide' not in source
 
 
-def test_generate_report_is_structured_as_report_scope_artifact_review() -> None:
+def test_generate_report_uses_two_primary_configuration_zones_and_compact_review() -> None:
     source = read(TEMPLATE)
 
     for marker in (
@@ -55,12 +54,15 @@ def test_generate_report_is_structured_as_report_scope_artifact_review() -> None
     ):
         assert marker in source
 
-    assert 'Choose Report' in source
-    assert 'Define Scope' in source
-    assert 'Configure Artifact' in source
+    assert 'Report Contract' in source
+    assert 'Kubernetes Scope' in source
+    assert 'Report Content' in source
     assert 'Review & Queue' in source
     assert 'Create & Queue Report' in source
-    assert 'Scope Boundary' in source
+    assert 'xl:grid-cols-2 xl:divide-x xl:divide-outline-default' in source
+    assert '01 Choose Report' not in source
+    assert '02 Define Scope' not in source
+    assert '03 Configure Artifact' not in source
 
 
 def test_generate_report_removes_duplicate_guide_and_sidebar_content() -> None:
@@ -89,32 +91,33 @@ def test_generate_report_removes_duplicate_guide_and_sidebar_content() -> None:
     assert 'def _get_generation_readiness' not in service
 
 
-def test_inventory_sections_are_contract_locked_without_disabled_checkboxes() -> None:
+def test_inventory_sections_are_contract_locked_and_compact() -> None:
     source = read(TEMPLATE)
 
     assert "payload.selected_report_type.family == 'inventory'" in source
-    assert 'Inventory workbook structure is locked by the report contract.' in source
+    assert 'Workbook structure is locked by the report contract.' in source
     assert '<input type="hidden" name="sections" value="{{ section.value }}">' in source
     assert "input.type = 'hidden';" in source
+    assert 'sm:grid-cols-3' in source
     assert "marker.innerHTML = '<i data-lucide=\"file-spreadsheet\"" in source
     assert "input.disabled = inventoryContractLocked" not in source
     assert "setElementVisibility(selectionActions, !inventoryContractLocked);" in source
 
 
-def test_output_format_is_visual_and_period_options_follow_selected_contract() -> None:
+def test_output_format_uses_compact_native_select_and_contract_filtering() -> None:
     source = read(TEMPLATE)
 
+    assert 'id="output-format-select"' in source
     assert 'option.value in payload.selected_report_type.allowed_formats' in source
     assert '{% if not format_allowed %}disabled hidden{% endif %}' in source
-    assert 'data-output-format-card="{{ option.value }}"' in source
-    assert 'data-output-format-grid="true"' in source
-    assert 'syncOutputFormatCards' in source
-    assert "outputFormatSelect.value = card.dataset.outputFormatCard;" in source
+    assert 'data-output-format-card=' not in source
+    assert 'data-output-format-grid=' not in source
     assert 'option.disabled = !isAllowed;' in source
     assert 'option.hidden = !isAllowed;' in source
     assert "option.value !== 'snapshot'" in source
     assert "option.value === 'snapshot'" in source
-    assert 'Analytics: PDF / CSV · Inventory: XLSX / CSV' in source
+    assert 'Analytics: PDF / CSV' in source
+    assert 'Inventory: XLSX / CSV' in source
 
 
 def test_generate_report_uses_semantic_status_tokens_and_preserves_storage_guard() -> None:
@@ -132,7 +135,7 @@ def test_generate_report_uses_semantic_status_tokens_and_preserves_storage_guard
     assert "if not bool(storage_status.get('write_available', False))" in service
 
 
-def test_review_manifest_keeps_dynamic_contract_ids_for_runtime_sync() -> None:
+def test_compact_review_keeps_dynamic_contract_ids_for_runtime_sync() -> None:
     source = read(TEMPLATE)
 
     for element_id in (
