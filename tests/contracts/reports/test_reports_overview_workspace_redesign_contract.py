@@ -12,7 +12,7 @@ def read(path: Path) -> str:
     return path.read_text()
 
 
-def test_reports_overview_uses_canonical_hero_and_statistics_first_layout() -> None:
+def test_reports_overview_uses_canonical_hero_and_two_block_body() -> None:
     source = read(OVERVIEW / 'index.html')
 
     assert 'data-reports-overview-layout="operational-full-width"' in source
@@ -23,14 +23,17 @@ def test_reports_overview_uses_canonical_hero_and_statistics_first_layout() -> N
     assert 'page_hero.context_card(' in source
     assert 'data-reports-hero-layout="canonical-7-5"' in source
 
-    assert '_reporting_operations.html' in source
-    assert '_reporting_statistics.html' in source
-    assert '_reporting_portfolio.html' in source
-    assert '_reporting_coverage.html' in source
-    assert '_recent_reports.html' not in source
+    assert '_reporting_operational_posture.html' in source
+    assert '_reporting_estate_capability.html' in source
+    for legacy in (
+        '_reporting_operations.html',
+        '_reporting_statistics.html',
+        '_reporting_portfolio.html',
+        '_reporting_coverage.html',
+        '_recent_reports.html',
+    ):
+        assert legacy not in source
 
-    # Overview is posture/statistics-first; artifact browsing stays on Generated Reports.
-    assert 'Recent Generated Reports' not in source
     assert 'min-h-[13rem]' not in source
     assert 'xl:grid-cols-12' not in source
 
@@ -52,95 +55,70 @@ def test_reports_overview_hero_keeps_health_in_canonical_context_card() -> None:
         assert f"'label': '{label}'" in service
 
 
-def test_reporting_operations_are_one_compact_operational_workspace() -> None:
-    source = read(OVERVIEW / 'partials' / '_reporting_operations.html')
+def test_operational_posture_merges_runtime_and_generation_statistics() -> None:
+    source = read(OVERVIEW / 'partials' / '_reporting_operational_posture.html')
     service = read(SERVICE)
+    presentation = read(PRESENTATION)
 
-    assert 'Reporting Operations' in source
-    assert 'payload.reporting_operations' in source
-    assert 'lg:grid-cols-3' in source
     assert '{% import "components/table_label.html" as table_label %}' in source
+    assert 'data-reports-overview-block="operational-posture"' in source
+    assert 'Reporting Operational Posture' in source
+    assert 'Runtime Health' in source
+    assert 'Generation Performance' in source
+    assert 'payload.reporting_operations' in source
+    assert 'payload.artifact_statistics[:2]' in source
     assert 'table_label.status_indicator_label' in source
 
     for label in ('Generation Queue', 'Active Schedules', 'Artifact Storage'):
         assert label in service
-
-
-def test_reporting_statistics_replace_recent_artifact_table() -> None:
-    source = read(OVERVIEW / 'partials' / '_reporting_statistics.html')
-    service = read(SERVICE)
-    presentation = read(PRESENTATION)
-
-    assert 'Reporting Statistics' in source
-    assert 'payload.artifact_statistics' in source
-    assert 'Open Generated Reports' in source
-    assert 'data-reporting-statistics-layout="two-domain-cards"' in source
-    assert 'data-reporting-statistic-domain="generation-performance"' in source
-    assert 'data-reporting-statistic-domain="artifact-reuse"' in source
-    assert 'Generation Performance' in source
-    assert 'Artifact &amp; Reuse' in source
-    assert 'lg:grid-cols-2' in source
-    assert 'xl:grid-cols-4' not in source
-    assert 'payload.artifact_statistics[:2]' in source
-    assert 'payload.artifact_statistics[2:]' in source
-    for label in ('Requests This Month', 'Completion Rate', 'Artifact Footprint', 'Custom Templates'):
+    for label in ('Requests This Month', 'Completion Rate'):
         assert label in service
         assert label in presentation
 
-    assert 'get_artifact_statistics(report_counts)' in service
-    assert 'func.sum(Report.file_size_bytes)' in service
-    assert 'get_recent_reports(' not in service
-    assert 'serialize_recent_report(' not in service
+    assert 'data-report-storage-incident="overview"' in source
+    assert 'S3 Artifact Storage Disconnected' in source
+    assert 'Verify Now' in source
 
 
-def test_reporting_portfolio_surfaces_family_format_and_automation_mix() -> None:
-    source = read(OVERVIEW / 'partials' / '_reporting_portfolio.html')
+def test_estate_capability_merges_artifact_mix_reuse_and_contracts() -> None:
+    source = read(OVERVIEW / 'partials' / '_reporting_estate_capability.html')
     service = read(SERVICE)
+    presentation = read(PRESENTATION)
 
-    assert 'Reporting Portfolio' in source
-    assert 'Artifact Families' in source
-    assert 'Output Formats' in source
-    assert 'Automation & Reuse' in source
+    assert 'data-reports-overview-block="estate-capability"' in source
+    assert 'Reporting Estate &amp; Capability' in source
+    assert 'Artifact Estate' in source
+    assert 'Reuse &amp; Capability' in source
+    assert 'payload.artifact_statistics[2]' in source
     assert 'payload.artifact_portfolio.families' in source
     assert 'payload.artifact_portfolio.formats' in source
     assert 'payload.automation_summary.active_schedules' in source
-
-    assert 'def get_artifact_portfolio()' in service
-    assert '.group_by(Report.report_type)' in service
-    assert '.group_by(Report.output_format)' in service
-    assert 'def get_automation_summary(' in service
-
-
-def test_reporting_capability_is_compact_not_a_second_catalog() -> None:
-    source = read(OVERVIEW / 'partials' / '_reporting_coverage.html')
-    service = read(SERVICE)
-
-    assert 'Reporting Capability' in source
     assert 'payload.reporting_coverage' in source
     assert 'group.contract_count' in source
-    assert 'Formats' in source
-    assert 'group[\'items\']' not in source
-    assert 'for item in group' not in source
+    assert 'Generated Reports' in source
+    assert 'Templates' in source
 
-    for label in ('Analytics Reports', 'Inventory Reports'):
+    for label in ('Artifact Footprint', 'Custom Templates'):
         assert label in service
+        assert label in presentation
+    assert 'def get_artifact_portfolio()' in service
+    assert 'def get_automation_summary(' in service
     assert "group['contract_count'] = len(group['items'])" in service
 
 
-def test_overview_does_not_expose_configuration_or_artifact_registry_details() -> None:
+def test_overview_is_not_an_artifact_registry_or_configuration_page() -> None:
     combined = '\n'.join(
         read(path)
         for path in (
             OVERVIEW / 'index.html',
-            OVERVIEW / 'partials' / '_reporting_operations.html',
-            OVERVIEW / 'partials' / '_reporting_statistics.html',
-            OVERVIEW / 'partials' / '_reporting_portfolio.html',
-            OVERVIEW / 'partials' / '_reporting_coverage.html',
+            OVERVIEW / 'partials' / '_reporting_operational_posture.html',
+            OVERVIEW / 'partials' / '_reporting_estate_capability.html',
         )
     )
 
     for forbidden in (
         'Access Key', 'Secret Key', 'Bucket Prefix', 'Retention Days',
         'Cron Expression', 'Storage Path', 'Recent Generated Reports',
+        'Reporting Statistics', 'Reporting Portfolio', 'Reporting Capability',
     ):
         assert forbidden not in combined

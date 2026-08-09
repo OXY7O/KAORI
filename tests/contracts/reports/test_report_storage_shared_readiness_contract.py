@@ -99,24 +99,23 @@ def test_connectivity_recovery_does_not_clear_a_previous_write_failure() -> None
 
 def test_overview_uses_degraded_mode_instead_of_blocking_the_workspace() -> None:
     overview = read('app/templates/reports/overview/index.html')
-    operations = read('app/templates/reports/overview/partials/_reporting_operations.html')
+    posture = read('app/templates/reports/overview/partials/_reporting_operational_posture.html')
+    estate = read('app/templates/reports/overview/partials/_reporting_estate_capability.html')
     service = read('app/reports/overview/service.py')
 
     assert 'payload.storage_context.degraded' in overview
     assert 'Open Storage' in overview
-    statistics = read('app/templates/reports/overview/partials/_reporting_statistics.html')
-    assert 'Open Generated Reports' in statistics
-    assert '_reporting_statistics.html' in overview
-    assert '_reporting_portfolio.html' in overview
-    assert '_reporting_coverage.html' in overview
+    assert 'Generated Reports' in estate
+    assert '_reporting_operational_posture.html' in overview
+    assert '_reporting_estate_capability.html' in overview
     assert "'degraded': not is_ready" in service
     assert 'format_storage_check_age' in service
     assert 'monitor_interval_minutes' in service
 
-    assert 'data-report-storage-incident="overview"' in operations
-    assert 'S3 Artifact Storage Disconnected' in operations
-    assert 'New artifact generation and S3-backed downloads stay paused' in operations
-    assert 'Automatic check every' in operations
+    assert 'data-report-storage-incident="overview"' in posture
+    assert 'S3 Artifact Storage Disconnected' in posture
+    assert 'New artifact generation and S3-backed access stay paused' in posture
+    assert 'automatic check every' in posture
 
 
 def test_generate_remains_visible_but_is_guarded_before_report_creation() -> None:

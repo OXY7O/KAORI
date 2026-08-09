@@ -15,17 +15,17 @@ def read(path: Path) -> str:
     return path.read_text()
 
 
-def test_overview_statistics_and_portfolio_have_visible_icons() -> None:
-    statistics = read(OVERVIEW / '_reporting_statistics.html')
-    portfolio = read(OVERVIEW / '_reporting_portfolio.html')
+def test_overview_two_large_blocks_keep_visible_operational_icons() -> None:
+    posture = read(OVERVIEW / '_reporting_operational_posture.html')
+    estate = read(OVERVIEW / '_reporting_estate_capability.html')
     service = read(OVERVIEW_SERVICE)
 
-    assert 'data-lucide="{{ item.icon }}"' in statistics
-    assert 'data-lucide="{{ item.icon }}"' in portfolio
+    assert 'data-lucide="{{ item.icon }}"' in posture
+    assert 'data-lucide="{{ item.icon }}"' in estate
     assert "'icon': 'calendar-range'" in service
     assert "'icon': 'chart-no-axes-combined'" in service
-    assert 'Reporting Statistics' in statistics
-    assert 'Reporting Portfolio' in portfolio
+    assert 'Reporting Operational Posture' in posture
+    assert 'Reporting Estate &amp; Capability' in estate
 
 
 def test_report_detail_storage_probe_is_failure_tolerant() -> None:
