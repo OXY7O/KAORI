@@ -67,6 +67,9 @@ def test_operational_posture_merges_runtime_and_generation_statistics() -> None:
     assert 'Generation Performance' in source
     assert 'payload.reporting_operations' in source
     assert 'payload.artifact_statistics[:2]' in source
+    assert 'data-reporting-performance-tip="true"' in source
+    assert 'Performance Tip' in source
+    assert 'Track request volume as reporting demand' in source
     assert 'table_label.status_indicator_label' in source
 
     for label in ('Generation Queue', 'Active Schedules', 'Artifact Storage'):
@@ -91,7 +94,11 @@ def test_estate_capability_merges_artifact_mix_reuse_and_contracts() -> None:
     assert 'Reuse &amp; Capability' in source
     assert 'payload.artifact_statistics[2]' in source
     assert 'payload.artifact_portfolio.families' in source
+    assert 'data-artifact-family-tip' not in source
     assert 'payload.artifact_portfolio.formats' in source
+    assert 'data-output-format-tip="true"' in source
+    assert 'Format Tip' in source
+    assert 'Use PDF for governed operational documents' in source
     assert 'payload.automation_summary.active_schedules' in source
     assert 'payload.reporting_coverage' in source
     assert 'group.contract_count' in source
