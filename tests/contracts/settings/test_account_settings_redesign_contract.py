@@ -111,16 +111,43 @@ def test_credential_workspace_uses_security_posture_then_two_stage_form() -> Non
     assert "lg:grid-cols-3" not in credentials
 
 
-def test_credential_context_uses_semantic_impact_states_and_single_boundary_panel() -> None:
+def test_credential_workspace_uses_balanced_equal_height_columns() -> None:
+    page = read("app/templates/settings/account/partials/_page_content.html")
+    credentials = read("app/templates/settings/account/partials/_change_password.html")
     context = read("app/templates/settings/account/partials/_credential_information.html")
-    assert "Credential Ownership" in context
-    assert "Change Impact" in context
-    assert "Credential Boundary" in context
-    assert "status_indicator_label('Changed', 'maintenance')" in context
-    assert "status_indicator_label('Preserved', 'normal')" in context
-    assert "status_indicator_label('Revoked', 'warning')" in context
-    assert "status_indicator_label('Recorded', 'info')" in context
-    assert "Only Local Database password hashes are owned by KAORI" in context
+
+    assert 'data-credential-workspace-layout="balanced-columns"' in page
+    assert "xl:items-stretch" in page
+    assert "xl:col-span-7 xl:h-full" in page
+    assert "xl:col-span-5 xl:h-full" in page
+    assert 'data-credential-action-panel="true"' in credentials
+    assert "h-full overflow-hidden" in credentials
+    assert 'data-credential-security-panel="single-balanced-box"' in context
+    assert "flex h-full flex-col" in context
+
+
+def test_credential_context_is_one_security_flow_box_with_session_outcomes() -> None:
+    context = read("app/templates/settings/account/partials/_credential_information.html")
+    assert "Credential Security Flow" in context
+    assert "Authoritative Credential Owner" in context
+    assert "Password Replacement Flow" in context
+    assert "Provider Recovery Flow" in context
+    assert 'data-credential-security-flow="true"' in context
+    assert "Verify Current Credential" in context
+    assert "Validate & Replace" in context
+    assert "Rotate Session Generation" in context
+    assert "Record Security Evidence" in context
+    assert "Session Outcome" in context
+    assert "Current Browser" in context
+    assert "Other Active Sessions" in context
+    assert "Remembered Sign-Ins" in context
+    assert "Account Security Evidence" in context
+    assert "Credential Evidence Boundary" in context
+    assert "Passwords values" not in context
+    assert "Password values, LDAP bind secrets" in context
+    assert "<details" not in context
+    assert "Credential Ownership" not in context
+    assert "Change Impact" not in context
 
 
 def test_readme_locks_account_presentation_contract() -> None:

@@ -72,9 +72,12 @@ def test_credential_workspace_explains_session_effect_without_reopening_external
 
     assert 'Other sessions revoked' in change_password
     assert 'This browser stays signed in; other sessions and remembered sign-ins are revoked.' in change_password
-    assert 'Local password hash and session generation' in credential_information
-    assert 'Other authenticated sessions and remembered sign-ins' in credential_information
-    assert 'current browser session remain intact' in credential_information
+    assert 'Rotate Session Generation' in credential_information
+    assert 'other sessions and remembered sign-ins are invalidated' in credential_information
+    assert 'Current Browser' in credential_information
+    assert "status_indicator_label('Preserved', 'normal')" in credential_information
+    assert "status_indicator_label('Revoked', 'warning')" in credential_information
+    assert "status_indicator_label('Cleared', 'maintenance')" in credential_information
     assert 'provider-managed credential recovery' in hero
     assert 'revokes other sessions and remembered sign-ins' in hero
 

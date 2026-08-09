@@ -16,11 +16,12 @@
                 {% include "settings/account/partials/_recent_login_activity.html" %}
             </div>
         {% else %}
-            <div class="grid gap-6 p-5 xl:grid-cols-12 xl:items-start xl:p-6">
-                <main class="min-w-0 xl:col-span-8">
+            <div class="grid gap-6 p-5 xl:grid-cols-12 xl:items-stretch xl:p-6"
+                 data-credential-workspace-layout="balanced-columns">
+                <main class="min-w-0 xl:col-span-7 xl:h-full">
                     {% include "settings/account/partials/_change_password.html" %}
                 </main>
-                <aside class="min-w-0 space-y-5 xl:col-span-4">
+                <aside class="min-w-0 xl:col-span-5 xl:h-full">
                     {% include "settings/account/partials/_credential_information.html" %}
                 </aside>
             </div>
