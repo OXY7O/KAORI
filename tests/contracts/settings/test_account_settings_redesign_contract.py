@@ -42,14 +42,23 @@ def test_profile_workspace_is_full_width_without_right_information_column() -> N
     assert 'include "settings/account/partials/_profile_information.html"' not in page
 
     assert 'data-account-profile-workspace="full-width"' in profile
-    assert "Account Posture" in profile
-    assert "Identity Source" in profile
+    assert "Access Posture" in profile
     assert "Assigned Role" in profile
     assert "Account Lifecycle" in profile
     assert "Administrative Tier" in profile
+    assert "md:grid-cols-3" in profile
+    assert "xl:grid-cols-4" not in profile
+
     assert "Identity Profile" in profile
+    assert 'data-identity-profile-layout="identity-record"' in profile
+    assert "Canonical Account" in profile
+    assert "Identity Source" in profile
     assert "Credential Owner" in profile
     assert "Provisioning Mode" in profile
+    assert "xl:grid-cols-[minmax(0,1.2fr)_minmax(20rem,0.8fr)]" in profile
+    assert "('Display Name', current_user.display_label)" not in profile
+    assert "md:grid-cols-2 xl:grid-cols-3" not in profile
+
     assert "Personal Presentation" in profile
     assert "Open General Settings" in profile
     assert "Last Verified Sign-In" in profile
