@@ -19,12 +19,14 @@ def test_generated_detail_uses_operational_dossier_hierarchy() -> None:
     assert 'data-generated-detail-block="operational-snapshot"' in template
     assert 'data-generated-detail-block="generation-evidence"' in template
     assert 'data-generated-detail-report-actions="true"' in template
-    assert 'data-generated-detail-polish="final-v1"' in template
+    assert 'data-generated-detail-polish="final-v2"' in template
     assert 'data-operational-snapshot-grid="true"' in template
+    assert 'data-operational-snapshot-layout="briefing-v3"' in template
     assert 'data-generated-evidence-columns="true"' in template
+    assert 'data-generated-detail-actions-embedded="true"' in template
 
     assert 'Operational Snapshot' in template
-    assert 'Report Identity' in template
+    assert 'Report Brief' in template
     assert 'Governed Scope' in template
     assert 'Artifact Delivery' in template
     assert 'Generation & Evidence' in template
@@ -66,7 +68,7 @@ def test_generated_detail_visible_labels_follow_title_case_standard() -> None:
         'Delivery Posture',
         'Artifact Status',
         'Operational Snapshot',
-        'Report Identity',
+        'Report Brief',
         'Governed Scope',
         'Artifact Delivery',
         'Generation & Evidence',
@@ -117,6 +119,7 @@ def test_generated_detail_lifecycle_and_actions_remain_single_click_safe() -> No
 
     assert 'xl:grid-cols-[minmax(0,1fr)_380px]' not in template
     assert 'lg:divide-x lg:divide-outline-subtle' not in template
+    assert 'data-snapshot-brief="identity-scope"' in template
     assert "status_indicator_label('Archived', 'warning')" not in template
     assert 'data-generated-detail-primary-action="restore"' in template
     assert 'data-generated-detail-primary-action="download"' in template
