@@ -15,29 +15,28 @@ def read(path: Path) -> str:
 def test_generated_detail_uses_operational_dossier_hierarchy() -> None:
     template = read(DETAIL)
 
-    assert 'data-generated-report-detail="operational-dossier-v4"' in template
-    assert 'data-generated-detail-block="operational-snapshot"' in template
+    assert 'data-generated-report-detail="operational-dossier-v5"' in template
+    assert 'data-generated-detail-block="report-overview"' in template
     assert 'data-generated-detail-block="generation-evidence"' in template
     assert 'data-generated-detail-report-actions="true"' in template
-    assert 'data-generated-detail-polish="final-v2"' in template
-    assert 'data-operational-snapshot-grid="true"' in template
-    assert 'data-operational-snapshot-layout="briefing-v3"' in template
+    assert 'data-generated-detail-polish="professional-v1"' in template
+    assert 'data-report-overview-grid="true"' in template
+    assert 'data-report-overview-layout="balanced-dossier"' in template
     assert 'data-generated-evidence-columns="true"' in template
     assert 'data-generated-detail-actions-embedded="true"' in template
 
-    assert 'Operational Snapshot' in template
-    assert 'Report Brief' in template
-    assert 'Governed Scope' in template
+    assert 'Report Overview' in template
+    assert 'Report Context' in template
+    assert 'Governed Evidence Scope' in template
     assert 'Artifact Delivery' in template
     assert 'Generation & Evidence' in template
     assert 'Latest Generation Attempt' in template
     assert 'Persisted Report Definition' in template
     assert 'Governed Evidence Scope' in template
-    assert 'Report Actions' in template
+    assert 'data-generated-detail-report-actions="true"' in template
 
     for old_label in [
         'Artifact Record',
-        'Report Overview',
         'Generation Timeline',
         'Report Content & Evidence',
         'Lifecycle Actions',
@@ -56,7 +55,7 @@ def test_generated_detail_regeneration_state_keeps_artifact_and_attempt_separate
     assert 'The verified artifact remains available while the latest regeneration attempt is running.' in template
     assert 'The latest attempt failed, but the previously verified artifact is still available for download.' in template
     assert 'Artifact availability is evaluated independently from the latest generation attempt.' in template
-    assert 'Download the verified artifact or queue a regeneration without discarding the current valid artifact.' in template
+    assert 'data-generated-detail-actions-embedded="true"' in template
 
 
 def test_generated_detail_visible_labels_follow_title_case_standard() -> None:
@@ -66,16 +65,14 @@ def test_generated_detail_visible_labels_follow_title_case_standard() -> None:
     required_title_case = [
         'Generated Report',
         'Delivery Posture',
-        'Artifact Status',
-        'Operational Snapshot',
-        'Report Brief',
-        'Governed Scope',
+        'Report Status',
+        'Report Context',
+        'Governed Evidence Scope',
         'Artifact Delivery',
         'Generation & Evidence',
         'Latest Generation Attempt',
         'Persisted Report Definition',
         'Governed Evidence Scope',
-        'Report Actions',
         'Back to Registry',
     ]
     for label in required_title_case:
@@ -110,6 +107,8 @@ def test_generated_detail_lifecycle_and_actions_remain_single_click_safe() -> No
     assert 'data-generation-lifecycle="true"' in template
     assert 'data-generated-detail-latest-attempt-panel="true"' in template
     assert 'data-generated-detail-definition-panel="true"' in template
+    assert 'data-generated-detail-actions-embedded="true"' in template
+    assert 'id="report-actions"' in template
 
     assert 'data-loading-label="Queueing Generation..."' in template
     assert 'data-loading-label="Archiving Report..."' in template
@@ -119,7 +118,8 @@ def test_generated_detail_lifecycle_and_actions_remain_single_click_safe() -> No
 
     assert 'xl:grid-cols-[minmax(0,1fr)_380px]' not in template
     assert 'lg:divide-x lg:divide-outline-subtle' not in template
-    assert 'data-snapshot-brief="identity-scope"' in template
+    assert 'data-report-context="true"' in template
+    assert 'data-artifact-delivery-panel="true"' in template
     assert "status_indicator_label('Archived', 'warning')" not in template
     assert 'data-generated-detail-primary-action="restore"' in template
     assert 'data-generated-detail-primary-action="download"' in template
