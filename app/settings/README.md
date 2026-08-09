@@ -89,3 +89,13 @@ Automatic schedules and manual background-job controls are owned by `app.jobs` u
 ## Access ownership boundary
 
 Roles & Access and Permission Catalog are owned exclusively by `app/access/` at `/access/roles/` and `/access/permissions/`. Settings contains no role/permission routes, templates, forms, redirect shims, or compatibility wrappers. Historical `/settings/roles*` and `/settings/permissions` URLs are intentionally retired; stale bookmarks must use the canonical Access routes.
+
+### Account & Authentication presentation contract
+
+- Keep the shared KAORI Violet hero and use the right-side panel as a compact posture summary: one context header, two metrics, and one boundary note. Do not place long policy paragraphs or duplicate actions in the hero.
+- Account tab navigation follows the same simple tab contract as General Settings; operational counts and provider-management posture belong in the active workspace, not inside tab badges.
+- Account Profile & Access starts with Identity Source, Assigned Role, and Account Lifecycle posture, followed by one read-only identity detail grid and one Last Verified Sign-In panel.
+- Recent Authentication Activity keeps the latest-five summary and canonical KAORI table in the main workspace. Right-side panels explain evidence scope, result interpretation, and audit privacy only.
+- Credential Management presents ownership, password policy, and session effect before the mutation form. Current password is verified first; replacement and confirmation fields are grouped together below it.
+- Use shared semantic labels for lifecycle, provider readiness, authentication results, and credential-impact states. Avoid hand-built status badges.
+- Right-side information boundaries use expandable `details` panels only for secondary evidence. The final privacy/ownership boundary may use one violet information panel without another nested disclosure.

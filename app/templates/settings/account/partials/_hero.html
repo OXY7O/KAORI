@@ -1,30 +1,27 @@
 {% import "components/page_hero.html" as page_hero %}
-{% if active_tab == 'activity' %}
-    {% set section_eyebrow = "Authentication History" %}
-    {% set section_icon = "activity" %}
-    {% set section_summary = "Review recent sign-in, failed sign-in, and sign-out events recorded in the unified Activity Audit Log." %}
-    {% set section_boundary = "Authentication events preserve provider, result, IP address, device context, and failure reason without storing passwords, OAuth secrets, or provider tokens." %}
-{% elif active_tab == 'credentials' %}
-    {% set section_eyebrow = "Credential Ownership" %}
-    {% set section_icon = "key-round" %}
-    {% set section_summary = "Manage the credential owned by KAORI or follow the recovery path of the authoritative external identity provider." %}
-    {% if can_change_password %}
-        {% set section_boundary = identity_context.credential_detail ~ ' A Local Database password change preserves this browser session, revokes other sessions and remembered sign-ins, and leaves role, lifecycle state, Super Admin tier, and identity links unchanged.' %}
-    {% else %}
-        {% set section_boundary = identity_context.credential_detail ~ ' Role, lifecycle state, Super Admin tier, and external identity links remain separate from provider-managed credential recovery.' %}
-    {% endif %}
-{% else %}
-    {% set section_eyebrow = "Identity & Access" %}
-    {% set section_icon = "id-card" %}
-    {% set section_summary = "Review your KAORI profile, authoritative identity source, authorization role, lifecycle state, and most recent verified sign-in." %}
-    {% set section_boundary = "The provider verifies identity while KAORI applies account lifecycle, RBAC authorization, administrative safeguards, and personal presentation settings." %}
-{% endif %}
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
-            {% call page_hero.intro(section_icon, section_eyebrow, 'user-round-cog') %}
+            {% if active_tab == 'activity' %}
+                {% set eyebrow_label = 'Authentication Evidence' %}
+                {% set eyebrow_icon = 'activity' %}
+                {% set leading_icon = 'scroll-text' %}
+                {% set summary = 'Review the latest personal authentication events captured by KAORI without exposing credential material.' %}
+            {% elif active_tab == 'credentials' %}
+                {% set eyebrow_label = 'Credential Security' %}
+                {% set eyebrow_icon = 'key-round' %}
+                {% set leading_icon = 'shield-check' %}
+                {% set summary = 'Manage the credential boundary for this account while preserving KAORI lifecycle, authorization, and audit controls.' %}
+            {% else %}
+                {% set eyebrow_label = 'Identity & Access' %}
+                {% set eyebrow_icon = 'id-card' %}
+                {% set leading_icon = 'user-round-cog' %}
+                {% set summary = 'Review your account identity, authoritative authentication source, authorization posture, and most recent verified sign-in.' %}
+            {% endif %}
+
+            {% call page_hero.intro(eyebrow_icon, eyebrow_label, leading_icon) %}
                 <h1 class="{{ page_hero.title_classes() }}">Account & Authentication</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">{{ section_summary }}</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">{{ summary }}</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label(identity_context.icon, identity_context.provider_name) }}
                     {{ page_hero.meta_label('shield', user_role) }}
@@ -32,28 +29,35 @@
                 </div>
             {% endcall %}
         </div>
+
         <aside class="{{ page_hero.aside_classes() }}">
             <div class="{{ page_hero.context_panel_classes() }}">
-                <div>
-                    <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Current Section Boundary</p>
-                    <p class="mt-2 text-sm font-semibold leading-6 text-brand-foreground">{{ section_boundary }}</p>
-                </div>
-                <div class="{{ page_hero.metadata_row_classes() }}">
-                    <span class="inline-flex h-9 items-center gap-2 rounded-lg border border-brand-outline bg-brand-surface-strong px-3 text-xs font-semibold text-brand-foreground">
-                        <i data-lucide="{{ section_icon }}" class="h-3.5 w-3.5"></i>
-                        {% if active_tab == 'activity' %}
-                            Authentication Activity
-                        {% elif active_tab == 'credentials' %}
-                            Credential Management
-                        {% else %}
-                            Profile & Access
-                        {% endif %}
-                    </span>
-                    <span class="inline-flex h-9 items-center gap-2 rounded-lg border border-brand-outline bg-brand-surface-strong px-3 text-xs font-semibold text-brand-foreground">
-                        <i data-lucide="link-2" class="h-3.5 w-3.5"></i>
-                        {{ identity_context.projection_label }}
-                    </span>
-                </div>
+                {% if active_tab == 'activity' %}
+                    {{ page_hero.context_header('Authentication Evidence', 'Latest Five Events', 'activity') }}
+                    <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                        {{ page_hero.context_metric('circle-check', 'Successful', activity_summary.success, 'Verified sign-ins') }}
+                        {{ page_hero.context_metric('circle-x', 'Failed', activity_summary.failed, 'Rejected attempts') }}
+                    </div>
+                    {{ page_hero.context_info('shield-check', 'This tab is the personal authentication view; system-wide administrative evidence remains in Activity Audit.') }}
+                {% elif active_tab == 'credentials' %}
+                    {{ page_hero.context_header('Credential Posture', identity_context.credential_owner, 'key-round') }}
+                    <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                        {{ page_hero.context_metric(identity_context.icon, 'Ownership', 'KAORI Local' if can_change_password else 'Provider Managed', identity_context.type_label, 'text-sm font-semibold leading-6') }}
+                        {{ page_hero.context_metric('shield-off' if can_change_password else 'external-link', 'Session Effect', 'Revoke Others' if can_change_password else 'External Recovery', 'Current browser preserved for local change' if can_change_password else 'Credential reset occurs outside KAORI', 'text-sm font-semibold leading-6') }}
+                    </div>
+                    {% if can_change_password %}
+                    {{ page_hero.context_info('lock-keyhole', 'A Local Database password change revokes other sessions and remembered sign-ins while preserving the current browser; credential values remain excluded from audit metadata.') }}
+                    {% else %}
+                    {{ page_hero.context_info('lock-keyhole', 'External recovery follows provider-managed credential recovery outside KAORI; role, lifecycle, and authorization controls remain governed locally.') }}
+                    {% endif %}
+                {% else %}
+                    {{ page_hero.context_header('Account Posture', current_user.display_label, 'badge-check') }}
+                    <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                        {{ page_hero.context_metric(identity_context.icon, 'Identity Source', identity_context.type_label, identity_context.provider_name, 'text-sm font-semibold leading-6') }}
+                        {{ page_hero.context_metric('shield', 'Access Role', user_role, 'KAORI authorization role', 'text-sm font-semibold leading-6') }}
+                    </div>
+                    {{ page_hero.context_info('workflow', 'The provider verifies identity; KAORI applies account lifecycle, RBAC authorization, and administrative safeguards.') }}
+                {% endif %}
             </div>
         </aside>
     </div>

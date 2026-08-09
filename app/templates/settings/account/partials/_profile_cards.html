@@ -1,132 +1,115 @@
-<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <div class="flex items-center gap-3">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+{% import "components/table_label.html" as table_label %}
+<section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card">
+    <header class="flex flex-col gap-4 border-b border-outline-default px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+        <div class="flex items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
                 <i data-lucide="id-card" class="h-5 w-5"></i>
-            </div>
+            </span>
             <div>
-                <h2 class="text-base font-semibold text-content-primary">Account Profile & Access</h2>
-                <p class="mt-0.5 text-xs leading-5 text-content-muted">Your KAORI profile, authorization state, and most recent verified sign-in.</p>
+                <h2 class="text-base font-bold text-content-primary">Account Profile & Access</h2>
+                <p class="mt-1 text-sm leading-6 text-content-muted">Your read-only identity profile, KAORI authorization posture, and latest verified authentication context.</p>
             </div>
         </div>
-        <span class="inline-flex h-8 w-fit items-center gap-1.5 rounded-md border px-2.5 text-xs font-semibold {{ 'border-status-normal-border bg-status-normal-soft text-status-normal-text' if current_user.account_is_active else 'border-status-warning-border bg-status-warning-soft text-status-warning-text' }}">
-            <i data-lucide="{{ 'circle-check' if current_user.account_is_active else 'circle-pause' }}"
-               class="h-3.5 w-3.5"></i>
-            {{ 'Active Account' if current_user.account_is_active else 'Inactive Account' }}
-        </span>
+        {{ table_label.metadata_label('Read-Only Account View', 'scan-eye') }}
     </header>
-    <div class="space-y-4 p-5">
-        <div class="grid gap-4 lg:grid-cols-2">
-            <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
-                <div class="flex items-start gap-3">
-                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                        <i data-lucide="user-round" class="h-4 w-4"></i>
+
+    <div class="space-y-6 p-5">
+        <section aria-labelledby="account-posture-title">
+            <div class="mb-3">
+                <h3 id="account-posture-title" class="text-sm font-bold text-content-primary">Account Posture</h3>
+                <p class="mt-1 text-xs leading-5 text-content-muted">The three controls that determine how this account is identified and admitted to KAORI.</p>
+            </div>
+            <div class="grid gap-3 md:grid-cols-3">
+                <article class="rounded-xl border border-outline-default bg-surface-subtle p-4">
+                    <div class="flex items-center gap-2 text-xs font-semibold text-content-muted">
+                        <i data-lucide="{{ identity_context.icon }}" class="h-4 w-4 text-kaori-primary"></i>
+                        Identity Source
                     </div>
-                    <div>
-                        <h3 class="text-sm font-semibold text-content-primary">Identity Profile</h3>
-                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Display information used across KAORI and audit records.</p>
+                    <p class="mt-2 text-sm font-bold text-content-primary">{{ identity_context.type_label }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ identity_context.provider_name }}</p>
+                </article>
+                <article class="rounded-xl border border-outline-default bg-surface-subtle p-4">
+                    <div class="flex items-center gap-2 text-xs font-semibold text-content-muted">
+                        <i data-lucide="shield" class="h-4 w-4 text-kaori-primary"></i>
+                        Assigned Role
                     </div>
+                    <p class="mt-2 text-sm font-bold text-content-primary">{{ user_role }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Authorization applied after identity verification.</p>
+                </article>
+                <article class="rounded-xl border border-outline-default bg-surface-subtle p-4">
+                    <div class="flex items-center gap-2 text-xs font-semibold text-content-muted">
+                        <i data-lucide="power" class="h-4 w-4 text-kaori-primary"></i>
+                        Account Lifecycle
+                    </div>
+                    <div class="mt-2">
+                        {{ table_label.status_indicator_label('Active Account', 'normal') if current_user.account_is_active else table_label.status_indicator_label('Inactive Account', 'warning') }}
+                    </div>
+                    <p class="mt-2 text-xs leading-5 text-content-muted">Global access gate for every authentication provider.</p>
+                </article>
+            </div>
+        </section>
+
+        <section aria-labelledby="identity-profile-title">
+            <div class="mb-3 flex items-center justify-between gap-3">
+                <div>
+                    <h3 id="identity-profile-title" class="text-sm font-bold text-content-primary">Identity Profile</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Account attributes presented throughout KAORI and administrative evidence.</p>
                 </div>
-                <dl class="mt-4 divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
-                    <div class="grid gap-1 px-4 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center">
-                        <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Display name</dt>
-                        <dd class="break-words text-sm font-semibold text-content-primary">
-                            {{ current_user.display_label }}
-                        </dd>
+                {% if current_user.is_super_admin %}
+                    {{ table_label.special_label('Super Admin', 'maintenance', 'crown') }}
+                {% else %}
+                    {{ table_label.metadata_label('Standard Account', 'user-round') }}
+                {% endif %}
+            </div>
+            <dl class="grid gap-px overflow-hidden rounded-xl border border-outline-default bg-outline-subtle md:grid-cols-2">
+                {% for label, value in [
+                    ('Display Name', current_user.display_label),
+                    ('Username', current_user.username),
+                    ('Email', current_user.email|default('Not configured', true)),
+                    ('Provisioning', identity_context.projection_label),
+                    ('Time Zone', current_timezone ~ ' · ' ~ ('Automatic browser detection' if current_timezone_mode == 'automatic' else 'Manual selection')),
+                    ('Regional Format', current_locale ~ ' · ' ~ ('24-hour clock' if current_time_format == '24h' else '12-hour clock'))
+                    ] %}
+                    <div class="bg-surface-subtle px-4 py-3.5">
+                        <dt class="text-xs font-semibold text-content-muted">{{ label }}</dt>
+                        <dd class="mt-1 break-words text-sm font-semibold text-content-primary">{{ value }}</dd>
                     </div>
-                    <div class="grid gap-1 px-4 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center">
-                        <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Username</dt>
-                        <dd class="break-words text-sm font-semibold text-content-primary">
-                            {{ current_user.username }}
-                        </dd>
-                    </div>
-                    <div class="grid gap-1 px-4 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center">
-                        <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Email</dt>
-                        <dd class="break-words text-sm font-semibold text-content-primary">
-                            {{ current_user.email|default('Not configured', true) }}
-                        </dd>
-                    </div>
-                    <div class="grid gap-1 px-4 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center">
-                        <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Time zone</dt>
-                        <dd class="text-sm font-semibold text-content-primary">
-                            {{ current_timezone }} · {{ 'Automatic browser detection' if current_timezone_mode == 'automatic' else 'Manual selection' }}
-                        </dd>
-                    </div>
-                    <div class="grid gap-1 px-4 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center">
-                        <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Regional format</dt>
-                        <dd class="text-sm font-semibold text-content-primary">
-                            {{ current_locale }} · {{ '24-hour clock' if current_time_format == '24h' else '12-hour clock' }}
-                        </dd>
-                    </div>
-                </dl>
-            </article>
-            <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
-                <div class="flex items-start gap-3">
-                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                        <i data-lucide="shield-check" class="h-4 w-4"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-sm font-semibold text-content-primary">Authorization & Lifecycle</h3>
-                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Access controls applied after the provider verifies your identity.</p>
-                    </div>
-                </div>
-                <dl class="mt-4 divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
-                    <div class="grid gap-1 px-4 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center">
-                        <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Assigned role</dt>
-                        <dd class="text-sm font-semibold text-content-primary">
-                            {{ user_role }}
-                        </dd>
-                    </div>
-                    <div class="grid gap-1 px-4 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center">
-                        <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Admin tier</dt>
-                        <dd class="text-sm font-semibold text-content-primary">
-                            {{ 'Super Admin' if current_user.is_super_admin else 'Standard Account' }}
-                        </dd>
-                    </div>
-                    <div class="grid gap-1 px-4 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center">
-                        <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Provider</dt>
-                        <dd class="text-sm font-semibold text-content-primary">
-                            {{ identity_context.provider_name }}
-                        </dd>
-                    </div>
-                    <div class="grid gap-1 px-4 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center">
-                        <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Provisioning</dt>
-                        <dd class="text-sm font-semibold text-content-primary">
-                            {{ identity_context.projection_label }}
-                        </dd>
-                    </div>
-                </dl>
-            </article>
-        </div>
-        <article class="rounded-lg border border-brand-outline bg-kaori-soft p-4">
+                {% endfor %}
+            </dl>
+        </section>
+
+        <section class="rounded-xl border border-kaori-primary/25 bg-kaori-soft/60 p-4" aria-labelledby="last-verified-signin-title">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div class="flex items-start gap-3">
-                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary">
-                        <i data-lucide="log-in" class="h-5 w-5"></i>
-                    </div>
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
+                        <i data-lucide="log-in" class="h-4 w-4"></i>
+                    </span>
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-widest text-kaori-primary">Last successful sign-in</p>
-                        <p class="mt-1 text-sm font-semibold text-kaori-strong">
+                        <h3 id="last-verified-signin-title" class="text-sm font-bold text-content-primary">Last Verified Sign-In</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Updated only after a successful authentication event.</p>
+                    </div>
+                </div>
+                <div class="grid gap-3 sm:grid-cols-3 lg:min-w-[28rem]">
+                    <div>
+                        <p class="text-xs font-semibold text-content-muted">Time</p>
+                        <p class="mt-1 text-sm font-bold text-kaori-primary">
                             {% if current_user.last_login_at %}
                                 {{ current_user.last_login_at|user_datetime(include_seconds=true) }}
                             {% else %}
-                                No successful sign-in has been recorded yet.
+                                Not recorded
                             {% endif %}
                         </p>
-                        <p class="mt-1 text-xs leading-5 text-kaori-primary">Updated only after a successful authentication event.</p>
                     </div>
-                </div>
-                <div class="grid gap-2 sm:grid-cols-2 lg:min-w-[20rem]">
-                    <div class="rounded-lg border border-brand-outline bg-surface-card px-3 py-2.5">
-                        <p class="text-xs font-semibold uppercase tracking-widest text-content-muted">Source</p>
-                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ last_auth_label }}</p>
+                    <div>
+                        <p class="text-xs font-semibold text-content-muted">Provider</p>
+                        <p class="mt-1 text-sm font-bold text-content-primary">{{ last_auth_label }}</p>
                     </div>
-                    <div class="rounded-lg border border-brand-outline bg-surface-card px-3 py-2.5">
-                        <p class="text-xs font-semibold uppercase tracking-widest text-content-muted">IP address</p>
-                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ current_user.last_login_ip|default('Unavailable', true) }}</p>
+                    <div>
+                        <p class="text-xs font-semibold text-content-muted">IP Address</p>
+                        <p class="mt-1 break-all text-sm font-bold text-content-primary">{{ current_user.last_login_ip|default('Not recorded', true) }}</p>
                     </div>
                 </div>
             </div>
-        </article>
+        </section>
     </div>
 </section>

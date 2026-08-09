@@ -1,102 +1,89 @@
-<details class="group overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 transition hover:bg-kaori-soft/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
-        <div class="flex min-w-0 items-center gap-3">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                <i data-lucide="chart-no-axes-column-increasing" class="h-5 w-5"></i>
-            </div>
-            <div class="min-w-0">
-                <h2 class="text-base font-semibold text-content-primary">Recent Activity Snapshot</h2>
-                <p class="mt-0.5 text-xs leading-5 text-content-muted">Summary of the latest five authentication events for this account.</p>
-            </div>
-        </div>
-        <span class="flex shrink-0 items-center gap-2 text-xs font-semibold text-kaori-primary">
-            <span class="group-open:hidden">Details</span>
-            <span class="hidden group-open:inline">Collapse</span>
-            <i data-lucide="chevron-down"
-               class="h-4 w-4 transition-transform group-open:rotate-180"></i>
-        </span>
-    </summary>
-    <div class="grid gap-3 border-t border-outline-subtle p-5 sm:grid-cols-2 xl:grid-cols-1">
-        <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
-            <p class="text-xs font-semibold uppercase tracking-widest text-content-muted">Successful sign-ins</p>
-            <p class="mt-2 text-2xl font-semibold text-content-primary">{{ activity_summary.success }}</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Identity verified and KAORI access granted.</p>
-        </article>
-        <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
-            <p class="text-xs font-semibold uppercase tracking-widest text-content-muted">Failed sign-ins</p>
-            <p class="mt-2 text-2xl font-semibold text-content-primary">{{ activity_summary.failed }}</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Rejected authentication attempts recorded with a reason.</p>
-        </article>
-        <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
-            <p class="text-xs font-semibold uppercase tracking-widest text-content-muted">Sign-outs</p>
-            <p class="mt-2 text-2xl font-semibold text-content-primary">{{ activity_summary.sign_out }}</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">User sessions explicitly closed through KAORI.</p>
-        </article>
-    </div>
-</details>
-<details class="group overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 transition hover:bg-kaori-soft/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
-        <div class="flex min-w-0 items-center gap-3">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                <i data-lucide="scan-search" class="h-5 w-5"></i>
-            </div>
-            <div class="min-w-0">
-                <h2 class="text-base font-semibold text-content-primary">Recorded Context</h2>
-                <p class="mt-0.5 text-xs leading-5 text-content-muted">Operational evidence retained for authentication review.</p>
-            </div>
-        </div>
-        <span class="flex shrink-0 items-center gap-2 text-xs font-semibold text-kaori-primary">
-            <span class="group-open:hidden">Details</span>
-            <span class="hidden group-open:inline">Collapse</span>
-            <i data-lucide="chevron-down"
-               class="h-4 w-4 transition-transform group-open:rotate-180"></i>
-        </span>
-    </summary>
-    <div class="space-y-3 border-t border-outline-subtle p-5">
-        {% for item in [
-            ('fingerprint', 'Identity & provider', 'Username, actor, authentication provider, and result.'),
-            ('network', 'Connection context', 'IP address, browser, operating system, device type, and raw user-agent.'),
-            ('message-square-warning', 'Failure context', 'Normalized failure reason for rejected authentication attempts.'),
-            ('clock-3', 'Event time', 'Canonical audit timestamp rendered with this user\'s General Settings preference.')
-            ] %}
-            <article class="flex gap-3 rounded-lg border border-outline-subtle bg-surface-elevated p-4">
-                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary">
-                    <i data-lucide="{{ item[0] }}" class="h-4 w-4"></i>
+<div class="space-y-4" data-authentication-evidence-boundaries="true">
+    <details class="group overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 transition hover:bg-kaori-soft/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="scan-search" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-base font-bold text-content-primary">Recorded Evidence</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">Authentication context retained for personal review and administrative evidence.</p>
                 </div>
-                <div>
-                    <h3 class="text-sm font-semibold text-content-primary">{{ item[1] }}</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ item[2] }}</p>
+            </div>
+            <span class="inline-flex shrink-0 items-center gap-2 rounded-lg border border-outline-default bg-surface-subtle px-3 py-2 text-xs font-semibold text-kaori-primary">
+                <span class="group-open:hidden">Details</span>
+                <span class="hidden group-open:inline">Collapse</span>
+                <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
+            </span>
+        </summary>
+        <div class="border-t border-outline-default px-5 pb-5 pt-4">
+            <dl class="divide-y divide-outline-subtle rounded-xl border border-outline-default bg-surface-subtle px-4">
+                {% for title, text in [
+                    ('Identity & Provider', 'Target identity, authenticated actor when available, provider, action, and result.'),
+                    ('Connection Context', 'IP address, browser, operating system, device type, and user-agent evidence.'),
+                    ('Failure Context', 'Normalized failure reason for rejected authentication attempts.'),
+                    ('Event Time', 'Canonical audit timestamp rendered with the current General Settings preference.')
+                    ] %}
+                    <div class="py-3.5">
+                        <dt class="text-xs font-semibold text-content-primary">{{ title }}</dt>
+                        <dd class="mt-1 text-xs leading-5 text-content-muted">{{ text }}</dd>
+                    </div>
+                {% endfor %}
+            </dl>
+        </div>
+    </details>
+
+    <details class="group overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 transition hover:bg-kaori-soft/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="badge-check" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-base font-bold text-content-primary">Result Interpretation</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">How to read the result state in this personal authentication view.</p>
                 </div>
-            </article>
-        {% endfor %}
-    </div>
-</details>
-<details class="group overflow-hidden rounded-xl border border-brand-outline bg-kaori-soft shadow-sm">
-    <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 transition hover:bg-kaori-soft/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-kaori-primary/30 [&::-webkit-details-marker]:hidden">
-        <div class="flex min-w-0 items-center gap-3">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary">
+            </div>
+            <span class="inline-flex shrink-0 items-center gap-2 rounded-lg border border-outline-default bg-surface-subtle px-3 py-2 text-xs font-semibold text-kaori-primary">
+                <span class="group-open:hidden">Details</span>
+                <span class="hidden group-open:inline">Collapse</span>
+                <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
+            </span>
+        </summary>
+        <div class="border-t border-outline-default px-5 pb-5 pt-4">
+            <dl class="divide-y divide-outline-subtle rounded-xl border border-outline-default bg-surface-subtle px-4">
+                <div class="py-3.5">
+                    <dt class="text-xs font-semibold text-content-primary">Success</dt>
+                    <dd class="mt-1 text-xs leading-5 text-content-muted">Identity verification and KAORI session admission succeeded.</dd>
+                </div>
+                <div class="py-3.5">
+                    <dt class="text-xs font-semibold text-content-primary">Failed</dt>
+                    <dd class="mt-1 text-xs leading-5 text-content-muted">Authentication or session admission was rejected; the normalized reason remains visible without exposing secrets.</dd>
+                </div>
+                <div class="py-3.5">
+                    <dt class="text-xs font-semibold text-content-primary">Sign Out</dt>
+                    <dd class="mt-1 text-xs leading-5 text-content-muted">The authenticated session was explicitly terminated through KAORI.</dd>
+                </div>
+            </dl>
+        </div>
+    </details>
+
+    <section class="rounded-2xl border border-kaori-primary/20 bg-kaori-soft/60 p-5 shadow-sm" aria-labelledby="audit-privacy-boundary-title">
+        <div class="flex items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-card text-kaori-primary shadow-sm">
                 <i data-lucide="shield-check" class="h-5 w-5"></i>
-            </div>
-            <div class="min-w-0">
-                <h2 class="text-sm font-semibold text-kaori-strong">Audit Privacy Boundary</h2>
-                <p class="mt-0.5 text-xs leading-5 text-kaori-primary">Secrets and authentication credentials remain excluded from audit metadata.</p>
+            </span>
+            <div class="min-w-0 flex-1">
+                <h2 id="audit-privacy-boundary-title" class="text-sm font-bold text-content-primary">Audit Privacy Boundary</h2>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Passwords, LDAP bind secrets, OAuth client secrets, authorization codes, and provider tokens are never stored in authentication audit metadata.</p>
+                {% if current_user.has_permission('settings.view_operational_activity') %}
+                    <a href="{{ url_for('notifications.activity_log', category='access', search=current_user.username) }}"
+                       class="mt-4 inline-flex h-9 items-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                        <i data-lucide="external-link" class="h-3.5 w-3.5"></i>
+                        Open Activity Audit
+                    </a>
+                {% endif %}
             </div>
         </div>
-        <span class="flex shrink-0 items-center gap-2 text-xs font-semibold text-kaori-primary">
-            <span class="group-open:hidden">Details</span>
-            <span class="hidden group-open:inline">Collapse</span>
-            <i data-lucide="chevron-down"
-               class="h-4 w-4 transition-transform group-open:rotate-180"></i>
-        </span>
-    </summary>
-    <div class="border-t border-brand-outline px-5 py-4">
-        <p class="text-xs leading-5 text-kaori-primary">Passwords, LDAP bind secrets, OAuth client secrets, authorization codes, and provider tokens are never stored in authentication audit metadata.</p>
-        {% if current_user.has_permission('settings.view_operational_activity') %}
-            <a href="{{ url_for('notifications.activity_log', category='access', search=current_user.username) }}"
-               class="mt-3 inline-flex h-9 items-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft">
-                <i data-lucide="external-link" class="h-3.5 w-3.5"></i>
-                Open Full Activity Audit
-            </a>
-        {% endif %}
-    </div>
-</details>
+    </section>
+</div>
