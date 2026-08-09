@@ -24,9 +24,20 @@
 }
 
 .kaori-login-brand__acronym {
-    max-width: 25rem;
-    letter-spacing: 0.075em;
+    max-width: 100%;
+    overflow: visible;
+    font-size: 8px;
+    letter-spacing: 0.045em;
     line-height: 1.35;
+    white-space: nowrap;
+}
+
+.kaori-login-brand__eyebrow {
+    letter-spacing: 0.12em;
+}
+
+.kaori-login-brand__clarity {
+    color: #A78BFA;
 }
 
 .kaori-operations-fabric {
@@ -95,6 +106,14 @@
 
 .kaori-login-submit:hover {
     background-image: linear-gradient(90deg, #5B21B6 0%, #6D28D9 54%, #7C3AED 100%);
+}
+
+
+@media (min-width: 1024px) and (max-width: 1120px) {
+    .kaori-login-brand__acronym {
+        font-size: 7.5px;
+        letter-spacing: 0.025em;
+    }
 }
 
 @media (min-width: 1024px) {

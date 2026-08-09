@@ -271,9 +271,18 @@ def _serialize_notification(
     created_at = _normalize_created_at(notification.created_at)
     default_user_label = _user_label(user, notification.user_id)
     actor_display_name = str(metadata.get('actor_display_name') or '').strip()
-    user_label = actor_display_name or default_user_label
     actor_email = str(metadata.get('actor_email') or '').strip() or None
     actor_role = str(metadata.get('actor_role') or '').strip() or None
+    unauthenticated_attempt = (
+        notification.event_type == 'authentication'
+        and str(metadata.get('result') or '').strip().lower() == 'failed'
+    )
+    if unauthenticated_attempt:
+        user_label = 'Unauthenticated Request'
+        actor_email = None
+        actor_role = 'No Authenticated Role'
+    else:
+        user_label = actor_display_name or default_user_label
     auth_source_override = (
         str(metadata.get('authentication_provider') or metadata.get('auth_source') or '').strip() or None
     )
@@ -294,9 +303,17 @@ def _serialize_notification(
         'id': notification.id,
         'user_id': notification.user_id,
         'user_label': user_label,
-        'user_email': actor_email if actor_email is not None else (user.email if user is not None else None),
+        'user_email': (
+            None
+            if unauthenticated_attempt
+            else actor_email if actor_email is not None else (user.email if user is not None else None)
+        ),
         'user_initials': _actor_initials(user_label),
-        'user_role': actor_role or (user.role_display_name if user is not None else 'Unknown role'),
+        'user_role': (
+            'No Authenticated Role'
+            if unauthenticated_attempt
+            else actor_role or (user.role_display_name if user is not None else 'Unknown role')
+        ),
         'user_auth_source': _auth_source_label(
             auth_source_override
             if auth_source_override is not None

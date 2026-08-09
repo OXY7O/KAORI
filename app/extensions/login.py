@@ -4,6 +4,7 @@ from flask import redirect, request, session, url_for
 from flask_login import LoginManager
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.auth.admission import session_admission_reason
 from app.auth.readiness import check_authentication_database_readiness
 from app.common.flashes import flash_once
 from app.models.user import User
@@ -24,17 +25,28 @@ def load_user(user_id: str):
     handled once by the login route or unauthorized handler.
     """
 
+    def invalidate_session() -> None:
+        session.clear()
+        # Clear a persistent remember cookie as well. Otherwise a revoked user
+        # can be reloaded from the same cookie on the next request.
+        session['_remember'] = 'clear'
+
     try:
         user = User.query.get(int(user_id))
-        if user is not None and not user.is_active:
-            session.clear()
+        if user is None:
+            invalidate_session()
+            return None
+
+        source = str(session.get('auth_source') or user.last_auth_source or user.auth_source or '')
+        if session_admission_reason(user, source=source) is not None:
+            invalidate_session()
             return None
         return user
     except (TypeError, ValueError):
-        session.clear()
+        invalidate_session()
         return None
     except SQLAlchemyError:
-        session.clear()
+        invalidate_session()
         return None
 
 

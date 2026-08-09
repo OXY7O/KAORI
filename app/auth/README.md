@@ -41,6 +41,7 @@ app/users forms -> app/users/provider_forms.py -> Auth configuration DTO
 | File | Responsibility |
 | --- | --- |
 | `results.py` | Provider-neutral `AuthResult`, reason codes, and safe messages. |
+| `admission.py` | Final account/source/role admission gate shared by new logins and existing sessions. |
 | `services.py` | Credential-flow orchestration and local-authority fallback rules. |
 | `routes.py` | HTTP boundary for login, SSO start/callback, logout, rate limits, and response handling. |
 | `session.py` | Session rotation, Flask-Login establishment, remember-me policy, and auth-owned cleanup. |
@@ -70,9 +71,11 @@ app/users forms -> app/users/provider_forms.py -> Auth configuration DTO
 3. The Local Database provider runs first and remains authoritative when a local user exists.
 4. Only an unknown local identity may fall through to LDAP.
 5. LDAP resolves all matching enabled identity links and performs directory binds through `LdapDirectoryClient`.
-6. Invalid credentials, inactive users, database outages, and provider outages return normalized `AuthResult` values.
-7. Login metadata is committed before session establishment.
-8. A successful Activity Audit event is written only after the session has been established.
+6. Invalid credentials, inactive users, provider outages, source mismatches, and inactive/missing roles return normalized `AuthResult` values.
+7. `admission.enforce_login_admission()` is the single final gate before session establishment; non-super-admin users require an active role and the verified provider must match the account owner.
+8. Credential failures expose one generic public rejection message except a platform-wide database outage; detailed reason codes remain audit-only.
+9. Login metadata is committed before session establishment.
+10. A successful Activity Audit event is written only after the session has been established.
 
 This prevents a local username collision from silently authenticating against LDAP and prevents a failed metadata commit from being recorded as a completed login.
 
@@ -84,7 +87,8 @@ This prevents a local username collision from silently authenticating against LD
 4. The callback validates provider identity, state, and the configured `AUTH_SSO_FLOW_TTL_SECONDS` window.
 5. The registered strategy exchanges and validates the authorization code.
 6. `sso.resolve_sso_identity()` resolves a pre-provisioned link or applies controlled JIT admission.
-7. Account state and database failures are normalized before session establishment.
+7. Account state, provider ownership, and role admission are normalized before session establishment.
+8. A validated internal `next` target is carried through the signed SSO flow and revalidated before redirect; external and protocol-relative targets are rejected.
 
 ## Security Invariants
 
@@ -96,9 +100,16 @@ This prevents a local username collision from silently authenticating against LD
 - LDAP transport mode and URI scheme must agree; plaintext LDAP remains disabled unless `AUTH_LDAP_ALLOW_PLAINTEXT=true` is explicitly enabled for a controlled development environment.
 - Google OIDC requires a nonce at authorization and callback validation.
 - SSO state is stored as a SHA-256 fingerprint rather than raw state.
-- Successful login rotates the session before authentication state is retained.
-- Logout is POST-only and CSRF-protected.
+- Successful login clears prior session state before authentication state is retained.
+- Login and SSO post-authentication redirects accept only same-origin absolute-path targets; schemes, authorities, protocol-relative URLs, backslashes, and control characters are rejected.
+- Non-super-admin sessions require an active role, and provider ownership is revalidated both at login and by the Flask-Login user loader on later requests.
+- The `super_admin` break-glass authority is valid only through the Local Database provider.
+- Logout is POST-only and CSRF-protected. The Flask-Login remember-cookie revocation marker is preserved during session cleanup so logout cannot silently recreate the session.
 - Persistent login remains disabled for super administrators unless `AUTH_ALLOW_SUPER_ADMIN_REMEMBER_ME=true` is explicitly configured.
+- Normal remember-me persistence defaults to 7 days and is bounded to 1-30 days by `AUTH_REMEMBER_ME_DAYS`.
+- Authentication rate-limit rejections are persisted as audit-only `rate_limited` events.
+- Authentication Audit schema `authentication.v2` separates a resolved target account from an authenticated actor; failed attempts never claim the target user's email, display name, or role as actor identity.
+- Authentication request evidence stores `request.path`, never callback query strings, so OAuth authorization codes are excluded from the audit record.
 - Production proxy trust remains centralized in `ProxyFix`; authentication reads `request.remote_addr` only.
 
 ## Readiness Contract
@@ -123,6 +134,8 @@ pytest -q tests/auth -m functional
 pytest -q tests/contracts/auth -m contract
 pytest -q tests/auth -m functional --cov=app.auth --cov=app.users.identity --cov-report=term-missing
 ```
+
+The security regression contracts specifically cover session admission, safe post-login redirects, remember-cookie revocation, bounded remember-me duration, rate-limit audit evidence, and `authentication.v2` actor/target semantics.
 
 The functional gate covers provider family/type mapping, credential orchestration, Database behavior, LDAP transport and bind semantics, browser SSO strategy selection and token projection, SSO identity resolution, provider configuration projection, session policy, readiness, and login transaction boundaries. Contract tests are guardrails and are not counted as evidence that a function works.
 

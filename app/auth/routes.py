@@ -5,6 +5,7 @@ from flask import Blueprint, current_app, redirect, render_template, request, se
 from flask_login import current_user, login_required, logout_user
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.auth.admission import enforce_login_admission
 from app.auth.audit import record_authentication_activity
 from app.auth.forms import LoginForm
 from app.auth.providers.browser import (
@@ -16,14 +17,19 @@ from app.auth.providers.browser import (
 )
 from app.auth.providers.registry import get_browser_sso_provider
 from app.auth.readiness import check_authentication_database_readiness
-from app.auth.results import AuthResult
+from app.auth.results import ACCESS_NOT_PERMITTED_MESSAGE, AuthResult
 from app.auth.services import (
     DATABASE_UNAVAILABLE_MESSAGE,
-    INVALID_LOGIN_MESSAGE,
     PROVIDER_UNAVAILABLE_MESSAGE,
     authenticate,
+    credential_failure_message,
 )
-from app.auth.session import clear_authenticated_session, establish_authenticated_session
+from app.auth.session import (
+    AuthSessionError,
+    clear_authenticated_session,
+    establish_authenticated_session,
+    safe_next_url,
+)
 from app.auth.sso import SsoProviderStoreError, enabled_sso_providers, find_enabled_sso_provider, resolve_sso_identity
 from app.extensions.db import db
 from app.extensions.limiter import limiter
@@ -50,7 +56,12 @@ def _record_result(username: str, result: AuthResult) -> None:
     )
 
 
-def _complete_successful_login(result: AuthResult, *, remember_requested: bool = False):
+def _complete_successful_login(
+    result: AuthResult,
+    *,
+    remember_requested: bool = False,
+    next_url: object = None,
+):
     user = result.user
     if user is None:
         raise RuntimeError('Successful authentication result is missing its user.')
@@ -68,7 +79,7 @@ def _complete_successful_login(result: AuthResult, *, remember_requested: bool =
         source=result.source,
         remember_requested=remember_requested,
     )
-    return redirect(url_for('welcome.index'))
+    return redirect(safe_next_url(next_url) or url_for('welcome.index'))
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
@@ -92,9 +103,11 @@ def login():
         )
 
     if current_user.is_authenticated:
-        return redirect(url_for('welcome.index'))
+        return redirect(safe_next_url(request.args.get('next')) or url_for('welcome.index'))
 
     form = LoginForm()
+    if request.method == 'GET':
+        form.next.data = safe_next_url(request.args.get('next')) or ''
     if form.validate_on_submit():
         username = form.username.data or ''
         password = form.password.data or ''
@@ -102,7 +115,11 @@ def login():
 
         if result.success and result.user:
             try:
-                response = _complete_successful_login(result, remember_requested=bool(form.remember.data))
+                response = _complete_successful_login(
+                    result,
+                    remember_requested=bool(form.remember.data),
+                    next_url=form.next.data,
+                )
             except SQLAlchemyError:
                 result = AuthResult(
                     False,
@@ -111,17 +128,20 @@ def login():
                     user=result.user,
                     message=DATABASE_UNAVAILABLE_MESSAGE,
                 )
+            except AuthSessionError:
+                result = AuthResult(
+                    False,
+                    'access_not_permitted',
+                    source=result.source,
+                    user=result.user,
+                    message=ACCESS_NOT_PERMITTED_MESSAGE,
+                )
             else:
                 _record_result(username, result)
                 return response
 
         _record_result(username, result)
-        if result.reason == 'database_unavailable':
-            message = result.message or DATABASE_UNAVAILABLE_MESSAGE
-        elif result.reason == 'provider_unavailable':
-            message = result.message or PROVIDER_UNAVAILABLE_MESSAGE
-        else:
-            message = result.message or INVALID_LOGIN_MESSAGE
+        message = credential_failure_message(result)
         queue_transient_feedback(
             status='error',
             title='Sign-in failed',
@@ -135,7 +155,7 @@ def login():
 @limiter.limit(lambda: current_app.config.get('AUTH_SSO_RATE_LIMIT', '20 per minute'))
 def sso_start(provider_key: str):
     if current_user.is_authenticated:
-        return redirect(url_for('welcome.index'))
+        return redirect(safe_next_url(request.args.get('next')) or url_for('welcome.index'))
 
     try:
         provider = find_enabled_sso_provider(provider_key)
@@ -147,6 +167,13 @@ def sso_start(provider_key: str):
         )
         return redirect(url_for('auth.login'))
     if provider is None:
+        record_authentication_activity(
+            action='login',
+            username=provider_key,
+            source='sso',
+            result='failed',
+            reason='provider_unavailable',
+        )
         queue_transient_feedback(
             status='error',
             title='SSO provider unavailable',
@@ -158,6 +185,13 @@ def sso_start(provider_key: str):
     try:
         adapter = get_browser_sso_provider(provider.provider_type)
     except SsoProviderError:
+        record_authentication_activity(
+            action='login',
+            username=provider.key,
+            source=provider.provider_type,
+            result='failed',
+            reason='provider_unavailable',
+        )
         queue_transient_feedback(
             status='error',
             title='SSO provider unavailable',
@@ -172,6 +206,7 @@ def sso_start(provider_key: str):
         'state_hash': state_fingerprint(state),
         'nonce': nonce,
         'started_at': datetime.now(UTC).timestamp(),
+        'next_url': safe_next_url(request.args.get('next')),
     }
     try:
         authorization_url = adapter.build_authorization_url(
@@ -202,7 +237,8 @@ def sso_start(provider_key: str):
 @auth_bp.get('/sso/<provider_key>/callback')
 @limiter.limit(lambda: current_app.config.get('AUTH_SSO_RATE_LIMIT', '20 per minute'))
 def sso_callback(provider_key: str):
-    flow = session.pop(SSO_SESSION_KEY, None) or {}
+    raw_flow = session.pop(SSO_SESSION_KEY, None)
+    flow = raw_flow if isinstance(raw_flow, dict) else {}
     try:
         provider = find_enabled_sso_provider(provider_key)
     except SsoProviderStoreError:
@@ -213,6 +249,13 @@ def sso_callback(provider_key: str):
         )
         return redirect(url_for('auth.login'))
     if provider is None:
+        record_authentication_activity(
+            action='login',
+            username=provider_key,
+            source='sso',
+            result='failed',
+            reason='provider_unavailable',
+        )
         queue_transient_feedback(
             status='error',
             title='SSO provider unavailable',
@@ -222,6 +265,13 @@ def sso_callback(provider_key: str):
     try:
         adapter = get_browser_sso_provider(provider.provider_type)
     except SsoProviderError:
+        record_authentication_activity(
+            action='login',
+            username=provider.key,
+            source=provider.provider_type,
+            result='failed',
+            reason='provider_unavailable',
+        )
         queue_transient_feedback(
             status='error',
             title='SSO provider unavailable',
@@ -277,7 +327,7 @@ def sso_callback(provider_key: str):
             redirect_uri=redirect_uri,
             expected_nonce=flow.get('nonce'),
         )
-        result = resolve_sso_identity(provider, identity)
+        result = enforce_login_admission(resolve_sso_identity(provider, identity))
     except SsoProviderError:
         current_app.logger.warning('SSO callback failed for provider %s.', provider.key, exc_info=True)
         result = AuthResult(False, 'provider_unavailable', source=provider.provider_type)
@@ -285,7 +335,7 @@ def sso_callback(provider_key: str):
     audit_username = identity.username if 'identity' in locals() else provider.key
     if result.success and result.user:
         try:
-            response = _complete_successful_login(result)
+            response = _complete_successful_login(result, next_url=flow.get('next_url'))
         except SQLAlchemyError:
             result = AuthResult(
                 False,
@@ -293,6 +343,14 @@ def sso_callback(provider_key: str):
                 source=result.source,
                 user=result.user,
                 message=DATABASE_UNAVAILABLE_MESSAGE,
+            )
+        except AuthSessionError:
+            result = AuthResult(
+                False,
+                'access_not_permitted',
+                source=result.source,
+                user=result.user,
+                message=ACCESS_NOT_PERMITTED_MESSAGE,
             )
         else:
             _record_result(audit_username, result)

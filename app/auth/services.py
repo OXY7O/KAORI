@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from app.auth.admission import enforce_login_admission
 from app.auth.providers.registry import build_credential_provider_registry
 from app.auth.results import (
     DATABASE_UNAVAILABLE_MESSAGE,
@@ -11,6 +12,10 @@ from app.auth.results import (
 )
 
 
+def _finalize_result(result: AuthResult) -> AuthResult:
+    return enforce_login_admission(result) if result.success else result
+
+
 def authenticate(username: str, password: str) -> AuthResult:
     registry = build_credential_provider_registry()
     local_result = registry.local.authenticate(username=username, password=password)
@@ -19,17 +24,30 @@ def authenticate(username: str, password: str) -> AuthResult:
         or local_result.user is not None
         or local_result.reason in {'user_inactive', 'database_unavailable'}
     ):
-        return local_result
+        return _finalize_result(local_result)
 
     unavailable_result: AuthResult | None = None
     for provider in registry.external:
         result = provider.authenticate(username=username, password=password)
         if result.success or result.user is not None or result.reason == 'user_inactive':
-            return result
+            return _finalize_result(result)
         if result.reason == 'provider_unavailable':
             unavailable_result = result
 
     return unavailable_result or local_result
+
+
+def credential_failure_message(result: AuthResult) -> str:
+    """Return the public message for username/password authentication failures.
+
+    Account state, provider ownership, role state, and LDAP reachability remain
+    audit-only details so the login surface does not become a username or account
+    state enumeration oracle.
+    """
+
+    if result.reason == 'database_unavailable':
+        return result.message or DATABASE_UNAVAILABLE_MESSAGE
+    return INVALID_LOGIN_MESSAGE
 
 
 __all__ = [
@@ -40,4 +58,5 @@ __all__ = [
     'PROVIDER_UNAVAILABLE_MESSAGE',
     'USER_INACTIVE_MESSAGE',
     'authenticate',
+    'credential_failure_message',
 ]

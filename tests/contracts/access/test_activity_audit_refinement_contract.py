@@ -25,7 +25,10 @@ def test_activity_audit_uses_bounded_posture_and_access_hero_contract() -> None:
     assert 'Lifecycle Boundary' in summary
     assert 'Sensitive Data Boundary' in summary
     assert 'cutoff_24h = datetime.now(UTC) - timedelta(hours=24)' in queries
-    assert "func.count(func.distinct(func.coalesce(Notification.user_id, 0)))" in queries
+    assert 'actor_identity = case(' in queries
+    assert "Notification.event_type == 'authentication'" in queries
+    assert "Notification.status != 'success'" in queries
+    assert 'func.count(func.distinct(actor_identity))' in queries
     assert 'Unread' not in page
     assert 'Unread Activities' not in summary
 

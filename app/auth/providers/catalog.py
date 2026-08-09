@@ -90,6 +90,10 @@ def provider_label(provider_type: str | AuthProviderType | None) -> str:
     normalized = str(provider_type or '').strip().lower()
     if not normalized or normalized == 'local':
         normalized = AuthProviderType.DATABASE.value
+    if normalized == 'credentials':
+        return 'Credential Sign-In'
+    if normalized == AuthProviderFamily.SSO.value:
+        return 'Browser SSO'
     definition = _PROVIDER_BY_TYPE.get(normalized)
     if definition is not None:
         return definition.label

@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from celery.schedules import crontab
@@ -541,6 +542,17 @@ class Config:
         'AUTH_ALLOW_SUPER_ADMIN_REMEMBER_ME',
         False,
     )
+
+    # Flask-Login defaults remember cookies to one year. KAORI bounds persistent
+    # sessions to a shorter operator-controlled window suitable for an
+    # infrastructure administration surface.
+    AUTH_REMEMBER_ME_DAYS = _bounded_env_int(
+        'AUTH_REMEMBER_ME_DAYS',
+        7,
+        1,
+        30,
+    )
+    REMEMBER_COOKIE_DURATION = timedelta(days=AUTH_REMEMBER_ME_DAYS)
 
     # Plain LDAP transmits credentials without transport encryption and is disabled by default.
     AUTH_LDAP_ALLOW_PLAINTEXT = _env_bool(
