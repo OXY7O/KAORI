@@ -27,7 +27,8 @@ def test_template_registry_uses_full_width_kaori_workspace() -> None:
     assert 'Tip: Use custom templates only for reusable reporting defaults.' in template
     assert 'Custom templates remain optional.' not in template
     assert 'data-template-registry="true"' in template
-    assert 'data-template-filters="true"' in template
+    assert "marker_name='data-template-filters'" in template
+    assert "marker_value='true'" in template
     assert 'xl:grid-cols-6' in template
     assert 'Template Registry' in template
     assert '>Template<' in template
@@ -37,18 +38,17 @@ def test_template_registry_uses_full_width_kaori_workspace() -> None:
     assert '>Sections<' in template
     assert '>Ownership<' in template
     assert '>Action<' in template
-    assert 'Previous' in template
-    assert 'Next' in template
     assert 'components/loading_bar.html' in template
     assert "loading_bar.render('templates-registry-loading', active=false, label='Refreshing Template Registry')" in template
     assert 'data-kaori-template-loading-region="true"' in template
-    assert 'hx-indicator="#templates-registry-loading"' in template
-    assert '<input type="hidden" name="per_page" value="{{ payload.pagination.per_page }}">' in template
-    assert 'data-template-page-size-form="true"' in template
-    assert 'data-kaori-page-size-control="report-templates"' in template
+    assert 'components/table_registry.html' in template
+    assert 'registry_ui.filter_form(' in template
+    assert 'registry_ui.footer(' in template
+    assert 'registry_ui.clear_filters_link(' in template
+    assert 'data-template-page-size-form="true"' not in template
+    assert 'data-kaori-page-size-control="report-templates"' not in template
     assert 'id="templates-registry-request-scope"' not in template
-    assert template.count('hx-sync="closest section:replace"') >= 3
-    assert 'hx-trigger="change, input delay:450ms"' in template
+    assert 'hx-trigger="change, input delay:450ms"' not in template
     assert 'from:select' not in template
     assert 'from:input' not in template
     assert 'hx-include="closest form"' not in template
@@ -83,7 +83,7 @@ def test_template_service_is_catalog_driven_and_filterable() -> None:
     assert "'families': [" in service
     assert "'ownership': [" in service
     assert "'formats': [" in service
-    assert "for key in ('family', 'report_type', 'ownership', 'status', 'output_format', 'search')" in service
+    assert "'search': args.get('search', '').strip()" in service
     assert "'System Template'" in service
     assert "'system_count': system_count" in service
     assert "'custom_count': custom_count" in service
@@ -91,10 +91,13 @@ def test_template_service_is_catalog_driven_and_filterable() -> None:
     assert "'Active Custom'" in service
     assert "'protected_coverage_percent': protected_coverage_percent" in service
     assert "'supported_formats_label': ' · '.join(supported_formats)" in service
-    assert 'def normalize_templates_per_page(value: str | int | None) -> int:' in service
-    assert 'requested_per_page = normalize_templates_per_page' in service
-    assert "params: dict[str, str] = {'page': str(page), 'per_page': str(per_page)}" in service
-    assert "for key in ('family', 'report_type', 'ownership', 'status', 'output_format', 'search')" in service
+    assert 'from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window' in service
+    assert 'def normalize_templates_per_page' not in service
+    assert 'def build_templates_page_window' not in service
+    assert 'def build_templates_page_href' not in service
+    assert 'def parse_positive_int' not in service
+    assert 'pagination = build_pagination_window(' in service
+    assert "'per_page_options': list(PER_PAGE_OPTIONS)" in service
 
 
 def test_template_feedback_titles_follow_title_case() -> None:

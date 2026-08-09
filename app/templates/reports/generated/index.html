@@ -2,7 +2,7 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
-{% import "components/pagination.html" as pagination_ui %}
+{% import "components/table_registry.html" as registry_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
 
 {% block title %}Generated Reports{% endblock title %}
@@ -182,19 +182,13 @@
                 {{ loading_bar.render('generated-report-loading', label='Refreshing Generated Reports') }}
             </header>
 
-            <form method="GET"
-                  action="{{ url_for('reports.generated_reports') }}"
-                  hx-get="{{ url_for('reports.generated_reports') }}"
-                  hx-trigger="change, input delay:450ms"
-                  hx-target="#generated-report-registry"
-                  hx-select="#generated-report-registry"
-                  hx-swap="outerHTML"
-                  hx-push-url="true"
-                  hx-indicator="#generated-report-loading"
-                  hx-sync="closest section:replace"
-                  class="{{ table_ui.inventory_filter_bar_classes() }} grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6 xl:items-end">
-                <input type="hidden" name="page" value="1">
-                <input type="hidden" name="per_page" value="{{ payload.selected_filters.per_page }}">
+            {% call registry_ui.filter_form(
+                'reports.generated_reports',
+                'generated-report-registry',
+                'generated-report-loading',
+                payload.pagination.per_page,
+                table_ui.inventory_filter_bar_classes() ~ ' grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6 xl:items-end'
+            ) %}
 
                 <label class="block min-w-0">
                     <span class="{{ table_ui.filter_label_classes() }}">Search</span>
@@ -252,7 +246,7 @@
                         {% endfor %}
                     </select>
                 </label>
-            </form>
+            {% endcall %}
 
             <div class="overflow-x-auto">
                 <table class="{{ table_ui.table_classes('min-w-[72rem]') }}" data-generated-registry-table="true">
@@ -374,94 +368,19 @@
                 'status': payload.selected_filters.status,
                 'output_format': payload.selected_filters.output_format,
                 'period': payload.selected_filters.period,
-                'search': payload.selected_filters.search,
-                'per_page': payload.selected_filters.per_page
+                'search': payload.selected_filters.search
             } %}
-            <footer class="{{ pagination_ui.footer_classes() }}">
-                <div class="{{ pagination_ui.summary_group_classes() }}">
-                    <span>{{ payload.pagination.label }}</span>
-                    <form method="GET"
-                          action="{{ url_for('reports.generated_reports') }}"
-                          hx-get="{{ url_for('reports.generated_reports') }}"
-                          hx-trigger="change"
-                          hx-target="#generated-report-registry"
-                          hx-select="#generated-report-registry"
-                          hx-swap="outerHTML"
-                          hx-push-url="true"
-                          hx-indicator="#generated-report-loading"
-                          hx-sync="closest section:replace"
-                          class="{{ pagination_ui.rows_group_classes() }}"
-                          data-kaori-page-size-control="generated-reports">
-                        <input type="hidden" name="cluster_id" value="{{ payload.selected_filters.cluster_id }}">
-                        <input type="hidden" name="report_type" value="{{ payload.selected_filters.report_type }}">
-                        <input type="hidden" name="status" value="{{ payload.selected_filters.status }}">
-                        <input type="hidden" name="output_format" value="{{ payload.selected_filters.output_format }}">
-                        <input type="hidden" name="period" value="{{ payload.selected_filters.period }}">
-                        <input type="hidden" name="search" value="{{ payload.selected_filters.search }}">
-                        <input type="hidden" name="page" value="1">
-                        <span>Rows</span>
-                        <select name="per_page" class="{{ pagination_ui.page_size_classes() }}" aria-label="Reports per page">
-                            {% for option in payload.filter_options.per_page_options %}
-                                <option value="{{ option.value }}" {% if payload.selected_filters.per_page == option.value %}selected{% endif %}>{{ option.label }}</option>
-                            {% endfor %}
-                        </select>
-                    </form>
-                </div>
-                <div class="{{ pagination_ui.navigation_group_classes() }}"
-                     hx-select="#generated-report-registry"
-                     hx-push-url="true"
-                     hx-sync="closest section:replace">
-                    {% set previous_query = registry_query.copy() %}
-                    {% set _ = previous_query.update({'page': payload.pagination.prev_page}) %}
-                    {% if payload.pagination.has_prev %}
-                        <a href="{{ url_for('reports.generated_reports', **previous_query) }}"
-                           hx-get="{{ url_for('reports.generated_reports', **previous_query) }}"
-                           hx-target="#generated-report-registry"
-                           hx-swap="outerHTML"
-                           hx-indicator="#generated-report-loading"
-                           class="{{ pagination_ui.navigation_classes(false) }}">
-                            <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
-                            Previous
-                        </a>
-                    {% else %}
-                        <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">
-                            <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
-                            Previous
-                        </span>
-                    {% endif %}
-
-                    {{ pagination_ui.numeric_pages(
-                        payload.pagination.page,
-                        payload.pagination.total_pages,
-                        page_param='page',
-                        hx_target='#generated-report-registry',
-                        hx_indicator='#generated-report-loading',
-                        endpoint='reports.generated_reports',
-                        query_params=registry_query,
-                        hx_swap='outerHTML',
-                        href_endpoint='reports.generated_reports'
-                    ) }}
-
-                    {% set next_query = registry_query.copy() %}
-                    {% set _ = next_query.update({'page': payload.pagination.next_page}) %}
-                    {% if payload.pagination.has_next %}
-                        <a href="{{ url_for('reports.generated_reports', **next_query) }}"
-                           hx-get="{{ url_for('reports.generated_reports', **next_query) }}"
-                           hx-target="#generated-report-registry"
-                           hx-swap="outerHTML"
-                           hx-indicator="#generated-report-loading"
-                           class="{{ pagination_ui.navigation_classes(false) }}">
-                            Next
-                            <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
-                        </a>
-                    {% else %}
-                        <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">
-                            Next
-                            <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
-                        </span>
-                    {% endif %}
-                </div>
-            </footer>
+            {{ registry_ui.footer(
+                'reports.generated_reports',
+                'generated-report-registry',
+                'generated-report-loading',
+                payload.pagination,
+                registry_query,
+                payload.pagination.per_page_options,
+                resource_label='Reports',
+                rows_aria_label='Reports per page',
+                control_name='generated-reports'
+            ) }}
         </section>
     </div>
 {% endblock dashboard_content %}

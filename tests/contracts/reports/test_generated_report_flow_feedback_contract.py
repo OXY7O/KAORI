@@ -76,10 +76,9 @@ def test_generated_registry_is_compact_focused_and_auto_refreshes_pending_work()
     assert 'active generation refreshes silently' in template
     assert 'xl:grid-cols-6' in template
     assert 'xl:grid-cols-[minmax(13rem,1.4fr)' not in template
-    assert '>Previous<' in template or 'Previous\n' in template
-    assert '>Next<' in template or 'Next\n' in template
-    assert 'pagination_ui.navigation_classes(false)' in template
-    assert 'pagination_ui.navigation_classes(true)' in template
+    assert 'components/table_registry.html' in template
+    assert 'registry_ui.filter_form(' in template
+    assert 'registry_ui.footer(' in template
     assert 'table_label.status_indicator_label(report.status' in template
     assert '>Report</th>' in template
     assert '>Scope</th>' in template
@@ -96,16 +95,19 @@ def test_generated_registry_is_compact_focused_and_auto_refreshes_pending_work()
     assert 'reports/components/_summary_strip.html' not in template
     assert 'id="generated-report-registry-request-scope"' not in template
     assert 'hx-sync="this:abort"' in template
-    assert template.count('hx-sync="closest section:replace"') >= 3
-    assert 'data-kaori-page-size-control="generated-reports"' in template
-    assert 'hx-trigger="change, input delay:450ms"' in template
+    assert 'components/pagination.html' not in template
+    assert 'data-kaori-page-size-control="generated-reports"' not in template
+    assert 'hx-trigger="change, input delay:450ms"' not in template
     assert 'from:select' not in template
     assert 'from:input' not in template
-    assert 'GENERATED_PER_PAGE_OPTIONS = (5, 10, 25, 50)' in service
-    assert 'def normalize_generated_per_page(value: str | int | None) -> int:' in service
-    assert "'per_page': str(normalize_generated_per_page(query_args.get('per_page')))" in service
-    assert 'total_pages = max((total_items + per_page - 1) // per_page, 1)' in service
-    assert 'page = min(page, total_pages)' in service
+    assert 'from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window, normalize_per_page, positive_int' in service
+    assert 'GENERATED_PER_PAGE_OPTIONS' not in service
+    assert 'def normalize_generated_per_page' not in service
+    assert 'def normalize_generated_page' not in service
+    assert "'per_page': str(normalize_per_page(query_args.get('per_page')))" in service
+    assert 'pagination = build_pagination_window(' in service
+    assert '.offset(pagination.offset)' in service
+    assert '.limit(pagination.per_page)' in service
 
 
 def test_generated_registry_keeps_storage_outage_as_degraded_not_blocking() -> None:

@@ -2,7 +2,7 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
-{% import "components/pagination.html" as pagination_ui %}
+{% import "components/table_registry.html" as registry_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "reports/components/_record_detail_modal.html" as record_modal %}
 
@@ -165,17 +165,13 @@
                     <div class="flex flex-wrap items-center gap-2">
                         {{ table_label.metadata_label(payload.pagination.total_items ~ ' Templates', 'layout-template') }}
                         {% if payload.active_filter_count > 0 %}
-                            <a href="{{ url_for('reports.report_templates', per_page=payload.pagination.per_page) }}"
-                               hx-get="{{ url_for('reports.report_templates', per_page=payload.pagination.per_page) }}"
-                               hx-target="#templates-registry"
-                               hx-select="#templates-registry"
-                               hx-swap="outerHTML"
-                               hx-push-url="true"
-                               hx-indicator="#templates-registry-loading"
-                               class="{{ table_ui.action_classes() }}">
-                                <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
-                                Clear Filters
-                            </a>
+                            {{ registry_ui.clear_filters_link(
+                                'reports.report_templates',
+                                'templates-registry',
+                                'templates-registry-loading',
+                                payload.pagination.per_page,
+                                table_ui.action_classes()
+                            ) }}
                         {% endif %}
                     </div>
                 </div>
@@ -184,20 +180,15 @@
                 </div>
             </header>
 
-            <form method="GET"
-                  action="{{ url_for('reports.report_templates') }}"
-                  hx-get="{{ url_for('reports.report_templates') }}"
-                  hx-target="#templates-registry"
-                  hx-select="#templates-registry"
-                  hx-swap="outerHTML"
-                  hx-push-url="true"
-                  hx-indicator="#templates-registry-loading"
-                  hx-sync="closest section:replace"
-                  hx-trigger="change, input delay:450ms"
-                  class="grid grid-cols-1 gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:grid-cols-2 xl:grid-cols-6 sm:px-6"
-                  data-template-filters="true">
-                <input type="hidden" name="page" value="1">
-                <input type="hidden" name="per_page" value="{{ payload.pagination.per_page }}">
+            {% call registry_ui.filter_form(
+                'reports.report_templates',
+                'templates-registry',
+                'templates-registry-loading',
+                payload.pagination.per_page,
+                'grid grid-cols-1 gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:grid-cols-2 xl:grid-cols-6 sm:px-6',
+                marker_name='data-template-filters',
+                marker_value='true'
+            ) %}
                 <label class="block min-w-0">
                     <span class="text-xs font-semibold text-content-muted">Search</span>
                     <div class="relative mt-1.5">
@@ -235,7 +226,7 @@
                         {% for option in payload.filter_options.formats %}<option value="{{ option.value }}" {% if payload.selected_filters.output_format == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
                     </select>
                 </label>
-            </form>
+            {% endcall %}
 
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[1120px] table-fixed text-left">
@@ -376,40 +367,17 @@
                 </table>
             </div>
 
-            <footer class="{{ pagination_ui.footer_classes() }}">
-                <div class="{{ pagination_ui.summary_group_classes() }}">
-                    <span>{{ payload.pagination.label }}</span>
-                    <form method="GET"
-                          action="{{ url_for('reports.report_templates') }}"
-                          hx-get="{{ url_for('reports.report_templates') }}"
-                          hx-trigger="change"
-                          hx-target="#templates-registry"
-                          hx-select="#templates-registry"
-                          hx-swap="outerHTML"
-                          hx-push-url="true"
-                          hx-indicator="#templates-registry-loading"
-                          hx-sync="closest section:replace"
-                          class="{{ pagination_ui.rows_group_classes() }}"
-                          data-template-page-size-form="true"
-                          data-kaori-page-size-control="report-templates">
-                        {% for key, value in payload.selected_filters.items() %}{% if value %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}{% endfor %}
-                        <input type="hidden" name="page" value="1">
-                        <span>Rows</span>
-                        <select name="per_page" class="{{ pagination_ui.page_size_classes() }}" aria-label="Templates per page">
-                            {% for option in payload.pagination.per_page_options %}<option value="{{ option }}" {% if payload.pagination.per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}
-                        </select>
-                    </form>
-                </div>
-                <nav class="{{ pagination_ui.navigation_group_classes() }}"
-                     aria-label="Template Registry Pagination"
-                     hx-sync="closest section:replace">
-                    {% if payload.pagination.has_previous %}<a href="{{ payload.pagination.previous_href }}" hx-get="{{ payload.pagination.previous_href }}" hx-target="#templates-registry" hx-select="#templates-registry" hx-swap="outerHTML" hx-push-url="true" hx-indicator="#templates-registry-loading" class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous</a>{% else %}<span class="{{ pagination_ui.navigation_classes(true) }}"><i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous</span>{% endif %}
-                    {% for item in payload.pagination.page_items %}
-                        {% if item is none %}<span class="px-1 text-content-muted" aria-hidden="true">…</span>{% elif item.current %}<span class="{{ pagination_ui.current_page_classes() }}" aria-current="page">{{ item.page }}</span>{% else %}<a href="{{ item.href }}" hx-get="{{ item.href }}" hx-target="#templates-registry" hx-select="#templates-registry" hx-swap="outerHTML" hx-push-url="true" hx-indicator="#templates-registry-loading" class="{{ pagination_ui.navigation_classes(false) }} min-w-9 px-2">{{ item.page }}</a>{% endif %}
-                    {% endfor %}
-                    {% if payload.pagination.has_next %}<a href="{{ payload.pagination.next_href }}" hx-get="{{ payload.pagination.next_href }}" hx-target="#templates-registry" hx-select="#templates-registry" hx-swap="outerHTML" hx-push-url="true" hx-indicator="#templates-registry-loading" class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i></a>{% else %}<span class="{{ pagination_ui.navigation_classes(true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i></span>{% endif %}
-                </nav>
-            </footer>
+            {{ registry_ui.footer(
+                'reports.report_templates',
+                'templates-registry',
+                'templates-registry-loading',
+                payload.pagination,
+                payload.selected_filters,
+                payload.pagination.per_page_options,
+                resource_label='Templates',
+                rows_aria_label='Templates per page',
+                control_name='report-templates'
+            ) }}
         </section>
 
         {% call record_modal.render(

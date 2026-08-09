@@ -8,6 +8,7 @@ from flask import abort, current_app
 from sqlalchemy import Select, func, or_, select
 
 from app.common.job_execution_presentation import present_job_execution
+from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window, normalize_per_page, positive_int
 from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.job import JobExecution
@@ -24,7 +25,6 @@ from app.reports.storage.service import (
 
 REPORT_TYPE_LABELS = {spec.value: spec.label for spec in REPORT_TYPE_SPECS}
 
-GENERATED_PER_PAGE_OPTIONS = (5, 10, 25, 50)
 
 STATUS_LABELS = {
     'requested': 'Requested',
@@ -382,26 +382,9 @@ def get_filter_options() -> dict[str, list[dict[str, str]]]:
                 'value': str(option),
                 'label': str(option),
             }
-            for option in GENERATED_PER_PAGE_OPTIONS
+            for option in PER_PAGE_OPTIONS
         ],
     }
-
-
-def normalize_generated_per_page(value: str | int | None) -> int:
-    default = GENERATED_PER_PAGE_OPTIONS[0]
-    try:
-        normalized = int(value) if value is not None else default
-    except (TypeError, ValueError):
-        return default
-    return normalized if normalized in GENERATED_PER_PAGE_OPTIONS else default
-
-
-def normalize_generated_page(value: str | int | None) -> int:
-    try:
-        normalized = int(value) if value is not None else 1
-    except (TypeError, ValueError):
-        return 1
-    return max(normalized, 1)
 
 
 def get_selected_filters(
@@ -439,8 +422,8 @@ def get_selected_filters(
             'search',
             '',
         ),
-        'page': str(normalize_generated_page(query_args.get('page'))),
-        'per_page': str(normalize_generated_per_page(query_args.get('per_page'))),
+        'page': str(positive_int(query_args.get('page'), 1)),
+        'per_page': str(normalize_per_page(query_args.get('per_page'))),
     }
 
 
@@ -449,9 +432,6 @@ def get_reports(
     *,
     backend_status: Mapping[str, Any] | None = None,
 ) -> tuple[list[dict[str, Any]], int]:
-    page = normalize_generated_page(selected_filters.get('page'))
-    per_page = normalize_generated_per_page(selected_filters.get('per_page'))
-
     statement = select(
         Report,
     )
@@ -472,18 +452,19 @@ def get_reports(
         or 0
     )
 
-    total_pages = max((total_items + per_page - 1) // per_page, 1)
-    page = min(page, total_pages)
+    pagination = build_pagination_window(
+        total_items=total_items,
+        page=selected_filters.get('page'),
+        per_page=selected_filters.get('per_page'),
+    )
 
     statement = (
         statement.order_by(
             Report.created_at.desc(),
             Report.id.desc(),
         )
-        .offset((page - 1) * per_page)
-        .limit(
-            per_page,
-        )
+        .offset(pagination.offset)
+        .limit(pagination.per_page)
     )
 
     report_items = (
@@ -516,46 +497,19 @@ def get_reports(
 def get_pagination(
     selected_filters: dict[str, str],
     total_items: int,
-) -> dict[str, int | str | bool]:
-    page = normalize_generated_page(selected_filters.get('page'))
-    per_page = normalize_generated_per_page(selected_filters.get('per_page'))
-
-    total_pages = max(
-        (total_items + per_page - 1) // per_page,
-        1,
-    )
-
-    current_page = min(
-        page,
-        total_pages,
-    )
-
-    has_prev = current_page > 1
-    has_next = current_page < total_pages
-
-    start_item = 0 if total_items == 0 else ((current_page - 1) * per_page) + 1
-    end_item = min(
-        current_page * per_page,
-        total_items,
+) -> dict[str, Any]:
+    pagination = build_pagination_window(
+        total_items=total_items,
+        page=selected_filters.get('page'),
+        per_page=selected_filters.get('per_page'),
     )
 
     return {
-        'page': current_page,
-        'total_pages': total_pages,
-        'total_items': total_items,
-        'per_page': per_page,
-        'start_item': start_item,
-        'end_item': end_item,
-        'label': f'Showing {start_item}–{end_item} of {total_items} Reports',
-        'has_prev': has_prev,
-        'has_next': has_next,
-        'prev_page': max(
-            current_page - 1,
-            1,
-        ),
-        'next_page': min(
-            current_page + 1,
-            total_pages,
+        **pagination.as_dict(),
+        'per_page_options': list(PER_PAGE_OPTIONS),
+        'label': (
+            f'Showing {pagination.start_item}–{pagination.end_item} '
+            f'of {pagination.total_items} Reports'
         ),
     }
 

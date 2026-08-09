@@ -554,77 +554,25 @@ def get_selected_filters(args: MultiDict[str, str] | None) -> dict[str, str]:
     return filters
 
 
-def normalize_templates_per_page(value: str | int | None) -> int:
-    default = int(PER_PAGE_OPTIONS[0])
-    normalized = parse_positive_int(str(value) if value is not None else None, default)
-    allowed = {int(option) for option in PER_PAGE_OPTIONS}
-    return normalized if normalized in allowed else default
-
-
 def build_templates_pagination(
     args: MultiDict[str, str] | None,
     selected_filters: dict[str, str],
     total_items: int,
 ) -> dict[str, Any]:
-    requested_page = parse_positive_int(args.get('page') if args is not None else None, 1)
-    requested_per_page = normalize_templates_per_page(args.get('per_page') if args is not None else None)
     pagination = build_pagination_window(
         total_items=total_items,
-        page=requested_page,
-        per_page=requested_per_page,
+        page=args.get('page') if args is not None else 1,
+        per_page=args.get('per_page') if args is not None else PER_PAGE_OPTIONS[0],
     )
 
     return {
         **pagination.as_dict(),
         'per_page_options': list(PER_PAGE_OPTIONS),
-        'has_previous': pagination.has_prev,
-        'has_next': pagination.has_next,
-        'previous_href': build_templates_page_href(selected_filters, pagination.prev_page, pagination.per_page),
-        'next_href': build_templates_page_href(selected_filters, pagination.next_page, pagination.per_page),
-        'page_items': [
-            {
-                'page': page_number,
-                'href': build_templates_page_href(selected_filters, page_number, pagination.per_page),
-                'current': page_number == pagination.page,
-            }
-            if page_number is not None else None
-            for page_number in build_templates_page_window(pagination.page, pagination.total_pages)
-        ],
-        'label': (f'Showing {pagination.start_item}–{pagination.end_item} of {pagination.total_items} Templates'),
+        'label': (
+            f'Showing {pagination.start_item}–{pagination.end_item} '
+            f'of {pagination.total_items} Templates'
+        ),
     }
-
-
-
-def build_templates_page_window(current_page: int, total_pages: int) -> list[int | None]:
-    if total_pages <= 7:
-        return list(range(1, total_pages + 1))
-
-    pages: list[int | None] = [1]
-    start = max(2, current_page - 1)
-    end = min(total_pages - 1, current_page + 1)
-    if start > 2:
-        pages.append(None)
-    pages.extend(range(start, end + 1))
-    if end < total_pages - 1:
-        pages.append(None)
-    pages.append(total_pages)
-    return pages
-
-def build_templates_page_href(filters: dict[str, str], page: int, per_page: int) -> str:
-    params: dict[str, str] = {'page': str(page), 'per_page': str(per_page)}
-    for key in ('family', 'report_type', 'ownership', 'status', 'output_format', 'search'):
-        value = filters.get(key, '').strip()
-        if value:
-            params[key] = value
-    return f'{url_for("reports.report_templates")}?{urlencode(params)}'
-
-
-def parse_positive_int(value: str | None, default: int) -> int:
-    try:
-        parsed = int(value or default)
-    except (TypeError, ValueError):
-        return default
-    return parsed if parsed > 0 else default
 
 
 def count_active_filters(selected_filters: dict[str, str]) -> int:
