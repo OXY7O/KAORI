@@ -123,6 +123,14 @@ def test_credential_workspace_keeps_action_left_and_security_context_right() -> 
     assert "Password reuse is blocked" in credentials
     assert "grid gap-4 md:grid-cols-2" in credentials
     assert "lg:grid-cols-3" not in credentials
+    assert 'data-password-safety-tips="true"' in credentials
+    assert 'data-password-safety-tip-list="true"' in credentials
+    assert "Password Safety Tips" in credentials
+    assert "Use a long passphrase" in credentials
+    assert "Keep it unique" in credentials
+    assert "Avoid personal clues" in credentials
+    assert "Store it safely" in credentials
+    assert "approved password manager" in credentials
 
     assert 'data-credential-posture-location="security-panel"' in context
     assert "Credential Posture" in context
