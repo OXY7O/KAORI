@@ -73,25 +73,54 @@
             </section>
         {% endif %}
 
-        <section class="rounded-2xl border border-kaori-primary/15 bg-kaori-soft/35 px-5 py-4 shadow-sm"
-                 data-generated-registry-guide="true">
-            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+                 data-generated-registry-posture="true">
+            <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
                 <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm" aria-hidden="true">
-                        <i data-lucide="info" class="h-4 w-4"></i>
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                        <i data-lucide="chart-no-axes-combined" class="h-4 w-4"></i>
                     </span>
                     <div class="min-w-0">
-                        <h2 class="text-sm font-semibold text-content-primary">Artifact Registry Guide</h2>
+                        <h2 class="text-sm font-bold text-content-primary">Generated Reporting Posture</h2>
                         <p class="mt-1 text-xs leading-5 text-content-muted">
-                            Track report requests from Requested through Ready or Failed. Active work refreshes silently, while report metadata remains readable when artifact storage is degraded.
+                            Current report volume, generation outcomes, and retained artifact readiness.
                         </p>
                     </div>
                 </div>
-                <div class="flex shrink-0 flex-wrap items-center gap-2 text-xs">
+                {{ table_label.status_indicator_label(
+                    'Storage Connected' if payload.backend_status.available else 'Storage Needs Review',
+                    'normal' if payload.backend_status.available else 'warning'
+                ) }}
+            </header>
+
+            <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+                {% set posture_cards = [
+                    ('files', 'Total Reports', payload.summary_cards[0].value, 'All report request records'),
+                    ('circle-check-big', 'Ready', payload.summary_cards[1].value, 'Artifacts available for delivery'),
+                    ('clock-3', 'In Progress', payload.summary_cards[2].value, 'Requested, queued, or generating'),
+                    ('triangle-alert', 'Needs Review', payload.summary_cards[3].value, 'Failed generation requiring review')
+                ] %}
+                {% for icon, label, value, caption in posture_cards %}
+                    <article class="min-w-0 px-5 py-4" data-generated-posture-metric="{{ label|lower|replace(' ', '-') }}">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
+                                <p class="mt-1 text-2xl font-extrabold tracking-tight text-content-primary">{{ value }}</p>
+                            </div>
+                            <i data-lucide="{{ icon }}" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                        </div>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ caption }}</p>
+                    </article>
+                {% endfor %}
+            </div>
+
+            <footer class="flex flex-col gap-2 border-t border-outline-subtle bg-surface-subtle/60 px-5 py-3 text-xs text-content-muted sm:flex-row sm:items-center sm:justify-between">
+                <span>Registry values are sourced from report metadata; active generation refreshes silently.</span>
+                <div class="flex flex-wrap items-center gap-2">
                     {{ table_label.metadata_label('Rows 5 / 10 / 25 / 50', 'rows-3') }}
                     {{ table_label.metadata_label('Storage-Aware Downloads', 'hard-drive-download') }}
                 </div>
-            </div>
+            </footer>
         </section>
 
         <section id="generated-report-registry"
@@ -161,11 +190,11 @@
                   hx-swap="outerHTML"
                   hx-push-url="true"
                   hx-indicator="#generated-report-loading"
-                  class="{{ table_ui.inventory_filter_bar_classes() }} grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(13rem,1.4fr)_minmax(9rem,1fr)_minmax(11rem,1.1fr)_minmax(8rem,0.85fr)_minmax(7rem,0.75fr)_minmax(8rem,0.85fr)] xl:items-end">
+                  class="{{ table_ui.inventory_filter_bar_classes() }} grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6 xl:items-end">
                 <input type="hidden" name="page" value="1">
                 <input type="hidden" name="per_page" value="{{ payload.selected_filters.per_page }}">
 
-                <label class="block">
+                <label class="block min-w-0">
                     <span class="{{ table_ui.filter_label_classes() }}">Search</span>
                     <div class="relative mt-1.5">
                         <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted" aria-hidden="true"></i>
@@ -177,7 +206,7 @@
                     </div>
                 </label>
 
-                <label class="block">
+                <label class="block min-w-0">
                     <span class="{{ table_ui.filter_label_classes() }}">Cluster</span>
                     <select name="cluster_id" class="mt-1.5 {{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.clusters %}
@@ -186,7 +215,7 @@
                     </select>
                 </label>
 
-                <label class="block">
+                <label class="block min-w-0">
                     <span class="{{ table_ui.filter_label_classes() }}">Report Type</span>
                     <select name="report_type" class="mt-1.5 {{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.report_types %}
@@ -195,7 +224,7 @@
                     </select>
                 </label>
 
-                <label class="block">
+                <label class="block min-w-0">
                     <span class="{{ table_ui.filter_label_classes() }}">Status</span>
                     <select name="status" class="mt-1.5 {{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.statuses %}
@@ -204,7 +233,7 @@
                     </select>
                 </label>
 
-                <label class="block">
+                <label class="block min-w-0">
                     <span class="{{ table_ui.filter_label_classes() }}">Format</span>
                     <select name="output_format" class="mt-1.5 {{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.output_formats %}
@@ -213,7 +242,7 @@
                     </select>
                 </label>
 
-                <label class="block">
+                <label class="block min-w-0">
                     <span class="{{ table_ui.filter_label_classes() }}">Created</span>
                     <select name="period" class="mt-1.5 {{ table_ui.filter_select_classes() }}">
                         {% for option in payload.filter_options.periods %}
