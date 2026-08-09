@@ -28,7 +28,7 @@ def _current_user_id() -> int:
 def _queue_template_validation(errors: list[str]) -> None:
     queue_transient_feedback(
         status='error',
-        title='Report template validation failed',
+        title='Report Template Validation Failed',
         message='Review the report template fields and try again.',
         detail=' '.join(errors),
     )
@@ -55,7 +55,7 @@ def _record_template_feedback(
         title=title,
         message=message,
         action_url=action_url,
-        action_label='View report templates',
+        action_label='View Report Templates',
         metadata=metadata,
         queue_feedback=True,
     )
@@ -85,7 +85,7 @@ def create_report_template() -> ResponseReturnValue:
         _record_template_feedback(
             event_type='report_template_create',
             success=True,
-            title='Report template created',
+            title='Report Template Created',
             message='Custom report template created successfully.',
             template_id=template.id,
         )
@@ -102,7 +102,7 @@ def update_report_template(template_id: int) -> ResponseReturnValue:
         _record_template_feedback(
             event_type='report_template_update',
             success=True,
-            title='Report template updated',
+            title='Report Template Updated',
             message='Custom report template updated successfully.',
             template_id=template.id,
         )
@@ -118,7 +118,7 @@ def delete_report_template(template_id: int) -> ResponseReturnValue:
     _record_template_feedback(
         event_type='report_template_delete',
         success=success,
-        title='Report template deleted' if success else 'Report template deletion failed',
+        title='Report Template Deleted' if success else 'Report Template Deletion Failed',
         message=message,
         template_id=template_id,
     )
@@ -132,7 +132,7 @@ def duplicate_system_report_template(template_id: str) -> ResponseReturnValue:
     _record_template_feedback(
         event_type='report_template_duplicate',
         success=success,
-        title='Report template duplicated' if success else 'Report template duplication failed',
+        title='Report Template Duplicated' if success else 'Report Template Duplication Failed',
         message=message,
         template_id=result_id,
     )
@@ -148,7 +148,7 @@ def duplicate_custom_report_template(template_id: int) -> ResponseReturnValue:
     _record_template_feedback(
         event_type='report_template_duplicate',
         success=success,
-        title='Report template duplicated' if success else 'Report template duplication failed',
+        title='Report Template Duplicated' if success else 'Report Template Duplication Failed',
         message=message,
         template_id=result_id,
     )

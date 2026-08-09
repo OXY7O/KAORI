@@ -21,8 +21,10 @@ from app.reports.export.constants import (
 )
 from app.reports.catalog import (
     OUTPUT_FORMAT_OPTIONS,
+    REPORT_FAMILY_ANALYTICS,
     REPORT_FAMILY_INVENTORY,
     REPORT_TYPE_OPTIONS,
+    REPORT_TYPE_SPECS,
     get_allowed_output_formats,
     get_default_output_format,
     get_report_type_spec,
@@ -31,21 +33,23 @@ from app.reports.generate.service import SECTION_OPTIONS
 
 SYSTEM_TEMPLATE_ITEMS: list[dict[str, Any]] = [
     {
-        'id': str(option['value']),
-        'name': f"{str(option['label']).removesuffix(' Report')} Template",
-        'report_type': str(option['value']),
-        'report_type_label': str(option['label']).removesuffix(' Report'),
-        'description': str(option['description']),
+        'id': spec.value,
+        'name': f"{spec.label.removesuffix(' Report')} Template",
+        'report_type': spec.value,
+        'report_type_label': spec.label.removesuffix(' Report'),
+        'description': spec.description,
         'status': 'system',
         'report_domain': DEFAULT_REPORT_DOMAIN,
         'source_kind': DEFAULT_REPORT_SOURCE_KIND,
-        'output_format': str(option['primary_format']).upper(),
-        'allowed_formats': [str(value).upper() for value in option['allowed_formats']],
-        'icon': str(option['icon']),
-        'sections': list(option['default_sections']),
+        'output_format': spec.default_format.upper(),
+        'allowed_formats': [value.upper() for value in spec.allowed_formats],
+        'icon': spec.icon,
+        'family': spec.family,
+        'sections': list(spec.default_sections),
     }
-    for option in REPORT_TYPE_OPTIONS
+    for spec in REPORT_TYPE_SPECS
 ]
+
 
 IMPLEMENTED_TEMPLATE_IDS = {item['id'] for item in SYSTEM_TEMPLATE_ITEMS}
 
@@ -68,6 +72,7 @@ def get_report_templates_payload(
             'Manage protected defaults and reusable custom report structures.'
         ),
         'summary_cards': get_summary_cards(all_templates),
+        'posture': get_template_posture(all_templates),
         'filter_options': get_filter_options(),
         'selected_filters': selected_filters,
         'active_filter_count': count_active_filters(selected_filters),
@@ -84,6 +89,9 @@ def get_report_templates_payload(
         'output_format_options': OUTPUT_FORMAT_OPTIONS,
         'allowed_formats_by_report_type': {
             str(option['value']): list(option['allowed_formats']) for option in REPORT_TYPE_OPTIONS
+        },
+        'report_family_by_report_type': {
+            str(option['value']): str(option['family']) for option in REPORT_TYPE_OPTIONS
         },
     }
 
@@ -114,7 +122,11 @@ def build_system_template_item(template: dict[str, Any]) -> dict[str, Any]:
         **template,
         'template_key': f'system:{template_id}',
         'source': 'system',
+        'ownership': 'system',
+        'ownership_label': 'System Template',
         'database_id': None,
+        'family': str(template.get('family') or get_report_family(template_id)),
+        'family_label': get_report_family_label(str(template.get('family') or get_report_family(template_id))),
         'sections': get_section_labels(sections),
         'section_values': sections,
         'section_count': len(sections),
@@ -140,17 +152,23 @@ def build_custom_template_item(template: ReportTemplate) -> dict[str, Any]:
     sections = sanitize_sections(template.report_type, template.sections_as_list())
     report_type_label = get_report_type_label(template.report_type)
     status = template.status or 'draft'
+    family = get_report_family(template.report_type)
     return {
         'id': str(template.id),
         'template_key': f'custom:{template.id}',
         'source': 'custom',
+        'ownership': 'custom',
+        'ownership_label': 'Custom Template',
         'database_id': template.id,
         'name': template.name,
         'report_type': template.report_type,
         'report_type_label': report_type_label,
+        'family': family,
+        'family_label': get_report_family_label(family),
         'description': template.description or 'Custom report template.',
         'status': status,
         'output_format': template.output_format.upper(),
+        'allowed_formats': [value.upper() for value in get_allowed_output_formats(template.report_type)],
         'icon': get_report_type_icon(template.report_type),
         'sections': get_section_labels(sections),
         'section_values': sections,
@@ -189,6 +207,7 @@ def get_template_form_context(template: ReportTemplate | None = None) -> dict[st
         'status': template.status if template else 'draft',
         'sections': sections,
         'output_format': template.output_format if template else get_default_output_format(report_type),
+        'source_template_key': template.source_template_key if template else f'system:{report_type}',
     }
 
 
@@ -206,21 +225,31 @@ def get_edit_template_context(args: MultiDict[str, str]) -> dict[str, Any] | Non
 
 def template_matches_filters(template: dict[str, Any], filters: dict[str, str]) -> bool:
     report_type = filters.get('report_type', '')
+    family = filters.get('family', '')
+    ownership = filters.get('ownership', '')
     status = filters.get('status', '')
+    output_format = filters.get('output_format', '')
     search = filters.get('search', '').strip().lower()
 
     if report_type and template.get('report_type') != report_type:
         return False
-
+    if family and template.get('family') != family:
+        return False
+    if ownership and template.get('ownership') != ownership:
+        return False
     if status and template.get('status') != status:
+        return False
+    if output_format and str(template.get('output_format', '')).lower() != output_format:
         return False
 
     if search:
         searchable = ' '.join(
             [
                 str(template.get('name', '')),
+                str(template.get('family_label', '')),
                 str(template.get('report_type_label', '')),
                 str(template.get('description', '')),
+                str(template.get('created_by_label', '')),
                 ' '.join(str(section) for section in template.get('sections', [])),
             ]
         ).lower()
@@ -364,6 +393,8 @@ def apply_template_state(template: ReportTemplate, form_state: dict[str, Any]) -
     template.status = form_state['status']
     template.output_format = form_state['output_format']
     template.sections = form_state['sections']
+    if template.id is None and not template.source_template_key:
+        template.source_template_key = f"system:{form_state['report_type']}"
 
 
 def apply_template_owner_snapshot(template: ReportTemplate, user_id: int | None) -> None:
@@ -381,74 +412,119 @@ def apply_template_owner_snapshot(template: ReportTemplate, user_id: int | None)
 
 
 def get_summary_cards(templates: list[dict[str, Any]]) -> list[dict[str, str]]:
-    system_templates = sum(1 for template in templates if template['status'] == 'system')
-    ready_templates = sum(1 for template in templates if template.get('renderer_status') == 'Ready')
-    custom_templates = sum(1 for template in templates if template['status'] in {'active', 'draft'})
-    active_custom_templates = sum(1 for template in templates if template['status'] == 'active')
+    system_templates = sum(1 for template in templates if template['ownership'] == 'system')
+    custom_templates = sum(1 for template in templates if template['ownership'] == 'custom')
+    active_custom_templates = sum(1 for template in templates if template['ownership'] == 'custom' and template['status'] == 'active')
     return [
         {
             'label': 'System Templates',
             'value': str(system_templates),
-            'caption': 'Default report definitions from Analytics modules',
+            'caption': 'Protected canonical report contracts',
             'icon': 'shield-check',
-            'tone': 'blue',
-        },
-        {
-            'label': 'Renderer Ready',
-            'value': str(ready_templates),
-            'caption': 'Templates mapped to canonical PDF, Excel, or CSV renderers',
-            'icon': 'file-check-2',
-            'tone': 'green',
+            'tone': 'info',
         },
         {
             'label': 'Custom Templates',
             'value': str(custom_templates),
-            'caption': f'{active_custom_templates} active custom template(s)',
-            'icon': 'pencil-ruler',
-            'tone': 'purple',
+            'caption': 'Reusable operator-owned definitions',
+            'icon': 'copy-plus',
+            'tone': 'maintenance',
+        },
+        {
+            'label': 'Active Custom',
+            'value': str(active_custom_templates),
+            'caption': 'Available for repeated generation',
+            'icon': 'check-circle-2',
+            'tone': 'normal',
         },
         {
             'label': 'Total Templates',
             'value': str(len(templates)),
-            'caption': 'Visible system and custom definitions',
+            'caption': 'System and custom definitions',
             'icon': 'layout-template',
-            'tone': 'amber',
+            'tone': 'info',
         },
     ]
 
 
+def get_template_posture(templates: list[dict[str, Any]]) -> dict[str, Any]:
+    analytics_count = sum(1 for item in templates if item.get('family') == REPORT_FAMILY_ANALYTICS)
+    inventory_count = sum(1 for item in templates if item.get('family') == REPORT_FAMILY_INVENTORY)
+    draft_count = sum(1 for item in templates if item.get('status') == 'draft')
+    return {
+        'analytics_count': analytics_count,
+        'inventory_count': inventory_count,
+        'draft_count': draft_count,
+        'catalog_count': len(REPORT_TYPE_SPECS),
+        'status_label': 'Canonical Catalog Ready',
+        'status_tone': 'normal',
+    }
+
+
 def get_filter_options() -> dict[str, list[dict[str, str]]]:
-    report_type_options = [{'value': '', 'label': 'All Types'}]
+    report_type_options = [{'value': '', 'label': 'All Report Types'}]
     for option in REPORT_TYPE_OPTIONS:
         report_type_options.append(
             {'value': str(option['value']), 'label': str(option['label']).replace(' Report', '')}
         )
 
     return {
+        'families': [
+            {'value': '', 'label': 'All Families'},
+            {'value': REPORT_FAMILY_ANALYTICS, 'label': 'Analytics'},
+            {'value': REPORT_FAMILY_INVENTORY, 'label': 'Inventory'},
+        ],
         'report_types': report_type_options,
+        'ownership': [
+            {'value': '', 'label': 'All Ownership'},
+            {'value': 'system', 'label': 'System Templates'},
+            {'value': 'custom', 'label': 'Custom Templates'},
+        ],
         'statuses': [
             {'value': '', 'label': 'All Status'},
             {'value': 'system', 'label': 'System'},
             {'value': 'active', 'label': 'Active'},
             {'value': 'draft', 'label': 'Draft'},
         ],
+        'formats': [
+            {'value': '', 'label': 'All Formats'},
+            *[{'value': str(item['value']), 'label': str(item['label'])} for item in OUTPUT_FORMAT_OPTIONS],
+        ],
     }
 
 
 def get_selected_filters(args: MultiDict[str, str] | None) -> dict[str, str]:
+    defaults = {
+        'family': '',
+        'report_type': '',
+        'ownership': '',
+        'status': '',
+        'output_format': '',
+        'search': '',
+    }
     if args is None:
-        return {'report_type': '', 'status': '', 'search': ''}
+        return defaults
 
-    report_type = args.get('report_type', '').strip()
-    status = args.get('status', '').strip()
-    search = args.get('search', '').strip()
-
-    if report_type not in get_allowed_report_types():
-        report_type = ''
-    if status not in {'system', 'active', 'draft'}:
-        status = ''
-
-    return {'report_type': report_type, 'status': status, 'search': search}
+    filters = {
+        'family': args.get('family', '').strip(),
+        'report_type': args.get('report_type', '').strip(),
+        'ownership': args.get('ownership', '').strip(),
+        'status': args.get('status', '').strip(),
+        'output_format': args.get('output_format', '').strip().lower(),
+        'search': args.get('search', '').strip(),
+    }
+    if filters['family'] not in {REPORT_FAMILY_ANALYTICS, REPORT_FAMILY_INVENTORY}:
+        filters['family'] = ''
+    if filters['report_type'] not in get_allowed_report_types():
+        filters['report_type'] = ''
+    if filters['ownership'] not in {'system', 'custom'}:
+        filters['ownership'] = ''
+    if filters['status'] not in {'system', 'active', 'draft'}:
+        filters['status'] = ''
+    allowed_formats = {str(item['value']) for item in OUTPUT_FORMAT_OPTIONS}
+    if filters['output_format'] not in allowed_formats:
+        filters['output_format'] = ''
+    return filters
 
 
 def build_templates_pagination(
@@ -466,15 +542,41 @@ def build_templates_pagination(
         **pagination.as_dict(),
         'per_page_options': list(PER_PAGE_OPTIONS),
         'has_previous': pagination.has_prev,
+        'has_next': pagination.has_next,
         'previous_href': build_templates_page_href(selected_filters, pagination.prev_page, pagination.per_page),
         'next_href': build_templates_page_href(selected_filters, pagination.next_page, pagination.per_page),
-        'label': (f'Showing {pagination.start_item} - {pagination.end_item} of {pagination.total_items} templates'),
+        'page_items': [
+            {
+                'page': page_number,
+                'href': build_templates_page_href(selected_filters, page_number, pagination.per_page),
+                'current': page_number == pagination.page,
+            }
+            if page_number is not None else None
+            for page_number in build_templates_page_window(pagination.page, pagination.total_pages)
+        ],
+        'label': (f'Showing {pagination.start_item}–{pagination.end_item} of {pagination.total_items} Templates'),
     }
 
 
+
+def build_templates_page_window(current_page: int, total_pages: int) -> list[int | None]:
+    if total_pages <= 7:
+        return list(range(1, total_pages + 1))
+
+    pages: list[int | None] = [1]
+    start = max(2, current_page - 1)
+    end = min(total_pages - 1, current_page + 1)
+    if start > 2:
+        pages.append(None)
+    pages.extend(range(start, end + 1))
+    if end < total_pages - 1:
+        pages.append(None)
+    pages.append(total_pages)
+    return pages
+
 def build_templates_page_href(filters: dict[str, str], page: int, per_page: int) -> str:
     params: dict[str, str] = {'page': str(page), 'per_page': str(per_page)}
-    for key in ('report_type', 'status', 'search'):
+    for key in ('family', 'report_type', 'ownership', 'status', 'output_format', 'search'):
         value = filters.get(key, '').strip()
         if value:
             params[key] = value
@@ -597,6 +699,17 @@ def get_allowed_report_types() -> set[str]:
     return {str(item['value']) for item in REPORT_TYPE_OPTIONS}
 
 
+def get_report_family(report_type: str) -> str:
+    try:
+        return get_report_type_spec(report_type).family
+    except Exception:
+        return REPORT_FAMILY_ANALYTICS
+
+
+def get_report_family_label(family: str) -> str:
+    return 'Inventory' if family == REPORT_FAMILY_INVENTORY else 'Analytics'
+
+
 def get_report_type_label(report_type: str) -> str:
     for option in REPORT_TYPE_OPTIONS:
         if option['value'] == report_type:
@@ -633,7 +746,7 @@ def build_copy_name(name: str) -> str:
 
 def format_status_label(status: str) -> str:
     labels = {
-        'system': 'System Ready',
+        'system': 'System Template',
         'active': 'Active',
         'draft': 'Draft',
     }
@@ -642,8 +755,8 @@ def format_status_label(status: str) -> str:
 
 def get_status_tone(status: str) -> str:
     tones = {
-        'system': 'blue',
-        'active': 'green',
-        'draft': 'purple',
+        'system': 'info',
+        'active': 'normal',
+        'draft': 'unknown',
     }
     return tones.get(status, 'gray')
