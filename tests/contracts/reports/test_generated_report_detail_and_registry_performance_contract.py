@@ -31,6 +31,8 @@ def test_generated_detail_uses_operational_dossier_hierarchy() -> None:
     assert 'Artifact Delivery' in template
     assert 'Technical Storage Reference' in template
     assert 'View Storage Reference' in template
+    assert 'View retained storage URI and object key.' in template
+    assert 'without expanding the delivery panel' not in template
     assert 'Storage Reference' in template
     assert 'Generation & Evidence' in template
     assert 'Latest Generation Attempt' in template
@@ -134,7 +136,11 @@ def test_generated_detail_lifecycle_and_actions_remain_single_click_safe() -> No
     assert '<details class="group mt-4' not in template
     assert 'data-generated-attempt-interpretation="true"' in template
     assert 'Artifact and Attempt Are Independent' in template
+    assert 'data-generated-definition-workspace="true"' in template
+    assert 'data-generated-definition-sections="true"' in template
+    assert 'data-generated-definition-scope-section="true"' in template
     assert 'data-generated-definition-scope="true"' in template
+    assert 'data-generated-definition-governance="true"' in template
     assert "status_indicator_label('Archived', 'warning')" not in template
     assert 'data-generated-detail-primary-action="restore"' in template
     assert 'data-generated-detail-primary-action="download"' in template
@@ -161,6 +167,8 @@ def test_storage_reference_uses_shared_native_modal_and_attempt_layout_has_no_de
     assert 'data-generated-evidence-columns="true"' not in template
     assert 'xl:border-r xl:border-outline-subtle xl:pb-0 xl:pr-7' not in template
     assert 'Artifact availability is evaluated independently from the latest generation attempt.' in template
+    assert 'xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]' not in template
+    assert 'sm:grid-cols-2 xl:grid-cols-4' in template
 
 
 
