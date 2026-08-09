@@ -104,7 +104,8 @@ def test_overview_uses_degraded_mode_instead_of_blocking_the_workspace() -> None
 
     assert 'payload.storage_context.degraded' in overview
     assert 'Open Storage' in overview
-    assert 'View Generated Reports' in overview
+    recent = read('app/templates/reports/overview/partials/_recent_reports.html')
+    assert 'View All Reports' in recent
     assert '_recent_reports.html' in overview
     assert '_reporting_coverage.html' in overview
     assert "'degraded': not is_ready" in service

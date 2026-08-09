@@ -3,74 +3,61 @@
 {% block title %}Reports Overview{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6" data-reports-overview-layout="operational-full-width">
+        {% set ready_card = payload.summary_cards[1] %}
+        {% set progress_card = payload.summary_cards[2] %}
+        {% set failed_card = payload.summary_cards[3] %}
+        {% set hero_status_label = 'Ready' %}
+        {% set hero_status_tone = 'normal' %}
+        {% set hero_secondary_icon = 'loader-circle' %}
+        {% set hero_secondary_label = 'In Progress' %}
+        {% set hero_secondary_value = progress_card.value %}
+        {% set hero_secondary_helper = 'Queued or generating' %}
+        {% set hero_action_label = 'Generate Report' %}
+        {% set hero_action_url = url_for('reports.generate_report') %}
+
+        {% if payload.storage_context.degraded %}
+            {% set hero_status_label = 'Degraded' %}
+            {% set hero_status_tone = 'warning' %}
+            {% set hero_action_label = 'Open Storage' %}
+            {% set hero_action_url = url_for('reports.storage') %}
+        {% elif failed_card.value|int > 0 %}
+            {% set hero_status_label = 'Needs Review' %}
+            {% set hero_status_tone = 'warning' %}
+            {% set hero_secondary_icon = 'triangle-alert' %}
+            {% set hero_secondary_label = 'Failed' %}
+            {% set hero_secondary_value = failed_card.value %}
+            {% set hero_secondary_helper = 'Requires review' %}
+        {% endif %}
+
         <section class="{{ page_hero.shell_classes() }}">
-            <div data-reports-hero-layout="compact-posture">
-                {% call page_hero.intro('file-text', 'Operational Reporting', 'file-text') %}
-                    <h1 class="{{ page_hero.title_classes() }}">{{ payload.page_title }}</h1>
-                    <p class="mt-1.5 {{ page_hero.description_classes() }}">{{ payload.page_subtitle }}</p>
-
-                    <div class="{{ page_hero.metadata_row_classes() }}">
-                        {{ page_hero.meta_label('layers-3', payload.selected_cluster_label) }}
-                        {% if payload.storage_context.degraded %}
-                            {{ page_hero.meta_label('triangle-alert', 'Reporting Degraded') }}
-                            {{ page_hero.meta_label('hard-drive', payload.storage_status) }}
-                        {% else %}
-                            {{ page_hero.meta_label('hard-drive', payload.storage_status) }}
+            <div class="{{ page_hero.layout_classes() }}"
+                 data-reports-hero-layout="canonical-7-5">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('file-text', 'Operational Reporting', 'file-text') %}
+                        <h1 class="{{ page_hero.title_classes() }}">{{ payload.page_title }}</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">{{ payload.page_subtitle }}</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('layers-3', payload.selected_cluster_label) }}
+                            {{ page_hero.meta_label('hard-drive', 'S3 Artifact Storage' if payload.storage_context.backend == 's3' else 'Local Artifact Storage') }}
                             {{ page_hero.meta_label('workflow', 'Governed Artifact Lifecycle') }}
-                        {% endif %}
-                    </div>
-
-                    <div class="mt-3 flex flex-wrap gap-2">
-                        {% if payload.storage_context.degraded %}
-                            <a href="{{ url_for('reports.storage') }}"
-                               class="{{ page_hero.primary_action_classes() }}">
-                                <i data-lucide="hard-drive" class="h-4 w-4" aria-hidden="true"></i>
-                                Open Storage
-                            </a>
-                        {% else %}
-                            <a href="{{ url_for('reports.generate_report') }}"
-                               class="{{ page_hero.primary_action_classes() }}">
-                                <i data-lucide="plus-circle" class="h-4 w-4" aria-hidden="true"></i>
-                                Generate Report
-                            </a>
-                        {% endif %}
-                        <a href="{{ url_for('reports.generated_reports') }}"
-                           class="kaori-hero-chip inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/35 px-4 text-sm font-semibold text-brand-foreground transition hover:bg-white/10">
-                            <i data-lucide="folder-open" class="h-4 w-4" aria-hidden="true"></i>
-                            View Generated Reports
-                        </a>
-                        {% if payload.storage_context.degraded and current_user.has_permission('reports.manage_storage') %}
-                            <a href="{{ url_for('reports.storage', verify=1) }}"
-                               class="kaori-hero-chip inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/35 px-4 text-sm font-semibold text-brand-foreground transition hover:bg-white/10">
-                                <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
-                                Verify Storage
-                            </a>
-                        {% endif %}
-                    </div>
-                {% endcall %}
-
-                <div class="mt-4 border-t border-white/20 pt-3" aria-label="Reporting posture">
-                    <div class="grid grid-cols-2 gap-y-3 sm:grid-cols-4 sm:divide-x sm:divide-white/20">
-                        {% for card in payload.summary_cards %}
-                            <div class="min-w-0 px-1 sm:px-4 first:sm:pl-0 last:sm:pr-0"
-                                 data-report-posture-item="{{ card.label|lower|replace(' ', '-') }}">
-                                <div class="flex items-center justify-between gap-3">
-                                    <p class="text-[11px] font-semibold uppercase tracking-wide text-brand-foreground-muted">
-                                        {{ card.label }}
-                                    </p>
-                                    <i data-lucide="{{ card.icon }}"
-                                       class="h-3.5 w-3.5 shrink-0 text-brand-foreground/85"
-                                       aria-hidden="true"></i>
-                                </div>
-                                <div class="mt-1 flex min-w-0 items-baseline gap-2">
-                                    <p class="text-xl font-bold tracking-tight text-brand-foreground">{{ card.value }}</p>
-                                    <p class="truncate text-[11px] leading-4 text-brand-foreground-muted"
-                                       title="{{ card.caption }}">{{ card.caption }}</p>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
+                        </div>
+                    {% endcall %}
                 </div>
+
+                {{ page_hero.context_card(
+                    'Reporting posture',
+                    'Reporting Posture',
+                    'Artifact Readiness',
+                    hero_status_label,
+                    hero_status_tone,
+                    [
+                        ('circle-check', 'Ready', ready_card.value, 'Available artifacts'),
+                        (hero_secondary_icon, hero_secondary_label, hero_secondary_value, hero_secondary_helper)
+                    ],
+                    hero_action_label,
+                    hero_action_url,
+                    'file-check-2'
+                ) }}
             </div>
         </section>
 

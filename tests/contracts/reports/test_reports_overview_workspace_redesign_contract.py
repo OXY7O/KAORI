@@ -12,54 +12,67 @@ def read(path: Path) -> str:
     return path.read_text()
 
 
-def test_reports_overview_is_full_width_without_right_sidebar() -> None:
+def test_reports_overview_hero_uses_canonical_kaori_shared_geometry() -> None:
     source = read(OVERVIEW / 'index.html')
 
     assert 'data-reports-overview-layout="operational-full-width"' in source
     assert 'Operational Reporting' in source
-    assert 'Generate Report' in source
-    assert 'View Generated Reports' in source
-    assert 'page_hero.aside_classes()' not in source
-    assert 'Reports overview actions' not in source
-    assert 'xl:grid-cols-[minmax(0,1fr)_390px]' not in source
-    assert '<aside' not in source
+    assert 'page_hero.shell_classes()' in source
+    assert 'page_hero.layout_classes()' in source
+    assert 'page_hero.content_classes()' in source
+    assert 'page_hero.intro(' in source
+    assert 'page_hero.title_classes()' in source
+    assert 'page_hero.description_classes()' in source
+    assert 'page_hero.metadata_row_classes()' in source
+    assert 'page_hero.context_card(' in source
+    assert 'data-reports-hero-layout="canonical-7-5"' in source
+
+    # Hero geometry and actions are owned by the shared component, not this page.
+    assert 'min-h-[13rem]' not in source
+    assert 'lg:min-h-[14.5rem]' not in source
+    assert 'xl:grid-cols-12' not in source
+    assert 'xl:col-span-' not in source
+    assert 'page_hero.primary_action_classes()' not in source
+    assert 'kaori-hero-chip' not in source
+    assert 'data-reporting-posture-strip' not in source
 
     assert '_reporting_operations.html' in source
     assert '_recent_reports.html' in source
     assert '_reporting_coverage.html' in source
 
-    for legacy_partial in (
-        '_reporting_context.html',
-        '_summary_cards.html',
-        '_coverage_pipeline_workspace.html',
-        '_data_collection_status.html',
-        '_current_status.html',
-        '_reporting_operating_model.html',
-        '_related_information.html',
-    ):
-        assert legacy_partial not in source
 
-
-def test_reporting_posture_is_embedded_in_the_hero() -> None:
+def test_reports_overview_hero_respects_context_density_and_metadata_contract() -> None:
     source = read(OVERVIEW / 'index.html')
     service = read(SERVICE)
     presentation = read(PRESENTATION)
 
-    assert 'aria-label="Reporting posture"' in source
-    assert 'data-reports-hero-layout="compact-posture"' in source
-    assert 'payload.summary_cards' in source
-    assert 'kaori-hero-tile rounded-xl border px-4 py-3' not in source
-    assert 'border-t border-white/20' in source
-    assert 'sm:divide-x sm:divide-white/20' in source
-    assert 'min-h-[13rem]' not in source
-    assert 'lg:min-h-[14.5rem]' not in source
+    # Metadata communicates scope/identity, while health stays in semantic context status.
+    assert "payload.selected_cluster_label" in source
+    assert "'S3 Artifact Storage'" in source
+    assert "'Governed Artifact Lifecycle'" in source
+    assert "page_hero.meta_label('triangle-alert', 'Reporting Degraded')" not in source
+
+    # Canonical context card: one status, exactly two compact metrics, one action.
+    assert "'Reporting Posture'" in source
+    assert "'Artifact Readiness'" in source
+    assert "('circle-check', 'Ready', ready_card.value, 'Available artifacts')" in source
+    assert "hero_secondary_label" in source
+    assert "hero_action_label" in source
+    assert "hero_action_url" in source
+    assert "View Generated Reports" not in source
+    assert "Verify Storage" not in source
+
+    # Degraded storage changes posture/action without changing hero geometry.
+    assert "hero_status_label = 'Degraded'" in source
+    assert "hero_status_tone = 'warning'" in source
+    assert "hero_action_label = 'Open Storage'" in source
+
     for label in ('Generated', 'Ready', 'In Progress', 'Failed'):
         assert f"'label': '{label}'" in service
         assert f"'label': '{label}'" in presentation
 
     assert "'page_title': 'Reports'" in service
     assert 'Generate, schedule, retain, and audit governed reporting artifacts.' in service
-
 
 def test_reporting_operations_are_one_compact_operational_workspace() -> None:
     source = read(OVERVIEW / 'partials' / '_reporting_operations.html')
