@@ -462,14 +462,27 @@ def get_template_posture(templates: list[dict[str, Any]]) -> dict[str, Any]:
         for item in templates
         if item.get('ownership') == 'custom' and item.get('status') == 'draft'
     )
+    catalog_count = len(REPORT_TYPE_SPECS)
+    catalog_analytics_count = sum(1 for spec in REPORT_TYPE_SPECS if spec.family == REPORT_FAMILY_ANALYTICS)
+    catalog_inventory_count = sum(1 for spec in REPORT_TYPE_SPECS if spec.family == REPORT_FAMILY_INVENTORY)
+    supported_formats = sorted({fmt.upper() for spec in REPORT_TYPE_SPECS for fmt in spec.allowed_formats})
+    protected_coverage_percent = round((system_count / catalog_count) * 100) if catalog_count else 0
+
     return {
         'analytics_count': analytics_count,
         'inventory_count': inventory_count,
+        'catalog_analytics_count': catalog_analytics_count,
+        'catalog_inventory_count': catalog_inventory_count,
         'system_count': system_count,
         'custom_count': custom_count,
         'active_custom_count': active_custom_count,
         'draft_count': draft_count,
-        'catalog_count': len(REPORT_TYPE_SPECS),
+        'catalog_count': catalog_count,
+        'format_count': len(supported_formats),
+        'supported_formats_label': ' · '.join(supported_formats),
+        'protected_coverage_percent': protected_coverage_percent,
+        'customization_label': 'No Custom Overrides' if custom_count == 0 else f'{custom_count} Custom Templates',
+        'customization_tone': 'normal' if draft_count == 0 else 'warning',
         'status_label': 'Canonical Catalog Ready',
         'status_tone': 'normal',
     }
@@ -541,15 +554,24 @@ def get_selected_filters(args: MultiDict[str, str] | None) -> dict[str, str]:
     return filters
 
 
+def normalize_templates_per_page(value: str | int | None) -> int:
+    default = int(PER_PAGE_OPTIONS[0])
+    normalized = parse_positive_int(str(value) if value is not None else None, default)
+    allowed = {int(option) for option in PER_PAGE_OPTIONS}
+    return normalized if normalized in allowed else default
+
+
 def build_templates_pagination(
     args: MultiDict[str, str] | None,
     selected_filters: dict[str, str],
     total_items: int,
 ) -> dict[str, Any]:
+    requested_page = parse_positive_int(args.get('page') if args is not None else None, 1)
+    requested_per_page = normalize_templates_per_page(args.get('per_page') if args is not None else None)
     pagination = build_pagination_window(
         total_items=total_items,
-        page=args.get('page') if args is not None else 1,
-        per_page=args.get('per_page') if args is not None else PER_PAGE_OPTIONS[0],
+        page=requested_page,
+        per_page=requested_per_page,
     )
 
     return {

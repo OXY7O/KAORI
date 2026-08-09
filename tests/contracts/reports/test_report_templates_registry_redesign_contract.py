@@ -21,6 +21,9 @@ def test_template_registry_uses_full_width_kaori_workspace() -> None:
     assert 'data-template-posture="governance-v2"' in template
     assert 'Protected Base. Governed Customization.' in template
     assert 'data-template-governance-guardrails="true"' in template
+    assert 'data-template-governance-coverage="true"' in template
+    assert 'Catalog Coverage' in template
+    assert 'Customization State' in template
     assert 'data-template-registry="true"' in template
     assert 'data-template-filters="true"' in template
     assert 'xl:grid-cols-6' in template
@@ -38,6 +41,10 @@ def test_template_registry_uses_full_width_kaori_workspace() -> None:
     assert "loading_bar.render('templates-registry-loading', active=false, label='Refreshing Template Registry')" in template
     assert 'data-kaori-template-loading-region="true"' in template
     assert 'hx-indicator="#templates-registry-loading"' in template
+    assert '<input type="hidden" name="per_page" value="{{ payload.pagination.per_page }}">' in template
+    assert 'data-template-page-size-form="true"' in template
+    assert 'hx-trigger="change"' in template
+    assert 'hx-include="closest form"' not in template
     assert 'htmx-indicator h-0.5 overflow-hidden bg-kaori-soft' not in template
     assert 'xl:grid-cols-[minmax(0,1fr)_420px]' not in template
     assert 'View more' not in template
@@ -75,6 +82,10 @@ def test_template_service_is_catalog_driven_and_filterable() -> None:
     assert "'custom_count': custom_count" in service
     assert "'active_custom_count': active_custom_count" in service
     assert "'Active Custom'" in service
+    assert "'protected_coverage_percent': protected_coverage_percent" in service
+    assert "'supported_formats_label': ' · '.join(supported_formats)" in service
+    assert 'def normalize_templates_per_page(value: str | int | None) -> int:' in service
+    assert 'requested_per_page = normalize_templates_per_page' in service
 
 
 def test_template_feedback_titles_follow_title_case() -> None:
