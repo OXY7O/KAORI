@@ -11,7 +11,7 @@ def read(path: Path) -> str:
     return path.read_text(encoding='utf-8')
 
 
-def test_generate_report_uses_canonical_hero_and_full_width_governed_workspace() -> None:
+def test_generate_report_uses_canonical_hero_and_guided_full_width_builder() -> None:
     source = read(TEMPLATE)
 
     assert 'page_hero.shell_classes()' in source
@@ -21,12 +21,30 @@ def test_generate_report_uses_canonical_hero_and_full_width_governed_workspace()
     assert 'Single Cluster Scope' in source
     assert 'Catalog-Driven Contract' in source
     assert 'Queued Artifact Generation' in source
-    assert 'data-generate-report-workspace="governed-request"' in source
+    assert 'data-generate-report-workspace="guided-builder"' in source
+    assert 'data-report-builder-progress="true"' in source
+    assert 'Report Builder' in source
     assert 'xl:grid-cols-[minmax(0,1fr)_360px]' not in source
     assert 'xl:sticky xl:top-5 xl:self-start' not in source
 
 
-def test_generate_report_is_structured_as_report_scope_artifact_summary() -> None:
+def test_generate_report_uses_visual_family_and_report_contract_selection() -> None:
+    source = read(TEMPLATE)
+
+    assert 'data-report-family-filter="analytics"' in source
+    assert 'data-report-family-filter="inventory"' in source
+    assert 'data-report-type-card="{{ option.value }}"' in source
+    assert 'data-report-family="{{ option.family }}"' in source
+    assert 'id="report-type-card-grid"' in source
+    assert 'id="report-type-select"' in source
+    assert 'class="sr-only"' in source
+    assert 'syncReportFamilyView' in source
+    assert 'syncReportTypeCards' in source
+    assert "reportTypeSelect.value = card.dataset.reportTypeCard;" in source
+    assert 'Report Type Guide' not in source
+
+
+def test_generate_report_is_structured_as_report_scope_artifact_review() -> None:
     source = read(TEMPLATE)
 
     for marker in (
@@ -37,12 +55,12 @@ def test_generate_report_is_structured_as_report_scope_artifact_summary() -> Non
     ):
         assert marker in source
 
-    assert '>Report<' in source
-    assert '>Scope<' in source
-    assert '>Artifact<' in source
-    assert 'Request Summary' in source
-    assert 'Governed Report Request' in source
+    assert 'Choose Report' in source
+    assert 'Define Scope' in source
+    assert 'Configure Artifact' in source
+    assert 'Review & Queue' in source
     assert 'Create & Queue Report' in source
+    assert 'Scope Boundary' in source
 
 
 def test_generate_report_removes_duplicate_guide_and_sidebar_content() -> None:
@@ -83,16 +101,20 @@ def test_inventory_sections_are_contract_locked_without_disabled_checkboxes() ->
     assert "setElementVisibility(selectionActions, !inventoryContractLocked);" in source
 
 
-def test_output_and_period_options_follow_selected_report_contract() -> None:
+def test_output_format_is_visual_and_period_options_follow_selected_contract() -> None:
     source = read(TEMPLATE)
 
     assert 'option.value in payload.selected_report_type.allowed_formats' in source
     assert '{% if not format_allowed %}disabled hidden{% endif %}' in source
+    assert 'data-output-format-card="{{ option.value }}"' in source
+    assert 'data-output-format-grid="true"' in source
+    assert 'syncOutputFormatCards' in source
+    assert "outputFormatSelect.value = card.dataset.outputFormatCard;" in source
     assert 'option.disabled = !isAllowed;' in source
     assert 'option.hidden = !isAllowed;' in source
     assert "option.value !== 'snapshot'" in source
     assert "option.value === 'snapshot'" in source
-    assert 'Analytics produces PDF or CSV. Inventory produces XLSX or CSV' in source
+    assert 'Analytics: PDF / CSV · Inventory: XLSX / CSV' in source
 
 
 def test_generate_report_uses_semantic_status_tokens_and_preserves_storage_guard() -> None:
@@ -110,7 +132,7 @@ def test_generate_report_uses_semantic_status_tokens_and_preserves_storage_guard
     assert "if not bool(storage_status.get('write_available', False))" in service
 
 
-def test_request_summary_keeps_dynamic_contract_ids_for_runtime_sync() -> None:
+def test_review_manifest_keeps_dynamic_contract_ids_for_runtime_sync() -> None:
     source = read(TEMPLATE)
 
     for element_id in (

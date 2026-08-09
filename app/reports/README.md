@@ -74,13 +74,14 @@ Overview must not expose storage credentials, storage paths, retention configura
 
 ## Generate Report presentation contract
 
-Generate Report is one full-width governed request workspace. It does not use a sticky right sidebar, report-type catalog browser, duplicate request preview, generation guide, or separate storage/readiness cards. The fixed request hierarchy is:
+Generate Report is one full-width guided report builder. It does not use a sticky right sidebar, a separate catalog-guide page inside the form, duplicate previews, or repeated storage/readiness cards. The fixed request hierarchy is:
 
-1. **Report**: select one catalog-backed report type and optional report name.
-2. **Scope**: bind the request to one explicit Kubernetes cluster, optional namespace, and the report contract's period mode.
-3. **Artifact**: select only output formats allowed by the catalog and configure content. Analytics sections are selectable; Inventory workbook sections are contract-locked and render as structure rows rather than disabled checkboxes.
-4. **Request Summary**: show concise scope, artifact, storage, worker, and create-readiness evidence.
-5. **Actions**: cancel or create and queue the governed request.
+1. **Choose Report**: switch between Analytics and Inventory families, then choose a catalog-backed report contract from visual report cards. Report name remains optional.
+2. **Define Scope**: bind the request to one explicit Kubernetes cluster, optional namespace, and the report contract's period mode.
+3. **Configure Artifact**: choose only visual output-format options allowed by the catalog and configure content. Analytics sections are selectable; Inventory workbook sections are contract-locked and render as structure rows rather than disabled checkboxes.
+4. **Review & Queue**: show one compact request manifest covering report, scope, artifact, storage, worker, and queue-readiness evidence before submission.
+
+The builder exposes one four-step progress rail and keeps the underlying canonical form controls available for submission/runtime synchronization while presenting report types and output formats as direct-selection cards.
 
 The Generate hero uses the canonical KAORI `page_hero` geometry. Hero metadata describes identity/scope only; worker/storage operational state belongs in the context panel or compact degraded-state strips below the hero. Storage unavailability keeps the workspace readable but disables submission and remains enforced server-side before a `Report` row is created.
 

@@ -27,19 +27,19 @@ def test_reports_pages_use_standard_heroes_and_compact_summary_strips() -> None:
     assert 'Single Cluster Scope' in generate
     assert 'Catalog-Driven Contract' in generate
     assert 'Queued Artifact Generation' in generate
-    assert 'data-generate-report-workspace="governed-request"' in generate
+    assert 'data-generate-report-workspace="guided-builder"' in generate
     assert 'data-generate-step="report"' in generate
     assert 'data-generate-step="scope"' in generate
     assert 'data-generate-step="artifact"' in generate
     assert 'data-generate-step="summary"' in generate
-    assert 'Request Summary' in generate
+    assert 'Review & Queue' in generate
     assert 'id="namespace-select"' in generate
     assert 'namespaceOptionsByCluster' in generate
     assert 'Select a specific cluster to load namespace options.' in generate
     assert 'id="namespace-input"' not in generate
     assert 'id="preview-report-name"' in generate
     assert 'syncPreviewReportName' in generate
-    assert 'Ready to Create' in generate
+    assert 'Ready to Queue' in generate
     assert 'Create & Queue Report' in generate
     assert 'Report Type Guide' not in generate
     assert 'Generation Guide' not in generate
@@ -226,8 +226,9 @@ def test_generate_report_uses_the_canonical_family_format_and_scope_contract() -
     assert 'filter_current_generation(query, model)' in inventory_payload
     assert 'query = query.filter(model.cluster_id == cluster_id)' in inventory_payload
 
-    assert "('analytics', 'Kubernetes Analytics')" in generate_template
-    assert "('inventory', 'Kubernetes Inventory')" in generate_template
+    assert 'data-report-family-filter="analytics"' in generate_template
+    assert 'data-report-family-filter="inventory"' in generate_template
+    assert 'data-report-type-card="{{ option.value }}"' in generate_template
     assert "'value': 'snapshot'" in generate_service
     assert 'A selected Kubernetes cluster is required for every report artifact.' in generate_service
     assert "reportType.family === 'inventory'" in generate_template
