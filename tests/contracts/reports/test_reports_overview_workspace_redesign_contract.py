@@ -68,6 +68,7 @@ def test_reporting_operations_are_one_compact_operational_workspace() -> None:
     assert 'Reporting Operations' in source
     assert 'payload.reporting_operations' in source
     assert 'lg:grid-cols-3' in source
+    assert '{% import "components/table_label.html" as table_label %}' in source
     assert 'table_label.status_indicator_label' in source
 
     for label in ('Generation Queue', 'Active Schedules', 'Artifact Storage'):
