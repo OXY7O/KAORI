@@ -74,6 +74,15 @@ def test_reporting_statistics_replace_recent_artifact_table() -> None:
     assert 'Reporting Statistics' in source
     assert 'payload.artifact_statistics' in source
     assert 'Open Generated Reports' in source
+    assert 'data-reporting-statistics-layout="two-domain-cards"' in source
+    assert 'data-reporting-statistic-domain="generation-performance"' in source
+    assert 'data-reporting-statistic-domain="artifact-reuse"' in source
+    assert 'Generation Performance' in source
+    assert 'Artifact &amp; Reuse' in source
+    assert 'lg:grid-cols-2' in source
+    assert 'xl:grid-cols-4' not in source
+    assert 'payload.artifact_statistics[:2]' in source
+    assert 'payload.artifact_statistics[2:]' in source
     for label in ('Requests This Month', 'Completion Rate', 'Artifact Footprint', 'Custom Templates'):
         assert label in service
         assert label in presentation
