@@ -8,18 +8,21 @@
 {% block dashboard_content %}
     {% set report_status_tone = 'normal' if payload.report.raw_status == 'ready' else ('critical' if payload.report.raw_status == 'failed' else ('warning' if payload.report.raw_status == 'archived' else 'pending')) %}
     {% set file_tone = 'normal' if payload.report.file_state.tone == 'green' else ('critical' if payload.report.file_state.tone == 'red' else ('warning' if payload.report.file_state.tone == 'amber' else 'unknown')) %}
+    {% set attempt_active = payload.job_execution and payload.job_execution.is_active %}
+    {% set attempt_failed = payload.job_execution and payload.job_execution.status_tone == 'critical' %}
+    {% set retained_ready_artifact = payload.report.raw_status == 'ready' and payload.report.can_download_artifact %}
     {% set hero_action_label = 'Download ' ~ payload.report.artifact_label if payload.report.can_download_artifact else ('Review Storage' if payload.artifact_access_notice else 'Back to Registry') %}
     {% set hero_action_href = url_for('reports.download_report_artifact', report_id=payload.report.id) if payload.report.can_download_artifact else (payload.artifact_access_notice.action_href if payload.artifact_access_notice else url_for('reports.generated_reports')) %}
     {% set hero_action_icon = 'download' if payload.report.can_download_artifact else ('hard-drive' if payload.artifact_access_notice else 'arrow-left') %}
 
-    <div class="space-y-6" data-generated-report-detail="operator-record">
+    <div class="space-y-6" data-generated-report-detail="operator-record-v2">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('file-check-2', 'Generated Report Detail', 'file-text') %}
                         <h1 class="{{ page_hero.title_classes() }}">{{ payload.report.name }}</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">
-                            Review the governed report request, generation evidence, and retained artifact delivery state.
+                            Review the persisted report contract, latest generation attempt, and retained artifact delivery state.
                         </p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('file-type-2', payload.report.report_type) }}
@@ -37,7 +40,7 @@
                     report_status_tone,
                     [
                         ('file-type-2', 'Format', payload.report.output_format, 'Governed artifact contract'),
-                        (payload.report.file_state.icon, 'File State', payload.report.file_state.label, 'Verified on this detail view')
+                        (payload.report.file_state.icon, 'Artifact State', payload.report.file_state.label, 'Verified on this detail view')
                     ],
                     hero_action_label,
                     hero_action_href,
@@ -45,6 +48,42 @@
                 ) }}
             </div>
         </section>
+
+        {% if attempt_active and retained_ready_artifact %}
+            <section class="rounded-2xl border border-kaori-primary/20 bg-kaori-soft/45 px-5 py-4 shadow-sm"
+                     role="status"
+                     data-generated-detail-regeneration-state="active-retained">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm" aria-hidden="true">
+                            <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h2 class="text-sm font-bold text-content-primary">Regeneration In Progress</h2>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">The existing verified artifact remains available while the latest generation attempt runs.</p>
+                        </div>
+                    </div>
+                    {{ table_label.status_indicator_label(payload.job_execution.status_label, payload.job_execution.status_tone) }}
+                </div>
+            </section>
+        {% elif attempt_failed and retained_ready_artifact %}
+            <section class="rounded-2xl border border-status-warning-border bg-status-warning-soft px-5 py-4 shadow-sm"
+                     role="status"
+                     data-generated-detail-regeneration-state="failed-retained">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning-text shadow-sm" aria-hidden="true">
+                            <i data-lucide="shield-check" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h2 class="text-sm font-bold text-content-primary">Verified Artifact Retained</h2>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">The latest generation attempt failed, but the previously verified artifact remains available for download.</p>
+                        </div>
+                    </div>
+                    {{ table_label.status_indicator_label('Attempt Failed', 'warning') }}
+                </div>
+            </section>
+        {% endif %}
 
         {% if payload.artifact_access_notice %}
             <section class="rounded-2xl border border-status-warning-border bg-status-warning-soft px-5 py-4 shadow-sm"
@@ -56,7 +95,7 @@
                             <i data-lucide="{{ payload.artifact_access_notice.icon }}" class="h-4 w-4"></i>
                         </span>
                         <div class="min-w-0">
-                            <h2 id="artifact-storage-unavailable-title" class="text-sm font-bold text-status-warning-text">{{ payload.artifact_access_notice.title }}</h2>
+                            <h2 class="text-sm font-bold text-status-warning-text">{{ payload.artifact_access_notice.title }}</h2>
                             <p class="mt-1 text-xs leading-5 text-content-secondary">{{ payload.artifact_access_notice.description }}</p>
                         </div>
                     </div>
@@ -83,14 +122,14 @@
         {% endif %}
 
         <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
-                 data-generated-detail-block="record-artifact">
+                 data-generated-detail-block="artifact-record">
             <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
                         <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="badge-info" class="h-5 w-5"></i></span>
                         <div class="min-w-0">
-                            <h2 class="{{ table_ui.block_title_classes() }}">Report Record & Artifact</h2>
-                            <p class="{{ table_ui.block_description_classes() }}">Canonical request identity, Kubernetes scope, and artifact delivery metadata.</p>
+                            <h2 class="{{ table_ui.block_title_classes() }}">Artifact Record</h2>
+                            <p class="{{ table_ui.block_description_classes() }}">Canonical request identity, Kubernetes scope, and retained artifact delivery metadata.</p>
                         </div>
                     </div>
                     {{ table_label.status_indicator_label(payload.report.status, report_status_tone) }}
@@ -101,29 +140,14 @@
                 <section class="min-w-0 p-5 sm:p-6" aria-labelledby="generated-detail-identity-title">
                     <div class="mb-4">
                         <h3 id="generated-detail-identity-title" class="text-sm font-bold text-content-primary">Identity & Scope</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">The immutable request identity and selected Kubernetes boundary.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">The persisted report contract and selected Kubernetes boundary.</p>
                     </div>
                     <dl class="divide-y divide-outline-subtle border-y border-outline-subtle">
-                        <div class="flex items-start justify-between gap-6 py-3">
-                            <dt class="text-xs font-semibold text-content-muted">Report ID</dt>
-                            <dd class="text-right text-sm font-bold text-content-primary">#{{ payload.report.id }}</dd>
-                        </div>
-                        <div class="flex items-start justify-between gap-6 py-3">
-                            <dt class="text-xs font-semibold text-content-muted">Report Type</dt>
-                            <dd class="max-w-[65%] text-right text-sm font-bold text-content-primary">{{ payload.report.report_type }}</dd>
-                        </div>
-                        <div class="flex items-start justify-between gap-6 py-3">
-                            <dt class="text-xs font-semibold text-content-muted">Cluster</dt>
-                            <dd class="max-w-[65%] break-words text-right text-sm font-bold text-content-primary">{{ payload.report.cluster }}</dd>
-                        </div>
-                        <div class="flex items-start justify-between gap-6 py-3">
-                            <dt class="text-xs font-semibold text-content-muted">Namespace</dt>
-                            <dd class="max-w-[65%] break-words text-right text-sm font-bold text-content-primary">{{ payload.report.namespace }}</dd>
-                        </div>
-                        <div class="flex items-start justify-between gap-6 py-3">
-                            <dt class="text-xs font-semibold text-content-muted">Period</dt>
-                            <dd class="text-right text-sm font-bold text-content-primary">{{ payload.report.period }}</dd>
-                        </div>
+                        <div class="flex items-start justify-between gap-6 py-3"><dt class="text-xs font-semibold text-content-muted">Report ID</dt><dd class="text-right text-sm font-bold text-content-primary">#{{ payload.report.id }}</dd></div>
+                        <div class="flex items-start justify-between gap-6 py-3"><dt class="text-xs font-semibold text-content-muted">Report Type</dt><dd class="max-w-[65%] text-right text-sm font-bold text-content-primary">{{ payload.report.report_type }}</dd></div>
+                        <div class="flex items-start justify-between gap-6 py-3"><dt class="text-xs font-semibold text-content-muted">Cluster</dt><dd class="max-w-[65%] break-words text-right text-sm font-bold text-content-primary">{{ payload.report.cluster }}</dd></div>
+                        <div class="flex items-start justify-between gap-6 py-3"><dt class="text-xs font-semibold text-content-muted">Namespace</dt><dd class="max-w-[65%] break-words text-right text-sm font-bold text-content-primary">{{ payload.report.namespace }}</dd></div>
+                        <div class="flex items-start justify-between gap-6 py-3"><dt class="text-xs font-semibold text-content-muted">Period</dt><dd class="text-right text-sm font-bold text-content-primary">{{ payload.report.period }}</dd></div>
                         <div class="flex items-start justify-between gap-6 py-3">
                             <dt class="text-xs font-semibold text-content-muted">Requested By</dt>
                             <dd class="max-w-[65%] text-right">
@@ -138,30 +162,18 @@
                     <div class="mb-4 flex items-start justify-between gap-3">
                         <div>
                             <h3 id="generated-detail-artifact-title" class="text-sm font-bold text-content-primary">Artifact Delivery</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Stored artifact state and delivery location.</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Verified artifact format, storage backend, and delivery state.</p>
                         </div>
                         {{ table_label.status_indicator_label(payload.report.file_state.label, file_tone) }}
                     </div>
                     <dl class="divide-y divide-outline-subtle border-y border-outline-subtle">
-                        <div class="flex items-start justify-between gap-6 py-3">
-                            <dt class="text-xs font-semibold text-content-muted">Output Format</dt>
-                            <dd class="text-right text-sm font-bold text-content-primary">{{ payload.report.output_format }}</dd>
-                        </div>
-                        <div class="flex items-start justify-between gap-6 py-3">
-                            <dt class="text-xs font-semibold text-content-muted">File Size</dt>
-                            <dd class="text-right text-sm font-bold text-content-primary">{{ payload.report.file_size }}</dd>
-                        </div>
-                        <div class="flex items-start justify-between gap-6 py-3">
-                            <dt class="text-xs font-semibold text-content-muted">Storage Backend</dt>
-                            <dd class="max-w-[65%] text-right text-sm font-bold text-content-primary">{{ payload.report.storage_backend_label }}</dd>
-                        </div>
-                        <div class="flex items-start justify-between gap-6 py-3">
-                            <dt class="text-xs font-semibold text-content-muted">Artifact State</dt>
-                            <dd class="max-w-[65%] text-right text-sm font-bold text-content-primary">{{ payload.report.file_state.label }}</dd>
-                        </div>
+                        <div class="flex items-start justify-between gap-6 py-3"><dt class="text-xs font-semibold text-content-muted">Output Format</dt><dd class="text-right text-sm font-bold text-content-primary">{{ payload.report.output_format }}</dd></div>
+                        <div class="flex items-start justify-between gap-6 py-3"><dt class="text-xs font-semibold text-content-muted">File Size</dt><dd class="text-right text-sm font-bold text-content-primary">{{ payload.report.file_size }}</dd></div>
+                        <div class="flex items-start justify-between gap-6 py-3"><dt class="text-xs font-semibold text-content-muted">Storage Backend</dt><dd class="max-w-[65%] text-right text-sm font-bold text-content-primary">{{ payload.report.storage_backend_label }}</dd></div>
+                        <div class="flex items-start justify-between gap-6 py-3"><dt class="text-xs font-semibold text-content-muted">Artifact State</dt><dd>{{ table_label.status_indicator_label(payload.report.file_state.label, file_tone) }}</dd></div>
                     </dl>
 
-                    <details class="group mt-4 rounded-xl border border-outline-subtle bg-surface-subtle" data-generated-artifact-storage-details="true">
+                    <details class="group mt-4 rounded-xl border border-outline-subtle bg-surface-subtle">
                         <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-content-primary [&::-webkit-details-marker]:hidden">
                             Storage Reference
                             <i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition group-open:rotate-180" aria-hidden="true"></i>
@@ -178,87 +190,115 @@
         </section>
 
         <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
-                 data-generated-detail-block="generation-content">
+                 data-generated-detail-block="generation-timeline">
             <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-                <div class="flex min-w-0 items-start gap-3">
-                    <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="workflow" class="h-5 w-5"></i></span>
-                    <div class="min-w-0">
-                        <h2 class="{{ table_ui.block_title_classes() }}">Generation Evidence & Report Content</h2>
-                        <p class="{{ table_ui.block_description_classes() }}">Worker execution evidence, lifecycle timing, and the report sections bound to this request.</p>
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="workflow" class="h-5 w-5"></i></span>
+                        <div class="min-w-0">
+                            <h2 class="{{ table_ui.block_title_classes() }}">Generation Timeline</h2>
+                            <p class="{{ table_ui.block_description_classes() }}">Latest Reports worker execution and the lifecycle checkpoints for this artifact request.</p>
+                        </div>
                     </div>
+                    {% if payload.job_execution %}
+                        {{ table_label.status_indicator_label(payload.job_execution.status_label, payload.job_execution.status_tone) }}
+                    {% endif %}
                 </div>
             </header>
 
-            <div class="grid lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle">
-                <section class="min-w-0 p-5 sm:p-6" aria-labelledby="generated-detail-execution-title">
-                    <div class="mb-4 flex items-start justify-between gap-3">
-                        <div>
-                            <h3 id="generated-detail-execution-title" class="text-sm font-bold text-content-primary">Generation Evidence</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Latest linked Reports worker execution and report lifecycle timestamps.</p>
-                        </div>
-                        {% if payload.job_execution %}
-                            {{ table_label.status_indicator_label(payload.job_execution.status_label, payload.job_execution.status_tone) }}
-                        {% endif %}
+            <div class="p-5 sm:p-6">
+                {% if payload.job_execution %}
+                    <div class="grid gap-0 overflow-hidden rounded-xl border border-outline-subtle sm:grid-cols-4" data-generation-timeline="true">
+                        {% set timeline_items = [
+                            ('01', 'Requested', payload.report.created_at, 'Request persisted'),
+                            ('02', 'Queued', payload.job_execution.queued_at, 'Reports queue'),
+                            ('03', 'Started', payload.job_execution.started_at, 'Worker execution'),
+                            ('04', 'Completed', payload.job_execution.completed_at, 'Terminal attempt state')
+                        ] %}
+                        {% for number, label, value, caption in timeline_items %}
+                            <div class="min-w-0 border-b border-outline-subtle bg-surface-card px-4 py-4 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-extrabold tracking-wide text-kaori-primary">{{ number }}</span>
+                                    <p class="text-sm font-bold text-content-primary">{{ label }}</p>
+                                </div>
+                                <p class="mt-2 break-words text-sm font-semibold text-content-secondary">{{ value }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ caption }}</p>
+                            </div>
+                        {% endfor %}
                     </div>
 
-                    {% if payload.job_execution %}
-                        <dl class="divide-y divide-outline-subtle border-y border-outline-subtle">
-                            <div class="flex items-start justify-between gap-6 py-3"><dt class="text-xs font-semibold text-content-muted">Execution ID</dt><dd class="max-w-[65%] break-all text-right text-sm font-bold text-content-primary">{{ payload.job_execution.public_id }}</dd></div>
-                            <div class="flex items-start justify-between gap-6 py-3"><dt class="text-xs font-semibold text-content-muted">Trigger</dt><dd class="text-right text-sm font-bold text-content-primary">{{ payload.job_execution.trigger_label }}</dd></div>
-                            <div class="flex items-start justify-between gap-6 py-3"><dt class="text-xs font-semibold text-content-muted">Queue</dt><dd class="text-right text-sm font-bold text-content-primary">{{ payload.job_execution.queue_name }}</dd></div>
-                            <div class="flex items-start justify-between gap-6 py-3"><dt class="text-xs font-semibold text-content-muted">Queued</dt><dd class="text-right text-sm font-bold text-content-primary">{{ payload.job_execution.queued_at }}</dd></div>
-                            <div class="flex items-start justify-between gap-6 py-3"><dt class="text-xs font-semibold text-content-muted">Started</dt><dd class="text-right text-sm font-bold text-content-primary">{{ payload.job_execution.started_at }}</dd></div>
-                            <div class="flex items-start justify-between gap-6 py-3"><dt class="text-xs font-semibold text-content-muted">Completed</dt><dd class="text-right text-sm font-bold text-content-primary">{{ payload.job_execution.completed_at }}</dd></div>
-                            <div class="flex items-start justify-between gap-6 py-3"><dt class="text-xs font-semibold text-content-muted">Duration</dt><dd class="text-right text-sm font-bold text-content-primary">{{ payload.job_execution.duration }}</dd></div>
-                        </dl>
+                    <div class="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.45fr)]">
+                        <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p class="text-xs font-semibold text-content-muted">Latest Attempt</p>
+                                    <p class="mt-1 text-sm font-bold text-content-primary">{{ payload.job_execution.public_id }}</p>
+                                </div>
+                                <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                                    <div><p class="text-xs font-semibold text-content-muted">Trigger</p><p class="mt-1 font-bold text-content-primary">{{ payload.job_execution.trigger_label }}</p></div>
+                                    <div><p class="text-xs font-semibold text-content-muted">Queue</p><p class="mt-1 font-bold text-content-primary">{{ payload.job_execution.queue_name }}</p></div>
+                                    <div><p class="text-xs font-semibold text-content-muted">Duration</p><p class="mt-1 font-bold text-content-primary">{{ payload.job_execution.duration }}</p></div>
+                                    <div><p class="text-xs font-semibold text-content-muted">Last Updated</p><p class="mt-1 font-bold text-content-primary">{{ payload.report.updated_at }}</p></div>
+                                </div>
+                            </div>
+                        </div>
+
                         {% if payload.job_execution.is_active %}
-                            <div class="mt-4 rounded-xl border border-kaori-primary/15 bg-kaori-soft/35 px-4 py-3">
+                            <div class="rounded-xl border border-kaori-primary/15 bg-kaori-soft/35 px-4 py-3" data-generated-detail-active-progress="true">
                                 <div class="flex items-center justify-between gap-3 text-xs font-semibold text-content-secondary">
                                     <span>{{ payload.job_execution.progress_message }}</span>
                                     <span>{{ payload.job_execution.progress_label }}</span>
                                 </div>
-                                <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-disabled">
+                                <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-disabled">
                                     <div class="h-full rounded-full bg-kaori-primary" style="width: {{ payload.job_execution.progress }}%"></div>
                                 </div>
                             </div>
+                        {% else %}
+                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">
+                                <p class="text-xs font-semibold text-content-muted">Attempt Status</p>
+                                <div class="mt-2">{{ table_label.status_indicator_label(payload.job_execution.status_label, payload.job_execution.status_tone) }}</div>
+                                <p class="mt-2 text-xs leading-5 text-content-muted">Artifact availability is evaluated separately from the latest generation attempt.</p>
+                            </div>
                         {% endif %}
-                    {% else %}
-                        <div class="rounded-xl border border-dashed border-outline-default bg-surface-subtle px-4 py-6 text-center">
-                            <p class="text-sm font-semibold text-content-primary">No Job Execution Linked</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">This record does not currently reference a canonical Reports worker execution.</p>
-                        </div>
-                    {% endif %}
+                    </div>
+                {% else %}
+                    <div class="rounded-xl border border-dashed border-outline-default bg-surface-subtle px-4 py-6 text-center">
+                        <p class="text-sm font-semibold text-content-primary">No Job Execution Linked</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">This record does not currently reference a canonical Reports worker execution.</p>
+                    </div>
+                {% endif %}
 
-                    <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                        <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">
-                            <p class="text-xs font-semibold text-content-muted">Created</p>
-                            <p class="mt-1 text-sm font-bold text-content-primary">{{ payload.report.created_at }}</p>
-                        </div>
-                        <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">
-                            <p class="text-xs font-semibold text-content-muted">Last Updated</p>
-                            <p class="mt-1 text-sm font-bold text-content-primary">{{ payload.report.updated_at }}</p>
+                {% if payload.report.error_message and payload.report.error_message != 'No error recorded' %}
+                    <div class="mt-4 rounded-xl border border-status-warning-border bg-status-warning-soft px-4 py-3" data-generated-detail-generation-note="true">
+                        <p class="text-xs font-bold text-status-warning-text">Latest Generation Note</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ payload.report.error_message }}</p>
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+                 data-generated-detail-block="report-contract">
+            <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="list-checks" class="h-5 w-5"></i></span>
+                        <div class="min-w-0">
+                            <h2 class="{{ table_ui.block_title_classes() }}">Report Contract</h2>
+                            <p class="{{ table_ui.block_description_classes() }}">Persisted content selection and evidence boundary used by the renderer.</p>
                         </div>
                     </div>
+                    {{ table_label.metadata_label(payload.report.sections_count ~ ' Sections', 'list-checks') }}
+                </div>
+            </header>
 
-                    {% if payload.report.error_message and payload.report.error_message != 'No error recorded' %}
-                        <div class="mt-4 rounded-xl border border-status-warning-border bg-status-warning-soft px-4 py-3" data-generated-detail-generation-note="true">
-                            <p class="text-xs font-bold text-status-warning-text">Latest Generation Note</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ payload.report.error_message }}</p>
-                        </div>
-                    {% endif %}
-                </section>
-
+            <div class="grid lg:grid-cols-[minmax(0,1.3fr)_minmax(20rem,0.7fr)] lg:divide-x lg:divide-outline-subtle">
                 <section class="min-w-0 p-5 sm:p-6" aria-labelledby="generated-detail-content-title">
-                    <div class="mb-4 flex items-start justify-between gap-3">
-                        <div>
-                            <h3 id="generated-detail-content-title" class="text-sm font-bold text-content-primary">Report Content</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Sections persisted with the report request and used by the renderer contract.</p>
-                        </div>
-                        {{ table_label.metadata_label(payload.report.sections_count ~ ' Sections', 'list-checks') }}
-                    </div>
+                    <h3 id="generated-detail-content-title" class="text-sm font-bold text-content-primary">Included Sections</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Sections persisted with the report request.</p>
 
                     {% if payload.report.sections %}
-                        <div class="grid gap-2 sm:grid-cols-2" data-generated-detail-sections="true">
+                        <div class="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3" data-generated-detail-sections="true">
                             {% for section in payload.report.sections %}
                                 <div class="flex min-w-0 items-center gap-2.5 rounded-lg border border-outline-subtle bg-surface-subtle px-3 py-2.5">
                                     <i data-lucide="check" class="h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
@@ -267,17 +307,29 @@
                             {% endfor %}
                         </div>
                     {% else %}
-                        <div class="rounded-xl border border-dashed border-outline-default bg-surface-subtle px-4 py-6 text-center">
+                        <div class="mt-4 rounded-xl border border-dashed border-outline-default bg-surface-subtle px-4 py-6 text-center">
                             <p class="text-sm font-semibold text-content-primary">No Selected Sections</p>
                             <p class="mt-1 text-xs leading-5 text-content-muted">This report contract does not contain persisted section selections.</p>
                         </div>
                     {% endif %}
+                </section>
+
+                <aside class="min-w-0 p-5 sm:p-6" aria-labelledby="generated-detail-boundary-title">
+                    <h3 id="generated-detail-boundary-title" class="text-sm font-bold text-content-primary">Evidence Boundary</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">The artifact is bound to the request contract shown on this page.</p>
+
+                    <dl class="mt-4 divide-y divide-outline-subtle border-y border-outline-subtle">
+                        <div class="flex items-start justify-between gap-6 py-3"><dt class="text-xs font-semibold text-content-muted">Cluster</dt><dd class="max-w-[60%] text-right text-sm font-bold text-content-primary">{{ payload.report.cluster }}</dd></div>
+                        <div class="flex items-start justify-between gap-6 py-3"><dt class="text-xs font-semibold text-content-muted">Namespace</dt><dd class="max-w-[60%] text-right text-sm font-bold text-content-primary">{{ payload.report.namespace }}</dd></div>
+                        <div class="flex items-start justify-between gap-6 py-3"><dt class="text-xs font-semibold text-content-muted">Period</dt><dd class="text-right text-sm font-bold text-content-primary">{{ payload.report.period }}</dd></div>
+                        <div class="flex items-start justify-between gap-6 py-3"><dt class="text-xs font-semibold text-content-muted">Format</dt><dd class="text-right text-sm font-bold text-content-primary">{{ payload.report.output_format }}</dd></div>
+                    </dl>
 
                     <div class="mt-4 rounded-xl border border-kaori-primary/15 bg-kaori-soft/35 px-4 py-3">
-                        <p class="text-xs font-bold text-content-primary">Evidence Boundary</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">The report is bound to the persisted cluster, namespace, period, format, and section contract shown on this page.</p>
+                        <p class="text-xs font-bold text-content-primary">Governed Evidence</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Regeneration reuses this persisted request contract; it does not silently broaden cluster, namespace, period, or section scope.</p>
                     </div>
-                </section>
+                </aside>
             </div>
         </section>
 
@@ -292,9 +344,9 @@
                             <h2 class="{{ table_ui.block_title_classes() }}">Lifecycle Actions</h2>
                             <p class="{{ table_ui.block_description_classes() }}">
                                 {% if payload.report.raw_status == 'ready' and payload.report.can_generate_artifact %}
-                                    Regeneration keeps the existing verified artifact available if the new attempt fails.
+                                    Existing verified artifacts remain available if a regeneration attempt fails.
                                 {% else %}
-                                    Manage the report artifact lifecycle without changing the persisted request scope.
+                                    Manage artifact lifecycle without changing the persisted request scope.
                                 {% endif %}
                             </p>
                         </div>

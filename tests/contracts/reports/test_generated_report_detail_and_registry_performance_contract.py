@@ -30,27 +30,56 @@ def test_generated_registry_is_metadata_first_and_avoids_global_storage_integrit
     assert 'without per-row object-storage HEAD checks' in service
 
 
-def test_generated_detail_is_full_width_operator_record_without_legacy_sidebar() -> None:
+def test_generated_detail_separates_retained_artifact_from_latest_generation_attempt() -> None:
     template = read(DETAIL)
 
-    assert 'data-generated-report-detail="operator-record"' in template
-    assert 'data-generated-detail-block="record-artifact"' in template
-    assert 'data-generated-detail-block="generation-content"' in template
+    assert 'data-generated-report-detail="operator-record-v2"' in template
+    assert 'data-generated-detail-block="artifact-record"' in template
+    assert 'data-generated-detail-block="generation-timeline"' in template
+    assert 'data-generated-detail-block="report-contract"' in template
     assert 'data-generated-detail-lifecycle-actions="true"' in template
-    assert 'Identity & Scope' in template
-    assert 'Artifact Delivery' in template
-    assert 'Generation Evidence' in template
-    assert 'Report Content' in template
+
+    assert 'Artifact Record' in template
+    assert 'Generation Timeline' in template
+    assert 'Latest Attempt' in template
+    assert 'Report Contract' in template
     assert 'Evidence Boundary' in template
     assert 'Storage Reference' in template
-    assert 'Regeneration keeps the existing verified artifact available if the new attempt fails.' in template
+
+    assert 'data-generated-detail-regeneration-state="active-retained"' in template
+    assert 'data-generated-detail-regeneration-state="failed-retained"' in template
+    assert 'Regeneration In Progress' in template
+    assert 'Verified Artifact Retained' in template
+    assert 'The existing verified artifact remains available while the latest generation attempt runs.' in template
+    assert 'The latest generation attempt failed, but the previously verified artifact remains available for download.' in template
+
+    assert 'Artifact availability is evaluated separately from the latest generation attempt.' in template
+    assert 'Regeneration reuses this persisted request contract' in template
+    assert 'Existing verified artifacts remain available if a regeneration attempt fails.' in template
+
+    assert 'data-generation-timeline="true"' in template
+    assert "('01', 'Requested'" in template
+    assert "('02', 'Queued'" in template
+    assert "('03', 'Started'" in template
+    assert "('04', 'Completed'" in template
 
     assert 'xl:grid-cols-[minmax(0,1fr)_380px]' not in template
     assert 'Status Context' not in template
     assert 'Export Readiness' not in template
     assert 'Recommended Actions' not in template
+    assert 'Generation Evidence & Report Content' not in template
     assert 'bg-rose-' not in template
     assert 'bg-emerald-' not in template
+
+
+def test_generated_detail_lifecycle_actions_use_single_click_operation_guard() -> None:
+    template = read(DETAIL)
+
+    assert 'data-loading-label="Queueing generation..."' in template
+    assert 'data-loading-label="Archiving..."' in template
+    assert 'data-loading-label="Restoring..."' in template
+    assert template.count('data-operation-submit') >= 3
+    assert template.count('data-operation-submit-label') >= 3
 
 
 def test_generate_review_status_is_grouped_with_readiness_and_submit_is_single_click_safe() -> None:
