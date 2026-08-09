@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-from flask import url_for
+from flask import current_app, url_for
 from sqlalchemy import func, select
 
 from app.common.celery_queue_health import get_queue_readiness
@@ -33,6 +33,7 @@ from app.reports.storage.service import (
     get_configured_storage_backend_name,
     get_report_storage_backend_status,
 )
+from app.reports.storage.state import format_storage_check_age, format_storage_check_source
 
 PENDING_REPORT_STATUSES = [
     'requested',
@@ -261,7 +262,16 @@ def get_reporting_operations(
     storage_context: dict[str, Any],
     worker_context: dict[str, Any],
 ) -> list[dict[str, Any]]:
-    storage_ready = str(storage_context.get('status')) == 'selected'
+    storage_ready = bool(storage_context.get('ready', False))
+    storage_state = str(storage_context.get('state') or 'unknown')
+    if storage_ready:
+        storage_status_label = 'Connected'
+    elif storage_state == 'degraded':
+        storage_status_label = 'Degraded'
+    elif storage_state == 'misconfigured':
+        storage_status_label = 'Needs Review'
+    else:
+        storage_status_label = 'Disconnected'
     active_schedules = int(report_counts.get('active_schedules', 0))
 
     return [
@@ -292,15 +302,10 @@ def get_reporting_operations(
         {
             'label': 'Artifact Storage',
             'value': str(storage_context.get('label', 'Report Storage')),
-            'status': 'Ready' if storage_ready else 'Review',
+            'status': storage_status_label,
             'tone': 'normal' if storage_ready else 'warning',
-            'icon': 'hard-drive',
-            'caption': str(
-                storage_context.get(
-                    'active_detail',
-                    'Configured report artifact backend.',
-                )
-            ).capitalize(),
+            'icon': 'hard-drive' if storage_ready else 'cloud-off',
+            'caption': f"{storage_context.get('checked_label', 'Readiness checked')} · shared readiness state.",
             'action_label': 'Open Storage',
             'href': url_for('reports.storage'),
         },
@@ -472,34 +477,46 @@ def get_storage_context() -> dict[str, Any]:
     local_health = build_local_storage_health()
     s3_health = build_s3_storage_health()
     backend_status = get_report_storage_backend_status(backend_name)
+    is_ready = bool(backend_status.get('write_available', False))
+    state = str(backend_status.get('state') or 'unknown')
+    checked_label = format_storage_check_age(backend_status)
+
+    try:
+        monitor_interval = int(current_app.config.get('REPORT_STORAGE_HEALTH_INTERVAL_MINUTES', 1) or 1)
+    except (TypeError, ValueError):
+        monitor_interval = 1
 
     if backend_name == 's3':
-        is_available = bool(backend_status.get('available', False))
-        status = 'selected' if is_available else 'unavailable'
-        display_status = 'S3 Storage Connected' if is_available else 'S3 Storage Disconnected'
-        tone = str(backend_status.get('tone', 'amber'))
-        description = str(backend_status.get('description') or '')
+        if is_ready:
+            display_status = 'S3 Storage Connected'
+        elif state == 'degraded':
+            display_status = 'S3 Storage Degraded'
+        elif state == 'misconfigured':
+            display_status = 'S3 Storage Needs Review'
+        else:
+            display_status = 'S3 Storage Disconnected'
         active_detail = 'S3-compatible object storage'
     else:
-        root_writable = bool(local_health.get('root_writable', False))
-        status = 'selected' if root_writable else 'path_review'
-        display_status = 'Local Storage' if root_writable else 'Local Storage Review'
-        tone = 'green' if root_writable else 'amber'
-        description = (
-            'Local filesystem storage is selected as the report artifact backend. Detailed path and retention validation is handled on the Storage page.'
-            if root_writable
-            else 'Local filesystem storage is selected, but the configured report path should be reviewed on the Storage page.'
-        )
+        display_status = 'Local Storage Ready' if is_ready else 'Local Storage Review'
         active_detail = 'local filesystem storage'
 
     return {
         'backend': backend_name,
-        'label': 'S3-compatible storage' if backend_name == 's3' else 'Local filesystem',
-        'status': status,
+        'label': str(backend_status.get('label') or ('S3-compatible storage' if backend_name == 's3' else 'Local filesystem')),
+        'status': 'selected' if is_ready else 'unavailable',
+        'state': state,
         'display_status': display_status,
-        'tone': tone,
-        'description': description,
+        'tone': str(backend_status.get('tone') or ('green' if is_ready else 'amber')),
+        'description': str(backend_status.get('description') or ''),
         'active_detail': active_detail,
+        'ready': is_ready,
+        'degraded': not is_ready,
+        'checked_at': backend_status.get('checked_at'),
+        'checked_label': checked_label,
+        'source': str(backend_status.get('source') or 'direct'),
+        'source_label': format_storage_check_source(backend_status),
+        'stale': bool(backend_status.get('stale', False)),
+        'monitor_interval_minutes': max(monitor_interval, 1),
         'local': local_health,
         's3': s3_health,
         'backend_status': backend_status,

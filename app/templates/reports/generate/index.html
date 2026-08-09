@@ -540,7 +540,8 @@
                                 </a>
                                 <button type="submit"
                                         id="generate-report-button"
-                                        class="inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 disabled:cursor-not-allowed">
+                                        {% if not payload.generation_allowed %}disabled{% endif %}
+                                        class="inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-kaori-soft disabled:text-content-muted">
                                     <i data-lucide="file-plus-2" class="h-4 w-4"></i>
                                     Create & Queue Report
                                 </button>
@@ -571,7 +572,7 @@
                     boundary='Status: ' ~ payload.storage_context.status ~ '. Generated report artifacts are saved to this backend.'
                 ) }}
 
-                {% set request_ready = payload.readiness[0].tone == 'blue' and payload.readiness[1].tone == 'blue' %}
+                {% set request_ready = payload.readiness[0].tone == 'blue' and payload.readiness[1].tone == 'blue' and payload.generation_allowed %}
                 <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
                     <header class="flex items-start justify-between gap-3 border-b border-outline-default px-5 py-4">
                         <div class="flex items-start gap-3">
@@ -652,6 +653,7 @@
                 const reportNameInput = document.getElementById('report-name-input');
                 const clusterGuard = document.getElementById('cluster-guard');
                 const generateButton = document.getElementById('generate-report-button');
+                const storageGenerationReady = {{ payload.generation_allowed|tojson }};
                 const selectedSectionList = document.getElementById('selected-section-list');
                 const selectedSectionCountBadge = document.getElementById('selected-section-count-badge');
                 const selectedSectionValidation = document.getElementById('selected-section-validation');
@@ -777,7 +779,9 @@
                     if (readinessSummaryText) {
                         readinessSummaryText.textContent = isReady
                             ? 'Scope and section requirements are valid. The request can be created.'
-                            : 'Resolve the required scope or section checks before creating the request.';
+                            : (storageGenerationReady
+                                ? 'Resolve the required scope or section checks before creating the request.'
+                                : 'Artifact storage is unavailable. Restore storage connectivity before creating a report.');
                     }
 
                     if (previewEligibilityStatus) {
@@ -811,7 +815,9 @@
                     if (previewNextStepDescription) {
                         previewNextStepDescription.textContent = isReady
                             ? 'The request will be saved and one canonical artifact-generation job will be queued automatically.'
-                            : 'Resolve the cluster scope or section selection before creating the request.';
+                            : (storageGenerationReady
+                                ? 'Resolve the cluster scope or section selection before creating the request.'
+                                : 'Restore artifact storage connectivity before creating and queueing a report.');
                     }
                 }
 
@@ -1122,7 +1128,7 @@
                     const isAllClusters = !clusterSelect.value;
                     const hasSelectedSections = getSelectedSections().length > 0;
                     const shouldBlockCluster = requiresSpecificCluster && isAllClusters;
-                    const shouldBlock = !hasRegisteredClusters || shouldBlockCluster || !hasSelectedSections;
+                    const shouldBlock = !hasRegisteredClusters || shouldBlockCluster || !hasSelectedSections || !storageGenerationReady;
                     const clusterLabel = clusterSelect.options[clusterSelect.selectedIndex]
                         ? clusterSelect.options[clusterSelect.selectedIndex].text.trim()
                         : 'Select Cluster';

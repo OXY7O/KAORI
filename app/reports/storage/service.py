@@ -21,6 +21,13 @@ from app.reports.storage.health import (
 )
 from app.reports.storage.local import build_local_report_storage
 from app.reports.storage.s3 import build_s3_report_storage
+from app.reports.storage.state import (
+    clear_shared_report_storage_status,
+    format_storage_check_age,
+    format_storage_check_source,
+    get_shared_report_storage_status,
+    publish_shared_report_storage_status,
+)
 from app.storage.base import ArtifactStorageBackend, StoredArtifact
 
 SUPPORTED_REPORT_STORAGE_BACKENDS = {
@@ -113,23 +120,37 @@ def _get_storage_status_cache() -> dict[str, dict[str, Any]]:
     return cache
 
 
-def clear_report_storage_status_cache() -> None:
-    """Clear request-scoped storage probes before an explicit retry."""
+def clear_report_storage_status_cache(*, include_shared: bool = False) -> None:
+    """Clear local readiness caches before an explicit retry.
+
+    Shared Redis state is preserved by default so one web process cannot erase
+    the canonical multi-process snapshot. Pass ``include_shared=True`` only
+    when configuration changed and the shared snapshot must be invalidated.
+    """
 
     setattr(g, _STORAGE_STATUS_CACHE_KEY, {})
     _clear_process_storage_status_cache()
+    if include_shared:
+        clear_shared_report_storage_status(get_configured_storage_backend_name())
 
 
-def _cache_storage_status(backend_name: str, status: dict[str, Any]) -> dict[str, Any]:
-    _get_storage_status_cache()[backend_name] = status
-    _set_process_cached_storage_status(backend_name, status)
-    return status
+def _cache_storage_status(
+    backend_name: str,
+    status: dict[str, Any],
+    *,
+    source: str = 'direct',
+) -> dict[str, Any]:
+    published = publish_shared_report_storage_status(status, source=source)
+    _get_storage_status_cache()[backend_name] = published
+    _set_process_cached_storage_status(backend_name, published)
+    return published
 
 
 def get_report_storage_backend_status(
     backend_name: str | None = None,
     *,
     force: bool = False,
+    source: str = 'direct',
 ) -> dict[str, Any]:
     """Return a sanitized, request-cached readiness state for one backend.
 
@@ -140,31 +161,46 @@ def get_report_storage_backend_status(
 
     normalized_backend = str(backend_name or get_configured_storage_backend_name()).lower().strip()
     if normalized_backend not in SUPPORTED_REPORT_STORAGE_BACKENDS:
-        return {
-            'backend': normalized_backend or 'unknown',
-            'label': _format_storage_backend_label(normalized_backend),
-            'configured': False,
-            'reachable': False,
-            'available': False,
-            'read_available': False,
-            'write_available': False,
-            'state': 'unsupported',
-            'status': 'Needs Review',
-            'tone': 'amber',
-            'icon': 'circle-alert',
-            'title': 'Storage Configuration Needs Review',
-            'description': 'The configured report storage backend is not supported.',
-            'action_label': 'Review Storage',
-        }
+        return _cache_storage_status(
+            normalized_backend,
+            {
+                'backend': normalized_backend or 'unknown',
+                'label': _format_storage_backend_label(normalized_backend),
+                'configured': False,
+                'reachable': False,
+                'available': False,
+                'read_available': False,
+                'write_available': False,
+                'state': 'unsupported',
+                'status': 'Needs Review',
+                'tone': 'amber',
+                'icon': 'circle-alert',
+                'title': 'Storage Configuration Needs Review',
+                'description': 'The configured report storage backend is not supported.',
+                'action_label': 'Review Storage',
+            },
+            source=source,
+        )
 
     cache = _get_storage_status_cache()
     if not force and normalized_backend in cache:
         return cache[normalized_backend]
     if not force:
+        shared_status = get_shared_report_storage_status(normalized_backend)
+        if shared_status is not None:
+            cache[normalized_backend] = shared_status
+            _set_process_cached_storage_status(normalized_backend, shared_status)
+            return shared_status
         process_cached = _get_process_cached_storage_status(normalized_backend)
         if process_cached is not None:
             cache[normalized_backend] = process_cached
             return process_cached
+
+    previous_shared_status = (
+        get_shared_report_storage_status(normalized_backend, allow_stale=True)
+        if normalized_backend == 's3'
+        else None
+    )
 
     if normalized_backend == 'local':
         health = build_local_storage_health()
@@ -193,6 +229,7 @@ def get_report_storage_backend_status(
                 ),
                 'action_label': 'Review Storage',
             },
+            source=source,
         )
 
     health = build_s3_storage_health()
@@ -218,6 +255,7 @@ def get_report_storage_backend_status(
                 ),
                 'action_label': 'Review Storage',
             },
+            source=source,
         )
 
     try:
@@ -250,6 +288,37 @@ def get_report_storage_backend_status(
                 ),
                 'action_label': 'Retry Connection',
             },
+            source=source,
+        )
+
+    if (
+        source != 'manual_verification'
+        and previous_shared_status is not None
+        and bool(previous_shared_status.get('write_verification_required', False))
+    ):
+        return _cache_storage_status(
+            normalized_backend,
+            {
+                'backend': 's3',
+                'label': 'S3-compatible storage',
+                'configured': True,
+                'reachable': True,
+                'available': False,
+                'read_available': True,
+                'write_available': False,
+                'write_verification_required': True,
+                'state': 'degraded',
+                'status': 'Verification Required',
+                'tone': 'amber',
+                'icon': 'shield-alert',
+                'title': 'S3 Storage Is Reachable but Write Verification Is Required',
+                'description': (
+                    'KAORI can reach the configured S3 or MinIO bucket, but a previous write or strong verification failure remains unresolved. '
+                    'New report generation stays paused until Test Storage succeeds.'
+                ),
+                'action_label': 'Verify Storage',
+            },
+            source=source,
         )
 
     return _cache_storage_status(
@@ -262,6 +331,7 @@ def get_report_storage_backend_status(
             'available': True,
             'read_available': True,
             'write_available': True,
+            'write_verification_required': False,
             'state': 'ready',
             'status': 'Connected',
             'tone': 'green',
@@ -270,13 +340,39 @@ def get_report_storage_backend_status(
             'description': 'KAORI can reach the configured S3 or MinIO bucket for report artifacts.',
             'action_label': 'Test Storage',
         },
+        source=source,
     )
 
 
-def mark_report_storage_backend_unavailable(backend_name: str) -> dict[str, Any]:
-    """Cache a sanitized unavailable state after an artifact operation fails."""
+
+def refresh_report_storage_readiness(
+    backend_name: str | None = None,
+    *,
+    source: str = 'periodic',
+) -> dict[str, Any]:
+    """Run a fresh lightweight probe and publish one shared readiness snapshot."""
+
+    normalized_backend = str(backend_name or get_configured_storage_backend_name()).lower().strip()
+    clear_report_storage_status_cache()
+    return get_report_storage_backend_status(
+        normalized_backend,
+        force=True,
+        source=source,
+    )
+
+
+def mark_report_storage_backend_unavailable(
+    backend_name: str,
+    *,
+    source: str = 'operation_failure',
+) -> dict[str, Any]:
+    """Publish a sanitized unavailable state after an artifact operation fails."""
 
     normalized_backend = str(backend_name or 'unknown').lower().strip()
+    write_verification_required = source in {
+        'artifact_write_failure',
+        'manual_verification_failure',
+    }
     return _cache_storage_status(
         normalized_backend,
         {
@@ -287,6 +383,7 @@ def mark_report_storage_backend_unavailable(backend_name: str) -> dict[str, Any]
             'available': False,
             'read_available': False,
             'write_available': False,
+            'write_verification_required': write_verification_required,
             'state': 'unavailable',
             'status': 'Disconnected',
             'tone': 'amber',
@@ -297,6 +394,7 @@ def mark_report_storage_backend_unavailable(backend_name: str) -> dict[str, Any]
             ),
             'action_label': 'Retry Connection',
         },
+        source=source,
     )
 
 
@@ -423,29 +521,35 @@ def save_report_file(
     *,
     content_type: str = 'application/pdf',
 ) -> StoredArtifact:
+    backend_name = get_configured_storage_backend_name()
     backend = get_active_report_storage_backend()
-
-    return backend.save_file(
-        source_path=source_path,
-        object_key=object_key,
-        content_type=content_type,
-    )
+    try:
+        return backend.save_file(
+            source_path=source_path,
+            object_key=object_key,
+            content_type=content_type,
+        )
+    except Exception:
+        mark_report_storage_backend_unavailable(
+            backend_name,
+            source='artifact_write_failure',
+        )
+        raise
 
 
 def build_report_download_path(
     stored_path: str,
 ) -> Path:
-    backend_name, object_key = parse_report_storage_uri(
-        stored_path,
-    )
-
-    backend = build_report_storage_backend(
-        backend_name,
-    )
-
-    return backend.build_download_path(
-        object_key,
-    )
+    backend_name, object_key = parse_report_storage_uri(stored_path)
+    backend = build_report_storage_backend(backend_name)
+    try:
+        return backend.build_download_path(object_key)
+    except Exception:
+        mark_report_storage_backend_unavailable(
+            backend_name,
+            source='artifact_read_failure',
+        )
+        raise
 
 
 def report_file_exists(
@@ -523,6 +627,15 @@ def get_report_storage_payload() -> dict[str, Any]:
         'active_backend': backend_name,
         'backend_status': backend_status,
         'storage_actions_enabled': bool(backend_status.get('reachable', False)),
+        'readiness_monitor': {
+            'enabled': bool(current_app.config.get('REPORT_STORAGE_HEALTH_MONITOR_ENABLED', True)),
+            'interval_minutes': int(current_app.config.get('REPORT_STORAGE_HEALTH_INTERVAL_MINUTES', 1) or 1),
+            'stale_seconds': int(current_app.config.get('REPORT_STORAGE_HEALTH_STALE_SECONDS', 120) or 120),
+            'checked_label': format_storage_check_age(backend_status),
+            'source': str(backend_status.get('source') or 'direct'),
+            'source_label': format_storage_check_source(backend_status),
+            'shared_state': bool(current_app.config.get('REDIS_URL')),
+        },
         'summary_cards': summary_cards,
         'supported_backends': [
             {
@@ -770,13 +883,6 @@ def build_storage_recommended_actions(
 def verify_active_report_storage() -> dict[str, Any]:
     backend = get_active_report_storage_backend()
     backend_name = get_configured_storage_backend_name()
-
-    if backend_name == 's3' and hasattr(
-        backend,
-        'test_connection',
-    ):
-        backend.test_connection()  # type: ignore[attr-defined]
-
     test_key = 'reports/storage-verification/kaori-report-storage-check.txt'
 
     with NamedTemporaryFile(
@@ -785,27 +891,30 @@ def verify_active_report_storage() -> dict[str, Any]:
         suffix='.txt',
         delete=False,
     ) as temp_file:
-        temp_file.write(
-            'kaori report storage verification\n',
-        )
-        temp_path = Path(
-            temp_file.name,
-        )
+        temp_file.write('kaori report storage verification\n')
+        temp_path = Path(temp_file.name)
 
     try:
+        if backend_name == 's3' and hasattr(backend, 'test_connection'):
+            backend.test_connection()  # type: ignore[attr-defined]
+
         stored_file = backend.save_file(
             source_path=temp_path,
             object_key=test_key,
         )
-
-        exists = backend.exists(
-            stored_file.object_key,
+        exists = backend.exists(stored_file.object_key)
+        backend.delete(stored_file.object_key)
+        readiness = (
+            refresh_report_storage_readiness(
+                backend_name,
+                source='manual_verification',
+            )
+            if exists
+            else mark_report_storage_backend_unavailable(
+                backend_name,
+                source='manual_verification_failure',
+            )
         )
-
-        backend.delete(
-            stored_file.object_key,
-        )
-
         return {
             'backend': backend_name,
             'uri': stored_file.uri,
@@ -813,11 +922,16 @@ def verify_active_report_storage() -> dict[str, Any]:
             'size_bytes': stored_file.size_bytes,
             'exists_after_upload': exists,
             'verified': exists,
+            'readiness': readiness,
         }
-    finally:
-        temp_path.unlink(
-            missing_ok=True,
+    except Exception:
+        mark_report_storage_backend_unavailable(
+            backend_name,
+            source='manual_verification_failure',
         )
+        raise
+    finally:
+        temp_path.unlink(missing_ok=True)
 
 
 def scan_report_storage_integrity(

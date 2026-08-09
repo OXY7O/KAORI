@@ -115,7 +115,8 @@
                                                   action="{{ url_for('reports.run_schedule', schedule_id=schedule.id) }}">
                                                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                                 <button type="submit"
-                                                        class="inline-flex items-center gap-1.5 rounded-lg bg-kaori-primary px-3 py-2 text-xs font-semibold text-white hover:bg-kaori-primary bg-kaori-primary dark:hover:bg-kaori-primary cursor-pointer disabled:cursor-not-allowed">
+                                                        {% if not payload.run_actions_enabled %}disabled title="Artifact storage is unavailable. Restore storage connectivity before running this schedule."{% endif %}
+                                                        class="inline-flex items-center gap-1.5 rounded-lg bg-kaori-primary px-3 py-2 text-xs font-semibold text-white hover:bg-kaori-primary bg-kaori-primary dark:hover:bg-kaori-primary cursor-pointer disabled:cursor-not-allowed disabled:bg-kaori-soft disabled:text-content-muted">
                                                     <i data-lucide="play" class="h-3.5 w-3.5"></i> Run Now
                                                 </button>
                                             </form>

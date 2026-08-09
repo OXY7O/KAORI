@@ -31,8 +31,12 @@ def test_reports_overview_surfaces_s3_disconnect_as_compact_operational_incident
 
     assert 'data-report-storage-incident="overview"' in source
     assert "payload.storage_context.backend == 's3'" in source
-    assert "payload.storage_context.status != 'selected'" in source
-    assert 'S3 Report Storage Disconnected' in source
-    assert 'Report records remain available' in source
+    assert 'payload.storage_context.degraded' in source
+    assert 'S3 Artifact Storage Disconnected' in source
+    assert 'S3 Artifact Storage Degraded' in source
+    assert 'S3 Storage Configuration Needs Review' in source
+    assert 'Report metadata, templates, schedules, and history remain available.' in source
+    assert 'payload.storage_context.checked_label' in source
+    assert 'payload.storage_context.monitor_interval_minutes' in source
     assert 'Open Storage' in source
-    assert 'Retry Connection' in source
+    assert 'Verify Now' in source

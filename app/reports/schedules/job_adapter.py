@@ -15,6 +15,7 @@ from app.models.report import ReportSchedule
 from app.reports.delivery import get_delivery_channel_catalog
 from app.reports.jobs.queue import get_reports_queue_name
 from app.reports.schedules.tasks import run_report_schedule_job
+from app.reports.storage.service import get_report_storage_backend_status
 
 JOB_TYPE = 'report_schedule'
 OPERATION = 'dispatch_due_reports'
@@ -63,6 +64,10 @@ def run_schedule_now(
     schedule = db.session.get(ReportSchedule, schedule_id)
     if schedule is None:
         return False, 'Schedule not found.', None
+
+    storage_status = get_report_storage_backend_status()
+    if not bool(storage_status.get('write_available', False)):
+        return False, 'Artifact storage is unavailable. Run Now is paused until storage recovers.', None
 
     result = dispatch_report_schedule_job(
         requested_by_user_id=requested_by_user_id,

@@ -39,7 +39,7 @@ def test_storage_page_stays_available_and_shows_reconnect_guidance() -> None:
     assert "if payload['storage_actions_enabled']" in route_source
     assert 'report-storage-connectivity-title' in template
     assert 'Report registry and metadata remain readable.' in template
-    assert 'Retry Connection' in template
+    assert 'action_label=payload.backend_status.action_label' in template
     assert 'Integrity Check Paused' in template
     assert 'Cleanup Preview Paused' in template
     assert 'Traceback' not in template

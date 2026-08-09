@@ -69,3 +69,35 @@ Reports Overview is the operational landing workspace for the Reports domain. It
 4. Reporting Coverage: Analytics (PDF/CSV) and Inventory (XLSX/CSV) families derived from `REPORT_TYPE_SPECS`.
 
 Overview must not expose storage credentials, storage paths, retention configuration, cron definitions, or other configuration-level detail. Those remain owned by their dedicated Reports workspaces.
+
+## Shared report-storage readiness and degraded mode
+
+Report artifact storage readiness is one canonical, cross-process state shared by Overview, Generate, Generated Reports, Schedules, and Storage. Web processes must not maintain independent long-lived truth for S3/MinIO connectivity.
+
+The readiness lifecycle is:
+
+1. Celery Beat dispatches `app.reports.storage.tasks.refresh_report_storage_readiness_task` on the maintenance queue every `REPORT_STORAGE_HEALTH_INTERVAL_MINUTES` (default: 1 minute).
+2. The periodic task performs a lightweight connectivity/readiness probe (`head_bucket` for S3-compatible storage) and publishes a sanitized state to Redis.
+3. Shared readiness includes `checked_at`, source, age/staleness metadata, backend state, and read/write availability. The Redis key is configuration-fingerprinted so stale state from a previous endpoint/bucket/credential configuration cannot be reused after configuration changes.
+4. Manual **Test Storage** remains the strong validation path: connect, write a temporary verification object, confirm it exists, delete it, then publish the resulting shared state immediately.
+5. Artifact read/write failures publish an immediate unavailable state so all Reports pages converge on degraded mode without waiting for the next periodic probe.
+6. If Redis/shared state is unavailable or stale, request-time probing remains the fail-safe fallback; the short process cache is only a request-load optimization, not the canonical multi-process state.
+
+Default monitor settings:
+
+- `REPORT_STORAGE_HEALTH_MONITOR_ENABLED=true`
+- `REPORT_STORAGE_HEALTH_INTERVAL_MINUTES=1`
+- `REPORT_STORAGE_HEALTH_STALE_SECONDS=120`
+- `REPORT_STORAGE_HEALTH_STATE_TTL_SECONDS=600`
+- `REPORT_STORAGE_HEALTH_CELERY_QUEUE=maintenance`
+
+S3/MinIO unavailability degrades artifact capabilities; it does **not** make the complete Reports domain unavailable:
+
+- **Overview:** remains available and shows a degraded storage incident with last-check evidence and Storage actions.
+- **Generate:** remains readable, but new report creation is disabled in the UI and rejected server-side before a `Report` record is created when artifact storage cannot accept writes.
+- **Generated Reports / detail:** database registry and metadata remain available. Download availability is evaluated per artifact/backend, so historical local artifacts are not disabled merely because the active S3 backend is unavailable.
+- **Templates:** remain available because template/catalog management does not require artifact storage.
+- **Schedules:** definitions and history remain available. **Run Now** and due artifact execution are paused/fail-closed before creating a report artifact request while storage is unavailable.
+- **Storage:** remains available for diagnostics and strong manual verification.
+
+Raw S3 exceptions, access keys, secret keys, tokens, and credential values are never written into the shared readiness payload or rendered in Reports UI. Technical exceptions remain server-side evidence.

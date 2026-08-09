@@ -1,5 +1,4 @@
 import os
-from datetime import timedelta
 from pathlib import Path
 
 from celery.schedules import crontab
@@ -181,6 +180,17 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
                 or 'resolver-maintenance'
             },
         }
+    if _env_bool('REPORT_STORAGE_HEALTH_MONITOR_ENABLED', True):
+        schedule['report-storage-readiness'] = {
+            'task': 'app.reports.storage.tasks.refresh_report_storage_readiness_task',
+            'schedule': crontab(
+                minute=f'*/{_bounded_env_int("REPORT_STORAGE_HEALTH_INTERVAL_MINUTES", 1, 1, 60)}'
+            ),
+            'options': {
+                'queue': _env_str('REPORT_STORAGE_HEALTH_CELERY_QUEUE', 'maintenance').strip()
+                or 'maintenance'
+            },
+        }
     return schedule
 
 def _normalize_storage_backend(
@@ -331,6 +341,19 @@ class Config:
     ANALYTICS_CELERY_QUEUE = _env_str('ANALYTICS_CELERY_QUEUE', 'analytics-batch').strip() or 'analytics-batch'
     FORECASTING_CELERY_QUEUE = _env_str('FORECASTING_CELERY_QUEUE', 'forecasting').strip() or 'forecasting'
     REPORTS_CELERY_QUEUE = _env_str('REPORTS_CELERY_QUEUE', 'reports').strip() or 'reports'
+    REPORT_STORAGE_HEALTH_MONITOR_ENABLED = _env_bool('REPORT_STORAGE_HEALTH_MONITOR_ENABLED', True)
+    REPORT_STORAGE_HEALTH_INTERVAL_MINUTES = _bounded_env_int(
+        'REPORT_STORAGE_HEALTH_INTERVAL_MINUTES', 1, 1, 60
+    )
+    REPORT_STORAGE_HEALTH_STALE_SECONDS = _bounded_env_int(
+        'REPORT_STORAGE_HEALTH_STALE_SECONDS', 120, 30, 3600
+    )
+    REPORT_STORAGE_HEALTH_STATE_TTL_SECONDS = _bounded_env_int(
+        'REPORT_STORAGE_HEALTH_STATE_TTL_SECONDS', 600, 120, 86400
+    )
+    REPORT_STORAGE_HEALTH_CELERY_QUEUE = (
+        _env_str('REPORT_STORAGE_HEALTH_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'
+    )
     REPORT_TELEGRAM_BOT_TOKEN = _env_optional_str('REPORT_TELEGRAM_BOT_TOKEN')
     REPORT_TELEGRAM_CHAT_ID = _env_optional_str('REPORT_TELEGRAM_CHAT_ID')
     REPORT_PUBLIC_BASE_URL = _env_str('REPORT_PUBLIC_BASE_URL', '').strip()
@@ -426,6 +449,7 @@ class Config:
             'app.jobs.tasks',
             'app.reports.schedules.tasks',
             'app.reports.jobs.tasks',
+            'app.reports.storage.tasks',
             'app.resolver.tasks',
         ),
         'task_routes': {
@@ -473,6 +497,9 @@ class Config:
             },
             'app.reports.jobs.tasks.generate_report_job': {
                 'queue': REPORTS_CELERY_QUEUE,
+            },
+            'app.reports.storage.tasks.refresh_report_storage_readiness_task': {
+                'queue': REPORT_STORAGE_HEALTH_CELERY_QUEUE,
             },
             'app.resolver.tasks.execute_authorized_resolution': {
                 'queue': RESOLVER_EXECUTION_CELERY_QUEUE,
@@ -542,17 +569,6 @@ class Config:
         'AUTH_ALLOW_SUPER_ADMIN_REMEMBER_ME',
         False,
     )
-
-    # Flask-Login defaults remember cookies to one year. KAORI bounds persistent
-    # sessions to a shorter operator-controlled window suitable for an
-    # infrastructure administration surface.
-    AUTH_REMEMBER_ME_DAYS = _bounded_env_int(
-        'AUTH_REMEMBER_ME_DAYS',
-        7,
-        1,
-        30,
-    )
-    REMEMBER_COOKIE_DURATION = timedelta(days=AUTH_REMEMBER_ME_DAYS)
 
     # Plain LDAP transmits credentials without transport encryption and is disabled by default.
     AUTH_LDAP_ALLOW_PLAINTEXT = _env_bool(

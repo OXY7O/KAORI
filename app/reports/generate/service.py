@@ -23,7 +23,6 @@ from app.reports.catalog import (
 )
 from app.reports.export.constants import DEFAULT_REPORT_DOMAIN, DEFAULT_REPORT_SOURCE_KIND
 from app.reports.jobs.queue import get_reports_queue_name
-from app.reports.storage.health import build_local_storage_health
 from app.reports.storage.service import (
     get_configured_storage_backend_name,
     get_report_storage_backend_status,
@@ -485,6 +484,7 @@ def get_generate_report_payload(
             worker_context=worker_context,
         ),
         'storage_context': storage_context,
+        'generation_allowed': bool(storage_context.get('ready', False)),
         'worker_context': worker_context,
         'generation_flow': _get_generation_flow(),
         'report_type_guide_groups': _get_report_type_guide_groups(),
@@ -506,6 +506,16 @@ def create_report_request(
 
     if errors:
         return False, errors, None
+
+    storage_status = get_report_storage_backend_status()
+    if not bool(storage_status.get('write_available', False)):
+        return (
+            False,
+            [
+                'Artifact storage is unavailable. Report metadata remains accessible, but new report generation is paused until storage connectivity is restored.'
+            ],
+            None,
+        )
 
     cluster_id = _parse_cluster_id(
         form_state['cluster_id'],
@@ -640,40 +650,20 @@ def _get_report_type_context(
 def _get_storage_generation_context() -> dict[str, Any]:
     try:
         backend_name = get_configured_storage_backend_name()
-
-        if backend_name == 's3':
-            backend_status = get_report_storage_backend_status('s3')
-            is_ready = bool(backend_status.get('available', False))
-
-            return {
-                'backend': backend_name,
-                'label': 'S3-compatible storage',
-                'status': str(backend_status.get('status', 'Needs Review')),
-                'tone': str(backend_status.get('tone', 'amber')),
-                'description': str(backend_status.get('description') or ''),
-                'ready': is_ready,
-                'state': str(backend_status.get('state', 'unknown')),
-            }
-
-        local_health = build_local_storage_health()
-        is_ready = bool(
-            local_health.get(
-                'root_writable',
-                False,
-            )
-        )
-
+        backend_status = get_report_storage_backend_status(backend_name)
+        is_ready = bool(backend_status.get('write_available', False))
         return {
-            'backend': 'local',
-            'label': 'Local filesystem',
-            'status': 'Ready' if is_ready else 'Needs Review',
-            'tone': 'blue' if is_ready else 'amber',
-            'description': 'Generated report artifacts will be stored with local: object references.'
-            if is_ready
-            else 'Local storage is selected but the report storage root needs write permission review.',
+            'backend': backend_name,
+            'label': str(backend_status.get('label') or 'Report storage'),
+            'status': str(backend_status.get('status') or 'Needs Review'),
+            'tone': str(backend_status.get('tone') or ('blue' if is_ready else 'amber')),
+            'description': str(backend_status.get('description') or ''),
             'ready': is_ready,
+            'state': str(backend_status.get('state') or 'unknown'),
+            'checked_at': backend_status.get('checked_at'),
+            'source': str(backend_status.get('source') or 'direct'),
         }
-    except Exception as exc:
+    except Exception:
         return {
             'backend': 'unknown',
             'label': 'Storage backend',
@@ -681,6 +671,9 @@ def _get_storage_generation_context() -> dict[str, Any]:
             'tone': 'amber',
             'description': 'Storage readiness could not be evaluated. Review Reports Storage and server logs.',
             'ready': False,
+            'state': 'unknown',
+            'checked_at': None,
+            'source': 'fallback',
         }
 
 

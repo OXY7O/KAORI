@@ -30,8 +30,10 @@ from app.reports.generate.service import (
 from app.reports.jobs.queue import get_reports_queue_name
 from app.reports.jobs.service import ReportJobEnqueueError, enqueue_report_generation
 from app.reports.schedules.failures import mark_schedule_dispatch_failed
-from app.reports.storage.health import build_local_storage_health, build_s3_storage_health
-from app.reports.storage.service import get_configured_storage_backend_name
+from app.reports.storage.service import (
+    get_configured_storage_backend_name,
+    get_report_storage_backend_status,
+)
 
 CADENCE_OPTIONS: list[dict[str, str]] = [
     {
@@ -103,6 +105,7 @@ def get_report_schedules_payload(
         'form_state': form_state,
         'errors': errors or [],
         'storage_context': storage_context,
+        'run_actions_enabled': bool(storage_context.get('ready', False)),
         'worker_context': worker_context,
         'scheduler_context': get_scheduler_context(storage_context, worker_context),
         'recommended_actions': get_recommended_actions(),
@@ -327,6 +330,17 @@ def execute_schedule(
     run.trigger_source = trigger_source
     run.started_at = datetime.now(UTC)
     db.session.add(run)
+
+    storage_status = get_report_storage_backend_status()
+    if not bool(storage_status.get('write_available', False)):
+        run.status = 'failed'
+        run.finished_at = datetime.now(UTC)
+        run.error_message = 'Artifact storage is unavailable. Scheduled report generation was not started.'
+        schedule.last_status = 'failed'
+        schedule.last_run_at = run.finished_at
+        schedule.next_run_at = calculate_next_run_at(schedule, base=run.finished_at)
+        db.session.commit()
+        return False, 'Artifact storage is unavailable. The scheduled report was not created.', None
 
     try:
         validate_report_contract(
@@ -695,34 +709,28 @@ def _get_default_sections_by_report_type() -> dict[str, list[str]]:
 def _get_storage_context() -> dict[str, Any]:
     try:
         backend_name = get_configured_storage_backend_name()
-        if backend_name == 's3':
-            health = build_s3_storage_health()
-            ready = bool(health.get('configuration_complete', False))
-            return {
-                'backend': 's3',
-                'status': 'Ready' if ready else 'Needs Review',
-                'tone': 'blue' if ready else 'amber',
-                'description': 'S3-compatible storage is configured for scheduled report artifacts.'
-                if ready
-                else 'S3-compatible storage requires bucket/dependency configuration review.',
-            }
-
-        health = build_local_storage_health()
-        ready = bool(health.get('root_writable', False))
+        status = get_report_storage_backend_status(backend_name)
+        ready = bool(status.get('write_available', False))
         return {
-            'backend': 'local',
-            'status': 'Ready' if ready else 'Needs Review',
-            'tone': 'blue' if ready else 'amber',
-            'description': 'Local storage is writable for scheduled report artifacts.'
-            if ready
-            else 'Local report storage root needs write permission review.',
+            'backend': backend_name,
+            'status': 'Ready' if ready else str(status.get('status') or 'Needs Review'),
+            'tone': 'normal' if ready else 'warning',
+            'description': str(status.get('description') or 'Report storage readiness could not be evaluated.'),
+            'ready': ready,
+            'state': str(status.get('state') or 'unknown'),
+            'checked_at': status.get('checked_at'),
+            'source': str(status.get('source') or 'direct'),
         }
-    except Exception as exc:
+    except Exception:
         return {
             'backend': 'unknown',
             'status': 'Needs Review',
-            'tone': 'amber',
-            'description': f'Storage readiness could not be evaluated: {exc}',
+            'tone': 'warning',
+            'description': 'Storage readiness could not be evaluated. Review Reports Storage and server logs.',
+            'ready': False,
+            'state': 'unknown',
+            'checked_at': None,
+            'source': 'fallback',
         }
 
 

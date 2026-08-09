@@ -11,21 +11,41 @@
 
                     <div class="{{ page_hero.metadata_row_classes() }}">
                         {{ page_hero.meta_label('layers-3', payload.selected_cluster_label) }}
-                        {{ page_hero.meta_label('hard-drive', payload.storage_status) }}
-                        {{ page_hero.meta_label('workflow', 'Governed Artifact Lifecycle') }}
+                        {% if payload.storage_context.degraded %}
+                            {{ page_hero.meta_label('triangle-alert', 'Reporting Degraded') }}
+                            {{ page_hero.meta_label('hard-drive', payload.storage_status) }}
+                        {% else %}
+                            {{ page_hero.meta_label('hard-drive', payload.storage_status) }}
+                            {{ page_hero.meta_label('workflow', 'Governed Artifact Lifecycle') }}
+                        {% endif %}
                     </div>
 
                     <div class="mt-3 flex flex-wrap gap-2">
-                        <a href="{{ url_for('reports.generate_report') }}"
-                           class="{{ page_hero.primary_action_classes() }}">
-                            <i data-lucide="plus-circle" class="h-4 w-4" aria-hidden="true"></i>
-                            Generate Report
-                        </a>
+                        {% if payload.storage_context.degraded %}
+                            <a href="{{ url_for('reports.storage') }}"
+                               class="{{ page_hero.primary_action_classes() }}">
+                                <i data-lucide="hard-drive" class="h-4 w-4" aria-hidden="true"></i>
+                                Open Storage
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('reports.generate_report') }}"
+                               class="{{ page_hero.primary_action_classes() }}">
+                                <i data-lucide="plus-circle" class="h-4 w-4" aria-hidden="true"></i>
+                                Generate Report
+                            </a>
+                        {% endif %}
                         <a href="{{ url_for('reports.generated_reports') }}"
                            class="kaori-hero-chip inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/35 px-4 text-sm font-semibold text-brand-foreground transition hover:bg-white/10">
                             <i data-lucide="folder-open" class="h-4 w-4" aria-hidden="true"></i>
                             View Generated Reports
                         </a>
+                        {% if payload.storage_context.degraded and current_user.has_permission('reports.manage_storage') %}
+                            <a href="{{ url_for('reports.storage', verify=1) }}"
+                               class="kaori-hero-chip inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/35 px-4 text-sm font-semibold text-brand-foreground transition hover:bg-white/10">
+                                <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
+                                Verify Storage
+                            </a>
+                        {% endif %}
                     </div>
                 {% endcall %}
 
