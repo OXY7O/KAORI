@@ -56,11 +56,13 @@ def main() -> int:
         'Unread',
         'Active Work',
         'Activity Audit',
-        'Activity Audit remains the system-wide administrative evidence view.',
         "url_for('notifications.activity_log')",
     ):
         if required not in page:
             errors.append(f'Notification Center hero/boundary contract missing: {required}')
+
+    if 'Activity Audit remains the system-wide administrative evidence view.' in page:
+        errors.append('Notification Center hero still renders the retired Activity Audit helper strip')
 
     for required in (
         'Personal Operations Inbox',

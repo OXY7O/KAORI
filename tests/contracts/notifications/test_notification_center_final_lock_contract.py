@@ -17,7 +17,7 @@ def test_notification_center_is_personal_and_distinct_from_activity_audit() -> N
     assert 'Personal Inbox' in page
     assert 'Notification Posture' in page
     assert 'Activity Audit' in page
-    assert 'Activity Audit remains the system-wide administrative evidence view.' in page
+    assert 'Activity Audit remains the system-wide administrative evidence view.' not in page
     assert 'Notifications' in content
     assert 'Active Work' in content
     assert 'Personal Operations Inbox' in content
