@@ -1,4 +1,3 @@
-{% import "components/operational_point_flow.html" as point_flow %}
 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
     <header class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
         <div class="flex min-w-0 items-start gap-3">
@@ -38,17 +37,4 @@
         </div>
     </div>
 
-    <div class="bg-surface-subtle px-5 py-4 sm:px-6">
-        <div class="mb-4">
-            <p class="text-xs font-semibold text-content-primary">Provisioning Path</p>
-            <p class="mt-0.5 text-xs leading-5 text-content-muted">Validate the provider, resolve one identity, assign local authorization, then create the KAORI account projection.</p>
-        </div>
-        {% set provisioning_steps = [
-            ('scan-search', 'Validate Provider', 'Confirm directory reachability, TLS, and service-bind readiness.'),
-            ('search', 'Find Identity', 'Resolve the intended external identity from the selected directory.'),
-            ('badge-check', 'Assign Role', 'Choose the KAORI role and initial account state.'),
-            ('user-plus', 'Provision Account', 'Create the account projection and external identity link without copying credentials.')
-        ] %}
-        {{ point_flow.render(provisioning_steps, aria_label='Directory Provisioning Path') }}
-    </div>
 </section>

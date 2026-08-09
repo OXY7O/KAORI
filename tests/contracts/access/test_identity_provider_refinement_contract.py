@@ -94,13 +94,9 @@ def test_identity_provider_index_uses_full_width_registry_and_directory_workflow
     assert 'Provider Types' not in template
     assert 'Directory Provisioning' in strip
     assert 'LDAP Workflow' in strip
-    assert '{% import "components/operational_point_flow.html" as point_flow %}' in strip
-    assert 'Provisioning Path' in strip
-    assert "'Validate Provider'" in strip
-    assert "'Find Identity'" in strip
-    assert "'Assign Role'" in strip
+    assert 'operational_point_flow.html' not in strip
+    assert 'Provisioning Path' not in strip
     assert 'Credentials Stay Directory-Owned' not in strip
-    assert "'Provision Account'" in strip
     assert 'operational_flow_steps.render' not in strip
     assert 'arrow-right' not in strip
     assert 'arrow-down' not in strip

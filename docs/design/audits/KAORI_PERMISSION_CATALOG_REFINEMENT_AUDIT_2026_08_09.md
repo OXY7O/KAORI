@@ -41,3 +41,8 @@ Role Registry Overview keeps its existing information architecture but now uses 
 ## Remaining open Access work
 
 Permission Catalog is not Final Locked yet. Directory Provisioning, Activity Audit, password-reset session invalidation, and the broader Access final-lock review remain open.
+
+## v1.21 layout refinement
+
+- Permission Registry and Role Coverage filter bars now use the full workspace width instead of the generic flex filter primitive, with desktop-aligned columns matching other KAORI registers.
+- Permission Details uses an opt-in content-driven shared resource-detail modal at `max-w-5xl`; other shared modal consumers retain the existing viewport-height default.

@@ -58,6 +58,11 @@ def test_permission_catalog_uses_kaori_hero_overview_tabs_tables_loading_and_pag
         assert 'Next' in template
         assert 'hx-indicator=' in template
 
+    assert 'table_ui.inventory_filter_bar_classes()' in registry
+    assert 'grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4' in registry
+    assert 'sm:col-span-2 lg:col-span-2' in registry
+    assert 'table_ui.inventory_filter_bar_classes()' in coverage
+    assert 'grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4' in coverage
     assert 'Search Permission' in registry
     assert 'Control Module' in registry
     assert 'Coverage' in registry
@@ -130,3 +135,8 @@ def test_permission_detail_modal_supports_string_permission_keys() -> None:
     assert "template.replace('__detail__', encodeURIComponent(detailId))" in js
     assert "@bp.get('/<string:permission_key>/details')" in routes
     assert "permission_key='__detail__'" in index
+    assert "dialog_max_width='max-w-5xl'" in index
+    assert 'content_driven=true' in index
+    modal = read('app/templates/components/resource_detail_modal.html')
+    assert 'content_driven=false' in modal
+    assert 'h-auto max-h-[calc(100dvh-1rem)]' in modal

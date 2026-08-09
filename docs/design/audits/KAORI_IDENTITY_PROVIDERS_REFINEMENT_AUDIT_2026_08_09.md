@@ -36,3 +36,7 @@ Identity Providers remains under the Access control-plane composition while `app
 - The workflow is now a four-stage read path without zig-zag arrows or per-step cards: Validate Provider → Find Identity → Assign Role → Provision Account.
 - The point-flow component now chooses a stable 3/4/5-column desktop grid from the number of stages so four-stage workflows do not leave an empty fifth column.
 - Directory Provisioning keeps the compact four-step lifecycle path without the redundant “Credentials Stay Directory-Owned” side label; credential ownership remains documented in the surrounding provider boundaries.
+
+## v1.21 density refinement
+
+- The Directory Provisioning summary keeps provider/link/authorization evidence and the workflow action, while the additional Provisioning Path flow is removed to avoid duplicating guidance already owned by the Directory Provisioning page.

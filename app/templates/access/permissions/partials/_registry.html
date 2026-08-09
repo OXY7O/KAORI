@@ -18,7 +18,7 @@
 </header>
 
 <form id="permission-registry-filter-form"
-      class="{{ table_ui.filter_bar_classes() }}"
+      class="{{ table_ui.inventory_filter_bar_classes() }}"
       method="get"
       action="{{ url_for('access.permissions.index') }}"
       hx-get="{{ url_for('access.permissions.index') }}"
@@ -28,8 +28,8 @@
       hx-push-url="true"
       hx-indicator="#permission-registry-loading">
     <input type="hidden" name="view" value="registry">
-    <div class="grid gap-3 lg:grid-cols-3">
-        <label class="block min-w-0">
+    <div class="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <label class="block min-w-0 sm:col-span-2 lg:col-span-2">
             <span class="{{ table_ui.filter_label_classes() }}">Search Permission</span>
             <div class="relative mt-1.5">
                 <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted" aria-hidden="true"></i>

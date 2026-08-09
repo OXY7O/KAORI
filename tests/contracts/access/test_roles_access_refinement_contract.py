@@ -134,7 +134,8 @@ def test_resource_detail_modal_supports_access_context_without_breaking_inventor
     component = read('app/templates/components/resource_detail_modal.html')
     assert "context_label='Inventory'" in component
     assert "dialog_max_width='max-w-[100rem]'" in component
-    assert "{{ _host(resource_type, detail_url_template, footer_text, context_label, dialog_max_width, 'modal') }}" in component
+    assert "content_driven=false" in component
+    assert "{{ _host(resource_type, detail_url_template, footer_text, context_label, dialog_max_width, 'modal', content_driven) }}" in component
 
 
 def test_role_registry_overview_matches_kaori_registry_overview_visual_grammar() -> None:

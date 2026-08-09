@@ -17,7 +17,7 @@
 </header>
 
 <form id="permission-coverage-filter-form"
-      class="{{ table_ui.filter_bar_classes() }}"
+      class="{{ table_ui.inventory_filter_bar_classes() }}"
       method="get"
       action="{{ url_for('access.permissions.index') }}"
       hx-get="{{ url_for('access.permissions.index') }}"
@@ -27,7 +27,7 @@
       hx-push-url="true"
       hx-indicator="#permission-coverage-loading">
     <input type="hidden" name="view" value="coverage">
-    <div class="grid gap-3 lg:grid-cols-4">
+    <div class="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <label class="block min-w-0">
             <span class="{{ table_ui.filter_label_classes() }}">Search Permission</span>
             <div class="relative mt-1.5">
