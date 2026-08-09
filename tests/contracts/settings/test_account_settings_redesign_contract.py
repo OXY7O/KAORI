@@ -131,6 +131,9 @@ def test_credential_workspace_keeps_action_left_and_security_context_right() -> 
     assert "Avoid personal clues" in credentials
     assert "Store it safely" in credentials
     assert "approved password manager" in credentials
+    assert 'data-password-sharing-warning="true"' in credentials
+    assert "Keep your password private." in credentials
+    assert "Never share it with anyone, including administrators or support staff." in credentials
 
     assert 'data-credential-posture-location="security-panel"' in context
     assert "Credential Posture" in context
