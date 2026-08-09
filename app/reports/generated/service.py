@@ -968,6 +968,7 @@ def _serialize_report(
             report.report_type,
         ),
         'raw_report_type': report.report_type,
+        'report_icon': _get_report_visual_icon(report.report_type),
         'report_domain': _format_report_domain(getattr(report, 'report_domain', 'kubernetes')),
         'source_kind': _format_source_kind(getattr(report, 'source_kind', 'kubernetes')),
         'source_badge': _format_source_badge(
@@ -1805,6 +1806,37 @@ def _get_known_section_options() -> list[dict[str, str]]:
     ]
 
 
+
+
+def _get_report_visual_icon(value: str) -> str:
+    """Return a stable Lucide icon for Generated Reports presentation."""
+
+    normalized = (value or '').strip().lower()
+
+    if 'inventory' in normalized:
+        return 'boxes'
+    if 'alert' in normalized or 'anomal' in normalized:
+        return 'siren'
+    if 'forecast' in normalized:
+        return 'trending-up'
+    if 'capacity' in normalized:
+        return 'gauge'
+    if 'storage' in normalized:
+        return 'hard-drive'
+    if 'workload' in normalized:
+        return 'layers-3'
+    if 'consumer' in normalized:
+        return 'bar-chart-3'
+    if 'utilization' in normalized:
+        return 'activity'
+    if 'tls' in normalized or 'certificate' in normalized or 'governance' in normalized:
+        return 'shield-check'
+    if 'analytics' in normalized or 'overview' in normalized:
+        return 'chart-no-axes-combined'
+
+    return 'file-text'
+
+
 def format_report_type(
     value: str,
 ) -> str:
@@ -1821,7 +1853,7 @@ def _format_file_size(
     value: int | None,
 ) -> str:
     if value is None:
-        return 'Not available'
+        return 'Not Available'
 
     if value < 1024:
         return f'{value} B'

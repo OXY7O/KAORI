@@ -14,7 +14,7 @@
     {% set storage_ready = payload.backend_status.available %}
     {% set hero_status = 'Needs Review' if failed_count > 0 else ('Degraded' if not storage_ready else 'Operational') %}
     {% set hero_tone = 'warning' if failed_count > 0 or not storage_ready else 'normal' %}
-    {% set second_metric = ('triangle-alert', 'Needs Review', failed_count, 'Failed generation') if failed_count > 0 else ('clock-3', 'In Progress', pending_count, 'Requested, queued, or generating') %}
+    {% set second_metric = ('triangle-alert', 'Needs Review', failed_count, 'Failed generation') if failed_count > 0 else ('clock-3', 'In Progress', pending_count, 'Requested, Queued, or Generating') %}
 
     <div class="space-y-6">
         <section class="{{ page_hero.shell_classes() }}">
@@ -83,7 +83,7 @@
                     <div class="min-w-0">
                         <h2 class="text-sm font-bold text-content-primary">Generated Reporting Posture</h2>
                         <p class="mt-1 text-xs leading-5 text-content-muted">
-                            Current report volume, generation outcomes, and retained artifact readiness.
+                            Current report volume, delivery readiness, active generation, and review demand.
                         </p>
                     </div>
                 </div>
@@ -95,10 +95,10 @@
 
             <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
                 {% set posture_cards = [
-                    ('files', 'Total Reports', payload.summary_cards[0].value, 'All report request records'),
-                    ('circle-check-big', 'Ready', payload.summary_cards[1].value, 'Artifacts available for delivery'),
-                    ('clock-3', 'In Progress', payload.summary_cards[2].value, 'Requested, queued, or generating'),
-                    ('triangle-alert', 'Needs Review', payload.summary_cards[3].value, 'Failed generation requiring review')
+                    ('files', 'Total Reports', payload.summary_cards[0].value, 'All Generated Report Records'),
+                    ('circle-check-big', 'Ready', payload.summary_cards[1].value, 'Verified Artifacts Available'),
+                    ('clock-3', 'In Progress', payload.summary_cards[2].value, 'Requested, Queued, or Generating'),
+                    ('triangle-alert', 'Needs Review', payload.summary_cards[3].value, 'Failed Generation Requiring Review')
                 ] %}
                 {% for icon, label, value, caption in posture_cards %}
                     <article class="min-w-0 px-5 py-4" data-generated-posture-metric="{{ label|lower|replace(' ', '-') }}">
@@ -115,7 +115,7 @@
             </div>
 
             <footer class="flex flex-col gap-2 border-t border-outline-subtle bg-surface-subtle/60 px-5 py-3 text-xs text-content-muted sm:flex-row sm:items-center sm:justify-between">
-                <span>Registry values are sourced from report metadata; active generation refreshes silently.</span>
+                <span>Registry posture is metadata-first; active generation refreshes silently without probing every stored object.</span>
                 <div class="flex flex-wrap items-center gap-2">
                     {{ table_label.metadata_label('Rows 5 / 10 / 25 / 50', 'rows-3') }}
                     {{ table_label.metadata_label('Storage-Aware Downloads', 'hard-drive-download') }}
@@ -287,12 +287,20 @@
                                                class="generated-report-checkbox h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-accent/40 disabled:cursor-not-allowed disabled:opacity-40">
                                     </td>
                                     <td class="{{ table_ui.cell_classes() }} align-top">
-                                        <div class="min-w-[15rem]">
-                                            <div class="flex flex-wrap items-center gap-2">
-                                                <p class="text-sm font-semibold leading-5 text-content-primary">{{ report.name }}</p>
-                                                {% if report.is_focused %}{{ table_label.metadata_label('Just Queued', 'send') }}{% endif %}
+                                        <div class="flex min-w-[16rem] items-start gap-3" data-generated-report-identity="true">
+                                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary"
+                                                  data-generated-report-icon="{{ report.report_icon }}"
+                                                  aria-hidden="true">
+                                                <i data-lucide="{{ report.report_icon }}" class="h-4 w-4"></i>
+                                            </span>
+                                            <div class="min-w-0">
+                                                <div class="flex flex-wrap items-center gap-2">
+                                                    <p class="break-words text-sm font-semibold leading-5 text-content-primary">{{ report.name }}</p>
+                                                    {% if report.is_focused %}{{ table_label.metadata_label('Just Queued', 'send') }}{% endif %}
+                                                </div>
+                                                <p class="mt-1 text-xs font-medium leading-5 text-content-secondary">{{ report.report_type }}</p>
+                                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ report.period }}</p>
                                             </div>
-                                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ report.report_type }} · {{ report.period }}</p>
                                         </div>
                                     </td>
                                     <td class="{{ table_ui.cell_classes() }} align-top">
@@ -306,8 +314,8 @@
                                             {{ table_label.metadata_label(report.output_format, 'file-text') }}
                                             <p class="mt-1 text-xs leading-5 text-content-muted">
                                                 {% if report.file_exists %}{{ report.file_size }} · {{ report.storage_backend_label }}
-                                                {% elif report.raw_status in ['requested', 'queued', 'generating'] %}Artifact pending
-                                                {% else %}No retained artifact{% endif %}
+                                                {% elif report.raw_status in ['requested', 'queued', 'generating'] %}Artifact Pending
+                                                {% else %}No Retained Artifact{% endif %}
                                             </p>
                                         </div>
                                     </td>

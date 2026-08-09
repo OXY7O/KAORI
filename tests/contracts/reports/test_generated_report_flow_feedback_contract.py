@@ -87,6 +87,9 @@ def test_generated_registry_is_compact_focused_and_auto_refreshes_pending_work()
     assert '>Status</th>' in template
     assert '>Updated</th>' in template
     assert '>Action</th>' in template
+    assert 'data-generated-report-identity="true"' in template
+    assert 'data-generated-report-icon="{{ report.report_icon }}"' in template
+    assert 'data-lucide="{{ report.report_icon }}"' in template
     assert 'View more' not in template
     assert 'Report Lifecycle' not in template
     assert 'Storage Context' not in template

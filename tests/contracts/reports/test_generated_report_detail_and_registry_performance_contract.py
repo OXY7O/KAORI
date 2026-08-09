@@ -5,38 +5,41 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 SERVICE = ROOT / 'app/reports/generated/service.py'
 DETAIL = ROOT / 'app/templates/reports/generated/detail.html'
+REGISTRY = ROOT / 'app/templates/reports/generated/index.html'
 
 
 def read(path: Path) -> str:
     return path.read_text(encoding='utf-8')
 
 
-def test_generated_detail_uses_refined_operator_hierarchy() -> None:
+def test_generated_detail_uses_operational_dossier_hierarchy() -> None:
     template = read(DETAIL)
 
-    assert 'data-generated-report-detail="operator-record-v3"' in template
-    assert 'data-generated-detail-block="report-overview"' in template
-    assert 'data-generated-detail-block="generation-lifecycle"' in template
-    assert 'data-generated-detail-block="report-content-evidence"' in template
+    assert 'data-generated-report-detail="operational-dossier-v4"' in template
+    assert 'data-generated-detail-block="operational-snapshot"' in template
+    assert 'data-generated-detail-block="generation-evidence"' in template
     assert 'data-generated-detail-report-actions="true"' in template
+    assert 'data-operational-snapshot-grid="true"' in template
+    assert 'data-generated-evidence-columns="true"' in template
 
-    assert 'Report Overview' in template
-    assert 'Report Identity & Scope' in template
+    assert 'Operational Snapshot' in template
+    assert 'Report Identity' in template
+    assert 'Governed Scope' in template
     assert 'Artifact Delivery' in template
-    assert 'Generation Lifecycle' in template
-    assert 'Latest Attempt' in template
-    assert 'Report Content & Evidence' in template
-    assert 'Included Sections' in template
-    assert 'Evidence Scope' in template
+    assert 'Generation & Evidence' in template
+    assert 'Latest Generation Attempt' in template
+    assert 'Persisted Report Definition' in template
     assert 'Governed Evidence Scope' in template
     assert 'Report Actions' in template
 
-    assert 'Artifact Record' not in template
-    assert 'Generation Timeline' not in template
-    assert 'Lifecycle Actions' not in template
-    assert 'Evidence Boundary' not in template
-    assert 'data-generation-timeline="true"' not in template
-    assert 'data-generation-lifecycle="true"' in template
+    for old_label in [
+        'Artifact Record',
+        'Report Overview',
+        'Generation Timeline',
+        'Report Content & Evidence',
+        'Lifecycle Actions',
+    ]:
+        assert old_label not in template
 
 
 def test_generated_detail_regeneration_state_keeps_artifact_and_attempt_separate() -> None:
@@ -50,7 +53,7 @@ def test_generated_detail_regeneration_state_keeps_artifact_and_attempt_separate
     assert 'The verified artifact remains available while the latest regeneration attempt is running.' in template
     assert 'The latest attempt failed, but the previously verified artifact is still available for download.' in template
     assert 'Artifact availability is evaluated independently from the latest generation attempt.' in template
-    assert 'Regeneration preserves the existing verified artifact if the latest attempt fails.' in template
+    assert 'Download the verified artifact or queue a regeneration without discarding the current valid artifact.' in template
 
 
 def test_generated_detail_visible_labels_follow_title_case_standard() -> None:
@@ -59,16 +62,15 @@ def test_generated_detail_visible_labels_follow_title_case_standard() -> None:
 
     required_title_case = [
         'Generated Report',
+        'Delivery Posture',
         'Artifact Status',
-        'Report Overview',
-        'Report Identity & Scope',
+        'Operational Snapshot',
+        'Report Identity',
+        'Governed Scope',
         'Artifact Delivery',
-        'Generation Lifecycle',
-        'Latest Attempt',
-        'Attempt Status',
-        'Report Content & Evidence',
-        'Included Sections',
-        'Evidence Scope',
+        'Generation & Evidence',
+        'Latest Generation Attempt',
+        'Persisted Report Definition',
         'Governed Evidence Scope',
         'Report Actions',
         'Back to Registry',
@@ -95,13 +97,16 @@ def test_generated_detail_visible_labels_follow_title_case_standard() -> None:
         assert label in service
 
 
-def test_generated_detail_timeline_and_actions_remain_single_click_safe() -> None:
+def test_generated_detail_lifecycle_and_actions_remain_single_click_safe() -> None:
     template = read(DETAIL)
 
     assert "('01', 'Requested'" in template
     assert "('02', 'Queued'" in template
     assert "('03', 'Started'" in template
     assert "('04', 'Completed'" in template
+    assert 'data-generation-lifecycle="true"' in template
+    assert 'data-generated-detail-latest-attempt-panel="true"' in template
+    assert 'data-generated-detail-definition-panel="true"' in template
 
     assert 'data-loading-label="Queueing Generation..."' in template
     assert 'data-loading-label="Archiving Report..."' in template
@@ -110,5 +115,22 @@ def test_generated_detail_timeline_and_actions_remain_single_click_safe() -> Non
     assert template.count('data-operation-submit-label') >= 3
 
     assert 'xl:grid-cols-[minmax(0,1fr)_380px]' not in template
+    assert 'lg:divide-x lg:divide-outline-subtle' not in template
     assert 'bg-rose-' not in template
     assert 'bg-emerald-' not in template
+
+
+def test_registry_report_identity_has_domain_icon_and_service_mapping() -> None:
+    template = read(REGISTRY)
+    service = read(SERVICE)
+
+    assert 'data-generated-report-identity="true"' in template
+    assert 'data-generated-report-icon="{{ report.report_icon }}"' in template
+    assert 'data-lucide="{{ report.report_icon }}"' in template
+    assert "'report_icon': _get_report_visual_icon(report.report_type)" in service
+    assert 'def _get_report_visual_icon(value: str) -> str:' in service
+    assert "return 'boxes'" in service
+    assert "return 'siren'" in service
+    assert "return 'trending-up'" in service
+    assert "return 'hard-drive'" in service
+    assert "return 'file-text'" in service
