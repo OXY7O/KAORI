@@ -88,14 +88,14 @@ def test_activity_detail_uses_content_driven_modal_and_curated_evidence() -> Non
     service = read('app/notifications/service.py')
 
     assert "url_for('notifications.activity_detail', notification_id=0)" in page
-    assert "dialog_max_width='max-w-5xl'" in page
+    assert "dialog_max_width='max-w-6xl'" in page
     assert 'content_driven=true' in page
     assert "@notifications_bp.get('/activity/<int:notification_id>/details')" in routes
     assert 'get_notification_activity_detail(notification_id=notification_id)' in routes
     assert 'def get_notification_activity_detail(' in service
 
     for token in (
-        'Activity Summary',
+        'Activity Detail',
         'Failure Summary',
         'Execution Evidence',
         'Actor & Access',
@@ -133,3 +133,28 @@ def test_activity_audit_suppresses_sensitive_metadata_and_keeps_lifecycle_bounda
     assert '_sensitive_metadata_key(base_key)' in metadata
     assert 'Activity Audit and persistent Notification Center records share the same archive-first policy' in summary
     assert 'Lifecycle boundary:' not in activity
+
+
+def test_activity_detail_is_capability_driven_across_event_shapes() -> None:
+    detail = read('app/templates/notifications/partials/_activity_detail.html')
+
+    # Sections are driven by the evidence available on the record, not by
+    # hard-coded event families. This keeps one audit grammar across Access,
+    # Integrations, Platform Operations, security, and background events.
+    for conditional in (
+        '{% if item.failure_summary %}',
+        '{% if item.execution_evidence %}',
+        '{% if item.changed_fields %}',
+        '{% if item.trace_references %}',
+        '{% if item.additional_evidence %}',
+        '{% if item.technical_evidence %}',
+    ):
+        assert conditional in detail
+
+    assert 'item.event_type ==' not in detail
+    assert "item.event_type.startswith" not in detail
+    assert 'lg:grid-cols-2' in detail
+    assert 'Trace References' in detail
+    assert '<dl class="grid gap-px bg-outline-subtle sm:grid-cols-2">' in detail
+    assert 'Low-level diagnostics for troubleshooting; hidden by default' in detail
+    assert 'Activity Summary' not in detail

@@ -34,3 +34,8 @@ Activity Audit is not independently final locked yet. Directory Provisioning and
 ## Detail Evidence Refinement v1.26
 
 The Activity Details modal no longer presents a flat Operational Metadata dump. The final inspection order is Activity Summary, conditional Failure Summary, compact Execution Evidence, Actor & Access plus Target Context, Recorded Changes when present, Trace References, optional Additional Evidence, and Technical Evidence collapsed by default. Execution counters and trace identifiers are separated from low-level diagnostics, duplicated category/target/timestamp values are not repeated across multiple cards, and raw failure strings are redacted and length-bounded before they can appear under Technical Evidence.
+
+
+## Adaptive Detail Modal Refinement v1.27
+
+The Activity Details modal is widened to `max-w-6xl` while remaining content-driven. Evidence hierarchy is capability-driven rather than event-name-driven: failure interpretation appears only for warning/error evidence, execution metrics only when recorded, before/after changes only when available, curated additional evidence only when non-duplicated metadata remains, and technical diagnostics stay collapsed by default. The header carries the operator-facing activity message, Actor & Access and Target Context use a balanced two-column composition, Trace References use a compact register instead of large evidence cards, and the same modal grammar is intended to cover success, failure, change, background, and security-sensitive events without event-specific template branches.

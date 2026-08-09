@@ -12,7 +12,7 @@
                         {{ table_label.metadata_label(item.category_label, item.category_icon) }}
                         {{ table_label.status_label(item.status_label, item.status, none, 'detail') }}
                     </div>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Recorded administrative evidence from the current committed Activity Audit source.</p>
+                    <p class="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ item.message }}</p>
                 </div>
             </div>
         </header>
@@ -25,28 +25,17 @@
         ], compact=true) }}
 
         <div class="space-y-4 p-5">
-            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
-                <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+            {% if item.detail and item.detail != item.message and item.detail != item.failure_summary %}
+                <section class="rounded-xl border border-outline-subtle bg-surface-card px-4 py-3.5">
                     <div class="flex min-w-0 items-start gap-3">
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="message-square-text" class="h-4 w-4"></i></span>
                         <div class="min-w-0">
-                            <h4 class="text-sm font-semibold text-content-primary">Activity Summary</h4>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Recorded outcome and operator-facing evidence for this activity.</p>
+                            <p class="text-xs font-semibold text-content-secondary">Activity Detail</p>
+                            <p class="mt-1 break-words text-sm leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.detail }}</p>
                         </div>
                     </div>
-                    {{ table_label.metadata_label(item.event_label, 'history') }}
-                </header>
-                <div class="grid gap-4 p-4 lg:grid-cols-2">
-                    <div>
-                        <p class="text-xs font-semibold text-content-secondary">Message</p>
-                        <p class="mt-1 text-sm leading-6 text-content-primary">{{ item.message }}</p>
-                    </div>
-                    <div>
-                        <p class="text-xs font-semibold text-content-secondary">Detail</p>
-                        <p class="mt-1 text-sm leading-6 {{ 'text-content-primary' if item.detail else 'text-content-muted' }}">{{ item.detail or 'No additional detail was recorded for this activity.' }}</p>
-                    </div>
-                </div>
-            </section>
+                </section>
+            {% endif %}
 
             {% if item.failure_summary %}
                 {% set failure_icon_classes = 'bg-status-critical-soft text-status-critical-text' if item.status == 'error' else 'bg-status-warning-soft text-status-warning-text' %}
@@ -56,15 +45,23 @@
                             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ failure_icon_classes }}" aria-hidden="true"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span>
                             <div class="min-w-0">
                                 <h4 class="text-sm font-semibold text-content-primary">Failure Summary</h4>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Operator-facing failure interpretation; low-level diagnostics remain collapsed below.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Operator-facing interpretation of the failed or warning outcome.</p>
                             </div>
                         </div>
                         {{ table_label.metadata_label(item.failure_type, 'triangle-alert') }}
                     </header>
-                    <div class="space-y-3 p-4">
-                        <p class="text-sm leading-6 text-content-primary">{{ item.failure_summary }}</p>
+                    <div class="grid gap-4 p-4 lg:grid-cols-2">
+                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                            <p class="text-xs font-semibold text-content-secondary">{{ item.failure_type }}</p>
+                            <p class="mt-2 break-words text-sm leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.failure_summary }}</p>
+                        </div>
                         {% if item.failure_context %}
-                            {{ detail_ui.evidence_grid(item.failure_context, columns=3, compact=true) }}
+                            <div>{{ detail_ui.evidence_grid(item.failure_context, columns=2, compact=true) }}</div>
+                        {% else %}
+                            <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                                <p class="text-xs font-semibold text-content-secondary">Operator Action</p>
+                                <p class="mt-2 text-sm leading-6 text-content-muted">Review the related configuration, target availability, and trace references before retrying.</p>
+                            </div>
                         {% endif %}
                     </div>
                 </section>
@@ -77,7 +74,7 @@
                             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="gauge" class="h-4 w-4"></i></span>
                             <div class="min-w-0">
                                 <h4 class="text-sm font-semibold text-content-primary">Execution Evidence</h4>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Compact execution outcome recorded with this activity.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Outcome metrics captured with the operation.</p>
                             </div>
                         </div>
                         {{ table_label.metadata_label(item.execution_evidence|length ~ ' ' ~ ('Metric' if item.execution_evidence|length == 1 else 'Metrics'), 'gauge') }}
@@ -111,7 +108,7 @@
                         </div>
                         {{ table_label.metadata_label(item.changed_fields|length ~ ' ' ~ ('Change' if item.changed_fields|length == 1 else 'Changes'), 'diff') }}
                     </header>
-                    <div class="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3">
+                    <div class="grid gap-3 p-4 lg:grid-cols-2">
                         {% for field in item.changed_fields %}
                             <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
                                 <p class="text-xs font-semibold text-content-secondary">{{ field.label }}</p>
@@ -132,19 +129,28 @@
                 </section>
             {% endif %}
 
-            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
-                <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
-                    <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-subtle text-content-secondary" aria-hidden="true"><i data-lucide="route" class="h-4 w-4"></i></span>
-                        <div class="min-w-0">
-                            <h4 class="text-sm font-semibold text-content-primary">Trace References</h4>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Stable identifiers for correlating this activity with jobs, workers, and logs.</p>
+            {% if item.trace_references %}
+                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-subtle text-content-secondary" aria-hidden="true"><i data-lucide="route" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <h4 class="text-sm font-semibold text-content-primary">Trace References</h4>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Identifiers for correlating this activity with jobs, workers, and logs.</p>
+                            </div>
                         </div>
-                    </div>
-                    {{ table_label.metadata_label(item.trace_references|length ~ ' ' ~ ('Reference' if item.trace_references|length == 1 else 'References'), 'route') }}
-                </header>
-                <div class="p-4">{{ detail_ui.evidence_grid(item.trace_references, columns=4, compact=true) }}</div>
-            </section>
+                        {{ table_label.metadata_label(item.trace_references|length ~ ' ' ~ ('Reference' if item.trace_references|length == 1 else 'References'), 'route') }}
+                    </header>
+                    <dl class="grid gap-px bg-outline-subtle sm:grid-cols-2">
+                        {% for reference in item.trace_references %}
+                            <div class="min-w-0 bg-surface-card px-4 py-3">
+                                <dt class="text-xs font-medium text-content-muted">{{ reference.label }}</dt>
+                                <dd class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]" title="{{ reference.value }}">{{ reference.value }}</dd>
+                            </div>
+                        {% endfor %}
+                    </dl>
+                </section>
+            {% endif %}
 
             {% if item.additional_evidence %}
                 <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
@@ -153,7 +159,7 @@
                             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-subtle text-content-secondary" aria-hidden="true"><i data-lucide="list-tree" class="h-4 w-4"></i></span>
                             <div class="min-w-0">
                                 <h4 class="text-sm font-semibold text-content-primary">Additional Evidence</h4>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Non-duplicated metadata that remains relevant to this activity.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Curated metadata not already represented by the primary evidence sections.</p>
                             </div>
                         </div>
                         {{ table_label.metadata_label(item.additional_evidence|length ~ ' ' ~ ('Field' if item.additional_evidence|length == 1 else 'Fields'), 'list-tree') }}
@@ -165,7 +171,7 @@
             {% if item.technical_evidence %}
                 {% call view_more.render(
                     'Technical Evidence',
-                    'Low-level diagnostic text for troubleshooting; collapsed by default to keep the operational summary readable.',
+                    'Low-level diagnostics for troubleshooting; hidden by default to keep the audit narrative readable.',
                     icon='terminal-square',
                     open_by_default=false,
                     aria_label='Technical Evidence',
