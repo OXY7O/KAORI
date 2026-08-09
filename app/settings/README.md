@@ -94,7 +94,7 @@ Roles & Access and Permission Catalog are owned exclusively by `app/access/` at 
 
 - Keep the shared KAORI Violet hero and use the right-side panel as a compact posture summary: one context header, two metrics, and one boundary note. Do not place long policy paragraphs or duplicate actions in the hero.
 - Account tab navigation follows the same simple tab contract as General Settings; operational counts and provider-management posture belong in the active workspace, not inside tab badges.
-- Account Profile & Access starts with Identity Source, Assigned Role, and Account Lifecycle posture, followed by one read-only identity detail grid and one Last Verified Sign-In panel.
+- Account Profile & Access is a full-width workspace with no right-side information column. It starts with Identity Source, Assigned Role, Account Lifecycle, and Administrative Tier posture, then keeps identity/provider linkage, personal presentation, Last Verified Sign-In, and the access boundary in the main workspace.
 - Recent Authentication Activity keeps the latest-five summary and canonical KAORI table in the main workspace. Right-side panels explain evidence scope, result interpretation, and audit privacy only.
 - Credential Management presents ownership, password policy, and session effect before the mutation form. Current password is verified first; replacement and confirmation fields are grouped together below it.
 - Use shared semantic labels for lifecycle, provider readiness, authentication results, and credential-impact states. Avoid hand-built status badges.

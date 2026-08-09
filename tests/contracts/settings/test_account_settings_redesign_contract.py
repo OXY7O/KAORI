@@ -32,27 +32,30 @@ def test_account_tabs_use_same_simple_navigation_contract_as_general() -> None:
     assert "KAORI managed" not in tabs
 
 
-def test_profile_workspace_uses_posture_grid_and_verified_signin_panel() -> None:
+def test_profile_workspace_is_full_width_without_right_information_column() -> None:
+    page = read("app/templates/settings/account/partials/_page_content.html")
     profile = read("app/templates/settings/account/partials/_profile_cards.html")
+
+    assert "data-account-profile-full-width" in page
+    assert "active_tab == 'profile'" in page
+    assert 'include "settings/account/partials/_profile_cards.html"' in page
+    assert 'include "settings/account/partials/_profile_information.html"' not in page
+
+    assert 'data-account-profile-workspace="full-width"' in profile
     assert "Account Posture" in profile
     assert "Identity Source" in profile
     assert "Assigned Role" in profile
     assert "Account Lifecycle" in profile
+    assert "Administrative Tier" in profile
     assert "Identity Profile" in profile
+    assert "Credential Owner" in profile
+    assert "Provisioning Mode" in profile
+    assert "Personal Presentation" in profile
+    assert "Open General Settings" in profile
     assert "Last Verified Sign-In" in profile
+    assert "Access Boundary" in profile
     assert "table_label.status_indicator_label" in profile
     assert "Read-Only Account View" in profile
-
-
-def test_profile_context_uses_expandable_boundaries_and_general_settings_link() -> None:
-    context = read("app/templates/settings/account/partials/_profile_information.html")
-    assert "data-account-profile-boundaries" in context
-    assert context.count("rounded-2xl") >= 3
-    assert "Current Identity Source" in context
-    assert "Access Control Boundary" in context
-    assert "Personal Presentation" in context
-    assert "Open General Settings" in context
-    assert "[&::-webkit-details-marker]:hidden" in context
 
 
 def test_authentication_activity_keeps_summary_and_table_together() -> None:
