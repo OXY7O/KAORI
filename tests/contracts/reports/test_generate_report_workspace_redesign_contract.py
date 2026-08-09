@@ -58,6 +58,8 @@ def test_generate_report_uses_two_primary_configuration_zones_and_compact_review
     assert 'Kubernetes Scope' in source
     assert 'Report Content' in source
     assert 'Review & Queue' in source
+    assert 'Review the request summary before it is queued for artifact generation.' in source
+    assert 'flex items-start justify-between gap-4' in source
     assert 'Create & Queue Report' in source
     assert 'xl:grid-cols-2 xl:divide-x xl:divide-outline-default' in source
     assert '01 Choose Report' not in source
@@ -228,7 +230,9 @@ def test_generate_report_uses_numbered_workflow_hierarchy_without_progress_rail(
         assert f"workflow_number('{number}')" in source
 
     assert 'data-selected-report-summary="true"' in source
-    assert "workflow_number('01', true)" in source
+    assert "context_icon_marker('file-check-2')" in source
+    assert 'data-generate-context-marker="{{ icon_name }}"' in source
+    assert "workflow_number('01', true)" not in source
     assert 'Selected Report' in source
     assert 'selectedReportIcon' not in source
     assert 'id="selected-report-icon"' not in source
