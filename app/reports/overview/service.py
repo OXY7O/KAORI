@@ -8,8 +8,13 @@ from sqlalchemy import func, select
 
 from app.common.celery_queue_health import get_queue_readiness
 from app.extensions.db import db
+from app.models.cluster import Cluster
 from app.models.report import Report, ReportSchedule, ReportTemplate
-from app.reports.catalog import REPORT_TYPE_SPECS
+from app.reports.catalog import (
+    REPORT_FAMILY_ANALYTICS,
+    REPORT_FAMILY_INVENTORY,
+    REPORT_TYPE_SPECS,
+)
 from app.reports.delivery.service import get_delivery_channel_catalog
 from app.reports.export.constants import (
     DEFAULT_REPORT_DOMAIN,
@@ -134,14 +139,18 @@ def get_reports_overview_payload() -> dict[str, Any]:
     )
 
     return {
-        'page_title': 'Reports Overview',
-        'page_subtitle': 'Generate governed infrastructure reports from connected KAORI data sources.',
+        'page_title': 'Reports',
+        'page_subtitle': 'Generate, schedule, retain, and audit governed reporting artifacts.',
         'selected_cluster_label': 'All Infrastructure Scopes',
         'report_engine_status': worker_context['label'],
         'storage_status': storage_context['display_status'],
         'summary_cards': get_summary_cards(report_counts),
+        'reporting_operations': get_reporting_operations(
+            report_counts, storage_context, worker_context
+        ),
         'recent_reports': get_recent_reports(),
         'report_type_coverage': report_type_coverage,
+        'reporting_coverage': get_reporting_coverage_summary(),
         'report_type_summary': get_report_type_summary(report_type_coverage),
         'report_architecture_context': get_report_architecture_context(),
         'pipeline_status': pipeline_status,
@@ -214,45 +223,143 @@ def count_custom_report_templates() -> int:
 
 
 def get_summary_cards(report_counts: dict[str, int]) -> list[dict[str, str]]:
+    generated_count = report_counts['ready'] + report_counts['archived']
     return [
         {
-            'label': 'Total Reports',
-            'value': str(report_counts['total']),
-            'caption': 'All Report Records',
+            'label': 'Generated',
+            'value': str(generated_count),
+            'caption': 'Ready or archived artifacts',
             'icon': 'files',
-            'tone': 'blue',
+            'tone': 'info',
         },
         {
-            'label': 'Generated This Month',
-            'value': str(report_counts['generated_this_month']),
-            'caption': 'Reports Created This Month',
-            'icon': 'calendar-days',
-            'tone': 'green',
-        },
-        {
-            'label': 'Ready Reports',
+            'label': 'Ready',
             'value': str(report_counts['ready']),
-            'caption': 'Available for Download',
-            'icon': 'check-circle-2',
-            'tone': 'purple',
+            'caption': 'Available artifacts',
+            'icon': 'circle-check',
+            'tone': 'normal',
         },
         {
-            'label': 'Enabled Schedules',
-            'value': str(report_counts['active_schedules']),
-            'caption': 'Enabled Recurring Definitions',
-            'icon': 'calendar-clock',
-            'tone': 'purple',
+            'label': 'In Progress',
+            'value': str(report_counts['pending']),
+            'caption': 'Requested or generating',
+            'icon': 'loader-circle',
+            'tone': 'info',
+        },
+        {
+            'label': 'Failed',
+            'value': str(report_counts['failed']),
+            'caption': 'Requires review',
+            'icon': 'triangle-alert',
+            'tone': 'critical' if report_counts['failed'] else 'normal',
         },
     ]
 
 
+def get_reporting_operations(
+    report_counts: dict[str, int],
+    storage_context: dict[str, Any],
+    worker_context: dict[str, Any],
+) -> list[dict[str, Any]]:
+    storage_ready = str(storage_context.get('status')) == 'selected'
+    active_schedules = int(report_counts.get('active_schedules', 0))
+
+    return [
+        {
+            'label': 'Generation Queue',
+            'value': 'Operational' if worker_context.get('ready') else str(worker_context.get('label', 'Review')),
+            'status': str(worker_context.get('label', 'Unknown')),
+            'tone': str(worker_context.get('tone', 'unknown')),
+            'icon': 'workflow',
+            'caption': (
+                f"{int(worker_context.get('worker_count', 0))} worker(s) listening on the Reports queue."
+                if worker_context.get('ready')
+                else str(worker_context.get('description', 'Reports queue readiness could not be verified.'))
+            ),
+            'action_label': 'Generate Report',
+            'href': url_for('reports.generate_report'),
+        },
+        {
+            'label': 'Active Schedules',
+            'value': str(active_schedules),
+            'status': 'Enabled' if active_schedules else 'No Active Schedules',
+            'tone': 'normal' if active_schedules else 'unknown',
+            'icon': 'calendar-clock',
+            'caption': f"{int(report_counts.get('schedules', 0))} total schedule definition(s).",
+            'action_label': 'Open Schedules',
+            'href': url_for('reports.schedules'),
+        },
+        {
+            'label': 'Artifact Storage',
+            'value': str(storage_context.get('label', 'Report Storage')),
+            'status': 'Ready' if storage_ready else 'Review',
+            'tone': 'normal' if storage_ready else 'warning',
+            'icon': 'hard-drive',
+            'caption': str(
+                storage_context.get(
+                    'active_detail',
+                    'Configured report artifact backend.',
+                )
+            ).capitalize(),
+            'action_label': 'Open Storage',
+            'href': url_for('reports.storage'),
+        },
+    ]
+
+
+def get_reporting_coverage_summary() -> list[dict[str, Any]]:
+    groups: dict[str, dict[str, Any]] = {
+        REPORT_FAMILY_ANALYTICS: {
+            'key': REPORT_FAMILY_ANALYTICS,
+            'label': 'Analytics Reports',
+            'description': 'Time-range analysis and operational evidence.',
+            'icon': 'chart-no-axes-combined',
+            'formats': ['PDF', 'CSV'],
+            'items': [],
+        },
+        REPORT_FAMILY_INVENTORY: {
+            'key': REPORT_FAMILY_INVENTORY,
+            'label': 'Inventory Reports',
+            'description': 'Point-in-time Kubernetes asset evidence.',
+            'icon': 'boxes',
+            'formats': ['XLSX', 'CSV'],
+            'items': [],
+        },
+    }
+
+    for spec in REPORT_TYPE_SPECS:
+        group = groups.get(spec.family)
+        if group is None:
+            continue
+        label = str(spec.label)
+        if label.endswith(' Report'):
+            label = label[:-7]
+        group['items'].append(
+            {
+                'label': label,
+                'value': spec.value,
+                'icon': spec.icon,
+            }
+        )
+
+    return [groups[REPORT_FAMILY_ANALYTICS], groups[REPORT_FAMILY_INVENTORY]]
+
+
 def get_recent_reports(limit: int = 5) -> list[dict[str, Any]]:
     reports = db.session.scalars(select(Report).order_by(Report.created_at.desc()).limit(limit)).all()
+    cluster_ids = {str(report.cluster_id) for report in reports if report.cluster_id}
+    cluster_names: dict[str, str] = {}
+    if cluster_ids:
+        clusters = db.session.scalars(select(Cluster).where(Cluster.id.in_(cluster_ids))).all()
+        cluster_names = {str(cluster.id): str(cluster.name) for cluster in clusters}
 
-    return [serialize_recent_report(report) for report in reports]
+    return [serialize_recent_report(report, cluster_names) for report in reports]
 
 
-def serialize_recent_report(report: Report) -> dict[str, Any]:
+def serialize_recent_report(
+    report: Report,
+    cluster_names: dict[str, str] | None = None,
+) -> dict[str, Any]:
     status = str(report.status or 'requested').lower()
     report_type_option = next(
         (
@@ -273,7 +380,9 @@ def serialize_recent_report(report: Report) -> dict[str, Any]:
         'status_label': format_status_label(status),
         'status_tone': get_status_tone(status),
         'period': report.period,
-        'scope': report.namespace or 'All namespaces',
+        'scope': report.namespace or 'All Namespaces',
+        'cluster_name': (cluster_names or {}).get(str(report.cluster_id), 'Cluster Unavailable'),
+        'output_format': str(report.output_format or '-').upper(),
         'created_at': report.created_at,
         'file_size': format_file_size(report.file_size_bytes),
         'href': url_for('reports.generated_report_detail', report_id=report.id),

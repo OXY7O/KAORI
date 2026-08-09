@@ -1,60 +1,80 @@
-<section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+<section class="{{ table_ui.block_classes() }}"
          aria-labelledby="recent-reports-title">
-    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
-        <div class="flex items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
-                  aria-hidden="true">
-                <i data-lucide="file-text" class="h-5 w-5"></i>
-            </span>
-            <div>
-                <h2 id="recent-reports-title" class="text-base font-semibold text-content-primary">Recent Generated Reports</h2>
-                <p class="mt-0.5 text-xs leading-5 text-content-muted">Latest report records and artifact readiness across infrastructure scopes.</p>
+    <header class="{{ table_ui.block_header_classes() }}">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                    <i data-lucide="file-text" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 id="recent-reports-title" class="{{ table_ui.block_title_classes() }}">Recent Generated Reports</h2>
+                    <p class="{{ table_ui.block_description_classes() }}">Latest artifact records across governed cluster scopes.</p>
+                </div>
             </div>
+            <a href="{{ url_for('reports.generated_reports') }}"
+               class="{{ table_ui.action_classes() }}">
+                <i data-lucide="folder-open" class="h-4 w-4" aria-hidden="true"></i>
+                View All Reports
+            </a>
         </div>
-        <a href="{{ url_for('reports.generated_reports') }}"
-           class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-kaori-primary/30 bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft">
-            <i data-lucide="folder-open" class="h-4 w-4" aria-hidden="true"></i>
-            View Reports
-        </a>
     </header>
+
     {% if payload.recent_reports %}
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-outline-default">
-                <thead class="bg-surface-hover">
+            <table class="{{ table_ui.table_classes('min-w-[68rem]') }}">
+                <thead class="{{ table_ui.head_classes() }}">
                     <tr>
-                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Report Name</th>
-                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Scope</th>
-                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Type</th>
-                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Status</th>
-                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Created</th>
-                        <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-content-muted">Action</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Report</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Cluster</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Format</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Status</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Generated</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Size</th>
+                        <th class="{{ table_ui.header_cell_classes(true) }}">Action</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-outline-subtle bg-surface-card">
+                <tbody class="{{ table_ui.body_classes() }}">
                     {% for report in payload.recent_reports %}
-                        <tr class="transition hover:bg-surface-hover">
-                            <td class="px-5 py-4">
-                                <div class="flex min-w-0 items-start gap-3">
-                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/20 bg-kaori-soft text-kaori-primary"
+                        <tr class="{{ table_ui.row_classes() }}">
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <div class="flex min-w-[15rem] items-start gap-3">
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                                           aria-hidden="true">
                                         <i data-lucide="{{ report.icon|default('file-text') }}" class="h-4 w-4"></i>
                                     </span>
                                     <div class="min-w-0">
-                                        <p class="max-w-xs truncate text-sm font-semibold text-content-primary"
+                                        <p class="max-w-xs truncate text-sm font-semibold leading-5 text-content-primary"
                                            title="{{ report.name }}">{{ report.name }}</p>
-                                        <p class="mt-1 text-xs text-content-muted">{{ report.file_size }}</p>
+                                        <p class="mt-0.5 truncate text-xs leading-5 text-content-muted"
+                                           title="{{ report.report_type_label }}">{{ report.report_type_label }}</p>
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-5 py-4 text-sm text-content-secondary">{{ report.scope }}</td>
-                            <td class="px-5 py-4 text-sm text-content-secondary">{{ report.report_type_label }}</td>
-                            <td class="px-5 py-4">
-                                {{ table_label.status_label(report.status_label, report.status, none, 'detail') }}
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <div class="min-w-[12rem]">
+                                    <p class="truncate text-sm font-semibold text-content-primary"
+                                       title="{{ report.cluster_name }}">{{ report.cluster_name }}</p>
+                                    <p class="mt-0.5 truncate text-xs text-content-muted"
+                                       title="{{ report.scope }}">{{ report.scope }}</p>
+                                </div>
                             </td>
-                            <td class="px-5 py-4 text-sm text-content-secondary">{{ report.created_at|user_datetime }}</td>
-                            <td class="px-5 py-4 text-right">
+                            <td class="{{ table_ui.cell_classes() }}">
+                                {{ table_label.metadata_label(report.output_format, 'file-output', false, 'detail') }}
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                {{ table_label.status_indicator_label(report.status_label, report.status_tone, none, 'detail') }}
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <span class="whitespace-nowrap text-sm text-content-secondary">{{ report.created_at|user_datetime }}</span>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <span class="whitespace-nowrap text-sm text-content-secondary">{{ report.file_size }}</span>
+                            </td>
+                            <td class="{{ table_ui.cell_classes(true) }}">
                                 <a href="{{ report.href }}"
-                                   class="inline-flex min-h-8 items-center justify-center rounded-lg border border-outline-default px-3 text-xs font-semibold text-content-secondary transition hover:border-kaori-primary/40 hover:text-kaori-primary">View</a>
+                                   class="{{ table_ui.action_classes() }}">View</a>
                             </td>
                         </tr>
                     {% endfor %}
@@ -62,17 +82,15 @@
             </table>
         </div>
     {% else %}
-        <div class="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:p-6">
+        <div class="flex flex-col items-center justify-center px-5 py-10 text-center sm:px-6">
             <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
                   aria-hidden="true">
                 <i data-lucide="file-plus-2" class="h-6 w-6"></i>
             </span>
-            <div class="min-w-0 flex-1">
-                <h3 class="text-sm font-semibold text-content-primary">No Generated Reports Yet</h3>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Generate the first report to establish artifact history and reporting evidence for this workspace.</p>
-            </div>
+            <h3 class="mt-3 text-sm font-semibold text-content-primary">No Generated Reports Yet</h3>
+            <p class="mt-1 max-w-xl text-xs leading-5 text-content-secondary">Generate the first report to establish artifact history and reporting evidence for this workspace.</p>
             <a href="{{ url_for('reports.generate_report') }}"
-               class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark">
+               class="mt-4 inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark">
                 <i data-lucide="plus-circle" class="h-4 w-4" aria-hidden="true"></i>
                 Generate Report
             </a>

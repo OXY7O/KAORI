@@ -58,3 +58,14 @@ Rendering failures are logged with technical evidence and returned to users as s
 `app/reports/jobs/queue.py` owns the Reports queue name. Both artifact generation and schedule dispatch resolve `REPORTS_CELERY_QUEUE` through this module before creating a canonical `JobExecution`. The Dev Container and production Compose definitions each run `reports-worker` with hostname `reports@%h` and the same queue environment variable.
 
 `app/common/celery_queue_health.py` owns the shared, cached Celery topology inspection used by Reports, Retention, and the Activity Deck. Report pages must never render a static worker-ready state. Worker liveness is presentation evidence; business tasks remain owned by Celery workers and never execute inside HTTP requests.
+
+## Reports Overview presentation contract
+
+Reports Overview is the operational landing workspace for the Reports domain. It is full-width and does not use a secondary right sidebar. The hierarchy is fixed to:
+
+1. Reporting posture in the violet hero: Generated, Ready, In Progress, and Failed.
+2. Reporting Operations: Reports worker/queue readiness, active schedules, and artifact storage readiness.
+3. Recent Generated Reports: a compact canonical table with Report, Cluster, Format, Status, Generated, Size, and Action.
+4. Reporting Coverage: Analytics (PDF/CSV) and Inventory (XLSX/CSV) families derived from `REPORT_TYPE_SPECS`.
+
+Overview must not expose storage credentials, storage paths, retention configuration, cron definitions, or other configuration-level detail. Those remain owned by their dedicated Reports workspaces.

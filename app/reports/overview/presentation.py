@@ -94,15 +94,21 @@ def normalize_reports_overview_payload(payload: Mapping[str, Any] | None) -> dic
     if not normalized.get('related_information'):
         normalized['related_information'] = [dict(item) for item in _RELATED_INFORMATION]
 
-    normalized.setdefault('page_title', 'Reports Overview')
+    normalized.setdefault('page_title', 'Reports')
     normalized.setdefault(
         'page_subtitle',
-        'Generate governed infrastructure reports from connected KAORI data sources.',
+        'Generate, schedule, retain, and audit governed reporting artifacts.',
     )
     normalized.setdefault('selected_cluster_label', 'All Infrastructure Scopes')
     normalized.setdefault('report_engine_status', 'Ready')
     normalized.setdefault('storage_status', 'Storage Review')
     normalized['summary_cards'] = _normalize_summary_cards(normalized.get('summary_cards'))
+    normalized['reporting_operations'] = _normalize_reporting_operations(
+        normalized.get('reporting_operations'), normalized
+    )
+    normalized['reporting_coverage'] = _normalize_reporting_coverage(
+        normalized.get('reporting_coverage')
+    )
     normalized.setdefault('recent_reports', [])
 
     return normalized
@@ -112,41 +118,117 @@ def normalize_reports_overview_payload(payload: Mapping[str, Any] | None) -> dic
 def _normalize_summary_cards(raw: Any) -> list[dict[str, Any]]:
     defaults = [
         {
-            'label': 'Total Reports',
+            'label': 'Generated',
             'value': '0',
-            'caption': 'All Report Records',
+            'caption': 'Ready or archived artifacts',
             'icon': 'files',
-            'tone': 'blue',
+            'tone': 'info',
         },
         {
-            'label': 'Generated This Month',
+            'label': 'Ready',
             'value': '0',
-            'caption': 'Reports Created This Month',
-            'icon': 'calendar-days',
-            'tone': 'green',
+            'caption': 'Available artifacts',
+            'icon': 'circle-check',
+            'tone': 'normal',
         },
         {
-            'label': 'Ready Reports',
+            'label': 'In Progress',
             'value': '0',
-            'caption': 'Available for Download',
-            'icon': 'check-circle-2',
-            'tone': 'purple',
+            'caption': 'Requested or generating',
+            'icon': 'loader-circle',
+            'tone': 'info',
         },
         {
-            'label': 'Enabled Schedules',
+            'label': 'Failed',
             'value': '0',
-            'caption': 'Enabled Recurring Definitions',
-            'icon': 'calendar-clock',
-            'tone': 'purple',
+            'caption': 'Requires review',
+            'icon': 'triangle-alert',
+            'tone': 'normal',
         },
     ]
     if not isinstance(raw, list):
         return defaults
 
     cards = [dict(card) for card in raw if isinstance(card, Mapping)]
+    if not cards:
+        return defaults
+
+    # Older workers may still emit the previous four summary labels during a rolling deploy.
+    label_map = {str(card.get('label', '')): card for card in cards}
+    if 'Generated' not in label_map and 'Total Reports' in label_map:
+        return defaults
+
     while len(cards) < len(defaults):
         cards.append(dict(defaults[len(cards)]))
-    return cards
+    return cards[:4]
+
+
+def _normalize_reporting_operations(raw: Any, payload: Mapping[str, Any]) -> list[dict[str, Any]]:
+    if isinstance(raw, list):
+        items = [dict(item) for item in raw if isinstance(item, Mapping)]
+        if items:
+            return items[:3]
+
+    worker = payload.get('worker_context') if isinstance(payload.get('worker_context'), Mapping) else {}
+    storage = payload.get('storage_context') if isinstance(payload.get('storage_context'), Mapping) else {}
+    return [
+        {
+            'label': 'Generation Queue',
+            'value': str(worker.get('label', 'Review')),
+            'status': str(worker.get('label', 'Unknown')),
+            'tone': str(worker.get('tone', 'unknown')),
+            'icon': 'workflow',
+            'caption': str(worker.get('description', 'Reports queue readiness is unavailable.')),
+            'action_label': 'Generate Report',
+            'href': '/reports/generate',
+        },
+        {
+            'label': 'Active Schedules',
+            'value': '0',
+            'status': 'Review',
+            'tone': 'unknown',
+            'icon': 'calendar-clock',
+            'caption': 'Open Schedules to review recurring definitions.',
+            'action_label': 'Open Schedules',
+            'href': '/reports/schedules',
+        },
+        {
+            'label': 'Artifact Storage',
+            'value': str(storage.get('label', 'Report Storage')),
+            'status': str(storage.get('display_status', 'Review')),
+            'tone': 'normal' if str(storage.get('status')) == 'selected' else 'warning',
+            'icon': 'hard-drive',
+            'caption': str(storage.get('active_detail', 'Configured report artifact backend.')).capitalize(),
+            'action_label': 'Open Storage',
+            'href': '/reports/storage',
+        },
+    ]
+
+
+def _normalize_reporting_coverage(raw: Any) -> list[dict[str, Any]]:
+    if isinstance(raw, list):
+        groups = [dict(item) for item in raw if isinstance(item, Mapping)]
+        if groups:
+            return groups[:2]
+
+    return [
+        {
+            'key': 'analytics',
+            'label': 'Analytics Reports',
+            'description': 'Time-range analysis and operational evidence.',
+            'icon': 'chart-no-axes-combined',
+            'formats': ['PDF', 'CSV'],
+            'items': [],
+        },
+        {
+            'key': 'inventory',
+            'label': 'Inventory Reports',
+            'description': 'Point-in-time Kubernetes asset evidence.',
+            'icon': 'boxes',
+            'formats': ['XLSX', 'CSV'],
+            'items': [],
+        },
+    ]
 
 def _normalize_report_type_coverage(raw: Any) -> dict[str, Any]:
     if not isinstance(raw, Mapping):

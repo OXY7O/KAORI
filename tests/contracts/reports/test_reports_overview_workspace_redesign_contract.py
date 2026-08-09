@@ -5,145 +5,133 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 OVERVIEW = ROOT / 'app' / 'templates' / 'reports' / 'overview'
 SERVICE = ROOT / 'app' / 'reports' / 'overview' / 'service.py'
+PRESENTATION = ROOT / 'app' / 'reports' / 'overview' / 'presentation.py'
 
 
 def read(path: Path) -> str:
     return path.read_text()
 
 
-def test_reports_overview_uses_short_hero_and_standard_context_panel() -> None:
+def test_reports_overview_is_full_width_without_right_sidebar() -> None:
+    source = read(OVERVIEW / 'index.html')
+
+    assert 'data-reports-overview-layout="operational-full-width"' in source
+    assert 'Operational Reporting' in source
+    assert 'Generate Report' in source
+    assert 'View Generated Reports' in source
+    assert 'page_hero.aside_classes()' not in source
+    assert 'Reports overview actions' not in source
+    assert 'xl:grid-cols-[minmax(0,1fr)_390px]' not in source
+    assert '<aside' not in source
+
+    assert '_reporting_operations.html' in source
+    assert '_recent_reports.html' in source
+    assert '_reporting_coverage.html' in source
+
+    for legacy_partial in (
+        '_reporting_context.html',
+        '_summary_cards.html',
+        '_coverage_pipeline_workspace.html',
+        '_data_collection_status.html',
+        '_current_status.html',
+        '_reporting_operating_model.html',
+        '_related_information.html',
+    ):
+        assert legacy_partial not in source
+
+
+def test_reporting_posture_is_embedded_in_the_hero() -> None:
     source = read(OVERVIEW / 'index.html')
     service = read(SERVICE)
+    presentation = read(PRESENTATION)
 
-    assert 'Generate governed infrastructure reports from connected KAORI data sources.' in service
-    assert 'Infrastructure reporting center' not in source
-    assert 'Infrastructure Reporting Center' in source
-    assert 'Reporting Readiness' in source
-    assert 'page_hero.context_status_badge' in source
-    assert "'Available Types'" in source
-    assert "'Active Schedules'" in source
-    assert 'Templates' in source
-    assert 'Generate' in source
+    assert 'aria-label="Reporting posture"' in source
+    assert 'payload.summary_cards' in source
+    for label in ('Generated', 'Ready', 'In Progress', 'Failed'):
+        assert f"'label': '{label}'" in service
+        assert f"'label': '{label}'" in presentation
+
+    assert "'page_title': 'Reports'" in service
+    assert 'Generate, schedule, retain, and audit governed reporting artifacts.' in service
 
 
-def test_reporting_overview_is_general_and_integration_driven() -> None:
-    source = read(OVERVIEW / 'partials' / '_reporting_context.html')
+def test_reporting_operations_are_one_compact_operational_workspace() -> None:
+    source = read(OVERVIEW / 'partials' / '_reporting_operations.html')
     service = read(SERVICE)
 
-    assert 'Integration-Driven Reporting Workspace' in source
-    assert 'Integration-Driven Coverage' in service
-    assert 'Reusable Report Contracts' in service
-    assert 'Governed Artifact Lifecycle' in service
-    assert 'Automation & Delivery' in service
-    assert 'any supported infrastructure domain' in service
-    assert 'dashboard screenshots' not in source
+    assert 'Reporting Operations' in source
+    assert 'payload.reporting_operations' in source
+    assert 'lg:grid-cols-3' in source
+    assert 'table_label.status_indicator_label' in source
 
-
-def test_coverage_and_pipeline_use_short_tabs_and_scalable_expandables() -> None:
-    workspace = read(OVERVIEW / 'partials' / '_coverage_pipeline_workspace.html')
-    coverage = read(OVERVIEW / 'partials' / '_report_type_coverage.html')
-    pipeline = read(OVERVIEW / 'partials' / '_pipeline_status.html')
-
-    assert "reportWorkspaceTab: 'coverage'" in read(OVERVIEW / 'index.html')
-    assert "activateReportWorkspaceTab('coverage')" in workspace
-    assert "activateReportWorkspaceTab('pipeline')" in workspace
-    assert 'Reporting Capability' in workspace
-    assert '\n                    Types\n' in workspace
-    assert '\n                    Pipeline\n' in workspace
-    assert 'Report Type Coverage' not in workspace
-    assert 'Reporting Pipeline Status' not in workspace
-
-    assert 'openCoverageDomain: null' in coverage
-    assert 'openCoverageDomain ===' in coverage
-    assert 'x-collapse' in coverage
-    assert 'payload.report_type_coverage.domains' in coverage
-    assert 'md:grid-cols-2 2xl:grid-cols-3' in coverage
-    assert 'overflow-x-auto' not in coverage
-
-    assert 'openPipelineStage: null' in pipeline
-    assert 'openPipelineStage ===' in pipeline
-    assert 'x-collapse' in pipeline
-    assert 'aria-label="Generate report pipeline stages"' in pipeline
-    assert 'space-y-2' in pipeline
-    assert 'overflow-x-auto' not in pipeline
-    assert 'min-h-[720px]' not in coverage
-
-
-def test_current_status_and_operating_model_are_closed_by_default() -> None:
-    current_status = read(OVERVIEW / 'partials' / '_current_status.html')
-    operating_model = read(OVERVIEW / 'partials' / '_reporting_operating_model.html')
-
-    assert 'x-data="{ open: false }"' in current_status
-    assert 'x-data="{ open: false }"' in operating_model
-    assert 'x-show="open" x-collapse x-cloak' in current_status
-    assert 'x-show="open" x-collapse x-cloak' in operating_model
-    assert 'Ready ·' in current_status
-    assert 'Reporting Operating Model' in operating_model
-
-
-def test_infrastructure_collection_covers_ready_available_planned_and_reserved_integrations() -> None:
-    source = read(SERVICE)
-    template = read(OVERVIEW / 'partials' / '_data_collection_status.html')
-
-    for label in (
-        'Kubernetes API',
-        'Prometheus / Thanos',
-        'Alertmanager',
-        'Local Filesystem',
-        'MinIO / S3-Compatible Storage',
-        'Server & VM Inventory',
-        'HCI Provider APIs',
-        'Vault & Secret Providers',
-        'Telegram',
-        'Email, Slack & Webhook',
-    ):
-        assert label in source
-
-    for stage in ('Ready Now', 'Available to Configure', 'Planned', 'Reserved'):
-        assert stage in template
-
-    assert 'Review Integrations' in template
-
-
-def test_related_kaori_information_is_available_in_right_column() -> None:
-    index = read(OVERVIEW / 'index.html')
-    related = read(OVERVIEW / 'partials' / '_related_information.html')
-    service = read(SERVICE)
-
-    assert '_related_information.html' in index
-    assert 'Related KAORI Information' in related
-    for label in (
-        'Generate Report',
-        'Report Templates',
-        'Report Schedules',
-        'Report Storage',
-        'Infrastructure Integrations',
-    ):
+    for label in ('Generation Queue', 'Active Schedules', 'Artifact Storage'):
         assert label in service
 
+    assert "url_for('reports.generate_report')" in service
+    assert "url_for('reports.schedules')" in service
+    assert "url_for('reports.storage')" in service
 
-def test_report_overview_headings_use_title_case_where_appropriate() -> None:
+
+def test_recent_reports_use_canonical_artifact_registry_columns() -> None:
+    source = read(OVERVIEW / 'partials' / '_recent_reports.html')
+    service = read(SERVICE)
+
+    assert 'components/table.html' in source
+    assert 'components/table_label.html' in source
+    for label in ('Report', 'Cluster', 'Format', 'Status', 'Generated', 'Size', 'Action'):
+        assert f'>{label}<' in source
+
+    assert 'report.cluster_name' in source
+    assert 'report.output_format' in source
+    assert 'report.file_size' in source
+    assert 'status_indicator_label' in source
+    assert "'cluster_name':" in service
+    assert "'output_format':" in service
+    assert 'select(Cluster).where(Cluster.id.in_(cluster_ids))' in service
+
+    assert 'Scope</th>' not in source
+    assert 'Type</th>' not in source
+    assert 'Created</th>' not in source
+
+
+def test_reporting_coverage_is_one_full_width_family_workspace() -> None:
+    source = read(OVERVIEW / 'partials' / '_reporting_coverage.html')
+    service = read(SERVICE)
+
+    assert 'Reporting Coverage' in source
+    assert 'payload.reporting_coverage' in source
+    assert 'lg:grid-cols-2' in source
+    assert 'data-report-family="{{ group.key }}"' in source
+    assert 'Governed scope.' in source
+    assert 'analytics uses PDF/CSV while inventory uses XLSX/CSV.' in source
+
+    for label in ('Analytics Reports', 'Inventory Reports'):
+        assert label in service
+    for format_label in ("'PDF'", "'CSV'", "'XLSX'"):
+        assert format_label in service
+
+    assert 'REPORT_FAMILY_ANALYTICS' in service
+    assert 'REPORT_FAMILY_INVENTORY' in service
+    assert 'for spec in REPORT_TYPE_SPECS' in service
+
+
+def test_overview_does_not_expose_storage_or_schedule_configuration_details() -> None:
     combined = '\n'.join(
         read(path)
-        for path in [
+        for path in (
             OVERVIEW / 'index.html',
-            *sorted((OVERVIEW / 'partials').glob('*.html')),
-        ]
+            OVERVIEW / 'partials' / '_reporting_operations.html',
+            OVERVIEW / 'partials' / '_recent_reports.html',
+            OVERVIEW / 'partials' / '_reporting_coverage.html',
+        )
     )
 
-    required = (
-        'Infrastructure Reporting Center',
-        'Reporting Activity Snapshot',
-        'Recent Generated Reports',
-        'Reporting Capability',
-        'Infrastructure Data Collection',
-        'Current Status',
-        'Reporting Operating Model',
-        'Related KAORI Information',
-    )
-    for label in required:
-        assert label in combined
-
-    assert 'Report engine' not in combined
-    assert 'Infrastructure reporting center' not in combined
-    assert 'Create first report' not in combined
+    for forbidden in (
+        'Access Key',
+        'Secret Key',
+        'Bucket Prefix',
+        'Retention Days',
+        'Cron Expression',
+        'Storage Path',
+    ):
+        assert forbidden not in combined
