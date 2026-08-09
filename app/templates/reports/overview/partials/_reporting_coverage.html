@@ -1,15 +1,13 @@
-{% import "components/table_label.html" as table_label %}
 <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
          aria-labelledby="reporting-coverage-title">
     <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
         <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
-                  aria-hidden="true">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
                 <i data-lucide="layers-3" class="h-5 w-5"></i>
             </span>
             <div class="min-w-0">
-                <h2 id="reporting-coverage-title" class="text-base font-semibold text-content-primary">Reporting Coverage</h2>
-                <p class="mt-0.5 text-xs leading-5 text-content-muted">Canonical report families and artifact formats available from the Generate workflow.</p>
+                <h2 id="reporting-coverage-title" class="text-base font-semibold text-content-primary">Reporting Capability</h2>
+                <p class="mt-0.5 text-xs leading-5 text-content-muted">Canonical report families available to the governed Generate workflow.</p>
             </div>
         </div>
         <a href="{{ url_for('reports.report_templates') }}"
@@ -22,10 +20,9 @@
     <div class="grid divide-y divide-outline-subtle lg:grid-cols-2 lg:divide-x lg:divide-y-0">
         {% for group in payload.reporting_coverage %}
             <article class="px-5 py-5 sm:px-6" data-report-family="{{ group.key }}">
-                <div class="flex items-start justify-between gap-4">
+                <div class="flex items-start justify-between gap-5">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
-                              aria-hidden="true">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
                             <i data-lucide="{{ group.icon }}" class="h-5 w-5"></i>
                         </span>
                         <div class="min-w-0">
@@ -33,24 +30,15 @@
                             <p class="mt-1 text-xs leading-5 text-content-muted">{{ group.description }}</p>
                         </div>
                     </div>
-                    <div class="flex shrink-0 flex-wrap justify-end gap-1.5">
-                        {% for format in group.formats %}
-                            {{ table_label.metadata_label(format, none, false, 'detail') }}
-                        {% endfor %}
+                    <div class="shrink-0 text-right">
+                        <p class="text-2xl font-bold tracking-tight text-content-primary">{{ group.contract_count }}</p>
+                        <p class="text-xs font-semibold text-content-muted">Contracts</p>
                     </div>
                 </div>
-
-                <div class="mt-4 grid gap-x-5 gap-y-2 border-t border-outline-subtle pt-4 sm:grid-cols-2">
-                    {% for item in group['items'] %}
-                        <div class="flex min-w-0 items-center gap-2 py-1.5">
-                            <i data-lucide="{{ item.icon }}"
-                               class="h-3.5 w-3.5 shrink-0 text-kaori-primary"
-                               aria-hidden="true"></i>
-                            <span class="truncate text-xs font-semibold text-content-secondary"
-                                  title="{{ item.label }}">{{ item.label }}</span>
-                        </div>
-                    {% else %}
-                        <p class="text-xs leading-5 text-content-muted sm:col-span-2">Coverage details will appear after the report catalog is loaded.</p>
+                <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-outline-subtle pt-4">
+                    <span class="text-xs font-semibold text-content-muted">Formats</span>
+                    {% for format in group.formats %}
+                        <span class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-subtle px-2 text-xs font-semibold text-content-secondary">{{ format }}</span>
                     {% endfor %}
                 </div>
             </article>
@@ -58,15 +46,11 @@
     </div>
 
     <div class="flex flex-col gap-3 border-t border-outline-subtle bg-kaori-soft/45 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div class="flex min-w-0 items-start gap-2.5">
-            <i data-lucide="shield-check" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
-            <p class="text-xs leading-5 text-content-secondary">
-                <span class="font-semibold text-content-primary">Governed scope.</span>
-                Every report requires an explicit cluster scope; analytics uses PDF/CSV while inventory uses XLSX/CSV.
-            </p>
-        </div>
-        <a href="{{ url_for('reports.generate_report') }}"
-           class="inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold text-kaori-primary transition hover:text-kaori-primary-dark">
+        <p class="text-xs leading-5 text-content-secondary">
+            <span class="font-semibold text-content-primary">Governed scope.</span>
+            Every report uses one explicit cluster scope; analytics uses PDF/CSV and inventory uses XLSX/CSV.
+        </p>
+        <a href="{{ url_for('reports.generate_report') }}" class="inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold text-kaori-primary transition hover:text-kaori-primary-dark">
             Generate Report
             <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
         </a>

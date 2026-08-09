@@ -8,7 +8,6 @@ from sqlalchemy import func, select
 
 from app.common.celery_queue_health import get_queue_readiness
 from app.extensions.db import db
-from app.models.cluster import Cluster
 from app.models.report import Report, ReportSchedule, ReportTemplate
 from app.reports.catalog import (
     REPORT_FAMILY_ANALYTICS,
@@ -149,7 +148,9 @@ def get_reports_overview_payload() -> dict[str, Any]:
         'reporting_operations': get_reporting_operations(
             report_counts, storage_context, worker_context
         ),
-        'recent_reports': get_recent_reports(),
+        'artifact_statistics': get_artifact_statistics(report_counts),
+        'artifact_portfolio': get_artifact_portfolio(),
+        'automation_summary': get_automation_summary(report_counts, report_type_coverage),
         'report_type_coverage': report_type_coverage,
         'reporting_coverage': get_reporting_coverage_summary(),
         'report_type_summary': get_report_type_summary(report_type_coverage),
@@ -347,50 +348,99 @@ def get_reporting_coverage_summary() -> list[dict[str, Any]]:
             }
         )
 
+    for group in groups.values():
+        group['contract_count'] = len(group['items'])
+
     return [groups[REPORT_FAMILY_ANALYTICS], groups[REPORT_FAMILY_INVENTORY]]
 
 
-def get_recent_reports(limit: int = 5) -> list[dict[str, Any]]:
-    reports = db.session.scalars(select(Report).order_by(Report.created_at.desc()).limit(limit)).all()
-    cluster_ids = {str(report.cluster_id) for report in reports if report.cluster_id}
-    cluster_names: dict[str, str] = {}
-    if cluster_ids:
-        clusters = db.session.scalars(select(Cluster).where(Cluster.id.in_(cluster_ids))).all()
-        cluster_names = {str(cluster.id): str(cluster.name) for cluster in clusters}
 
-    return [serialize_recent_report(report, cluster_names) for report in reports]
-
-
-def serialize_recent_report(
-    report: Report,
-    cluster_names: dict[str, str] | None = None,
-) -> dict[str, Any]:
-    status = str(report.status or 'requested').lower()
-    report_type_option = next(
-        (
-            option
-            for option in REPORT_TYPE_OPTIONS
-            if str(option.get('value', '')) == str(report.report_type or '')
-        ),
-        {},
+def get_artifact_statistics(report_counts: dict[str, int]) -> list[dict[str, str]]:
+    completed = int(report_counts.get('ready', 0)) + int(report_counts.get('archived', 0))
+    failed = int(report_counts.get('failed', 0))
+    resolved = completed + failed
+    completion_rate = f"{round((completed / resolved) * 100)}%" if resolved else '—'
+    footprint_bytes = int(
+        db.session.scalar(
+            select(func.coalesce(func.sum(Report.file_size_bytes), 0)).where(
+                Report.status.in_(READY_REPORT_STATUSES + ARCHIVED_REPORT_STATUSES)
+            )
+        )
+        or 0
     )
 
+    return [
+        {
+            'label': 'Requests This Month',
+            'value': str(report_counts.get('generated_this_month', 0)),
+            'caption': 'Report requests created this calendar month',
+            'icon': 'calendar-range',
+        },
+        {
+            'label': 'Completion Rate',
+            'value': completion_rate,
+            'caption': 'Ready or archived among resolved requests',
+            'icon': 'badge-check',
+        },
+        {
+            'label': 'Artifact Footprint',
+            'value': format_file_size(footprint_bytes),
+            'caption': 'Stored ready and archived artifacts',
+            'icon': 'database',
+        },
+        {
+            'label': 'Custom Templates',
+            'value': str(report_counts.get('custom_templates', 0)),
+            'caption': 'Reusable operator-defined templates',
+            'icon': 'layout-template',
+        },
+    ]
+
+
+def get_artifact_portfolio() -> dict[str, list[dict[str, str]]]:
+    generated_statuses = READY_REPORT_STATUSES + ARCHIVED_REPORT_STATUSES
+    family_by_type = {spec.value: spec.family for spec in REPORT_TYPE_SPECS}
+
+    type_rows = db.session.execute(
+        select(Report.report_type, func.count(Report.id))
+        .where(Report.status.in_(generated_statuses))
+        .group_by(Report.report_type)
+    ).all()
+    family_counts = {REPORT_FAMILY_ANALYTICS: 0, REPORT_FAMILY_INVENTORY: 0}
+    for report_type, count in type_rows:
+        family = family_by_type.get(str(report_type))
+        if family in family_counts:
+            family_counts[family] += int(count or 0)
+
+    format_rows = db.session.execute(
+        select(Report.output_format, func.count(Report.id))
+        .where(Report.status.in_(generated_statuses))
+        .group_by(Report.output_format)
+    ).all()
+    format_counts = {str(fmt or '').upper(): int(count or 0) for fmt, count in format_rows}
+
     return {
-        'id': report.id,
-        'name': report.name,
-        'report_type': report.report_type,
-        'report_type_label': format_report_type(report.report_type),
-        'icon': str(report_type_option.get('icon', 'file-text')),
-        'status': status,
-        'status_label': format_status_label(status),
-        'status_tone': get_status_tone(status),
-        'period': report.period,
-        'scope': report.namespace or 'All Namespaces',
-        'cluster_name': (cluster_names or {}).get(str(report.cluster_id), 'Cluster Unavailable'),
-        'output_format': str(report.output_format or '-').upper(),
-        'created_at': report.created_at,
-        'file_size': format_file_size(report.file_size_bytes),
-        'href': url_for('reports.generated_report_detail', report_id=report.id),
+        'families': [
+            {'label': 'Analytics', 'value': str(family_counts[REPORT_FAMILY_ANALYTICS]), 'icon': 'chart-no-axes-combined'},
+            {'label': 'Inventory', 'value': str(family_counts[REPORT_FAMILY_INVENTORY]), 'icon': 'boxes'},
+        ],
+        'formats': [
+            {'label': 'PDF', 'value': str(format_counts.get('PDF', 0))},
+            {'label': 'CSV', 'value': str(format_counts.get('CSV', 0))},
+            {'label': 'XLSX', 'value': str(format_counts.get('XLSX', 0))},
+        ],
+    }
+
+
+def get_automation_summary(
+    report_counts: dict[str, int],
+    report_type_coverage: dict[str, Any],
+) -> dict[str, str]:
+    return {
+        'active_schedules': str(report_counts.get('active_schedules', 0)),
+        'total_schedules': str(report_counts.get('schedules', 0)),
+        'custom_templates': str(report_counts.get('custom_templates', 0)),
+        'available_contracts': str(report_type_coverage.get('available_count', 0)),
     }
 
 

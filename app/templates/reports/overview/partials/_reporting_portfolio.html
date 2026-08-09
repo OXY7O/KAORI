@@ -1,0 +1,64 @@
+<section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+         aria-labelledby="reporting-portfolio-title">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                <i data-lucide="pie-chart" class="h-5 w-5"></i>
+            </span>
+            <div class="min-w-0">
+                <h2 id="reporting-portfolio-title" class="text-base font-semibold text-content-primary">Reporting Portfolio</h2>
+                <p class="mt-0.5 text-xs leading-5 text-content-muted">Generated artifact mix, output formats, and automation posture.</p>
+            </div>
+        </div>
+    </header>
+
+    <div class="grid divide-y divide-outline-subtle lg:grid-cols-3 lg:divide-x lg:divide-y-0">
+        <article class="px-5 py-5 sm:px-6">
+            <p class="text-sm font-semibold text-content-primary">Artifact Families</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Ready and archived artifacts by report family.</p>
+            <div class="mt-4 space-y-3">
+                {% for item in payload.artifact_portfolio.families %}
+                    <div class="flex items-center justify-between gap-4 border-b border-outline-subtle pb-3 last:border-b-0 last:pb-0">
+                        <span class="inline-flex items-center gap-2 text-sm font-medium text-content-secondary">
+                            <i data-lucide="{{ item.icon }}" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                            {{ item.label }}
+                        </span>
+                        <strong class="text-base text-content-primary">{{ item.value }}</strong>
+                    </div>
+                {% endfor %}
+            </div>
+        </article>
+
+        <article class="px-5 py-5 sm:px-6">
+            <p class="text-sm font-semibold text-content-primary">Output Formats</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Generated artifact distribution by file contract.</p>
+            <div class="mt-4 grid grid-cols-3 gap-3">
+                {% for item in payload.artifact_portfolio.formats %}
+                    <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-3 py-3 text-center">
+                        <p class="text-lg font-bold text-content-primary">{{ item.value }}</p>
+                        <p class="mt-1 text-xs font-semibold text-content-muted">{{ item.label }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </article>
+
+        <article class="px-5 py-5 sm:px-6">
+            <p class="text-sm font-semibold text-content-primary">Automation & Reuse</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Recurring definitions, reusable templates, and available report contracts.</p>
+            <dl class="mt-4 divide-y divide-outline-subtle border-y border-outline-subtle">
+                <div class="flex items-center justify-between gap-4 py-3">
+                    <dt class="text-xs font-semibold text-content-muted">Active Schedules</dt>
+                    <dd class="text-sm font-bold text-content-primary">{{ payload.automation_summary.active_schedules }} / {{ payload.automation_summary.total_schedules }}</dd>
+                </div>
+                <div class="flex items-center justify-between gap-4 py-3">
+                    <dt class="text-xs font-semibold text-content-muted">Custom Templates</dt>
+                    <dd class="text-sm font-bold text-content-primary">{{ payload.automation_summary.custom_templates }}</dd>
+                </div>
+                <div class="flex items-center justify-between gap-4 py-3">
+                    <dt class="text-xs font-semibold text-content-muted">Available Contracts</dt>
+                    <dd class="text-sm font-bold text-content-primary">{{ payload.automation_summary.available_contracts }}</dd>
+                </div>
+            </dl>
+        </article>
+    </div>
+</section>

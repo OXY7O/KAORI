@@ -109,7 +109,9 @@ def normalize_reports_overview_payload(payload: Mapping[str, Any] | None) -> dic
     normalized['reporting_coverage'] = _normalize_reporting_coverage(
         normalized.get('reporting_coverage')
     )
-    normalized.setdefault('recent_reports', [])
+    normalized['artifact_statistics'] = _normalize_artifact_statistics(normalized.get('artifact_statistics'))
+    normalized['artifact_portfolio'] = _normalize_artifact_portfolio(normalized.get('artifact_portfolio'))
+    normalized['automation_summary'] = _normalize_automation_summary(normalized.get('automation_summary'))
 
     return normalized
 
@@ -209,6 +211,9 @@ def _normalize_reporting_coverage(raw: Any) -> list[dict[str, Any]]:
     if isinstance(raw, list):
         groups = [dict(item) for item in raw if isinstance(item, Mapping)]
         if groups:
+            for group in groups:
+                items = group.get('items') if isinstance(group.get('items'), list) else []
+                group.setdefault('contract_count', len(items))
             return groups[:2]
 
     return [
@@ -219,6 +224,7 @@ def _normalize_reporting_coverage(raw: Any) -> list[dict[str, Any]]:
             'icon': 'chart-no-axes-combined',
             'formats': ['PDF', 'CSV'],
             'items': [],
+            'contract_count': 0,
         },
         {
             'key': 'inventory',
@@ -227,8 +233,52 @@ def _normalize_reporting_coverage(raw: Any) -> list[dict[str, Any]]:
             'icon': 'boxes',
             'formats': ['XLSX', 'CSV'],
             'items': [],
+            'contract_count': 0,
         },
     ]
+
+
+def _normalize_artifact_statistics(raw: Any) -> list[dict[str, Any]]:
+    defaults = [
+        {'label': 'Requests This Month', 'value': '0', 'caption': 'Report requests created this calendar month', 'icon': 'calendar-range'},
+        {'label': 'Completion Rate', 'value': '—', 'caption': 'Ready or archived among resolved requests', 'icon': 'badge-check'},
+        {'label': 'Artifact Footprint', 'value': '0 B', 'caption': 'Stored ready and archived artifacts', 'icon': 'database'},
+        {'label': 'Custom Templates', 'value': '0', 'caption': 'Reusable operator-defined templates', 'icon': 'layout-template'},
+    ]
+    if not isinstance(raw, list):
+        return defaults
+    items = [dict(item) for item in raw if isinstance(item, Mapping)]
+    return (items + defaults[len(items):])[:4]
+
+
+def _normalize_artifact_portfolio(raw: Any) -> dict[str, list[dict[str, str]]]:
+    if isinstance(raw, Mapping):
+        families = [dict(item) for item in raw.get('families', []) if isinstance(item, Mapping)]
+        formats = [dict(item) for item in raw.get('formats', []) if isinstance(item, Mapping)]
+        if families and formats:
+            return {'families': families, 'formats': formats}
+    return {
+        'families': [
+            {'label': 'Analytics', 'value': '0', 'icon': 'chart-no-axes-combined'},
+            {'label': 'Inventory', 'value': '0', 'icon': 'boxes'},
+        ],
+        'formats': [
+            {'label': 'PDF', 'value': '0'},
+            {'label': 'CSV', 'value': '0'},
+            {'label': 'XLSX', 'value': '0'},
+        ],
+    }
+
+
+def _normalize_automation_summary(raw: Any) -> dict[str, str]:
+    if not isinstance(raw, Mapping):
+        raw = {}
+    return {
+        'active_schedules': str(raw.get('active_schedules', '0')),
+        'total_schedules': str(raw.get('total_schedules', '0')),
+        'custom_templates': str(raw.get('custom_templates', '0')),
+        'available_contracts': str(raw.get('available_contracts', '0')),
+    }
 
 def _normalize_report_type_coverage(raw: Any) -> dict[str, Any]:
     if not isinstance(raw, Mapping):

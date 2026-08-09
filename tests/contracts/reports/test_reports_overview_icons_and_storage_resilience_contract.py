@@ -15,18 +15,17 @@ def read(path: Path) -> str:
     return path.read_text()
 
 
-def test_recent_report_names_and_reporting_capability_have_visible_icons() -> None:
-    recent = read(OVERVIEW / '_recent_reports.html')
-    capability = read(OVERVIEW / '_coverage_pipeline_workspace.html')
+def test_overview_statistics_and_portfolio_have_visible_icons() -> None:
+    statistics = read(OVERVIEW / '_reporting_statistics.html')
+    portfolio = read(OVERVIEW / '_reporting_portfolio.html')
     service = read(OVERVIEW_SERVICE)
 
-    assert "'icon': str(report_type_option.get('icon', 'file-text'))" in service
-    assert 'data-lucide="{{ report.icon|default(\'file-text\') }}"' in recent
-    assert recent.index('report.icon') < recent.index('{{ report.name }}')
-
-    assert 'data-lucide="workflow"' in capability
-    assert 'Reporting Capability' in capability
-    assert 'border-kaori-primary/20' in capability
+    assert 'data-lucide="{{ item.icon }}"' in statistics
+    assert 'data-lucide="{{ item.icon }}"' in portfolio
+    assert "'icon': 'calendar-range'" in service
+    assert "'icon': 'chart-no-axes-combined'" in service
+    assert 'Reporting Statistics' in statistics
+    assert 'Reporting Portfolio' in portfolio
 
 
 def test_report_detail_storage_probe_is_failure_tolerant() -> None:

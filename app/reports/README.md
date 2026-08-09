@@ -61,29 +61,17 @@ Rendering failures are logged with technical evidence and returned to users as s
 
 ## Reports Overview presentation contract
 
-Reports Overview is the operational landing workspace for the Reports domain. Its hero uses the canonical KAORI `page_hero` 7/5 structure: identity/scope on the left and a two-metric reporting-posture context panel on the right. Detailed degraded-state remediation belongs below the hero. The workspace beneath the hero is full-width and does not use a secondary right sidebar.
+Reports Overview is the operational landing workspace for the Reports domain. It is full-width and does not use a secondary right sidebar. The hierarchy is fixed to:
 
-The overview hierarchy is fixed to:
-
-1. Canonical Reports hero with reporting posture and one contextual action.
+1. Reporting Posture: the canonical KAORI hero owns artifact readiness and two compact operational metrics.
 2. Reporting Operations: Reports worker/queue readiness, active schedules, and artifact storage readiness.
-3. Recent Generated Reports: a compact canonical table with Report, Cluster, Format, Status, Generated, Size, and Action.
-4. Reporting Coverage: Analytics (PDF/CSV) and Inventory (XLSX/CSV) families derived from `REPORT_TYPE_SPECS`.
+3. Reporting Statistics: monthly request activity, completion rate, artifact footprint, and reusable custom templates.
+4. Reporting Portfolio: generated artifact family mix, output-format distribution, and automation/reuse posture.
+5. Reporting Capability: compact Analytics (PDF/CSV) and Inventory (XLSX/CSV) contract families derived from `REPORT_TYPE_SPECS`.
+
+The Overview deliberately does not repeat the Generated Reports artifact registry. Artifact browsing, row-level status, file size, and report-detail actions remain owned by `Reports -> Generated Reports`.
 
 Overview must not expose storage credentials, storage paths, retention configuration, cron definitions, or other configuration-level detail. Those remain owned by their dedicated Reports workspaces.
-
-## Generate Report presentation contract
-
-Generate Report is one full-width guided report builder. It does not use a sticky right sidebar, a separate catalog-guide page inside the form, duplicate previews, or repeated storage/readiness cards. The fixed request hierarchy is:
-
-1. **Choose Report**: switch between Analytics and Inventory families, then choose a catalog-backed report contract from visual report cards. Report name remains optional.
-2. **Define Scope**: bind the request to one explicit Kubernetes cluster, optional namespace, and the report contract's period mode.
-3. **Configure Artifact**: choose only visual output-format options allowed by the catalog and configure content. Analytics sections are selectable; Inventory workbook sections are contract-locked and render as structure rows rather than disabled checkboxes.
-4. **Review & Queue**: show one compact request manifest covering report, scope, artifact, storage, worker, and queue-readiness evidence before submission.
-
-The builder exposes one four-step progress rail and keeps the underlying canonical form controls available for submission/runtime synchronization while presenting report types and output formats as direct-selection cards.
-
-The Generate hero uses the canonical KAORI `page_hero` geometry. Hero metadata describes identity/scope only; worker/storage operational state belongs in the context panel or compact degraded-state strips below the hero. Storage unavailability keeps the workspace readable but disables submission and remains enforced server-side before a `Report` row is created.
 
 ## Shared report-storage readiness and degraded mode
 
