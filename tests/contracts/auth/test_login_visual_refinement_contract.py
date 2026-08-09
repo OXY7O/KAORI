@@ -1,0 +1,57 @@
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[3]
+TEMPLATES = ROOT / 'app' / 'templates' / 'auth' / 'partials'
+CSS = ROOT / 'app' / 'static' / 'css' / 'auth-login.css'
+FABRIC = ROOT / 'app' / 'static' / 'images' / 'kaori-login-operations-fabric.svg'
+
+
+def _read(path: Path) -> str:
+    return path.read_text(encoding='utf-8')
+
+
+def test_login_brand_panel_uses_operations_fabric_visual() -> None:
+    source = _read(TEMPLATES / '_brand_panel.html')
+
+    assert "images/kaori-login-operations-fabric.svg" in source
+    assert 'kaori-operations-fabric' in source
+    assert 'Operate with clarity.' in source
+    assert 'Infrastructure Operations Platform' in source
+    assert 'Unified visibility and governed operations' in source
+    assert 'kaori-brand-network' not in source
+
+
+def test_login_brand_message_remains_global_not_provider_catalog() -> None:
+    combined = _read(TEMPLATES / '_brand_panel.html') + _read(TEMPLATES / '_feature_cards.html')
+
+    for capability in ('Visibility', 'Control', 'Intelligence', 'Assurance'):
+        assert capability in combined
+
+    for provider_or_workspace in (
+        'Prometheus',
+        'Alertmanager',
+        'Kubernetes Analytics',
+        'Secret Management',
+        'TLS Governance',
+    ):
+        assert provider_or_workspace not in combined
+
+
+def test_login_visual_uses_kaori_violet_and_keeps_compact_form_scale() -> None:
+    css = _read(CSS)
+
+    assert '.kaori-operations-fabric' in css
+    assert '#7C3AED' in css
+    assert '#A78BFA' in css
+    assert 'width: min(1060px, 100%);' in css
+    assert 'height: 44px;' in css
+    assert 'min-height: 44px;' in css
+
+
+def test_operations_fabric_is_static_non_scripted_svg() -> None:
+    source = _read(FABRIC)
+
+    assert '<svg' in source
+    assert '<script' not in source.lower()
+    assert 'onload=' not in source.lower()
+    assert 'href="http' not in source.lower()
