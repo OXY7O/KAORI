@@ -69,6 +69,7 @@ STATUS_META = {
 
 PENDING_STATUSES = [
     'requested',
+    'queued',
     'generating',
 ]
 
@@ -85,7 +86,12 @@ def get_generated_reports_payload(
         selected_filters,
     )
 
+    focus_report_id = _safe_int(selected_filters.get('focus', ''), 0)
+    for item in reports:
+        item['is_focused'] = bool(focus_report_id and item['id'] == focus_report_id)
+
     summary_cards = get_summary_cards()
+    has_pending_reports = _count_reports_by_status(PENDING_STATUSES) > 0
     unavailable_artifacts = sum(
         1
         for item in reports
@@ -123,6 +129,9 @@ def get_generated_reports_payload(
         'backend_status': backend_status,
         'hero_posture': get_hero_posture(),
         'storage_notice': storage_notice,
+        'focus_report_id': focus_report_id,
+        'has_pending_reports': has_pending_reports,
+        'poll_interval_seconds': 8,
     }
 
 
@@ -308,6 +317,10 @@ def get_filter_options() -> dict[str, list[dict[str, str]]]:
                 'label': 'Requested',
             },
             {
+                'value': 'queued',
+                'label': 'Queued',
+            },
+            {
                 'value': 'generating',
                 'label': 'Generating',
             },
@@ -324,11 +337,25 @@ def get_filter_options() -> dict[str, list[dict[str, str]]]:
                 'label': 'Archived',
             },
         ],
-        'periods': [
+        'output_formats': [
             {
-                'value': 'snapshot',
-                'label': 'Current Inventory Snapshot',
+                'value': '',
+                'label': 'All Formats',
             },
+            {
+                'value': 'pdf',
+                'label': 'PDF',
+            },
+            {
+                'value': 'csv',
+                'label': 'CSV',
+            },
+            {
+                'value': 'xlsx',
+                'label': 'XLSX',
+            },
+        ],
+        'periods': [
             {
                 'value': '30d',
                 'label': 'Last 30 days',
@@ -390,9 +417,17 @@ def get_selected_filters(
             'status',
             '',
         ),
+        'output_format': query_args.get(
+            'output_format',
+            '',
+        ),
         'period': query_args.get(
             'period',
             '30d',
+        ),
+        'focus': query_args.get(
+            'focus',
+            '',
         ),
         'search': query_args.get(
             'search',
@@ -552,7 +587,7 @@ def get_pagination(
         'per_page': per_page,
         'start_item': start_item,
         'end_item': end_item,
-        'label': f'Showing {start_item} - {end_item} of {total_items} reports',
+        'label': f'Showing {start_item}–{end_item} of {total_items} Reports',
         'has_prev': has_prev,
         'has_next': has_next,
         'prev_page': max(
@@ -790,6 +825,10 @@ def _apply_filters(
         'status',
         '',
     )
+    output_format = selected_filters.get(
+        'output_format',
+        '',
+    )
     period = selected_filters.get(
         'period',
         '30d',
@@ -812,6 +851,11 @@ def _apply_filters(
     if status:
         statement = statement.where(
             Report.status == status,
+        )
+
+    if output_format:
+        statement = statement.where(
+            Report.output_format == output_format,
         )
 
     if period != 'all':

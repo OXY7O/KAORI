@@ -54,7 +54,7 @@ def test_generated_pages_use_safe_probe_and_pause_storage_actions() -> None:
     assert 'return probe_report_artifact(file_path)' in service
     assert "and bool(active_backend_status.get('write_available', False))" in service
     assert 'Report records remain available; download actions stay paused' in service
-    assert 'payload.backend_status.status' in template
+    assert 'data-generated-storage-degraded="true"' in template
     assert 'payload.backend_status.title' in template
 
 

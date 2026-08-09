@@ -15,6 +15,14 @@ def test_reports_pages_use_standard_heroes_and_compact_summary_strips() -> None:
     for page in ('generated', 'report_templates', 'storage', 'schedules'):
         source = read(REPORT_TEMPLATES / page / 'index.html')
         assert 'page_hero.shell_classes()' in source
+
+    generated = read(REPORT_TEMPLATES / 'generated' / 'index.html')
+    assert 'reports/components/_summary_strip.html' not in generated
+    assert 'data-generated-report-registry="true"' in generated
+    assert 'Generation Posture' in generated
+
+    for page in ('report_templates', 'storage', 'schedules'):
+        source = read(REPORT_TEMPLATES / page / 'index.html')
         assert 'reports/components/_summary_strip.html' in source
 
     generate = read(REPORT_TEMPLATES / 'generate' / 'index.html')
@@ -118,7 +126,7 @@ def test_generated_registry_surfaces_storage_outage_without_breaking_list() -> N
     assert "'storage_notice': storage_notice" in service
     assert 'storage_reachable' in service
     assert 'Artifact Storage Needs Review' in template
-    assert 'Review Storage' in template
+    assert 'Open Storage' in template
     assert 'Report storage is temporarily unavailable.' in export_service
 
 

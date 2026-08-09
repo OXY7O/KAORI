@@ -93,6 +93,9 @@ def _notification_category_condition(category: str):
         return or_(
             Notification.event_type.like('data_lifecycle_%'),
             Notification.event_type.like('job_%'),
+            Notification.event_type.like('report_%'),
+            Notification.event_type.like('generated_report_%'),
+            Notification.event_type.like('generated_reports_%'),
             Notification.event_type.like('kubernetes_secret_reveal_cluster_readiness_%'),
             Notification.event_type.like('kubernetes_secret_reveal_namespace_policy_%'),
         )
@@ -372,15 +375,7 @@ def get_notification_activity_context(
     )
 
     if normalized_user_id is not None:
-        filtered_query = filtered_query.filter(
-            Notification.user_id == normalized_user_id,
-            # Authentication failures may be linked to the account that was
-            # targeted, but that account is not the authenticated actor.
-            or_(
-                Notification.event_type != 'authentication',
-                Notification.status == 'success',
-            ),
-        )
+        filtered_query = filtered_query.filter(Notification.user_id == normalized_user_id)
 
     if normalized_status != 'all':
         filtered_query = filtered_query.filter(Notification.status == normalized_status)
@@ -476,21 +471,11 @@ def get_notification_activity_context(
 
     if include_summary:
         cutoff_24h = datetime.now(UTC) - timedelta(hours=24)
-        actor_identity = case(
-            (
-                and_(
-                    Notification.event_type == 'authentication',
-                    Notification.status != 'success',
-                ),
-                None,
-            ),
-            else_=func.coalesce(Notification.user_id, 0),
-        )
         events_24h, success_24h, attention_24h, actors_24h = db.session.query(
             func.count(Notification.id),
             func.coalesce(func.sum(case((Notification.status == 'success', 1), else_=0)), 0),
             func.coalesce(func.sum(case((Notification.status.in_(['warning', 'error']), 1), else_=0)), 0),
-            func.count(func.distinct(actor_identity)),
+            func.count(func.distinct(func.coalesce(Notification.user_id, 0))),
         ).filter(Notification.created_at >= cutoff_24h).one()
 
         context['summary'] = {

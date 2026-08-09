@@ -10,6 +10,7 @@ from app.jobs.execution import JobExecutionContext
 from app.jobs.service import subscriber_user_ids
 from app.models.job import JobExecution
 from app.models.report import Report, ReportSchedule, ReportScheduleRun
+from app.notifications.feedback import OperationalDeliveryPolicy
 from app.notifications.service import record_operational_activity
 from app.reports.delivery import deliver_generated_report
 from app.reports.export.service import generate_report_artifact
@@ -19,26 +20,36 @@ def _notify(job: JobExecution, report: Report, *, success: bool, message: str) -
     users = set(subscriber_user_ids(job))
     if report.generated_by_id:
         users.add(report.generated_by_id)
+
+    title = 'Report Ready' if success else 'Report Generation Failed'
+    public_message = (
+        f'{report.name} is ready for download.'
+        if success
+        else f'KAORI could not complete {report.name}. Review generation evidence before retrying.'
+    )
+
     for user_id in users:
         record_operational_activity(
             user_id=user_id,
             event_type='report_generation_completed' if success else 'report_generation_failed',
             status='success' if success else 'error',
-            title='Report Ready' if success else 'Report Generation Failed',
-            message=message,
-            detail=f'{report.name} · {report.output_format.upper()}',
+            title=title,
+            message=public_message,
+            detail=f'{report.output_format.upper()} · {message}',
             action_url=f'/reports/generated/{report.id}',
-            action_label='View report',
+            action_label='Open report',
             action_icon='file-text',
             metadata={
                 'feedback_delivery': 'activity_center',
                 'job_execution_id': job.id,
                 'job_public_id': job.public_id,
                 'report_id': report.id,
+                'report_name': report.name,
                 'report_type': report.report_type,
                 'output_format': report.output_format,
                 'status': report.status,
             },
+            delivery_policy=OperationalDeliveryPolicy.PERSISTENT,
         )
 
 

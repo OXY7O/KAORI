@@ -76,6 +76,9 @@ def event_category_key(event_type: str) -> str:
             'kubernetes_secret_reveal_namespace_policy_',
             'data_lifecycle_',
             'job_',
+            'report_',
+            'generated_report_',
+            'generated_reports_',
         )
     ):
         return 'platform_operations'
@@ -210,6 +213,18 @@ def build_event_context(
             target_name=_string_metadata(metadata, 'secret_name', 'namespace') or 'Protected Secret',
             event_icon='key-round',
             event_tone='violet',
+        )
+    elif event_type.startswith(('report_', 'generated_report_', 'generated_reports_')):
+        report_name = _string_metadata(metadata, 'report_name')
+        report_id = _string_metadata(metadata, 'report_id')
+        context.update(
+            module_label='Platform Operations',
+            target_type='Report',
+            target_name=report_name or (f'Report #{report_id}' if report_id else 'Report operation'),
+            event_icon='file-text',
+            event_tone='violet',
+            source_label='Reports operation',
+            source_detail='KAORI Reports runtime',
         )
     elif event_type == 'authentication':
         action_is_logout = access_action == 'logout'

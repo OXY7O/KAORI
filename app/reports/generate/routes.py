@@ -6,6 +6,7 @@ from flask_login import current_user
 from werkzeug.exceptions import HTTPException
 
 from app.extensions.db import db
+from app.notifications.feedback import OperationalDeliveryPolicy
 from app.notifications.service import queue_transient_feedback, record_operational_activity
 from app.rbac.decorators import permission_required
 from app.reports.generate.service import (
@@ -29,6 +30,7 @@ def generate_report() -> ResponseReturnValue:
 
         if success and report is not None:
             detail_url = url_for('reports.generated_report_detail', report_id=report.id)
+            generated_url = url_for('reports.generated_reports', focus=report.id, period='all')
             try:
                 dispatch = enqueue_report_generation(
                     report,
@@ -50,14 +52,20 @@ def generate_report() -> ResponseReturnValue:
                     user_id=current_user.id,
                     event_type='report_generation_queue_failed',
                     status='error',
-                    title='Report Generation Not Queued',
-                    message='The report request was saved, but the Reports worker could not accept the job.',
+                    title='Report Not Queued',
+                    message=f'{report.name} was saved, but KAORI could not dispatch the generation job.',
                     detail=f'Report reference: {build_report_reference(report)}.',
                     action_url=detail_url,
                     action_label='Review report',
                     action_icon='triangle-alert',
-                    metadata={'report_id': report.id, 'report_type': report.report_type},
+                    metadata={
+                        'report_id': report.id,
+                        'report_name': report.name,
+                        'report_type': report.report_type,
+                        'feedback_delivery': 'toast',
+                    },
                     queue_feedback=True,
+                    delivery_policy=OperationalDeliveryPolicy.DECK_ON_FAILURE,
                 )
                 return redirect(detail_url)
 
@@ -65,22 +73,25 @@ def generate_report() -> ResponseReturnValue:
                 user_id=current_user.id,
                 event_type='report_generation_queued',
                 status='success',
-                title='Report Generation Queued',
-                message=dispatch.message,
+                title='Report Queued',
+                message=f'{report.name} was queued for artifact generation.',
                 detail=f'Report reference: {build_report_reference(report)}.',
-                action_url=detail_url,
-                action_label='View report',
-                action_icon='file-text',
+                action_url=generated_url,
+                action_label='Open generated reports',
+                action_icon='files',
                 metadata={
                     'report_id': report.id,
+                    'report_name': report.name,
                     'report_type': report.report_type,
                     'job_execution_id': dispatch.job.id if dispatch.job is not None else None,
                     'job_public_id': dispatch.job.public_id if dispatch.job is not None else None,
                     'dispatch_status': dispatch.status,
+                    'feedback_delivery': 'toast',
                 },
                 queue_feedback=True,
+                delivery_policy=OperationalDeliveryPolicy.AUDIT_ONLY,
             )
-            return redirect(url_for('reports.generated_reports'))
+            return redirect(generated_url)
 
         form_state = get_form_state_from_form(request.form)
         payload = get_generate_report_payload(form_state=form_state, errors=errors)

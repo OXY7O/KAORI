@@ -1,297 +1,233 @@
-{% import "components/pagination.html" as pagination_ui %}
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/pagination.html" as pagination_ui %}
+{% import "components/loading_bar.html" as loading_bar %}
+
 {% block title %}Generated Reports{% endblock title %}
+
 {% block dashboard_content %}
+    {% set ready_count = payload.summary_cards[1].value|int %}
+    {% set pending_count = payload.summary_cards[2].value|int %}
+    {% set failed_count = payload.summary_cards[3].value|int %}
+    {% set storage_ready = payload.backend_status.available %}
+    {% set hero_status = 'Needs Review' if failed_count > 0 else ('Degraded' if not storage_ready else 'Operational') %}
+    {% set hero_tone = 'warning' if failed_count > 0 or not storage_ready else 'normal' %}
+    {% set second_metric = ('triangle-alert', 'Needs Review', failed_count, 'Failed generation') if failed_count > 0 else ('clock-3', 'In Progress', pending_count, 'Requested, queued, or generating') %}
+
     <div class="space-y-6">
-        <!-- Hero -->
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro('archive-restore', 'Generated Reports', 'files') %}
-                        <h1 class="{{ page_hero.title_classes() }}">{{ payload.page_title }}</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">{{ payload.page_subtitle }}</p>
+                    {% call page_hero.intro('files', 'Generated Reports', 'file-check-2') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Generated Reports</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
+                            Track report requests from queue admission through retained artifact delivery.
+                        </p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('file-check-2', 'Report Artifacts') }}
-                            {{ page_hero.meta_label('workflow', 'Governed Lifecycle') }}
-                            {{ page_hero.meta_label('hard-drive', payload.hero_posture[2].value) }}
+                            {{ page_hero.meta_label('server', 'Single-Cluster Artifacts') }}
+                            {{ page_hero.meta_label('hard-drive', 'Governed Storage') }}
+                            {{ page_hero.meta_label('workflow', 'Worker-Owned Generation') }}
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="{{ page_hero.aside_classes() }}" aria-label="Generated report actions">
-                    <div class="{{ page_hero.context_panel_classes() }}">
-                        <div class="flex items-start justify-between gap-3">
-                            <div>
-                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Artifact Registry</p>
-                                <h2 class="{{ page_hero.context_panel_title_classes() }}">Report Artifacts</h2>
-                            </div>
-                            {{ page_hero.context_status_badge(payload.backend_status.status, 'normal' if payload.backend_status.available else 'warning') }}
-                        </div>
-                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                            {{ page_hero.context_metric('files', 'Total Reports', payload.summary_cards[0].value, 'Tracked report records') }}
-                            {{ page_hero.context_metric('file-check-2', 'Ready', payload.summary_cards[1].value, 'Available artifacts') }}
-                        </div>
-                        <div class="{{ page_hero.context_actions_classes() }}">
-                            <a href="{{ url_for('reports.generate_report') }}" class="{{ page_hero.context_action_classes() }}"><i data-lucide="plus" class="h-4 w-4"></i>Generate</a>
-                            <a href="{{ url_for('reports.storage') }}" class="{{ page_hero.context_action_classes() }}"><i data-lucide="hard-drive" class="h-4 w-4"></i>Storage</a>
-                        </div>
-                    </div>
-                </aside>
+                {{ page_hero.context_card(
+                    'Generated reports posture',
+                    'Artifact Registry',
+                    'Generation Posture',
+                    hero_status,
+                    hero_tone,
+                    [
+                        ('file-check-2', 'Ready', ready_count, 'Available artifacts'),
+                        second_metric
+                    ],
+                    'Generate Report',
+                    url_for('reports.generate_report'),
+                    'plus'
+                ) }}
             </div>
         </section>
-        {% include "reports/components/_summary_strip.html" %}
+
         {% if payload.storage_notice %}
-            <section class="rounded-2xl border border-status-warning-border bg-status-warning-soft px-5 py-4 shadow-sm">
+            <section class="rounded-2xl border border-status-warning-border bg-status-warning-soft px-5 py-4 shadow-sm"
+                     data-generated-storage-degraded="true">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning-text"><i data-lucide="wifi-off" class="h-4 w-4"></i></span>
-                        <div>
-                            <h2 class="text-sm font-semibold text-status-warning-text">{{ payload.backend_status.title if not payload.backend_status.available else 'Artifact Storage Needs Review' }}</h2>
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning-text" aria-hidden="true">
+                            <i data-lucide="wifi-off" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h2 class="text-sm font-semibold text-status-warning-text">
+                                {{ payload.backend_status.title if not payload.backend_status.available else 'Artifact Storage Needs Review' }}
+                            </h2>
                             <p class="mt-1 text-xs leading-5 text-status-warning-text">{{ payload.storage_notice }}</p>
                         </div>
                     </div>
-                    <a href="{{ url_for('reports.storage') }}" class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-status-warning-border bg-surface-card px-3 text-xs font-semibold text-status-warning-text"><i data-lucide="hard-drive" class="h-3.5 w-3.5"></i>Review Storage</a>
+                    <a href="{{ url_for('reports.storage') }}"
+                       class="{{ table_ui.action_classes() }} shrink-0">
+                        <i data-lucide="hard-drive" class="h-4 w-4" aria-hidden="true"></i>
+                        Open Storage
+                    </a>
                 </div>
             </section>
         {% endif %}
-        <!-- Lifecycle and Storage Context -->
-        <section class="grid items-stretch gap-6 xl:grid-cols-2"
-                 x-data="{ lifecycleOpen: false, storageOpen: false }">
-            <article class="flex h-full flex-col rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
-                <button type="button"
-                        class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
-                        @click="lifecycleOpen = !lifecycleOpen"
-                        :aria-expanded="lifecycleOpen.toString()">
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
-                            <i data-lucide="workflow" class="h-[18px] w-[18px]"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-base font-semibold text-content-primary text-content-primary">Report Lifecycle</h2>
-                            <p class="text-xs text-content-muted dark:text-content-muted">Lifecycle states and available user actions for generated reports.</p>
-                        </div>
-                    </div>
-                    <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-kaori-soft text-content-muted bg-kaori-soft dark:text-content-secondary">
-                        <i data-lucide="chevron-down" class="h-4 w-4" x-show="!lifecycleOpen"></i>
-                        <i data-lucide="chevron-up"
-                           class="h-4 w-4"
-                           x-show="lifecycleOpen"
-                           x-cloak></i>
-                    </span>
-                </button>
-                <div class="flex-1 border-t border-outline-default px-5 py-4 dark:border-outline-default"
-                     x-show="lifecycleOpen"
-                     x-cloak>
-                    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                        {% for item in payload.lifecycle_status %}
-                            {% set dot_class = {
-                                                            'blue': 'bg-kaori-primary',
-                                                            'gray': 'bg-content-muted',
-                                                            'amber': 'bg-amber-500',
-                                                            'green': 'bg-emerald-500',
-                                                            'red': 'bg-rose-500',
-                                                            'purple': 'bg-violet-500'
-                                                        }.get(item.tone, 'bg-content-muted') %}
-                            <div class="rounded-xl bg-surface-subtle p-3 bg-surface-subtle">
-                                <div class="flex items-center justify-between gap-3">
-                                    <div class="flex min-w-0 items-center gap-2">
-                                        <span class="h-2.5 w-2.5 shrink-0 rounded-full {{ dot_class }}"></span>
-                                        <p class="truncate text-sm font-semibold text-content-primary dark:text-content-primary">{{ item.name }}</p>
-                                    </div>
-                                    <span class="shrink-0 rounded-lg bg-white px-2 py-1 text-xs font-semibold text-content-secondary ring-1 ring-outline-default bg-surface-card dark:text-content-secondary ring-outline-default">{{ item.status }}</span>
-                                </div>
-                                <p class="mt-2 text-xs leading-5 text-content-muted dark:text-content-muted">{{ item.description }}</p>
+
+        <section id="generated-report-registry"
+                 data-generated-report-registry="true"
+                 {% if payload.has_pending_reports %}
+                     hx-get="{{ url_for(
+                         'reports.generated_reports',
+                         cluster_id=payload.selected_filters.cluster_id,
+                         report_type=payload.selected_filters.report_type,
+                         status=payload.selected_filters.status,
+                         output_format=payload.selected_filters.output_format,
+                         period=payload.selected_filters.period,
+                         search=payload.selected_filters.search,
+                         per_page=payload.selected_filters.per_page,
+                         page=payload.pagination.page
+                     ) }}"
+                     hx-trigger="every {{ payload.poll_interval_seconds }}s"
+                     hx-target="this"
+                     hx-select="#generated-report-registry"
+                     hx-swap="outerHTML"
+                     hx-indicator="#generated-report-loading"
+                 {% endif %}
+                 class="{{ table_ui.block_classes() }}">
+            <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true">
+                            <i data-lucide="table-2" class="h-5 w-5"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h2 class="{{ table_ui.block_title_classes() }}">Artifact Registry</h2>
+                                {% if payload.has_pending_reports %}
+                                    {{ table_label.status_indicator_label('Auto-Refreshing', 'info') }}
+                                {% endif %}
                             </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </article>
-            <article class="flex h-full flex-col rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
-                <button type="button"
-                        class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
-                        @click="storageOpen = !storageOpen"
-                        :aria-expanded="storageOpen.toString()">
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
-                            <i data-lucide="hard-drive" class="h-[18px] w-[18px]"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-base font-semibold text-content-primary text-content-primary">Storage Context</h2>
-                            <p class="text-xs text-content-muted dark:text-content-muted">Artifact availability, active backend, and retention posture.</p>
+                            <p class="{{ table_ui.block_description_classes() }}">
+                                Review report scope, artifact state, lifecycle status, and retained delivery records.
+                            </p>
                         </div>
                     </div>
-                    <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-kaori-soft text-content-muted bg-kaori-soft dark:text-content-secondary">
-                        <i data-lucide="chevron-down" class="h-4 w-4" x-show="!storageOpen"></i>
-                        <i data-lucide="chevron-up" class="h-4 w-4" x-show="storageOpen" x-cloak></i>
-                    </span>
-                </button>
-                <div class="flex-1 border-t border-outline-default px-5 py-4 dark:border-outline-default"
-                     x-show="storageOpen"
-                     x-cloak>
-                    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                        {% for item in payload.storage_context %}
-                            {% set dot_class = {
-                                                            'gray': 'bg-content-muted',
-                                                            'amber': 'bg-amber-500',
-                                                            'blue': 'bg-kaori-primary',
-                                                            'green': 'bg-emerald-500',
-                                                            'red': 'bg-rose-500'
-                                                        }.get(item.tone, 'bg-content-muted') %}
-                            <div class="rounded-xl bg-surface-subtle p-3 bg-surface-subtle">
-                                <div class="flex items-center justify-between gap-3">
-                                    <div class="flex min-w-0 items-center gap-2">
-                                        <span class="h-2.5 w-2.5 shrink-0 rounded-full {{ dot_class }}"></span>
-                                        <p class="truncate text-sm font-semibold text-content-primary dark:text-content-primary">{{ item.label }}</p>
-                                    </div>
-                                    <span class="shrink-0 rounded-lg bg-white px-2 py-1 text-xs font-semibold text-content-secondary ring-1 ring-outline-default bg-surface-card dark:text-content-secondary ring-outline-default">{{ item.status }}</span>
-                                </div>
-                                <p class="mt-2 text-xs leading-5 text-content-muted dark:text-content-muted">{{ item.description }}</p>
-                            </div>
-                        {% endfor %}
+                    <div class="flex flex-wrap items-center gap-2">
+                        <form id="bulk-archive-reports-form"
+                              method="POST"
+                              action="{{ url_for('reports.bulk_archive_generated_reports') }}">
+                            {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                            <input type="hidden" name="next" value="{{ request.full_path }}">
+                            <button type="submit" class="{{ table_ui.action_classes() }}">
+                                <i data-lucide="archive" class="h-4 w-4" aria-hidden="true"></i>
+                                Archive Selected
+                            </button>
+                        </form>
+                        <a href="{{ url_for('reports.generate_report') }}" class="{{ table_ui.action_classes() }}">
+                            <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                            Generate Report
+                        </a>
                     </div>
                 </div>
-            </article>
-        </section>
-        <!-- Reports List Header and Filters -->
-        <section class="rounded-2xl border border-outline-default bg-white p-5 shadow-sm dark:border-outline-default bg-surface-card">
-            <div class="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                <div>
-                    <h2 class="text-base font-semibold text-content-primary text-content-primary">Reports List</h2>
-                    <p class="mt-1 text-xs text-content-muted dark:text-content-muted">Filter, inspect, download, regenerate, archive, or restore generated infrastructure report artifacts.</p>
-                </div>
-                <span class="inline-flex w-fit items-center gap-2 rounded-xl bg-kaori-soft px-3 py-1.5 text-xs font-semibold text-content-secondary bg-kaori-soft dark:text-content-secondary">
-                    <i data-lucide="database" class="h-3.5 w-3.5"></i>
-                    Artifact registry
-                </span>
-            </div>
+                {{ loading_bar.render('generated-report-loading', label='Refreshing Generated Reports') }}
+            </header>
+
             <form method="GET"
                   action="{{ url_for('reports.generated_reports') }}"
                   hx-get="{{ url_for('reports.generated_reports') }}"
-                  hx-trigger="change from:select, keyup changed delay:500ms from:input[name='search'], search from:input[name='search']"
-                  hx-target="#reports-table"
-                  hx-select="#reports-table"
+                  hx-trigger="change from:select, keyup changed delay:450ms from:input[name='search'], search from:input[name='search']"
+                  hx-target="#generated-report-registry"
+                  hx-select="#generated-report-registry"
                   hx-swap="outerHTML"
                   hx-push-url="true"
-                  hx-indicator="#reports-table-loading"
-                  hx-on::after-swap="if (window.lucide) { window.lucide.createIcons(); }"
-                  class="grid gap-3 lg:grid-cols-[180px_190px_170px_170px_minmax(0,1fr)] lg:items-end">
-                <input type="hidden"
-                       name="per_page"
-                       value="{{ payload.selected_filters.per_page }}">
+                  hx-indicator="#generated-report-loading"
+                  class="{{ table_ui.inventory_filter_bar_classes() }} grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-[minmax(16rem,1.5fr)_repeat(5,minmax(0,1fr))] 2xl:items-end">
                 <input type="hidden" name="page" value="1">
-                <label class="block">
-                    <span class="text-xs font-medium text-content-muted dark:text-content-muted">Cluster</span>
-                    <select name="cluster_id"
-                            class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
-                        {% for option in payload.filter_options.clusters %}
-                            <option value="{{ option.value }}"
-                                    {% if payload.selected_filters.cluster_id == option.value %}selected{% endif %}>{{ option.label }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
-                <label class="block">
-                    <span class="text-xs font-medium text-content-muted dark:text-content-muted">Report Type</span>
-                    <select name="report_type"
-                            class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
-                        {% for option in payload.filter_options.report_types %}
-                            <option value="{{ option.value }}"
-                                    {% if payload.selected_filters.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
-                <label class="block">
-                    <span class="text-xs font-medium text-content-muted dark:text-content-muted">Status</span>
-                    <select name="status"
-                            class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
-                        {% for option in payload.filter_options.statuses %}
-                            <option value="{{ option.value }}"
-                                    {% if payload.selected_filters.status == option.value %}selected{% endif %}>{{ option.label }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
-                <label class="block">
-                    <span class="text-xs font-medium text-content-muted dark:text-content-muted">Period</span>
-                    <select name="period"
-                            class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
-                        {% for option in payload.filter_options.periods %}
-                            <option value="{{ option.value }}"
-                                    {% if payload.selected_filters.period == option.value %}selected{% endif %}>{{ option.label }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
-                <label class="block">
-                    <span class="text-xs font-medium text-content-muted dark:text-content-muted">Search</span>
-                    <div class="relative mt-1">
-                        <i data-lucide="search"
-                           class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
+                <input type="hidden" name="per_page" value="{{ payload.selected_filters.per_page }}">
+
+                <label class="block 2xl:col-span-1">
+                    <span class="{{ table_ui.filter_label_classes() }}">Search</span>
+                    <div class="relative mt-1.5">
+                        <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted" aria-hidden="true"></i>
                         <input type="search"
                                name="search"
                                value="{{ payload.selected_filters.search }}"
                                placeholder="Search report name..."
-                               class="w-full rounded-xl border border-outline-default bg-white py-2 pl-9 pr-3 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
+                               class="{{ table_ui.filter_input_classes() }} pl-9">
                     </div>
                 </label>
+
+                <label class="block">
+                    <span class="{{ table_ui.filter_label_classes() }}">Cluster</span>
+                    <select name="cluster_id" class="mt-1.5 {{ table_ui.filter_select_classes() }}">
+                        {% for option in payload.filter_options.clusters %}
+                            <option value="{{ option.value }}" {% if payload.selected_filters.cluster_id == option.value %}selected{% endif %}>{{ option.label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+                <label class="block">
+                    <span class="{{ table_ui.filter_label_classes() }}">Report Type</span>
+                    <select name="report_type" class="mt-1.5 {{ table_ui.filter_select_classes() }}">
+                        {% for option in payload.filter_options.report_types %}
+                            <option value="{{ option.value }}" {% if payload.selected_filters.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+                <label class="block">
+                    <span class="{{ table_ui.filter_label_classes() }}">Status</span>
+                    <select name="status" class="mt-1.5 {{ table_ui.filter_select_classes() }}">
+                        {% for option in payload.filter_options.statuses %}
+                            <option value="{{ option.value }}" {% if payload.selected_filters.status == option.value %}selected{% endif %}>{{ option.label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+                <label class="block">
+                    <span class="{{ table_ui.filter_label_classes() }}">Format</span>
+                    <select name="output_format" class="mt-1.5 {{ table_ui.filter_select_classes() }}">
+                        {% for option in payload.filter_options.output_formats %}
+                            <option value="{{ option.value }}" {% if payload.selected_filters.output_format == option.value %}selected{% endif %}>{{ option.label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+                <label class="block">
+                    <span class="{{ table_ui.filter_label_classes() }}">Created</span>
+                    <select name="period" class="mt-1.5 {{ table_ui.filter_select_classes() }}">
+                        {% for option in payload.filter_options.periods %}
+                            <option value="{{ option.value }}" {% if payload.selected_filters.period == option.value %}selected{% endif %}>{{ option.label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
             </form>
-            <div id="reports-table-loading"
-                 class="htmx-indicator mt-4 h-1.5 overflow-hidden rounded-full bg-kaori-soft bg-kaori-soft">
-                <div class="h-full w-full animate-pulse rounded-full bg-kaori-primary transition-all duration-300"></div>
-            </div>
-        </section>
-        <!-- Reports Table -->
-        <section id="reports-table"
-                 x-data="{ selectAllReports: false, openReportId: null, toggleReports() { this.$el.querySelectorAll('.generated-report-checkbox:not(:disabled)').forEach((item) => { item.checked = this.selectAllReports; }); } }"
-                 class="overflow-visible rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
-            <div class="flex flex-col gap-3 border-b border-outline-default px-5 py-4 dark:border-outline-default md:flex-row md:items-center md:justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
-                        <i data-lucide="table-2" class="h-4 w-4"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-base font-semibold text-content-primary text-content-primary">Artifact Registry</h2>
-                        <p class="text-xs text-content-muted dark:text-content-muted">Generated report records with expandable metadata and compact lifecycle actions.</p>
-                    </div>
-                </div>
-                <div class="flex flex-wrap items-center gap-2">
-                    <form id="bulk-archive-reports-form"
-                          method="POST"
-                          action="{{ url_for('reports.bulk_archive_generated_reports') }}"
-                          class="inline-flex">
-                        {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                        <input type="hidden" name="next" value="{{ request.full_path }}">
-                        <button type="submit"
-                                class="inline-flex items-center gap-2 rounded-xl border border-outline-default bg-white px-3 py-1.5 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-brand-outline hover:text-kaori-primary dark:border-outline-default bg-surface-subtle dark:text-content-secondary hover:border-brand-outline dark:hover:text-kaori-primary cursor-pointer disabled:cursor-not-allowed">
-                            <i data-lucide="archive" class="h-3.5 w-3.5"></i>
-                            Archive Selected
-                        </button>
-                    </form>
-                    <span class="inline-flex w-fit items-center gap-2 rounded-xl bg-kaori-soft px-3 py-1.5 text-xs font-semibold text-content-secondary bg-kaori-soft dark:text-content-secondary">
-                        <i data-lucide="file-text" class="h-3.5 w-3.5"></i>
-                        {{ payload.pagination.label }}
-                    </span>
-                </div>
-            </div>
+
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-outline-default divide-outline-default">
-                    <thead class="bg-surface-subtle bg-surface-subtle">
+                <table class="{{ table_ui.table_classes('min-w-[72rem]') }}" data-generated-registry-table="true">
+                    <thead class="{{ table_ui.head_classes() }}">
                         <tr>
                             <th class="w-10 px-5 py-3 text-left">
                                 <input type="checkbox"
-                                       x-model="selectAllReports"
-                                       @change="toggleReports()"
+                                       x-data="{ checked: false }"
+                                       x-model="checked"
+                                       @change="document.querySelectorAll('.generated-report-checkbox:not(:disabled)').forEach((item) => { item.checked = checked; })"
                                        aria-label="Select all archiveable reports"
-                                       class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle">
+                                       class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-accent/40">
                             </th>
-                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">Report</th>
-                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">Type</th>
-                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">Status</th>
-                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">Created</th>
-                            <th class="w-48 px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">Actions</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Report</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Scope</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Artifact</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Status</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Updated</th>
+                            <th class="{{ table_ui.header_cell_classes(action=true) }}">Action</th>
                         </tr>
                     </thead>
-                    {% if payload.reports %}
-                        {% for report in payload.reports %}
-                            <tbody class="divide-y divide-outline-default divide-outline-default">
-                                <tr>
+                    <tbody class="{{ table_ui.body_classes() }}">
+                        {% if payload.reports %}
+                            {% for report in payload.reports %}
+                                <tr class="{{ table_ui.row_classes() }} {% if report.is_focused %}bg-kaori-soft/50{% endif %}"
+                                    {% if report.is_focused %}data-focused-report="true"{% endif %}>
                                     <td class="px-5 py-4 align-top">
                                         <input type="checkbox"
                                                name="report_ids"
@@ -299,268 +235,131 @@
                                                form="bulk-archive-reports-form"
                                                {% if not report.can_archive_report %}disabled{% endif %}
                                                aria-label="Select {{ report.name }}"
-                                               class="generated-report-checkbox h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:opacity-40 dark:border-outline-default bg-surface-subtle">
+                                               class="generated-report-checkbox h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-accent/40 disabled:cursor-not-allowed disabled:opacity-40">
                                     </td>
-                                    <td class="px-5 py-4 text-sm text-content-secondary dark:text-content-secondary">
-                                        <div class="min-w-0">
-                                            <p class="font-semibold text-content-primary dark:text-content-primary">{{ report.name }}</p>
-                                            <div class="mt-2 flex flex-wrap items-center gap-2">
-                                                <span class="inline-flex w-fit items-center gap-1.5 rounded-md bg-kaori-soft px-2 py-0.5 text-xs font-semibold text-kaori-primary ring-1 ring-brand-outline bg-kaori-soft dark:text-kaori-primary ring-brand-outline">
-                                                    <i data-lucide="layers-3" class="h-3 w-3"></i>
-                                                    {{ report.source_badge }}
-                                                </span>
-                                                <span class="text-xs text-content-muted dark:text-content-muted">{{ report.output_format }} • {{ report.sections_count }} sections</span>
+                                    <td class="{{ table_ui.cell_classes() }} align-top">
+                                        <div class="min-w-[15rem]">
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <p class="text-sm font-semibold leading-5 text-content-primary">{{ report.name }}</p>
+                                                {% if report.is_focused %}{{ table_label.metadata_label('Just Queued', 'send') }}{% endif %}
                                             </div>
-                                            <button type="button"
-                                                    @click="openReportId = openReportId === '{{ report.id }}' ? null : '{{ report.id }}'"
-                                                    class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-kaori-primary transition hover:text-kaori-primary dark:text-kaori-primary dark:hover:text-content-secondary">
-                                                <span x-text="openReportId === '{{ report.id }}' ? 'Hide details' : 'View more'"></span>
-                                                <i data-lucide="chevron-down"
-                                                   class="h-3.5 w-3.5"
-                                                   x-show="openReportId !== '{{ report.id }}'"></i>
-                                                <i data-lucide="chevron-up"
-                                                   class="h-3.5 w-3.5"
-                                                   x-show="openReportId === '{{ report.id }}'"
-                                                   x-cloak></i>
-                                            </button>
+                                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ report.report_type }} · {{ report.period }}</p>
                                         </div>
                                     </td>
-                                    <td class="px-5 py-4 text-sm text-content-muted dark:text-content-muted">{{ report.report_type }}</td>
-                                    <td class="px-5 py-4 text-sm">
-                                        {% set status_class = {
-                                                                                    'blue': 'bg-kaori-soft text-kaori-primary ring-brand-outline bg-kaori-soft dark:text-kaori-primary ring-brand-outline',
-                                                                                    'purple': 'bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-950/50 dark:text-violet-300 dark:ring-violet-400/20',
-                                                                                    'green': 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-400/20',
-                                                                                    'red': 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-400/20',
-                                                                                    'gray': 'bg-kaori-soft text-content-secondary ring-slate-600/20 bg-kaori-soft dark:text-content-secondary dark:ring-slate-400/20'
-                                                                                }.get(report.status_meta.tone, 'bg-kaori-soft text-content-secondary ring-slate-600/20 bg-kaori-soft dark:text-content-secondary dark:ring-slate-400/20') %}
-                                        <span class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ status_class }}">
-                                            <i data-lucide="{{ report.status_meta.icon }}" class="h-3.5 w-3.5"></i>
-                                            {{ report.status_meta.label }}
-                                        </span>
+                                    <td class="{{ table_ui.cell_classes() }} align-top">
+                                        <div class="min-w-[12rem]">
+                                            <p class="text-sm font-semibold leading-5 text-content-primary">{{ report.cluster }}</p>
+                                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ report.namespace }}</p>
+                                        </div>
                                     </td>
-                                    <td class="px-5 py-4 text-sm text-content-muted dark:text-content-muted">{{ report.created_at }}</td>
-                                    <td class="px-5 py-4 text-right text-sm">
-                                        <div class="relative inline-flex"
-                                             x-data="{ actionOpen: false }"
-                                             @click.outside="actionOpen = false">
-                                            <button type="button"
-                                                    @click="actionOpen = !actionOpen"
-                                                    class="inline-flex items-center justify-center gap-2 rounded-lg border border-outline-default bg-white px-3 py-1.5 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-brand-outline hover:text-kaori-primary dark:border-outline-default bg-surface-subtle dark:text-content-secondary hover:border-brand-outline dark:hover:text-kaori-primary">
-                                                Actions
-                                                <i data-lucide="chevron-down" class="h-3.5 w-3.5" x-show="!actionOpen"></i>
-                                                <i data-lucide="chevron-up"
-                                                   class="h-3.5 w-3.5"
-                                                   x-show="actionOpen"
-                                                   x-cloak></i>
-                                            </button>
-                                            <div x-show="actionOpen"
-                                                 x-cloak
-                                                 class="absolute right-0 z-20 mt-9 w-52 overflow-hidden rounded-xl border border-outline-default bg-white py-1 text-left shadow-lg dark:border-outline-default bg-surface-subtle">
-                                                <a href="{{ url_for('reports.generated_report_detail', report_id=report.id) }}"
-                                                   class="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-content-secondary transition hover:bg-surface-subtle hover:text-kaori-primary dark:text-content-secondary hover:bg-kaori-soft dark:hover:text-kaori-primary">
-                                                    <i data-lucide="arrow-up-right" class="h-3.5 w-3.5"></i>
-                                                    View detail
+                                    <td class="{{ table_ui.cell_classes() }} align-top">
+                                        <div class="min-w-[9rem]">
+                                            {{ table_label.metadata_label(report.output_format, 'file-text') }}
+                                            <p class="mt-1 text-xs leading-5 text-content-muted">
+                                                {% if report.file_exists %}{{ report.file_size }} · {{ report.storage_backend_label }}
+                                                {% elif report.raw_status in ['requested', 'queued', 'generating'] %}Artifact pending
+                                                {% else %}No retained artifact{% endif %}
+                                            </p>
+                                        </div>
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }} align-top">
+                                        {{ table_label.status_indicator_label(report.status, report.status_tone, none, 'detail') }}
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes() }} align-top">
+                                        <p class="text-sm font-medium leading-5 text-content-secondary">{{ report.updated_at }}</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">Created {{ report.created_at }}</p>
+                                    </td>
+                                    <td class="{{ table_ui.cell_classes(action=true) }} align-top">
+                                        <div class="flex justify-end gap-2">
+                                            {% if report.can_download_artifact %}
+                                                <a href="{{ url_for('reports.download_report_artifact', report_id=report.id) }}"
+                                                   class="{{ table_ui.action_classes() }}"
+                                                   title="Download {{ report.output_format }}">
+                                                    <i data-lucide="download" class="h-4 w-4" aria-hidden="true"></i>
+                                                    <span class="sr-only">Download</span>
                                                 </a>
-                                                {% if report.can_generate_artifact %}
-                                                    <form method="POST"
-                                                          action="{{ url_for('reports.generate_report_output', report_id=report.id) }}">
-                                                        {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                                        <input type="hidden" name="next" value="{{ request.full_path }}">
-                                                        <button type="submit"
-                                                                class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-950/40 cursor-pointer disabled:cursor-not-allowed">
-                                                            <i data-lucide="{{ 'refresh-cw' if report.raw_status == 'ready' else 'file-plus-2' }}"
-                                                               class="h-3.5 w-3.5"></i>
-                                                            {{ report.generate_artifact_label }}
-                                                        </button>
-                                                    </form>
-                                                {% endif %}
-                                                {% if report.can_download_artifact %}
-                                                    <a href="{{ url_for('reports.download_report_artifact', report_id=report.id) }}"
-                                                       class="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft dark:text-kaori-primary hover:bg-kaori-soft">
-                                                        <i data-lucide="download" class="h-3.5 w-3.5"></i>
-                                                        Download
-                                                    </a>
-                                                {% elif report.raw_status in ['ready', 'archived'] and report.file_path and not report.file_exists %}
-                                                    <span class="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-rose-600 dark:text-rose-300">
-                                                        <i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i>
-                                                        Missing artifact
-                                                    </span>
-                                                {% endif %}
-                                                {% if report.can_archive_report %}
-                                                    <form method="POST"
-                                                          action="{{ url_for('reports.archive_generated_report', report_id=report.id) }}">
-                                                        {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                                        <input type="hidden" name="next" value="{{ request.full_path }}">
-                                                        <button type="submit"
-                                                                class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-content-secondary transition hover:bg-surface-subtle dark:text-content-secondary hover:bg-kaori-soft cursor-pointer disabled:cursor-not-allowed">
-                                                            <i data-lucide="archive" class="h-3.5 w-3.5"></i>
-                                                            Archive
-                                                        </button>
-                                                    </form>
-                                                {% elif report.can_restore_report %}
-                                                    <form method="POST"
-                                                          action="{{ url_for('reports.restore_generated_report', report_id=report.id) }}">
-                                                        {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                                        <input type="hidden" name="next" value="{{ request.full_path }}">
-                                                        <button type="submit"
-                                                                class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-content-secondary transition hover:bg-surface-subtle dark:text-content-secondary hover:bg-kaori-soft cursor-pointer disabled:cursor-not-allowed">
-                                                            <i data-lucide="rotate-ccw" class="h-3.5 w-3.5"></i>
-                                                            Restore
-                                                        </button>
-                                                    </form>
-                                                {% endif %}
-                                            </div>
+                                            {% endif %}
+                                            <a href="{{ url_for('reports.generated_report_detail', report_id=report.id) }}"
+                                               class="{{ table_ui.action_classes() }}">
+                                                View
+                                                <i data-lucide="arrow-up-right" class="h-4 w-4" aria-hidden="true"></i>
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>
-                                <tr x-show="openReportId === '{{ report.id }}'" x-cloak>
-                                    <td colspan="6" class="bg-surface-subtle px-5 py-4 bg-surface-subtle/70">
-                                        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                                            <div class="rounded-xl border border-outline-default bg-white p-3 dark:border-outline-default bg-surface-card">
-                                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Scope</p>
-                                                <p class="mt-1 text-sm font-semibold text-content-primary dark:text-content-primary">{{ report.cluster }}</p>
-                                                <p class="mt-1 text-xs text-content-muted dark:text-content-muted">{{ report.namespace }} • {{ report.period }}</p>
-                                            </div>
-                                            <div class="rounded-xl border border-outline-default bg-white p-3 dark:border-outline-default bg-surface-card">
-                                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Owner</p>
-                                                <p class="mt-1 text-sm font-semibold text-content-primary dark:text-content-primary">{{ report.generated_by }}</p>
-                                                <p class="mt-1 text-xs text-content-muted dark:text-content-muted">{{ report.generated_by_meta.status_label }} • Updated {{ report.updated_at }}</p>
-                                            </div>
-                                            <div class="rounded-xl border border-outline-default bg-white p-3 dark:border-outline-default bg-surface-card">
-                                                {% set file_state_class = {
-                                                                                                    'green': 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-400/20',
-                                                                                                    'blue': 'bg-kaori-soft text-kaori-primary ring-brand-outline bg-kaori-soft dark:text-kaori-primary ring-brand-outline',
-                                                                                                    'purple': 'bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-950/50 dark:text-violet-300 dark:ring-violet-400/20',
-                                                                                                    'amber': 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-950/50 dark:text-amber-300 dark:ring-amber-400/20',
-                                                                                                    'red': 'bg-rose-50 text-rose-700 ring-rose-600/20 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-400/20'
-                                                                                                }.get(report.file_state.tone, 'bg-kaori-soft text-content-secondary ring-slate-600/20 bg-kaori-soft dark:text-content-secondary dark:ring-slate-400/20') %}
-                                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Artifact</p>
-                                                <span class="mt-1 inline-flex w-fit items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ file_state_class }}">
-                                                    <i data-lucide="{{ report.file_state.icon }}" class="h-3.5 w-3.5"></i>
-                                                    {{ report.file_state.label }}
-                                                </span>
-                                                <p class="mt-2 truncate text-xs text-content-muted dark:text-content-muted">{{ report.storage_backend_label }} • {{ report.file_size }}</p>
-                                                {% if report.raw_status in ['ready', 'archived'] and report.file_path and not report.file_exists %}
-                                                    <p class="mt-1 text-xs font-semibold text-rose-600 dark:text-rose-300">Regenerate artifact required</p>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        {% endfor %}
-                    {% else %}
-                        <tbody>
+                            {% endfor %}
+                        {% else %}
                             <tr>
-                                <td colspan="6">
-                                    <div class="flex min-h-72 flex-col items-center justify-center px-6 py-12 text-center">
-                                        <div class="flex h-16 w-16 items-center justify-center rounded-full bg-kaori-soft text-content-muted bg-kaori-soft dark:text-content-secondary">
-                                            <i data-lucide="files" class="h-8 w-8"></i>
-                                        </div>
-                                        <h3 class="mt-4 text-base font-semibold text-content-primary text-content-primary">No generated reports yet</h3>
-                                        <p class="mt-2 max-w-md text-sm leading-6 text-content-muted dark:text-content-muted">Generated reports will appear here after you create your first infrastructure report.</p>
-                                        <a href="{{ url_for('reports.generate_report') }}"
-                                           class="mt-5 inline-flex items-center gap-2 rounded-xl border border-brand-outline bg-kaori-soft px-4 py-2 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-soft border-brand-outline bg-kaori-soft dark:text-kaori-primary hover:bg-kaori-soft">
-                                            <i data-lucide="plus-circle" class="h-4 w-4"></i>
+                                <td colspan="7" class="px-6 py-14 text-center">
+                                    <div class="mx-auto max-w-md">
+                                        <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                            <i data-lucide="files" class="h-5 w-5"></i>
+                                        </span>
+                                        <h3 class="mt-4 text-base font-semibold text-content-primary">No Generated Reports Found</h3>
+                                        <p class="mt-2 text-sm leading-6 text-content-muted">Adjust the filters or create a governed report request.</p>
+                                        <a href="{{ url_for('reports.generate_report') }}" class="mt-4 {{ table_ui.action_classes() }}">
+                                            <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
                                             Generate Report
                                         </a>
                                     </div>
                                 </td>
                             </tr>
-                        </tbody>
-                    {% endif %}
+                        {% endif %}
+                    </tbody>
                 </table>
             </div>
-            <!-- Pagination -->
-            <div class="flex flex-col gap-3 border-t border-outline-default px-5 py-4 dark:border-outline-default lg:flex-row lg:items-center lg:justify-between">
-                <form method="GET"
-                      action="{{ url_for('reports.generated_reports') }}"
-                      hx-get="{{ url_for('reports.generated_reports') }}"
-                      hx-trigger="change"
-                      hx-target="#reports-table"
-                      hx-select="#reports-table"
-                      hx-swap="outerHTML"
-                      hx-push-url="true"
-                      hx-indicator="#reports-table-loading"
-                      hx-on::after-swap="if (window.lucide) { window.lucide.createIcons(); }"
-                      class="flex flex-wrap items-center gap-2 text-sm text-content-muted dark:text-content-muted">
-                    <input type="hidden"
-                           name="cluster_id"
-                           value="{{ payload.selected_filters.cluster_id }}">
-                    <input type="hidden"
-                           name="report_type"
-                           value="{{ payload.selected_filters.report_type }}">
-                    <input type="hidden"
-                           name="status"
-                           value="{{ payload.selected_filters.status }}">
-                    <input type="hidden"
-                           name="period"
-                           value="{{ payload.selected_filters.period }}">
-                    <input type="hidden"
-                           name="search"
-                           value="{{ payload.selected_filters.search }}">
-                    <input type="hidden" name="page" value="1">
+
+            {% set registry_query = {
+                'cluster_id': payload.selected_filters.cluster_id,
+                'report_type': payload.selected_filters.report_type,
+                'status': payload.selected_filters.status,
+                'output_format': payload.selected_filters.output_format,
+                'period': payload.selected_filters.period,
+                'search': payload.selected_filters.search,
+                'per_page': payload.selected_filters.per_page
+            } %}
+            <footer class="{{ pagination_ui.footer_classes() }}">
+                <div class="{{ pagination_ui.summary_group_classes() }}">
                     <span>{{ payload.pagination.label }}</span>
-                    <select name="per_page"
-                            aria-label="Reports per page"
-                            class="{{ pagination_ui.page_size_classes() }}">
-                        {% for option in payload.filter_options.per_page_options %}
-                            <option value="{{ option.value }}"
-                                    {% if payload.selected_filters.per_page == option.value %}selected{% endif %}>{{ option.label }}</option>
-                        {% endfor %}
-                    </select>
-                </form>
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between lg:justify-end">
-                    <div class="flex items-center gap-2">
-                        {% set prev_url = url_for('reports.generated_reports', cluster_id=payload.selected_filters.cluster_id, report_type=payload.selected_filters.report_type, status=payload.selected_filters.status, period=payload.selected_filters.period, search=payload.selected_filters.search, per_page=payload.selected_filters.per_page, page=payload.pagination.prev_page) %}
-                        {% set next_url = url_for('reports.generated_reports', cluster_id=payload.selected_filters.cluster_id, report_type=payload.selected_filters.report_type, status=payload.selected_filters.status, period=payload.selected_filters.period, search=payload.selected_filters.search, per_page=payload.selected_filters.per_page, page=payload.pagination.next_page) %}
-                        {% if payload.pagination.has_prev %}
-                            <a href="{{ prev_url }}"
-                               hx-get="{{ prev_url }}"
-                               hx-target="#reports-table"
-                               hx-select="#reports-table"
-                               hx-swap="outerHTML"
-                               hx-push-url="true"
-                               hx-indicator="#reports-table-loading"
-                               hx-on::after-swap="if (window.lucide) { window.lucide.createIcons(); }"
-                               class="{{ pagination_ui.navigation_classes(disabled=false) }}">
-                                <i data-lucide="chevron-left" class="h-4 w-4"></i>
-                                Previous
-                            </a>
-                        {% else %}
-                            <button type="button"
-                                    disabled
-                                    class="{{ pagination_ui.navigation_classes(disabled=true) }}">
-                                <i data-lucide="chevron-left" class="h-4 w-4"></i>
-                                Previous
-                            </button>
-                        {% endif %}
-                        {{ pagination_ui.numeric_pages(payload.pagination.page, payload.pagination.total_pages) }}
-                        {% if payload.pagination.has_next %}
-                            <a href="{{ next_url }}"
-                               hx-get="{{ next_url }}"
-                               hx-target="#reports-table"
-                               hx-select="#reports-table"
-                               hx-swap="outerHTML"
-                               hx-push-url="true"
-                               hx-indicator="#reports-table-loading"
-                               hx-on::after-swap="if (window.lucide) { window.lucide.createIcons(); }"
-                               class="{{ pagination_ui.navigation_classes(disabled=false) }}">
-                                Next
-                                <i data-lucide="chevron-right" class="h-4 w-4"></i>
-                            </a>
-                        {% else %}
-                            <button type="button"
-                                    disabled
-                                    class="{{ pagination_ui.navigation_classes(disabled=true) }}">
-                                Next
-                                <i data-lucide="chevron-right" class="h-4 w-4"></i>
-                            </button>
-                        {% endif %}
-                    </div>
+                    <form method="GET"
+                          action="{{ url_for('reports.generated_reports') }}"
+                          hx-get="{{ url_for('reports.generated_reports') }}"
+                          hx-trigger="change"
+                          hx-target="#generated-report-registry"
+                          hx-select="#generated-report-registry"
+                          hx-swap="outerHTML"
+                          hx-push-url="true"
+                          hx-indicator="#generated-report-loading"
+                          class="{{ pagination_ui.rows_group_classes() }}">
+                        <input type="hidden" name="cluster_id" value="{{ payload.selected_filters.cluster_id }}">
+                        <input type="hidden" name="report_type" value="{{ payload.selected_filters.report_type }}">
+                        <input type="hidden" name="status" value="{{ payload.selected_filters.status }}">
+                        <input type="hidden" name="output_format" value="{{ payload.selected_filters.output_format }}">
+                        <input type="hidden" name="period" value="{{ payload.selected_filters.period }}">
+                        <input type="hidden" name="search" value="{{ payload.selected_filters.search }}">
+                        <input type="hidden" name="page" value="1">
+                        <span>Rows</span>
+                        <select name="per_page" class="{{ pagination_ui.page_size_classes() }}" aria-label="Reports per page">
+                            {% for option in payload.filter_options.per_page_options %}
+                                <option value="{{ option.value }}" {% if payload.selected_filters.per_page == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </form>
                 </div>
-            </div>
+                <div class="{{ pagination_ui.navigation_group_classes() }}">
+                    {{ pagination_ui.numeric_pages(
+                        payload.pagination.page,
+                        payload.pagination.total_pages,
+                        page_param='page',
+                        hx_target='#generated-report-registry',
+                        hx_indicator='#generated-report-loading',
+                        endpoint='reports.generated_reports',
+                        query_params=registry_query,
+                        hx_swap='outerHTML',
+                        href_endpoint='reports.generated_reports'
+                    ) }}
+                </div>
+            </footer>
         </section>
     </div>
 {% endblock dashboard_content %}
