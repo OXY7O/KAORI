@@ -17,6 +17,7 @@ from flask import (
 from flask_login import current_user, login_required
 
 from app.auth.forms import ChangePasswordForm
+from app.auth.session import preserve_current_session_after_password_change
 from app.common.timezone import (
     format_user_datetime,
     is_valid_timezone_name,
@@ -40,6 +41,30 @@ bp = Blueprint(
     __name__,
     url_prefix='/settings',
 )
+
+
+def _record_password_change_rejection(*, user: User, auth_source: str, reason_code: str) -> None:
+    """Persist a security-relevant self-service rejection without creating inbox noise."""
+
+    record_operational_activity(
+        user_id=user.id,
+        event_type='account_security',
+        status='error',
+        title='Account password change rejected',
+        message='KAORI rejected a Local Database password change attempt for this account.',
+        detail='No credential or session state was changed.',
+        action_url=url_for('settings.account', tab='credentials'),
+        action_label='Open Credential Management',
+        action_icon='key-round',
+        metadata={
+            'security_action': 'password_change',
+            'credential_owner': 'KAORI Local Database',
+            'auth_source': auth_source,
+            'result': 'failed',
+            'reason_code': reason_code,
+        },
+        delivery_policy=OperationalDeliveryPolicy.AUDIT_ONLY,
+    )
 
 
 @bp.route('/', methods=['GET', 'POST'])
@@ -235,7 +260,10 @@ def account():
             password_feedback = {
                 'status': 'warning',
                 'title': 'Password is managed externally',
-                'message': 'This account uses an external authentication source. Password updates must be completed in the connected identity provider.',
+                'message': (
+                    'This account uses an external authentication source. Password updates must be completed '
+                    'in the connected identity provider.'
+                ),
             }
         elif password_form.validate():
             current_password = password_form.current_password.data or ''
@@ -251,16 +279,40 @@ def account():
                     'title': 'Password update failed',
                     'message': 'The current password does not match the active local account password.',
                 }
+                _record_password_change_rejection(
+                    user=user,
+                    auth_source=auth_source,
+                    reason_code='current_password_mismatch',
+                )
+            elif user.check_password(new_password):
+                password_form.new_password.errors = [
+                    *password_form.new_password.errors,
+                    'New password must be different from the current password.',
+                ]
+                password_feedback = {
+                    'status': 'danger',
+                    'title': 'Password update failed',
+                    'message': 'Choose a new Local Database password instead of reusing the active credential.',
+                }
+                _record_password_change_rejection(
+                    user=user,
+                    auth_source=auth_source,
+                    reason_code='current_password_reuse',
+                )
             else:
                 user.set_password(new_password)
                 db.session.commit()
+                preserve_current_session_after_password_change(user)
                 password_toast = record_operational_activity(
                     user_id=user.id,
                     event_type='account_security',
                     status='success',
                     title='Account password updated',
                     message='Your KAORI Local Database password was changed successfully.',
-                    detail='Use the new password on your next sign-in. The password value was not stored in notification or audit metadata.',
+                    detail=(
+                        'This browser session remains active. Other authenticated sessions and remembered sign-ins '
+                        'were revoked. The password value was not stored in notification or audit metadata.'
+                    ),
                     action_url=url_for('settings.account', tab='credentials'),
                     action_label='Open Credential Management',
                     action_icon='key-round',
@@ -269,10 +321,14 @@ def account():
                         'credential_owner': 'KAORI Local Database',
                         'auth_source': auth_source,
                         'result': 'success',
+                        'session_effect': 'other_sessions_revoked',
+                        'current_session': 'preserved',
+                        'remembered_sign_ins': 'revoked',
+                        'auth_session_version': user.auth_session_version,
                     },
                     queue_feedback=not is_htmx,
                 )
-                notification_changed = True
+                notification_changed = bool(password_toast.get('notification_deck_visible'))
 
                 if not is_htmx:
                     return redirect(url_for('settings.account', tab='credentials'))

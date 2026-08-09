@@ -2,6 +2,8 @@ from flask_wtf import FlaskForm
 from wtforms import BooleanField, HiddenField, PasswordField, StringField, SubmitField
 from wtforms.validators import DataRequired, EqualTo, Length
 
+from app.auth.password_policy import LOCAL_PASSWORD_MAX_LENGTH, LocalPasswordPolicy
+
 
 # Form for user login
 class LoginForm(FlaskForm):
@@ -19,14 +21,14 @@ class LoginForm(FlaskForm):
 class ChangePasswordForm(FlaskForm):
     current_password = PasswordField(
         'Current Password',
-        validators=[DataRequired()],
+        validators=[DataRequired(), Length(max=LOCAL_PASSWORD_MAX_LENGTH)],
     )
 
     new_password = PasswordField(
         'New Password',
         validators=[
             DataRequired(),
-            Length(min=8, message='Password must be at least 8 characters.'),
+            LocalPasswordPolicy(),
         ],
     )
 
@@ -34,6 +36,7 @@ class ChangePasswordForm(FlaskForm):
         'Confirm New Password',
         validators=[
             DataRequired(),
+            Length(max=LOCAL_PASSWORD_MAX_LENGTH),
             EqualTo('new_password', message='Password confirmation does not match.'),
         ],
     )

@@ -107,6 +107,9 @@ This prevents a local username collision from silently authenticating against LD
 - Logout is POST-only and CSRF-protected. The Flask-Login remember-cookie revocation marker is preserved during session cleanup so logout cannot silently recreate the session.
 - Persistent login remains disabled for super administrators unless `AUTH_ALLOW_SUPER_ADMIN_REMEMBER_ME=true` is explicitly configured.
 - Normal remember-me persistence defaults to 7 days and is bounded to 1-30 days by `AUTH_REMEMBER_ME_DAYS`.
+- Local Database sessions are bound to `User.auth_session_version` through the Flask-Login user identifier. Password changes/resets advance the generation so older sessions and remember cookies fail closed on their next request.
+- Self-service password change refreshes only the current browser onto the new generation and clears its remember cookie; administrator or CLI password reset preserves no target session.
+- Legacy pre-generation session identifiers are accepted only while the user remains on generation `1`; after any password change, a missing generation is rejected.
 - Authentication rate-limit rejections are persisted as audit-only `rate_limited` events.
 - Authentication Audit schema `authentication.v2` separates a resolved target account from an authenticated actor; failed attempts never claim the target user's email, display name, or role as actor identity.
 - Authentication request evidence stores `request.path`, never callback query strings, so OAuth authorization codes are excluded from the audit record.

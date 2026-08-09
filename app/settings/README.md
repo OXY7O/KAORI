@@ -53,14 +53,18 @@ The former standalone `/settings/time-locale` and `/settings/system-info` pages 
 
 `/settings/account` is organized into `profile`, `activity`, and `credentials` query-backed HTMX tabs. Tab navigation replaces `#account-authentication-page` without a full-page reload, updates the browser URL, and preserves normal-link fallback. Information panels in the Activity and Credential tabs use native `<details>` elements and remain closed by default so the workspace can grow without creating a permanently long page.
 
-Local Database password changes use HTMX and replace `#account-authentication-page` without a full-page reload. A successful password change:
+Local Database password changes use HTMX and replace `#account-authentication-page` without a full-page reload. The canonical Local Database password policy is a unique passphrase of at least 12 characters (maximum 1024), with known default values rejected. A successful password change:
 
 - creates a personal `account_security` notification for the authenticated user;
-- triggers `kaori:notifications-changed` so the top Notification Center refreshes immediately;
+- triggers `kaori:notifications-changed` only when the persistent account-security notification is visible;
 - returns the shared KAORI Violet operational result toast through an out-of-band HTMX swap;
 - does not render a duplicate inline success banner after the toast is emitted;
 - excludes current and new password values from notification and audit metadata;
+- advances `User.auth_session_version`, preserves the current browser session on the new generation, and revokes other authenticated sessions plus remembered sign-ins on their next request;
+- clears the current browser's remember cookie so persistence must be re-established with the replacement password;
 - keeps profile, role, lifecycle state, Super Admin tier, and external identity links unchanged.
+
+Incorrect-current-password and current-password-reuse attempts are persisted as `AUDIT_ONLY` `account_security` failures without creating Notification Center unread items.
 
 Normal POST and redirect remain available only as progressive-enhancement fallback when HTMX is unavailable.
 

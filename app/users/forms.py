@@ -5,6 +5,7 @@ from flask_wtf import FlaskForm
 from wtforms import BooleanField, HiddenField, PasswordField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, EqualTo, Length, Optional, ValidationError
 
+from app.auth.password_policy import LOCAL_PASSWORD_MAX_LENGTH, LocalPasswordPolicy
 from app.auth.provider_configuration import normalize_provider_key
 from app.auth.providers.catalog import configurable_provider_choices
 from app.auth.providers.ldap import ExternalProviderError, resolve_ldap_transport
@@ -20,18 +21,26 @@ class UserForm(FlaskForm):
     role_id = SelectField('Role', coerce=int, validators=[DataRequired()])
     is_active = BooleanField('Active')
     is_super_admin = BooleanField('Super Admin')
-    password = PasswordField('Password', validators=[Optional(), Length(min=8)])
+    password = PasswordField('Password', validators=[Optional(), LocalPasswordPolicy()])
     confirm_password = PasswordField(
-        'Confirm Password', validators=[EqualTo('password', message='Password confirmation does not match.')]
+        'Confirm Password',
+        validators=[
+            Length(max=LOCAL_PASSWORD_MAX_LENGTH),
+            EqualTo('password', message='Password confirmation does not match.'),
+        ],
     )
     submit = SubmitField('Save User')
 
 
 class ResetPasswordForm(FlaskForm):
-    password = PasswordField('New Password', validators=[DataRequired(), Length(min=8)])
+    password = PasswordField('New Password', validators=[DataRequired(), LocalPasswordPolicy()])
     confirm_password = PasswordField(
         'Confirm Password',
-        validators=[DataRequired(), EqualTo('password', message='Password confirmation does not match.')],
+        validators=[
+            DataRequired(),
+            Length(max=LOCAL_PASSWORD_MAX_LENGTH),
+            EqualTo('password', message='Password confirmation does not match.'),
+        ],
     )
     submit = SubmitField('Reset Password')
 

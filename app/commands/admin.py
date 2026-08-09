@@ -5,19 +5,10 @@ import os
 import click
 from flask.cli import with_appcontext
 
+from app.auth.password_policy import local_password_policy_error
 from app.extensions.db import db
 from app.models import Role, User
 from app.rbac.service import seed_default_rbac
-
-MIN_ADMIN_PASSWORD_LENGTH = 12
-BLOCKED_BOOTSTRAP_PASSWORDS = {
-    'admin',
-    'changeme',
-    'change-me',
-    'password',
-    'password123',
-    'kaori',
-}
 
 
 def _clean_env_value(value: str | None) -> str:
@@ -30,11 +21,9 @@ def _validate_admin_password(password: str | None) -> str:
     if not normalized:
         raise click.ClickException('ADMIN_PASSWORD is not configured')
 
-    if normalized.lower() in BLOCKED_BOOTSTRAP_PASSWORDS:
-        raise click.ClickException('ADMIN_PASSWORD uses a blocked default or weak value')
-
-    if len(normalized) < MIN_ADMIN_PASSWORD_LENGTH:
-        raise click.ClickException(f'ADMIN_PASSWORD must be at least {MIN_ADMIN_PASSWORD_LENGTH} characters long')
+    policy_error = local_password_policy_error(normalized)
+    if policy_error is not None:
+        raise click.ClickException(f'ADMIN_PASSWORD policy violation: {policy_error}')
 
     return normalized
 
@@ -170,4 +159,4 @@ def reset_admin_password(username: str, password: str | None) -> None:
     user.set_password(password)
     db.session.commit()
 
-    click.echo(f'Password reset completed for admin user {username}')
+    click.echo(f'Password reset completed for admin user {username}; existing sessions revoked')

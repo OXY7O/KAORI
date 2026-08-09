@@ -126,11 +126,15 @@ def test_user_management_keeps_dual_audit_ledger_until_shared_audit_consumers_ar
     assert 'must not be removed from User Management in isolation' in readme
 
 
-def test_password_reset_session_revocation_remains_explicit_pre_lock_follow_up() -> None:
+def test_password_reset_revokes_existing_sessions_through_credential_generation() -> None:
     readme = read('app/users/README.md')
+    model = read('app/models/user.py')
+    login_extension = read('app/extensions/login.py')
     assert 'Password Reset Session Boundary' in readme
-    assert 'existing authenticated sessions are not yet version-invalidated' in readme
-    assert 'must be resolved before User Management Final Lock' in readme
+    assert 'User.auth_session_version' in readme
+    assert 'revoke all existing authenticated sessions and remembered sign-ins' in readme
+    assert 'auth_session_version' in model
+    assert 'issued_session_version != current_session_version' in login_extension
 
 
 def test_reset_password_matches_kaori_hero_impact_and_secure_delivery_contract() -> None:
@@ -152,8 +156,8 @@ def test_reset_password_matches_kaori_hero_impact_and_secure_delivery_contract()
     assert 'Account &amp; Role' in template
     assert 'Activity Audit' in template
     assert 'Existing Sessions' in template
-    assert 'Remain Active' in template
-    assert 'Share the new password securely; administrator resets are not temporary.' in template
+    assert 'Revoked on Next Request' in template
+    assert 'Existing sessions and remembered sign-ins for the target account will be revoked.' in template
     assert 'Deliver the new password through an approved secure channel.' not in template
 
 

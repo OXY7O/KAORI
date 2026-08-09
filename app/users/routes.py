@@ -312,7 +312,7 @@ def reset_password(user_id: int):
                 event_type='user_password_reset',
                 status='success',
                 title='Password reset completed',
-                message=f'A new Local Database password was set for {user.username}.',
+                message=f'A new Local Database password was set for {user.username}; existing sessions were revoked.',
                 target=user,
             )
         )

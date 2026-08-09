@@ -6,6 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.auth.admission import session_admission_reason
 from app.auth.readiness import check_authentication_database_readiness
+from app.auth.session import parse_authenticated_user_identifier
 from app.common.flashes import flash_once
 from app.models.user import User
 
@@ -32,8 +33,22 @@ def load_user(user_id: str):
         session['_remember'] = 'clear'
 
     try:
-        user = User.query.get(int(user_id))
+        resolved_user_id, issued_session_version = parse_authenticated_user_identifier(user_id)
+        user = User.query.get(resolved_user_id)
         if user is None:
+            invalidate_session()
+            return None
+
+        current_session_version = max(int(user.auth_session_version or 1), 1)
+        if issued_session_version is None:
+            # Legacy sessions issued before session generations existed are only
+            # admissible while the account remains on its initial generation.
+            # Once a password has changed, a missing generation fails closed.
+            if current_session_version != 1:
+                invalidate_session()
+                return None
+            session['_user_id'] = user.get_id()
+        elif issued_session_version != current_session_version:
             invalidate_session()
             return None
 

@@ -52,6 +52,13 @@ class User(UserMixin, db.Model):
 
     password_hash: Mapped[str] = mapped_column(db.String(255), nullable=False, default='')
 
+    auth_session_version: Mapped[int] = mapped_column(
+        db.Integer,
+        nullable=False,
+        default=1,
+        server_default=db.text('1'),
+    )
+
     role_id: Mapped[int | None] = mapped_column(
         db.ForeignKey('roles.id', ondelete='SET NULL'), nullable=True, index=True
     )
@@ -132,8 +139,19 @@ class User(UserMixin, db.Model):
     def is_admin_level(self) -> bool:
         return bool(self.is_super_admin or self.role_name == 'admin')
 
+    def get_id(self) -> str:  # type: ignore[override]
+        """Bind Flask-Login session identity to the current credential generation."""
+
+        version = max(int(self.auth_session_version or 1), 1)
+        return f'{self.id}:{version}'
+
     def set_password(self, password: str) -> None:
+        """Replace the local credential and revoke sessions issued for the old hash."""
+
+        had_local_password = bool(self.password_hash)
+        current_version = max(int(self.auth_session_version or 1), 1)
         self.password_hash = generate_password_hash(password)
+        self.auth_session_version = current_version + 1 if had_local_password else current_version
 
     def check_password(self, password: str) -> bool:
         if not self.password_hash:

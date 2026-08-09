@@ -8,7 +8,11 @@
     {% set section_eyebrow = "Credential Ownership" %}
     {% set section_icon = "key-round" %}
     {% set section_summary = "Manage the credential owned by KAORI or follow the recovery path of the authoritative external identity provider." %}
-    {% set section_boundary = identity_context.credential_detail ~ ' Role, lifecycle state, Super Admin tier, and external identity links remain separate from credential changes.' %}
+    {% if can_change_password %}
+        {% set section_boundary = identity_context.credential_detail ~ ' A Local Database password change preserves this browser session, revokes other sessions and remembered sign-ins, and leaves role, lifecycle state, Super Admin tier, and identity links unchanged.' %}
+    {% else %}
+        {% set section_boundary = identity_context.credential_detail ~ ' Role, lifecycle state, Super Admin tier, and external identity links remain separate from provider-managed credential recovery.' %}
+    {% endif %}
 {% else %}
     {% set section_eyebrow = "Identity & Access" %}
     {% set section_icon = "id-card" %}
