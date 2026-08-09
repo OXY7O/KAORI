@@ -130,19 +130,21 @@ def test_credential_workspace_keeps_action_left_and_security_context_right() -> 
     assert "Password Policy" in context
     assert "Session Handling" in context
 
-def test_credential_workspace_uses_balanced_equal_height_columns() -> None:
+def test_credential_workspace_uses_natural_top_aligned_columns() -> None:
     page = read("app/templates/settings/account/partials/_page_content.html")
     credentials = read("app/templates/settings/account/partials/_change_password.html")
     context = read("app/templates/settings/account/partials/_credential_information.html")
 
-    assert 'data-credential-workspace-layout="balanced-columns"' in page
-    assert "xl:items-stretch" in page
-    assert "xl:col-span-7 xl:h-full" in page
-    assert "xl:col-span-5 xl:h-full" in page
+    assert 'data-credential-workspace-layout="natural-columns"' in page
+    assert "xl:items-start" in page
+    assert "xl:items-stretch" not in page
+    assert "xl:col-span-7 xl:h-full" not in page
+    assert "xl:col-span-5 xl:h-full" not in page
     assert 'data-credential-action-panel="true"' in credentials
-    assert "flex h-full flex-col overflow-hidden" in credentials
-    assert 'data-credential-security-panel="single-balanced-box"' in context
-    assert "flex h-full flex-col" in context
+    assert "flex h-full flex-col overflow-hidden" not in credentials
+    assert 'data-credential-security-panel="single-context-box"' in context
+    assert "flex h-full flex-col" not in context
+    assert "mt-auto" not in credentials
 
 
 def test_credential_context_is_one_clean_security_panel_without_duplicate_status_blocks() -> None:
