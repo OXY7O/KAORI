@@ -30,3 +30,7 @@ The Activity Details modal uses the established KAORI evidence layout: Activity 
 ## Remaining Access Work
 
 Activity Audit is not independently final locked yet. Directory Provisioning and the remaining Access security decisions still need review before the Access domain Final Lock.
+
+## Detail Evidence Refinement v1.26
+
+The Activity Details modal no longer presents a flat Operational Metadata dump. The final inspection order is Activity Summary, conditional Failure Summary, compact Execution Evidence, Actor & Access plus Target Context, Recorded Changes when present, Trace References, optional Additional Evidence, and Technical Evidence collapsed by default. Execution counters and trace identifiers are separated from low-level diagnostics, duplicated category/target/timestamp values are not repeated across multiple cards, and raw failure strings are redacted and length-bounded before they can appear under Technical Evidence.

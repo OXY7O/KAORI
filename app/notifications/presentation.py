@@ -75,6 +75,192 @@ def _user_label(user: User | None, user_id: int | None) -> str:
     return f'{user.display_label}{suffix}'
 
 
+_ACTIVITY_EXECUTION_EVIDENCE_KEYS = (
+    'total_count',
+    'synced_count',
+    'failed_count',
+    'updated_count',
+    'record_count',
+    'cleanup_deleted_count',
+    'target_count',
+    'duration_seconds',
+    'response_time_ms',
+)
+_ACTIVITY_TRACE_REFERENCE_KEYS = (
+    'task_id',
+    'job_execution_id',
+    'job_id',
+    'bulk_job_id',
+    'archive_id',
+    'certificate_id',
+)
+_ACTIVITY_FAILURE_CONTEXT_KEYS = (
+    'failed_clusters',
+    'cluster_scope',
+    'endpoint',
+    'server',
+    'failure_code',
+    'reason_code',
+)
+_ACTIVITY_TECHNICAL_EVIDENCE_KEYS = (
+    'failure_evidence',
+    'error',
+    'error_message',
+    'exception',
+    'traceback',
+    'raw_error',
+    'failure_detail',
+)
+
+
+def _technical_evidence_value(value: Any) -> str:
+    rendered = re.sub(r'\s+', ' ', str(value or '')).strip()
+    if not rendered:
+        return '-'
+
+    rendered = re.sub(
+        r'(?i)(https?://)([^/@\s:]+):([^/@\s]+)@',
+        r'\1***:***@',
+        rendered,
+    )
+    rendered = re.sub(
+        r'(?i)\b(password|passwd|token|secret|api[_-]?key)=([^&\s,;]+)',
+        r'\1=***',
+        rendered,
+    )
+    if len(rendered) > 1200:
+        rendered = f'{rendered[:1197].rstrip()}...'
+    return rendered
+
+
+def _activity_failure_type(value: str | None, fallback: str | None = None) -> str:
+    normalized = (value or '').lower()
+    if any(token in normalized for token in ('nameresolutionerror', 'name resolution', 'failed to resolve', 'dns')):
+        return 'Name Resolution'
+    if any(token in normalized for token in ('timeout', 'timed out', 'read timed out')):
+        return 'Timeout'
+    if 'connection refused' in normalized:
+        return 'Connection Refused'
+    if any(token in normalized for token in ('certificate', 'x509', 'ssl', 'tls')):
+        return 'TLS Verification'
+    if any(token in normalized for token in ('401', 'unauthorized', 'authentication failed', 'invalid credential')):
+        return 'Authentication'
+    if any(token in normalized for token in ('403', 'forbidden', 'permission denied')):
+        return 'Authorization'
+    if any(token in normalized for token in ('connectionerror', 'max retries exceeded', 'connectionpool')):
+        return 'Connectivity'
+    if fallback:
+        return fallback.replace('_', ' ').title()
+    return 'Operational Failure'
+
+
+def _activity_detail_evidence(
+    *,
+    notification: Notification,
+    metadata: dict[str, Any],
+    event_context: dict[str, Any],
+) -> dict[str, Any]:
+    all_metadata_items = metadata_items(
+        metadata,
+        event_type=notification.event_type,
+    )
+    items_by_key = {item['key']: item for item in all_metadata_items}
+
+    execution_evidence = [
+        items_by_key[key]
+        for key in _ACTIVITY_EXECUTION_EVIDENCE_KEYS
+        if key in items_by_key
+    ]
+
+    trace_references: list[dict[str, Any]] = [
+        {
+            'key': 'source',
+            'label': 'Source',
+            'value': event_context['source_label'],
+            'is_identifier': False,
+            'tone': 'slate',
+        },
+        {
+            'key': 'event_key',
+            'label': 'Event Key',
+            'value': notification.event_type,
+            'is_identifier': True,
+            'tone': 'slate',
+        },
+    ]
+    trace_references.extend(
+        items_by_key[key]
+        for key in _ACTIVITY_TRACE_REFERENCE_KEYS
+        if key in items_by_key
+    )
+
+    technical_evidence = [
+        {
+            'key': key,
+            'label': key.replace('_', ' ').title(),
+            'value': _technical_evidence_value(metadata[key]),
+        }
+        for key in _ACTIVITY_TECHNICAL_EVIDENCE_KEYS
+        if metadata.get(key) not in (None, '')
+    ]
+
+    failure_raw = next(
+        (
+            str(metadata[key])
+            for key in (
+                'failure_evidence',
+                'error_message',
+                'error',
+                'exception',
+                'traceback',
+                'reason',
+            )
+            if metadata.get(key) not in (None, '')
+        ),
+        notification.detail or notification.message,
+    )
+    failure_summary = None
+    failure_type = None
+    failure_context: list[dict[str, Any]] = []
+    if notification.status in {'warning', 'error'}:
+        failure_summary = standardize_activity_text(
+            failure_raw,
+            event_type=notification.event_type,
+            status=notification.status,
+        ) or 'The operation requires review.'
+        failure_type = _activity_failure_type(
+            failure_raw,
+            str(metadata.get('failure_code') or metadata.get('reason_code') or '').strip() or None,
+        )
+        failure_context = [
+            items_by_key[key]
+            for key in _ACTIVITY_FAILURE_CONTEXT_KEYS
+            if key in items_by_key
+        ]
+
+    consumed_keys = {
+        'event_key',
+        'reason',
+        *_ACTIVITY_EXECUTION_EVIDENCE_KEYS,
+        *_ACTIVITY_TRACE_REFERENCE_KEYS,
+        *_ACTIVITY_FAILURE_CONTEXT_KEYS,
+        *_ACTIVITY_TECHNICAL_EVIDENCE_KEYS,
+    }
+    additional_evidence = [
+        item for item in all_metadata_items if item['key'] not in consumed_keys
+    ]
+
+    return {
+        'execution_evidence': execution_evidence,
+        'trace_references': trace_references,
+        'technical_evidence': technical_evidence,
+        'failure_summary': failure_summary,
+        'failure_type': failure_type,
+        'failure_context': failure_context,
+        'additional_evidence': additional_evidence,
+    }
+
+
 def _serialize_notification(
     notification: Notification,
     *,
@@ -153,9 +339,12 @@ def _serialize_notification(
     }
 
     if include_metadata:
-        item['metadata_items'] = metadata_items(
-            metadata,
-            event_type=notification.event_type,
+        item.update(
+            _activity_detail_evidence(
+                notification=notification,
+                metadata=metadata,
+                event_context=event_context,
+            )
         )
 
     return item

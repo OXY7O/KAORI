@@ -83,6 +83,7 @@ def test_activity_register_uses_kaori_filters_loading_table_and_pagination() -> 
 def test_activity_detail_uses_content_driven_modal_and_curated_evidence() -> None:
     page = read('app/templates/notifications/activity.html')
     detail = read('app/templates/notifications/partials/_activity_detail.html')
+    presentation = read('app/notifications/presentation.py')
     routes = read('app/notifications/routes.py')
     service = read('app/notifications/service.py')
 
@@ -95,18 +96,29 @@ def test_activity_detail_uses_content_driven_modal_and_curated_evidence() -> Non
 
     for token in (
         'Activity Summary',
+        'Failure Summary',
+        'Execution Evidence',
         'Actor & Access',
-        'Execution & Trace',
-        'Context & Target',
+        'Target Context',
         'Recorded Changes',
-        'Operational Metadata',
+        'Trace References',
+        'Technical Evidence',
         'item.created_at|user_datetime',
     ):
         assert token in detail
 
-    assert 'xl:grid-cols-3' in detail
+    assert 'Operational Metadata' not in detail
+    assert 'Execution & Trace' not in detail
+    assert 'Context & Target' not in detail
+    assert 'open_by_default=false' in detail
+    assert 'View Technical Evidence' in detail
     assert 'Before' in detail and 'After' in detail
-    assert 'text-status-critical-text' in detail
+    assert '_ACTIVITY_EXECUTION_EVIDENCE_KEYS' in presentation
+    assert '_ACTIVITY_TRACE_REFERENCE_KEYS' in presentation
+    assert '_ACTIVITY_TECHNICAL_EVIDENCE_KEYS' in presentation
+    assert 'standardize_activity_text(' in presentation
+    assert "return 'Name Resolution'" in presentation
+    assert "r'\\1***:***@'" in presentation
 
 
 def test_activity_audit_suppresses_sensitive_metadata_and_keeps_lifecycle_boundary() -> None:
