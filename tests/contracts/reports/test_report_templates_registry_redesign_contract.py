@@ -18,6 +18,9 @@ def test_template_registry_uses_full_width_kaori_workspace() -> None:
 
     assert 'data-report-templates-page="registry-v2"' in template
     assert 'Template Governance Posture' in template
+    assert 'data-template-posture="governance-v2"' in template
+    assert 'Protected Base. Governed Customization.' in template
+    assert 'data-template-governance-guardrails="true"' in template
     assert 'data-template-registry="true"' in template
     assert 'data-template-filters="true"' in template
     assert 'xl:grid-cols-6' in template
@@ -31,7 +34,11 @@ def test_template_registry_uses_full_width_kaori_workspace() -> None:
     assert '>Action<' in template
     assert 'Previous' in template
     assert 'Next' in template
-    assert 'templates-registry-loading' in template
+    assert 'components/loading_bar.html' in template
+    assert "loading_bar.render('templates-registry-loading', active=false, label='Refreshing Template Registry')" in template
+    assert 'data-kaori-template-loading-region="true"' in template
+    assert 'hx-indicator="#templates-registry-loading"' in template
+    assert 'htmx-indicator h-0.5 overflow-hidden bg-kaori-soft' not in template
     assert 'xl:grid-cols-[minmax(0,1fr)_420px]' not in template
     assert 'View more' not in template
 
@@ -64,6 +71,9 @@ def test_template_service_is_catalog_driven_and_filterable() -> None:
     assert "'formats': [" in service
     assert "for key in ('family', 'report_type', 'ownership', 'status', 'output_format', 'search')" in service
     assert "'System Template'" in service
+    assert "'system_count': system_count" in service
+    assert "'custom_count': custom_count" in service
+    assert "'active_custom_count': active_custom_count" in service
     assert "'Active Custom'" in service
 
 

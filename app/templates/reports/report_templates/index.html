@@ -3,6 +3,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/pagination.html" as pagination_ui %}
+{% import "components/loading_bar.html" as loading_bar %}
 {% import "reports/components/_record_detail_modal.html" as record_modal %}
 
 {% block title %}Report Templates{% endblock title %}
@@ -52,29 +53,76 @@
             </div>
         </section>
 
-        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm" data-template-posture="true">
-            <div class="flex flex-col gap-4 px-5 py-4 lg:flex-row lg:items-center lg:justify-between sm:px-6">
-                <div class="flex min-w-0 items-start gap-3">
-                    <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="shield-check" class="h-5 w-5"></i></span>
-                    <div class="min-w-0">
-                        <h2 class="{{ table_ui.block_title_classes() }}">Template Governance Posture</h2>
-                        <p class="{{ table_ui.block_description_classes() }}">System contracts stay protected while custom templates reuse the same report types, formats, and section definitions as Generate Report.</p>
+        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm" data-template-posture="governance-v2">
+            <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="shield-check" class="h-5 w-5"></i></span>
+                        <div class="min-w-0">
+                            <h2 class="{{ table_ui.block_title_classes() }}">Template Governance Posture</h2>
+                            <p class="{{ table_ui.block_description_classes() }}">Protected system contracts define the reporting baseline; custom templates extend that baseline without creating a second report contract.</p>
+                        </div>
                     </div>
+                    {{ table_label.status_indicator_label(payload.posture.status_label, payload.posture.status_tone) }}
                 </div>
-                <div class="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4 lg:min-w-[38rem]">
-                    <div><p class="text-xs font-semibold text-content-muted">Catalog Contracts</p><p class="mt-1 text-lg font-bold text-content-primary">{{ payload.posture.catalog_count }}</p></div>
-                    <div><p class="text-xs font-semibold text-content-muted">Analytics</p><p class="mt-1 text-lg font-bold text-content-primary">{{ payload.posture.analytics_count }}</p></div>
-                    <div><p class="text-xs font-semibold text-content-muted">Inventory</p><p class="mt-1 text-lg font-bold text-content-primary">{{ payload.posture.inventory_count }}</p></div>
-                    <div><p class="text-xs font-semibold text-content-muted">Draft Custom</p><p class="mt-1 text-lg font-bold text-content-primary">{{ payload.posture.draft_count }}</p></div>
-                </div>
+            </header>
+
+            <div class="grid lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.35fr)]">
+                <section class="border-b border-outline-subtle p-5 sm:p-6 lg:border-b-0 lg:border-r lg:border-outline-subtle" aria-labelledby="template-governance-contract-title">
+                    <p class="text-xs font-semibold text-kaori-primary">Governance Contract</p>
+                    <h3 id="template-governance-contract-title" class="mt-1 text-lg font-bold text-content-primary">Protected Base. Governed Customization.</h3>
+                    <p class="mt-2 max-w-2xl text-sm leading-6 text-content-secondary">System templates remain read-only, while custom templates inherit canonical report types, supported formats, and section boundaries used by Generate Report and scheduling workflows.</p>
+
+                    <div class="mt-5 space-y-3" data-template-governance-guardrails="true">
+                        {% for icon, title, detail in [
+                            ('lock-keyhole', 'System Templates Protected', 'Canonical templates cannot be edited or deleted.'),
+                            ('git-branch', 'Custom Templates Inherit Contracts', 'Customization stays inside the selected report type contract.'),
+                            ('refresh-cw', 'One Reporting Catalog', 'Generate, Templates, and Schedules consume the same report definitions.')
+                        ] %}
+                            <div class="flex items-start gap-3">
+                                <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
+                                <div class="min-w-0">
+                                    <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
+                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ detail }}</p>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <section class="min-w-0" aria-label="Template Governance Metrics">
+                    <div class="grid grid-cols-2 gap-px bg-outline-subtle sm:grid-cols-4">
+                        {% for icon, label, value, helper in [
+                            ('layers-3', 'Catalog Contracts', payload.posture.catalog_count, 'Canonical report types'),
+                            ('shield-check', 'Protected System', payload.posture.system_count, 'Read-only baseline'),
+                            ('circle-check-big', 'Active Custom', payload.posture.active_custom_count, 'Reusable definitions'),
+                            ('file-pen-line', 'Draft Custom', payload.posture.draft_count, 'Awaiting activation')
+                        ] %}
+                            <article class="min-w-0 bg-surface-card px-4 py-5 sm:px-5">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-semibold text-content-muted">{{ label }}</p>
+                                        <p class="mt-2 text-xl font-bold text-content-primary">{{ value }}</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                                    </div>
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                    <div class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex flex-wrap gap-2">
+                            {{ table_label.metadata_label(payload.posture.analytics_count ~ ' Analytics', 'chart-no-axes-combined') }}
+                            {{ table_label.metadata_label(payload.posture.inventory_count ~ ' Inventory', 'boxes') }}
+                            {{ table_label.metadata_label(payload.posture.custom_count ~ ' Custom Templates', 'copy-plus') }}
+                        </div>
+                        <p class="text-xs leading-5 text-content-muted">Catalog coverage and customization posture across the reusable reporting estate.</p>
+                    </div>
+                </section>
             </div>
         </section>
 
         <section id="templates-registry" class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm" data-template-registry="true">
-            <div id="templates-registry-loading" class="htmx-indicator h-0.5 overflow-hidden bg-kaori-soft" aria-hidden="true">
-                <div class="h-full w-full animate-pulse bg-kaori-primary"></div>
-            </div>
-
             <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
@@ -100,6 +148,9 @@
                             </a>
                         {% endif %}
                     </div>
+                </div>
+                <div data-kaori-template-loading-region="true">
+                    {{ loading_bar.render('templates-registry-loading', active=false, label='Refreshing Template Registry') }}
                 </div>
             </header>
 
