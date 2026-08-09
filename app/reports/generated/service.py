@@ -1987,7 +1987,7 @@ def _get_file_state(
 
     if report.file_path and not storage_reachable:
         return {
-            'label': 'Storage unavailable',
+            'label': 'Storage Unavailable',
             'description': (
                 'KAORI could not verify this report artifact because its storage backend is temporarily unavailable.'
             ),
@@ -2005,7 +2005,7 @@ def _get_file_state(
 
     if report.status == 'ready' and report.file_path and not file_exists:
         return {
-            'label': 'Missing file',
+            'label': 'Missing File',
             'description': 'Report is Ready, but the generated report artifact no longer exists in configured storage.',
             'tone': 'red',
             'icon': 'triangle-alert',
@@ -2013,7 +2013,7 @@ def _get_file_state(
 
     if report.status == 'ready' and not report.file_path:
         return {
-            'label': 'File path missing',
+            'label': 'File Path Missing',
             'description': 'Report is Ready, but file_path metadata is empty.',
             'tone': 'red',
             'icon': 'triangle-alert',
@@ -2021,7 +2021,7 @@ def _get_file_state(
 
     if report.status == 'archived' and report.file_path and file_exists:
         return {
-            'label': 'Archived artifact',
+            'label': 'Archived Artifact',
             'description': 'Archived report artifact exists in configured storage and remains downloadable for historical reference.',  # noqa: E501
             'tone': 'gray',
             'icon': 'archive',
@@ -2029,7 +2029,7 @@ def _get_file_state(
 
     if report.status == 'archived' and report.file_path and not file_exists:
         return {
-            'label': 'Archived missing',
+            'label': 'Archived Artifact Missing',
             'description': 'Archived report has storage metadata, but the generated artifact is missing in configured storage.',  # noqa: E501
             'tone': 'red',
             'icon': 'triangle-alert',
@@ -2037,7 +2037,7 @@ def _get_file_state(
 
     if report.status == 'archived' and not report.file_path:
         return {
-            'label': 'Archived without artifact',
+            'label': 'Archived Without Artifact',
             'description': 'Archived report does not have generated artifact metadata.',
             'tone': 'gray',
             'icon': 'archive',
@@ -2053,14 +2053,14 @@ def _get_file_state(
 
     if report.status == 'failed':
         return {
-            'label': 'Not available',
+            'label': 'Not Available',
             'description': 'Generated artifact is not available because generation failed.',
             'tone': 'red',
             'icon': 'triangle-alert',
         }
 
     return {
-        'label': 'Not generated',
+        'label': 'Not Generated',
         'description': 'Generated artifact has not been created yet.',
         'tone': 'amber',
         'icon': 'clock-3',
@@ -2321,11 +2321,11 @@ def _format_period(
 ) -> str:
     labels = {
         'snapshot': 'Current Inventory Snapshot',
-        '24h': 'Last 24 hours',
-        '7d': 'Last 7 days',
-        '30d': 'Last 30 days',
-        '90d': 'Last 90 days',
-        'month': 'This month',
+        '24h': 'Last 24 Hours',
+        '7d': 'Last 7 Days',
+        '30d': 'Last 30 Days',
+        '90d': 'Last 90 Days',
+        'month': 'This Month',
     }
 
     return labels.get(
