@@ -11,6 +11,7 @@ from sqlalchemy import select
 from werkzeug.datastructures import ImmutableMultiDict, MultiDict
 
 from app.common.celery_queue_health import get_queue_readiness
+from app.common.pagination import PER_PAGE_OPTIONS, paginate_sequence
 from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.report import Report, ReportSchedule, ReportScheduleRun
@@ -70,46 +71,90 @@ def get_report_schedules_payload(
     query_args: Mapping[str, str] | None = None,
     form_state: dict[str, Any] | None = None,
     errors: list[str] | None = None,
+    *,
+    edit_schedule_id: int | None = None,
+    edit_form_state: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    schedules = _get_schedule_rows()
+    query_args = query_args or {}
+    all_schedules = _get_schedule_rows()
     recent_runs = _get_recent_runs()
+    cluster_options = _get_cluster_options()
     storage_context = _get_storage_context()
     worker_context = get_queue_readiness(get_reports_queue_name())
+    selected_filters = _get_selected_filters(query_args)
+    filtered_schedules = _filter_schedule_rows(all_schedules, selected_filters)
+    schedules, pagination = paginate_sequence(
+        filtered_schedules,
+        page=query_args.get('page', 1),
+        per_page=query_args.get('per_page', PER_PAGE_OPTIONS[0]),
+    )
 
     if form_state is None:
         form_state = build_default_schedule_form_state()
 
+    if edit_schedule_id is None:
+        edit_schedule_id = _parse_optional_int(query_args.get('edit_schedule_id'))
+    edit_schedule = next(
+        (item for item in all_schedules if item['id'] == edit_schedule_id),
+        None,
+    )
+    if edit_schedule is not None and edit_form_state is not None:
+        edit_schedule = {**edit_schedule, 'edit_state': edit_form_state}
+
+    report_family_by_report_type = {
+        item['value']: str(item.get('family') or 'analytics')
+        for item in REPORT_TYPE_OPTIONS
+    }
+    allowed_formats_by_report_type = {
+        item['value']: list(item.get('allowed_formats') or [])
+        for item in REPORT_TYPE_OPTIONS
+    }
+
     return {
         'page_title': 'Report Schedules',
         'page_subtitle': (
-            'Automate report generation and delivery through the dedicated Reports worker.'
+            'Automate governed report generation and delivery through recurring report contracts.'
         ),
         'status_label': f"Reports Worker {worker_context['label']}",
         'status_description': worker_context['description'],
         'summary_cards': get_summary_cards(
-            schedules=schedules,
+            schedules=all_schedules,
             recent_runs=recent_runs,
         ),
         'schedules': schedules,
+        'all_schedule_count': len(all_schedules),
         'recent_runs': recent_runs,
-        'clusters': _get_cluster_options(),
+        'clusters': cluster_options,
         'report_type_options': REPORT_TYPE_OPTIONS,
-        'period_options': PERIOD_OPTIONS,
+        'period_options': _title_case_period_options(),
         'output_format_options': OUTPUT_FORMAT_OPTIONS,
         'section_options': SECTION_OPTIONS,
         'section_options_by_report_type': _get_section_options_by_report_type(),
         'default_sections_by_report_type': _get_default_sections_by_report_type(),
+        'report_family_by_report_type': report_family_by_report_type,
+        'allowed_formats_by_report_type': allowed_formats_by_report_type,
         'cadence_options': CADENCE_OPTIONS,
         'day_of_week_options': DAY_OF_WEEK_OPTIONS,
         'day_of_month_options': list(range(1, 29)),
         'form_state': form_state,
         'errors': errors or [],
+        'open_create_dialog': bool(errors) and edit_schedule is None,
+        'edit_schedule': edit_schedule,
         'storage_context': storage_context,
         'run_actions_enabled': bool(storage_context.get('ready', False)),
         'worker_context': worker_context,
         'scheduler_context': get_scheduler_context(storage_context, worker_context),
         'recommended_actions': get_recommended_actions(),
         'delivery_channel_options': get_delivery_channel_catalog(),
+        'filter_options': _get_schedule_filter_options(all_schedules, cluster_options),
+        'selected_filters': selected_filters,
+        'pagination': pagination,
+        'per_page_options': list(PER_PAGE_OPTIONS),
+        'registry_query_params': {
+            key: value
+            for key, value in selected_filters.items()
+            if key in {'search', 'status', 'cadence', 'report_type', 'cluster', 'delivery'} and value
+        },
     }
 
 
@@ -573,13 +618,136 @@ def _create_report_from_schedule(schedule: ReportSchedule) -> Report:
     return report
 
 
+def _get_selected_filters(query_args: Mapping[str, str]) -> dict[str, str]:
+    return {
+        'search': str(query_args.get('search', '') or '').strip(),
+        'status': str(query_args.get('status', '') or '').strip().lower(),
+        'cadence': str(query_args.get('cadence', '') or '').strip().lower(),
+        'report_type': str(query_args.get('report_type', '') or '').strip(),
+        'cluster': str(query_args.get('cluster', '') or '').strip(),
+        'delivery': str(query_args.get('delivery', '') or '').strip().lower(),
+    }
+
+
+def _filter_schedule_rows(
+    schedules: list[dict[str, Any]],
+    selected_filters: dict[str, str],
+) -> list[dict[str, Any]]:
+    search = selected_filters['search'].casefold()
+    status = selected_filters['status']
+    cadence = selected_filters['cadence']
+    report_type = selected_filters['report_type']
+    cluster = selected_filters['cluster']
+    delivery = selected_filters['delivery']
+
+    filtered: list[dict[str, Any]] = []
+    for schedule in schedules:
+        if status and status != ('active' if schedule['is_enabled'] else 'paused'):
+            continue
+        if cadence and schedule['cadence_value'] != cadence:
+            continue
+        if report_type and schedule['report_type_value'] != report_type:
+            continue
+        if cluster and schedule['cluster_id'] != cluster:
+            continue
+        if delivery:
+            channels = {str(item).lower() for item in schedule['notification_channels']}
+            if delivery == 'none':
+                if channels:
+                    continue
+            elif delivery not in channels:
+                continue
+        if search:
+            haystack = ' '.join(
+                [
+                    schedule['name'],
+                    schedule['description'],
+                    schedule['report_type'],
+                    schedule['cluster'],
+                    schedule['namespace'],
+                    schedule['cadence'],
+                    schedule['delivery_label'],
+                ]
+            ).casefold()
+            if search not in haystack:
+                continue
+        filtered.append(schedule)
+    return filtered
+
+
+def _get_schedule_filter_options(
+    schedules: list[dict[str, Any]],
+    cluster_options: list[dict[str, str]],
+) -> dict[str, list[dict[str, str]]]:
+    delivery_catalog = get_delivery_channel_catalog()
+    return {
+        'statuses': [
+            {'value': '', 'label': 'All Statuses'},
+            {'value': 'active', 'label': 'Active'},
+            {'value': 'paused', 'label': 'Paused'},
+        ],
+        'cadences': [
+            {'value': '', 'label': 'All Cadences'},
+            *[{'value': item['value'], 'label': item['label']} for item in CADENCE_OPTIONS],
+        ],
+        'report_types': [
+            {'value': '', 'label': 'All Report Types'},
+            *[{'value': item['value'], 'label': item['label']} for item in REPORT_TYPE_OPTIONS],
+        ],
+        'clusters': [
+            {'value': '', 'label': 'All Clusters'},
+            *[{'value': item['value'], 'label': item['label']} for item in cluster_options],
+        ],
+        'deliveries': [
+            {'value': '', 'label': 'All Delivery'},
+            {'value': 'none', 'label': 'No Notification'},
+            *[
+                {'value': item['value'], 'label': item['label']}
+                for item in delivery_catalog
+                if item.get('selectable') or item.get('value') in {channel for schedule in schedules for channel in schedule['notification_channels']}
+            ],
+        ],
+    }
+
+
+def _title_case_period_options() -> list[dict[str, str]]:
+    return [
+        {**item, 'label': str(item['label']).title()}
+        for item in PERIOD_OPTIONS
+    ]
+
+
+def _format_period_label(value: str | None) -> str:
+    normalized = str(value or '').strip()
+    for item in PERIOD_OPTIONS:
+        if item['value'] == normalized:
+            return str(item['label']).title()
+    return normalized.replace('_', ' ').title() or 'Not Available'
+
+
+def _format_cadence_detail(schedule: ReportSchedule) -> str:
+    if schedule.cadence == 'weekly':
+        day = next(
+            (item['label'] for item in DAY_OF_WEEK_OPTIONS if item['value'] == schedule.day_of_week),
+            'Monday',
+        )
+        return f'{day} at {schedule.run_time}'
+    if schedule.cadence == 'monthly':
+        return f'Day {schedule.day_of_month or 1} at {schedule.run_time}'
+    return f'Every Day at {schedule.run_time}'
+
+
 def _get_schedule_rows() -> list[dict[str, Any]]:
     schedules = db.session.scalars(
         select(ReportSchedule).order_by(ReportSchedule.created_at.desc(), ReportSchedule.id.desc())
     ).all()
     cluster_map = _get_cluster_map([item.cluster_id for item in schedules if item.cluster_id])
+    delivery_label_map = {
+        item['value']: item['label']
+        for item in get_delivery_channel_catalog()
+    }
 
-    return [_serialize_schedule(item, cluster_map) for item in schedules]
+    return [_serialize_schedule(item, cluster_map, delivery_label_map) for item in schedules]
 
 
 def _get_recent_runs(limit: int = 8) -> list[dict[str, Any]]:
@@ -593,25 +761,41 @@ def _get_recent_runs(limit: int = 8) -> list[dict[str, Any]]:
     return [_serialize_run(item, schedule_map) for item in runs]
 
 
-def _serialize_schedule(schedule: ReportSchedule, cluster_map: dict[str, str]) -> dict[str, Any]:
-    status_tone = 'green' if schedule.is_enabled else 'gray'
+def _serialize_schedule(
+    schedule: ReportSchedule,
+    cluster_map: dict[str, str],
+    delivery_label_map: dict[str, str],
+) -> dict[str, Any]:
+    report_spec = next(
+        (item for item in REPORT_TYPE_OPTIONS if item['value'] == schedule.report_type),
+        REPORT_TYPE_OPTIONS[0],
+    )
+    status_tone = 'normal' if schedule.is_enabled else 'unknown'
     status_icon = 'play-circle' if schedule.is_enabled else 'pause-circle'
+    delivery_channels = schedule.notification_channels_as_list()
+    delivery_labels = [delivery_label_map.get(item, item.replace('_', ' ').title()) for item in delivery_channels]
     return {
         'id': schedule.id,
         'name': schedule.name,
         'description': schedule.description or 'No description provided.',
         'report_type_value': schedule.report_type,
         'report_type': get_report_type_label(schedule.report_type),
+        'report_icon': str(report_spec.get('icon') or 'file-text'),
+        'report_family': str(report_spec.get('family') or 'analytics'),
         'cluster_id': schedule.cluster_id or '',
         'cluster': cluster_map.get(schedule.cluster_id or '', 'Cluster Selection Required'),
         'namespace': schedule.namespace or 'All Namespaces',
-        'period': schedule.period,
+        'period': _format_period_label(schedule.period),
+        'period_value': schedule.period,
         'output_format': str(schedule.output_format or '').upper(),
         'sections': schedule.sections_as_list(),
         'sections_count': len(schedule.sections_as_list()),
-        'notification_channels': schedule.notification_channels_as_list(),
+        'notification_channels': delivery_channels,
+        'delivery_labels': delivery_labels,
+        'delivery_label': ', '.join(delivery_labels) if delivery_labels else 'No Notification',
         'cadence': schedule.cadence.title(),
         'cadence_value': schedule.cadence,
+        'cadence_detail': _format_cadence_detail(schedule),
         'run_time': schedule.run_time,
         'day_of_week': schedule.day_of_week,
         'day_of_month': schedule.day_of_month,
@@ -624,7 +808,8 @@ def _serialize_schedule(schedule: ReportSchedule, cluster_map: dict[str, str]) -
         },
         'next_run_at': _format_datetime(schedule.next_run_at, schedule.timezone),
         'last_run_at': _format_datetime(schedule.last_run_at, schedule.timezone),
-        'last_status': schedule.last_status or 'Never run',
+        'last_status': schedule.last_status or 'never_run',
+        'last_status_label': (schedule.last_status or 'Never Run').replace('_', ' ').title(),
         'last_report_id': schedule.last_report_id,
         'created_by': schedule.created_by_display_name_snapshot or schedule.created_by_username_snapshot or 'System',
         'edit_state': _schedule_edit_state(schedule),
@@ -639,7 +824,7 @@ def _serialize_run(run: ReportScheduleRun, schedule_map: dict[int, str]) -> dict
         'report_id': run.report_id,
         'status': run.status,
         'status_label': run.status.replace('_', ' ').title(),
-        'status_tone': 'green' if run.status == 'success' else 'red' if run.status == 'failed' else 'blue',
+        'status_tone': 'normal' if run.status == 'success' else 'critical' if run.status == 'failed' else 'pending',
         'trigger_source': run.trigger_source.replace('_', ' ').title(),
         'started_at': _format_datetime(run.started_at, _get_default_timezone()),
         'finished_at': _format_datetime(run.finished_at, _get_default_timezone()),
