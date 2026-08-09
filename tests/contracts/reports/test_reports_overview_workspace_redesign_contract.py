@@ -142,3 +142,16 @@ def test_overview_does_not_expose_storage_or_schedule_configuration_details() ->
         'Storage Path',
     ):
         assert forbidden not in combined
+
+
+def test_overview_partials_import_table_label_when_used():
+    partials = [
+        Path('app/templates/reports/overview/partials/_reporting_operations.html'),
+        Path('app/templates/reports/overview/partials/_recent_reports.html'),
+        Path('app/templates/reports/overview/partials/_reporting_coverage.html'),
+    ]
+    import_line = '{% import "components/table_label.html" as table_label %}'
+    for path in partials:
+        source = path.read_text()
+        if 'table_label.' in source:
+            assert import_line in source, f'{path} uses table_label without importing it'
