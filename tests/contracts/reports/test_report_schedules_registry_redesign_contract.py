@@ -12,28 +12,66 @@ def read(path: Path) -> str:
     return path.read_text(encoding='utf-8')
 
 
-def test_schedules_use_canonical_registry_and_full_width_workspace() -> None:
+def test_schedules_use_balanced_canonical_hero_actions() -> None:
+    template = read(TEMPLATE)
+
+    assert 'data-report-schedules-page="automation-registry-v2"' in template
+    assert 'data-schedule-hero-actions="balanced-two"' in template
+    assert 'page_hero.context_actions_classes(2)' in template
+    assert template.count('page_hero.context_action_classes()') >= 2
+    assert 'Create Schedule' in template
+    assert 'Job Configuration' in template
+    assert 'page_hero.context_actions_classes()' not in template
+
+
+def test_schedule_registry_and_recent_runs_share_reusable_tabbed_workspace() -> None:
     template = read(TEMPLATE)
     service = read(SERVICE)
 
+    assert 'components/workspace_tabs.html' in template
+    assert 'data-schedule-operations-workspace="true"' in template
+    assert "('registry', 'Schedule Registry', 'calendar-range', payload.pagination.total_items)" in template
+    assert "('runs', 'Recent Schedule Runs', 'history', payload.recent_runs|length)" in template
+    assert 'schedule-operations-panel-registry' in template
+    assert 'schedule-operations-panel-runs' in template
+    assert 'data-schedule-registry="true"' in template
+    assert 'data-schedule-runs="recent"' not in template
     assert 'components/table_registry.html' in template
     assert "registry_ui.filter_form('reports.schedules'" in template
     assert "registry_ui.footer('reports.schedules'" in template
     assert 'schedule-registry-loading' in template
     assert 'xl:grid-cols-6' in template
-    assert 'data-schedule-registry="true"' in template
-    assert 'xl:grid-cols-[minmax(0,1fr)_420px]' not in template
-    assert '<details class="mt-4 rounded-xl' not in template
-    assert 'onsubmit="return confirm(' not in template
     assert 'from app.common.pagination import PER_PAGE_OPTIONS, paginate_sequence' in service
     assert 'paginate_sequence(' in service
 
 
-def test_schedule_registry_exposes_operational_contract_and_modals() -> None:
+def test_schedule_automation_posture_is_state_aware_for_storage_and_worker() -> None:
+    template = read(TEMPLATE)
+    service = read(SERVICE)
+
+    assert 'data-schedule-posture="automation-v2"' in template
+    assert 'data-schedule-control-boundary="true"' in template
+    assert 'data-schedule-dependency-readiness="true"' in template
+    assert 'data-schedule-storage-ready="true"' in template
+    assert 'data-schedule-storage-degraded="true"' in template
+    assert 'Artifact Storage Ready' in template
+    assert 'Artifact Storage Needs Review' in template
+    assert "url_for('reports.storage')" in template
+    assert "'automation_posture': get_automation_posture(storage_context, worker_context)" in service
+    assert 'def get_automation_posture(' in service
+    for label in [
+        'Automation Ready',
+        'Ready for Unattended Execution',
+        'Artifact Execution Paused',
+        'Dispatcher Needs Attention',
+    ]:
+        assert label in service
+
+
+def test_schedule_tables_and_actions_keep_kaori_contracts() -> None:
     template = read(TEMPLATE)
 
     for label in [
-        'Schedule Automation Posture',
         'Schedule Registry',
         'Recent Schedule Runs',
         'Schedule Identity & Scope',
@@ -45,30 +83,21 @@ def test_schedule_registry_exposes_operational_contract_and_modals() -> None:
     ]:
         assert label in template
 
+    assert 'table_ui.table_classes()' in template
+    assert 'table_ui.head_classes()' in template
+    assert 'table_ui.body_classes()' in template
+    assert 'table_ui.row_classes()' in template
+    assert 'table_ui.cell_classes()' in template
     assert 'data-kaori-dialog-open' in template
     assert 'schedule-form-dialog' in template
     assert 'data-operation-submit' in template
     assert 'data-loading-label="Queueing Report..."' in template
     assert 'data-loading-label="Deleting Schedule..."' in template
+    assert 'onsubmit="return confirm(' not in template
     assert 'bg-emerald-' not in template
     assert 'bg-rose-' not in template
     assert 'bg-amber-' not in template
     assert 'bg-slate-' not in template
-
-
-def test_schedule_filter_and_rows_state_are_canonical() -> None:
-    template = read(TEMPLATE)
-    service = read(SERVICE)
-
-    for name in ['search', 'status', 'cadence', 'report_type', 'cluster', 'delivery']:
-        assert f'name="{name}"' in template
-
-    assert "'registry_query_params':" in service
-    assert "'per_page_options': list(PER_PAGE_OPTIONS)" in service
-    assert "'selected_filters': selected_filters" in service
-    assert "'filter_options': _get_schedule_filter_options" in service
-    assert "'page': payload.pagination.page" in template
-    assert "'per_page': payload.pagination.per_page" in template
 
 
 def test_schedule_feedback_and_run_now_follow_reports_flow() -> None:

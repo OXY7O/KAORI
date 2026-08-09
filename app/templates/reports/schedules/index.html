@@ -3,6 +3,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table_registry.html" as registry_ui %}
+{% import "components/workspace_tabs.html" as workspace_tabs %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "reports/components/_record_detail_modal.html" as record_modal %}
 
@@ -86,7 +87,7 @@
     {% set schedule_form_action = url_for('reports.update_schedule', schedule_id=payload.edit_schedule.id) if payload.edit_schedule else url_for('reports.create_schedule') %}
     {% set schedule_form_is_edit = payload.edit_schedule is not none %}
 
-    <div class="space-y-5" data-report-schedules-page="automation-registry-v1">
+    <div class="space-y-5" data-report-schedules-page="automation-registry-v2">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -102,9 +103,27 @@
                 </div>
                 <aside class="{{ page_hero.aside_classes() }}" aria-label="Schedule Automation Posture">
                     <div class="{{ page_hero.context_panel_classes() }}">
-                        <div class="flex items-start justify-between gap-3"><div><p class="{{ page_hero.context_panel_eyebrow_classes() }}">Automation Posture</p><h2 class="{{ page_hero.context_panel_title_classes() }}">Recurring Reports</h2></div>{{ page_hero.context_status_badge(payload.worker_context.label, payload.worker_context.tone) }}</div>
-                        <div class="{{ page_hero.context_panel_metrics_classes() }}">{{ page_hero.context_metric('calendar-check', 'Active', payload.summary_cards[1].value, 'Enabled Schedules') }}{{ page_hero.context_metric('clock-arrow-up', 'Worker', payload.worker_context.label, payload.worker_context.queue_name, value_classes='text-sm font-semibold leading-5') }}</div>
-                        <div class="{{ page_hero.context_actions_classes() }}"><button type="button" data-kaori-dialog-open data-dialog-target="schedule-form-dialog" class="{{ page_hero.context_action_classes() }}"><i data-lucide="calendar-plus" class="h-4 w-4" aria-hidden="true"></i>Create Schedule</button></div>
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Automation Posture</p>
+                                <h2 class="{{ page_hero.context_panel_title_classes() }}">Recurring Reports</h2>
+                            </div>
+                            {{ page_hero.context_status_badge(payload.automation_posture.status_label, payload.automation_posture.status_tone) }}
+                        </div>
+                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                            {{ page_hero.context_metric('calendar-check', 'Active', payload.summary_cards[1].value, 'Enabled Schedules') }}
+                            {{ page_hero.context_metric('clock-arrow-up', 'Worker', payload.worker_context.label, payload.worker_context.queue_name, value_classes='text-sm font-semibold leading-5') }}
+                        </div>
+                        <div class="{{ page_hero.context_actions_classes(2) }}" data-schedule-hero-actions="balanced-two">
+                            <button type="button" data-kaori-dialog-open data-dialog-target="schedule-form-dialog" class="{{ page_hero.context_action_classes() }}">
+                                <i data-lucide="calendar-plus" class="h-4 w-4" aria-hidden="true"></i>
+                                Create Schedule
+                            </button>
+                            <a href="{{ url_for('jobs.configuration', job_key='reports.schedule.dispatch') }}" class="{{ page_hero.context_action_classes() }}">
+                                <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>
+                                Job Configuration
+                            </a>
+                        </div>
                     </div>
                 </aside>
             </div>
@@ -122,26 +141,106 @@
             </section>
         {% endif %}
 
-        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm" data-schedule-posture="automation-v1">
-            <header class="border-b border-outline-subtle px-5 py-4 sm:px-6"><div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div class="flex items-start gap-3"><span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="route" class="h-5 w-5"></i></span><div><h2 class="{{ table_ui.block_title_classes() }}">Schedule Automation Posture</h2><p class="{{ table_ui.block_description_classes() }}">Review recurring definition volume and the dependencies that govern unattended execution.</p></div></div><a href="{{ url_for('jobs.configuration', job_key='reports.schedule.dispatch') }}" class="{{ table_ui.action_classes() }}"><i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>Job Configuration</a></div></header>
-            <div class="grid gap-0 border-b border-outline-subtle sm:grid-cols-2 xl:grid-cols-4">{% for card in payload.summary_cards %}<div class="px-5 py-4 {% if not loop.last %}xl:border-r xl:border-outline-subtle{% endif %}"><div class="flex items-center gap-2 text-xs font-semibold text-content-muted"><i data-lucide="{{ card.icon }}" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>{{ card.label }}</div><p class="mt-2 text-2xl font-bold tracking-tight text-content-primary">{{ card.value }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ card.caption }}</p></div>{% endfor %}</div>
-            <div class="grid gap-3 px-5 py-4 sm:grid-cols-2 xl:grid-cols-4">{% for item in payload.scheduler_context %}<div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="{{ item.icon }}" class="h-4 w-4"></i></span><div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><p class="text-xs font-bold text-content-primary">{{ item.label }}</p>{{ table_label.status_indicator_label(item.status, item.tone) }}</div><p class="mt-1 text-xs leading-5 text-content-muted">{{ item.description }}</p></div></div>{% endfor %}</div>
-        </section>
-
-        <section id="schedule-registry" class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm" data-schedule-registry="true">
-            <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div class="flex items-start gap-3"><span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="calendar-range" class="h-5 w-5"></i></span><div><h2 class="{{ table_ui.block_title_classes() }}">Schedule Registry</h2><p class="{{ table_ui.block_description_classes() }}">Manage recurring report definitions, scope, timing, delivery, and execution state.</p></div></div><div class="flex flex-wrap items-center gap-2">{{ table_label.metadata_label(payload.pagination.total_items ~ ' Schedules', 'calendar-clock') }}{% if payload.selected_filters.search or payload.selected_filters.status or payload.selected_filters.cadence or payload.selected_filters.report_type or payload.selected_filters.cluster or payload.selected_filters.delivery %}{{ registry_ui.clear_filters_link('reports.schedules', 'schedule-registry', 'schedule-registry-loading', payload.pagination.per_page, table_ui.action_classes()) }}{% endif %}</div></div>
-                <div class="mt-4">{{ loading_bar.render('schedule-registry-loading', active=false, label='Refreshing Schedule Registry') }}</div>
-                {% call registry_ui.filter_form('reports.schedules', 'schedule-registry', 'schedule-registry-loading', payload.pagination.per_page, 'mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6', 'data-schedule-registry-filters', 'true') %}
-                    <label class="block"><span class="{{ table_ui.filter_label_classes() }}">Search</span><div class="relative mt-1.5"><i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted" aria-hidden="true"></i><input type="search" name="search" value="{{ payload.selected_filters.search }}" placeholder="Search schedules" class="{{ table_ui.filter_input_classes() }} pl-9"></div></label>
-                    <label class="block"><span class="{{ table_ui.filter_label_classes() }}">Status</span><select name="status" class="mt-1.5 {{ table_ui.filter_select_classes() }}">{% for option in payload.filter_options.statuses %}<option value="{{ option.value }}" {% if payload.selected_filters.status == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label>
-                    <label class="block"><span class="{{ table_ui.filter_label_classes() }}">Cadence</span><select name="cadence" class="mt-1.5 {{ table_ui.filter_select_classes() }}">{% for option in payload.filter_options.cadences %}<option value="{{ option.value }}" {% if payload.selected_filters.cadence == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label>
-                    <label class="block"><span class="{{ table_ui.filter_label_classes() }}">Report Type</span><select name="report_type" class="mt-1.5 {{ table_ui.filter_select_classes() }}">{% for option in payload.filter_options.report_types %}<option value="{{ option.value }}" {% if payload.selected_filters.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label>
-                    <label class="block"><span class="{{ table_ui.filter_label_classes() }}">Cluster</span><select name="cluster" class="mt-1.5 {{ table_ui.filter_select_classes() }}">{% for option in payload.filter_options.clusters %}<option value="{{ option.value }}" {% if payload.selected_filters.cluster == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label>
-                    <label class="block"><span class="{{ table_ui.filter_label_classes() }}">Delivery</span><select name="delivery" class="mt-1.5 {{ table_ui.filter_select_classes() }}">{% for option in payload.filter_options.deliveries %}<option value="{{ option.value }}" {% if payload.selected_filters.delivery == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label>
-                {% endcall %}
+        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm" data-schedule-posture="automation-v2" data-storage-state="{{ payload.storage_context.state }}">
+            <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="route" class="h-5 w-5"></i></span>
+                    <div class="min-w-0">
+                        <h2 class="{{ table_ui.block_title_classes() }}">Schedule Automation Posture</h2>
+                        <p class="{{ table_ui.block_description_classes() }}">Execution readiness, recurring definition volume, and the dependencies that govern unattended reporting.</p>
+                    </div>
+                </div>
+                {{ table_label.status_indicator_label(payload.automation_posture.status_label, payload.automation_posture.status_tone) }}
             </header>
 
+            <div class="grid lg:grid-cols-12">
+                <section class="border-b border-outline-subtle p-5 sm:p-6 lg:col-span-5 lg:border-b-0 lg:border-r" aria-labelledby="schedule-readiness-title">
+                    <p class="text-xs font-semibold text-kaori-primary">Execution Readiness</p>
+                    <h3 id="schedule-readiness-title" class="mt-1 text-lg font-bold text-content-primary">{{ payload.automation_posture.title }}</h3>
+                    <p class="mt-2 text-sm leading-6 text-content-secondary">{{ payload.automation_posture.description }}</p>
+
+                    <div class="mt-5 divide-y divide-outline-subtle border-y border-outline-subtle" data-schedule-control-boundary="true">
+                        <div class="flex items-center justify-between gap-4 py-3">
+                            <div><p class="text-xs font-semibold text-content-primary">Schedule Management</p><p class="mt-0.5 text-xs leading-5 text-content-muted">Create, edit, pause, and inspect definitions.</p></div>
+                            {{ table_label.status_indicator_label('Available', 'normal') }}
+                        </div>
+                        <div class="flex items-center justify-between gap-4 py-3">
+                            <div><p class="text-xs font-semibold text-content-primary">Artifact Execution</p><p class="mt-0.5 text-xs leading-5 text-content-muted">Run Now and unattended report generation.</p></div>
+                            {{ table_label.status_indicator_label(payload.automation_posture.execution_label, payload.automation_posture.execution_tone) }}
+                        </div>
+                        <div class="flex items-center justify-between gap-4 py-3">
+                            <div><p class="text-xs font-semibold text-content-primary">Dispatcher Worker</p><p class="mt-0.5 text-xs leading-5 text-content-muted">Dedicated Reports queue processing.</p></div>
+                            {{ table_label.status_indicator_label(payload.worker_context.label, payload.worker_context.tone) }}
+                        </div>
+                    </div>
+
+                    {% if payload.storage_context.ready %}
+                        <div class="mt-5 flex items-start gap-3 rounded-xl border border-status-normal-border bg-status-normal-soft px-4 py-3" data-schedule-storage-ready="true">
+                            <i data-lucide="hard-drive" class="mt-0.5 h-4 w-4 shrink-0 text-status-normal-text" aria-hidden="true"></i>
+                            <div><p class="text-xs font-bold text-status-normal-text">Artifact Storage Ready</p><p class="mt-1 text-xs leading-5 text-content-secondary">The configured backend is writable for scheduled and manual report execution.</p></div>
+                        </div>
+                    {% else %}
+                        <div class="mt-5 rounded-xl border border-status-warning-border bg-status-warning-soft px-4 py-3" data-schedule-storage-degraded="true">
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                <div class="flex min-w-0 items-start gap-3"><i data-lucide="hard-drive" class="mt-0.5 h-4 w-4 shrink-0 text-status-warning-text" aria-hidden="true"></i><div><p class="text-xs font-bold text-status-warning-text">Artifact Storage Needs Review</p><p class="mt-1 text-xs leading-5 text-content-secondary">Schedule definitions remain manageable, but artifact execution is paused until storage becomes writable.</p></div></div>
+                                <a href="{{ url_for('reports.storage') }}" class="{{ table_ui.action_classes() }} shrink-0"><i data-lucide="arrow-right" class="h-4 w-4" aria-hidden="true"></i>Open Storage</a>
+                            </div>
+                        </div>
+                    {% endif %}
+                </section>
+
+                <section class="min-w-0 lg:col-span-7" aria-label="Schedule Automation Metrics and Dependencies">
+                    <div class="grid grid-cols-2 gap-px bg-outline-subtle sm:grid-cols-4">
+                        {% for card in payload.summary_cards %}
+                            <article class="min-w-0 bg-surface-card px-4 py-5 sm:px-5">
+                                <div class="flex items-start justify-between gap-3"><div class="min-w-0"><p class="text-xs font-semibold text-content-muted">{{ card.label }}</p><p class="mt-2 text-xl font-bold text-content-primary">{{ card.value }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ card.caption }}</p></div><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="{{ card.icon }}" class="h-4 w-4"></i></span></div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                    <div class="border-t border-outline-subtle p-5 sm:p-6" data-schedule-dependency-readiness="true">
+                        <div class="flex items-start justify-between gap-3"><div><p class="text-xs font-semibold text-kaori-primary">Dependency Readiness</p><h3 class="mt-1 text-sm font-bold text-content-primary">Automation Runtime Dependencies</h3></div><span class="text-xs font-semibold text-content-muted">{{ payload.scheduler_context|length }} Checks</span></div>
+                        <div class="mt-4 grid gap-x-6 gap-y-4 sm:grid-cols-2">
+                            {% for item in payload.scheduler_context %}
+                                <div class="flex items-start gap-3">
+                                    <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="{{ item.icon }}" class="h-4 w-4"></i></span>
+                                    <div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><p class="text-xs font-bold text-content-primary">{{ item.label }}</p>{{ table_label.status_indicator_label(item.status, item.tone) }}</div><p class="mt-1 text-xs leading-5 text-content-muted">{{ item.description }}</p></div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </section>
+
+        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+                 x-data="{ tabs: ['registry', 'runs'], activeTab: 'registry', setTab(tab) { if (this.tabs.includes(tab)) this.activeTab = tab; }, moveTab(currentTab, direction, prefix = 'schedule-operations') { const currentIndex = this.tabs.indexOf(currentTab); if (currentIndex < 0) return; let nextIndex = currentIndex; if (direction === 'home') nextIndex = 0; else if (direction === 'end') nextIndex = this.tabs.length - 1; else nextIndex = (currentIndex + direction + this.tabs.length) % this.tabs.length; const nextTab = this.tabs[nextIndex]; this.setTab(nextTab); this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus()); } }"
+                 data-schedule-operations-workspace="true">
+            <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3"><span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="calendar-range" class="h-5 w-5"></i></span><div class="min-w-0"><h2 class="{{ table_ui.block_title_classes() }}">Schedule Operations</h2><p class="{{ table_ui.block_description_classes() }}">Manage recurring definitions and review execution evidence from one operational workspace.</p></div></div>
+                    {{ table_label.metadata_label(payload.all_schedule_count ~ ' Schedules', 'calendar-clock') }}
+                </div>
+            </header>
+
+            {{ workspace_tabs.render([
+                ('registry', 'Schedule Registry', 'calendar-range', payload.pagination.total_items),
+                ('runs', 'Recent Schedule Runs', 'history', payload.recent_runs|length)
+            ], prefix='schedule-operations', aria_label='Schedule Operations Views') }}
+
+            <div id="schedule-operations-panel-registry" role="tabpanel" aria-labelledby="schedule-operations-tab-registry" x-show="activeTab === 'registry'" x-bind:hidden="activeTab !== 'registry'">
+                <div id="schedule-registry" data-schedule-registry="true">
+                    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><h3 class="text-sm font-bold text-content-primary">Schedule Registry</h3><p class="mt-1 text-xs leading-5 text-content-muted">Filter and manage recurring report definitions, scope, timing, delivery, and execution state.</p></div><div class="flex flex-wrap items-center gap-2">{{ table_label.metadata_label(payload.pagination.total_items ~ ' Schedules', 'calendar-clock') }}{% if payload.selected_filters.search or payload.selected_filters.status or payload.selected_filters.cadence or payload.selected_filters.report_type or payload.selected_filters.cluster or payload.selected_filters.delivery %}{{ registry_ui.clear_filters_link('reports.schedules', 'schedule-registry', 'schedule-registry-loading', payload.pagination.per_page, table_ui.action_classes()) }}{% endif %}</div></div>
+                        <div class="mt-4">{{ loading_bar.render('schedule-registry-loading', active=false, label='Refreshing Schedule Registry') }}</div>
+                        {% call registry_ui.filter_form('reports.schedules', 'schedule-registry', 'schedule-registry-loading', payload.pagination.per_page, 'mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6', 'data-schedule-registry-filters', 'true') %}
+                            <label class="block"><span class="{{ table_ui.filter_label_classes() }}">Search</span><div class="relative mt-1.5"><i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted" aria-hidden="true"></i><input type="search" name="search" value="{{ payload.selected_filters.search }}" placeholder="Search schedules" class="{{ table_ui.filter_input_classes() }} pl-9"></div></label>
+                            <label class="block"><span class="{{ table_ui.filter_label_classes() }}">Status</span><select name="status" class="mt-1.5 {{ table_ui.filter_select_classes() }}">{% for option in payload.filter_options.statuses %}<option value="{{ option.value }}" {% if payload.selected_filters.status == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label>
+                            <label class="block"><span class="{{ table_ui.filter_label_classes() }}">Cadence</span><select name="cadence" class="mt-1.5 {{ table_ui.filter_select_classes() }}">{% for option in payload.filter_options.cadences %}<option value="{{ option.value }}" {% if payload.selected_filters.cadence == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label>
+                            <label class="block"><span class="{{ table_ui.filter_label_classes() }}">Report Type</span><select name="report_type" class="mt-1.5 {{ table_ui.filter_select_classes() }}">{% for option in payload.filter_options.report_types %}<option value="{{ option.value }}" {% if payload.selected_filters.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label>
+                            <label class="block"><span class="{{ table_ui.filter_label_classes() }}">Cluster</span><select name="cluster" class="mt-1.5 {{ table_ui.filter_select_classes() }}">{% for option in payload.filter_options.clusters %}<option value="{{ option.value }}" {% if payload.selected_filters.cluster == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label>
+                            <label class="block"><span class="{{ table_ui.filter_label_classes() }}">Delivery</span><select name="delivery" class="mt-1.5 {{ table_ui.filter_select_classes() }}">{% for option in payload.filter_options.deliveries %}<option value="{{ option.value }}" {% if payload.selected_filters.delivery == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label>
+                        {% endcall %}
+                    </header>
             <div class="overflow-x-auto">
                 <table class="{{ table_ui.table_classes() }}">
                     <thead class="{{ table_ui.head_classes() }}"><tr><th class="{{ table_ui.header_cell_classes() }}">Schedule</th><th class="{{ table_ui.header_cell_classes() }}">Scope</th><th class="{{ table_ui.header_cell_classes() }}">Report Contract</th><th class="{{ table_ui.header_cell_classes() }}">Cadence</th><th class="{{ table_ui.header_cell_classes() }}">Next Run</th><th class="{{ table_ui.header_cell_classes() }}">Status</th><th class="{{ table_ui.header_cell_classes() }} text-right">Action</th></tr></thead>
@@ -187,11 +286,15 @@
                 {% endcall %}
                 {% call record_modal.render('schedule-delete-' ~ loop.index, 'Schedule Lifecycle', 'Delete Report Schedule', 'Remove this recurring definition from future scheduler execution.', 'trash-2', 'Existing generated reports and retained artifacts are not deleted with the schedule.', 'standard') %}<div class="space-y-4"><div class="rounded-xl border border-status-warning-border bg-status-warning-soft px-4 py-3"><p class="text-sm font-bold text-status-warning-text">Confirm Schedule Deletion</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ schedule.name }} will stop producing future scheduled reports. Existing generated records remain unchanged.</p></div><form method="POST" action="{{ url_for('reports.delete_schedule', schedule_id=schedule.id) }}" class="flex justify-end">{% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}<button type="submit" data-operation-submit data-loading-label="Deleting Schedule..." class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-status-critical-border bg-status-critical-soft px-4 text-xs font-semibold text-status-critical-text transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"><i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Delete Schedule</span></button></form></div>{% endcall %}
             {% endfor %}
-        </section>
 
-        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm" data-schedule-runs="recent">
-            <header class="border-b border-outline-subtle px-5 py-4 sm:px-6"><div class="flex items-start gap-3"><span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="history" class="h-5 w-5"></i></span><div><h2 class="{{ table_ui.block_title_classes() }}">Recent Schedule Runs</h2><p class="{{ table_ui.block_description_classes() }}">Latest Run Now and automatic dispatcher executions for operational evidence.</p></div></div></header>
+                </div>
+            </div>
+
+            <div id="schedule-operations-panel-runs" role="tabpanel" aria-labelledby="schedule-operations-tab-runs" x-show="activeTab === 'runs'" x-bind:hidden="activeTab !== 'runs'" x-cloak>
+                <header class="border-b border-outline-subtle px-5 py-4 sm:px-6"><div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><h3 class="text-sm font-bold text-content-primary">Recent Schedule Runs</h3><p class="mt-1 text-xs leading-5 text-content-muted">Latest Run Now and automatic dispatcher executions retained as operational evidence.</p></div>{{ table_label.metadata_label((payload.recent_runs|length) ~ ' Runs', 'history') }}</div></header>
             <div class="overflow-x-auto"><table class="{{ table_ui.table_classes() }}"><thead class="{{ table_ui.head_classes() }}"><tr><th class="{{ table_ui.header_cell_classes() }}">Schedule</th><th class="{{ table_ui.header_cell_classes() }}">Trigger</th><th class="{{ table_ui.header_cell_classes() }}">Result</th><th class="{{ table_ui.header_cell_classes() }}">Delivery</th><th class="{{ table_ui.header_cell_classes() }}">Started</th><th class="{{ table_ui.header_cell_classes() }} text-right">Report</th></tr></thead><tbody class="{{ table_ui.body_classes() }}">{% if payload.recent_runs %}{% for run in payload.recent_runs %}<tr class="{{ table_ui.row_classes() }}"><td class="{{ table_ui.cell_classes() }}"><p class="text-sm font-semibold text-content-primary">{{ run.schedule_name }}</p></td><td class="{{ table_ui.cell_classes() }}"><p class="text-sm text-content-secondary">{{ run.trigger_source }}</p></td><td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(run.status_label, run.status_tone) }}{% if run.error_message %}<p class="mt-1 max-w-xs truncate text-xs text-content-muted">{{ run.error_message }}</p>{% endif %}</td><td class="{{ table_ui.cell_classes() }}"><p class="text-xs text-content-secondary">{{ run.delivery_result.successful|default(0) }} Sent · {{ run.delivery_result.failed|default(0) }} Failed · {{ run.delivery_result.skipped|default(0) }} Skipped</p></td><td class="{{ table_ui.cell_classes() }}"><p class="text-sm text-content-secondary">{{ run.started_at }}</p></td><td class="{{ table_ui.cell_classes() }} text-right">{% if run.report_id %}<a href="{{ url_for('reports.generated_report_detail', report_id=run.report_id) }}" class="{{ table_ui.action_classes() }}"><i data-lucide="file-text" class="h-4 w-4" aria-hidden="true"></i>Open</a>{% else %}<span class="text-xs text-content-muted">No Report</span>{% endif %}</td></tr>{% endfor %}{% else %}<tr><td colspan="6" class="px-6 py-10 text-center text-sm text-content-muted">No schedule execution evidence is available yet.</td></tr>{% endif %}</tbody></table></div>
+
+            </div>
         </section>
 
         {% call record_modal.render('schedule-form-dialog', 'Schedule Workspace', 'Edit Report Schedule' if schedule_form_is_edit else 'Create Report Schedule', 'Define one recurring report contract, execution cadence, and delivery policy.', 'calendar-plus', 'Schedule management remains available independently from generated artifacts; execution is storage-aware.', 'standard') %}

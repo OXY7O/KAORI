@@ -143,6 +143,7 @@ def get_report_schedules_payload(
         'storage_context': storage_context,
         'run_actions_enabled': bool(storage_context.get('ready', False)),
         'worker_context': worker_context,
+        'automation_posture': get_automation_posture(storage_context, worker_context),
         'scheduler_context': get_scheduler_context(storage_context, worker_context),
         'recommended_actions': get_recommended_actions(),
         'delivery_channel_options': get_delivery_channel_catalog(),
@@ -512,6 +513,53 @@ def calculate_next_run_at(
         candidate = datetime(year, month, day, run_hour, run_minute, tzinfo=tz)
     return candidate.astimezone(UTC)
 
+
+
+def get_automation_posture(
+    storage_context: dict[str, Any],
+    worker_context: dict[str, Any],
+) -> dict[str, str]:
+    storage_ready = bool(storage_context.get('ready', False))
+    worker_tone = str(worker_context.get('tone') or 'unknown')
+    worker_ready = worker_tone == 'normal'
+
+    if not storage_ready:
+        return {
+            'status_label': 'Execution Needs Review',
+            'status_tone': 'warning',
+            'title': 'Artifact Execution Paused',
+            'description': (
+                'Schedule definitions remain available for management, but Run Now and unattended '
+                'generation stay paused until artifact storage is writable.'
+            ),
+            'execution_label': 'Paused',
+            'execution_tone': 'warning',
+        }
+
+    if not worker_ready:
+        return {
+            'status_label': 'Dispatcher Needs Review',
+            'status_tone': worker_tone if worker_tone in {'warning', 'critical', 'unknown'} else 'warning',
+            'title': 'Dispatcher Needs Attention',
+            'description': (
+                'Artifact storage is writable, but unattended execution depends on a healthy Reports '
+                'worker consuming the dedicated queue.'
+            ),
+            'execution_label': 'Needs Review',
+            'execution_tone': worker_tone if worker_tone in {'warning', 'critical', 'unknown'} else 'warning',
+        }
+
+    return {
+        'status_label': 'Automation Ready',
+        'status_tone': 'normal',
+        'title': 'Ready for Unattended Execution',
+        'description': (
+            'Schedule definitions, the Reports worker, and artifact storage are ready for Run Now '
+            'and recurring report execution.'
+        ),
+        'execution_label': 'Ready',
+        'execution_tone': 'normal',
+    }
 
 def get_scheduler_context(
     storage_context: dict[str, Any],
