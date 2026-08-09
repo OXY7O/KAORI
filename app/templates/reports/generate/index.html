@@ -1,6 +1,11 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_label.html" as table_label %}
+{% macro workflow_number(number, compact=false) -%}
+    <span class="inline-flex shrink-0 items-center justify-center rounded-lg border border-kaori-primary/20 bg-kaori-soft font-extrabold tracking-wide text-kaori-primary {% if compact %}h-7 min-w-7 px-1.5 text-xs{% else %}h-8 min-w-8 px-2 text-xs{% endif %}"
+          data-generate-section-number="{{ number }}"
+          aria-hidden="true">{{ number }}</span>
+{%- endmacro %}
 {% block title %}Generate Report{% endblock title %}
 {% block dashboard_content %}
     {% set initial_scope_ready = payload.has_clusters and payload.form_state.cluster_id %}
@@ -132,9 +137,12 @@
                     <section id="report-configuration"
                              class="min-w-0 px-5 py-5 sm:px-6"
                              data-generate-step="report">
-                        <div class="mb-4">
-                            <h3 class="text-base font-bold text-content-primary">Report Contract</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Select one catalog report and optionally override the generated artifact name.</p>
+                        <div class="mb-4 flex items-start gap-3" data-generate-section-header="report-contract">
+                            {{ workflow_number('01') }}
+                            <div class="min-w-0">
+                                <h3 class="text-base font-bold text-content-primary">Report Contract</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Select one catalog report and optionally override the generated artifact name.</p>
+                            </div>
                         </div>
 
                         <div class="grid gap-4 sm:grid-cols-2">
@@ -165,11 +173,11 @@
                         </div>
 
                         <div id="selected-template-summary"
-                             class="mt-4 flex items-start gap-3 border-t border-outline-subtle pt-4">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                <i id="selected-report-icon" data-lucide="{{ payload.selected_report_type.icon }}" class="h-4 w-4" aria-hidden="true"></i>
-                            </span>
+                             class="mt-4 flex items-start gap-3 border-t border-outline-subtle pt-4"
+                             data-selected-report-summary="true">
+                            {{ workflow_number('01', true) }}
                             <div class="min-w-0 flex-1">
+                                <p class="mb-1 text-xs font-semibold text-content-muted">Selected Report</p>
                                 <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
                                     <p id="selected-report-label" class="text-sm font-bold text-content-primary">{{ payload.selected_report_type.label }}</p>
                                     <span id="selected-report-scope" class="inline-flex min-h-6 items-center rounded-md border border-kaori-primary/20 bg-kaori-soft px-2 text-xs font-semibold text-kaori-primary">Single Cluster</span>
@@ -182,9 +190,12 @@
 
                     <section class="min-w-0 px-5 py-5 sm:px-6"
                              data-generate-step="scope">
-                        <div class="mb-4">
-                            <h3 class="text-base font-bold text-content-primary">Kubernetes Scope</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Every report is bound to one cluster. Namespace narrows the selected cluster when required.</p>
+                        <div class="mb-4 flex items-start gap-3" data-generate-section-header="kubernetes-scope">
+                            {{ workflow_number('02') }}
+                            <div class="min-w-0">
+                                <h3 class="text-base font-bold text-content-primary">Kubernetes Scope</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Every report is bound to one cluster. Namespace narrows the selected cluster when required.</p>
+                            </div>
                         </div>
 
                         <div class="grid gap-4 sm:grid-cols-2">
@@ -252,8 +263,13 @@
                          data-generate-step="artifact">
                     <div class="flex flex-col gap-4 lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-6">
                         <div class="min-w-0">
-                            <h3 class="text-base font-bold text-content-primary">Artifact</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Choose an output format allowed by the selected report contract.</p>
+                            <div class="flex items-start gap-3" data-generate-section-header="artifact">
+                                {{ workflow_number('03') }}
+                                <div class="min-w-0">
+                                    <h3 class="text-base font-bold text-content-primary">Artifact</h3>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Choose an output format allowed by the selected report contract.</p>
+                                </div>
+                            </div>
 
                             <label class="mt-4 block">
                                 <span class="text-sm font-semibold text-content-primary">Output Format</span>
@@ -277,12 +293,15 @@
 
                         <div class="min-w-0 lg:border-l lg:border-outline-subtle lg:pl-6">
                             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                <div>
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <h3 class="text-base font-bold text-content-primary">Report Content</h3>
-                                        <span id="selected-section-count-badge" class="inline-flex min-h-6 items-center rounded-md border border-kaori-primary/20 bg-kaori-soft px-2 text-xs font-semibold text-kaori-primary">{{ payload.form_state.sections|length }} Selected</span>
+                                <div class="flex items-start gap-3" data-generate-section-header="report-content">
+                                    {{ workflow_number('04') }}
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <h3 class="text-base font-bold text-content-primary">Report Content</h3>
+                                            <span id="selected-section-count-badge" class="inline-flex min-h-6 items-center rounded-md border border-kaori-primary/20 bg-kaori-soft px-2 text-xs font-semibold text-kaori-primary">{{ payload.form_state.sections|length }} Selected</span>
+                                        </div>
+                                        <p id="section-contract-note" class="mt-1 text-xs leading-5 text-content-muted">{% if payload.selected_report_type.family == 'inventory' %}Workbook structure is locked by the report contract.{% else %}Select the sections included in the artifact.{% endif %}</p>
                                     </div>
-                                    <p id="section-contract-note" class="mt-1 text-xs leading-5 text-content-muted">{% if payload.selected_report_type.family == 'inventory' %}Workbook structure is locked by the report contract.{% else %}Select the sections included in the artifact.{% endif %}</p>
                                 </div>
                                 <div id="section-selection-actions" class="flex shrink-0 items-center gap-2 {% if payload.selected_report_type.family == 'inventory' %}hidden{% endif %}">
                                     <button type="button" id="select-all-sections" class="inline-flex min-h-8 items-center rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-kaori-primary/40 hover:text-kaori-primary">Select All</button>
@@ -319,12 +338,15 @@
                          data-generate-step="summary">
                     <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                         <div class="min-w-0 flex-1">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <h3 id="request-summary-title" class="text-base font-bold text-content-primary">Review & Queue</h3>
-                                <span id="preview-eligibility-status" class="inline-flex min-h-6 items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold leading-4 {% if initial_request_ready %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% else %}border-status-warning-border bg-status-warning-soft text-status-warning-text{% endif %}">
-                                    <i id="preview-eligibility-icon" data-lucide="{{ 'circle-check' if initial_request_ready else 'triangle-alert' }}" class="h-3 w-3 shrink-0 {% if initial_request_ready %}text-status-normal{% else %}text-status-warning{% endif %}" aria-hidden="true"></i>
-                                    <span id="preview-eligibility-label">{{ 'Ready to Queue' if initial_request_ready else 'Action Required' }}</span>
-                                </span>
+                            <div class="flex flex-wrap items-center gap-3" data-generate-section-header="review-queue">
+                                {{ workflow_number('05') }}
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h3 id="request-summary-title" class="text-base font-bold text-content-primary">Review & Queue</h3>
+                                    <span id="preview-eligibility-status" class="inline-flex min-h-6 items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-semibold leading-4 {% if initial_request_ready %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% else %}border-status-warning-border bg-status-warning-soft text-status-warning-text{% endif %}">
+                                        <i id="preview-eligibility-icon" data-lucide="{{ 'circle-check' if initial_request_ready else 'triangle-alert' }}" class="h-3 w-3 shrink-0 {% if initial_request_ready %}text-status-normal{% else %}text-status-warning{% endif %}" aria-hidden="true"></i>
+                                        <span id="preview-eligibility-label">{{ 'Ready to Queue' if initial_request_ready else 'Action Required' }}</span>
+                                    </span>
+                                </div>
                             </div>
 
                             <div class="mt-3 grid gap-3 sm:grid-cols-3">
@@ -429,7 +451,6 @@
                 const selectedReportDescription = document.getElementById('selected-report-description');
                 const selectedReportScope = document.getElementById('selected-report-scope');
                 const selectedReportCount = document.getElementById('selected-report-count');
-                const selectedReportIcon = document.getElementById('selected-report-icon');
                 const previewReportType = document.getElementById('preview-report-type');
                 const previewReportDescription = document.getElementById('preview-report-description');
                 const previewReportIcon = document.getElementById('preview-report-icon');
@@ -859,9 +880,6 @@
                         selectedReportCount.textContent = selectedSections.length + ' ' + sectionLabel;
                     }
 
-                    if (selectedReportIcon) {
-                        selectedReportIcon.setAttribute('data-lucide', reportType.icon || 'file-text');
-                    }
 
                     if (previewReportType) {
                         previewReportType.textContent = reportType.label;

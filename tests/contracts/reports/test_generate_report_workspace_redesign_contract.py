@@ -211,3 +211,28 @@ def test_scope_filters_are_symmetric_and_use_guidance_instead_of_inline_warning(
     assert 'id="cluster-guard"' not in source
     assert "const clusterGuard = document.getElementById('cluster-guard');" not in source
     assert 'setElementVisibility(clusterGuard, shouldBlockCluster);' not in source
+
+
+def test_generate_report_uses_numbered_workflow_hierarchy_without_progress_rail() -> None:
+    source = read(TEMPLATE)
+
+    expected = {
+        'report-contract': '01',
+        'kubernetes-scope': '02',
+        'artifact': '03',
+        'report-content': '04',
+        'review-queue': '05',
+    }
+    for section, number in expected.items():
+        assert f'data-generate-section-header="{section}"' in source
+        assert f"workflow_number('{number}')" in source
+
+    assert 'data-selected-report-summary="true"' in source
+    assert "workflow_number('01', true)" in source
+    assert 'Selected Report' in source
+    assert 'selectedReportIcon' not in source
+    assert 'id="selected-report-icon"' not in source
+    assert 'data-report-builder-progress="true"' not in source
+    macro = source.split('{% macro workflow_number', 1)[1].split('{%- endmacro %}', 1)[0]
+    assert 'rounded-lg' in macro
+    assert 'rounded-full' not in macro
