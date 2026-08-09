@@ -120,6 +120,63 @@
             {% for error in timezone_form.timezone.errors %}
                 <p class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{{ error }}</p>
             {% endfor %}
+
+            <section class="border-t border-outline-subtle pt-5"
+                     aria-labelledby="timezone-preference-boundary-title"
+                     data-timezone-preference-boundary="inline">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <h3 id="timezone-preference-boundary-title"
+                            class="text-sm font-bold text-content-primary">
+                            Preference Scope &amp; Boundary
+                        </h3>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">
+                            Timezone changes affect how timestamps are presented to this account, not operational source data.
+                        </p>
+                    </div>
+                    {{ table_label.metadata_label('Presentation Only', 'eye') }}
+                </div>
+
+                <div class="mt-4 grid border-y border-outline-subtle lg:grid-cols-3 lg:divide-x lg:divide-outline-subtle">
+                    <div class="py-4 lg:pr-5">
+                        <div class="flex items-center gap-2 text-xs font-semibold text-kaori-primary">
+                            <i data-lucide="panels-top-left" class="h-4 w-4" aria-hidden="true"></i>
+                            Presentation Scope
+                        </div>
+                        <p class="mt-2 text-xs leading-5 text-content-muted">
+                            Inventory, Analytics, Activity Audit, Governance, Operations, and report timestamps use this preference when rendered.
+                        </p>
+                    </div>
+
+                    <div class="border-t border-outline-subtle py-4 lg:border-t-0 lg:px-5">
+                        <div class="flex items-center gap-2 text-xs font-semibold text-kaori-primary">
+                            <i data-lucide="database" class="h-4 w-4" aria-hidden="true"></i>
+                            Canonical Data
+                        </div>
+                        <p class="mt-2 text-xs leading-5 text-content-muted">
+                            Operational timestamps stay canonical in UTC. Job and report schedules keep their own explicit execution timezone.
+                        </p>
+                    </div>
+
+                    <div class="border-t border-outline-subtle py-4 lg:border-t-0 lg:pl-5">
+                        <div class="flex items-center gap-2 text-xs font-semibold text-kaori-primary">
+                            <i data-lucide="network" class="h-4 w-4" aria-hidden="true"></i>
+                            External Systems
+                        </div>
+                        <p class="mt-2 text-xs leading-5 text-content-muted">
+                            Kubernetes, Prometheus, Alertmanager, databases, and connected providers are never reconfigured by this preference.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-4 flex items-start gap-2 rounded-xl border border-kaori-primary/20 bg-kaori-soft/60 px-4 py-3 text-xs leading-5 text-content-secondary">
+                    <i data-lucide="shield-check" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                    <p>
+                        <strong class="text-content-primary">Display preference only.</strong>
+                        Saving a timezone changes what you see; it does not change stored timestamps or execution schedules.
+                    </p>
+                </div>
+            </section>
         </div>
 
         <footer class="flex flex-col gap-3 border-t border-outline-default bg-surface-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">

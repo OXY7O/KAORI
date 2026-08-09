@@ -22,15 +22,23 @@ def test_general_hero_uses_compact_context_without_duplicate_actions() -> None:
 
 def test_time_zone_workspace_has_clear_configuration_sequence() -> None:
     template = read("app/templates/settings/general/partials/_time_locale.html")
+    page = read("app/templates/settings/general/partials/_page_content.html")
     for token in (
         "Selection Mode",
         "Browser Detection",
         "Manual Time Zone",
+        "Preference Scope &amp; Boundary",
+        "Presentation Scope",
+        "Canonical Data",
+        "External Systems",
+        "Display preference only.",
         "Effective Time Zone",
         "Save Time Zone",
         "Personal Preference",
     ):
         assert token in template
+    assert 'data-timezone-workspace-layout="full-width"' in page
+    assert 'data-timezone-preference-boundary="inline"' in template
     assert "general-current-time" in template
     assert "detect-browser-timezone" in template
     assert "pointer-events-none" in template

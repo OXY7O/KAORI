@@ -16,9 +16,9 @@ The former standalone `/settings/time-locale` and `/settings/system-info` pages 
 ### General Settings presentation contract
 
 - Keep the shared KAORI Violet page hero and use its right-side context panel for current preference or safe system metadata, not duplicate actions.
-- Time Zone follows a stable sequence: Selection Mode → Browser Detection / Manual Time Zone → Effective Time Zone → Save.
+- Time Zone uses one full-width workspace: Selection Mode → Browser Detection / Manual Time Zone → inline Preference Scope & Boundary → Effective Time Zone → Save.
 - Regional Format presents Locale, Date Format, and Time Format as equal configuration controls with one persisted-value preview.
-- The right-side preference context explains Presentation Scope and the Data & Execution Boundary; preference UI must never imply that canonical UTC data, schedules, or external systems are mutated.
+- Time Zone embeds Presentation Scope and the Data & Execution Boundary inside the same workspace. Regional Format may retain the shared right-side preference context. Preference UI must never imply that canonical UTC data, schedules, or external systems are mutated.
 - System Information and Compatibility Versions are read-only workspaces. Use the shared semantic label primitives for read-only and validation posture.
 - Keep long capability catalogs expandable and keep the supported-version matrix on the shared KAORI table primitive.
 
@@ -56,7 +56,7 @@ The former standalone `/settings/time-locale` and `/settings/system-info` pages 
 2. Add a dedicated partial under `app/templates/settings/general/partials/`.
 3. Store long-lived per-user preferences on the centralized `User` model in `app/models/`.
 4. Add an Alembic migration and normalized validation helpers when persistence changes.
-5. Explain the preference scope and operational boundary in the right-side information panel.
+5. Explain the preference scope and operational boundary in the active workspace; use a side context panel only when it improves the information hierarchy.
 
 ## Account & Authentication contract
 
@@ -89,13 +89,3 @@ Automatic schedules and manual background-job controls are owned by `app.jobs` u
 ## Access ownership boundary
 
 Roles & Access and Permission Catalog are owned exclusively by `app/access/` at `/access/roles/` and `/access/permissions/`. Settings contains no role/permission routes, templates, forms, redirect shims, or compatibility wrappers. Historical `/settings/roles*` and `/settings/permissions` URLs are intentionally retired; stale bookmarks must use the canonical Access routes.
-
-### Account & Authentication presentation contract
-
-- Keep the shared KAORI Violet hero and use the right-side panel as a compact posture summary: one context header, two metrics, and one boundary note. Do not place long policy paragraphs or duplicate actions in the hero.
-- Account tab navigation follows the same simple tab contract as General Settings; operational counts and provider-management posture belong in the active workspace, not inside tab badges.
-- Account Profile & Access is a full-width workspace with no right-side information column. Access Posture is authorization-only (Assigned Role, Account Lifecycle, Administrative Tier). Identity Profile uses a single identity-record layout: canonical account identity on the left and provider/credential/provisioning ownership as quiet definition rows on the right. Provider Linkage, Personal Presentation, Last Verified Sign-In, and the Access Boundary remain below as supporting account context. Do not return to a six-cell read-only field grid or duplicate Identity Source in the posture cards.
-- Recent Authentication Activity is a full-width workspace with no right-side information column. Keep the latest-five summary and a compact four-column event table: Event (action + time), Source (provider + IP), Result, and Context. Context uses short normalized labels such as Access Granted, Sign-In Rejected, and Session Ended; detailed administrative evidence remains in Activity Audit. Close the workspace with one concise inline Authentication Evidence note.
-- Credential Management separates action from context. The left panel is mutation-only: verify the current password, enter the replacement and confirmation, show only concise input requirements, then submit. Do not duplicate credential posture cards above the form.
-- Use shared semantic labels for lifecycle, provider readiness, authentication results, and credential-impact states. Avoid hand-built status badges.
-- Credential Management uses a natural two-column workspace on XL screens: action stays on the left and Credential Security context stays on the right, both top-aligned and sized by their own content. Never force equal-height cards or add filler content to balance the columns. The right panel owns Credential Posture, Password Change/Provider Recovery Flow, and the concise evidence boundary. Flow steps use quiet text numbers (`01`–`04`) with no icon/boxed-number treatment and no redundant `4 Steps` label. Do not add a Local Database Session Outcome block. Profile and authentication-activity tabs remain full-width.
