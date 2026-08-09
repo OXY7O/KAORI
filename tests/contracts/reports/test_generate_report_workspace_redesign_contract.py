@@ -116,8 +116,9 @@ def test_output_format_uses_compact_native_select_and_contract_filtering() -> No
     assert 'option.hidden = !isAllowed;' in source
     assert "option.value !== 'snapshot'" in source
     assert "option.value === 'snapshot'" in source
-    assert 'Analytics: PDF / CSV' in source
-    assert 'Inventory: XLSX / CSV' in source
+    assert 'Supported Formats' in source
+    assert 'id="output-format-contract"' in source
+    assert "allowedFormats\n                            .map(function (format) { return format.toUpperCase(); })" in source
 
 
 def test_generate_report_uses_semantic_status_tokens_and_preserves_storage_guard() -> None:
@@ -167,3 +168,28 @@ def test_compact_review_keeps_dynamic_contract_ids_for_runtime_sync() -> None:
     assert 'syncPeriodMode' in source
     assert 'syncClusterGuard' in source
     assert 'renderSectionList' in source
+
+
+def test_generate_report_typography_and_summary_are_visually_hierarchical() -> None:
+    source = read(TEMPLATE)
+
+    for heading in (
+        'Report Contract',
+        'Kubernetes Scope',
+        'Artifact',
+        'Report Content',
+        'Review & Queue',
+    ):
+        assert f'class="text-base font-bold text-content-primary">{heading}</h3>' in source
+
+    assert 'text-[10px]' not in source
+    assert 'text-[11px]' not in source
+    assert 'id="preview-report-type"' in source
+    assert 'id="preview-cluster"' in source
+    assert 'id="preview-output-format"' in source
+    assert 'sm:grid-cols-3' in source
+    assert 'Select a specific cluster to load namespace options.' not in source
+    assert 'Cluster selection loads namespace options.' not in source
+    assert 'id="namespace-select-help"' not in source
+    assert 'Supported Formats' in source
+    assert 'id="output-format-contract"' in source

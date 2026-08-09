@@ -35,7 +35,9 @@ def test_reports_pages_use_standard_heroes_and_compact_summary_strips() -> None:
     assert 'Review & Queue' in generate
     assert 'id="namespace-select"' in generate
     assert 'namespaceOptionsByCluster' in generate
-    assert 'Cluster selection loads namespace options.' in generate
+    assert 'Cluster selection loads namespace options.' not in generate
+    assert 'Select a specific cluster to load namespace options.' not in generate
+    assert 'id="namespace-select-help"' not in generate
     assert 'id="namespace-input"' not in generate
     assert 'id="preview-report-name"' in generate
     assert 'syncPreviewReportName' in generate
