@@ -70,18 +70,18 @@ def test_credential_workspace_explains_session_effect_without_reopening_external
     credential_information = read('app/templates/settings/account/partials/_credential_information.html')
     hero = read('app/templates/settings/account/partials/_hero.html')
 
-    assert 'Other sessions revoked' in change_password
-    assert 'This browser stays active; other sessions are revoked.' in change_password
+    assert 'Minimum 12 characters' in change_password
+    assert 'Password reuse is blocked' in change_password
+    assert 'Session Handling' in credential_information
+    assert 'Revoke Others' in credential_information
+    assert 'Keep current browser' in credential_information
     assert 'Rotate Sessions' in credential_information
-    assert 'revoke other sessions and remembered sign-ins' in credential_information
+    assert 'Revoke other sessions and remembered sign-ins.' in credential_information
     assert 'Session Outcome' not in credential_information
-    assert 'Current Browser' not in credential_information
     assert 'Other Active Sessions' not in credential_information
     assert 'Remembered Sign-Ins' not in credential_information
-    assert 'Current browser stays active; stale sessions are revoked.' in credential_information
     assert 'Provider-managed recovery' in hero
     assert 'Other sessions are revoked; secrets stay out of audit.' in hero
-
 
 def test_administrative_reset_now_revokes_target_sessions_and_no_longer_claims_they_remain_active() -> None:
     routes = read('app/users/routes.py')

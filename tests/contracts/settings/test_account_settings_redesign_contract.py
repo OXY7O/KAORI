@@ -110,20 +110,25 @@ def test_authentication_activity_is_full_width_with_inline_evidence_boundary() -
     assert "Audit Privacy Boundary" not in activity
 
 
-def test_credential_workspace_uses_security_posture_then_two_stage_form() -> None:
+def test_credential_workspace_keeps_action_left_and_security_context_right() -> None:
     credentials = read("app/templates/settings/account/partials/_change_password.html")
-    assert "Credential Posture" in credentials
-    assert "Credential Owner" in credentials
-    assert "Password Policy" in credentials
-    assert "Session Effect" in credentials
-    assert "Replace Local Password" in credentials
+    context = read("app/templates/settings/account/partials/_credential_information.html")
+
+    assert 'data-local-password-action="true"' in credentials
+    assert "Change Local Password" in credentials
     assert "Current Password" in credentials
     assert "New Password" in credentials
     assert "Confirm New Password" in credentials
     assert "Minimum 12 characters" in credentials
+    assert "Password reuse is blocked" in credentials
     assert "grid gap-4 md:grid-cols-2" in credentials
     assert "lg:grid-cols-3" not in credentials
 
+    assert 'data-credential-posture-location="security-panel"' in context
+    assert "Credential Posture" in context
+    assert "Credential Owner" in context
+    assert "Password Policy" in context
+    assert "Session Handling" in context
 
 def test_credential_workspace_uses_balanced_equal_height_columns() -> None:
     page = read("app/templates/settings/account/partials/_page_content.html")
@@ -135,41 +140,38 @@ def test_credential_workspace_uses_balanced_equal_height_columns() -> None:
     assert "xl:col-span-7 xl:h-full" in page
     assert "xl:col-span-5 xl:h-full" in page
     assert 'data-credential-action-panel="true"' in credentials
-    assert "h-full overflow-hidden" in credentials
+    assert "flex h-full flex-col overflow-hidden" in credentials
     assert 'data-credential-security-panel="single-balanced-box"' in context
     assert "flex h-full flex-col" in context
 
 
-def test_credential_context_is_one_security_flow_box_without_redundant_session_outcome() -> None:
+def test_credential_context_is_one_clean_security_panel_without_duplicate_status_blocks() -> None:
     context = read("app/templates/settings/account/partials/_credential_information.html")
-    assert "Credential Security Flow" in context
+    assert "Credential Security" in context
+    assert "Password policy, session handling, and audit boundary." in context
+    assert "Credential Posture" in context
     assert "Credential Owner" in context
-    assert "Password Replacement Flow" in context
+    assert "Password Change Flow" in context
     assert "Provider Recovery Flow" in context
     assert 'data-credential-security-flow="true"' in context
     assert "Verify Current Credential" in context
     assert "Validate & Replace" in context
     assert "Rotate Sessions" in context
     assert "Record Audit Event" in context
+    assert "4 Steps" not in context
     assert "Session Outcome" not in context
     assert "Current Browser" not in context
     assert "Other Active Sessions" not in context
     assert "Remembered Sign-Ins" not in context
-    assert "Security Audit" not in context
     assert 'data-credential-flow-step="true"' in context
     assert 'data-credential-flow-step-icon' not in context
+    assert "rounded-xl border border-kaori-primary/20 bg-kaori-soft text-xs font-extrabold" not in context
     assert "Credential Evidence Boundary" in context
-    assert "Credential lifecycle, session impact, and audit handling." in context
-    assert "Confirm the current password." in context
-    assert "Apply password policy and replace the stored hash." in context
-    assert "Other sessions are revoked; secrets stay out of audit." not in context
-    assert "credential values remain excluded from audit metadata" not in context
-    assert "Passwords values" not in context
-    assert "Credential values and secrets are never stored in audit metadata." in context
+    assert "Secrets are excluded from audit metadata." in context
+    assert "Audit Safe" in context
     assert "<details" not in context
     assert "Credential Ownership" not in context
     assert "Change Impact" not in context
-
 
 def test_readme_locks_account_presentation_contract() -> None:
     readme = read("app/settings/README.md")
