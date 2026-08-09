@@ -97,6 +97,9 @@ def test_estate_capability_merges_artifact_mix_reuse_and_contracts() -> None:
     assert 'group.contract_count' in source
     assert 'Generated Reports' in source
     assert 'Templates' in source
+    assert "url_for('reports.report_templates')" in source
+    assert "url_for('reports.templates')" not in source
+
 
     for label in ('Artifact Footprint', 'Custom Templates'):
         assert label in service
