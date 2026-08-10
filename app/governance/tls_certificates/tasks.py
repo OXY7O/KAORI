@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from celery import shared_task
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
 from app.governance.tls_certificates.results import classify_tls_sync_outcome
@@ -92,7 +93,7 @@ def _record_terminal_audit(
         db.session.add(event)
         db.session.commit()
         return True
-    except Exception:
+    except SQLAlchemyError:
         db.session.rollback()
         logger.exception('Could not persist terminal TLS sync audit event for job %s.', job.public_id)
         return False

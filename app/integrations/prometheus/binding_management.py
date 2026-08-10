@@ -1,4 +1,5 @@
 from __future__ import annotations
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
 from app.integrations.binding_selectors import build_selector
@@ -79,7 +80,7 @@ def create_binding(
     if commit:
         try:
             db.session.commit()
-        except Exception:
+        except SQLAlchemyError:
             db.session.rollback()
             raise
     else:
@@ -114,7 +115,7 @@ def update_binding_selector(
     if commit:
         try:
             db.session.commit()
-        except Exception:
+        except SQLAlchemyError:
             db.session.rollback()
             raise
     else:

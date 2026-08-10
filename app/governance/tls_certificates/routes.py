@@ -67,7 +67,7 @@ def _record_dispatch_audit(
     try:
         db.session.add(event)
         db.session.commit()
-    except Exception:
+    except SQLAlchemyError:
         db.session.rollback()
         logger.exception('Could not persist TLS sync dispatch audit event.')
 

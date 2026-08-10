@@ -129,6 +129,8 @@ docs/architecture/code-health-debt-baseline.json
 
 They are ceilings, not quality targets. A listed cycle, form dependency, broad exception, large module, or large function may shrink or disappear, but it may not expand. A resolved entry must be removed from the baseline in the same change.
 
+The code-health ledger is additionally checked by `scripts/verify_code_health_baseline_integrity.py`. The verifier keeps the default 800/160/30/8 ceilings immutable and requires every debt exception to equal the currently measured value exactly, so the baseline cannot contain hidden growth allowance.
+
 New code should follow:
 
 ```text

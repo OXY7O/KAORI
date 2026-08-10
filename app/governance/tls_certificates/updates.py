@@ -8,6 +8,7 @@ from typing import Any, cast
 
 from flask import current_app
 from flask_login import current_user
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
 from app.governance.tls_certificates.certificate import (
@@ -136,7 +137,7 @@ def _persist_failure_event(event: TLSCertificateUpdateEvent) -> bool:
         db.session.add(event)
         db.session.commit()
         return True
-    except Exception:
+    except SQLAlchemyError:
         db.session.rollback()
         current_app.logger.exception('KAORI could not persist the failed TLS update event.')
         return False
@@ -267,7 +268,7 @@ def apply_certificate_update(certificate_id: int, files: Any) -> dict[str, Any]:
     )
     try:
         db.session.commit()
-    except Exception:
+    except SQLAlchemyError:
         db.session.rollback()
         current_app.logger.exception('Kubernetes TLS Secret updated, but KAORI posture persistence failed.')
         return {
@@ -411,7 +412,7 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
 
     try:
         db.session.commit()
-    except Exception:
+    except SQLAlchemyError:
         db.session.rollback()
         current_app.logger.exception('Bulk TLS mutations completed, but KAORI posture persistence failed.')
         for result in results:

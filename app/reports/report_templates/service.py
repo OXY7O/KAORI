@@ -18,6 +18,7 @@ from app.reports.catalog import (
     REPORT_FAMILY_INVENTORY,
     REPORT_TYPE_OPTIONS,
     REPORT_TYPE_SPECS,
+    ReportContractError,
     get_allowed_output_formats,
     get_default_output_format,
     get_report_type_spec,
@@ -679,7 +680,7 @@ def get_allowed_report_types() -> set[str]:
 def get_report_family(report_type: str) -> str:
     try:
         return get_report_type_spec(report_type).family
-    except Exception:
+    except ReportContractError:
         return REPORT_FAMILY_ANALYTICS
 
 

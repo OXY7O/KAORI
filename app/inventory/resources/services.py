@@ -4,6 +4,7 @@ from typing import Any
 
 from sqlalchemy import String, cast, func, or_
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.common.inventory_generation import filter_current_generation
 from app.common.pagination import paginate_query
@@ -219,7 +220,7 @@ def _matched_pod_preview(service: ServiceInventory, selector: dict[str, str]) ->
     )
     try:
         dialect = db.session.get_bind().dialect.name
-    except Exception:
+    except SQLAlchemyError:
         dialect = ''
     if dialect == 'postgresql':
         matched_query = pod_query.filter(cast(PodInventory.labels, JSONB).contains(selector))

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.alertmanager.forms import AlertmanagerBindingForm
 from app.alertmanager.repository import get_binding
@@ -37,7 +38,7 @@ def delete_binding(binding_id: int) -> IntegrationBinding | None:
     db.session.delete(binding)
     try:
         db.session.commit()
-    except Exception:
+    except SQLAlchemyError:
         db.session.rollback()
         raise
     return binding

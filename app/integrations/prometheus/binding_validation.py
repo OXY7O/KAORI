@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from typing import Any
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
 from app.integrations.binding_selectors import selector_is_configured
@@ -95,7 +96,7 @@ def validate_binding(
     if commit:
         try:
             db.session.commit()
-        except Exception:
+        except SQLAlchemyError:
             db.session.rollback()
             raise
     return {

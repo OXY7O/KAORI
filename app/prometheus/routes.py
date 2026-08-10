@@ -6,6 +6,7 @@ import logging
 from flask import Blueprint, abort, current_app, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.cluster.service import get_cluster_by_id
 from app.common.http import is_htmx_request
@@ -853,7 +854,7 @@ def delete_instance_binding(instance_id: int, binding_id: int) -> ResponseReturn
     try:
         db.session.delete(binding)
         db.session.commit()
-    except Exception as exc:
+    except SQLAlchemyError as exc:
         db.session.rollback()
         logger.exception('Prometheus binding deletion failed for binding %s.', binding_id)
         feedback = record_operational_activity(

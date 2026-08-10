@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 from urllib.parse import urlsplit
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.common.integration_errors import describe_integration_failure
 from app.extensions.db import db
@@ -260,7 +261,7 @@ def save_prometheus_instance(
         )
     try:
         db.session.commit()
-    except Exception:
+    except SQLAlchemyError:
         db.session.rollback()
         raise
     return instance
@@ -317,7 +318,7 @@ def remove_prometheus_instance(instance: PrometheusInstance) -> None:
         db.session.delete(canonical)
     try:
         db.session.commit()
-    except Exception:
+    except SQLAlchemyError:
         db.session.rollback()
         raise
 

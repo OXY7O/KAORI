@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from typing import Literal
 
 from flask import current_app, request
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.auth.providers.catalog import provider_label
 from app.auth.user_agent import parse_user_agent
@@ -136,7 +137,7 @@ def record_authentication_activity(
     try:
         db.session.add(activity)
         db.session.commit()
-    except Exception:
+    except SQLAlchemyError:
         db.session.rollback()
         current_app.logger.warning(
             'Authentication activity could not be persisted.',

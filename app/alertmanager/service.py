@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import urlsplit
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.alertmanager.bindings import create_or_update_binding, delete_binding, resolve_sources
 from app.alertmanager.consumer import (
@@ -146,7 +147,7 @@ def save_alertmanager_instance(
     if commit:
         try:
             db.session.commit()
-        except Exception:
+        except SQLAlchemyError:
             db.session.rollback()
             raise
     else:
@@ -215,7 +216,7 @@ def remove_alertmanager_instance(instance: AlertmanagerInstance) -> None:
         db.session.delete(canonical)
     try:
         db.session.commit()
-    except Exception:
+    except SQLAlchemyError:
         db.session.rollback()
         raise
 

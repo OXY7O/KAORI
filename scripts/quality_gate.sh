@@ -59,6 +59,7 @@ run_static() {
     python scripts/verify_module_reachability.py
     python scripts/verify_celery_topology.py
     python scripts/verify_code_health.py
+    python scripts/verify_code_health_baseline_integrity.py
     python scripts/verify_migration_graph.py
     python scripts/verify_test_taxonomy.py
     python scripts/verify_feature_test_coverage.py

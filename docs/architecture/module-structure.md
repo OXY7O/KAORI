@@ -106,3 +106,9 @@ Reusable UI behavior belongs in `app/templates/components/` or a static frontend
 ## Test ownership rule
 
 Permanent behavior tests live in `tests/<domain>/`. Architecture contracts, migration behavior, and temporary diagnostics live in their dedicated folders. A contract test may protect a boundary, but it does not replace a feature test that executes the actual decision, normalization, persistence, or failure behavior.
+
+## Release-candidate debt baseline normalization
+
+After the 2026-08-10 canonical Ruff/djLint formatting pass and completion of the locked pre-release workspace baseline, the code-health debt ledger was re-captured from the formatted source. This is a ledger synchronization, not a relaxation of KAORI's design targets: the default ceilings remain 800 module lines, 160 function lines, 30 branch points, and 8 arguments.
+
+`scripts/verify_code_health_baseline_integrity.py` requires every debt exception to equal the current measured value exactly. The ledger therefore has no growth allowance: any increase fails `verify_code_health.py`, while any reduction requires the resolved or reduced debt to be recorded in the same change. Broad exception handlers remain visible burn-down debt and must not increase.

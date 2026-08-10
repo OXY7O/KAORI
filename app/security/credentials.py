@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import binascii
 import hashlib
 import os
 from typing import Any
@@ -36,7 +37,7 @@ def _fernet_for(secret_value: str) -> Fernet:
     secret = secret_value.encode('utf-8')
     try:
         decoded = base64.urlsafe_b64decode(secret)
-    except Exception:
+    except (ValueError, binascii.Error):
         decoded = b''
     key = secret if len(decoded) == 32 else base64.urlsafe_b64encode(hashlib.sha256(secret).digest())
     return Fernet(key)

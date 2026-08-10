@@ -11,6 +11,8 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ### Changed
 
+- Synchronized the code-health debt ledger with the canonical formatted release-candidate source while keeping the 800/160/30/8 default ceilings unchanged, and added an integrity verifier that forbids hidden slack or stale debt entries.
+
 - Normalized Python and Jinja sources to the canonical Ruff and djLint formatting contracts used by the release quality gate.
 - Modernized typed dictionaries, generic declarations, type aliases, collection ABC imports, and response annotations for the Python 3.12+ baseline.
 - Kubernetes Dashboard Top Consumers now uses KAORI Violet for normal CPU and memory ranking signals.
@@ -32,6 +34,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ### Security
 
+- Narrowed 21 database, credential-decoding, and report-catalog exception boundaries to explicit exception classes; the broad-exception burn-down ceiling remains 198 rather than increasing with the stale ledger.
 - Removed the dormant end-to-end remediation orchestrator from the current release source while Intelligence remediation is held for the next controlled redesign.
 
 ## [2.1.0]
