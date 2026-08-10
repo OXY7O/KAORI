@@ -10,7 +10,6 @@ from weasyprint.text.fonts import FontConfiguration
 
 from app.reports.export.html_pdf.alerts_anomalies import build_alerts_anomalies_presentation
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 

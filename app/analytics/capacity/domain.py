@@ -465,9 +465,7 @@ def build_risk_summary(capacity_summary: dict[str, dict[str, Any]]) -> list[dict
         available = bool(item.get('evidence_available')) and item.get('headroom') is not None
         headroom = float(item['headroom']) if available else None
         status = (
-            headroom_status(headroom)
-            if available and headroom is not None
-            else {'label': 'Unknown', 'tone': 'unknown'}
+            headroom_status(headroom) if available and headroom is not None else {'label': 'Unknown', 'tone': 'unknown'}
         )
         risks.append(
             {

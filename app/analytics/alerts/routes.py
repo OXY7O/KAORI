@@ -13,7 +13,7 @@ from flask import (
 from flask.typing import ResponseReturnValue
 
 from app.analytics.alerts.application import present_alerts_materialized_context
-from app.analytics.alerts.contracts import AlertsSelection, SOURCE_OPTIONS, normalize_option
+from app.analytics.alerts.contracts import SOURCE_OPTIONS, AlertsSelection, normalize_option
 from app.analytics.materialization.presentation import blocked_page_context, pending_page_context, snapshot_meta
 from app.analytics.materialization.requests import resolve_materialized_request
 from app.common.dependencies import render_dependency_blocker

@@ -7,7 +7,6 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
-
 MAX_ALEMBIC_REVISION_LENGTH = 32
 
 

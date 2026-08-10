@@ -21,7 +21,6 @@ from app.analytics.utilization.presentation import (
 from app.analytics.utilization.service import get_utilization_clusters
 from app.rbac.decorators import permission_required
 
-
 _PAGE = {
     'dataset_key': 'analytics.utilization.summary',
     'title': 'Resource Utilization',

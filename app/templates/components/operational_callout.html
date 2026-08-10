@@ -40,7 +40,7 @@
                     <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                 </span>
                 <div class="min-w-0">
-                    <p {% if title_id %} id="{{ title_id }}"{% endif %}
+                    <p {% if title_id %}id="{{ title_id }}"{% endif %}
                        class="{{ 'text-xs' if variant == 'semantic' else 'text-sm' }} font-semibold {{ text_class if variant == 'semantic' else 'text-content-primary' }}">{{ title }}</p>
                     <p class="mt-1 text-xs leading-5 {{ text_class if variant == 'semantic' else 'text-content-muted' }}">{{ description }}</p>
                     {% if caller is defined %}

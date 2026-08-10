@@ -15,7 +15,6 @@ from kubernetes.client import (
 )
 from kubernetes.client.exceptions import ApiException
 
-
 COLLECTED = 'Collected'
 PERMISSION_UNAVAILABLE = 'Permission Unavailable'
 API_UNAVAILABLE = 'API Unavailable'

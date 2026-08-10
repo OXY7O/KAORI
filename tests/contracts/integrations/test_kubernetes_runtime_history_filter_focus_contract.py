@@ -2,7 +2,6 @@ from pathlib import Path
 
 from jinja2 import Environment
 
-
 ROOT = Path(__file__).resolve().parents[3]
 RUNTIME_HISTORY = ROOT / 'app/templates/integrations/partials/_runtime_history.html'
 RUNTIME_WORKSPACE = ROOT / 'app/templates/integrations/kubernetes/partials/_runtime_workspace.html'

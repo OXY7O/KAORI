@@ -39,7 +39,7 @@
                 {% set icon_classes = 'bg-status-warning-soft text-status-warning-text' if tone == 'warning'
                                     else ('bg-status-normal-soft text-status-normal-text' if tone == 'normal'
                                     else ('bg-status-info-soft text-status-info-text' if tone == 'info'
-                                    else 'bg-kaori-soft text-kaori-primary')) %}
+                                else 'bg-kaori-soft text-kaori-primary')) %}
                 <div class="flex min-w-0 items-center gap-3 border-outline-subtle px-5 py-4 sm:px-6 {% if loop.index < 4 %}border-b{% endif %} {% if loop.index is odd %}sm:border-r{% endif %} {% if loop.index > 2 %}sm:border-b-0{% endif %} {% if loop.index < 4 %}xl:border-b-0 xl:border-r{% else %}xl:border-r-0{% endif %}">
                     <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ icon_classes }}"
                           aria-hidden="true">

@@ -18,7 +18,6 @@ from app.inventory.collectors.common import (
     _to_modelish,
 )
 
-
 COLLECTED = 'Collected'
 PERMISSION_UNAVAILABLE = 'Permission Unavailable'
 API_UNAVAILABLE = 'API Unavailable'

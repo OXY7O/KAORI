@@ -75,7 +75,7 @@ def present_snapshot_summary(
 
 
 def _latest_matching_snapshots(
-    snapshots: list[Any],
+    snapshots: Sequence[Any],
     *,
     expected_parameters: dict[str, dict[str, str]] | None,
 ) -> dict[str, Any]:

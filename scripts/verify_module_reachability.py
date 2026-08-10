@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import argparse
 import ast
+import re
 from collections import defaultdict
 from pathlib import Path
-import re
 
 _MODULE_TOKEN = re.compile(r'^app(?:\.[A-Za-z_][A-Za-z0-9_]*)+$')
 

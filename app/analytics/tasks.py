@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import signal
 from collections.abc import Iterator
 from contextlib import contextmanager
-import signal
 from threading import current_thread, main_thread
 from typing import Any
 from urllib.parse import urlencode

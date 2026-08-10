@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from importlib import import_module
 import logging
+from importlib import import_module
 
 from celery.exceptions import CeleryError
 from flask import (

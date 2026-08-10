@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[3]
 NAMESPACED_RESOURCE_TABLES = (
     'namespaces',

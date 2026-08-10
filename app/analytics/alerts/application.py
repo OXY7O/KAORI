@@ -7,14 +7,14 @@ from typing import Any, cast
 
 from app.analytics.alerts.anomalies import filter_anomalies, load_prometheus_anomaly_metrics
 from app.analytics.alerts.contracts import (
-    AlertSelectedClusterSignalOverview,
-    AlertSourceStatus,
-    AlertsSelection,
-    NormalizedAlert,
     PER_PAGE_OPTIONS,
     SEVERITY_OPTIONS,
     SOURCE_OPTIONS,
     STATUS_OPTIONS,
+    AlertSelectedClusterSignalOverview,
+    AlertSourceStatus,
+    AlertsSelection,
+    NormalizedAlert,
     normalize_option,
     normalize_page,
     normalize_per_page,

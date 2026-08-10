@@ -122,8 +122,11 @@ def configure_sheet_page(
 
 
 def set_footer(sheet: Worksheet, document_reference: str) -> None:
-    left = sheet.oddFooter.left
-    right = sheet.oddFooter.right
+    footer = sheet.oddFooter
+    if footer is None:
+        return
+    left = footer.left
+    right = footer.right
     if left is not None:
         left.text = document_reference
         left.size = 8

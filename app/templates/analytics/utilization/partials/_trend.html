@@ -90,7 +90,8 @@
                         height="340"></canvas>
             </div>
             <div id="trendEmptyState"
-                 class="hidden {{ analysis_surface.empty_evidence_classes('mt-4') }}">{% set empty_state_icon = "line-chart" %}{% set empty_state_title = "No Trend Data Available" %}{% set empty_state_description = "Trend data will appear after the analytics worker commits historical CPU, memory, or pod utilization samples for the selected scope." %}{% set empty_state_min_height = "min-h-[340px]" %}
+                 class="hidden {{ analysis_surface.empty_evidence_classes('mt-4') }}">
+                {% set empty_state_icon = "line-chart" %}{% set empty_state_title = "No Trend Data Available" %}{% set empty_state_description = "Trend data will appear after the analytics worker commits historical CPU, memory, or pod utilization samples for the selected scope." %}{% set empty_state_min_height = "min-h-[340px]" %}
                 {% include "components/states/_empty_state.html" %}
             </div>
         </section>

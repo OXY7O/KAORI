@@ -18,12 +18,14 @@ from app.notifications.feedback import (
     queue_operational_feedback,
 )
 from app.notifications.normalization import standardize_activity_text, standardize_activity_title
-from app.notifications.queries import (
-    get_notification_activity_context as _get_notification_activity_context,
-    get_notification_activity_detail as _get_notification_activity_detail,
-)
 from app.notifications.queries import get_activity_center_context as _get_activity_center_context
 from app.notifications.queries import get_navigation_notification_context as _get_navigation_notification_context
+from app.notifications.queries import (
+    get_notification_activity_context as _get_notification_activity_context,
+)
+from app.notifications.queries import (
+    get_notification_activity_detail as _get_notification_activity_detail,
+)
 from app.notifications.queries import get_notification_center_page_context as _get_notification_center_page_context
 from app.notifications.queries import mark_all_notifications_read as _mark_all_notifications_read
 from app.notifications.queries import mark_notification_read as _mark_notification_read

@@ -67,7 +67,7 @@ def main() -> int:
     require('app/common/http.py', 'type HeaderSource =', errors)
     require('app/common/pagination.py', 'def paginate_sequence[ItemT](', errors)
     require('app/integrations/consumer/contracts.py', 'class ConsumerResult[PayloadT]:', errors)
-    require('app/kubernetes_operations/operation_flow.py', 'def validate_then_apply[_ResultT](', errors)
+    require('app/kubernetes_operations/operation_flow.py', 'def validate_then_apply[ResultT](', errors)
 
     for relative in (
         'app/analytics/materialization/requests.py',
@@ -90,10 +90,17 @@ def main() -> int:
         ('app/analytics/workload/quota.py', "cpu_request = resources['requests.cpu']"),
         ('app/analytics/workload/quota.py', "memory_limit = resources['limits.memory']"),
         ('app/analytics/workload/quota.py', "memory_request = resources['requests.memory']"),
-        ('tests/contracts/access/test_identity_provider_refinement_contract.py', "script = read('app/static/js/identity_provider_form.js')"),
         (
             'tests/contracts/kubernetes/test_kubernetes_operations_configmap_secret_styling_contract.py',
             "catalog = read('app/templates/components/operational_workflow_catalog.html')",
+        ),
+    ):
+        require(relative, token, errors)
+
+    for relative, token in (
+        (
+            'tests/contracts/access/test_identity_provider_refinement_contract.py',
+            "script = read('app/static/js/identity_provider_form.js')",
         ),
         (
             'tests/contracts/kubernetes/test_service_inventory_title_case_and_detail_contract.py',

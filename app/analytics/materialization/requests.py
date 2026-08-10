@@ -218,6 +218,7 @@ def selected_cluster_from_request(
             return resolve_instance_for_cluster(cluster_id) is not None
     else:
         normalized = parameters or {}
+
         def readiness(cluster_id: str) -> bool:
             return _cluster_has_snapshot(
                 dataset_key=dataset_key,

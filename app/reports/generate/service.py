@@ -19,6 +19,8 @@ from app.reports.catalog import (
     get_allowed_output_formats,
     get_default_output_format,
     get_report_type_spec,
+)
+from app.reports.catalog import (
     normalize_report_type as normalize_catalog_report_type,
 )
 from app.reports.export.constants import DEFAULT_REPORT_DOMAIN, DEFAULT_REPORT_SOURCE_KIND

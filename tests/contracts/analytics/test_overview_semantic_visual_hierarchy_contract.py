@@ -1,6 +1,5 @@
-from pathlib import Path
 import re
-
+from pathlib import Path
 
 SURFACE = Path('app/templates/analytics/components/_analysis_surfaces.html')
 OVERVIEW_ROOT = Path('app/templates/analytics/overview')

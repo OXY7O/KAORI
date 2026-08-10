@@ -120,7 +120,11 @@ def main() -> int:
         "('storage', 'Archive Storage', 'hard-drive')",
     )
     tab_positions = [index.find(token) for token in tab_tokens]
-    if any(position < 0 for position in tab_positions) or tab_positions != sorted(tab_positions) or "tabs: ['policies', 'history', 'storage']" not in index:
+    if (
+        any(position < 0 for position in tab_positions)
+        or tab_positions != sorted(tab_positions)
+        or "tabs: ['policies', 'history', 'storage']" not in index
+    ):
         errors.append('Data Lifecycle tab order must be Retention Policies → Archive History → Archive Storage')
     if 'Only approved lifecycle domains are manageable.' not in index:
         errors.append('Data Lifecycle managed-domain helper copy drifted from the compact lock')

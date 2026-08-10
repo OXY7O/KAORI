@@ -44,6 +44,41 @@ def main() -> None:
         'Top Consumers payload type guard',
     )
     _require(
+        'app/common/dependencies.py',
+        'def name(self) -> object: ...',
+        'ORM-compatible cluster display-name protocol',
+    )
+    _require(
+        'app/analytics/forecast/presentation.py',
+        "actionable_recommendations = forecast_payload.get('actionable_recommendations')",
+        'forecast snapshot recommendation boundary',
+    )
+    _require(
+        'app/analytics/overview/snapshot_summary.py',
+        'snapshots: Sequence[Any],',
+        'sequence-compatible snapshot summary boundary',
+    )
+    _require(
+        'app/dashboards/kubernetes/service.py',
+        '_cluster_health_rows, pagination = paginate_sequence(',
+        'dashboard pagination result separation',
+    )
+    _require(
+        'app/reports/export/html_pdf/forecast_analysis.py',
+        'projected is not None and projected >= _CRITICAL_THRESHOLD',
+        'forecast PDF optional projection guard',
+    )
+    _require(
+        'app/reports/export/xlsx/style.py',
+        'footer = sheet.oddFooter',
+        'optional OpenPyXL footer guard',
+    )
+    _require(
+        'app/reports/schedules/service.py',
+        'if dispatch_job is None:',
+        'optional scheduled report dispatch-job guard',
+    )
+    _require(
         'app/integrations/runtime/recovery.py',
         'class RecoveryDispatchResult(TypedDict):',
         'typed recovery dispatch result',

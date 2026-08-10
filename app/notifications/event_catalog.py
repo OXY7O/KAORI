@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 
-
 CATEGORY_LABELS = {
     'configmap_management': 'ConfigMap Management',
     'tls_certificate': 'TLS Certificate',

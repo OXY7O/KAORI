@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROUTES = Path('app/kubernetes_operations/secrets/tls_routes.py')
 
 

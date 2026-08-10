@@ -501,7 +501,9 @@
                                         <div class="limitations-copy">
                                             <h3>Known Limitations and Operational Use</h3>
                                             <ul>
-                                                {% for item in p.methodology.limitations %}<li>{{ item }}</li>{% endfor %}
+                                                {% for item in p.methodology.limitations %}
+                                                    <li>{{ item }}</li>
+                                                {% endfor %}
                                             </ul>
                                         </div>
                                         <div class="status-language-block">

@@ -100,7 +100,9 @@
                     {% endif %}
                     {% if not notification.is_read %}
                         <form method="POST" action="{{ read_url }}">
-                            {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                            {% if csrf_token is defined %}
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            {% endif %}
                             <input type="hidden" name="next" value="{{ request.full_path }}">
                             <button type="submit"
                                     hx-post="{{ read_hx_url }}"

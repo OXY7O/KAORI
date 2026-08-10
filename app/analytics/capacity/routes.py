@@ -7,7 +7,6 @@ from app.analytics.materialization.presentation import blocked_page_context, pen
 from app.analytics.materialization.requests import resolve_materialized_request
 from app.rbac.decorators import permission_required
 
-
 _ALLOWED_TABS = {'summary', 'allocation', 'risk', 'recommendations'}
 
 

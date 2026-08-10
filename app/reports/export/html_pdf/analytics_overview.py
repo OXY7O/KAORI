@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping, Sequence
 from html import escape
-import re
 from typing import Any
 
 from app.reports.export.html_pdf.analytics_publication_standard import (

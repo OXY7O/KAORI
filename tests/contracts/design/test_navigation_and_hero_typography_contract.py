@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[3]
 NAVIGATION_DIR = ROOT / 'app' / 'templates' / 'components' / 'navigation'
 PAGE_HERO = ROOT / 'app' / 'templates' / 'components' / 'page_hero.html'

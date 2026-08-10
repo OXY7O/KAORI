@@ -466,9 +466,18 @@ def execute_schedule(
         )
         return False, 'The scheduled report could not be queued.', failed_report_id
 
+    dispatch_job = dispatch.job
+    if dispatch_job is None:
+        failed_report_id = mark_schedule_dispatch_failed(
+            schedule_id=schedule.id,
+            schedule_run_id=run.id,
+            report_id=report.id,
+        )
+        return False, 'The scheduled report could not be queued.', failed_report_id
+
     run = db.session.get(ReportScheduleRun, run.id)
     if run is not None:
-        run.job_execution_id = dispatch.job.id
+        run.job_execution_id = dispatch_job.id
         run.status = 'queued'
     refreshed_schedule = db.session.get(ReportSchedule, schedule.id)
     if refreshed_schedule is not None:

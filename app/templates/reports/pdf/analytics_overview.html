@@ -238,7 +238,8 @@
                                                     <td><strong>P{{ loop.index }}</strong></td>
                                                     <td><strong>{{ row.resource }}</strong></td>
                                                     <td>{{ row.current }}</td>
-                                                    <td>{{ row.projected }}
+                                                    <td>
+                                                        {{ row.projected }}
                                                         {% if row.eta %}<small>{{ row.eta }}</small>{% endif %}
                                                     </td>
                                                     <td>{{ row.confidence }}</td>
@@ -605,7 +606,8 @@
                                         <tbody>
                                             {% for row in p.inventory.clusters[:5] %}
                                                 <tr>
-                                                    <td><strong>{{ row.name }}</strong>
+                                                    <td>
+                                                        <strong>{{ row.name }}</strong>
                                                         {% if row.environment %}- {{ row.environment }}{% endif %}
                                                     </td>
                                                     <td>{{ row.nodes }}</td>
@@ -835,7 +837,9 @@
                                         <div>
                                             <h3>Included in This Report</h3>
                                             <ul>
-                                                {% for item in p.methodology.included[:2] %}<li>{{ item }}</li>{% endfor %}
+                                                {% for item in p.methodology.included[:2] %}
+                                                    <li>{{ item }}</li>
+                                                {% endfor %}
                                             </ul>
                                         </div>
                                         <div>

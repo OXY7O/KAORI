@@ -6,7 +6,6 @@ from urllib.parse import urlencode
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-
 ROOT = Path(__file__).resolve().parents[2]
 
 

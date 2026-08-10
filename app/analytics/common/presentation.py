@@ -3,7 +3,6 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-
 PROMETHEUS_STATUS_SCHEMA_VERSION = 1
 
 

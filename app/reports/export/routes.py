@@ -18,7 +18,6 @@ from app.reports.export.artifacts import get_report_artifact_format
 from app.reports.export.service import get_download_file_path
 from app.reports.jobs.service import ReportJobEnqueueError, enqueue_report_generation
 
-
 logger = logging.getLogger(__name__)
 
 

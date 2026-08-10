@@ -19,7 +19,6 @@ from app.analytics.workload.presentation import present_workload_materialized_co
 from app.common.dependencies import render_dependency_blocker
 from app.rbac.decorators import permission_required
 
-
 _PAGE = {
     'dataset_key': 'analytics.workload',
     'title': 'Workload Analysis',

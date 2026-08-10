@@ -8,7 +8,6 @@ from flask import request, url_for
 
 from app.analytics.materialization.requests import MaterializedRequest
 
-
 _FAILURE_PATTERN = re.compile(
     r'^\[(?P<code>[^]]+)]\s+(?P<title>.*?):\s+(?P<detail>.*?)'
     r'(?:\s+Recommended action:\s+(?P<remediation>.*))?$',

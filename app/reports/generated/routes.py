@@ -21,7 +21,6 @@ from app.reports.generated.service import (
 )
 from app.reports.web import render_reports_unavailable
 
-
 logger = logging.getLogger(__name__)
 
 

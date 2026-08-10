@@ -131,7 +131,9 @@
                                           hx-target="#alertmanager-scope-workspace"
                                           hx-swap="outerHTML"
                                           hx-indicator="#alertmanager-binding-validation-loading">
-                                        {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                        {% if csrf_token is defined %}
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        {% endif %}
                                         <button type="submit" class="{{ table_ui.action_classes() }}">Validate</button>
                                     </form>
                                     <button type="button"
@@ -155,7 +157,9 @@
                                           hx-target="#alertmanager-scope-workspace"
                                           hx-swap="outerHTML"
                                           class="grid gap-3 lg:grid-cols-[1fr_8rem_1fr_auto] lg:items-end">
-                                        {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                        {% if csrf_token is defined %}
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        {% endif %}
                                         <div>
                                             <label class="{{ table_ui.filter_label_classes() }}">Label</label>
                                             <input name="selector_label"
@@ -387,7 +391,9 @@
               hx-indicator="#alertmanager-binding-loading"
               x-data="{ scopeType: 'kubernetes_cluster' }"
               class="relative flex max-h-[calc(100vh-2rem)] flex-col">
-            {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+            {% if csrf_token is defined %}
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {% endif %}
             <header class="flex items-start justify-between gap-3 border-b border-outline-subtle px-5 py-4">
                 <div class="flex min-w-0 items-start gap-3">
                     <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"><i data-lucide="link" class="h-5 w-5"></i></span>

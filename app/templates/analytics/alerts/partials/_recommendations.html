@@ -46,7 +46,8 @@
             <div class="bg-surface-hover">{{ recommendation_pager.controls(cards|length, 'Recommendations', 3) }}</div>
         </div>
     {% else %}
-        <div class="p-5">{% set empty_state_icon = "check-circle-2" %}{% set empty_state_title = "No Alert Recommendation Available" %}{% set empty_state_description = "Current alert and anomaly signals do not require an additional recommendation." %}
+        <div class="p-5">
+            {% set empty_state_icon = "check-circle-2" %}{% set empty_state_title = "No Alert Recommendation Available" %}{% set empty_state_description = "Current alert and anomaly signals do not require an additional recommendation." %}
             {% include "components/states/_empty_state.html" %}
         </div>
     {% endif %}

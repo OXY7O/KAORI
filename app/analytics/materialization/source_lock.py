@@ -22,7 +22,6 @@ from app.analytics.materialization.errors import AnalyticsSourceBusyError
 from app.extensions.db import db
 from app.prometheus.resolver import resolve_prometheus_sources
 
-
 _fallback_locks: dict[str, Lock] = {}
 
 

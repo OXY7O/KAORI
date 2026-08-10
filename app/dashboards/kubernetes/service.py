@@ -210,7 +210,7 @@ def get_dashboard_overview(
     dashboard.reporting_snapshot = build_reporting_snapshot(selected_cluster_id=selected_cluster_id)
     latest_sync = _latest_inventory_sync(selected_cluster_id)
     dashboard.last_updated = human_time(latest_sync) if latest_sync else 'No sync yet'
-    _, pagination = paginate_sequence(
+    _cluster_health_rows, pagination = paginate_sequence(
         items=clusters,
         page=cluster_health_page,
         per_page=cluster_health_per_page,

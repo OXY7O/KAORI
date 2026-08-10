@@ -187,8 +187,10 @@ class TopConsumersEvidenceCollector:
     ) -> TopConsumersEvidence:
         query = self.query
         scalar = self.scalar
+
         def namespaced(all_query: str, namespace_query_value: str) -> str:
             return namespace_query(namespace, all_query, namespace_query_value)
+
         return TopConsumersEvidence(
             namespaces=query(
                 NAMESPACE_ACTIVE_QUERY,

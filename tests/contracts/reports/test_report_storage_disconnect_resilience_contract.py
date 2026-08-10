@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[3]
 STORAGE_SERVICE = ROOT / 'app/reports/storage/service.py'
 STORAGE_ROUTES = ROOT / 'app/reports/storage/routes.py'

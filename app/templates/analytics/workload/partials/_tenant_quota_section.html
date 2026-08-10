@@ -113,7 +113,8 @@
                                     <p class="text-xs font-semibold text-content-primary">{{ row.runtime_demand_resource }}</p>
                                     {% if row.runtime_demand_object %}{{ table_label.metadata_label(row.runtime_demand_object, 'shield', size='compact') }}{% endif %}
                                 </div>
-                                <p class="mt-1 text-lg font-semibold tabular-nums {{ 'text-content-primary' if row.runtime_demand_available else analysis_surface.unavailable_value_classes() }}">{{ row.actual_usage_percent_display }}
+                                <p class="mt-1 text-lg font-semibold tabular-nums {{ 'text-content-primary' if row.runtime_demand_available else analysis_surface.unavailable_value_classes() }}">
+                                    {{ row.actual_usage_percent_display }}
                                     {% if row.runtime_demand_available %}%{% endif %}
                                 </p>
                                 <p class="mt-1 text-xs font-medium text-content-muted">Demand basis in View More</p>
@@ -162,22 +163,26 @@
                                     <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
                                         <div class="min-w-0 px-4 py-3 sm:px-5">
                                             <p class="{{ analysis_surface.metric_label_classes() }}">Highest Quota Pressure</p>
-                                            <p class="mt-1 text-lg font-semibold text-content-primary">{{ row.quota_usage_percent_display }}
+                                            <p class="mt-1 text-lg font-semibold text-content-primary">
+                                                {{ row.quota_usage_percent_display }}
                                                 {% if row.quota_pressure_available %}%{% endif %}
                                             </p>
                                             <p class="mt-1 truncate text-xs leading-5 text-content-muted"
-                                               title="{{ row.quota_pressure_resource }}{% if row.quota_pressure_object %} · {{ row.quota_pressure_object }}{% endif %}">{{ row.quota_pressure_resource }}
+                                               title="{{ row.quota_pressure_resource }}{% if row.quota_pressure_object %} · {{ row.quota_pressure_object }}{% endif %}">
+                                                {{ row.quota_pressure_resource }}
                                                 {% if row.quota_pressure_object %}· {{ row.quota_pressure_object }}{% endif %}
                                             </p>
                                         </div>
                                         <div class="min-w-0 px-4 py-3 sm:px-5">
                                             <p class="{{ analysis_surface.metric_label_classes() }}">Runtime Demand</p>
-                                            <p class="mt-1 text-lg font-semibold text-content-primary">{{ row.actual_usage_percent_display }}
+                                            <p class="mt-1 text-lg font-semibold text-content-primary">
+                                                {{ row.actual_usage_percent_display }}
                                                 {% if row.runtime_demand_available %}%{% endif %}
                                             </p>
                                             <p class="mt-1 truncate text-xs leading-5 text-content-muted"
-                                               title="{{ row.runtime_demand_resource }}{% if row.runtime_demand_object %} · {{ row.runtime_demand_object }}{% endif %}">{{ row.runtime_demand_resource }}
-                                                {% if row.runtime_demand_object %} · {{ row.runtime_demand_object }}{% endif %}
+                                               title="{{ row.runtime_demand_resource }}{% if row.runtime_demand_object %} · {{ row.runtime_demand_object }}{% endif %}">
+                                                {{ row.runtime_demand_resource }}
+                                                {% if row.runtime_demand_object %}· {{ row.runtime_demand_object }}{% endif %}
                                             </p>
                                         </div>
                                         <div class="min-w-0 px-4 py-3 sm:px-5">
@@ -210,9 +215,11 @@
                                             {% endfor %}
                                         </div>
                                         <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
-                                            <div class="flex items-center justify-between gap-3 text-xs"><span class="text-content-muted">Current Demand Against CPU Quota</span><span class="font-semibold tabular-nums text-content-primary">{{ row.cpu_actual_percent }}
-                                                {% if row.cpu_actual_available and row.cpu_quota != 'N/A' %}%{% endif %}
-                                            </span></div>
+                                            <div class="flex items-center justify-between gap-3 text-xs">
+                                                <span class="text-content-muted">Current Demand Against CPU Quota</span><span class="font-semibold tabular-nums text-content-primary">{{ row.cpu_actual_percent }}
+                                                    {% if row.cpu_actual_available and row.cpu_quota != 'N/A' %}%{% endif %}
+                                                </span>
+                                            </div>
                                             {% if row.cpu_actual_available and row.cpu_quota != 'N/A' %}
                                                 {% set cpu_quota_tone = progress_bar.pressure_tone(row.cpu_actual_percent)|trim %}{{ progress_bar.semantic_bar(row.cpu_actual_percent, cpu_quota_tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.namespace ~ ' CPU runtime demand against quota') }}
                                             {% else %}
@@ -237,9 +244,11 @@
                                             {% endfor %}
                                         </div>
                                         <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
-                                            <div class="flex items-center justify-between gap-3 text-xs"><span class="text-content-muted">Current Demand Against Memory Quota</span><span class="font-semibold tabular-nums text-content-primary">{{ row.memory_actual_percent }}
-                                                {% if row.memory_actual_available and row.memory_quota != 'N/A' %}%{% endif %}
-                                            </span></div>
+                                            <div class="flex items-center justify-between gap-3 text-xs">
+                                                <span class="text-content-muted">Current Demand Against Memory Quota</span><span class="font-semibold tabular-nums text-content-primary">{{ row.memory_actual_percent }}
+                                                    {% if row.memory_actual_available and row.memory_quota != 'N/A' %}%{% endif %}
+                                                </span>
+                                            </div>
                                             {% if row.memory_actual_available and row.memory_quota != 'N/A' %}
                                                 {% set memory_quota_tone = progress_bar.pressure_tone(row.memory_actual_percent)|trim %}{{ progress_bar.semantic_bar(row.memory_actual_percent, memory_quota_tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.namespace ~ ' memory runtime demand against quota') }}
                                             {% else %}
@@ -331,12 +340,15 @@
                                             <span class="{{ analysis_surface.role_icon_classes('evidence') }}"><i data-lucide="activity" class="h-4 w-4"></i></span>
                                             <div class="min-w-0">
                                                 <p class="{{ analysis_surface.metric_label_classes() }}">Runtime Demand Interpretation</p>
-                                                <h3 class="mt-1 text-sm font-semibold text-content-primary">{{ row.runtime_demand_resource }}
+                                                <h3 class="mt-1 text-sm font-semibold text-content-primary">
+                                                    {{ row.runtime_demand_resource }}
                                                     {% if row.runtime_demand_object %}Against {{ row.runtime_demand_object }}{% endif %}
                                                 </h3>
-                                                <p class="mt-2 text-xs leading-5 text-content-secondary">The displayed {{ row.actual_usage_percent_display }}
+                                                <p class="mt-2 text-xs leading-5 text-content-secondary">
+                                                    The displayed {{ row.actual_usage_percent_display }}
                                                     {% if row.runtime_demand_available %}%{% endif %}
-                                                is the highest active-Pod demand against the most restrictive applicable hard quota for this namespace.</p>
+                                                    is the highest active-Pod demand against the most restrictive applicable hard quota for this namespace.
+                                                </p>
                                                 <p class="mt-2 text-xs leading-5 text-content-muted">A configured zero remains a configured key. Multiple ResourceQuota objects are not merged into a synthetic denominator.</p>
                                             </div>
                                         </div>

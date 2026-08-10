@@ -153,7 +153,8 @@
                             <div class="flex items-start justify-between gap-4">
                                 <div class="min-w-0">
                                     <p class="text-sm font-semibold text-content-primary">{{ diagnostic.label }}</p>
-                                    <p class="mt-1 text-xs text-content-muted">{{ diagnostic.category_label }}
+                                    <p class="mt-1 text-xs text-content-muted">
+                                        {{ diagnostic.category_label }}
                                         {% if diagnostic.duration_ms is not none %}· {{ diagnostic.duration_display }}{% endif %}
                                     </p>
                                 </div>

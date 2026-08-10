@@ -1,7 +1,6 @@
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
-
 MODULE_PATH = Path(__file__).resolve().parents[3] / 'app/analytics/alerts/source_messages.py'
 SPEC = spec_from_file_location('alert_source_messages_contract', MODULE_PATH)
 assert SPEC is not None and SPEC.loader is not None

@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 OPERATION_TEMPLATES = (
     'app/templates/kubernetes_operations/configmaps/create.html',
     'app/templates/kubernetes_operations/configmaps/update.html',

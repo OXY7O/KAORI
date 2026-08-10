@@ -12,7 +12,6 @@ from app.inventory.resources.pod_detail import build_pod_detail
 from app.inventory.resources.pod_semantics import OPERATIONAL_STATE_TONES, pod_operational_state, pod_ready_values
 from app.models import Cluster, PodInventory
 
-
 UNKNOWN_FILTER = '__unknown__'
 UNSCHEDULED_FILTER = '__unscheduled__'
 

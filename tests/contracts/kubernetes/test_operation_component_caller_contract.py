@@ -7,7 +7,6 @@ from jinja2 import (
     select_autoescape,
 )
 
-
 ROOT = Path(__file__).resolve().parents[3]
 TEMPLATE_ROOT = ROOT / 'app' / 'templates'
 

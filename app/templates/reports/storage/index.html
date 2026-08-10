@@ -166,7 +166,6 @@
                 </section>
             </div>
         </section>
-
         {% if backend_status.backend == 's3' and not backend_status.reachable %}
             <section class="rounded-xl border border-status-warning-border bg-status-warning-soft p-4 sm:p-5"
                      aria-labelledby="report-storage-connectivity-title"
@@ -192,7 +191,6 @@
                 </div>
             </section>
         {% endif %}
-
         <section id="report-storage-workspace"
                  class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
                  data-storage-workspace="{{ payload.workspace }}">

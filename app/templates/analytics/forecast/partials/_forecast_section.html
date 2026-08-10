@@ -218,7 +218,8 @@
                                         mode='combined',
                                         height_class='h-[380px]') }}
                 {% else %}
-                    <div class="{{ analysis_surface.empty_evidence_classes('p-5') }}">{% set empty_state_icon = "line-chart" %}{% set empty_state_title = "No Forecast Data Available" %}{% set empty_state_description = forecast_payload.message %}
+                    <div class="{{ analysis_surface.empty_evidence_classes('p-5') }}">
+                        {% set empty_state_icon = "line-chart" %}{% set empty_state_title = "No Forecast Data Available" %}{% set empty_state_description = forecast_payload.message %}
                         {% include "components/states/_empty_state.html" %}
                     </div>
                 {% endif %}

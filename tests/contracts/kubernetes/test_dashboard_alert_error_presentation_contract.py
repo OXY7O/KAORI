@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[3]
 TEMPLATE = ROOT / 'app/templates/dashboards/kubernetes/partials/_alerts_summary.html'
 

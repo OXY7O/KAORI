@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[3]
 TEMPLATES = ROOT / 'app/templates'
 
@@ -11,6 +10,7 @@ def read(relative: str) -> str:
 
 def test_management_landings_use_flat_operational_workflow_catalog() -> None:
     component = read('app/templates/components/operational_workflow_card.html')
+    catalog = read('app/templates/components/operational_workflow_catalog.html')
     assert 'border-t border-outline-subtle' in component
     assert 'first:border-t-0' in component
     assert 'hover:bg-surface-hover' in component

@@ -29,7 +29,6 @@ from app.notifications.constants import (
 from app.notifications.event_catalog import CATEGORY_LABELS
 from app.notifications.presentation import _serialize_notification, _user_label
 
-
 _CENTER_CATEGORY_ORDER = (
     'configmap_management',
     'tls_certificate',

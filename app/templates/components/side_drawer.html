@@ -125,7 +125,9 @@
             <dd class="mt-2 text-base font-semibold leading-6 text-content-primary">
                 {{ value }}
             </dd>
-            {% if helper %}<p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>{% endif %}
+            {% if helper %}
+                <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+            {% endif %}
         </div>
     {% endif %}
 {%- endmacro %}

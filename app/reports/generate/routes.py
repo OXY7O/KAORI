@@ -19,7 +19,6 @@ from app.reports.jobs.service import ReportJobEnqueueError, enqueue_report_gener
 from app.reports.reference import build_report_reference
 from app.reports.web import render_reports_unavailable
 
-
 logger = logging.getLogger(__name__)
 
 

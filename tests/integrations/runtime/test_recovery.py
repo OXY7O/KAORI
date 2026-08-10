@@ -2,7 +2,6 @@ from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from types import SimpleNamespace
 
-
 MODULE_PATH = Path(__file__).resolve().parents[3] / 'app/integrations/runtime/recovery.py'
 SPEC = spec_from_file_location('integration_recovery_contract', MODULE_PATH)
 assert SPEC is not None and SPEC.loader is not None

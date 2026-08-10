@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
 import logging
+from datetime import UTC, datetime
 from time import perf_counter
 
 from app.alertmanager.service import get_alertmanager_alerts, get_alertmanager_status

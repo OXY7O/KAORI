@@ -57,20 +57,12 @@ def build_forecast_analysis_presentation(
     items = _resource_map(forecast_payload)
     resources = {key: _resource_presentation(key, _mapping(items.get(key))) for key in _RESOURCE_ORDER}
     available = [item for item in resources.values() if item['available']]
-    highest = (
-        max(available, key=lambda item: _float(item.get('peak_projected_percent')) or 0.0)
-        if available
-        else None
-    )
+    highest = max(available, key=lambda item: _float(item.get('peak_projected_percent')) or 0.0) if available else None
     warning_count = sum(
-        1
-        for item in available
-        if (_float(item.get('peak_projected_percent')) or 0.0) >= _WARNING_THRESHOLD
+        1 for item in available if (_float(item.get('peak_projected_percent')) or 0.0) >= _WARNING_THRESHOLD
     )
     critical_count = sum(
-        1
-        for item in available
-        if (_float(item.get('peak_projected_percent')) or 0.0) >= _CRITICAL_THRESHOLD
+        1 for item in available if (_float(item.get('peak_projected_percent')) or 0.0) >= _CRITICAL_THRESHOLD
     )
     coverage_count = len(available)
 
@@ -434,14 +426,14 @@ def _resource_presentation(key: str, item: Mapping[str, Any]) -> dict[str, Any]:
 
 def _resource_page(resource: Mapping[str, Any], title: str) -> dict[str, Any]:
     projected = _float(resource.get('peak_projected_percent'))
-    available = bool(resource.get('available'))
+    available = bool(resource.get('available')) and projected is not None
     if not available:
         assessment_title = f'{title} forecast evidence is not available.'
         assessment_body = resource['empty_reason']
         assessment_note = (
             'The report does not convert missing evidence into zero usage, stable direction, or healthy capacity.'
         )
-    elif projected >= _CRITICAL_THRESHOLD:
+    elif projected is not None and projected >= _CRITICAL_THRESHOLD:
         assessment_title = f'{title} is projected in the critical operating band.'
         assessment_body = (
             'Immediate ownership and live-state validation are required before capacity or workload changes.'
@@ -449,7 +441,7 @@ def _resource_page(resource: Mapping[str, Any], title: str) -> dict[str, Any]:
         assessment_note = (
             'Forecast conclusions remain subject to model confidence, source freshness, and approved change controls.'
         )
-    elif projected >= _WARNING_THRESHOLD:
+    elif projected is not None and projected >= _WARNING_THRESHOLD:
         assessment_title = f'{title} is projected in the warning operating band.'
         assessment_body = 'Review growth assumptions, accountable ownership, and the available threshold ETA.'
         assessment_note = 'A forecast warning is a planning signal and does not authorize autonomous remediation.'

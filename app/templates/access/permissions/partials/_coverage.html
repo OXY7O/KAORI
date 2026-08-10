@@ -46,7 +46,7 @@
                 <option value="all"{% if filters.module == 'all' %} selected{% endif %}>All Modules</option>
                 {% for option in module_options %}
                     <option value="{{ option.key }}"
-                            {% if filters.module == option.key %} selected{% endif %}>{{ option.label }}</option>
+                            {% if filters.module == option.key %}selected{% endif %}>{{ option.label }}</option>
                 {% endfor %}
             </select>
         </label>

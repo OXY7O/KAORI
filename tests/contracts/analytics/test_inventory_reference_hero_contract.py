@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ANALYTICS_HERO_FILES = [
     Path('app/templates/analytics/utilization/partials/_hero.html'),
     Path('app/templates/analytics/capacity/partials/_hero.html'),

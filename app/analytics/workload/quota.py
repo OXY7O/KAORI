@@ -393,6 +393,10 @@ def _tenant_cpu_memory_fields(
 ) -> dict[str, Any]:
     cpu_value = safe_float(cpu_actual.get(namespace))
     memory_value = safe_float(memory_actual.get(namespace))
+    cpu_limit = resources['limits.cpu']
+    cpu_request = resources['requests.cpu']
+    memory_limit = resources['limits.memory']
+    memory_request = resources['requests.memory']
     return {
         'cpu_quota': format_cpu_core(cpu_limit['hard']) if cpu_limit['configured'] else 'N/A',
         'cpu_requested': format_cpu_core(cpu_request['used']) if cpu_request['used_available'] else 'N/A',

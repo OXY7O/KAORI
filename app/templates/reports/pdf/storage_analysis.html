@@ -278,7 +278,8 @@
                                                             <span class="reference-code">{{ item.ref }}</span>
                                                             <div class="identity-copy">
                                                                 <strong class="identity-title">{{ item.node }}</strong>
-                                                                <p class="identity-meta"><b>Mount.</b> {{ item.mountpoint }}
+                                                                <p class="identity-meta">
+                                                                    <b>Mount.</b> {{ item.mountpoint }}
                                                                     {% if item.device %}&nbsp; <b>Device.</b> {{ item.device }}{% endif %}
                                                                 </p>
                                                             </div>
@@ -666,7 +667,9 @@
                                         <div class="limitations-copy">
                                             <h3>Known Limitations and Operational Use</h3>
                                             <ul>
-                                                {% for item in p.methodology.limitations %}<li>{{ item }}</li>{% endfor %}
+                                                {% for item in p.methodology.limitations %}
+                                                    <li>{{ item }}</li>
+                                                {% endfor %}
                                             </ul>
                                         </div>
                                         <div class="status-language-block">

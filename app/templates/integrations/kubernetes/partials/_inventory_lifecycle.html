@@ -116,7 +116,8 @@
                             <h4 id="lifecycle-action-title"
                                 class="text-sm font-semibold text-content-primary">Next Lifecycle Action</h4>
                             {% if deletion_guard.blocked %}
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Resolve {{ deletion_guard.reasons|length }} blocking condition{{ '' if deletion_guard.reasons|length == 1 else 's' }} before deleting this connection.
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                    Resolve {{ deletion_guard.reasons|length }} blocking condition{{ '' if deletion_guard.reasons|length == 1 else 's' }} before deleting this connection.
                                     {% if deletion_guard.reasons %}First: {{ deletion_guard.reasons[0] }}{% endif %}
                                 </p>
                             {% else %}
@@ -215,7 +216,8 @@
                                             <div class="min-w-0">
                                                 <p class="truncate text-sm font-semibold text-content-primary"
                                                    title="{{ source.name }}">{{ source.name }}</p>
-                                                <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">{{ source.provider }}
+                                                <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">
+                                                    {{ source.provider }}
                                                     {% if source.role %}· {{ source.role|title }} Source{% endif %}
                                                 </p>
                                             </div>

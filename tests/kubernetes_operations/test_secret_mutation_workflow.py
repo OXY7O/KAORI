@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from contextlib import nullcontext
 import importlib.util
-from pathlib import Path
 import sys
+from contextlib import nullcontext
+from pathlib import Path
 from types import ModuleType, SimpleNamespace
 
 import pytest

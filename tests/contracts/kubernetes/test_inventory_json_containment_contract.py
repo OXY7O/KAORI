@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[3]
 SERVICE_SOURCE = ROOT / 'app/inventory/resources/services.py'
 STORAGE_SOURCE = ROOT / 'app/inventory/resources/storage.py'

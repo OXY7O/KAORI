@@ -115,12 +115,16 @@
                             {% call evidence_list.cell(2) %}
                                 {{ evidence_list.mobile_label("Request Fit") }}
                                 <div class="space-y-2 text-xs">
-                                    <div class="flex items-center justify-between gap-3"><span class="text-content-muted">CPU</span><span class="font-semibold tabular-nums {{ 'text-content-primary' if row.cpu_request_utilization_available else analysis_surface.unavailable_value_classes() }}">{{ row.cpu_request_utilization_display }}
-                                        {% if row.cpu_request_utilization_available %}%{% endif %}
-                                    </span></div>
-                                    <div class="flex items-center justify-between gap-3"><span class="text-content-muted">Memory</span><span class="font-semibold tabular-nums {{ 'text-content-primary' if row.memory_request_utilization_available else analysis_surface.unavailable_value_classes() }}">{{ row.memory_request_utilization_display }}
-                                        {% if row.memory_request_utilization_available %}%{% endif %}
-                                    </span></div>
+                                    <div class="flex items-center justify-between gap-3">
+                                        <span class="text-content-muted">CPU</span><span class="font-semibold tabular-nums {{ 'text-content-primary' if row.cpu_request_utilization_available else analysis_surface.unavailable_value_classes() }}">{{ row.cpu_request_utilization_display }}
+                                            {% if row.cpu_request_utilization_available %}%{% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center justify-between gap-3">
+                                        <span class="text-content-muted">Memory</span><span class="font-semibold tabular-nums {{ 'text-content-primary' if row.memory_request_utilization_available else analysis_surface.unavailable_value_classes() }}">{{ row.memory_request_utilization_display }}
+                                            {% if row.memory_request_utilization_available %}%{% endif %}
+                                        </span>
+                                    </div>
                                 </div>
                                 <p class="mt-2 text-xs font-medium text-content-muted">Interpretation in View More</p>
                             {% endcall %}
@@ -203,9 +207,11 @@
                                         </div>
                                         <div class="space-y-4 border-t border-outline-subtle px-4 py-4 sm:px-5">
                                             <div>
-                                                <div class="flex items-center justify-between gap-3 text-xs"><span class="text-content-muted">Current Request Utilization</span><span class="font-semibold tabular-nums text-content-primary">{{ row.cpu_request_utilization_display }}
-                                                    {% if row.cpu_request_utilization_available %}%{% endif %}
-                                                </span></div>
+                                                <div class="flex items-center justify-between gap-3 text-xs">
+                                                    <span class="text-content-muted">Current Request Utilization</span><span class="font-semibold tabular-nums text-content-primary">{{ row.cpu_request_utilization_display }}
+                                                        {% if row.cpu_request_utilization_available %}%{% endif %}
+                                                    </span>
+                                                </div>
                                                 {% if row.cpu_request_utilization_available %}
                                                     {% set cpu_fit_tone = progress_bar.pressure_tone(row.cpu_request_utilization)|trim %}{{ progress_bar.semantic_bar(row.cpu_request_utilization, cpu_fit_tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.workload ~ ' CPU current request utilization') }}
                                                 {% else %}
@@ -213,9 +219,11 @@
                                                 {% endif %}
                                             </div>
                                             <div>
-                                                <div class="flex items-center justify-between gap-3 text-xs"><span class="text-content-muted">Peak Request Utilization</span><span class="font-semibold tabular-nums text-content-primary">{{ row.cpu_peak_request_utilization_display }}
-                                                    {% if row.cpu_peak_request_utilization_available %}%{% endif %}
-                                                </span></div>
+                                                <div class="flex items-center justify-between gap-3 text-xs">
+                                                    <span class="text-content-muted">Peak Request Utilization</span><span class="font-semibold tabular-nums text-content-primary">{{ row.cpu_peak_request_utilization_display }}
+                                                        {% if row.cpu_peak_request_utilization_available %}%{% endif %}
+                                                    </span>
+                                                </div>
                                                 {% if row.cpu_peak_request_utilization_available %}
                                                     {% set cpu_peak_tone = progress_bar.pressure_tone(row.cpu_peak_request_utilization)|trim %}{{ progress_bar.semantic_bar(row.cpu_peak_request_utilization, cpu_peak_tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.workload ~ ' CPU peak request utilization') }}
                                                 {% else %}
@@ -242,9 +250,11 @@
                                         </div>
                                         <div class="space-y-4 border-t border-outline-subtle px-4 py-4 sm:px-5">
                                             <div>
-                                                <div class="flex items-center justify-between gap-3 text-xs"><span class="text-content-muted">Current Request Utilization</span><span class="font-semibold tabular-nums text-content-primary">{{ row.memory_request_utilization_display }}
-                                                    {% if row.memory_request_utilization_available %}%{% endif %}
-                                                </span></div>
+                                                <div class="flex items-center justify-between gap-3 text-xs">
+                                                    <span class="text-content-muted">Current Request Utilization</span><span class="font-semibold tabular-nums text-content-primary">{{ row.memory_request_utilization_display }}
+                                                        {% if row.memory_request_utilization_available %}%{% endif %}
+                                                    </span>
+                                                </div>
                                                 {% if row.memory_request_utilization_available %}
                                                     {% set memory_fit_tone = progress_bar.pressure_tone(row.memory_request_utilization)|trim %}{{ progress_bar.semantic_bar(row.memory_request_utilization, memory_fit_tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.workload ~ ' memory current request utilization') }}
                                                 {% else %}
@@ -252,9 +262,11 @@
                                                 {% endif %}
                                             </div>
                                             <div>
-                                                <div class="flex items-center justify-between gap-3 text-xs"><span class="text-content-muted">Peak Request Utilization</span><span class="font-semibold tabular-nums text-content-primary">{{ row.memory_peak_request_utilization_display }}
-                                                    {% if row.memory_peak_request_utilization_available %}%{% endif %}
-                                                </span></div>
+                                                <div class="flex items-center justify-between gap-3 text-xs">
+                                                    <span class="text-content-muted">Peak Request Utilization</span><span class="font-semibold tabular-nums text-content-primary">{{ row.memory_peak_request_utilization_display }}
+                                                        {% if row.memory_peak_request_utilization_available %}%{% endif %}
+                                                    </span>
+                                                </div>
                                                 {% if row.memory_peak_request_utilization_available %}
                                                     {% set memory_peak_tone = progress_bar.pressure_tone(row.memory_peak_request_utilization)|trim %}{{ progress_bar.semantic_bar(row.memory_peak_request_utilization, memory_peak_tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.workload ~ ' memory peak request utilization') }}
                                                 {% else %}

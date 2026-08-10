@@ -2,7 +2,6 @@ from pathlib import Path
 
 from jinja2 import Environment
 
-
 ROOT = Path(__file__).resolve().parents[3]
 TEMPLATES = ROOT / 'app' / 'templates' / 'jobs' / 'executions'
 

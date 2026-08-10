@@ -9,11 +9,17 @@ from app.cluster.constants import get_environment_label
 from app.integrations.kubernetes.resolver import server_for_cluster
 from app.inventory.resources.ingress_semantics import (
     host_presentation as ingress_host_presentation,
+)
+from app.inventory.resources.ingress_semantics import (
     ingress_class_presentation,
+)
+from app.inventory.resources.ingress_semantics import (
     publication_presentation as ingress_publication_presentation,
 )
 from app.inventory.resources.storage_semantics import (
     binding_reference as storage_binding_reference,
+)
+from app.inventory.resources.storage_semantics import (
     lifecycle_presentation as storage_lifecycle_presentation,
 )
 from app.inventory.topology.contracts import (

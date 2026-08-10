@@ -271,8 +271,12 @@ def _normalize_artifact_portfolio(raw: Any) -> dict[str, list[dict[str, str]]]:
     if isinstance(raw, Mapping):
         raw_families = raw.get('families')
         raw_formats = raw.get('formats')
-        families = [dict(item) for item in raw_families if isinstance(item, Mapping)] if isinstance(raw_families, list) else []
-        formats = [dict(item) for item in raw_formats if isinstance(item, Mapping)] if isinstance(raw_formats, list) else []
+        families = (
+            [dict(item) for item in raw_families if isinstance(item, Mapping)] if isinstance(raw_families, list) else []
+        )
+        formats = (
+            [dict(item) for item in raw_formats if isinstance(item, Mapping)] if isinstance(raw_formats, list) else []
+        )
         if families and formats:
             return {'families': families, 'formats': formats}
     return {

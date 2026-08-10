@@ -3,9 +3,9 @@ from __future__ import annotations
 from app.auth.providers.catalog import AuthProviderType
 from app.auth.results import (
     ACCESS_NOT_PERMITTED_MESSAGE,
+    USER_INACTIVE_MESSAGE,
     AuthReason,
     AuthResult,
-    USER_INACTIVE_MESSAGE,
 )
 from app.models.user import User
 

@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[3]
 ALERTS_PARTIALS = ROOT / 'app/templates/analytics/alerts/partials'
 

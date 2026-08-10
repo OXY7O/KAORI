@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Collection
 import json
+from collections.abc import Callable, Collection
 from typing import Any
 
 from flask import (

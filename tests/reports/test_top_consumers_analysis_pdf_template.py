@@ -10,7 +10,6 @@ from weasyprint.text.fonts import FontConfiguration
 
 from app.reports.export.html_pdf.top_consumers_analysis import build_top_consumers_analysis_presentation
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 

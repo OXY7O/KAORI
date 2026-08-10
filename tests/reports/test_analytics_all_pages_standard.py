@@ -2,7 +2,6 @@ from pathlib import Path
 
 from jinja2 import Environment
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 TEMPLATE_DIR = PROJECT_ROOT / 'app' / 'templates' / 'reports' / 'pdf'
 HTML_PDF_DIR = PROJECT_ROOT / 'app' / 'reports' / 'export' / 'html_pdf'

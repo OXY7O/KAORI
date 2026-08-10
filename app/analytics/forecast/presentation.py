@@ -25,10 +25,10 @@ from app.analytics.forecast.contracts import (
     FORECAST_HORIZON_OPTIONS,
     FORECAST_METHOD_OPTIONS,
     FORECAST_TABS,
-    ForecastPoint,
-    ForecastResourceDefinition,
     HISTORY_WINDOW_OPTIONS,
     WARNING_THRESHOLD,
+    ForecastPoint,
+    ForecastResourceDefinition,
 )
 from app.analytics.forecast.resource import build_resource_forecast_payload
 from app.intelligence.recommendation_engine import (
@@ -120,6 +120,7 @@ def get_forecast_snapshot(
     storage_item = item_map.get('storage', {})
     pod_item = item_map.get('pods', {})
     forecast_risk = _resolve_forecast_risk(summary=summary, items=items)
+    actionable_recommendations = forecast_payload.get('actionable_recommendations')
     risk_count = _safe_int(summary.get('warning_count', 0)) + _safe_int(summary.get('critical_count', 0))
     return {
         'cpu_trend': _get_forecast_trend_label(cpu_item),

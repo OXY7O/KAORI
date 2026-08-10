@@ -104,7 +104,9 @@
         <dd class="mt-0.5 break-words {{ 'font-mono text-xs font-medium leading-5' if mono else 'text-sm font-semibold leading-5' }} text-content-primary [overflow-wrap:anywhere]">
             {{ value if value not in [None, ''] else '-' }}
         </dd>
-        {% if supporting %}<p class="mt-0.5 text-xs leading-5 text-content-muted">{{ supporting }}</p>{% endif %}
+        {% if supporting %}
+            <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ supporting }}</p>
+        {% endif %}
     </div>
 {%- endmacro %}
 {% macro empty_state(title, description, icon='inbox') -%}

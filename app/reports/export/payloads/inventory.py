@@ -10,21 +10,41 @@ from app.extensions.db import db
 from app.inventory.formatting import format_kubernetes_size
 from app.inventory.resources.ingress_semantics import (
     host_presentation as ingress_host_presentation,
+)
+from app.inventory.resources.ingress_semantics import (
     ingress_class_presentation,
+)
+from app.inventory.resources.ingress_semantics import (
     publication_presentation as ingress_publication_presentation,
 )
 from app.inventory.resources.service_semantics import (
     access_model as service_access_model,
+)
+from app.inventory.resources.service_semantics import (
     backend_registration as service_backend_registration,
+)
+from app.inventory.resources.service_semantics import (
     effective_service_type,
 )
 from app.inventory.resources.storage_semantics import (
     NOT_CONFIGURED as STORAGE_NOT_CONFIGURED,
+)
+from app.inventory.resources.storage_semantics import (
     NOT_REPORTED as STORAGE_NOT_REPORTED,
+)
+from app.inventory.resources.storage_semantics import (
     binding_reference as storage_binding_reference,
+)
+from app.inventory.resources.storage_semantics import (
     expansion_presentation as storage_expansion_presentation,
+)
+from app.inventory.resources.storage_semantics import (
     lifecycle_presentation as storage_lifecycle_presentation,
+)
+from app.inventory.resources.storage_semantics import (
     list_presentation as storage_list_presentation,
+)
+from app.inventory.resources.storage_semantics import (
     provisioning_presentation as storage_provisioning_presentation,
 )
 from app.models import (

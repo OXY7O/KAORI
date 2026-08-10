@@ -192,13 +192,17 @@
                               hx-swap="outerHTML settle:150ms"
                               hx-indicator="#users-refresh-indicator"
                               hx-include="#users-filter-form">
-                            {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                            {% if csrf_token is defined %}
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            {% endif %}
                             <button class="{{ table_ui.action_classes() }}"><i data-lucide="play-circle" class="h-3.5 w-3.5" aria-hidden="true"></i>Activate</button>
                         </form>
                     {% endif %}
                     {% if actions.get('can_delete') %}
                         <form method="post" action="{{ url_for('users.delete', user_id=user.id) }}">
-                            {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                            {% if csrf_token is defined %}
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            {% endif %}
                             <button id="delete-user-submit-{{ user.id }}"
                                     type="submit"
                                     class="hidden"

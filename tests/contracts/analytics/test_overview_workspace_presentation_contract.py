@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 OVERVIEW_ROOT = Path('app/templates/analytics/overview')
 
 

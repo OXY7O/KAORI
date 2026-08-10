@@ -263,26 +263,30 @@ def _present_record(
             }
         )
 
-    setattr(record, 'presentation', {
-        'status_label': status_label,
-        'status_tone': status_tone,
-        'status_icon': status_icon,
-        'coverage_label': coverage_label,
-        'coverage_tone': coverage_tone,
-        'coverage_icon': coverage_icon,
-        'host_coverage_rows': _host_coverage_rows(record),
-        'ingress_resources': ingress_resources,
-        'secret_collection_label': _COLLECTION_PRESENTATION.get(secret_state, ('Not Reported', 'unknown'))[0],
-        'secret_collection_tone': _COLLECTION_PRESENTATION.get(secret_state, ('Not Reported', 'unknown'))[1],
-        'ingress_mapping_label': _COLLECTION_PRESENTATION.get(ingress_state, ('Not Reported', 'unknown'))[0],
-        'ingress_mapping_tone': _COLLECTION_PRESENTATION.get(ingress_state, ('Not Reported', 'unknown'))[1],
-        'secret_collection_detail': collection_state.secret_collection_detail if collection_state else None,
-        'ingress_mapping_detail': collection_state.ingress_mapping_detail if collection_state else None,
-        'coverage_reported': (record.coverage_state or TLS_COVERAGE_NOT_REPORTED) != TLS_COVERAGE_NOT_REPORTED,
-        'ingress_mapping_reported': ingress_state == TLS_COLLECTION_COLLECTED,
-        'ingress_consumer_count': len(ingress_resources) if ingress_state == TLS_COLLECTION_COLLECTED else None,
-        'declared_host_count': record.declared_host_count if ingress_state == TLS_COLLECTION_COLLECTED else None,
-    })
+    setattr(
+        record,
+        'presentation',
+        {
+            'status_label': status_label,
+            'status_tone': status_tone,
+            'status_icon': status_icon,
+            'coverage_label': coverage_label,
+            'coverage_tone': coverage_tone,
+            'coverage_icon': coverage_icon,
+            'host_coverage_rows': _host_coverage_rows(record),
+            'ingress_resources': ingress_resources,
+            'secret_collection_label': _COLLECTION_PRESENTATION.get(secret_state, ('Not Reported', 'unknown'))[0],
+            'secret_collection_tone': _COLLECTION_PRESENTATION.get(secret_state, ('Not Reported', 'unknown'))[1],
+            'ingress_mapping_label': _COLLECTION_PRESENTATION.get(ingress_state, ('Not Reported', 'unknown'))[0],
+            'ingress_mapping_tone': _COLLECTION_PRESENTATION.get(ingress_state, ('Not Reported', 'unknown'))[1],
+            'secret_collection_detail': collection_state.secret_collection_detail if collection_state else None,
+            'ingress_mapping_detail': collection_state.ingress_mapping_detail if collection_state else None,
+            'coverage_reported': (record.coverage_state or TLS_COVERAGE_NOT_REPORTED) != TLS_COVERAGE_NOT_REPORTED,
+            'ingress_mapping_reported': ingress_state == TLS_COLLECTION_COLLECTED,
+            'ingress_consumer_count': len(ingress_resources) if ingress_state == TLS_COLLECTION_COLLECTED else None,
+            'declared_host_count': record.declared_host_count if ingress_state == TLS_COLLECTION_COLLECTED else None,
+        },
+    )
     return record
 
 

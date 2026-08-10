@@ -24,7 +24,6 @@ from app.reports.schedules.service import (
 )
 from app.reports.web import render_reports_unavailable
 
-
 logger = logging.getLogger(__name__)
 
 

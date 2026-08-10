@@ -8,8 +8,8 @@ from typing import Any
 from app.analytics.forecast.contracts import (
     CRITICAL_THRESHOLD,
     FORECAST_METHOD_OPTIONS,
-    ForecastPoint,
     WARNING_THRESHOLD,
+    ForecastPoint,
 )
 
 

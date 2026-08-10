@@ -5,7 +5,6 @@ from typing import Any
 
 from app.notifications.normalization import standardize_activity_text
 
-
 _SENSITIVE_METADATA_TOKENS = (
     'password',
     'secret',

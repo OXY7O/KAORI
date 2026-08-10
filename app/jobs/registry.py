@@ -4,9 +4,9 @@ from app.jobs.definitions import (
     ANALYTICS_REFRESH_DEFINITION,
     FORECAST_REFRESH_DEFINITION,
     INVENTORY_SYNC_DEFINITION,
-    JobDefinition,
     REPORT_SCHEDULE_DEFINITION,
     TLS_CERTIFICATE_SYNC_DEFINITION,
+    JobDefinition,
 )
 
 _JOB_DEFINITIONS: tuple[JobDefinition, ...] = (

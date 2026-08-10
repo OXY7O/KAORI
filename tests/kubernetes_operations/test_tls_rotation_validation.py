@@ -4,7 +4,6 @@ import importlib.util
 from pathlib import Path
 from types import SimpleNamespace
 
-
 ROOT = Path(__file__).resolve().parents[2]
 MODULE = ROOT / 'app/kubernetes_operations/secrets/tls_validation.py'
 

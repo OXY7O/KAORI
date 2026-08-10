@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from flask import Flask
 import pytest
+from flask import Flask
 
 from app.analytics import tasks
 from app.analytics.common import context as common_context

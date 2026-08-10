@@ -18,7 +18,6 @@ from kubernetes.client.exceptions import ApiException
 
 from app.inventory.collectors.common import _metadata_details, _string_value
 
-
 COLLECTED = 'Collected'
 PERMISSION_UNAVAILABLE = 'Permission Unavailable'
 API_UNAVAILABLE = 'API Unavailable'
