@@ -12,19 +12,18 @@
                 </div>
             {% endcall %}
         </div>
-        {{ page_hero.context_card(
-            'Service Backend Registration',
-            'Service Posture',
-            'Backend Registration',
-            inventory.overall_posture_label,
-            inventory.overall_posture_tone,
-            [
-                ('circle-check', 'Ready Backends', inventory.registered_backends, 'Services with ready registration'),
-                ('triangle-alert', 'Exceptions', inventory.backend_exceptions, 'Missing or partial')
-            ],
-            'Manage Clusters',
-            url_for('integrations.kubernetes'),
-            'server-cog'
+        {{ page_hero.context_card('Service Backend Registration',
+                'Service Posture',
+                'Backend Registration',
+                inventory.overall_posture_label,
+                inventory.overall_posture_tone,
+                [
+                ('circle-check', 'Ready Backends', inventory.registered_backends, 'Services with ready registration') ,
+        ('triangle-alert', 'Exceptions', inventory.backend_exceptions, 'Missing or partial')
+        ],
+        'Manage Clusters',
+        url_for('integrations.kubernetes'),
+        'server-cog'
         ) }}
     </div>
 </section>

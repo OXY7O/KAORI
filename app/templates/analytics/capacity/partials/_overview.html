@@ -8,7 +8,7 @@
     'Summarize current worker utilization, schedulable capacity, and remaining headroom using normalized display units.',
     'layout-dashboard',
     selected_time_range
-) %}
+    ) %}
     <div class="{{ analysis_surface.evidence_shell_classes() }}">
         <div class="{{ analysis_surface.metric_grid_classes(4) }}">
             {% for key, label, icon in resources %}
@@ -28,7 +28,11 @@
                         </div>
                         <p class="text-right text-xs leading-5 {{ 'text-content-muted' if item.evidence_available else analysis_surface.unavailable_value_classes() }}">
                             <span class="block font-semibold {{ 'text-content-secondary' if item.usage_evidence_available else analysis_surface.unavailable_value_classes() }}">{{ capacity_ui.resource_value(key, item.used, item.usage_evidence_available) }}</span>
-                            {% if item.capacity_evidence_available %}of {{ capacity_ui.resource_value(key, item.capacity, true) }}{% else %}Capacity unavailable{% endif %}
+                            {% if item.capacity_evidence_available %}
+                                of {{ capacity_ui.resource_value(key, item.capacity, true) }}
+                            {% else %}
+                                Capacity unavailable
+                            {% endif %}
                         </p>
                     </div>
                     {% if item.evidence_available %}
@@ -51,18 +55,27 @@
                 <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="gauge" class="h-4 w-4"></i></span>
                 <div>
                     <h3 class="{{ analysis_surface.section_title_classes() }}">Capacity Posture</h3>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">{% if capacity_posture.tone in ['critical', 'warning'] %}{{ capacity_posture.reason }}{% if capacity_headroom_available %} The lowest known Ready-worker margin is <span class="font-semibold">{{ lowest_headroom_metric_display }}</span>.{% endif %}{% elif capacity_scheduling_evidence_complete %}The tightest Ready-worker scheduling margin is <span class="font-semibold">{{ lowest_headroom_metric_display }}</span>. Node filesystem evidence is shown separately and does not determine Kubernetes scheduling posture.{% elif capacity_headroom_available %}Partial Ready-worker evidence identifies <span class="font-semibold">{{ lowest_headroom_metric_display }}</span> as the lowest known margin. Restore missing allocation or usage signals before approving placement growth.{% else %}No Ready-worker scheduling resource has complete committed evidence. Restore worker capacity and usage data before approving placement growth.{% endif %}</p>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">
+                        {% if capacity_posture.tone in ['critical', 'warning'] %}
+                            {{ capacity_posture.reason }}
+                            {% if capacity_headroom_available %} The lowest known Ready-worker margin is <span class="font-semibold">{{ lowest_headroom_metric_display }}</span>.{% endif %}
+                        {% elif capacity_scheduling_evidence_complete %}
+                            The tightest Ready-worker scheduling margin is <span class="font-semibold">{{ lowest_headroom_metric_display }}</span>. Node filesystem evidence is shown separately and does not determine Kubernetes scheduling posture.
+                        {% elif capacity_headroom_available %}
+                            Partial Ready-worker evidence identifies <span class="font-semibold">{{ lowest_headroom_metric_display }}</span> as the lowest known margin. Restore missing allocation or usage signals before approving placement growth.
+                        {% else %}
+                            No Ready-worker scheduling resource has complete committed evidence. Restore worker capacity and usage data before approving placement growth.
+                        {% endif %}
+                    </p>
                 </div>
             </div>
         </div>
         <div class="{{ analysis_surface.guidance_card_classes() }}">
-            {{ analysis_surface.interpretation_callout(
-                'Measurement Standard',
-                'Ready Worker Allocatable Capacity',
-                'CPU uses Cores, memory uses GiB, and pod capacity uses whole Pods. Node filesystem GiB is an operational reference, not Kubernetes allocatable capacity.',
-                icon='ruler',
-                role='insight'
-            ) }}
+            {{ analysis_surface.interpretation_callout('Measurement Standard',
+                        'Ready Worker Allocatable Capacity',
+                        'CPU uses Cores, memory uses GiB, and pod capacity uses whole Pods. Node filesystem GiB is an operational reference, not Kubernetes allocatable capacity.',
+                        icon='ruler',
+                        role='insight') }}
         </div>
     </div>
 {% endcall %}

@@ -16,12 +16,7 @@
            class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-kaori-accent' if intelligence_active else 'text-white/[0.35]' }}"></i>
     </summary>
     <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3">
-        {% set intelligence_links = [
-            ('intelligence.recommendations', 'sparkles', 'Recommendations'),
-            ('intelligence.alert_intelligence', 'triangle-alert', 'Alert Intelligence'),
-            ('intelligence.catalog', 'list-checks', 'Rule Catalog'),
-            ('automation_control.index', 'workflow', 'Automation Control')
-        ] %}
+        {% set intelligence_links = [('intelligence.recommendations', 'sparkles', 'Recommendations'), ('intelligence.alert_intelligence', 'triangle-alert', 'Alert Intelligence'), ('intelligence.catalog', 'list-checks', 'Rule Catalog'), ('automation_control.index', 'workflow', 'Automation Control')] %}
         {% for target_endpoint, icon, label in intelligence_links %}
             {% set active = endpoint == target_endpoint or (target_endpoint == 'intelligence.recommendations' and endpoint == 'intelligence.index') %}
             <a href="{{ url_for(target_endpoint) }}"

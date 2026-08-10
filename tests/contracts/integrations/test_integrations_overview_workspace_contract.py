@@ -12,7 +12,7 @@ def test_overview_uses_canonical_accessible_workspace_tabs() -> None:
 
     assert 'components/framed_workspace_tabs.html' in overview
     assert 'framed_workspace_tabs.render(' in overview
-    assert "data-kaori-tab-variant=\"framed-workspace-v2\"" in read('app/templates/components/framed_workspace_tabs.html')
+    assert 'data-kaori-tab-variant="framed-workspace-v2"' in read('app/templates/components/framed_workspace_tabs.html')
     assert "prefix='integration-overview'" in overview
     assert "allowedTabs: ['catalog', 'runtime', 'coverage']" in overview
     assert 'moveTab(currentTab, direction, prefix)' in overview
@@ -70,6 +70,7 @@ def test_runtime_records_use_inventory_table_and_shared_modal_details() -> None:
     assert 'record_detail_modal.render(' in modal
     assert 'data-kaori-runtime-overview-modal' in modal
     assert "'integrations/partials/_runtime_overview_modal.html'" in routes
+
 
 def test_runtime_footer_uses_standard_showing_and_rows_copy() -> None:
     runtime = read('app/templates/integrations/partials/_runtime_overview.html')
@@ -168,11 +169,16 @@ def test_integration_overview_uses_canonical_label_roles() -> None:
     assert 'components/table_label.html' in runtime
 
     # Context and count metadata use the shared metadata label. Only scope gets an icon.
-    assert "table_label.metadata_label(available_provider_count ~ ' Available · ' ~ planned_provider_count ~ ' Planned'" in overview
+    assert (
+        "table_label.metadata_label(available_provider_count ~ ' Available · ' ~ planned_provider_count ~ ' Planned'"
+        in overview
+    )
     assert "table_label.metadata_label(planned_provider_count ~ ' Planned'" in overview
     assert "table_label.metadata_label(provider_name, size='compact')" in overview
     assert "table_label.metadata_label(runtime_scope_label, 'filter'" in runtime
-    assert "table_label.metadata_label(runtime_stats.total ~ ' of ' ~ runtime_global_stats.total ~ ' Targets'" in runtime
+    assert (
+        "table_label.metadata_label(runtime_stats.total ~ ' of ' ~ runtime_global_stats.total ~ ' Targets'" in runtime
+    )
 
     # Repeated lifecycle/readiness states use a semantic dot instead of a Lucide icon.
     assert "integration_status('ready', 'Available', display='indicator')" in overview

@@ -1,13 +1,17 @@
 import logging
 
-from flask import redirect, render_template, request, url_for
+from flask import (
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from werkzeug.exceptions import HTTPException
 
 from app.notifications.service import record_operational_activity
 from app.rbac.decorators import permission_required
-from app.reports.web import render_reports_unavailable
 from app.reports.generated.service import (
     archive_report_record,
     bulk_archive_report_records,
@@ -15,6 +19,7 @@ from app.reports.generated.service import (
     get_report_detail_payload,
     restore_archived_report_record,
 )
+from app.reports.web import render_reports_unavailable
 
 
 logger = logging.getLogger(__name__)

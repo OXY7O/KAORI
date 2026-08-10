@@ -67,23 +67,22 @@ def build_forecast_chart(payload: Mapping[str, Any]) -> str:
     for tick in range(0, int(max_value) + 1, 20):
         tick_y = y(float(tick))
         parts.append(
-            f'<line x1="{left}" y1="{tick_y:.1f}" x2="{width-right}" y2="{tick_y:.1f}" '
+            f'<line x1="{left}" y1="{tick_y:.1f}" x2="{width - right}" y2="{tick_y:.1f}" '
             'stroke="#E7E2EE" stroke-width="1"/>'
         )
         parts.append(
-            f'<text x="{left-9}" y="{tick_y+4:.1f}" text-anchor="end" font-size="10" '
-            f'fill="#6B7280">{tick}%</text>'
+            f'<text x="{left - 9}" y="{tick_y + 4:.1f}" text-anchor="end" font-size="10" fill="#6B7280">{tick}%</text>'
         )
 
     for threshold, color, label in ((75, '#B45309', 'Warning'), (90, '#B91C1C', 'Critical')):
         if threshold <= max_value:
             threshold_y = y(float(threshold))
             parts.append(
-                f'<line x1="{left}" y1="{threshold_y:.1f}" x2="{width-right}" y2="{threshold_y:.1f}" '
+                f'<line x1="{left}" y1="{threshold_y:.1f}" x2="{width - right}" y2="{threshold_y:.1f}" '
                 f'stroke="{color}" stroke-width="1.4" stroke-dasharray="5 5"/>'
             )
             parts.append(
-                f'<text x="{width-right}" y="{threshold_y-5:.1f}" text-anchor="end" font-size="9" '
+                f'<text x="{width - right}" y="{threshold_y - 5:.1f}" text-anchor="end" font-size="9" '
                 f'fill="{color}">{label} {threshold}%</text>'
             )
 
@@ -98,16 +97,16 @@ def build_forecast_chart(payload: Mapping[str, Any]) -> str:
                 f'<circle cx="{current_x:.1f}" cy="{current_y:.1f}" r="4" fill="#FFFFFF" '
                 f'stroke="{color}" stroke-width="3"/>',
                 f'<circle cx="{projected_x:.1f}" cy="{projected_y:.1f}" r="4" fill="{color}"/>',
-                f'<text x="{projected_x+9:.1f}" y="{projected_y+4:.1f}" font-size="10" fill="{color}">'
+                f'<text x="{projected_x + 9:.1f}" y="{projected_y + 4:.1f}" font-size="10" fill="{color}">'
                 f'{html.escape(label)} {projected:.1f}%</text>',
             ]
         )
 
     parts.extend(
         [
-            f'<text x="{current_x:.1f}" y="{height-16}" text-anchor="middle" font-size="11" '
+            f'<text x="{current_x:.1f}" y="{height - 16}" text-anchor="middle" font-size="11" '
             'font-weight="700" fill="#1F2937">Current</text>',
-            f'<text x="{projected_x:.1f}" y="{height-16}" text-anchor="middle" font-size="11" '
+            f'<text x="{projected_x:.1f}" y="{height - 16}" text-anchor="middle" font-size="11" '
             'font-weight="700" fill="#1F2937">Projected</text>',
             '</svg>',
         ]
@@ -159,15 +158,15 @@ def build_alert_severity_chart(payload: Mapping[str, Any]) -> str:
         length = circumference * count / total
         parts.append(
             f'<circle cx="{center_x}" cy="{center_y}" r="{radius}" fill="none" '
-            f'stroke="{palette[label]}" stroke-width="24" stroke-dasharray="{length:.2f} {circumference-length:.2f}" '
+            f'stroke="{palette[label]}" stroke-width="24" stroke-dasharray="{length:.2f} {circumference - length:.2f}" '
             f'stroke-dashoffset="{-offset:.2f}" transform="rotate(-90 {center_x} {center_y})"/>'
         )
         offset += length
 
     parts.extend(
         [
-            f'<text x="{center_x}" y="{center_y-3}" text-anchor="middle" font-size="11" fill="#6B7280">Alerts</text>',
-            f'<text x="{center_x}" y="{center_y+25}" text-anchor="middle" font-size="27" '
+            f'<text x="{center_x}" y="{center_y - 3}" text-anchor="middle" font-size="11" fill="#6B7280">Alerts</text>',
+            f'<text x="{center_x}" y="{center_y + 25}" text-anchor="middle" font-size="27" '
             f'font-weight="700" fill="#1F2937">{total}</text>',
         ]
     )
@@ -178,8 +177,7 @@ def build_alert_severity_chart(payload: Mapping[str, Any]) -> str:
         y = legend_y + index * 35
         parts.append(f'<circle cx="{legend_x}" cy="{y}" r="5" fill="{palette[label]}"/>')
         parts.append(
-            f'<text x="{legend_x+14}" y="{y+4}" font-size="11" fill="#1F2937">'
-            f'{label}: {counts[label]}</text>'
+            f'<text x="{legend_x + 14}" y="{y + 4}" font-size="11" fill="#1F2937">{label}: {counts[label]}</text>'
         )
 
     parts.append('</svg>')

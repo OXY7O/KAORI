@@ -51,8 +51,12 @@ def test_protected_reveal_revalidates_policy_at_every_security_boundary() -> Non
 def test_configuration_changes_invalidate_active_protected_reveal_requests() -> None:
     policy = read('app/kubernetes_operations/secrets/reveal_policy.py')
 
-    readiness_block = policy.split('def update_cluster_reveal_readiness(', 1)[1].split('def set_namespace_reveal_policy(', 1)[0]
-    namespace_block = policy.split('def set_namespace_reveal_policy(', 1)[1].split('def build_namespace_policy_rows(', 1)[0]
+    readiness_block = policy.split('def update_cluster_reveal_readiness(', 1)[1].split(
+        'def set_namespace_reveal_policy(', 1
+    )[0]
+    namespace_block = policy.split('def set_namespace_reveal_policy(', 1)[1].split(
+        'def build_namespace_policy_rows(', 1
+    )[0]
 
     assert "SecretRevealRequest.status.in_(('pending', 'approved'))" in readiness_block
     assert "{'status': 'expired'}" in readiness_block
@@ -72,8 +76,12 @@ def test_protected_reveal_pagination_uses_title_case_resource_label() -> None:
 
 def test_secret_reveal_dark_mode_keeps_violet_for_accents_and_actions() -> None:
     administration = read('app/templates/platform_operations/kubernetes/_secret_reveal_workspace.html')
-    namespace_section = read('app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html')
-    namespace_table = read('app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html')
+    namespace_section = read(
+        'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html'
+    )
+    namespace_table = read(
+        'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html'
+    )
     request_form = read('app/templates/kubernetes_operations/secrets/_reveal_request_form.html')
     request_status = read('app/templates/kubernetes_operations/secrets/_reveal_request_status.html')
 

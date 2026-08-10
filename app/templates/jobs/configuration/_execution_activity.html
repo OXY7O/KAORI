@@ -21,16 +21,13 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                {{ table_label.status_indicator_label(
-                    selected_job.execution_state.label,
-                    selected_job.execution_state.tone,
-                    selected_job.execution_state.icon
-                ) }}
+                {{ table_label.status_indicator_label(selected_job.execution_state.label,
+                                selected_job.execution_state.tone,
+                                selected_job.execution_state.icon) }}
                 {{ table_label.metadata_label(definition.queue_name) }}
             </div>
         </div>
     </header>
-
     <div class="border-b border-outline-subtle px-5 py-5 sm:px-6">
         <div class="overflow-hidden rounded-xl border border-kaori-primary/15 bg-kaori-soft/40">
             <div class="flex flex-col gap-5 px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
@@ -42,11 +39,9 @@
                     <div class="min-w-0 flex-1">
                         <div class="flex flex-wrap items-center gap-2">
                             <p class="text-xs font-semibold text-kaori-primary/80">Current Execution</p>
-                            {{ table_label.status_indicator_label(
-                                active_job.status_label if active_job else selected_job.execution_state.label,
-                                active_job.status_tone if active_job else selected_job.execution_state.tone,
-                                active_job.status_icon if active_job else selected_job.execution_state.icon
-                            ) }}
+                            {{ table_label.status_indicator_label(active_job.status_label if active_job else selected_job.execution_state.label,
+                                                        active_job.status_tone if active_job else selected_job.execution_state.tone,
+                                                        active_job.status_icon if active_job else selected_job.execution_state.icon) }}
                         </div>
                         <p class="mt-2 text-sm font-semibold leading-6 text-content-primary">
                             {{ active_job.progress_message if active_job else selected_job.execution_state.description }}
@@ -60,26 +55,20 @@
                         </p>
                     </div>
                 </div>
-
                 {% if active_job %}
                     <div class="w-full lg:max-w-sm">
                         <div class="flex items-center justify-between gap-3 text-xs">
                             <span class="font-medium text-content-secondary">Execution Progress</span>
                             <span class="font-semibold text-kaori-primary">{{ active_job.progress }}%</span>
                         </div>
-                        {{ progress_bar.determinate(
-                            active_job.progress,
-                            label=definition.name ~ ' execution progress',
-                            classes='mt-2 block h-2 w-full overflow-hidden rounded-full accent-kaori-primary'
-                        ) }}
+                        {{ progress_bar.determinate(active_job.progress,
+                                                label=definition.name ~ ' execution progress',
+                                                classes='mt-2 block h-2 w-full overflow-hidden rounded-full accent-kaori-primary') }}
                     </div>
                 {% else %}
-                    <div class="self-start lg:self-center">
-                        {{ table_label.status_indicator_label('Ready for Execution', 'normal') }}
-                    </div>
+                    <div class="self-start lg:self-center">{{ table_label.status_indicator_label('Ready for Execution', 'normal') }}</div>
                 {% endif %}
             </div>
-
             <div class="grid border-t border-kaori-primary/10 bg-surface-card/70 sm:grid-cols-2 lg:grid-cols-4">
                 <div class="px-4 py-3 sm:px-5">
                     <p class="text-xs font-semibold text-content-muted">Scope</p>
@@ -100,7 +89,6 @@
             </div>
         </div>
     </div>
-
     <div class="flex flex-col gap-4 bg-surface-hover px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
         <p class="max-w-3xl text-xs leading-5 text-content-secondary">
             Manual runs use the same queue, job record, and audit boundary as scheduled executions.
@@ -130,16 +118,13 @@
             {% endif %}
         </div>
     </div>
-
     <div class="border-t border-outline-subtle">
         <div class="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <div>
                 <h4 class="text-sm font-semibold text-content-primary">Recent Executions</h4>
                 <p class="mt-1 text-xs leading-5 text-content-muted">{{ definition.recent_execution_summary }}</p>
             </div>
-            <span class="text-xs font-semibold text-content-muted">
-                Latest {{ selected_job.recent_jobs|length }} Records
-            </span>
+            <span class="text-xs font-semibold text-content-muted">Latest {{ selected_job.recent_jobs|length }} Records</span>
         </div>
         <div class="divide-y divide-outline-subtle border-t border-outline-subtle">
             {% for job in selected_job.recent_jobs %}
@@ -161,11 +146,9 @@
                             <span class="text-content-muted">Progress</span>
                             <span class="font-semibold text-content-primary">{{ job.progress }}%</span>
                         </div>
-                        {{ progress_bar.determinate(
-                            job.progress,
-                            label='Recent execution progress',
-                            classes='mt-2 block h-1.5 w-full overflow-hidden rounded-full accent-kaori-primary'
-                        ) }}
+                        {{ progress_bar.determinate(job.progress,
+                                                label='Recent execution progress',
+                                                classes='mt-2 block h-1.5 w-full overflow-hidden rounded-full accent-kaori-primary') }}
                     </div>
                     <div class="text-xs lg:col-span-3 lg:text-right">
                         <p class="font-semibold text-content-primary">{{ job.queued_at }}</p>
@@ -182,7 +165,7 @@
                                     {% endif %}
                                 </div>
                                 {% if job.error_code %}
-                                    {{ table_label.metadata_label(job.error_code|replace('_', ' ')|title, size='compact') }}
+                                    {{ table_label.metadata_label(job.error_code|replace('_', ' ') |title, size='compact') }}
                                 {% endif %}
                             </div>
                         </div>
@@ -199,10 +182,10 @@
             {% endfor %}
         </div>
     </div>
-
     <footer class="border-t border-kaori-primary/15 bg-kaori-soft px-5 py-3 sm:px-6">
         <p class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
-            <i data-lucide="shield-check" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+            <i data-lucide="shield-check"
+               class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
             <span><strong class="font-semibold text-content-primary">Execution Safety:</strong> {{ definition.safety_summary }}</span>
         </p>
     </footer>

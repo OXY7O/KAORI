@@ -38,10 +38,7 @@ def filter_tenant_quota_rows(
             not selected_quota_status
             or str((row.get('quota_status') or {}).get('label') or '') == selected_quota_status
         )
-        and (
-            not selected_risk
-            or str((row.get('risk') or {}).get('label') or '') == selected_risk
-        )
+        and (not selected_risk or str((row.get('risk') or {}).get('label') or '') == selected_risk)
     ]
 
 
@@ -197,7 +194,9 @@ def _selected_state(query_args: Mapping[str, Any]) -> dict[str, str]:
         'selected_tenant_risk': get_query_value(query_args=query_args, name='tenant_risk', default=''),
         'selected_workload_search': get_query_value(query_args=query_args, name='workload_search', default=''),
         'selected_workload_type': get_query_value(query_args=query_args, name='workload_type', default=''),
-        'selected_workload_configuration': get_query_value(query_args=query_args, name='workload_configuration', default=''),
+        'selected_workload_configuration': get_query_value(
+            query_args=query_args, name='workload_configuration', default=''
+        ),
         'selected_workload_qos': get_query_value(query_args=query_args, name='workload_qos', default=''),
         'selected_workload_risk': get_query_value(query_args=query_args, name='workload_risk', default=''),
         'initial_tab': initial_tab,
@@ -213,11 +212,7 @@ def _scope_rows(rows: list[dict[str, Any]], selected_namespace: str) -> list[dic
 def _scope_findings(findings: list[dict[str, Any]], selected_namespace: str) -> list[dict[str, Any]]:
     if not selected_namespace:
         return findings
-    return [
-        finding
-        for finding in findings
-        if str(finding.get('namespace') or '') in {'', selected_namespace}
-    ]
+    return [finding for finding in findings if str(finding.get('namespace') or '') in {'', selected_namespace}]
 
 
 def _nested_label_options(rows: list[dict[str, Any]], field: str) -> list[str]:

@@ -16,10 +16,10 @@ def test_execution_overview_uses_integrated_workspace() -> None:
 
     assert 'Execution Overview' in source
     assert 'Execution Workspace' in source
-    assert "{% set embedded = true %}" in source
-    assert "Active Work" in source
-    assert "Registry" in source
-    assert "Queues" in source
+    assert '{% set embedded = true %}' in source
+    assert 'Active Work' in source
+    assert 'Registry' in source
+    assert 'Queues' in source
     assert 'rounded-2xl border border-brand-outline bg-kaori-soft/60' not in source
 
 
@@ -70,6 +70,7 @@ def test_changed_execution_templates_parse_and_follow_source_hygiene() -> None:
         assert '<details' not in source
         assert '<summary' not in source
         import re
+
         assert re.search(r'#[0-9a-fA-F]{3,8}', source) is None
 
 

@@ -17,12 +17,8 @@ def build_workload_posture(
             'icon': 'circle-help',
         }
 
-    critical_count = sum(
-        1 for item in governance_findings if item.get('severity') == 'critical'
-    )
-    warning_count = sum(
-        1 for item in governance_findings if item.get('severity') == 'warning'
-    )
+    critical_count = sum(1 for item in governance_findings if item.get('severity') == 'critical')
+    warning_count = sum(1 for item in governance_findings if item.get('severity') == 'warning')
     if critical_count:
         return {
             'value': 'Critical',
@@ -73,11 +69,7 @@ def build_governance_findings(
     """Build factual findings without manufacturing a healthy placeholder row."""
     definitions = (
         (
-            sum(
-                1
-                for row in tenant_quota_rows
-                if (row.get('quota_status') or {}).get('label') == 'Missing'
-            ),
+            sum(1 for row in tenant_quota_rows if (row.get('quota_status') or {}).get('label') == 'Missing'),
             'Namespaces Without ResourceQuota',
             'warning',
             'triangle-alert',
@@ -98,8 +90,7 @@ def build_governance_findings(
             sum(
                 1
                 for row in workload_mapping_rows
-                if (row.get('limit_coverage') or {}).get('label')
-                in {'Memory Limit Missing', 'Limits Unset', 'Partial'}
+                if (row.get('limit_coverage') or {}).get('label') in {'Memory Limit Missing', 'Limits Unset', 'Partial'}
             ),
             'Workloads Need Memory Limit Review',
             'warning',
@@ -107,33 +98,21 @@ def build_governance_findings(
             'missing-limit',
         ),
         (
-            sum(
-                1
-                for row in workload_mapping_rows
-                if (row.get('qos') or {}).get('label') == 'BestEffort'
-            ),
+            sum(1 for row in workload_mapping_rows if (row.get('qos') or {}).get('label') == 'BestEffort'),
             'BestEffort Workloads',
             'warning',
             'info',
             'best-effort',
         ),
         (
-            sum(
-                1
-                for row in workload_mapping_rows
-                if (row.get('metrics_coverage') or {}).get('label') != 'Complete'
-            ),
+            sum(1 for row in workload_mapping_rows if (row.get('metrics_coverage') or {}).get('label') != 'Complete'),
             'Workloads Have Incomplete Metrics Coverage',
             'unknown',
             'database-zap',
             'metrics-coverage',
         ),
         (
-            sum(
-                1
-                for row in workload_mapping_rows
-                if 'reduce' in str(row.get('recommendation') or '').casefold()
-            ),
+            sum(1 for row in workload_mapping_rows if 'reduce' in str(row.get('recommendation') or '').casefold()),
             'Workloads Need Right-Sizing Review',
             'warning',
             'scale',

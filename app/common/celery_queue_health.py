@@ -15,8 +15,7 @@ def _copy_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
         **snapshot,
         'worker_names': list(snapshot.get('worker_names') or []),
         'worker_queues': {
-            str(worker): list(queues or [])
-            for worker, queues in dict(snapshot.get('worker_queues') or {}).items()
+            str(worker): list(queues or []) for worker, queues in dict(snapshot.get('worker_queues') or {}).items()
         },
     }
 
@@ -123,9 +122,7 @@ def get_queue_readiness(
             'queue_name': normalized_queue,
             'worker_count': len(queue_workers),
             'worker_names': queue_workers,
-            'description': (
-                f'{len(queue_workers)} worker(s) are listening on the {normalized_queue} queue.'
-            ),
+            'description': (f'{len(queue_workers)} worker(s) are listening on the {normalized_queue} queue.'),
             'show_warning': False,
         }
 
@@ -139,9 +136,7 @@ def get_queue_readiness(
             'queue_name': normalized_queue,
             'worker_count': 0,
             'worker_names': worker_names,
-            'description': (
-                f'Celery workers responded, but none are listening on the {normalized_queue} queue.'
-            ),
+            'description': (f'Celery workers responded, but none are listening on the {normalized_queue} queue.'),
             'show_warning': True,
         }
 
@@ -155,9 +150,7 @@ def get_queue_readiness(
             'queue_name': normalized_queue,
             'worker_count': 0,
             'worker_names': [],
-            'description': (
-                f'No worker is available for the {normalized_queue} queue. Queued jobs cannot start.'
-            ),
+            'description': (f'No worker is available for the {normalized_queue} queue. Queued jobs cannot start.'),
             'show_warning': True,
         }
 
@@ -170,8 +163,6 @@ def get_queue_readiness(
         'queue_name': normalized_queue,
         'worker_count': 0,
         'worker_names': [],
-        'description': (
-            f'KAORI could not verify a worker for the {normalized_queue} queue.'
-        ),
+        'description': (f'KAORI could not verify a worker for the {normalized_queue} queue.'),
         'show_warning': True,
     }

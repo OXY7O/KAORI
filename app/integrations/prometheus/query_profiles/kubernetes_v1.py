@@ -31,8 +31,10 @@ _TC_WORKER_LABELS = (
     _NODE_ROLE_LABEL,
 )
 
+
 def _tc_scope(namespace: str) -> str:
     return f'namespace="{namespace}"' if namespace else 'namespace!=""'
+
 
 def _tc_active_worker_pods(
     namespace: str,
@@ -58,6 +60,7 @@ def _tc_active_worker_pods(
         ')'
     )
 
+
 def _tc_container_signal(signal: str, namespace: str) -> str:
     return (
         'max by (namespace, pod, container) (\n'
@@ -69,32 +72,32 @@ def _tc_container_signal(signal: str, namespace: str) -> str:
         ')'
     )
 
+
 def _tc_cpu_signal(namespace: str) -> str:
     scope = _tc_scope(namespace)
     return _tc_container_signal(
-        'rate('
-        f'container_cpu_usage_seconds_total{{{scope}, pod!="", container!="", '
-        'container!="POD", image!=""}[5m])',
+        f'rate(container_cpu_usage_seconds_total{{{scope}, pod!="", container!="", container!="POD", image!=""}}[5m])',
         namespace,
     )
+
 
 def _tc_memory_signal(namespace: str) -> str:
     scope = _tc_scope(namespace)
     return _tc_container_signal(
-        f'container_memory_working_set_bytes{{{scope}, pod!="", container!="", '
-        'container!="POD", image!=""}',
+        f'container_memory_working_set_bytes{{{scope}, pod!="", container!="", container!="POD", image!=""}}',
         namespace,
     )
+
 
 def _tc_resource_signal(namespace: str, *, resource: str, kind: str) -> str:
     scope = _tc_scope(namespace)
     metric = f'kube_pod_container_resource_{kind}'
     unit = 'core' if resource == 'cpu' else 'byte'
     return _tc_container_signal(
-        f'{metric}{{{scope}, pod!="", container!="", '
-        f'resource="{resource}", unit="{unit}"}}',
+        f'{metric}{{{scope}, pod!="", container!="", resource="{resource}", unit="{unit}"}}',
         namespace,
     )
+
 
 def _tc_pod_owner(namespace: str) -> str:
     scope = _tc_scope(namespace)
@@ -106,8 +109,10 @@ def _tc_pod_owner(namespace: str) -> str:
         f'{_tc_active_worker_pods(namespace)}'
     )
 
+
 def _tc_pod_count(namespace: str) -> str:
     return f'sum by (namespace) (\n{_tc_active_worker_pods(namespace, phases="Running")}\n)'
+
 
 def _tc_ready_worker_capacity(resource: str, unit: str) -> str:
     return (
@@ -122,13 +127,11 @@ def _tc_ready_worker_capacity(resource: str, unit: str) -> str:
         ')'
     )
 
+
 def _tc_pvc_signal(namespace: str, metric: str) -> str:
     scope = _tc_scope(namespace)
-    return (
-        'max by (namespace, persistentvolumeclaim) (\n'
-        f'  {metric}{{{scope}, persistentvolumeclaim!=""}}\n'
-        ')'
-    )
+    return f'max by (namespace, persistentvolumeclaim) (\n  {metric}{{{scope}, persistentvolumeclaim!=""}}\n)'
+
 
 def _tc_definition(
     key: str,
@@ -145,14 +148,8 @@ def _tc_definition(
         required_metrics = tuple(dict.fromkeys((*metrics, *_TC_WORKER_METRICS)))
         required_labels = tuple(dict.fromkeys((*labels, *_TC_WORKER_LABELS)))
     elif worker_capacity:
-        required_metrics = tuple(
-            dict.fromkeys(
-                (*metrics, 'kube_node_status_condition', 'kube_node_role')
-            )
-        )
-        required_labels = tuple(
-            dict.fromkeys((*labels, _NODE_READY_LABEL, _NODE_ROLE_LABEL))
-        )
+        required_metrics = tuple(dict.fromkeys((*metrics, 'kube_node_status_condition', 'kube_node_role')))
+        required_labels = tuple(dict.fromkeys((*labels, _NODE_READY_LABEL, _NODE_ROLE_LABEL)))
     return QueryDefinition(
         key=key,
         expression=expression,
@@ -908,14 +905,20 @@ QUERIES: dict[str, QueryDefinition] = {
         expression='topk(\n    10,\n    sum by(namespace, pod)(\n        rate(\n            container_cpu_usage_seconds_total{\n                container!="",\n                container!="POD",\n                node!=""\n            }[5m]\n        )\n        unless on(node)\n        kube_node_role{role=~"control-plane|master"}\n    )\n)',
         domain='app.analytics.utilization',
         required_metrics=('container_cpu_usage_seconds_total', 'kube_node_role'),
-        required_labels=(('container_cpu_usage_seconds_total', ('container', 'namespace', 'pod', 'node')), _NODE_ROLE_LABEL),
+        required_labels=(
+            ('container_cpu_usage_seconds_total', ('container', 'namespace', 'pod', 'node')),
+            _NODE_ROLE_LABEL,
+        ),
     ),
     'analytics.utilization.queries.TOP_MEMORY_CONSUMERS': QueryDefinition(
         key='analytics.utilization.queries.TOP_MEMORY_CONSUMERS',
         expression='topk(\n    10,\n    sum by(namespace, pod)(\n        container_memory_working_set_bytes{\n            container!="",\n            container!="POD",\n            node!=""\n        }\n        unless on(node)\n        kube_node_role{role=~"control-plane|master"}\n    )\n)',
         domain='app.analytics.utilization',
         required_metrics=('container_memory_working_set_bytes', 'kube_node_role'),
-        required_labels=(('container_memory_working_set_bytes', ('container', 'namespace', 'pod', 'node')), _NODE_ROLE_LABEL),
+        required_labels=(
+            ('container_memory_working_set_bytes', ('container', 'namespace', 'pod', 'node')),
+            _NODE_ROLE_LABEL,
+        ),
     ),
     'analytics.utilization.queries.KUBERNETES_VERSION': QueryDefinition(
         key='analytics.utilization.queries.KUBERNETES_VERSION',

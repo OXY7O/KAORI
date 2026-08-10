@@ -6,8 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 EXPECTED_HERO_DESCRIPTION = (
-    'Operate and govern infrastructure with unified visibility, workflows, analytics, '
-    'reporting, and administration.'
+    'Operate and govern infrastructure with unified visibility, workflows, analytics, reporting, and administration.'
 )
 
 

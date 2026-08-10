@@ -6,8 +6,7 @@ from app.extensions.db import db
 from app.models.report import Report, ReportSchedule, ReportScheduleRun
 
 _QUEUE_FAILURE_MESSAGE = (
-    'KAORI could not queue the report job. Review the Reports worker, broker, '
-    'and queue configuration.'
+    'KAORI could not queue the report job. Review the Reports worker, broker, and queue configuration.'
 )
 _REPORT_QUEUE_FAILURE_MESSAGE = (
     'KAORI could not queue this scheduled report. Review the Reports worker, '

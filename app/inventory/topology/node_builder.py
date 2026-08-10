@@ -22,7 +22,12 @@ from app.inventory.topology.contracts import (
     TopologyRecords,
     TopologySelection,
 )
-from app.inventory.topology.presentation import field, node_element, selector_matches, status_tone
+from app.inventory.topology.presentation import (
+    field,
+    node_element,
+    selector_matches,
+    status_tone,
+)
 
 
 class TopologyNodeBuilder:
@@ -196,7 +201,7 @@ class TopologyNodeBuilder:
             details = item.details or {}
             external_addresses = ', '.join(details.get('external_addresses') or [])
             port_mappings = ', '.join(
-                f"{int(port.get('port') or 0)}/{port.get('protocol') or 'TCP'}"
+                f'{int(port.get("port") or 0)}/{port.get("protocol") or "TCP"}'
                 for port in details.get('ports') or []
                 if isinstance(port, dict)
             )

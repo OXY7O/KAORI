@@ -131,11 +131,7 @@ def test_single_tls_update_reports_provider_failure_separately(
 ) -> None:
     updates = _load_updates(monkeypatch)
     record = _record()
-    updates.db.session.get = (
-        lambda model, certificate_id: record
-        if model is updates.TLSCertificateInventory
-        else None
-    )
+    updates.db.session.get = lambda model, certificate_id: record if model is updates.TLSCertificateInventory else None
     monkeypatch.setattr(
         updates,
         'patch_tls_secret',
@@ -155,11 +151,7 @@ def test_single_tls_provider_failure_reports_unconfirmed_failure_event_when_data
 ) -> None:
     updates = _load_updates(monkeypatch, commit_error=True)
     record = _record()
-    updates.db.session.get = (
-        lambda model, certificate_id: record
-        if model is updates.TLSCertificateInventory
-        else None
-    )
+    updates.db.session.get = lambda model, certificate_id: record if model is updates.TLSCertificateInventory else None
     monkeypatch.setattr(
         updates,
         'patch_tls_secret',
@@ -179,11 +171,7 @@ def test_single_tls_update_warns_when_provider_succeeds_but_persistence_fails(
 ) -> None:
     updates = _load_updates(monkeypatch, commit_error=True)
     record = _record()
-    updates.db.session.get = (
-        lambda model, certificate_id: record
-        if model is updates.TLSCertificateInventory
-        else None
-    )
+    updates.db.session.get = lambda model, certificate_id: record if model is updates.TLSCertificateInventory else None
     provider_calls: list[int] = []
     monkeypatch.setattr(
         updates,

@@ -99,14 +99,10 @@ class KubernetesDiscovery:
         blocked = [value for value in required if value['status'] == 'blocked']
         legacy = [value for value in required if value['status'] == 'legacy']
         optional_blocked = [
-            key
-            for key, value in features.items()
-            if not self._contract(key).required and value['status'] == 'blocked'
+            key for key, value in features.items() if not self._contract(key).required and value['status'] == 'blocked'
         ]
         optional_legacy = [
-            key
-            for key, value in features.items()
-            if not self._contract(key).required and value['status'] == 'legacy'
+            key for key, value in features.items() if not self._contract(key).required and value['status'] == 'legacy'
         ]
 
         if blocked:
@@ -126,14 +122,10 @@ class KubernetesDiscovery:
             'features': features,
             'selected_adapters': selected_adapters,
             'blocked_features': sorted(
-                key
-                for key, value in features.items()
-                if self._contract(key).required and value['status'] == 'blocked'
+                key for key, value in features.items() if self._contract(key).required and value['status'] == 'blocked'
             ),
             'legacy_features': sorted(
-                key
-                for key, value in features.items()
-                if self._contract(key).required and value['status'] == 'legacy'
+                key for key, value in features.items() if self._contract(key).required and value['status'] == 'legacy'
             ),
             'optional_blocked_features': sorted(optional_blocked),
             'optional_legacy_features': sorted(optional_legacy),

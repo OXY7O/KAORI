@@ -45,7 +45,6 @@ def _metric_capability_state(
     return 'available', ready_evidence
 
 
-
 @dataclass(frozen=True)
 class QueryCheckResult:
     key: str

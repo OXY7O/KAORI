@@ -19,21 +19,21 @@ def calculate_next_run(*, interval_minutes: int, now: datetime | None = None) ->
 
 
 def _new_policy(definition: JobDefinition) -> JobPolicy:
-    return JobPolicy(
-        job_key=definition.key,
-        enabled=definition.default_enabled,
-        trigger_type='interval',
-        interval_minutes=definition.default_interval_minutes,
-        timezone='UTC',
-        scope_type=definition.scope_type,
-        scope_key=definition.scope_key,
-        configuration_json=dict(definition.default_configuration or {}),
-        next_run_at=(
-            calculate_next_run(interval_minutes=definition.default_interval_minutes)
-            if definition.default_enabled and definition.schedule_supported
-            else None
-        ),
+    policy = JobPolicy()
+    policy.job_key = definition.key
+    policy.enabled = definition.default_enabled
+    policy.trigger_type = 'interval'
+    policy.interval_minutes = definition.default_interval_minutes
+    policy.timezone = 'UTC'
+    policy.scope_type = definition.scope_type
+    policy.scope_key = definition.scope_key
+    policy.configuration_json = dict(definition.default_configuration or {})
+    policy.next_run_at = (
+        calculate_next_run(interval_minutes=definition.default_interval_minutes)
+        if definition.default_enabled and definition.schedule_supported
+        else None
     )
+    return policy
 
 
 def get_or_create_job_policy(job_key: str) -> JobPolicy:

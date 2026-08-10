@@ -15,7 +15,7 @@ def test_configuration_uses_shared_side_decision_and_primary_form_workspace():
     assert 'Prometheus Configuration Decision' in text
     assert 'data-kaori-configuration-decision-side' in shared
     assert 'Controlled Flow' in shared
-    assert "xl:grid-cols-[minmax(0,1fr)_25rem]" in text
+    assert 'xl:grid-cols-[minmax(0,1fr)_25rem]' in text
     assert 'items-stretch' in text
     assert 'embedded=true' in text
     assert 'flex h-full min-h-full flex-col self-stretch' in shared
@@ -36,13 +36,14 @@ def test_validation_uses_kubernetes_style_capability_readiness_before_full_width
     registry = PROMQL_REGISTRY.read_text()
     assert 'Prometheus Validation & PromQL' in text
     assert 'Prometheus Capability Readiness' in text
-    assert "integrations/components/_capability_readiness.html" in text
-    assert "capability_readiness.render(" in text
+    assert 'integrations/components/_capability_readiness.html' in text
+    assert 'capability_readiness.render(' in text
     assert "include 'prometheus/partials/_capability_registry.html'" in text
     assert 'PromQL Capability Registry' in registry
     assert 'data-kaori-provider-capability-matrix' in text
     assert 'Validation Decision' not in text
     assert 'lg:sticky lg:top-4' not in text
+
 
 def test_promql_registry_is_full_width_and_uses_server_backed_kaori_loading():
     text = PROMQL_REGISTRY.read_text()
@@ -83,7 +84,7 @@ def test_validation_filters_are_htmx_backed_and_buttonless():
 def test_prometheus_detail_alpine_shell_is_not_corrupted():
     text = DETAIL.read_text()
     assert 'integrationWorkspaceTabs(' in text
-    assert "x-on:popstate.window=\"syncTab()\"" in text
+    assert 'x-on:popstate.window="syncTab()"' in text
     assert "scrollIntoView({ behavior: 'smooth', block: 'start' })); } } }" not in text
 
 
@@ -91,8 +92,8 @@ def test_promql_view_more_matches_kubernetes_capability_evidence_concept():
     registry = PROMQL_REGISTRY.read_text()
     shared = (ROOT / 'app/templates/integrations/components/_provider_capability_detail.html').read_text()
     actions = (ROOT / 'app/templates/integrations/components/_record_actions.html').read_text()
-    assert "provider_capability_detail.content(" in registry
-    assert "record_actions.view_more(" in registry
+    assert 'provider_capability_detail.content(' in registry
+    assert 'record_actions.view_more(' in registry
     assert "'Prometheus Capability Evidence'" in registry
     for token in (
         'Capability Contract',

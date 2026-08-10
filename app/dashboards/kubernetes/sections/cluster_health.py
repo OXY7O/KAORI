@@ -177,9 +177,7 @@ def _capacity_percent(snapshot: CapacitySnapshot | None, label: str) -> float | 
 
 
 def _derive_cluster_status(signals: ClusterStatusSignals) -> str:
-    raw_status = normalize_status(
-        get_attr(signals.cluster, 'status', 'connection_status', 'health', default='')
-    )
+    raw_status = normalize_status(get_attr(signals.cluster, 'status', 'connection_status', 'health', default=''))
     if not signals.inventory_nodes_available:
         return _status_without_inventory(signals)
     if raw_status in {'offline', 'failed', 'unreachable', 'critical'}:
@@ -220,9 +218,7 @@ def _has_warning_signal(signals: ClusterStatusSignals, raw_status: str) -> bool:
 
 
 def _derive_cluster_status_reason(signals: ClusterStatusSignals) -> str:
-    raw_status = normalize_status(
-        get_attr(signals.cluster, 'status', 'connection_status', 'health', default='')
-    )
+    raw_status = normalize_status(get_attr(signals.cluster, 'status', 'connection_status', 'health', default=''))
     if not signals.inventory_nodes_available:
         return _reason_without_inventory(signals)
     reason = _critical_reason(signals, raw_status)

@@ -19,7 +19,6 @@ from app.models.job import JobExecution
 logger = logging.getLogger(__name__)
 
 
-
 class NoEligibleTLSCertificateTargets(RuntimeError):
     """Raised when no cluster can be collected through a canonical Kubernetes binding."""
 
@@ -95,9 +94,7 @@ def _resolve_overlap(
             return [], job
 
     busy_cluster_ids = set().union(*(_job_target_ids(job) for job in active_jobs))
-    remaining_targets = [
-        target for target in targets if str(target['cluster_id']) not in busy_cluster_ids
-    ]
+    remaining_targets = [target for target in targets if str(target['cluster_id']) not in busy_cluster_ids]
     if remaining_targets:
         return remaining_targets, None
 
@@ -148,13 +145,7 @@ def enqueue_tls_certificate_sync(
         else 'tls-certificate-inventory:global'
     )
     parameters: dict[str, Any] = {
-        'scope': (
-            'selected_cluster'
-            if selected_cluster_id
-            else 'fleet_subset'
-            if is_fleet_subset
-            else 'all_clusters'
-        ),
+        'scope': ('selected_cluster' if selected_cluster_id else 'fleet_subset' if is_fleet_subset else 'all_clusters'),
         'cluster_id': selected_cluster_id,
         'target_cluster_ids': [target['cluster_id'] for target in targets],
     }

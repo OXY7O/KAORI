@@ -46,8 +46,8 @@ def test_periodic_storage_probe_is_lightweight_and_routed_to_maintenance() -> No
     storage = read('app/reports/storage/service.py')
 
     assert "schedule['report-storage-readiness']" in config
-    assert "REPORT_STORAGE_HEALTH_INTERVAL_MINUTES" in config
-    assert "REPORT_STORAGE_HEALTH_CELERY_QUEUE" in config
+    assert 'REPORT_STORAGE_HEALTH_INTERVAL_MINUTES' in config
+    assert 'REPORT_STORAGE_HEALTH_CELERY_QUEUE' in config
     assert "'app.reports.storage.tasks'" in config
     assert "'app.reports.storage.tasks.refresh_report_storage_readiness_task'" in config
     assert "source='periodic'" in tasks

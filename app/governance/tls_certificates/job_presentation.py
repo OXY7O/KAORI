@@ -88,10 +88,7 @@ def present_tls_sync_job(job: JobExecution, *, user_id: int | None = None) -> di
             'progress_total': total,
             'progress_percent': progress_percent,
             'target_count': target_count,
-            'progress_text': (
-                f'{progress_percent}% · {target_count} target cluster'
-                f"{'s' if target_count != 1 else ''}"
-            ),
+            'progress_text': (f'{progress_percent}% · {target_count} target cluster{"s" if target_count != 1 else ""}'),
         }
 
     status, title, status_label = _terminal_status(job)
@@ -129,14 +126,10 @@ def present_tls_sync_job(job: JobExecution, *, user_id: int | None = None) -> di
         detail = job.error_message or job.progress_message or 'Review Jobs & Executions before retrying.'
 
     notification_deck_user_ids = {
-        int(value)
-        for value in (result.get('notification_deck_user_ids') or [])
-        if str(value).isdigit()
+        int(value) for value in (result.get('notification_deck_user_ids') or []) if str(value).isdigit()
     }
     activity_audit_saved = bool(result.get('activity_audit_saved'))
-    notification_deck_visible = (
-        user_id is not None and int(user_id) in notification_deck_user_ids
-    )
+    notification_deck_visible = user_id is not None and int(user_id) in notification_deck_user_ids
 
     return {
         'public_id': job.public_id,

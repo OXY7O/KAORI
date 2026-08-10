@@ -75,9 +75,7 @@ def _queue_icon(queue_name: str) -> str:
 
 
 def _attention_counts(query: Any, cutoff: datetime) -> tuple[int, int, int]:
-    active_attention = query.filter(
-        JobExecution.status.in_(_ACTIVE_ATTENTION_STATUSES)
-    ).count()
+    active_attention = query.filter(JobExecution.status.in_(_ACTIVE_ATTENTION_STATUSES)).count()
     recent_terminal_attention = query.filter(
         JobExecution.status.in_(_RECENT_ATTENTION_STATUSES),
         JobExecution.completed_at.isnot(None),

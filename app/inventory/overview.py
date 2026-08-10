@@ -68,8 +68,7 @@ def _build_inventory_signals(
                 'tone': 'critical',
                 'icon': 'plug-zap',
                 'description': (
-                    'The cluster connection is unavailable, so future inventory '
-                    'updates cannot be confirmed.'
+                    'The cluster connection is unavailable, so future inventory updates cannot be confirmed.'
                 ),
             }
         )
@@ -80,9 +79,7 @@ def _build_inventory_signals(
                 'label': 'Never Collected',
                 'tone': 'warning',
                 'icon': 'database-zap',
-                'description': (
-                    'No committed inventory snapshot is available for this cluster.'
-                ),
+                'description': ('No committed inventory snapshot is available for this cluster.'),
             }
         )
     elif _is_stale_inventory(synced_at):
@@ -92,8 +89,7 @@ def _build_inventory_signals(
                 'tone': 'warning',
                 'icon': 'clock-alert',
                 'description': (
-                    f'The latest snapshot is older than the '
-                    f'{INVENTORY_FRESHNESS_HOURS}-hour freshness window.'
+                    f'The latest snapshot is older than the {INVENTORY_FRESHNESS_HOURS}-hour freshness window.'
                 ),
             }
         )
@@ -105,8 +101,7 @@ def _build_inventory_signals(
                 'tone': 'info',
                 'icon': 'boxes',
                 'description': (
-                    'The cluster contains a high number of pods or workloads and may '
-                    'need closer inventory review.'
+                    'The cluster contains a high number of pods or workloads and may need closer inventory review.'
                 ),
             }
         )
@@ -117,10 +112,7 @@ def _build_inventory_signals(
                 'label': 'No Storage Data',
                 'tone': 'unknown',
                 'icon': 'hard-drive',
-                'description': (
-                    'Node inventory exists, but no current storage inventory records '
-                    'were collected.'
-                ),
+                'description': ('Node inventory exists, but no current storage inventory records were collected.'),
             }
         )
 
@@ -167,8 +159,7 @@ def _inventory_guidance(
         return {
             'title': 'Review Inventory Signals',
             'description': (
-                'Open the relevant asset inventory to validate the highlighted conditions '
-                'before planning changes.'
+                'Open the relevant asset inventory to validate the highlighted conditions before planning changes.'
             ),
             'tone': 'info',
             'icon': 'scan-search',
@@ -203,11 +194,7 @@ def _grouped_current_counts(model: Any, cluster_ids: list[Any]) -> dict[Any, int
     query = filter_current_generation(query, model)
     return {
         cluster_id: int(count or 0)
-        for cluster_id, count in (
-            query.filter(model.cluster_id.in_(cluster_ids))
-            .group_by(model.cluster_id)
-            .all()
-        )
+        for cluster_id, count in (query.filter(model.cluster_id.in_(cluster_ids)).group_by(model.cluster_id).all())
     }
 
 
@@ -224,9 +211,7 @@ def get_inventory_cluster_summary() -> tuple[
     if cluster_ids:
         inventories = {
             inventory.cluster_id: inventory
-            for inventory in ClusterInventory.query.filter(
-                ClusterInventory.cluster_id.in_(cluster_ids)
-            ).all()
+            for inventory in ClusterInventory.query.filter(ClusterInventory.cluster_id.in_(cluster_ids)).all()
         }
 
     summary: dict[str, dict[str, Any]] = {}
@@ -365,8 +350,12 @@ def get_inventory_freshness_context(cluster_id: str = '') -> dict[str, Any]:
         'collection_exceptions': collection_exceptions,
         'freshness_window_hours': INVENTORY_FRESHNESS_HOURS,
         'scope_label': selected[0].name if selected_count == 1 else f'{selected_count} Clusters',
-        'scope_supporting': 'Selected cluster' if selected_count == 1 else ('Fleet scope' if selected_count else 'No active scope'),
-        'latest_supporting': f'{INVENTORY_FRESHNESS_HOURS}-hour freshness window' if latest else 'No committed timestamp',
+        'scope_supporting': 'Selected cluster'
+        if selected_count == 1
+        else ('Fleet scope' if selected_count else 'No active scope'),
+        'latest_supporting': f'{INVENTORY_FRESHNESS_HOURS}-hour freshness window'
+        if latest
+        else 'No committed timestamp',
         'status': status,
         'tone': tone,
         'description': description,
@@ -481,7 +470,7 @@ def get_inventory_overview() -> dict[str, Any]:
             storage_count=counts['storage'],
         )
         populated_asset_types = sum(1 for count in counts.values() if count > 0)
-        dominant_asset_key = max(counts, key=counts.get) if total_objects else None
+        dominant_asset_key = max(counts, key=lambda asset_key: counts[asset_key]) if total_objects else None
         dominant_asset = (
             {
                 'label': INVENTORY_ASSET_LABELS[dominant_asset_key],
@@ -533,11 +522,7 @@ def get_inventory_overview() -> dict[str, Any]:
     health = get_inventory_health()
     total_clusters = totals['clusters']
     posture_status = (
-        'Unknown'
-        if total_clusters == 0
-        else 'Healthy'
-        if health['healthy_clusters'] == total_clusters
-        else 'Attention'
+        'Unknown' if total_clusters == 0 else 'Healthy' if health['healthy_clusters'] == total_clusters else 'Attention'
     )
     posture_tone = 'unknown' if posture_status == 'Unknown' else 'normal' if posture_status == 'Healthy' else 'warning'
 

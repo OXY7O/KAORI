@@ -117,11 +117,7 @@ def build_inventory_sync_context(policy: JobPolicy) -> dict[str, Any]:
         .order_by(JobExecution.updated_at.desc(), JobExecution.id.desc())
         .first()
     )
-    recent_jobs = (
-        jobs_query.order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
-        .limit(5)
-        .all()
-    )
+    recent_jobs = jobs_query.order_by(JobExecution.created_at.desc(), JobExecution.id.desc()).limit(5).all()
     latest_job = recent_jobs[0] if recent_jobs else None
 
     if policy.enabled and eligible_cluster_count:

@@ -71,15 +71,17 @@ def load_impact(
         monkeypatch,
     )
     current_generation_calls: list[object] = []
-    sys.modules['app.common.inventory_generation'].filter_current_generation = (
-        lambda query, model: current_generation_calls.append(model) or query
+    sys.modules['app.common.inventory_generation'].filter_current_generation = lambda query, model: (
+        current_generation_calls.append(model) or query
     )
     semantics = sys.modules['app.inventory.resources.configuration_semantics']
     semantics.COLLECTED = 'Collected'
     semantics.POD_EVIDENCE_KEY = 'inventory.pods'
     semantics.collection_state = lambda evidence, key: evidence.get(key, 'Not Reported')
-    sys.modules['app.inventory.resources.pod_semantics'].pod_operational_state = (
-        lambda phase, ready: ('Stable', 'normal', f'{phase} · {ready}')
+    sys.modules['app.inventory.resources.pod_semantics'].pod_operational_state = lambda phase, ready: (
+        'Stable',
+        'normal',
+        f'{phase} · {ready}',
     )
     sys.modules['app.kubernetes_operations.secrets.live_service'].LiveSecretSnapshot = type(
         'LiveSecretSnapshot',
@@ -87,9 +89,7 @@ def load_impact(
         {},
     )
 
-    cluster_query = Query(
-        [SimpleNamespace(collection_evidence={'inventory.pods': evidence_state})]
-    )
+    cluster_query = Query([SimpleNamespace(collection_evidence={'inventory.pods': evidence_state})])
     pod_query = Query(pods)
     models = sys.modules['app.models']
     models.ClusterInventory = type('ClusterInventory', (), {'query': cluster_query})

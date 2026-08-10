@@ -219,9 +219,7 @@ def validate(root: Path) -> list[str]:
     for queue in sorted(worker_queues - route_queues):
         errors.append(f'Production worker consumes a queue with no registered task route: {queue}')
 
-    report_route_queues = {
-        queue for task_name, queue in routes.items() if task_name.startswith('app.reports.')
-    }
+    report_route_queues = {queue for task_name, queue in routes.items() if task_name.startswith('app.reports.')}
     for queue in sorted(report_route_queues - development_worker_queues):
         errors.append(f'Report task queue has no Dev Container worker: {queue}')
 
@@ -235,9 +233,7 @@ def validate(root: Path) -> list[str]:
     if '--hostname=reports@%h' not in production_source:
         errors.append('Production reports-worker has no canonical reports hostname.')
 
-    devcontainer_config = json.loads(
-        (root / '.devcontainer' / 'devcontainer.json').read_text(encoding='utf-8')
-    )
+    devcontainer_config = json.loads((root / '.devcontainer' / 'devcontainer.json').read_text(encoding='utf-8'))
     if 'reports-worker' not in set(devcontainer_config.get('runServices') or []):
         errors.append('Dev Container runServices does not start reports-worker.')
 

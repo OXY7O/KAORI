@@ -198,8 +198,7 @@ def build_resource_utilization_presentation(
                 'ref': 'M5',
                 'title': 'Utilization Basis',
                 'description': (
-                    'Shared-resource posture uses committed summary metrics and P95 where the '
-                    'dataset provides it.'
+                    'Shared-resource posture uses committed summary metrics and P95 where the dataset provides it.'
                 ),
             },
         ),
@@ -220,9 +219,21 @@ def build_resource_utilization_presentation(
         ),
         'status_language': (
             {'ref': 'S1', 'title': 'Not Available', 'description': 'No evidence exists for the requested dimension.'},
-            {'ref': 'S2', 'title': 'Not Collected', 'description': 'Collection was prevented by configuration or failure.'},
-            {'ref': 'S3', 'title': 'Partial Coverage', 'description': 'Evidence exists but does not cover the full requested scope.'},
-            {'ref': 'S4', 'title': 'Source Unavailable', 'description': 'The source was unreachable or not providing data at the cut-off.'},
+            {
+                'ref': 'S2',
+                'title': 'Not Collected',
+                'description': 'Collection was prevented by configuration or failure.',
+            },
+            {
+                'ref': 'S3',
+                'title': 'Partial Coverage',
+                'description': 'Evidence exists but does not cover the full requested scope.',
+            },
+            {
+                'ref': 'S4',
+                'title': 'Source Unavailable',
+                'description': 'The source was unreachable or not providing data at the cut-off.',
+            },
         ),
     }
 
@@ -284,7 +295,7 @@ def build_resource_utilization_presentation(
                     'tone': 'normal' if total_nodes and not not_ready_nodes else 'warning',
                 },
             ),
-            'leading_title': f"{leading['label']} is the leading shared-resource signal.",
+            'leading_title': f'{leading["label"]} is the leading shared-resource signal.',
             'leading_body': _leading_interpretation(leading),
             'leading_note': (
                 'CPU and pod utilization remain within normal operating bands. '
@@ -343,11 +354,7 @@ def build_resource_utilization_presentation(
                     'Projection',
                     _optional_percent(memory_projection),
                     _forecast_eta(memory_forecast),
-                    (
-                        'warning'
-                        if memory_projection is not None and memory_projection >= 70
-                        else 'info'
-                    ),
+                    ('warning' if memory_projection is not None and memory_projection >= 70 else 'info'),
                 ),
             ),
             'chart_svg': memory_chart,
@@ -397,13 +404,12 @@ def build_resource_utilization_presentation(
                     'resource': 'Pods',
                     'used': pods['value'],
                     'capacity': (
-                        f"{_int(summary.get('pod_capacity'))} Total"
+                        f'{_int(summary.get("pod_capacity"))} Total'
                         if summary.get('pod_capacity') is not None
                         else 'Not Available'
                     ),
                     'headroom': (
-                        f"{max(_int(summary.get('pod_capacity')) - _int(summary.get('pod_count')), 0)} "
-                        'Remaining'
+                        f'{max(_int(summary.get("pod_capacity")) - _int(summary.get("pod_count")), 0)} Remaining'
                         if summary.get('pod_capacity') is not None
                         else 'Not Available'
                     ),
@@ -421,8 +427,8 @@ def build_resource_utilization_presentation(
                 },
             ),
             'interpretation': (
-                f"Pod utilization is {_percent(pods['percent'])}, leaving "
-                f"{_percent(pods['headroom'])} schedulable headroom. "
+                f'Pod utilization is {_percent(pods["percent"])}, leaving '
+                f'{_percent(pods["headroom"])} schedulable headroom. '
                 f'{ready_nodes} of {total_nodes} committed nodes are ready.'
                 if total_nodes
                 else 'Pod utilization is available, but node participation evidence was not returned.'
@@ -583,7 +589,6 @@ def _consumer_rows(items: list[Any], *, resource: str) -> list[dict[str, Any]]:
     return result
 
 
-
 def _memory_value_gib(value: float) -> float:
     """Normalize consumer memory to GiB without double-converting GiB input.
 
@@ -596,6 +601,7 @@ def _memory_value_gib(value: float) -> float:
         return value / 1024**3
     return value
 
+
 def _normalize_consumer_bars(items: list[dict[str, Any]]) -> None:
     max_value = max((item['raw_value'] for item in items), default=0.0)
     total = sum(item['raw_value'] for item in items)
@@ -607,7 +613,7 @@ def _normalize_consumer_bars(items: list[dict[str, Any]]) -> None:
 def _consumer_value(items: list[dict[str, Any]], index: int, *, unit: str) -> str:
     if len(items) <= index:
         return 'Not Available'
-    return f"{items[index]['raw_value']:.2f}"
+    return f'{items[index]["raw_value"]:.2f}'
 
 
 def _history_percent(item: Mapping[str, Any]) -> list[float]:
@@ -803,11 +809,11 @@ def _combined_trend_chart_svg(resources: Mapping[str, Mapping[str, Any]]) -> str
     for key, label_y in resolved_labels.items():
         end_x, color, end_value = endpoint_meta[key]
         label_parts.append(
-            f'<path d="M {end_x+3:.1f} {point_y[key]:.1f} L {label_x-7:.1f} {label_y:.1f}" '
+            f'<path d="M {end_x + 3:.1f} {point_y[key]:.1f} L {label_x - 7:.1f} {label_y:.1f}" '
             f'fill="none" stroke="{color}" stroke-width="1" opacity=".75"/>'
         )
         label_parts.append(
-            f'<text x="{label_x:.1f}" y="{label_y+4:.1f}" '
+            f'<text x="{label_x:.1f}" y="{label_y + 4:.1f}" '
             f'style="font:12px Inter,sans-serif;font-weight:700;fill:{color}">{key.title()} {_percent(end_value)}</text>'
         )
     label_svg = ''.join(label_parts)
@@ -856,12 +862,12 @@ def _participation_donut_svg(percent: float, ready_nodes: int) -> str:
             f'stroke-dasharray="{length:.2f} {circumference - length:.2f}" '
             'transform="rotate(-90 78 78)"/>'
         )
-    return f'''<svg viewBox="0 0 156 156" role="img" aria-label="Node participation {value:.0f} percent">
+    return f"""<svg viewBox="0 0 156 156" role="img" aria-label="Node participation {value:.0f} percent">
 <circle cx="78" cy="78" r="52" fill="none" stroke="#E2E8F0" stroke-width="20"/>{progress}
 <text x="78" y="76" text-anchor="middle" font-family="Inter, sans-serif"
  font-size="28" font-weight="700" fill="#1E293B">{ready_nodes}</text>
 <text x="78" y="96" text-anchor="middle" font-family="Inter, sans-serif"
- font-size="12" fill="#475569">Ready Nodes</text></svg>'''
+ font-size="12" fill="#475569">Ready Nodes</text></svg>"""
 
 
 def _donut_svg(items: list[dict[str, Any]]) -> str:
@@ -880,24 +886,24 @@ def _donut_svg(items: list[dict[str, Any]]) -> str:
             f'stroke-dashoffset="{-offset:.2f}" transform="rotate(-90 78 78)"/>'
         )
         offset += length
-    return f'''<svg viewBox="0 0 156 156" role="img" aria-label="Displayed memory concentration">
-<circle cx="78" cy="78" r="52" fill="none" stroke="#E2E8F0" stroke-width="20"/>{''.join(circles)}</svg>'''
+    return f"""<svg viewBox="0 0 156 156" role="img" aria-label="Displayed memory concentration">
+<circle cx="78" cy="78" r="52" fill="none" stroke="#E2E8F0" stroke-width="20"/>{''.join(circles)}</svg>"""
 
 
 def _empty_donut_svg() -> str:
-    return '''<svg viewBox="0 0 156 156" role="img" aria-label="Displayed memory concentration unavailable">
+    return """<svg viewBox="0 0 156 156" role="img" aria-label="Displayed memory concentration unavailable">
 <circle cx="78" cy="78" r="52" fill="none" stroke="#E2E8F0" stroke-width="20"/>
-<text x="78" y="82" text-anchor="middle" style="font:700 12px Inter,sans-serif;fill:#64748B">N/A</text></svg>'''
+<text x="78" y="82" text-anchor="middle" style="font:700 12px Inter,sans-serif;fill:#64748B">N/A</text></svg>"""
 
 
 def _leading_interpretation(item: Mapping[str, Any]) -> str:
     value = _float(item.get('percent'))
     if value >= 85:
-        return f"{item.get('label')} is in the critical operating band and requires immediate validation."
+        return f'{item.get("label")} is in the critical operating band and requires immediate validation.'
     if value >= 70:
-        return f"{item.get('label')} is in the warning operating band and requires capacity review."
+        return f'{item.get("label")} is in the warning operating band and requires capacity review.'
     return (
-        f"{item.get('label')} remains below the warning band. Review direction and workload concentration "
+        f'{item.get("label")} remains below the warning band. Review direction and workload concentration '
         'before considering aggregate capacity expansion.'
     )
 
@@ -916,7 +922,7 @@ def _priority_findings(
         else 'Review current memory utilization; projection evidence was not available.'
     )
     cpu_description = (
-        f"Validate whether {cpu_consumers[0]['name']} is expected for the selected reporting boundary."
+        f'Validate whether {cpu_consumers[0]["name"]} is expected for the selected reporting boundary.'
         if cpu_consumers
         else 'No top CPU consumer evidence was returned.'
     )
@@ -1082,7 +1088,7 @@ def _trend_interpretation(memory_projection: float | None, memory: Mapping[str, 
     if memory_projection is not None:
         return 'No displayed resource is projected to enter the warning band within the available planning horizon.'
     return (
-        f"Memory is the highest current planning signal at {memory.get('value')}; "
+        f'Memory is the highest current planning signal at {memory.get("value")}; '
         'projection evidence was not available.'
     )
 
@@ -1109,7 +1115,7 @@ def _recommendations(
             'status': 'Open' if cpu_consumers else 'Evidence Required',
             'tone': 'warning',
             'description': (
-                f"Confirm whether {cpu_consumers[0]['name']} is expected for the selected scope and reporting window."
+                f'Confirm whether {cpu_consumers[0]["name"]} is expected for the selected scope and reporting window.'
                 if cpu_consumers
                 else 'Collect top CPU consumer evidence before closing utilization review.'
             ),
@@ -1138,7 +1144,7 @@ def _recommendations(
             'status': 'Planned',
             'tone': 'info',
             'description': (
-                f"Confirm that {_percent(_float(pods.get('headroom')))} schedulable headroom "
+                f'Confirm that {_percent(_float(pods.get("headroom")))} schedulable headroom '
                 'matches deployment expectations and scope definitions.'
             ),
         },
@@ -1151,8 +1157,7 @@ def _recommendations(
             'status': 'Current' if total_nodes and ready_nodes == total_nodes else 'Open',
             'tone': 'normal' if total_nodes and ready_nodes == total_nodes else 'warning',
             'description': (
-                'Ensure not-ready nodes remain excluded from active capacity assumptions and '
-                'visibly reported.'
+                'Ensure not-ready nodes remain excluded from active capacity assumptions and visibly reported.'
             ),
         },
         {

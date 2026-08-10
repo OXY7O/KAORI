@@ -1,6 +1,12 @@
 import logging
 
-from flask import abort, redirect, request, send_file, url_for
+from flask import (
+    abort,
+    redirect,
+    request,
+    send_file,
+    url_for,
+)
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 

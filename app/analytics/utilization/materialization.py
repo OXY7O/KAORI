@@ -49,11 +49,7 @@ def build_utilization_trend_summary(
     sample_count = 0
 
     for resource in ('cpu', 'memory', 'pods'):
-        values = [
-            float(point.get('value', 0) or 0)
-            for point in trends.get(resource, [])
-            if isinstance(point, Mapping)
-        ]
+        values = [float(point.get('value', 0) or 0) for point in trends.get(resource, []) if isinstance(point, Mapping)]
         if not values:
             resources[resource] = {
                 'current': 0.0,
@@ -213,7 +209,8 @@ def get_utilization_summary_context(query_args: Mapping[str, Any]) -> dict[str, 
         'risk_assessment': risk_assessment,
         'error': None,
         'prometheus_connected': False,
-        'prometheus_status': context.get('prometheus_status') or {
+        'prometheus_status': context.get('prometheus_status')
+        or {
             'connected': False,
             'response_time_ms': None,
             'label': 'Prometheus Unavailable',
@@ -236,9 +233,7 @@ def get_utilization_summary_context(query_args: Mapping[str, Any]) -> dict[str, 
             )
         summary = service.get_summary()
         cluster_info = service.get_cluster_info(summary)
-        risk_assessment = service.get_capacity_pressure_risk(
-            cast(dict[str, int | float], summary)
-        )
+        risk_assessment = service.get_capacity_pressure_risk(cast(dict[str, int | float], summary))
         top_cpu_consumers = service.get_top_cpu_consumers()[:5]
         top_memory_consumers = service.get_top_memory_consumers()[:5]
         base.update(
@@ -285,9 +280,7 @@ def get_utilization_trend_context(query_args: Mapping[str, Any]) -> dict[str, An
         if selected_trend_node not in available_worker_nodes:
             selected_trend_node = ''
         summary = (
-            service.get_detail_summary(node_name=selected_trend_node)
-            if selected_trend_node
-            else service.get_summary()
+            service.get_detail_summary(node_name=selected_trend_node) if selected_trend_node else service.get_summary()
         )
         trends = service.get_trends(
             hours=trend_hours,

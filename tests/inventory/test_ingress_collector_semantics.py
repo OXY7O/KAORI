@@ -97,9 +97,7 @@ def _ingress(*, status=True, ingress_class='nginx'):
     rules = [
         SimpleNamespace(
             host='api.example.com',
-            http=SimpleNamespace(
-                paths=[SimpleNamespace(path='/api', path_type='Prefix', backend=_service_backend())]
-            ),
+            http=SimpleNamespace(paths=[SimpleNamespace(path='/api', path_type='Prefix', backend=_service_backend())]),
         ),
         SimpleNamespace(
             host=None,
@@ -117,9 +115,7 @@ def _ingress(*, status=True, ingress_class='nginx'):
     ingress_status = None
     if status is True:
         ingress_status = SimpleNamespace(
-            load_balancer=SimpleNamespace(
-                ingress=[SimpleNamespace(ip='203.0.113.10', hostname=None)]
-            )
+            load_balancer=SimpleNamespace(ingress=[SimpleNamespace(ip='203.0.113.10', hostname=None)])
         )
     elif status == 'pending':
         ingress_status = SimpleNamespace(load_balancer=SimpleNamespace(ingress=[]))

@@ -22,6 +22,7 @@
                 'filters': filters
             } | tojson }};
         </script>
-        <script type="module" src="{{ url_for('static', filename='js/inventory/topology.js') }}"></script>
+        <script type="module"
+                src="{{ url_for('static', filename='js/inventory/topology.js') }}"></script>
     {% endif %}
 {% endblock scripts %}

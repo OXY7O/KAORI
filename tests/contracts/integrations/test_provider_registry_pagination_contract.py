@@ -16,8 +16,8 @@ def test_shared_registry_pagination_owns_full_and_partial_navigation() -> None:
     assert 'hx-indicator="{{ indicator }}"' in pagination
     assert 'hx-push-url="true"' in pagination
     assert 'href_endpoint=endpoint' in pagination
-    assert 'page_param=\'page\'' in pagination
-    assert 'per_page_param=\'per_page\'' in pagination
+    assert "page_param='page'" in pagination
+    assert "per_page_param='per_page'" in pagination
 
 
 def test_coverage_pagination_uses_coverage_parameter_names() -> None:

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.cluster.constants import get_environment_label
 from app.extensions.db import db
 from app.models.cluster import Cluster
-from app.cluster.constants import get_environment_label
 from app.models.report import Report
 from app.reports.catalog import ReportContractError, require_selected_cluster
 
@@ -15,9 +15,7 @@ def get_report_selected_cluster(report: Report) -> Cluster:
     cluster_id = require_selected_cluster(report)
     cluster = db.session.get(Cluster, cluster_id)
     if cluster is None:
-        raise ReportContractError(
-            f'The selected Kubernetes cluster {cluster_id!r} no longer exists.'
-        )
+        raise ReportContractError(f'The selected Kubernetes cluster {cluster_id!r} no longer exists.')
     return cluster
 
 

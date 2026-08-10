@@ -2,89 +2,101 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
-
 {% macro render(panel) -%}
-<section class="{{ analysis_surface.evidence_shell_classes() }}" aria-labelledby="ranked-evidence-{{ panel.key }}-title">
-    <header class="border-b border-outline-subtle px-4 py-4">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}" aria-hidden="true">
-                    <i data-lucide="{{ panel.icon }}" class="h-4 w-4"></i>
-                </span>
-                <div class="min-w-0">
-                    <h3 id="ranked-evidence-{{ panel.key }}-title" class="font-semibold text-content-primary">{{ panel.title }}</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ panel.description }}</p>
+    <section class="{{ analysis_surface.evidence_shell_classes() }}"
+             aria-labelledby="ranked-evidence-{{ panel.key }}-title">
+        <header class="border-b border-outline-subtle px-4 py-4">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"
+                          aria-hidden="true">
+                        <i data-lucide="{{ panel.icon }}" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h3 id="ranked-evidence-{{ panel.key }}-title"
+                            class="font-semibold text-content-primary">{{ panel.title }}</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ panel.description }}</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    {{ table_label.status_label(panel.coverage.label, panel.coverage.tone, size='compact') }}
+                    {{ table_label.metadata_label(panel.unit, size='compact') }}
                 </div>
             </div>
-            <div class="flex flex-wrap items-center gap-2">
-                {{ table_label.status_label(panel.coverage.label, panel.coverage.tone, size='compact') }}
-                {{ table_label.metadata_label(panel.unit, size='compact') }}
-            </div>
+            <dl class="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle">
+                <div class="bg-surface-card px-3 py-3">
+                    <dt class="{{ analysis_surface.metric_label_classes() }}">Selected-Scope Total</dt>
+                    <dd class="mt-1 text-sm font-semibold text-content-primary">
+                        {{ panel.total_value }}
+                    </dd>
+                </div>
+                <div class="bg-surface-card px-3 py-3">
+                    <dt class="{{ analysis_surface.metric_label_classes() }}">{{ panel.capacity_label }}</dt>
+                    <dd class="mt-1 text-sm font-semibold text-content-primary">
+                        {{ panel.capacity_value }}
+                    </dd>
+                </div>
+            </dl>
+        </header>
+        <div class="hidden grid-cols-12 gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3 lg:grid">
+            <div class="col-span-1 {{ analysis_surface.metric_label_classes() }}">Rank</div>
+            <div class="col-span-5 {{ analysis_surface.metric_label_classes() }}">Consumer Identity</div>
+            <div class="col-span-4 {{ analysis_surface.metric_label_classes() }}">Contribution to Scope</div>
+            <div class="col-span-2 text-right {{ analysis_surface.metric_label_classes() }}">Consumption</div>
         </div>
-        <dl class="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle">
-            <div class="bg-surface-card px-3 py-3">
-                <dt class="{{ analysis_surface.metric_label_classes() }}">Selected-Scope Total</dt>
-                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ panel.total_value }}</dd>
-            </div>
-            <div class="bg-surface-card px-3 py-3">
-                <dt class="{{ analysis_surface.metric_label_classes() }}">{{ panel.capacity_label }}</dt>
-                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ panel.capacity_value }}</dd>
-            </div>
-        </dl>
-    </header>
-
-    <div class="hidden grid-cols-12 gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3 lg:grid">
-        <div class="col-span-1 {{ analysis_surface.metric_label_classes() }}">Rank</div>
-        <div class="col-span-5 {{ analysis_surface.metric_label_classes() }}">Consumer Identity</div>
-        <div class="col-span-4 {{ analysis_surface.metric_label_classes() }}">Contribution to Scope</div>
-        <div class="col-span-2 text-right {{ analysis_surface.metric_label_classes() }}">Consumption</div>
-    </div>
-
-    <div class="divide-y divide-outline-subtle">
-        {% for row in panel.rows %}
-            <article class="grid min-w-0 gap-3 bg-surface-card px-4 py-3 lg:grid-cols-12 lg:items-center">
-                <div class="lg:col-span-1">
-                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-hover text-xs font-semibold text-content-secondary">{{ row.rank }}</span>
-                </div>
-                <div class="min-w-0 lg:col-span-5">
-                    <div class="flex min-w-0 items-start gap-3">
-                        <span class="{{ analysis_surface.metric_icon_classes() }}" aria-hidden="true">
-                            <i data-lucide="{{ row.identity.icon }}" class="h-4 w-4"></i>
-                        </span>
-                        <div class="min-w-0">
-                            <p class="break-words text-sm font-semibold text-content-primary" title="{{ row.identity.primary }}">{{ row.identity.primary }}</p>
-                            <p class="mt-0.5 break-words text-xs leading-5 text-content-muted" title="{{ row.identity.secondary }}">{{ row.identity.secondary }}</p>
-                            {% if row.identity.tertiary %}<p class="break-words text-xs leading-5 text-content-muted" title="{{ row.identity.tertiary }}">{{ row.identity.tertiary }}</p>{% endif %}
+        <div class="divide-y divide-outline-subtle">
+            {% for row in panel.rows %}
+                <article class="grid min-w-0 gap-3 bg-surface-card px-4 py-3 lg:grid-cols-12 lg:items-center">
+                    <div class="lg:col-span-1">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-hover text-xs font-semibold text-content-secondary">{{ row.rank }}</span>
+                    </div>
+                    <div class="min-w-0 lg:col-span-5">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="{{ analysis_surface.metric_icon_classes() }}"
+                                  aria-hidden="true">
+                                <i data-lucide="{{ row.identity.icon }}" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="break-words text-sm font-semibold text-content-primary"
+                                   title="{{ row.identity.primary }}">{{ row.identity.primary }}</p>
+                                <p class="mt-0.5 break-words text-xs leading-5 text-content-muted"
+                                   title="{{ row.identity.secondary }}">{{ row.identity.secondary }}</p>
+                                {% if row.identity.tertiary %}
+                                    <p class="break-words text-xs leading-5 text-content-muted"
+                                       title="{{ row.identity.tertiary }}">{{ row.identity.tertiary }}</p>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="min-w-0 lg:col-span-4">
-                    <div class="flex items-center justify-between gap-3 text-xs text-content-muted">
-                        <span>Contribution</span>
-                        <span class="font-semibold tabular-nums text-content-primary">{{ row.contribution_display }}</span>
+                    <div class="min-w-0 lg:col-span-4">
+                        <div class="flex items-center justify-between gap-3 text-xs text-content-muted">
+                            <span>Contribution</span>
+                            <span class="font-semibold tabular-nums text-content-primary">{{ row.contribution_display }}</span>
+                        </div>
+                        {% if row.contribution_percent is not none %}
+                            {{ progress_bar.bar(row.contribution_bar_percent, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=row.identity.primary ~ ' contribution to selected scope') }}
+                        {% else %}
+                            <div class="mt-2 border-t border-dashed border-outline-strong"></div>
+                        {% endif %}
+                        <div class="mt-2">{{ table_label.status_label(row.risk.label, row.risk.tone, size='compact') }}</div>
                     </div>
-                    {% if row.contribution_percent is not none %}
-                        {{ progress_bar.bar(row.contribution_bar_percent, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=row.identity.primary ~ ' contribution to selected scope') }}
-                    {% else %}
-                        <div class="mt-2 border-t border-dashed border-outline-strong"></div>
-                    {% endif %}
-                    <div class="mt-2">{{ table_label.status_label(row.risk.label, row.risk.tone, size='compact') }}</div>
+                    <div class="flex items-center justify-between gap-3 lg:col-span-2 lg:block lg:text-right">
+                        <span class="{{ analysis_surface.metric_label_classes() }} lg:hidden">Consumption</span>
+                        <span class="text-sm font-semibold tabular-nums text-content-primary">{{ row.current_display }}</span>
+                        <p class="mt-1 text-xs text-content-muted">Pressure {{ row.pressure_display }}</p>
+                    </div>
+                </article>
+            {% else %}
+                <div class="p-4">
+                    <div class="{{ analysis_surface.empty_evidence_classes('flex min-h-44 flex-col items-center justify-center px-5 py-8 text-center') }}">
+                        <i data-lucide="database-zap"
+                           class="h-5 w-5 text-kaori-primary"
+                           aria-hidden="true"></i>
+                        <p class="mt-3 text-sm font-semibold text-content-primary">No Ranked Evidence Available</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">The selected snapshot does not contain ranked {{ panel.title|lower }} evidence.</p>
+                    </div>
                 </div>
-                <div class="flex items-center justify-between gap-3 lg:col-span-2 lg:block lg:text-right">
-                    <span class="{{ analysis_surface.metric_label_classes() }} lg:hidden">Consumption</span>
-                    <span class="text-sm font-semibold tabular-nums text-content-primary">{{ row.current_display }}</span>
-                    <p class="mt-1 text-xs text-content-muted">Pressure {{ row.pressure_display }}</p>
-                </div>
-            </article>
-        {% else %}
-            <div class="p-4">
-                <div class="{{ analysis_surface.empty_evidence_classes('flex min-h-44 flex-col items-center justify-center px-5 py-8 text-center') }}">
-                    <i data-lucide="database-zap" class="h-5 w-5 text-kaori-primary" aria-hidden="true"></i>
-                    <p class="mt-3 text-sm font-semibold text-content-primary">No Ranked Evidence Available</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">The selected snapshot does not contain ranked {{ panel.title|lower }} evidence.</p>
-                </div>
-            </div>
-        {% endfor %}
-    </div>
-</section>
+            {% endfor %}
+        </div>
+    </section>
 {%- endmacro %}

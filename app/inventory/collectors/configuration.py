@@ -1,8 +1,18 @@
 from __future__ import annotations
 
-from typing import Any, Literal, cast, overload
+from typing import (
+    Any,
+    Literal,
+    cast,
+    overload,
+)
 
-from kubernetes.client import CoreV1Api, V1ConfigMapList, V1ResourceQuotaList, V1SecretList
+from kubernetes.client import (
+    CoreV1Api,
+    V1ConfigMapList,
+    V1ResourceQuotaList,
+    V1SecretList,
+)
 from kubernetes.client.exceptions import ApiException
 
 
@@ -135,14 +145,8 @@ def get_resource_quotas(
             continue
         configured_hard = (spec.hard or {}) if spec else {}
         observed_hard = (status.hard or {}) if status else {}
-        hard = {
-            str(key): str(value)
-            for key, value in (configured_hard or observed_hard).items()
-        }
-        used = {
-            str(key): str(value)
-            for key, value in ((status.used or {}) if status else {}).items()
-        }
+        hard = {str(key): str(value) for key, value in (configured_hard or observed_hard).items()}
+        used = {str(key): str(value) for key, value in ((status.used or {}) if status else {}).items()}
         items.append(
             {
                 'namespace': metadata.namespace,

@@ -27,23 +27,28 @@
                 <tr class="{{ table_ui.row_classes() }}">
                     <td class="{{ table_ui.cell_classes() }}">
                         <div class="flex max-w-[260px] items-start gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent" aria-hidden="true">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"
+                                  aria-hidden="true">
                                 <i data-lucide="activity" class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
-                                <p class="truncate text-sm font-semibold text-content-primary" title="{{ row.name }}">{{ row.name }}</p>
+                                <p class="truncate text-sm font-semibold text-content-primary"
+                                   title="{{ row.name }}">{{ row.name }}</p>
                                 <p class="mt-0.5 line-clamp-2 text-xs leading-5 text-content-muted">{{ row.description or 'Reusable metrics connection' }}</p>
                             </div>
                         </div>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
-                        <p class="max-w-[250px] truncate text-sm text-content-secondary" title="{{ row.endpoint }}">{{ row.endpoint }}</p>
-                        <div class="mt-1.5">{{ table_label.metadata_label((row.endpoint_product or 'prometheus')|replace('_', ' ')|title, 'server-cog') }}</div>
+                        <p class="max-w-[250px] truncate text-sm text-content-secondary"
+                           title="{{ row.endpoint }}">{{ row.endpoint }}</p>
+                        <div class="mt-1.5">{{ table_label.metadata_label((row.endpoint_product or 'prometheus') |replace('_', ' ')|title, 'server-cog') }}</div>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
-                        <p class="truncate text-sm font-semibold text-content-primary" title="{{ row.version or 'Not Detected' }}">{{ row.version or 'Not Detected' }}</p>
+                        <p class="truncate text-sm font-semibold text-content-primary"
+                           title="{{ row.version or 'Not Detected' }}">{{ row.version or 'Not Detected' }}</p>
                         <div class="mt-1">{{ integration_status(row.compatibility, display='indicator') }}</div>
-                        <p class="mt-1 truncate text-xs leading-5 text-content-muted" title="{{ row.profile or row.capability_profile or row.query_profile or 'Capability profile pending' }}">{{ row.profile or row.capability_profile or row.query_profile or 'Capability profile pending' }}</p>
+                        <p class="mt-1 truncate text-xs leading-5 text-content-muted"
+                           title="{{ row.profile or row.capability_profile or row.query_profile or 'Capability profile pending' }}">{{ row.profile or row.capability_profile or row.query_profile or 'Capability profile pending' }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
                         {{ integration_status(row.readiness, display='indicator') }}
@@ -54,7 +59,8 @@
                         <p class="mt-0.5 text-xs leading-5 text-content-muted">Scope binding{{ '' if row.binding_count == 1 else 's' }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes(action=true) }}">
-                        <a href="{{ url_for('prometheus.instance_detail', instance_id=row.instance_id) }}" class="{{ table_ui.action_classes() }}">
+                        <a href="{{ url_for('prometheus.instance_detail', instance_id=row.instance_id) }}"
+                           class="{{ table_ui.action_classes() }}">
                             <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>
                             Manage
                         </a>
@@ -88,12 +94,10 @@
     'coverage_environment': selected_coverage_environment,
     'coverage_status': selected_coverage_status
 } %}
-{{ provider_registry.pagination_footer(
-    pagination,
-    'integrations.prometheus',
-    '#prometheus-inventory-content',
-    '#prometheus-inventory-loading',
-    registry_query_params,
-    item_label='Integration',
-    swap='innerHTML'
-) }}
+{{ provider_registry.pagination_footer(pagination,
+'integrations.prometheus',
+'#prometheus-inventory-content',
+'#prometheus-inventory-loading',
+registry_query_params,
+item_label='Integration',
+swap='innerHTML') }}

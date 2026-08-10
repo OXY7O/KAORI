@@ -1,57 +1,70 @@
 {% import "components/segmented_tabs.html" as segmented_tabs %}
-
 <template id="topology-inspector-empty-template">
     <div class="rounded-xl border border-dashed border-outline-strong bg-kaori-soft px-4 py-8 text-center">
-        <i data-lucide="mouse-pointer-click" class="mx-auto h-7 w-7 text-kaori-primary" aria-hidden="true"></i>
+        <i data-lucide="mouse-pointer-click"
+           class="mx-auto h-7 w-7 text-kaori-primary"
+           aria-hidden="true"></i>
         <p class="mt-3 text-sm font-semibold text-kaori-primary">Nothing Selected</p>
         <p class="mt-1 text-xs leading-5 text-content-secondary">Select a resource or relationship to inspect its inventory context.</p>
     </div>
 </template>
-
 <template id="topology-node-inspector-template">
     <div class="space-y-4">
         <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
             <div class="flex items-start gap-3">
-                <span data-node-icon-shell class="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border">
+                <span data-node-icon-shell
+                      class="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border">
                     <i data-node-icon class="h-5 w-5" aria-hidden="true"></i>
                 </span>
                 <div class="min-w-0 flex-1">
-                    <h4 data-node-label class="break-words text-base font-semibold text-content-primary"></h4>
+                    <h4 data-node-label
+                        class="break-words text-base font-semibold text-content-primary"></h4>
                     <p data-node-kind class="mt-1 text-xs text-content-muted"></p>
                     <div class="mt-2 flex flex-wrap gap-2">
-                        <span data-node-type class="kaori-semantic-label inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 py-0.5 text-xs font-semibold leading-5 text-kaori-primary-dark"></span>
-                        <span data-node-status class="kaori-semantic-label inline-flex min-h-6 items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold leading-5">
-                            <span data-node-status-dot class="h-1.5 w-1.5 rounded-full" aria-hidden="true"></span>
+                        <span data-node-type
+                              class="kaori-semantic-label inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 py-0.5 text-xs font-semibold leading-5 text-kaori-primary-dark"></span>
+                        <span data-node-status
+                              class="kaori-semantic-label inline-flex min-h-6 items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold leading-5">
+                            <span data-node-status-dot
+                                  class="h-1.5 w-1.5 rounded-full"
+                                  aria-hidden="true"></span>
                             <span data-node-status-text></span>
                         </span>
                     </div>
                 </div>
             </div>
-            <p data-node-description class="mt-3 hidden text-xs leading-5 text-content-secondary"></p>
+            <p data-node-description
+               class="mt-3 hidden text-xs leading-5 text-content-secondary"></p>
         </section>
-
         <div class="grid grid-cols-2 gap-2">
-            <button type="button" id="topology-highlight-path-button" class="inline-flex items-center justify-center gap-2 rounded-lg border border-outline-default bg-kaori-soft px-3 py-2 text-xs font-semibold text-kaori-primary transition hover:border-outline-focus hover:bg-surface-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+            <button type="button"
+                    id="topology-highlight-path-button"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg border border-outline-default bg-kaori-soft px-3 py-2 text-xs font-semibold text-kaori-primary transition hover:border-outline-focus hover:bg-surface-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                 <i data-lucide="route" class="h-3.5 w-3.5" aria-hidden="true"></i>
                 <span data-highlight-label>Highlight Path</span>
             </button>
-            <button type="button" id="topology-collapse-button" class="inline-flex items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-surface-hover hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-45">
+            <button type="button"
+                    id="topology-collapse-button"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-surface-hover hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-45">
                 <i data-collapse-icon class="h-3.5 w-3.5" aria-hidden="true"></i>
                 <span data-collapse-label>No Loaded Children</span>
             </button>
         </div>
-
-        {{ segmented_tabs.render(
-            [('details', 'Details', 'list-tree'), ('relationships', 'Relationships', 'git-branch')],
-            prefix='topology-inspector',
-            active_key='details',
-            aria_label='Topology Inspector',
-            data_attribute='data-topology-node-tab'
+        {{ segmented_tabs.render([('details', 'Details', 'list-tree') , ('relationships', 'Relationships', 'git-branch')],
+        prefix='topology-inspector',
+        active_key='details',
+        aria_label='Topology Inspector',
+        data_attribute='data-topology-node-tab'
         ) }}
         <span data-relationship-count class="sr-only"></span>
-        <div id="topology-inspector-panel-details" role="tabpanel" aria-labelledby="topology-inspector-tab-details">
-            <dl data-node-fields class="divide-y divide-outline-subtle rounded-xl border border-outline-subtle bg-surface-card px-3"></dl>
-            <div data-node-minimap class="mt-4 hidden rounded-xl border border-outline-subtle bg-surface-card p-3">
+        <div id="topology-inspector-panel-details"
+             role="tabpanel"
+             aria-labelledby="topology-inspector-tab-details">
+            <dl data-node-fields
+                class="divide-y divide-outline-subtle rounded-xl border border-outline-subtle bg-surface-card px-3">
+            </dl>
+            <div data-node-minimap
+                 class="mt-4 hidden rounded-xl border border-outline-subtle bg-surface-card p-3">
                 <div class="flex items-start justify-between gap-3">
                     <div>
                         <h5 class="text-sm font-semibold text-content-primary">Cluster Topology Overview</h5>
@@ -59,48 +72,60 @@
                     </div>
                     <span class="kaori-semantic-label inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 py-0.5 text-xs font-semibold leading-5 text-kaori-primary-dark">Overview</span>
                 </div>
-                <canvas id="topology-drawer-minimap" class="mt-3 block h-36 w-full cursor-crosshair rounded-lg border border-outline-default bg-surface-card" aria-label="Cluster topology mini-map"></canvas>
+                <canvas id="topology-drawer-minimap"
+                        class="mt-3 block h-36 w-full cursor-crosshair rounded-lg border border-outline-default bg-surface-card"
+                        aria-label="Cluster topology mini-map"></canvas>
             </div>
-            <a data-node-action class="mt-4 hidden min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 py-2 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+            <a data-node-action
+               class="mt-4 hidden min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 py-2 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                 <i data-lucide="arrow-up-right" class="h-4 w-4" aria-hidden="true"></i>
                 Open Inventory
             </a>
         </div>
-        <div id="topology-inspector-panel-relationships" role="tabpanel" aria-labelledby="topology-inspector-tab-relationships" hidden>
+        <div id="topology-inspector-panel-relationships"
+             role="tabpanel"
+             aria-labelledby="topology-inspector-tab-relationships"
+             hidden>
             <div data-node-relationships class="space-y-2"></div>
         </div>
     </div>
 </template>
-
 <template id="topology-field-row-template">
     <div class="flex items-start justify-between gap-3 py-2.5">
         <dt data-field-label class="text-xs font-normal text-content-muted"></dt>
-        <dd data-field-value class="max-w-[15rem] break-words text-right text-xs font-medium text-content-primary"></dd>
+        <dd data-field-value
+            class="max-w-[15rem] break-words text-right text-xs font-medium text-content-primary">
+        </dd>
     </div>
 </template>
-
-
 <template id="topology-relationship-row-template">
-    <button type="button" data-topology-related-node class="flex w-full items-start gap-3 rounded-lg border border-outline-subtle bg-surface-card px-3 py-3 text-left transition hover:border-outline-focus hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-        <span data-relationship-icon-shell class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+    <button type="button"
+            data-topology-related-node
+            class="flex w-full items-start gap-3 rounded-lg border border-outline-subtle bg-surface-card px-3 py-3 text-left transition hover:border-outline-focus hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+        <span data-relationship-icon-shell
+              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
             <i data-relationship-icon class="h-4 w-4" aria-hidden="true"></i>
         </span>
         <span class="min-w-0 flex-1">
             <span class="flex flex-wrap items-center gap-2">
-                <span data-relationship-direction class="text-xs font-medium text-content-muted"></span>
-                <span data-relationship-label class="kaori-semantic-label inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 py-0.5 text-xs font-semibold leading-5 text-kaori-primary-dark"></span>
+                <span data-relationship-direction
+                      class="text-xs font-medium text-content-muted"></span>
+                <span data-relationship-label
+                      class="kaori-semantic-label inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 py-0.5 text-xs font-semibold leading-5 text-kaori-primary-dark"></span>
             </span>
-            <span data-relationship-peer class="mt-1 block break-words text-xs font-medium text-content-primary"></span>
-            <span data-relationship-peer-type class="mt-1 block text-xs text-content-muted"></span>
+            <span data-relationship-peer
+                  class="mt-1 block break-words text-xs font-medium text-content-primary"></span>
+            <span data-relationship-peer-type
+                  class="mt-1 block text-xs text-content-muted"></span>
         </span>
-        <i data-lucide="chevron-right" class="mt-2 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+        <i data-lucide="chevron-right"
+           class="mt-2 h-3.5 w-3.5 shrink-0 text-kaori-primary"
+           aria-hidden="true"></i>
     </button>
 </template>
-
 <template id="topology-relationships-empty-template">
     <div class="rounded-xl border border-dashed border-outline-strong bg-kaori-soft px-4 py-6 text-center text-xs font-medium text-kaori-primary">No Visible Relationships</div>
 </template>
-
 <template id="topology-edge-inspector-template">
     <div class="space-y-4">
         <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
@@ -109,51 +134,70 @@
                     <i data-edge-icon class="h-5 w-5" aria-hidden="true"></i>
                 </span>
                 <div class="min-w-0 flex-1">
-                    <h4 data-edge-title class="break-words text-base font-semibold text-content-primary"></h4>
+                    <h4 data-edge-title
+                        class="break-words text-base font-semibold text-content-primary"></h4>
                     <p class="mt-1 text-xs text-content-muted">Topology Relationship</p>
-                    <span data-edge-type class="mt-2 inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 py-0.5 text-xs font-semibold leading-5 text-kaori-primary-dark"></span>
+                    <span data-edge-type
+                          class="mt-2 inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 py-0.5 text-xs font-semibold leading-5 text-kaori-primary-dark"></span>
                 </div>
             </div>
-            <p data-edge-description class="mt-3 hidden text-xs leading-5 text-content-secondary"></p>
+            <p data-edge-description
+               class="mt-3 hidden text-xs leading-5 text-content-secondary"></p>
         </section>
         <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
             <div class="flex items-center gap-3 rounded-lg bg-surface-hover px-3 py-3">
-                <span data-edge-swatch class="h-0.5 w-8 shrink-0 rounded-full" aria-hidden="true"></span>
+                <span data-edge-swatch
+                      class="h-0.5 w-8 shrink-0 rounded-full"
+                      aria-hidden="true"></span>
                 <div class="min-w-0 flex-1 space-y-1">
-                    <p data-edge-source class="break-words text-xs font-medium text-content-primary"></p>
+                    <p data-edge-source
+                       class="break-words text-xs font-medium text-content-primary"></p>
                     <p data-edge-label class="text-xs text-content-muted"></p>
-                    <p data-edge-target class="break-words text-xs font-medium text-content-primary"></p>
+                    <p data-edge-target
+                       class="break-words text-xs font-medium text-content-primary"></p>
                 </div>
             </div>
         </section>
     </div>
 </template>
-
 <template id="topology-resource-list-row-template">
     <tr class="transition-colors hover:bg-kaori-soft">
         <td class="px-4 py-3 align-middle">
             <div class="flex min-w-0 items-center gap-2.5">
-                <span data-list-icon-shell class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
+                <span data-list-icon-shell
+                      class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
                     <i data-list-icon class="h-4 w-4" aria-hidden="true"></i>
                 </span>
                 <div class="min-w-0">
-                    <p data-list-name class="max-w-[18rem] truncate text-sm font-semibold text-content-primary"></p>
-                    <p data-list-kind class="mt-0.5 max-w-[18rem] truncate text-xs text-content-muted"></p>
+                    <p data-list-name
+                       class="max-w-[18rem] truncate text-sm font-semibold text-content-primary"></p>
+                    <p data-list-kind
+                       class="mt-0.5 max-w-[18rem] truncate text-xs text-content-muted"></p>
                 </div>
             </div>
         </td>
-        <td class="px-4 py-3 align-middle"><span data-list-type class="text-xs font-semibold text-content-secondary"></span></td>
-        <td data-list-cluster class="px-4 py-3 align-middle text-sm text-content-secondary"></td>
-        <td data-list-namespace class="px-4 py-3 align-middle text-sm text-content-secondary"></td>
         <td class="px-4 py-3 align-middle">
-            <span data-list-status class="kaori-semantic-label inline-flex min-h-6 items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold leading-5">
-                <span data-list-status-dot class="h-1.5 w-1.5 rounded-full" aria-hidden="true"></span>
+            <span data-list-type class="text-xs font-semibold text-content-secondary"></span>
+        </td>
+        <td data-list-cluster
+            class="px-4 py-3 align-middle text-sm text-content-secondary"></td>
+        <td data-list-namespace
+            class="px-4 py-3 align-middle text-sm text-content-secondary"></td>
+        <td class="px-4 py-3 align-middle">
+            <span data-list-status
+                  class="kaori-semantic-label inline-flex min-h-6 items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold leading-5">
+                <span data-list-status-dot
+                      class="h-1.5 w-1.5 rounded-full"
+                      aria-hidden="true"></span>
                 <span data-list-status-text></span>
             </span>
         </td>
-        <td data-list-relationships class="px-4 py-3 align-middle text-sm font-semibold text-content-primary"></td>
+        <td data-list-relationships
+            class="px-4 py-3 align-middle text-sm font-semibold text-content-primary"></td>
         <td class="px-4 py-3 text-right align-middle">
-            <button type="button" data-list-details class="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border border-outline-default bg-surface-card px-2.5 text-xs font-medium text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+            <button type="button"
+                    data-list-details
+                    class="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border border-outline-default bg-surface-card px-2.5 text-xs font-medium text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                 <i data-lucide="panel-right-open" class="h-3.5 w-3.5" aria-hidden="true"></i>
                 View Details
             </button>

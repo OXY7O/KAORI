@@ -28,9 +28,9 @@ def test_welcome_uses_the_canonical_catalog_components() -> None:
     hero = (ROOT / 'app/templates/components/page_hero.html').read_text()
 
     assert 'page_hero.context_panel_classes()' in template
-    assert "components/welcome_capability_group.html" in template
-    assert "components/workspace_link_card.html" in template
-    assert "components/states/_empty_state.html" in template
+    assert 'components/welcome_capability_group.html' in template
+    assert 'components/workspace_link_card.html' in template
+    assert 'components/states/_empty_state.html' in template
     assert "table_label.metadata_label('Available Workspaces', 'layout-grid')" in template
     assert 'placeholder="Search Workspaces"' in template
     assert '{{ current_user.role_display_name }} Access' in template
@@ -38,7 +38,7 @@ def test_welcome_uses_the_canonical_catalog_components() -> None:
     assert 'Choose a Workspace' in template
     assert 'No Permitted Workspace Matches This Search' in template
     assert 'Only workspaces permitted for your current role are displayed.' not in template
-    assert "macro context_note(" not in hero
+    assert 'macro context_note(' not in hero
 
 
 def test_welcome_template_has_no_page_local_style_drift() -> None:

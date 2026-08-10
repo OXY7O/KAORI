@@ -1,6 +1,5 @@
 {# Canonical Inventory-aligned full-page + HTMX pagination for Analytics records. #}
 {% import "components/pagination.html" as pagination_ui %}
-
 {% macro render(
     pagination,
     page_param,
@@ -14,7 +13,7 @@
     resource_label='Records',
     allowed_per_page=(5, 10, 25, 50),
     embedded=false
-) -%}
+    ) -%}
     {% set current_page = pagination.page|default(pagination.current_page|default(1)) %}
     {% set total_pages = pagination.total_pages|default(1) %}
     {% set total_rows = pagination.total_items|default(0) %}
@@ -25,15 +24,17 @@
     {% set next_args = query_params.copy() %}{% set _ = next_args.update({page_param: current_page + 1}) %}
     {% set previous_href = url_for(href_endpoint, **previous_args) %}{% set previous_hx = url_for(partial_endpoint, **previous_args) %}
     {% set next_href = url_for(href_endpoint, **next_args) %}{% set next_hx = url_for(partial_endpoint, **next_args) %}
-    <footer class="{{ pagination_ui.footer_classes() if embedded else 'flex flex-col gap-4 overflow-hidden rounded-xl border border-outline-default bg-surface-hover px-5 py-3.5 text-xs text-content-muted shadow-sm lg:flex-row lg:items-center lg:justify-between' }}" data-kaori-record-pagination>
+    <footer class="{{ pagination_ui.footer_classes() if embedded else 'flex flex-col gap-4 overflow-hidden rounded-xl border border-outline-default bg-surface-hover px-5 py-3.5 text-xs text-content-muted shadow-sm lg:flex-row lg:items-center lg:justify-between' }}"
+            data-kaori-record-pagination>
         <div class="{{ pagination_ui.summary_group_classes() }}">
             <p>
                 Showing <span class="font-semibold text-content-primary">{{ start_item }}</span>–<span class="font-semibold text-content-primary">{{ end_item }}</span>
                 of <span class="font-semibold text-content-primary">{{ total_rows }}</span>
-                {{ pagination_ui.resource_name(resource_label, total_rows)|trim }}
+                {{ pagination_ui.resource_name(resource_label, total_rows) |trim }}
             </p>
             <div class="{{ pagination_ui.rows_group_classes() }}">
-                <label for="{{ panel_id }}-per-page" class="font-semibold text-content-secondary">Rows</label>
+                <label for="{{ panel_id }}-per-page"
+                       class="font-semibold text-content-secondary">Rows</label>
                 <select id="{{ panel_id }}-per-page"
                         name="{{ per_page_param }}"
                         aria-label="Rows Per Page"
@@ -51,7 +52,8 @@
                 </select>
             </div>
         </div>
-        <nav class="{{ pagination_ui.navigation_group_classes() }}" aria-label="{{ resource_label }} Pagination">
+        <nav class="{{ pagination_ui.navigation_group_classes() }}"
+             aria-label="{{ resource_label }} Pagination">
             {% if current_page > 1 %}
                 <a href="{{ previous_href }}"
                    hx-get="{{ previous_hx }}"
@@ -63,7 +65,8 @@
                     <i data-lucide="chevron-left" class="h-4 w-4"></i>Previous
                 </a>
             {% else %}
-                <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">
+                <span class="{{ pagination_ui.navigation_classes(true) }}"
+                      aria-disabled="true">
                     <i data-lucide="chevron-left" class="h-4 w-4"></i>Previous
                 </span>
             {% endif %}
@@ -79,7 +82,8 @@
                     Next<i data-lucide="chevron-right" class="h-4 w-4"></i>
                 </a>
             {% else %}
-                <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">
+                <span class="{{ pagination_ui.navigation_classes(true) }}"
+                      aria-disabled="true">
                     Next<i data-lucide="chevron-right" class="h-4 w-4"></i>
                 </span>
             {% endif %}

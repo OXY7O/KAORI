@@ -20,7 +20,8 @@
                     aria-controls="{{ prefix }}-panel-{{ tab_key }}"
                     aria-selected="{{ 'true' if tab_key == selected_key else 'false' }}"
                     tabindex="{{ '0' if tab_key == selected_key else '-1' }}"
-                    {{ data_attribute }}="{{ tab_key }}"
+                    {{ data_attribute }}
+                    None="{{ tab_key }}"
                     class="inline-flex min-h-7 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition {{ 'bg-surface-card text-kaori-primary shadow-sm' if tab_key == selected_key else 'text-content-muted hover:text-content-primary' }}">
                 {% if tab_icon %}<i data-lucide="{{ tab_icon }}" class="h-3.5 w-3.5" aria-hidden="true"></i>{% endif %}
                 <span>{{ tab_label }}</span>

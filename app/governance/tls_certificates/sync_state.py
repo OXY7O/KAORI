@@ -27,9 +27,7 @@ def _job_applies_to_cluster(job: JobExecution, cluster_id: str | None) -> bool:
     if str(payload.get('scope') or '') == 'all_clusters':
         return True
     return str(cluster_id) in {
-        str(target.get('cluster_id'))
-        for target in payload.get('targets') or []
-        if isinstance(target, dict)
+        str(target.get('cluster_id')) for target in payload.get('targets') or [] if isinstance(target, dict)
     }
 
 
@@ -49,9 +47,7 @@ def build_tls_sync_state(*, cluster_id: str | None = None) -> dict[str, Any]:
         .all(),
         cluster_id,
     )
-    recent_jobs = (
-        base_query.order_by(JobExecution.created_at.desc(), JobExecution.id.desc()).limit(100).all()
-    )
+    recent_jobs = base_query.order_by(JobExecution.created_at.desc(), JobExecution.id.desc()).limit(100).all()
     latest_job = _first_relevant(recent_jobs, cluster_id)
     latest_success = _first_relevant(
         [job for job in recent_jobs if job.status in _SUCCESS_STATUSES],
@@ -69,9 +65,7 @@ def build_tls_sync_state(*, cluster_id: str | None = None) -> dict[str, Any]:
     )
     collection_state_query = TLSCertificateCollectionState.query
     if cluster_id:
-        collection_state_query = collection_state_query.filter(
-            TLSCertificateCollectionState.cluster_id == cluster_id
-        )
+        collection_state_query = collection_state_query.filter(TLSCertificateCollectionState.cluster_id == cluster_id)
     latest_collection_state_at = (
         collection_state_query.with_entities(TLSCertificateCollectionState.collected_at)
         .order_by(TLSCertificateCollectionState.collected_at.desc())
@@ -82,7 +76,11 @@ def build_tls_sync_state(*, cluster_id: str | None = None) -> dict[str, Any]:
     last_success_at = _as_utc(latest_success.completed_at if latest_success else None)
     latest_collected_at = _as_utc(latest_collected_at)
     freshness_source = max(
-        (value for value in (last_success_at, latest_collected_at, _as_utc(latest_collection_state_at)) if value is not None),
+        (
+            value
+            for value in (last_success_at, latest_collected_at, _as_utc(latest_collection_state_at))
+            if value is not None
+        ),
         default=None,
     )
     interval_minutes = max(int(policy.interval_minutes or 360), 1)
@@ -133,9 +131,7 @@ def build_tls_sync_state(*, cluster_id: str | None = None) -> dict[str, Any]:
         'automatic_enabled': bool(policy.enabled),
         'interval_minutes': interval_minutes,
         'interval_label': (
-            f'{interval_minutes // 60} Hours'
-            if interval_minutes % 60 == 0
-            else f'{interval_minutes} Minutes'
+            f'{interval_minutes // 60} Hours' if interval_minutes % 60 == 0 else f'{interval_minutes} Minutes'
         ),
         'next_run_at': policy.next_run_at,
         'next_run_label': present_user_datetime(policy.next_run_at, empty='Not Scheduled'),

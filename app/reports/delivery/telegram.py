@@ -45,7 +45,7 @@ class TelegramReportDelivery:
         try:
             with urlopen(request, timeout=timeout) as response:  # noqa: S310 - fixed Telegram API endpoint.
                 payload = json.loads(response.read().decode('utf-8'))
-        except (HTTPError, URLError, TimeoutError, OSError, ValueError) as exc:
+        except (HTTPError, URLError, TimeoutError, OSError, ValueError):
             current_app.logger.warning('Telegram report delivery failed.', exc_info=True)
             return DeliveryResult(
                 channel=self.key,

@@ -17,7 +17,7 @@ def test_inventory_overview_asset_catalog_uses_shared_section_and_destination_ca
     assert 'components/inventory_asset_card.html' in template
     assert "'Inventory Asset Catalog'" in template
     assert 'overview.asset_catalog' in template
-    assert "url_for(asset.endpoint)" in template
+    assert 'url_for(asset.endpoint)' in template
     assert 'progress_bar.html' not in template
     assert 'Collection Coverage' not in template
     assert 'Healthy Targets' not in template

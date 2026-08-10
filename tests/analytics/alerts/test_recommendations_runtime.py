@@ -31,9 +31,7 @@ def test_partial_anomaly_evidence_produces_recovery_recommendation() -> None:
                 'failed_queries': ['readiness'],
             },
             'collection_warnings': [{'title': 'Partial evidence'}],
-            'selected_cluster_signal_overview': {
-                'priority': {'label': 'Limited Evidence'}
-            },
+            'selected_cluster_signal_overview': {'priority': {'label': 'Limited Evidence'}},
         }
     )
 

@@ -311,7 +311,6 @@ def _analytics_metadata(report: Report, document: ReportDocument) -> TabularExpo
     )
 
 
-
 def _iso_datetime_text(value: str) -> str:
     text = str(value or '').strip()
     for pattern in ('%d %b %Y %H:%M UTC', '%Y-%m-%d %H:%M UTC', '%Y-%m-%d %H:%M:%S UTC'):
@@ -385,8 +384,5 @@ def _write_dict_rows(
         writer.writeheader()
         for row in rows:
             writer.writerow(
-                {
-                    key: protect_spreadsheet_formula(serialize_tabular_value(row.get(key)))
-                    for key in fieldnames
-                }
+                {key: protect_spreadsheet_formula(serialize_tabular_value(row.get(key))) for key in fieldnames}
             )

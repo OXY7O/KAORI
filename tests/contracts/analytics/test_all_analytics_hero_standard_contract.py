@@ -1,5 +1,4 @@
 from pathlib import Path
-import re
 
 HERO_TEMPLATES = [
     Path('app/templates/analytics/overview/partials/_hero.html'),
@@ -18,7 +17,9 @@ def test_analytics_heroes_cap_metadata_to_three_labels():
         template = path.read_text()
         # Count the largest non-blocked branch conservatively by total literal calls.
         # Dependency labels are mutually exclusive with normal metadata.
-        normal_calls = [line for line in template.splitlines() if 'page_hero.meta_label' in line and 'lock-keyhole' not in line]
+        normal_calls = [
+            line for line in template.splitlines() if 'page_hero.meta_label' in line and 'lock-keyhole' not in line
+        ]
         assert len(normal_calls) <= 3, f'{path} has {len(normal_calls)} normal metadata labels'
 
 

@@ -95,10 +95,7 @@ def _load_file(name: str, path: Path) -> ModuleType:
 
 def _evidence(**overrides: VectorEvidence) -> StorageEvidence:
     empty = VectorEvidence()
-    values = {
-        field: empty
-        for field in StorageEvidence.__dataclass_fields__
-    }
+    values = {field: empty for field in StorageEvidence.__dataclass_fields__}
     values.update(overrides)
     return StorageEvidence(**values)
 
@@ -106,15 +103,9 @@ def _evidence(**overrides: VectorEvidence) -> StorageEvidence:
 def test_filesystem_uses_complete_root_pair_when_var_is_incomplete() -> None:
     domain = _load_domain()
     evidence = _evidence(
-        filesystem_var_size=VectorEvidence(
-            (_sample({'node': 'worker-1'}, 100),), observed=True
-        ),
-        filesystem_root_size=VectorEvidence(
-            (_sample({'node': 'worker-1'}, 200),), observed=True
-        ),
-        filesystem_root_available=VectorEvidence(
-            (_sample({'node': 'worker-1'}, 100),), observed=True
-        ),
+        filesystem_var_size=VectorEvidence((_sample({'node': 'worker-1'}, 100),), observed=True),
+        filesystem_root_size=VectorEvidence((_sample({'node': 'worker-1'}, 200),), observed=True),
+        filesystem_root_available=VectorEvidence((_sample({'node': 'worker-1'}, 100),), observed=True),
     )
 
     row = domain.build_filesystem_rows(evidence)[0]
@@ -126,11 +117,7 @@ def test_filesystem_uses_complete_root_pair_when_var_is_incomplete() -> None:
 
 def test_filesystem_missing_available_bytes_remains_unknown() -> None:
     domain = _load_domain()
-    evidence = _evidence(
-        filesystem_var_size=VectorEvidence(
-            (_sample({'node': 'worker-1'}, 100),), observed=True
-        )
-    )
+    evidence = _evidence(filesystem_var_size=VectorEvidence((_sample({'node': 'worker-1'}, 100),), observed=True))
 
     row = domain.build_filesystem_rows(evidence)[0]
 
@@ -147,9 +134,7 @@ def test_pvc_pressure_uses_observed_capacity_not_requested_capacity() -> None:
         pvc_capacity=VectorEvidence((_sample(labels, 100),), observed=True),
         pvc_used=VectorEvidence((_sample(labels, 80),), observed=True),
         pvc_available=VectorEvidence((_sample(labels, 20),), observed=True),
-        pvc_status=VectorEvidence(
-            (_sample({**labels, 'phase': 'Bound'}, 1),), observed=True
-        ),
+        pvc_status=VectorEvidence((_sample({**labels, 'phase': 'Bound'}, 1),), observed=True),
         pvc_info=VectorEvidence((_sample(labels, 1),), observed=True),
     )
 
@@ -165,9 +150,7 @@ def test_lost_pvc_sets_critical_storage_posture_without_pressure_evidence() -> N
     domain = _load_domain()
     labels = {'namespace': 'team-a', 'persistentvolumeclaim': 'data'}
     evidence = _evidence(
-        pvc_status=VectorEvidence(
-            (_sample({**labels, 'phase': 'Lost'}, 1),), observed=True
-        ),
+        pvc_status=VectorEvidence((_sample({**labels, 'phase': 'Lost'}, 1),), observed=True),
         pvc_info=VectorEvidence((_sample(labels, 1),), observed=True),
     )
 
@@ -178,7 +161,6 @@ def test_lost_pvc_sets_critical_storage_posture_without_pressure_evidence() -> N
         'tone': 'critical',
     }
     assert payload['storage_posture']['label'] == 'Critical'
-
 
 
 def test_unknown_pvc_lifecycle_is_not_classified_healthy() -> None:
@@ -214,34 +196,27 @@ def test_materialized_pv_summary_uses_collected_claim_evidence() -> None:
         pvc_capacity=VectorEvidence((_sample(claim_labels, 100),), observed=True),
         pvc_used=VectorEvidence((_sample(claim_labels, 40),), observed=True),
         pvc_available=VectorEvidence((_sample(claim_labels, 60),), observed=True),
-        pvc_status=VectorEvidence(
-            (_sample({**claim_labels, 'phase': 'Bound'}, 1),), observed=True
-        ),
+        pvc_status=VectorEvidence((_sample({**claim_labels, 'phase': 'Bound'}, 1),), observed=True),
         pvc_info=VectorEvidence(
             (_sample({**claim_labels, 'volumename': 'pv-data'}, 1),),
             observed=True,
         ),
         pv_capacity=VectorEvidence((_sample(volume_labels, 100),), observed=True),
-        pv_status=VectorEvidence(
-            (_sample({**volume_labels, 'phase': 'Bound'}, 1),), observed=True
-        ),
+        pv_status=VectorEvidence((_sample({**volume_labels, 'phase': 'Bound'}, 1),), observed=True),
         pv_info=VectorEvidence((_sample(volume_labels, 1),), observed=True),
     )
 
-    summary = domain.build_storage_payload(evidence)['storage_summary'][
-        'persistent_storage'
-    ]['pv']
+    summary = domain.build_storage_payload(evidence)['storage_summary']['persistent_storage']['pv']
 
     assert summary['requested_claim_capacity'] == '80 B'
     assert summary['observed_claim_usage'] == '40 B'
     assert summary['unallocated_provisioned_difference'] == '20 B'
 
+
 def test_observed_empty_inventory_is_zero_not_unavailable() -> None:
     domain = _load_domain()
 
-    pvc = domain.summarize_pvc(
-        [], inventory_observed=True, status_observed=True, scope_label='All Namespaces'
-    )
+    pvc = domain.summarize_pvc([], inventory_observed=True, status_observed=True, scope_label='All Namespaces')
     pv = domain.summarize_pv(
         [],
         inventory_observed=True,

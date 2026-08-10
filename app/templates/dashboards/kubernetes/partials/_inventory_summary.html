@@ -8,19 +8,20 @@
     action_label='View Inventory',
     body_classes='grid grid-cols-2 gap-3 p-5 sm:grid-cols-3',
     extra_classes='h-full'
-) %}
+    ) %}
     {% set inventory_items = [
-        ('Namespaces', dashboard.inventory_snapshot.namespaces, 'layout-grid', 'Scope'),
-        ('Workloads', dashboard.inventory_snapshot.workloads, 'boxes', 'Orchestration'),
-        ('Pods', dashboard.inventory_snapshot.pods, 'container', 'Runtime'),
-        ('Services', dashboard.inventory_snapshot.services, 'route', 'Discovery'),
-        ('Ingresses', dashboard.inventory_snapshot.ingresses, 'git-branch', 'Exposure'),
-        ('Storage', dashboard.inventory_snapshot.storage, 'hard-drive', 'Persistence')
-    ] %}
+            ('Namespaces', dashboard.inventory_snapshot.namespaces, 'layout-grid', 'Scope'),
+            ('Workloads', dashboard.inventory_snapshot.workloads, 'boxes', 'Orchestration'),
+            ('Pods', dashboard.inventory_snapshot.pods, 'container', 'Runtime'),
+            ('Services', dashboard.inventory_snapshot.services, 'route', 'Discovery'),
+            ('Ingresses', dashboard.inventory_snapshot.ingresses, 'git-branch', 'Exposure'),
+            ('Storage', dashboard.inventory_snapshot.storage, 'hard-drive', 'Persistence')
+        ] %}
     {% for label, value, icon, role in inventory_items %}
         <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
             <div class="flex items-start justify-between gap-3">
-                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
                     <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                 </span>
                 {{ table_label.metadata_label(role) }}

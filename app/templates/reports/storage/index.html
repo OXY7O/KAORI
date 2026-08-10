@@ -24,7 +24,8 @@
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="{{ page_hero.aside_classes() }}" aria-label="Report storage operations">
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="Report storage operations">
                     <div class="{{ page_hero.context_panel_classes() }}">
                         <div class="flex items-start justify-between gap-3">
                             <div>
@@ -37,7 +38,8 @@
                             {{ page_hero.context_metric('database', 'Backend', payload.active_backend|upper, posture.backend_label, value_classes='text-sm font-semibold leading-5') }}
                             {{ page_hero.context_metric('file-check-2', 'Ready', posture.ready_reports, 'Database-ready reports') }}
                         </div>
-                        <div class="{{ page_hero.context_actions_classes(2) }}" data-storage-hero-actions="balanced-two">
+                        <div class="{{ page_hero.context_actions_classes(2) }}"
+                             data-storage-hero-actions="balanced-two">
                             <a href="{{ url_for('reports.storage', verify='1', workspace='overview') }}"
                                class="{{ page_hero.context_action_classes() }}">
                                 <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
@@ -53,7 +55,6 @@
                 </aside>
             </div>
         </section>
-
         <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
                  data-report-storage-posture="{{ posture.status_tone }}"
                  data-report-storage-readiness-monitor="true"
@@ -61,7 +62,8 @@
             <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
                             <i data-lucide="shield-check" class="h-5 w-5"></i>
                         </span>
                         <div class="min-w-0">
@@ -72,39 +74,44 @@
                     {{ table_label.status_indicator_label(posture.status_label, posture.status_tone) }}
                 </div>
             </header>
-
-            <div class="grid xl:grid-cols-12" data-storage-posture-body="editorial-readiness">
+            <div class="grid xl:grid-cols-12"
+                 data-storage-posture-body="editorial-readiness">
                 <section class="border-b border-outline-subtle p-5 sm:p-6 xl:col-span-5 xl:border-b-0 xl:border-r"
                          data-storage-execution-boundary="true">
                     <p class="text-xs font-semibold text-kaori-primary">Storage Decision</p>
                     <h3 class="mt-1 text-lg font-semibold text-content-primary">{{ posture.title }}</h3>
                     <p class="mt-2 max-w-xl text-sm leading-6 text-content-muted">{{ posture.description }}</p>
-
-                    <dl class="mt-5 border-y border-outline-subtle" data-storage-decision-list="true">
+                    <dl class="mt-5 border-y border-outline-subtle"
+                        data-storage-decision-list="true">
                         <div class="flex items-center justify-between gap-4 py-3">
                             <div class="min-w-0">
                                 <dt class="text-sm font-semibold text-content-primary">Active Backend</dt>
-                                <dd class="mt-0.5 text-xs text-content-muted">Artifact storage target</dd>
+                                <dd class="mt-0.5 text-xs text-content-muted">
+                                    Artifact storage target
+                                </dd>
                             </div>
                             <span class="shrink-0 text-sm font-semibold text-content-primary">{{ payload.active_backend|upper }}</span>
                         </div>
                         <div class="flex items-center justify-between gap-4 border-t border-outline-subtle py-3">
                             <div class="min-w-0">
                                 <dt class="text-sm font-semibold text-content-primary">Artifact Read</dt>
-                                <dd class="mt-0.5 text-xs text-content-muted">Download and integrity access</dd>
+                                <dd class="mt-0.5 text-xs text-content-muted">
+                                    Download and integrity access
+                                </dd>
                             </div>
                             {{ table_label.status_indicator_label(posture.read_label, posture.read_tone) }}
                         </div>
                         <div class="flex items-center justify-between gap-4 border-t border-outline-subtle py-3">
                             <div class="min-w-0">
                                 <dt class="text-sm font-semibold text-content-primary">Artifact Write</dt>
-                                <dd class="mt-0.5 text-xs text-content-muted">Generation and scheduled writes</dd>
+                                <dd class="mt-0.5 text-xs text-content-muted">
+                                    Generation and scheduled writes
+                                </dd>
                             </div>
                             {{ table_label.status_indicator_label(posture.write_label, posture.write_tone) }}
                         </div>
                     </dl>
                 </section>
-
                 <section class="p-5 sm:p-6 xl:col-span-7" data-storage-readiness-panel="true">
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div>
@@ -114,32 +121,39 @@
                         </div>
                         {{ table_label.status_indicator_label(posture.monitor_label, posture.monitor_tone) }}
                     </div>
-
                     <dl class="mt-4 grid border-y border-outline-subtle sm:grid-cols-2 xl:grid-cols-4 xl:divide-x xl:divide-outline-subtle"
                         data-storage-readiness-strip="true">
                         <div class="py-3 sm:pr-4 xl:px-4 xl:first:pl-0">
                             <dt class="text-xs font-medium text-content-muted">Check Mode</dt>
-                            <dd class="mt-1 text-sm font-semibold text-content-primary">{{ 'Every ' ~ payload.readiness_monitor.interval_minutes ~ ' Min' if payload.readiness_monitor.enabled else 'On Demand' }}</dd>
+                            <dd class="mt-1 text-sm font-semibold text-content-primary">
+                                {{ 'Every ' ~ payload.readiness_monitor.interval_minutes ~ ' Min' if payload.readiness_monitor.enabled else 'On Demand' }}
+                            </dd>
                         </div>
                         <div class="border-t border-outline-subtle py-3 sm:border-t-0 sm:pl-4 xl:px-4">
                             <dt class="text-xs font-medium text-content-muted">Last Check</dt>
-                            <dd class="mt-1 text-sm font-semibold text-content-primary">{{ payload.readiness_monitor.checked_label }}</dd>
+                            <dd class="mt-1 text-sm font-semibold text-content-primary">
+                                {{ payload.readiness_monitor.checked_label }}
+                            </dd>
                         </div>
                         <div class="border-t border-outline-subtle py-3 sm:pr-4 xl:border-t-0 xl:px-4">
                             <dt class="text-xs font-medium text-content-muted">Evidence Source</dt>
-                            <dd class="mt-1 text-sm font-semibold text-content-primary">{{ posture.source_label }}</dd>
+                            <dd class="mt-1 text-sm font-semibold text-content-primary">
+                                {{ posture.source_label }}
+                            </dd>
                         </div>
                         <div class="border-t border-outline-subtle py-3 sm:pl-4 xl:border-t-0 xl:px-4 xl:last:pr-0">
                             <dt class="text-xs font-medium text-content-muted">Strong Verification</dt>
-                            <dd class="mt-1">{{ table_label.status_indicator_label(posture.verification_label, posture.verification_tone) }}</dd>
+                            <dd class="mt-1">
+                                {{ table_label.status_indicator_label(posture.verification_label, posture.verification_tone) }}
+                            </dd>
                         </div>
                     </dl>
-
                     <div class="mt-4 rounded-xl border border-outline-subtle bg-surface-subtle p-4"
                          data-storage-readiness-tip="true"
                          data-storage-readiness-tip-layout="boxed">
                         <div class="flex items-start gap-3">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
                                 <i data-lucide="lightbulb" class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
@@ -184,7 +198,8 @@
                  data-storage-workspace="{{ payload.workspace }}">
             <header class="px-5 py-4 sm:px-6">
                 <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
                         <i data-lucide="database-cog" class="h-4 w-4"></i>
                     </span>
                     <div class="min-w-0">
@@ -193,26 +208,26 @@
                     </div>
                 </div>
             </header>
-            {{ content_tabs.render_links(
-                'report-storage',
-                [
-                    ('overview', 'Storage Overview', 'hard-drive', overview_href),
-                    ('integrity', 'Integrity & Verification', 'shield-check', integrity_href),
-                    ('retention', 'Retention & Cleanup', 'archive', retention_href)
-                ],
-                payload.workspace,
-                'Report Storage Sections',
-                embedded=true,
-                data_namespace='storage'
+            {{ content_tabs.render_links('report-storage',
+                        [
+                        ('overview', 'Storage Overview', 'hard-drive', overview_href) ,
+            ('integrity', 'Integrity & Verification', 'shield-check', integrity_href),
+            ('retention', 'Retention & Cleanup', 'archive', retention_href)
+            ],
+            payload.workspace,
+            'Report Storage Sections',
+            embedded=true,
+            data_namespace='storage'
             ) }}
-
             {% if payload.workspace == 'overview' %}
                 <div class="p-5 sm:p-6">
                     <section data-storage-active-backend-layout="connection-contract">
                         <div class="flex flex-col gap-4 border-b border-outline-subtle pb-5 sm:flex-row sm:items-start sm:justify-between">
                             <div class="flex min-w-0 items-start gap-3">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
-                                    <i data-lucide="{{ 'cloud' if payload.active_backend == 's3' else 'hard-drive' }}" class="h-5 w-5"></i>
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="{{ 'cloud' if payload.active_backend == 's3' else 'hard-drive' }}"
+                                       class="h-5 w-5"></i>
                                 </span>
                                 <div class="min-w-0">
                                     <p class="text-xs font-semibold text-kaori-primary">Active Backend</p>
@@ -224,100 +239,131 @@
                             </div>
                             {{ table_label.status_indicator_label(backend_status.status, backend_status.tone) }}
                         </div>
-
                         {% if payload.active_backend == 's3' %}
                             <div class="grid xl:grid-cols-12 xl:divide-x xl:divide-outline-subtle">
-                                <section class="py-5 xl:col-span-7 xl:pr-6" data-storage-backend-connection="s3">
+                                <section class="py-5 xl:col-span-7 xl:pr-6"
+                                         data-storage-backend-connection="s3">
                                     <p class="text-xs font-semibold text-content-secondary">Connection Target</p>
                                     <dl class="mt-3 divide-y divide-outline-subtle border-y border-outline-subtle">
                                         <div class="grid gap-1 py-3 sm:grid-cols-3 sm:items-start sm:gap-4">
                                             <dt class="text-xs font-medium text-content-muted">Endpoint</dt>
-                                            <dd class="break-all text-sm font-semibold text-content-primary sm:col-span-2">{{ payload.s3.endpoint_url }}</dd>
+                                            <dd class="break-all text-sm font-semibold text-content-primary sm:col-span-2">
+                                                {{ payload.s3.endpoint_url }}
+                                            </dd>
                                         </div>
                                         <div class="grid gap-3 py-3 sm:grid-cols-2">
                                             <div>
                                                 <dt class="text-xs font-medium text-content-muted">Bucket</dt>
-                                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ payload.s3.bucket }}</dd>
+                                                <dd class="mt-1 text-sm font-semibold text-content-primary">
+                                                    {{ payload.s3.bucket }}
+                                                </dd>
                                             </div>
                                             <div>
                                                 <dt class="text-xs font-medium text-content-muted">Region</dt>
-                                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ payload.s3.region }}</dd>
+                                                <dd class="mt-1 text-sm font-semibold text-content-primary">
+                                                    {{ payload.s3.region }}
+                                                </dd>
                                             </div>
                                         </div>
                                         <div class="grid gap-1 py-3 sm:grid-cols-3 sm:items-start sm:gap-4">
                                             <dt class="text-xs font-medium text-content-muted">Object Prefix</dt>
-                                            <dd class="break-all font-mono text-xs font-semibold leading-5 text-content-primary sm:col-span-2">{{ payload.s3.prefix }}</dd>
+                                            <dd class="break-all font-mono text-xs font-semibold leading-5 text-content-primary sm:col-span-2">
+                                                {{ payload.s3.prefix }}
+                                            </dd>
                                         </div>
                                     </dl>
                                 </section>
-
-                                <section class="border-t border-outline-subtle py-5 xl:col-span-5 xl:border-t-0 xl:pl-6" data-storage-backend-access="s3">
+                                <section class="border-t border-outline-subtle py-5 xl:col-span-5 xl:border-t-0 xl:pl-6"
+                                         data-storage-backend-access="s3">
                                     <p class="text-xs font-semibold text-content-secondary">Access & Compatibility</p>
                                     <dl class="mt-3 divide-y divide-outline-subtle border-y border-outline-subtle">
                                         <div class="flex items-start justify-between gap-4 py-3">
                                             <dt class="text-xs font-medium text-content-muted">Credential Mode</dt>
-                                            <dd class="text-right text-sm font-semibold text-content-primary">{{ payload.s3.credential_mode }}</dd>
+                                            <dd class="text-right text-sm font-semibold text-content-primary">
+                                                {{ payload.s3.credential_mode }}
+                                            </dd>
                                         </div>
                                         <div class="flex items-start justify-between gap-4 py-3">
                                             <dt class="text-xs font-medium text-content-muted">Path Style</dt>
-                                            <dd class="text-right text-sm font-semibold text-content-primary">{{ 'Enabled' if payload.s3.force_path_style else 'Disabled' }}</dd>
+                                            <dd class="text-right text-sm font-semibold text-content-primary">
+                                                {{ 'Enabled' if payload.s3.force_path_style else 'Disabled' }}
+                                            </dd>
                                         </div>
                                         <div class="flex items-start justify-between gap-4 py-3">
                                             <dt class="text-xs font-medium text-content-muted">S3 Client</dt>
-                                            <dd>{{ table_label.status_indicator_label('Available' if payload.s3.boto3_available else 'Unavailable', 'normal' if payload.s3.boto3_available else 'critical') }}</dd>
+                                            <dd>
+                                                {{ table_label.status_indicator_label('Available' if payload.s3.boto3_available else 'Unavailable', 'normal' if payload.s3.boto3_available else 'critical') }}
+                                            </dd>
                                         </div>
                                         <div class="flex items-start justify-between gap-4 py-3">
                                             <dt class="text-xs font-medium text-content-muted">Configuration</dt>
-                                            <dd>{{ table_label.status_indicator_label('Complete' if payload.s3.configuration_complete else 'Needs Review', 'normal' if payload.s3.configuration_complete else 'warning') }}</dd>
+                                            <dd>
+                                                {{ table_label.status_indicator_label('Complete' if payload.s3.configuration_complete else 'Needs Review', 'normal' if payload.s3.configuration_complete else 'warning') }}
+                                            </dd>
                                         </div>
                                     </dl>
                                 </section>
                             </div>
                         {% else %}
                             <div class="grid xl:grid-cols-12 xl:divide-x xl:divide-outline-subtle">
-                                <section class="py-5 xl:col-span-7 xl:pr-6" data-storage-backend-connection="local">
+                                <section class="py-5 xl:col-span-7 xl:pr-6"
+                                         data-storage-backend-connection="local">
                                     <p class="text-xs font-semibold text-content-secondary">Filesystem Target</p>
                                     <dl class="mt-3 divide-y divide-outline-subtle border-y border-outline-subtle">
                                         <div class="grid gap-1 py-3 sm:grid-cols-3 sm:items-start sm:gap-4">
                                             <dt class="text-xs font-medium text-content-muted">Root Path</dt>
-                                            <dd class="break-all font-mono text-xs font-semibold leading-5 text-content-primary sm:col-span-2">{{ payload.local.root_path }}</dd>
+                                            <dd class="break-all font-mono text-xs font-semibold leading-5 text-content-primary sm:col-span-2">
+                                                {{ payload.local.root_path }}
+                                            </dd>
                                         </div>
                                         <div class="grid gap-1 py-3 sm:grid-cols-3 sm:items-start sm:gap-4">
                                             <dt class="text-xs font-medium text-content-muted">Reports Path</dt>
-                                            <dd class="break-all font-mono text-xs font-semibold leading-5 text-content-primary sm:col-span-2">{{ payload.local.reports_path }}</dd>
+                                            <dd class="break-all font-mono text-xs font-semibold leading-5 text-content-primary sm:col-span-2">
+                                                {{ payload.local.reports_path }}
+                                            </dd>
                                         </div>
                                         <div class="grid gap-1 py-3 sm:grid-cols-3 sm:items-start sm:gap-4">
                                             <dt class="text-xs font-medium text-content-muted">Render Staging</dt>
-                                            <dd class="break-all font-mono text-xs font-semibold leading-5 text-content-primary sm:col-span-2">{{ payload.local.render_staging_path }}</dd>
+                                            <dd class="break-all font-mono text-xs font-semibold leading-5 text-content-primary sm:col-span-2">
+                                                {{ payload.local.render_staging_path }}
+                                            </dd>
                                         </div>
                                     </dl>
                                 </section>
-
-                                <section class="border-t border-outline-subtle py-5 xl:col-span-5 xl:border-t-0 xl:pl-6" data-storage-backend-access="local">
+                                <section class="border-t border-outline-subtle py-5 xl:col-span-5 xl:border-t-0 xl:pl-6"
+                                         data-storage-backend-access="local">
                                     <p class="text-xs font-semibold text-content-secondary">Filesystem State</p>
                                     <dl class="mt-3 divide-y divide-outline-subtle border-y border-outline-subtle">
                                         <div class="flex items-start justify-between gap-4 py-3">
                                             <dt class="text-xs font-medium text-content-muted">Root Writable</dt>
-                                            <dd>{{ table_label.status_indicator_label('Ready' if payload.local.root_writable else 'Needs Review', 'normal' if payload.local.root_writable else 'critical') }}</dd>
+                                            <dd>
+                                                {{ table_label.status_indicator_label('Ready' if payload.local.root_writable else 'Needs Review', 'normal' if payload.local.root_writable else 'critical') }}
+                                            </dd>
                                         </div>
                                         <div class="flex items-start justify-between gap-4 py-3">
                                             <dt class="text-xs font-medium text-content-muted">Root Exists</dt>
-                                            <dd class="text-right text-sm font-semibold text-content-primary">{{ 'Yes' if payload.local.root_exists else 'No' }}</dd>
+                                            <dd class="text-right text-sm font-semibold text-content-primary">
+                                                {{ 'Yes' if payload.local.root_exists else 'No' }}
+                                            </dd>
                                         </div>
                                         <div class="flex items-start justify-between gap-4 py-3">
                                             <dt class="text-xs font-medium text-content-muted">Reports Path</dt>
-                                            <dd class="text-right text-sm font-semibold text-content-primary">{{ 'Available' if payload.local.reports_path_exists else 'Missing' }}</dd>
+                                            <dd class="text-right text-sm font-semibold text-content-primary">
+                                                {{ 'Available' if payload.local.reports_path_exists else 'Missing' }}
+                                            </dd>
                                         </div>
                                         <div class="flex items-start justify-between gap-4 py-3">
                                             <dt class="text-xs font-medium text-content-muted">Local Footprint</dt>
-                                            <dd class="text-right text-sm font-semibold text-content-primary">{{ payload.local.reports_file_count }} Files · {{ payload.local.reports_total_size }}</dd>
+                                            <dd class="text-right text-sm font-semibold text-content-primary">
+                                                {{ payload.local.reports_file_count }} Files · {{ payload.local.reports_total_size }}
+                                            </dd>
                                         </div>
                                     </dl>
                                 </section>
                             </div>
                         {% endif %}
-
-                        <div class="border-t border-outline-subtle pt-4" data-storage-configuration-boundary="true">
+                        <div class="border-t border-outline-subtle pt-4"
+                             data-storage-configuration-boundary="true">
                             <div class="grid gap-4 md:grid-cols-3 md:divide-x md:divide-outline-subtle">
                                 <div class="md:pr-5">
                                     <p class="text-xs font-medium text-content-muted">Configuration Source</p>
@@ -341,7 +387,9 @@
                         <div class="grid lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle">
                             <div class="pb-5 lg:pb-0 lg:pr-6">
                                 <div class="flex items-start gap-3">
-                                    <i data-lucide="activity" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                    <i data-lucide="activity"
+                                       class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+                                       aria-hidden="true"></i>
                                     <div>
                                         <h3 class="text-sm font-semibold text-content-primary">Strong Backend Verification</h3>
                                         <p class="mt-1 text-xs leading-5 text-content-muted">{{ payload.verification.description }}</p>
@@ -356,7 +404,9 @@
                             </div>
                             <div class="border-t border-outline-subtle pt-5 lg:border-t-0 lg:pl-6 lg:pt-0">
                                 <div class="flex items-start gap-3">
-                                    <i data-lucide="search-check" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                    <i data-lucide="search-check"
+                                       class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+                                       aria-hidden="true"></i>
                                     <div>
                                         <h3 class="text-sm font-semibold text-content-primary">Artifact Integrity Scan</h3>
                                         <p class="mt-1 text-xs leading-5 text-content-muted">{{ payload.integrity_check.description }}</p>
@@ -370,7 +420,8 @@
                                         Check Artifact Integrity
                                     </a>
                                 {% else %}
-                                    <span aria-disabled="true" class="mt-4 inline-flex min-h-9 cursor-not-allowed items-center justify-center gap-2 rounded-md border border-outline-subtle bg-surface-card px-4 text-sm font-semibold text-content-muted opacity-70">
+                                    <span aria-disabled="true"
+                                          class="mt-4 inline-flex min-h-9 cursor-not-allowed items-center justify-center gap-2 rounded-md border border-outline-subtle bg-surface-card px-4 text-sm font-semibold text-content-muted opacity-70">
                                         <i data-lucide="pause-circle" class="h-4 w-4" aria-hidden="true"></i>
                                         Integrity Check Paused
                                     </span>
@@ -406,7 +457,10 @@
                                                 <tr class="{{ table_ui.row_classes() }}">
                                                     <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(item.name, 'Report #' ~ item.report_id, 'file-text') }}</td>
                                                     <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(item.backend|upper, 'database') }}</td>
-                                                    <td class="{{ table_ui.cell_classes() }}"><p class="max-w-[320px] truncate text-xs text-content-muted" title="{{ item.reference }}">{{ item.reference }}</p></td>
+                                                    <td class="{{ table_ui.cell_classes() }}">
+                                                        <p class="max-w-[320px] truncate text-xs text-content-muted"
+                                                           title="{{ item.reference }}">{{ item.reference }}</p>
+                                                    </td>
                                                     <td class="{{ table_ui.cell_classes() }}">
                                                         {{ table_label.status_indicator_label(item.status, item.tone) }}
                                                         <p class="mt-1 max-w-[300px] text-xs leading-5 text-content-muted">{{ item.issue }}</p>
@@ -433,61 +487,76 @@
                             </div>
                             {{ table_label.status_indicator_label(payload.retention_policy.status, 'normal' if payload.retention_policy.auto_cleanup_enabled else 'warning') }}
                         </div>
-
                         <dl class="mt-5 grid border-y border-outline-subtle sm:grid-cols-2 xl:grid-cols-4 xl:divide-x xl:divide-outline-subtle"
                             data-storage-retention-summary="policy-strip">
                             <div class="py-3 sm:pr-4 xl:px-4 xl:first:pl-0">
                                 <dt class="text-xs text-content-muted">Cleanup Mode</dt>
-                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ payload.retention_policy.mode }}</dd>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">
+                                    {{ payload.retention_policy.mode }}
+                                </dd>
                             </div>
                             <div class="border-t border-outline-subtle py-3 sm:border-t-0 sm:pl-4 xl:px-4">
                                 <dt class="text-xs text-content-muted">Retention</dt>
-                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ payload.retention_policy.retention_days }} Days</dd>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">
+                                    {{ payload.retention_policy.retention_days }} Days
+                                </dd>
                             </div>
                             <div class="border-t border-outline-subtle py-3 sm:pr-4 xl:border-t-0 xl:px-4">
                                 <dt class="text-xs text-content-muted">Archive Retention</dt>
-                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ payload.retention_policy.archive_retention_days }} Days</dd>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">
+                                    {{ payload.retention_policy.archive_retention_days }} Days
+                                </dd>
                             </div>
                             <div class="border-t border-outline-subtle py-3 sm:pl-4 xl:border-t-0 xl:px-4 xl:last:pr-0">
                                 <dt class="text-xs text-content-muted">Orphan Detection</dt>
-                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ 'Enabled' if payload.retention_policy.orphan_detection_enabled else 'Disabled' }}</dd>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">
+                                    {{ 'Enabled' if payload.retention_policy.orphan_detection_enabled else 'Disabled' }}
+                                </dd>
                             </div>
                         </dl>
-
                         <div class="mt-5 grid gap-5 lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle"
                              data-storage-retention-governance="split-boundary">
                             <section class="lg:pr-6">
                                 <div class="flex items-center gap-2">
-                                    <i data-lucide="shield-check" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                    <i data-lucide="shield-check"
+                                       class="h-4 w-4 text-kaori-primary"
+                                       aria-hidden="true"></i>
                                     <h4 class="text-sm font-semibold text-content-primary">Policy Guardrails</h4>
                                 </div>
                                 <div class="mt-3 space-y-2.5">
                                     {% for rule in payload.retention_policy.policy_rules %}
-                                        <div class="flex items-start gap-2 text-xs leading-5 text-content-muted"><i data-lucide="check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i><span>{{ rule }}</span></div>
+                                        <div class="flex items-start gap-2 text-xs leading-5 text-content-muted"><i data-lucide="check"
+   class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"
+   aria-hidden="true"></i><span>{{ rule }}</span></div>
                                     {% endfor %}
                                 </div>
                             </section>
                             <section class="border-t border-outline-subtle pt-5 lg:border-t-0 lg:pl-6 lg:pt-0">
                                 <div class="flex items-center gap-2">
-                                    <i data-lucide="rotate-cw" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                    <i data-lucide="rotate-cw"
+                                       class="h-4 w-4 text-kaori-primary"
+                                       aria-hidden="true"></i>
                                     <h4 class="text-sm font-semibold text-content-primary">Operational Boundary</h4>
                                 </div>
                                 <p class="mt-3 text-xs leading-5 text-content-muted">{{ payload.retention_policy.safe_regenerate_behavior }}</p>
                                 <p class="mt-4 text-xs font-semibold text-content-primary">Before Enabling Cleanup</p>
                                 <div class="mt-2 space-y-2">
                                     {% for step in payload.retention_policy.next_steps %}
-                                        <div class="flex items-start gap-2 text-xs leading-5 text-content-muted"><i data-lucide="chevron-right" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i><span>{{ step }}</span></div>
+                                        <div class="flex items-start gap-2 text-xs leading-5 text-content-muted"><i data-lucide="chevron-right"
+   class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"
+   aria-hidden="true"></i><span>{{ step }}</span></div>
                                     {% endfor %}
                                 </div>
                             </section>
                         </div>
                     </section>
-
                     <section class="mt-5 border-t border-outline-subtle pt-5"
                              data-storage-cleanup-action="inline-boundary">
                         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                             <div class="flex min-w-0 items-start gap-3">
-                                <i data-lucide="scan-search" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                <i data-lucide="scan-search"
+                                   class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+                                   aria-hidden="true"></i>
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <h3 class="text-sm font-semibold text-content-primary">Cleanup Dry Run</h3>
@@ -503,7 +572,8 @@
                                     Preview Cleanup Candidates
                                 </a>
                             {% else %}
-                                <span aria-disabled="true" class="inline-flex min-h-9 shrink-0 cursor-not-allowed items-center justify-center gap-2 rounded-md border border-outline-subtle bg-surface-card px-4 text-sm font-semibold text-content-muted opacity-70"><i data-lucide="pause-circle" class="h-4 w-4" aria-hidden="true"></i>Cleanup Preview Paused</span>
+                                <span aria-disabled="true"
+                                      class="inline-flex min-h-9 shrink-0 cursor-not-allowed items-center justify-center gap-2 rounded-md border border-outline-subtle bg-surface-card px-4 text-sm font-semibold text-content-muted opacity-70"><i data-lucide="pause-circle" class="h-4 w-4" aria-hidden="true"></i>Cleanup Preview Paused</span>
                             {% endif %}
                         </div>
                     </section>
@@ -537,8 +607,14 @@
                                                     <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(item.name, 'Report #' ~ item.report_id, 'file-archive') }}</td>
                                                     <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(item.status, item.status) }}</td>
                                                     <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(item.backend|upper, 'database') }}</td>
-                                                    <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ item.file_size }}</span><p class="mt-0.5 text-xs text-content-muted">Updated {{ item.updated_at }}</p></td>
-                                                    <td class="{{ table_ui.cell_classes() }}"><p class="max-w-[360px] truncate text-xs text-content-muted" title="{{ item.file_path }}">{{ item.file_path }}</p></td>
+                                                    <td class="{{ table_ui.cell_classes() }}">
+                                                        <span class="text-sm font-semibold text-content-primary">{{ item.file_size }}</span>
+                                                        <p class="mt-0.5 text-xs text-content-muted">Updated {{ item.updated_at }}</p>
+                                                    </td>
+                                                    <td class="{{ table_ui.cell_classes() }}">
+                                                        <p class="max-w-[360px] truncate text-xs text-content-muted"
+                                                           title="{{ item.file_path }}">{{ item.file_path }}</p>
+                                                    </td>
                                                 </tr>
                                             {% endfor %}
                                         </tbody>

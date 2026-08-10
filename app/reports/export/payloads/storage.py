@@ -7,9 +7,9 @@ from app.analytics.storage.service import StorageAnalysisService
 from app.analytics.utilization.service import UtilizationService
 from app.cluster.constants import get_environment_label
 from app.models.report import Report
-from app.reports.export.payloads.common import get_report_selected_cluster, report_payload_error
 from app.prometheus.consumer import PrometheusConsumer
 from app.prometheus.service import PrometheusService
+from app.reports.export.payloads.common import get_report_selected_cluster, report_payload_error
 
 
 def get_report_storage_analysis_payload(
@@ -163,13 +163,10 @@ def _source_evidence(
     pv_summary = pv_summary if isinstance(pv_summary, dict) else {}
     pvc_summary = pvc_summary if isinstance(pvc_summary, dict) else {}
 
-    storage_state = (
-        'Committed' if filesystem_summary.get('evidence_complete') else 'Partial'
-    )
+    storage_state = 'Committed' if filesystem_summary.get('evidence_complete') else 'Partial'
     inventory_state = (
         'Committed'
-        if pv_summary.get('inventory_evidence_available')
-        and pvc_summary.get('inventory_evidence_available')
+        if pv_summary.get('inventory_evidence_available') and pvc_summary.get('inventory_evidence_available')
         else 'Partial'
     )
 

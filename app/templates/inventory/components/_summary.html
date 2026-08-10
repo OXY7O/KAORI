@@ -1,5 +1,4 @@
 {% import "components/progress_bar.html" as progress_bar %}
-
 {# Canonical summary presentation for Kubernetes Inventory resource pages. #}
 {% macro panel_header(eyebrow, title, description, badge_text, badge_icon='badge-check') -%}
     <header class="border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6">
@@ -22,7 +21,6 @@
         </div>
     </header>
 {%- endmacro %}
-
 {% macro metric_grid(cards) -%}
     <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
         {% for label, value, icon, description in cards %}
@@ -42,7 +40,6 @@
         {% endfor %}
     </div>
 {%- endmacro %}
-
 {% macro progress_card(label, percentage, supporting_text, progress_label, icon='badge-check') -%}
     <article class="bg-surface-card p-5">
         <div class="flex items-start justify-between gap-4">
@@ -52,12 +49,10 @@
                     <p class="text-2xl font-semibold text-content-primary">{{ percentage | int }}%</p>
                     <p class="pb-0.5 text-xs font-medium text-content-muted">{{ supporting_text }}</p>
                 </div>
-                {{ progress_bar.bar(
-                    percentage,
-                    track_classes='mt-4 h-2 overflow-hidden rounded-full bg-kaori-soft',
-                    fill_classes='h-full rounded-full bg-kaori-primary',
-                    label=progress_label
-                ) }}
+                {{ progress_bar.bar(percentage,
+                                track_classes='mt-4 h-2 overflow-hidden rounded-full bg-kaori-soft',
+                                fill_classes='h-full rounded-full bg-kaori-primary',
+                                label=progress_label) }}
             </div>
             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-brand-outline bg-kaori-soft text-kaori-primary"
                   aria-hidden="true">
@@ -66,7 +61,6 @@
         </div>
     </article>
 {%- endmacro %}
-
 {% macro status_card(label, value, description, icon, tone='info') -%}
     {% set icon_classes = 'border-status-normal-border bg-status-normal-soft text-status-normal-text' if tone == 'normal' else ('border-status-warning-border bg-status-warning-soft text-status-warning-text' if tone == 'warning' else ('border-status-critical-border bg-status-critical-soft text-status-critical-text' if tone == 'critical' else ('border-status-unknown-border bg-status-unknown-soft text-status-unknown-text' if tone == 'unknown' else 'border-status-info-border bg-status-info-soft text-status-info-text'))) %}
     <article class="bg-surface-card p-5">

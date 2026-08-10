@@ -4,8 +4,18 @@ import importlib.util
 from pathlib import Path
 import sys
 
-from sqlalchemy import Integer, String, create_engine, select
-from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
+from sqlalchemy import (
+    Integer,
+    String,
+    create_engine,
+    select,
+)
+from sqlalchemy.orm import (
+    DeclarativeBase,
+    Mapped,
+    Session,
+    mapped_column,
+)
 
 ROOT = Path(__file__).resolve().parents[3]
 PAGINATION = ROOT / 'app/common/pagination.py'

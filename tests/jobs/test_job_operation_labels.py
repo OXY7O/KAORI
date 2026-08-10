@@ -1,4 +1,4 @@
-from app.jobs.registry import job_operation_label
+from app.common.job_execution_contract import job_operation_label
 
 
 def test_tls_certificate_sync_preserves_tls_acronym():

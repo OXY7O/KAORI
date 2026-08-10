@@ -11,7 +11,6 @@ def read(relative: str) -> str:
 
 def test_management_landings_use_flat_operational_workflow_catalog() -> None:
     component = read('app/templates/components/operational_workflow_card.html')
-    catalog = read('app/templates/components/operational_workflow_catalog.html')
     assert 'border-t border-outline-subtle' in component
     assert 'first:border-t-0' in component
     assert 'hover:bg-surface-hover' in component
@@ -67,8 +66,6 @@ def test_secret_create_uses_reusable_choice_and_entry_components() -> None:
 
 def test_operation_permission_and_classification_are_separate() -> None:
     component = read('app/templates/components/operational_workflow_card.html')
-    catalog = read('app/templates/components/operational_workflow_catalog.html')
-
     assert "'Available' if allowed else 'Restricted'" in component
     assert 'metadata_label(classification' in component
     assert "status_label('Protected'" not in component

@@ -64,6 +64,7 @@ def test_runtime_primary_finding_replaces_duplicate_operational_focus_rows():
     assert 'data-kaori-operational-focus-list' not in source
     assert 'runtime_state.message' not in source
 
+
 def test_changed_templates_parse_as_jinja():
     env = Environment()
     env.parse(_text(RUNTIME_HISTORY))

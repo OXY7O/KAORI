@@ -15,9 +15,9 @@
                 <aside class="{{ page_hero.aside_classes() }}"
                        aria-label="Governance actions">
                     {% if cluster_onboarding.is_blocked %}
-                        {% set cluster_blocked_scope = 'Kubernetes Governance' %}
-                        {% set cluster_blocked_title = 'Cluster Setup Required' %}
-                        {% set cluster_blocked_info = 'Add a Kubernetes cluster to unlock governance workflows in KAORI.' %}
+                        {% set cluster_blocked_scope = "Kubernetes Governance" %}
+                        {% set cluster_blocked_title = "Cluster Setup Required" %}
+                        {% set cluster_blocked_info = "Add a Kubernetes cluster to unlock governance workflows in KAORI." %}
                         {% include 'components/cluster/_hero_blocked_context.html' %}
                     {% else %}
                         <div class="{{ page_hero.context_panel_classes() }}">
@@ -32,7 +32,7 @@
                                 Open TLS Certificates
                             </a>
                         </div>
-                {% endif %}
+                    {% endif %}
                 </aside>
             </div>
         </section>

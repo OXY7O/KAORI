@@ -41,8 +41,11 @@ def main() -> int:
         require('dark mode' in lock.lower(), 'Final lock must freeze dark-mode behavior.', errors)
 
     ui_lock = read('scripts/verify_core_workspace_ui_lock.py')
-    require("'app/templates/dashboards/kubernetes/'" in ui_lock,
-            'Kubernetes Dashboard templates must be protected by the core UI lock.', errors)
+    require(
+        "'app/templates/dashboards/kubernetes/'" in ui_lock,
+        'Kubernetes Dashboard templates must be protected by the core UI lock.',
+        errors,
+    )
 
     quality_gate = read('scripts/quality_gate.sh')
     for verifier_name in (
@@ -67,17 +70,30 @@ def main() -> int:
     # Welcome: canonical shared hero and domain catalog, no legacy standalone shell.
     welcome = read('app/templates/welcome/index.html')
     require('components/page_hero.html' in welcome, 'Welcome must use shared page_hero.', errors)
-    require('WELCOME_WORKSPACE_CATALOG' not in welcome, 'Welcome must not depend on a legacy inline catalog constant.', errors)
+    require(
+        'WELCOME_WORKSPACE_CATALOG' not in welcome,
+        'Welcome must not depend on a legacy inline catalog constant.',
+        errors,
+    )
 
     # Kubernetes Dashboard: canonical snapshot-only composition and no obsolete builder.
     dashboard = read('app/templates/dashboards/kubernetes/index.html')
     dashboard_content = read('app/templates/dashboards/kubernetes/partials/_content.html')
-    require('dashboards/kubernetes/partials/_content.html' in dashboard,
-            'Kubernetes Dashboard must use the canonical content partial.', errors)
-    require('id="dashboard-content"' in dashboard and 'Kubernetes Dashboard Sections' in dashboard_content,
-            'Kubernetes Dashboard must expose its canonical content and section navigation boundary.', errors)
-    require(not (ROOT / 'app/dashboards/kubernetes/snapshot_builder.py').exists(),
-            'Obsolete Kubernetes dashboard snapshot_builder.py must remain removed.', errors)
+    require(
+        'dashboards/kubernetes/partials/_content.html' in dashboard,
+        'Kubernetes Dashboard must use the canonical content partial.',
+        errors,
+    )
+    require(
+        'id="dashboard-content"' in dashboard and 'Kubernetes Dashboard Sections' in dashboard_content,
+        'Kubernetes Dashboard must expose its canonical content and section navigation boundary.',
+        errors,
+    )
+    require(
+        not (ROOT / 'app/dashboards/kubernetes/snapshot_builder.py').exists(),
+        'Obsolete Kubernetes dashboard snapshot_builder.py must remain removed.',
+        errors,
+    )
 
     # Inventory: canonical workspaces, snapshot semantics, topology drawer contract, no compatibility scopes.
     for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage'):
@@ -87,20 +103,34 @@ def main() -> int:
         require(not legacy.exists(), f'Inventory {resource} legacy _inventory_scope.html must remain removed.', errors)
     topology = read('app/templates/inventory/topology/partials/_workspace.html')
     require('visualization_workspace.render(' in topology, 'Topology must use shared visualization workspace.', errors)
-    require('topology-controls-panel' in topology and 'topology-details-panel' in topology,
-            'Topology controls/details must remain on-demand drawers.', errors)
+    require(
+        'topology-controls-panel' in topology and 'topology-details-panel' in topology,
+        'Topology controls/details must remain on-demand drawers.',
+        errors,
+    )
 
     # Analytics: shared token scope, canonical guidance ownership, and obsolete local assets removed.
     for domain in ('overview', 'utilization', 'capacity', 'storage', 'workload', 'forecast', 'top_consumers', 'alerts'):
         index = read(f'app/templates/analytics/{domain}/index.html')
-        require('kaori-analytics-page' in index, f'Analytics {domain} must use the shared analytics token scope.', errors)
-    require(not (ROOT / 'app/static/js/analytics_capacity.js').exists(),
-            'Obsolete analytics_capacity.js must remain removed.', errors)
-    require(not (ROOT / 'app/static/js/analytics_forecast.js').exists(),
-            'Obsolete analytics_forecast.js must remain removed.', errors)
+        require(
+            'kaori-analytics-page' in index, f'Analytics {domain} must use the shared analytics token scope.', errors
+        )
+    require(
+        not (ROOT / 'app/static/js/analytics_capacity.js').exists(),
+        'Obsolete analytics_capacity.js must remain removed.',
+        errors,
+    )
+    require(
+        not (ROOT / 'app/static/js/analytics_forecast.js').exists(),
+        'Obsolete analytics_forecast.js must remain removed.',
+        errors,
+    )
     surfaces = read('app/templates/analytics/components/_analysis_surfaces.html')
-    require('macro interpretation_callout' in surfaces and 'macro interpretation_content' in surfaces,
-            'Analytics guidance must remain owned by shared analysis surfaces.', errors)
+    require(
+        'macro interpretation_callout' in surfaces and 'macro interpretation_content' in surfaces,
+        'Analytics guidance must remain owned by shared analysis surfaces.',
+        errors,
+    )
 
     # Operations: live-operation feedback remains shared and legacy wrappers stay removed.
     for obsolete in (
@@ -110,10 +140,16 @@ def main() -> int:
     ):
         require(not (ROOT / obsolete).exists(), f'Obsolete Operations path must remain removed: {obsolete}', errors)
     configmap_create = read('app/templates/kubernetes_operations/configmaps/create.html')
-    require('data-operational-toast' in read('app/templates/components/operational_toast.html'),
-            'Shared operational toast component must remain available.', errors)
-    require('_validation_preview.html' in configmap_create,
-            'ConfigMap create must preserve persistent validation evidence.', errors)
+    require(
+        'data-operational-toast' in read('app/templates/components/operational_toast.html'),
+        'Shared operational toast component must remain available.',
+        errors,
+    )
+    require(
+        '_validation_preview.html' in configmap_create,
+        'ConfigMap create must preserve persistent validation evidence.',
+        errors,
+    )
 
     # Governance: canonical TLS workspace + guarded mutation and no legacy feedback wrappers.
     governance = read('app/templates/governance/tls_certificates/index.html')

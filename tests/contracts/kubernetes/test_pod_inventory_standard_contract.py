@@ -12,7 +12,10 @@ def test_pod_workspace_refreshes_scope_and_snapshot_context() -> None:
     workspace = read('app/templates/inventory/pods/partials/_page_workspace.html')
     card = read('app/templates/inventory/pods/partials/_table_card.html')
 
-    assert "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')" in routes
+    assert (
+        "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')"
+        in routes
+    )
     assert 'id="pods-page-workspace"' in workspace
     assert 'inventory/components/_data_freshness.html' in workspace
     assert 'hx-target="#pods-page-workspace"' in card

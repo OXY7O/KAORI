@@ -26,7 +26,7 @@ def test_reveal_polling_only_runs_for_the_active_replaceable_panel() -> None:
     request_status = read('app/templates/kubernetes_operations/secrets/_reveal_request_status.html')
     approvals = read('app/templates/kubernetes_operations/secrets/_reveal_pending_approvals.html')
 
-    assert "panel.hidden" in script
+    assert 'panel.hidden' in script
     assert "querySelector('[data-reveal-poll-owner]')" in script
     assert 'window.setInterval' in script
     assert 'data-reveal-poll-owner' in request_status

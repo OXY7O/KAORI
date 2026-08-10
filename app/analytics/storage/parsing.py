@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
 from app.analytics.storage.evidence import VectorEvidence, sample_metric, sample_value
 
 _CANONICAL_NODE_LABELS = ('node', 'nodename', 'kubernetes_node')
@@ -114,9 +112,7 @@ def pv_info_map(evidence: VectorEvidence) -> dict[str, dict[str, str]]:
             continue
         values[volume] = {
             'storage_class': str(metric.get('storageclass') or '').strip(),
-            'reclaim_policy': str(
-                metric.get('reclaim_policy') or metric.get('reclaimpolicy') or ''
-            ).strip(),
+            'reclaim_policy': str(metric.get('reclaim_policy') or metric.get('reclaimpolicy') or '').strip(),
         }
     return values
 

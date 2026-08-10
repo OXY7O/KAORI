@@ -18,10 +18,10 @@ def read(path: Path) -> str:
 def test_shared_analysis_surface_uses_neutral_guidance_composition() -> None:
     source = read(SURFACE)
 
-    assert "macro attention_strip_classes(tone=none)" in source
+    assert 'macro attention_strip_classes(tone=none)' in source
     assert "macro interpretation_grid_classes(extra='', cards=false)" in source
     assert "macro guidance_icon_classes(role='brand', tone='info', size='default')" in source
-    assert "macro interpretation_callout(" in source
+    assert 'macro interpretation_callout(' in source
     assert 'bg-surface-card' in source
     assert 'divide-y divide-outline-subtle' in source
     assert 'text-content-secondary' in source
@@ -77,7 +77,7 @@ def test_resource_pressure_keeps_semantic_bars_without_colored_guidance_icons() 
 
     assert 'progress_bar.semantic_bar(percent, semantic_tone' in source
     assert 'overview_surface.resource_icon_classes(item.label)' in source
-    assert "bar_class =" not in source
+    assert 'bar_class =' not in source
     assert "else 'bg-kaori-primary'" not in source
     assert 'overview_surface.interpretation_grid_classes()' in source
     assert "tone='info'" in source

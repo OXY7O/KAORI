@@ -43,7 +43,9 @@ def main() -> int:
     if (ROOT / 'app/templates/settings/data_lifecycle').exists():
         errors.append('legacy Settings Data Lifecycle templates must remain deleted')
     if (ROOT / 'app/settings/data_lifecycle').exists():
-        errors.append('legacy Settings Data Lifecycle package must remain deleted; compatibility belongs in data_lifecycle_compat.py')
+        errors.append(
+            'legacy Settings Data Lifecycle package must remain deleted; compatibility belongs in data_lifecycle_compat.py'
+        )
 
     platform_init = read('app/platform_operations/__init__.py')
     for required in (
@@ -83,13 +85,13 @@ def main() -> int:
 
     compatibility = read('app/settings/data_lifecycle_compat.py')
     for required in (
-        "redirect(url_for(endpoint, **values), code=302)",
-        "redirect(url_for(endpoint, **values), code=308)",
-        "platform_operations.data_lifecycle.index",
-        "platform_operations.data_lifecycle.save_policy",
-        "platform_operations.data_lifecycle.run",
-        "platform_operations.data_lifecycle.verify",
-        "platform_operations.data_lifecycle.download",
+        'redirect(url_for(endpoint, **values), code=302)',
+        'redirect(url_for(endpoint, **values), code=308)',
+        'platform_operations.data_lifecycle.index',
+        'platform_operations.data_lifecycle.save_policy',
+        'platform_operations.data_lifecycle.run',
+        'platform_operations.data_lifecycle.verify',
+        'platform_operations.data_lifecycle.download',
     ):
         if required not in compatibility:
             errors.append(f'legacy Settings redirect contract missing: {required}')
@@ -112,8 +114,13 @@ def main() -> int:
     for forbidden in ('role="tablist"', 'Planned Domains', 'bg-white', 'settings.data_lifecycle'):
         if forbidden in index:
             errors.append(f'Data Lifecycle workspace contains obsolete presentation debt: {forbidden}')
-    expected_tabs = "[('policies', 'Retention Policies', 'sliders-horizontal'), ('history', 'Archive History', 'history'), ('storage', 'Archive Storage', 'hard-drive')]"
-    if expected_tabs not in index or "tabs: ['policies', 'history', 'storage']" not in index:
+    tab_tokens = (
+        "('policies', 'Retention Policies', 'sliders-horizontal')",
+        "('history', 'Archive History', 'history')",
+        "('storage', 'Archive Storage', 'hard-drive')",
+    )
+    tab_positions = [index.find(token) for token in tab_tokens]
+    if any(position < 0 for position in tab_positions) or tab_positions != sorted(tab_positions) or "tabs: ['policies', 'history', 'storage']" not in index:
         errors.append('Data Lifecycle tab order must be Retention Policies → Archive History → Archive Storage')
     if 'Only approved lifecycle domains are manageable.' not in index:
         errors.append('Data Lifecycle managed-domain helper copy drifted from the compact lock')
@@ -131,7 +138,9 @@ def main() -> int:
         if required not in domain_workspace:
             errors.append(f'Retention Policies operational contract missing: {required}')
     if 'notification-progress-indeterminate' in domain_workspace:
-        errors.append('Retention Policies must use the shared KAORI loading bar, not the legacy notification progress segment')
+        errors.append(
+            'Retention Policies must use the shared KAORI loading bar, not the legacy notification progress segment'
+        )
 
     for required in (
         'Lifecycle Coverage',
@@ -185,20 +194,27 @@ def main() -> int:
     ):
         if required not in retention_presentation:
             errors.append(f'Analytics Snapshot lifecycle presentation missing: {required}')
-    if "selected.name == 'analytics_snapshot'" not in domain_workspace or 'Serve Window Protection' not in domain_workspace:
+    if (
+        "selected.name == 'analytics_snapshot'" not in domain_workspace
+        or 'Serve Window Protection' not in domain_workspace
+    ):
         errors.append('Analytics Snapshots must expose Serve Window Protection in Retention Policies')
 
     runtime_domain = read('app/retention/domains/runtime_observation.py')
     if 'IntegrationRuntimeObservation.query.filter(' not in runtime_domain:
         errors.append('Runtime Observation archive domain must read the canonical integration runtime model')
-    if "IntegrationRuntimeObservation.provider ==" in runtime_domain or 'filter_by(provider=' in runtime_domain:
-        errors.append('Runtime Observation lifecycle must remain provider-neutral; do not split Kubernetes/Prometheus/Alertmanager retention')
+    if 'IntegrationRuntimeObservation.provider ==' in runtime_domain or 'filter_by(provider=' in runtime_domain:
+        errors.append(
+            'Runtime Observation lifecycle must remain provider-neutral; do not split Kubernetes/Prometheus/Alertmanager retention'
+        )
 
     activity_domain = read('app/retention/domains/operational_activity.py')
     if 'Notification.query.filter(Notification.id.in_(record_ids))' not in activity_domain:
         errors.append('Operational Activity lifecycle must continue cleaning the canonical Notification source table')
     if 'deck_visible' in activity_domain:
-        errors.append('Operational Activity retention must not filter by deck visibility; audit-only and user notifications share one lifecycle')
+        errors.append(
+            'Operational Activity retention must not filter by deck visibility; audit-only and user notifications share one lifecycle'
+        )
 
     for required in (
         'Archive Target Contract',
@@ -242,8 +258,12 @@ def main() -> int:
     ):
         if required not in menu:
             errors.append(f'Platform Operations navigation missing: {required}')
-    if menu.find('Jobs &amp; Executions') > menu.find('Data Lifecycle') or menu.find('Data Lifecycle') > menu.find('K8s Administration'):
-        errors.append('Platform Operations navigation order must be Jobs & Executions → Data Lifecycle → K8s Administration')
+    if menu.find('Jobs &amp; Executions') > menu.find('Data Lifecycle') or menu.find('Data Lifecycle') > menu.find(
+        'K8s Administration'
+    ):
+        errors.append(
+            'Platform Operations navigation order must be Jobs & Executions → Data Lifecycle → K8s Administration'
+        )
     if 'Data Lifecycle' in settings_menu or 'data_lifecycle' in settings_menu:
         errors.append('Settings navigation must not expose Data Lifecycle')
 

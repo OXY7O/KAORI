@@ -96,9 +96,7 @@ def _rename_permission(*, old_key: str, new_key: str, module: str, action: str, 
 
     role_ids = [
         row.role_id
-        for row in bind.execute(
-            sa.select(role_permissions.c.role_id).where(role_permissions.c.permission_id == old_id)
-        )
+        for row in bind.execute(sa.select(role_permissions.c.role_id).where(role_permissions.c.permission_id == old_id))
     ]
     for role_id in role_ids:
         exists = bind.execute(

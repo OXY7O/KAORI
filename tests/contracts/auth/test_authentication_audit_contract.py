@@ -76,12 +76,11 @@ def test_activity_presentation_does_not_render_failed_target_account_as_actor() 
     assert 'func.count(func.distinct(actor_identity))' in queries
 
 
-
 def test_account_authentication_audit_links_use_supported_access_filters() -> None:
-    recent = read("app/templates/settings/account/partials/_recent_login_activity.html")
-    privacy = read("app/templates/settings/account/partials/_activity_information.html")
+    recent = read('app/templates/settings/account/partials/_recent_login_activity.html')
+    privacy = read('app/templates/settings/account/partials/_activity_information.html')
 
     for source in (recent, privacy):
         assert "category='access'" in source
-        assert "search=current_user.username" in source
+        assert 'search=current_user.username' in source
         assert "event_type='authentication'" not in source

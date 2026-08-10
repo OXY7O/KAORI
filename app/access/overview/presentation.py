@@ -125,11 +125,7 @@ def build_access_overview() -> dict[str, Any]:
         custom_roles = Role.query.filter(Role.is_system.is_(False)).count()
         total_permissions = Permission.query.count()
         permission_modules = Permission.query.with_entities(Permission.module).distinct().count()
-        assigned_permissions = (
-            db.session.query(RolePermission.permission_id)
-            .distinct()
-            .count()
-        )
+        assigned_permissions = db.session.query(RolePermission.permission_id).distinct().count()
         workspaces.extend(
             [
                 {

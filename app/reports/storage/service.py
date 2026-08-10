@@ -90,9 +90,7 @@ def build_storage_operations_posture(
         status_label = 'Needs Review'
         status_tone = 'warning'
         title = 'Artifact Writes Paused'
-        description = (
-            'The active backend is reachable, but the report artifact write path is not ready.'
-        )
+        description = 'The active backend is reachable, but the report artifact write path is not ready.'
         tip_title = 'Review the Write Path'
         tip_text = (
             'Check bucket or directory permissions, object prefix, and backend configuration. After the '
@@ -138,27 +136,32 @@ def build_storage_integrity_presentation(result: dict[str, Any]) -> dict[str, An
     presented = dict(result or {})
     samples: list[dict[str, Any]] = []
     for item in list(presented.get('missing_samples') or []):
-        samples.append({
-            'report_id': item.get('report_id'),
-            'name': item.get('name') or 'Generated Report',
-            'backend': item.get('backend') or 'Unknown',
-            'reference': item.get('file_path') or 'Not Available',
-            'issue': 'Artifact reference is missing from the configured backend.',
-            'tone': 'critical',
-            'status': 'Missing',
-        })
+        samples.append(
+            {
+                'report_id': item.get('report_id'),
+                'name': item.get('name') or 'Generated Report',
+                'backend': item.get('backend') or 'Unknown',
+                'reference': item.get('file_path') or 'Not Available',
+                'issue': 'Artifact reference is missing from the configured backend.',
+                'tone': 'critical',
+                'status': 'Missing',
+            }
+        )
     for item in list(presented.get('error_samples') or []):
-        samples.append({
-            'report_id': item.get('report_id'),
-            'name': item.get('name') or 'Generated Report',
-            'backend': item.get('backend') or 'Unknown',
-            'reference': item.get('file_path') or 'Not Available',
-            'issue': item.get('error') or 'Storage verification returned an error.',
-            'tone': 'warning',
-            'status': 'Error',
-        })
+        samples.append(
+            {
+                'report_id': item.get('report_id'),
+                'name': item.get('name') or 'Generated Report',
+                'backend': item.get('backend') or 'Unknown',
+                'reference': item.get('file_path') or 'Not Available',
+                'issue': item.get('error') or 'Storage verification returned an error.',
+                'tone': 'warning',
+                'status': 'Error',
+            }
+        )
     presented['review_samples'] = samples
     return presented
+
 
 _STORAGE_STATUS_CACHE_KEY = '_kaori_report_storage_status'
 _PROCESS_STORAGE_STATUS_CACHE: dict[tuple[object, ...], tuple[float, dict[str, Any]]] = {}
@@ -187,10 +190,10 @@ def _get_storage_status_cache_ttl_seconds() -> int:
 
 
 def _get_process_storage_status_cache_key(backend_name: str) -> tuple[object, ...]:
-    app = current_app._get_current_object()
+    app_identity = id(current_app.config)
     if backend_name == 's3':
         return (
-            id(app),
+            app_identity,
             backend_name,
             str(current_app.config.get('REPORT_S3_BUCKET', '') or ''),
             str(current_app.config.get('REPORT_S3_ENDPOINT_URL', '') or ''),
@@ -198,7 +201,7 @@ def _get_process_storage_status_cache_key(backend_name: str) -> tuple[object, ..
             str(current_app.config.get('REPORT_S3_PREFIX', '') or ''),
         )
     return (
-        id(app),
+        app_identity,
         backend_name,
         str(current_app.config.get('REPORT_LOCAL_STORAGE_DIR', '') or ''),
     )
@@ -230,7 +233,7 @@ def _set_process_cached_storage_status(backend_name: str, status: dict[str, Any]
 
 
 def _clear_process_storage_status_cache() -> None:
-    app_id = id(current_app._get_current_object())
+    app_id = id(current_app.config)
     with _PROCESS_STORAGE_STATUS_CACHE_LOCK:
         for cache_key in list(_PROCESS_STORAGE_STATUS_CACHE):
             if cache_key and cache_key[0] == app_id:
@@ -322,9 +325,7 @@ def get_report_storage_backend_status(
             return process_cached
 
     previous_shared_status = (
-        get_shared_report_storage_status(normalized_backend, allow_stale=True)
-        if normalized_backend == 's3'
-        else None
+        get_shared_report_storage_status(normalized_backend, allow_stale=True) if normalized_backend == 's3' else None
     )
 
     if normalized_backend == 'local':
@@ -467,7 +468,6 @@ def get_report_storage_backend_status(
         },
         source=source,
     )
-
 
 
 def refresh_report_storage_readiness(
@@ -682,9 +682,7 @@ def report_file_exists(
 ) -> bool:
     probe = probe_report_artifact(stored_path)
     if not bool(probe.get('reachable', True)):
-        raise ReportStorageUnavailable(
-            f"{probe.get('backend_label', 'Report storage')} is temporarily unavailable."
-        )
+        raise ReportStorageUnavailable(f'{probe.get("backend_label", "Report storage")} is temporarily unavailable.')
     return bool(probe.get('exists', False))
 
 
@@ -814,9 +812,7 @@ def get_report_storage_payload(*, workspace: str | None = None) -> dict[str, Any
         'integrity_result': None,
         'cleanup_dry_run': {
             'mode': 'Read-only cleanup preview',
-            'description': (
-                'Preview records that match retention rules without deleting artifacts or database rows.'
-            ),
+            'description': ('Preview records that match retention rules without deleting artifacts or database rows.'),
             'action_query': 'cleanup_dry_run=1',
             'default_retention_days': get_cleanup_dry_run_retention_days(),
             'max_items': 500,
@@ -848,13 +844,9 @@ def build_storage_lifecycle_summary(
 ) -> dict[str, Any]:
     resolved_backend_status = dict(backend_status or {})
     backend_ready = bool(resolved_backend_status.get('available', False))
-    backend_label = str(
-        resolved_backend_status.get('title')
-        or 'Storage backend needs review'
-    )
+    backend_label = str(resolved_backend_status.get('title') or 'Storage backend needs review')
     backend_description = str(
-        resolved_backend_status.get('description')
-        or 'The active storage backend is configured but needs verification.'
+        resolved_backend_status.get('description') or 'The active storage backend is configured but needs verification.'
     )
 
     if not resolved_backend_status:
@@ -1125,7 +1117,7 @@ def scan_report_storage_integrity(
             exists = report_file_exists(
                 stored_path,
             )
-        except Exception as exc:
+        except Exception:
             error_count += 1
 
             if (
@@ -1292,7 +1284,7 @@ def build_report_cleanup_dry_run(
             exists = report_file_exists(
                 stored_path,
             )
-        except Exception as exc:
+        except Exception:
             error_candidates += 1
 
             if (

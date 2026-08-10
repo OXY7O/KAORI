@@ -4,6 +4,7 @@ Revision ID: 20260730_inventory_evidence
 Revises: 20260729_report_delivery
 Create Date: 2026-07-30
 """
+
 from alembic import op
 import sqlalchemy as sa
 

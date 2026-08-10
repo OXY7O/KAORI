@@ -50,7 +50,7 @@ def main() -> int:
         errors,
     )
     require(
-        "if metadata is None or spec is None or not metadata.namespace or not metadata.name:" in collector,
+        'if metadata is None or spec is None or not metadata.namespace or not metadata.name:' in collector,
         'Invalid Service identities must be skipped.',
         errors,
     )
@@ -62,7 +62,7 @@ def main() -> int:
     )
 
     require(
-        "if not reported:" in semantics and "'label': 'Not Reported'" in semantics,
+        'if not reported:' in semantics and "'label': 'Not Reported'" in semantics,
         'Missing endpoint evidence must not be hidden by selectorless semantics.',
         errors,
     )
@@ -78,19 +78,18 @@ def main() -> int:
     )
 
     require(
-        "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')" in routes,
+        "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')"
+        in routes,
         'Service workspace partial must be registered.',
         errors,
     )
     require(
-        'id="services-page-workspace"' in workspace
-        and 'inventory/components/_data_freshness.html' in workspace,
+        'id="services-page-workspace"' in workspace and 'inventory/components/_data_freshness.html' in workspace,
         'Service workspace must own Hero and Snapshot Context.',
         errors,
     )
     require(
-        'hx-target="#services-page-workspace"' in card
-        and 'name="partial_mode" value="page_workspace"' in card,
+        'hx-target="#services-page-workspace"' in card and 'name="partial_mode" value="page_workspace"' in card,
         'Service filters must refresh the complete workspace.',
         errors,
     )
@@ -126,8 +125,7 @@ def main() -> int:
     ):
         require(token in detail, f'Service detail is missing evidence state: {token}', errors)
     require(
-        '<caption class="sr-only">Declared port mappings for Service' in detail
-        and detail.count('scope="col"') >= 6,
+        '<caption class="sr-only">Declared port mappings for Service' in detail and detail.count('scope="col"') >= 6,
         'Service port mapping table requires accessible structure.',
         errors,
     )

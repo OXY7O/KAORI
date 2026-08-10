@@ -1,5 +1,4 @@
 {% import "components/view_more_content.html" as view_more_content %}
-
 {% macro render(title, description, items, icon='info', open_by_default=false, aria_label=None, extra_classes='') -%}
     {% call view_more_content.render(
         title,
@@ -8,7 +7,7 @@
         open_by_default=open_by_default,
         aria_label=aria_label,
         extra_classes=extra_classes
-    ) %}
+        ) %}
         <div class="space-y-3 text-xs leading-5 text-content-muted">
             {% for item in items %}
                 <div class="grid grid-cols-[24px_minmax(0,1fr)] gap-2">

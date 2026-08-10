@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import ast
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -78,7 +77,7 @@ def test_pdf_templates_use_the_canonical_local_analytics_publication() -> None:
 
     assert 'macro report_header' in component
     assert 'macro identity_register' in component
-    assert "components/analytics_publication.html" in unavailable
+    assert 'components/analytics_publication.html' in unavailable
     assert 'http://' not in unavailable
     assert 'https://' not in unavailable
     assert '@page' in css

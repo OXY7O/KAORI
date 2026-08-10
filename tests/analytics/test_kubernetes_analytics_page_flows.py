@@ -41,9 +41,7 @@ def test_user_facing_analytics_routes_do_not_query_providers_directly() -> None:
 
 
 def test_pending_workspace_reports_worker_progress_without_aggressive_polling() -> None:
-    source = Path(
-        'app/templates/analytics/materialization/_pending.html'
-    ).read_text()
+    source = Path('app/templates/analytics/materialization/_pending.html').read_text()
 
     assert 'hx-trigger="every 5s"' in source
     assert 'materialization_progress_message' in source

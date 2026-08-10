@@ -6,13 +6,10 @@
 <section id="kubernetes-connection-registry"
          class="{{ integration_ui.section_shell_classes() }}"
          data-kaori-kubernetes-registry-icon-palette>
-    {{ provider_registry.registry_header(
-        'Kubernetes Connection Registry',
+    {{ provider_registry.registry_header('Kubernetes Connection Registry',
         'Manage reusable Kubernetes API connections and their downstream operational coverage.',
         'list-tree',
-        'kubernetes-registry-loading'
-    ) }}
-
+        'kubernetes-registry-loading') }}
     <form method="get"
           action="{{ url_for('integrations.kubernetes') }}"
           hx-get="{{ url_for('integrations.kubernetes') }}"
@@ -24,44 +21,65 @@
           class="border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
         <input type="hidden" name="page" value="1">
         <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
-        <div data-kaori-one-line-filters class="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,1fr))]">
-        <div>
-            <label for="kubernetes-registry-search" class="{{ table_ui.filter_label_classes() }}">Search</label>
-            <div class="relative">
-                <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted" aria-hidden="true"></i>
-                <input id="kubernetes-registry-search"
-                       type="search"
-                       name="q"
-                       value="{{ selected_query }}"
-                       placeholder="Cluster, endpoint, version, or profile"
-                       autocomplete="off"
-                       class="{{ table_ui.filter_input_classes() }} pl-9">
+        <div data-kaori-one-line-filters
+             class="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,1fr))]">
+            <div>
+                <label for="kubernetes-registry-search"
+                       class="{{ table_ui.filter_label_classes() }}">Search</label>
+                <div class="relative">
+                    <i data-lucide="search"
+                       class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
+                       aria-hidden="true"></i>
+                    <input id="kubernetes-registry-search"
+                           type="search"
+                           name="q"
+                           value="{{ selected_query }}"
+                           placeholder="Cluster, endpoint, version, or profile"
+                           autocomplete="off"
+                           class="{{ table_ui.filter_input_classes() }} pl-9">
+                </div>
+            </div>
+            <div>
+                <label for="kubernetes-registry-environment"
+                       class="{{ table_ui.filter_label_classes() }}">Environment</label>
+                <select id="kubernetes-registry-environment"
+                        name="environment"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Environments</option>
+                    {% for option in environment_options %}
+                        <option value="{{ option }}"
+                                {% if selected_environment == option %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="kubernetes-registry-readiness"
+                       class="{{ table_ui.filter_label_classes() }}">API Readiness</label>
+                <select id="kubernetes-registry-readiness"
+                        name="readiness"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Readiness</option>
+                    {% for option in readiness_options %}
+                        <option value="{{ option.value }}"
+                                {% if selected_readiness == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="kubernetes-registry-coverage"
+                       class="{{ table_ui.filter_label_classes() }}">Operational Coverage</label>
+                <select id="kubernetes-registry-coverage"
+                        name="coverage"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="">All Coverage</option>
+                    {% for option in coverage_options %}
+                        <option value="{{ option.value }}"
+                                {% if selected_coverage == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
             </div>
         </div>
-        <div>
-            <label for="kubernetes-registry-environment" class="{{ table_ui.filter_label_classes() }}">Environment</label>
-            <select id="kubernetes-registry-environment" name="environment" class="{{ table_ui.filter_select_classes() }}">
-                <option value="">All Environments</option>
-                {% for option in environment_options %}<option value="{{ option }}" {% if selected_environment == option %}selected{% endif %}>{{ option }}</option>{% endfor %}
-            </select>
-        </div>
-        <div>
-            <label for="kubernetes-registry-readiness" class="{{ table_ui.filter_label_classes() }}">API Readiness</label>
-            <select id="kubernetes-registry-readiness" name="readiness" class="{{ table_ui.filter_select_classes() }}">
-                <option value="">All Readiness</option>
-                {% for option in readiness_options %}<option value="{{ option.value }}" {% if selected_readiness == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
-            </select>
-        </div>
-        <div>
-            <label for="kubernetes-registry-coverage" class="{{ table_ui.filter_label_classes() }}">Operational Coverage</label>
-            <select id="kubernetes-registry-coverage" name="coverage" class="{{ table_ui.filter_select_classes() }}">
-                <option value="">All Coverage</option>
-                {% for option in coverage_options %}<option value="{{ option.value }}" {% if selected_coverage == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
-            </select>
-        </div>
-        </div>
     </form>
-
     <div class="overflow-hidden">
         <table class="{{ table_ui.table_classes() }} table-fixed">
             <colgroup>
@@ -88,8 +106,10 @@
                             <div class="flex min-w-0 items-start gap-3">
                                 {{ integration_ui.palette_icon('server-cog', connection_icon_tone) }}
                                 <div class="min-w-0">
-                                    <p class="truncate text-sm font-semibold text-content-primary" title="{{ row.cluster_name }}">{{ row.cluster_name }}</p>
-                                    <p class="mt-1 truncate text-xs text-content-muted" title="{{ row.server }}">{{ row.environment }} · {{ row.server }}</p>
+                                    <p class="truncate text-sm font-semibold text-content-primary"
+                                       title="{{ row.cluster_name }}">{{ row.cluster_name }}</p>
+                                    <p class="mt-1 truncate text-xs text-content-muted"
+                                       title="{{ row.server }}">{{ row.environment }} · {{ row.server }}</p>
                                 </div>
                             </div>
                         </td>
@@ -102,8 +122,10 @@
                             <p class="mt-1 text-xs text-content-muted">{{ row.coverage_ready_count }} of 3 operational domains ready</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            <p class="truncate text-sm font-semibold text-content-primary" title="{{ row.version or 'Not Discovered' }}">{{ row.version or 'Not Discovered' }}</p>
-                            <p class="mt-1 truncate text-xs text-content-muted" title="{{ row.compatibility_profile or 'Validation Required' }}">{{ row.compatibility_profile or 'Validation Required' }}</p>
+                            <p class="truncate text-sm font-semibold text-content-primary"
+                               title="{{ row.version or 'Not Discovered' }}">{{ row.version or 'Not Discovered' }}</p>
+                            <p class="mt-1 truncate text-xs text-content-muted"
+                               title="{{ row.compatibility_profile or 'Validation Required' }}">{{ row.compatibility_profile or 'Validation Required' }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">
                             <div class="flex flex-nowrap justify-end gap-1.5 whitespace-nowrap">
@@ -117,21 +139,18 @@
                                         <i data-lucide="settings-2" class="h-3.5 w-3.5" aria-hidden="true"></i>Settings
                                     </a>
                                 {% endif %}
-                                {{ expandable.toggle_button(
-                                    'kubernetes-registry',
-                                    row.cluster_id,
-                                    url_for('integrations.kubernetes_registry_details', cluster_id=row.cluster_id),
-                                    'kubernetes-registry-detail-content-' ~ row.cluster_id,
-                                    'kubernetes-registry-detail-row-' ~ row.cluster_id
+                                {{ expandable.toggle_button('kubernetes-registry',
+                                                                row.cluster_id,
+                                                                url_for('integrations.kubernetes_registry_details', cluster_id=row.cluster_id) ,
+                                'kubernetes-registry-detail-content-' ~ row.cluster_id,
+                                'kubernetes-registry-detail-row-' ~ row.cluster_id
                                 ) }}
                             </div>
                         </td>
                     </tr>
-                    {{ expandable.detail_row(
-                        'kubernetes-registry-detail-row-' ~ row.cluster_id,
-                        'kubernetes-registry-detail-content-' ~ row.cluster_id,
-                        5
-                    ) }}
+                    {{ expandable.detail_row('kubernetes-registry-detail-row-' ~ row.cluster_id,
+                                        'kubernetes-registry-detail-content-' ~ row.cluster_id,
+                                        5) }}
                 </tbody>
             {% else %}
                 <tbody>
@@ -155,18 +174,16 @@
         </table>
     </div>
     {% set registry_query_params = {
-        'q': selected_query,
-        'environment': selected_environment,
-        'readiness': selected_readiness,
-        'coverage': selected_coverage
-    } %}
-    {{ provider_registry.pagination_footer(
-        pagination,
+            'q': selected_query,
+            'environment': selected_environment,
+            'readiness': selected_readiness,
+            'coverage': selected_coverage
+        } %}
+    {{ provider_registry.pagination_footer(pagination,
         'integrations.kubernetes',
         '#kubernetes-connection-registry',
         '#kubernetes-registry-loading',
         registry_query_params,
         item_label='Integration',
-        swap='outerHTML'
-    ) }}
+        swap='outerHTML') }}
 </section>

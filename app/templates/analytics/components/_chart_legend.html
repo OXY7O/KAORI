@@ -1,8 +1,10 @@
 {% macro render(items, aria_label='Chart Legend') -%}
-    <div class="flex flex-wrap items-center gap-x-4 gap-y-2" aria-label="{{ aria_label }}">
+    <div class="flex flex-wrap items-center gap-x-4 gap-y-2"
+         aria-label="{{ aria_label }}">
         {% for label, swatch_class in items %}
             <span class="inline-flex items-center gap-2 text-xs font-semibold text-content-secondary">
-                <span class="h-2.5 w-2.5 rounded-full {{ swatch_class }}" aria-hidden="true"></span>
+                <span class="h-2.5 w-2.5 rounded-full {{ swatch_class }}"
+                      aria-hidden="true"></span>
                 {{ label }}
             </span>
         {% endfor %}

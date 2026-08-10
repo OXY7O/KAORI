@@ -1,25 +1,29 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
-
 {% macro render(label, icon, value, used_capacity, description, tone='normal', reason='', headroom=none, status_label=none, available=true, progress_fill_classes='') -%}
     {% set resolved_available = available|default(true) %}
     {% if resolved_available %}
         {% set percent = value|default(0)|float %}
-        {% if percent < 0 %}{% set percent = 0 %}{% elif percent > 100 %}{% set percent = 100 %}{% endif %}
+        {% if percent < 0 %}
+            {% set percent = 0 %}
+        {% elif percent > 100 %}
+            {% set percent = 100 %}
+        {% endif %}
         {% set resolved_tone = tone %}
         {% set resolved_status = status_label or ('Critical' if tone == 'critical' else ('Watch' if tone == 'warning' else ('Healthy' if tone == 'normal' else 'Unknown'))) %}
         {% set resolved_headroom = headroom if headroom is not none else (100 - percent) %}
     {% else %}
         {% set percent = none %}
-        {% set resolved_tone = 'unknown' %}
-        {% set resolved_status = 'Unknown' %}
+        {% set resolved_tone = "unknown" %}
+        {% set resolved_status = "Unknown" %}
         {% set resolved_headroom = none %}
     {% endif %}
     {% set resolved_icon = 'shield-alert' if resolved_tone == 'critical' else ('triangle-alert' if resolved_tone == 'warning' else ('circle-check' if resolved_tone == 'normal' else 'circle-help')) %}
     <article class="grid min-w-0 gap-4 bg-surface-card px-4 py-4 lg:grid-cols-12 lg:items-center">
         <div class="flex min-w-0 items-start gap-3 lg:col-span-3">
-            <span class="{{ analysis_surface.resource_icon_classes(label) }}" aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+            <span class="{{ analysis_surface.resource_icon_classes(label) }}"
+                  aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
             <div class="min-w-0">
                 <p class="text-sm font-semibold text-content-primary">{{ label }}</p>
                 <div class="mt-1">{{ table_label.status_label(resolved_status, resolved_tone, size='compact') }}</div>
@@ -48,14 +52,13 @@
             </div>
         </div>
         <div class="min-w-0 lg:col-span-4">
-            {{ analysis_surface.interpretation_content(
-                'Operational Reading',
-                (reason or description) if resolved_available else 'Restore Capacity Evidence Before Deciding',
-                description if resolved_available and reason and description else ('Use the committed utilization, absolute consumption, and remaining headroom together.' if resolved_available else 'Restore committed capacity evidence before making scheduling or growth decisions for this resource.'),
-                icon=resolved_icon,
-                role='status',
-                tone=resolved_tone,
-                compact=true
+            {{ analysis_surface.interpretation_content('Operational Reading',
+                        (reason or description) if resolved_available else 'Restore Capacity Evidence Before Deciding',
+            description if resolved_available and reason and description else ('Use the committed utilization, absolute consumption, and remaining headroom together.' if resolved_available else 'Restore committed capacity evidence before making scheduling or growth decisions for this resource.'),
+            icon=resolved_icon,
+            role='status',
+            tone=resolved_tone,
+            compact=true
             ) }}
         </div>
     </article>

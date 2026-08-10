@@ -43,8 +43,7 @@ def _top_consumers_recommendation_facts(
     critical_compute_pressure = [
         row
         for row in high_compute_pressure
-        if get_status_label(row.get('risk', '')).lower()
-        in {'critical', 'request missing'}
+        if get_status_label(row.get('risk', '')).lower() in {'critical', 'request missing'}
         or get_numeric_value(row.get('pressure_percent', 0)) >= 90
     ]
     memory_limit_review = [
@@ -63,11 +62,8 @@ def _top_consumers_recommendation_facts(
         and row.get('pressure_percent') is not None
         and get_numeric_value(row.get('pressure_percent', 0)) >= 80
     ]
-    coverage = (
-        consumer_payload.get('coverage')
-        if isinstance(consumer_payload.get('coverage'), dict)
-        else {}
-    )
+    raw_coverage = consumer_payload.get('coverage')
+    coverage = raw_coverage if isinstance(raw_coverage, dict) else {}
     return {
         'rows': rows,
         'missing_requests': missing_requests,
@@ -75,11 +71,7 @@ def _top_consumers_recommendation_facts(
         'critical_compute_pressure': critical_compute_pressure,
         'memory_limit_review': memory_limit_review,
         'high_pvc': high_pvc,
-        'critical_pvc': [
-            row
-            for row in high_pvc
-            if get_numeric_value(row.get('pressure_percent', 0)) >= 90
-        ],
+        'critical_pvc': [row for row in high_pvc if get_numeric_value(row.get('pressure_percent', 0)) >= 90],
         'incomplete_resources': (
             get_numeric_value(coverage.get('partial_count', 0))
             + get_numeric_value(coverage.get('unavailable_count', 0))
@@ -105,10 +97,7 @@ def _missing_request_recommendation(
         source='top_consumers_missing_requests',
         resource='cpu',
         action_type='missing_requests',
-        href=(
-            '/analytics/top-consumers?tab=records&focus=missing_requests'
-            '&priority=critical'
-        ),
+        href=('/analytics/top-consumers?tab=records&focus=missing_requests&priority=critical'),
         icon='activity',
     )
 
@@ -126,9 +115,7 @@ def _compute_pressure_recommendation(
             'boundary. Review request utilization, limit utilization, '
             'contribution to scope, scaling, and ownership.'
         ),
-        priority=(
-            'Critical' if facts['critical_compute_pressure'] else 'Warning'
-        ),
+        priority=('Critical' if facts['critical_compute_pressure'] else 'Warning'),
         source='top_consumers_high_usage',
         resource='cpu',
         action_type='high_usage',
@@ -154,10 +141,7 @@ def _memory_limit_recommendation(
         source='top_consumers_high_usage',
         resource='memory',
         action_type='memory_limit_review',
-        href=(
-            '/analytics/top-consumers?tab=records&resource=memory'
-            '&priority=warning'
-        ),
+        href=('/analytics/top-consumers?tab=records&resource=memory&priority=warning'),
         icon='memory-stick',
     )
 
@@ -250,8 +234,7 @@ def _top_consumers_baseline_recommendations() -> list[dict[str, Any]]:
         build_recommendation(
             title='Review Top Consumers Periodically',
             description=(
-                'Use Top Consumers as the first drilldown when utilization, '
-                'capacity, or forecast pages show pressure.'
+                'Use Top Consumers as the first drilldown when utilization, capacity, or forecast pages show pressure.'
             ),
             priority='Info',
             source='top_consumers_practice',
@@ -279,9 +262,7 @@ def build_top_consumers_actionable_recommendations(
         _pvc_pressure_recommendation(facts),
         _evidence_recovery_recommendation(facts),
     )
-    recommendations = deduplicate_recommendations(
-        [candidate for candidate in candidates if candidate is not None]
-    )
+    recommendations = deduplicate_recommendations([candidate for candidate in candidates if candidate is not None])
     return recommendations or _top_consumers_baseline_recommendations()
 
 

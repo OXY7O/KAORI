@@ -43,7 +43,7 @@ def test_capacity_queries_use_ready_worker_boundary_for_every_schedulable_signal
         'WORKER_POD_ALLOCATABLE_QUERY',
     )
     for key in required_keys:
-        definition = profile.split(f"'analytics.capacity.queries.{key}': QueryDefinition(", 1)[1].split("    ),", 1)[0]
+        definition = profile.split(f"'analytics.capacity.queries.{key}': QueryDefinition(", 1)[1].split('    ),', 1)[0]
         assert 'kube_node_status_condition{condition="Ready",status="true"}' in definition, key
         assert 'kube_node_role{role=~"control-plane|master"}' in definition, key
         assert key in evidence

@@ -167,21 +167,9 @@ def _overview_stats(
     ]
     total = len(target_states)
     configured = sum(1 for is_configured, _ in target_states if is_configured)
-    ready = sum(
-        1
-        for is_configured, readiness in target_states
-        if is_configured and readiness == 'ready'
-    )
-    validation_required = sum(
-        1
-        for is_configured, readiness in target_states
-        if is_configured and readiness != 'ready'
-    )
-    blocked = sum(
-        1
-        for is_configured, readiness in target_states
-        if is_configured and readiness == 'blocked'
-    )
+    ready = sum(1 for is_configured, readiness in target_states if is_configured and readiness == 'ready')
+    validation_required = sum(1 for is_configured, readiness in target_states if is_configured and readiness != 'ready')
+    blocked = sum(1 for is_configured, readiness in target_states if is_configured and readiness == 'blocked')
     not_configured = max(total - configured, 0)
     return {
         'total': total,
@@ -360,10 +348,7 @@ def build_kubernetes_page(
         scope_type='kubernetes_cluster',
         scope_keys=[str(connection.cluster_id) for connection in connections],
     )
-    rows = [
-        _build_kubernetes_registry_row(connection, bound_sources=bound_sources)
-        for connection in connections
-    ]
+    rows = [_build_kubernetes_registry_row(connection, bound_sources=bound_sources) for connection in connections]
     total = len(rows)
     normalized_query = str(query or '').strip().lower()
     filtered_rows = rows
@@ -388,11 +373,7 @@ def build_kubernetes_page(
     if readiness:
         filtered_rows = [row for row in filtered_rows if row.get('readiness') == readiness]
     if coverage:
-        filtered_rows = [
-            row
-            for row in filtered_rows
-            if (row.get('coverage_summary') or {}).get('status') == coverage
-        ]
+        filtered_rows = [row for row in filtered_rows if (row.get('coverage_summary') or {}).get('status') == coverage]
     page_rows, pagination = _paginate(filtered_rows, page=page, per_page=per_page)
     kubernetes_ready = sum(1 for row in rows if row['readiness'] == 'ready')
     kubernetes_attention = total - kubernetes_ready
@@ -532,8 +513,7 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
         contract = feature_contracts.get(key)
         required = bool(value.get('required', contract.required if contract else True))
         required_verbs = tuple(
-            value.get('required_verbs')
-            or (contract.required_verbs if contract else ('get', 'list'))
+            value.get('required_verbs') or (contract.required_verbs if contract else ('get', 'list'))
         )
         feature_rows.append(
             {
@@ -638,11 +618,8 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
         'validation_state': {
             'readiness': connection.readiness_status or 'validation_required',
             'readiness_label': present_key_label(connection.readiness_status or 'validation_required'),
-            'message': ' '.join(
-                str(item)
-                for item in (discovery.get('readiness_reasons') or [])
-                if item
-            ) or 'Run Full Validation to refresh served API, compatibility, and effective RBAC evidence.',
+            'message': ' '.join(str(item) for item in (discovery.get('readiness_reasons') or []) if item)
+            or 'Run Full Validation to refresh served API, compatibility, and effective RBAC evidence.',
         },
         'runtime_history': list_runtime_history('kubernetes', str(connection.id), limit=5),
         'feature_rows': feature_rows,
@@ -660,9 +637,7 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
             'node_count': int(cluster.node_count or 0),
             'validated_feature_count': len(selected_adapters),
             'operational_domain_count': len(capability_scope),
-            'binding_count': sum(
-                1 for row in source_bindings if row['binding_validation'] != 'not_bound'
-            ),
+            'binding_count': sum(1 for row in source_bindings if row['binding_validation'] != 'not_bound'),
             'report_count': report_count,
             'schedule_count': schedule_count,
             'inventory_status': 'committed' if latest_inventory else 'not_collected',
@@ -1004,11 +979,13 @@ def _runtime_stats(rows: list[dict[str, Any]]) -> dict[str, int]:
 def _runtime_scope_label(*, provider: str, health: str, readiness: str) -> str:
     parts: list[str] = []
     if provider:
-        parts.append({
-            'kubernetes': 'Kubernetes',
-            'prometheus': 'Prometheus / Thanos',
-            'alertmanager': 'Alertmanager',
-        }.get(provider, provider.replace('_', ' ').title()))
+        parts.append(
+            {
+                'kubernetes': 'Kubernetes',
+                'prometheus': 'Prometheus / Thanos',
+                'alertmanager': 'Alertmanager',
+            }.get(provider, provider.replace('_', ' ').title())
+        )
     if health:
         parts.append(health.replace('_', ' ').title())
     if readiness:
@@ -1027,7 +1004,8 @@ def _capability_attention_display(count: int) -> str:
 def _latest_runtime_observations() -> dict[tuple[str, str], IntegrationRuntimeObservation]:
     ranked = select(
         IntegrationRuntimeObservation.id.label('observation_id'),
-        func.row_number().over(
+        func.row_number()
+        .over(
             partition_by=(
                 IntegrationRuntimeObservation.provider,
                 IntegrationRuntimeObservation.instance_id,
@@ -1036,7 +1014,8 @@ def _latest_runtime_observations() -> dict[tuple[str, str], IntegrationRuntimeOb
                 IntegrationRuntimeObservation.observed_at.desc(),
                 IntegrationRuntimeObservation.id.desc(),
             ),
-        ).label('row_number'),
+        )
+        .label('row_number'),
     ).subquery()
     statement = (
         select(IntegrationRuntimeObservation)
@@ -1086,15 +1065,12 @@ def _runtime_overview_rows(
                 'validation_at_display': present_user_datetime(validation_at, empty='Not validated'),
                 'latency_ms': observation.latency_ms if observation else None,
                 'latency_display': (
-                    f'{observation.latency_ms} ms'
-                    if observation and observation.latency_ms is not None
-                    else None
+                    f'{observation.latency_ms} ms' if observation and observation.latency_ms is not None else None
                 ),
                 'capability_profile': connection.compatibility_profile,
                 'capability_attention': capability_attention,
                 'capability_attention_display': _capability_attention_display(capability_attention),
-                'message': (observation.message if observation else None)
-                or connection.validation_message,
+                'message': (observation.message if observation else None) or connection.validation_message,
             }
         )
 
@@ -1126,9 +1102,7 @@ def _runtime_overview_rows(
                 'validation_at_display': present_user_datetime(validation_at, empty='Not validated'),
                 'latency_ms': observation.latency_ms if observation else None,
                 'latency_display': (
-                    f'{observation.latency_ms} ms'
-                    if observation and observation.latency_ms is not None
-                    else None
+                    f'{observation.latency_ms} ms' if observation and observation.latency_ms is not None else None
                 ),
                 'capability_profile': instance.capability_profile or instance.query_profile,
                 'capability_attention': attention,
@@ -1166,9 +1140,7 @@ def _runtime_overview_rows(
                 'validation_at_display': present_user_datetime(validation_at, empty='Not validated'),
                 'latency_ms': observation.latency_ms if observation else None,
                 'latency_display': (
-                    f'{observation.latency_ms} ms'
-                    if observation and observation.latency_ms is not None
-                    else None
+                    f'{observation.latency_ms} ms' if observation and observation.latency_ms is not None else None
                 ),
                 'capability_profile': instance.capability_profile,
                 'capability_attention': capability_attention,

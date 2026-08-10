@@ -71,9 +71,7 @@ def _placement_context(pod: PodInventory, details: dict[str, Any], spec_reported
     affinity_reported = spec_reported and 'affinity_configured' in placement
     topology_reported = spec_reported and 'topology_spread_count' in placement
 
-    node_selectors = (
-        dict(sorted((placement.get('node_selector') or {}).items())) if selector_reported else {}
-    )
+    node_selectors = dict(sorted((placement.get('node_selector') or {}).items())) if selector_reported else {}
     toleration_values = list(placement.get('tolerations') or []) if tolerations_reported else []
     tolerations = {f'Toleration {index + 1}': str(value) for index, value in enumerate(toleration_values)}
     topology_count = placement.get('topology_spread_count') if topology_reported else None
@@ -112,9 +110,7 @@ def _placement_context(pod: PodInventory, details: dict[str, Any], spec_reported
             'value': str(int(topology_count)) if topology_count is not None else unknown,
         },
     ]
-    evidence_complete = all(
-        (selector_reported, tolerations_reported, affinity_reported, topology_reported)
-    )
+    evidence_complete = all((selector_reported, tolerations_reported, affinity_reported, topology_reported))
     return {
         'raw': placement,
         'rows': rows,
@@ -197,6 +193,7 @@ def _specification_context(
     ]
     return normalized, rows
 
+
 def _reference_rows(pod: PodInventory) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     configuration = [
         {
@@ -233,14 +230,8 @@ def _owner_resolution_review(details: dict[str, Any]) -> bool:
 
 
 def _presented_runtime(details: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    containers = [
-        container_presentation(container)
-        for container in (details.get('container_statuses') or [])
-    ]
-    conditions = [
-        condition_presentation(condition)
-        for condition in (details.get('conditions') or [])
-    ]
+    containers = [container_presentation(container) for container in (details.get('container_statuses') or [])]
+    conditions = [condition_presentation(condition) for condition in (details.get('conditions') or [])]
     return containers, conditions
 
 
@@ -275,22 +266,14 @@ def _reference_evidence_availability(
     specification_reported: bool,
     volumes: list[dict[str, Any]],
 ) -> tuple[bool, bool]:
-    volume_reported = bool(
-        specification_reported and details.get('volume_evidence_reported') is True
-    )
-    references_reported = bool(
-        specification_reported and details.get('reference_evidence_reported') is True
-    )
+    volume_reported = bool(specification_reported and details.get('volume_evidence_reported') is True)
+    references_reported = bool(specification_reported and details.get('reference_evidence_reported') is True)
     return volume_reported, references_reported
 
 
 def _owner_context(pod: PodInventory, details: dict[str, Any]) -> dict[str, Any]:
     has_controller = bool(pod.workload_type and pod.workload_name)
-    owner_display = (
-        f'{pod.workload_type} · {pod.workload_name}'
-        if has_controller
-        else 'Standalone'
-    )
+    owner_display = f'{pod.workload_type} · {pod.workload_name}' if has_controller else 'Standalone'
     return {
         'owner_type': pod.workload_type or 'Standalone',
         'owner_name': pod.workload_name or 'Not Reported',

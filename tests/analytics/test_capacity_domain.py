@@ -164,12 +164,19 @@ def test_capacity_posture_uses_allocation_risk_and_requires_complete_evidence() 
         ready_worker_nodes=scalar(3, True),
         cpu=_allocation(
             evidence,
-            allocatable=(10, True), requests=(11, True), limits=(12, True), actual=(2, True), peak=(3, True),
+            allocatable=(10, True),
+            requests=(11, True),
+            limits=(12, True),
+            actual=(2, True),
+            peak=(3, True),
         ),
         memory=_allocation(
             evidence,
-            allocatable=(16 * 1024**3, True), requests=(4 * 1024**3, True),
-            limits=(8 * 1024**3, True), actual=(3 * 1024**3, True), peak=(5 * 1024**3, True),
+            allocatable=(16 * 1024**3, True),
+            requests=(4 * 1024**3, True),
+            limits=(8 * 1024**3, True),
+            actual=(3 * 1024**3, True),
+            peak=(5 * 1024**3, True),
         ),
         pod_capacity=scalar(100, True),
         current_pods=scalar(20, True),
@@ -191,7 +198,11 @@ def test_capacity_posture_uses_allocation_risk_and_requires_complete_evidence() 
         ready_worker_nodes=capacity.ready_worker_nodes,
         cpu=_allocation(
             evidence,
-            allocatable=(10, True), requests=(4, True), limits=(7, True), actual=(2, True), peak=(3, True),
+            allocatable=(10, True),
+            requests=(4, True),
+            limits=(7, True),
+            actual=(2, True),
+            peak=(3, True),
         ),
         memory=capacity.memory,
         pod_capacity=capacity.pod_capacity,
@@ -222,12 +233,10 @@ def test_capacity_cluster_info_keeps_worker_and_full_cluster_readiness_separate(
         worker_nodes=scalar(4, True),
         ready_worker_nodes=scalar(3, True),
         cpu=_allocation(
-            evidence,
-            allocatable=(1, True), requests=(0, True), limits=(0, True), actual=(0, True), peak=(0, True)
+            evidence, allocatable=(1, True), requests=(0, True), limits=(0, True), actual=(0, True), peak=(0, True)
         ),
         memory=_allocation(
-            evidence,
-            allocatable=(1, True), requests=(0, True), limits=(0, True), actual=(0, True), peak=(0, True)
+            evidence, allocatable=(1, True), requests=(0, True), limits=(0, True), actual=(0, True), peak=(0, True)
         ),
         pod_capacity=scalar(1, True),
         current_pods=scalar(0, True),

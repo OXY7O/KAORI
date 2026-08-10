@@ -70,9 +70,7 @@ def _feedback(
     queue_feedback: bool = False,
 ) -> dict[str, Any]:
     is_validation = (
-        event_type.endswith('_validated')
-        or 'validation' in event_type
-        or metadata.get('operation') == 'validation'
+        event_type.endswith('_validated') or 'validation' in event_type or metadata.get('operation') == 'validation'
     )
     if is_validation:
         return create_transient_feedback(
@@ -191,9 +189,7 @@ def _validation_response(
         )
     )
     if feedback.get('status') == 'success':
-        response.headers['HX-Trigger'] = (
-            '{"kaori:operation-validated":{"formId":"' + form_id + '"}}'
-        )
+        response.headers['HX-Trigger'] = '{"kaori:operation-validated":{"formId":"' + form_id + '"}}'
     return response
 
 
@@ -266,11 +262,7 @@ def create_configmap_page():
         _csrf()
         metadata = create_configmap(request.form, dry_run=validate_only)
         feedback = _feedback(
-            event_type=(
-                'kubernetes_configmap_create_validated'
-                if validate_only
-                else 'kubernetes_configmap_created'
-            ),
+            event_type=('kubernetes_configmap_create_validated' if validate_only else 'kubernetes_configmap_created'),
             status='success',
             title=('ConfigMap Validation Passed' if validate_only else 'ConfigMap Created'),
             message=(
@@ -411,9 +403,7 @@ def update_configmap_page():
             diff = metadata['diff']
             feedback = _feedback(
                 event_type=(
-                    'kubernetes_configmap_update_validated'
-                    if validate_only
-                    else 'kubernetes_configmap_updated'
+                    'kubernetes_configmap_update_validated' if validate_only else 'kubernetes_configmap_updated'
                 ),
                 status='success',
                 title=('ConfigMap Update Validated' if validate_only else 'ConfigMap Updated'),
@@ -522,9 +512,7 @@ def delete_configmap_page():
                 delete_validation_token = issue_delete_receipt(metadata, user_id=int(current_user.id))
             feedback = _feedback(
                 event_type=(
-                    'kubernetes_configmap_delete_validated'
-                    if validate_only
-                    else 'kubernetes_configmap_deleted'
+                    'kubernetes_configmap_delete_validated' if validate_only else 'kubernetes_configmap_deleted'
                 ),
                 status='success',
                 title=('ConfigMap Deletion Validated' if validate_only else 'ConfigMap Deleted'),

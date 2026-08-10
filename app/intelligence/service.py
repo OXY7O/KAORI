@@ -264,18 +264,10 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
         for item in items:
             evidence = _as_dict(item.get('evidence'))
             namespace = _clean(str(evidence.get('namespace') or ''))
-            affected_count = (
-                evidence.get('affected_pods')
-                or evidence.get('affected_count')
-                or evidence.get('count')
-            )
+            affected_count = evidence.get('affected_pods') or evidence.get('affected_count') or evidence.get('count')
             source_label = str(item.get('source_kind_label') or 'Resource')
             item['scope_title'] = namespace if namespace and namespace != 'cluster scope' else 'Cluster Scope'
-            item['scope_supporting'] = (
-                f'{affected_count} {source_label} item(s)'
-                if affected_count
-                else source_label
-            )
+            item['scope_supporting'] = f'{affected_count} {source_label} item(s)' if affected_count else source_label
             item['list_summary'] = _compact_recommendation_summary(item.get('summary'))
 
     return {
@@ -852,7 +844,6 @@ def _severity_rank(value: str) -> int:
     }.get(value.lower(), 9)
 
 
-
 def get_catalog_rule(rule_key: str) -> dict[str, Any] | None:
     """Return one normalized catalog definition by its canonical rule key."""
 
@@ -865,6 +856,7 @@ def get_catalog_rule(rule_key: str) -> dict[str, Any] | None:
         if _clean(str(rule.get('rule_key'))) == resolved_key:
             return rule
     return None
+
 
 def get_recommendation_finding(recommendation_key: str) -> dict[str, Any] | None:
     """Return one active recommendation finding by its canonical finding key."""
@@ -879,18 +871,10 @@ def get_recommendation_finding(recommendation_key: str) -> dict[str, Any] | None
 
         evidence = _as_dict(finding.get('evidence'))
         namespace = _clean(str(evidence.get('namespace') or ''))
-        affected_count = (
-            evidence.get('affected_pods')
-            or evidence.get('affected_count')
-            or evidence.get('count')
-        )
+        affected_count = evidence.get('affected_pods') or evidence.get('affected_count') or evidence.get('count')
         source_label = str(finding.get('source_kind_label') or 'Resource')
         finding['scope_title'] = namespace if namespace and namespace != 'cluster scope' else 'Cluster Scope'
-        finding['scope_supporting'] = (
-            f'{affected_count} {source_label} item(s)'
-            if affected_count
-            else source_label
-        )
+        finding['scope_supporting'] = f'{affected_count} {source_label} item(s)' if affected_count else source_label
         finding['list_summary'] = _compact_recommendation_summary(finding.get('summary'))
         return finding
 
@@ -938,11 +922,7 @@ def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = '
 
 
 def get_alert_intelligence_payload() -> dict[str, Any]:
-    imported_rules = sum(
-        1
-        for rule in INTELLIGENCE_CATALOG
-        if str(rule.get('status')) == 'imported_signal'
-    )
+    imported_rules = sum(1 for rule in INTELLIGENCE_CATALOG if str(rule.get('status')) == 'imported_signal')
     sources = [
         {
             'key': 'kubernetes',
@@ -1047,4 +1027,3 @@ def get_alert_intelligence_payload() -> dict[str, Any]:
             ],
         },
     }
-

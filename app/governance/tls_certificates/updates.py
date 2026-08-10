@@ -102,17 +102,11 @@ def _refresh_record_coverage(record: TLSCertificateInventory) -> None:
         record.uncovered_hosts = []
         return
     uncovered = [
-        host
-        for host in hosts
-        if matching_certificate_pattern(host, record.dns_names or [], record.common_name) is None
+        host for host in hosts if matching_certificate_pattern(host, record.dns_names or [], record.common_name) is None
     ]
     covered = len(hosts) - len(uncovered)
     record.coverage_state = (
-        TLS_COVERAGE_FULL
-        if not uncovered
-        else TLS_COVERAGE_UNCOVERED
-        if covered == 0
-        else TLS_COVERAGE_PARTIAL
+        TLS_COVERAGE_FULL if not uncovered else TLS_COVERAGE_UNCOVERED if covered == 0 else TLS_COVERAGE_PARTIAL
     )
     record.declared_host_count = len(hosts)
     record.covered_host_count = covered
@@ -275,9 +269,7 @@ def apply_certificate_update(certificate_id: int, files: Any) -> dict[str, Any]:
         db.session.commit()
     except Exception:
         db.session.rollback()
-        current_app.logger.exception(
-            'Kubernetes TLS Secret updated, but KAORI posture persistence failed.'
-        )
+        current_app.logger.exception('Kubernetes TLS Secret updated, but KAORI posture persistence failed.')
         return {
             'status': 'warning',
             'message': (
@@ -382,10 +374,7 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
                 {
                     'target': target_view,
                     'status': 'failed',
-                    'message': (
-                        'Kubernetes update failed. Review the cluster connection and '
-                        'access permissions.'
-                    ),
+                    'message': ('Kubernetes update failed. Review the cluster connection and access permissions.'),
                     'provider_updated': False,
                     'persistence_confirmed': True,
                 }
@@ -424,29 +413,22 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
         db.session.commit()
     except Exception:
         db.session.rollback()
-        current_app.logger.exception(
-            'Bulk TLS mutations completed, but KAORI posture persistence failed.'
-        )
+        current_app.logger.exception('Bulk TLS mutations completed, but KAORI posture persistence failed.')
         for result in results:
             result['persistence_confirmed'] = False
             if result['status'] == 'success':
                 result.update(
                     {
                         'status': 'warning',
-                        'message': (
-                            'Kubernetes updated; KAORI posture persistence was not confirmed.'
-                        ),
+                        'message': ('Kubernetes updated; KAORI posture persistence was not confirmed.'),
                     }
                 )
 
-    provider_updated_count = sum(
-        1 for result in results if result.get('provider_updated') is True
-    )
+    provider_updated_count = sum(1 for result in results if result.get('provider_updated') is True)
     persistence_gap_count = sum(
         1
         for result in results
-        if result.get('provider_updated') is True
-        and result.get('persistence_confirmed') is False
+        if result.get('provider_updated') is True and result.get('persistence_confirmed') is False
     )
     failed_count = sum(1 for result in results if result['status'] == 'failed')
     overall_status = _bulk_result_status(results)
@@ -458,9 +440,8 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
             f'{persistence_gap_count}. Run TLS synchronization.'
         )
     else:
-        message = (
-            f'{provider_updated_count} of {len(results)} selected TLS Secrets were updated.'
-            + (f' {failed_count} failed.' if failed_count else '')
+        message = f'{provider_updated_count} of {len(results)} selected TLS Secrets were updated.' + (
+            f' {failed_count} failed.' if failed_count else ''
         )
 
     return {

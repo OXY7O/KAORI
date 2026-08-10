@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from collections.abc import Mapping, Sequence
-from datetime import datetime
 from typing import Any
 
 from app.reports.export.html_pdf.analytics_publication_standard import (
@@ -53,9 +52,24 @@ def build_alerts_anomalies_presentation(
         anomaly_count = len(anomalies)
 
     severity_rows = [
-        {'label': 'Critical', 'count': critical_count, 'tone': 'critical', 'bar': _bar(critical_count, max(critical_count, warning_count, info_count, 1))},
-        {'label': 'Warning', 'count': warning_count, 'tone': 'warning', 'bar': _bar(warning_count, max(critical_count, warning_count, info_count, 1))},
-        {'label': 'Info', 'count': info_count, 'tone': 'info', 'bar': _bar(info_count, max(critical_count, warning_count, info_count, 1))},
+        {
+            'label': 'Critical',
+            'count': critical_count,
+            'tone': 'critical',
+            'bar': _bar(critical_count, max(critical_count, warning_count, info_count, 1)),
+        },
+        {
+            'label': 'Warning',
+            'count': warning_count,
+            'tone': 'warning',
+            'bar': _bar(warning_count, max(critical_count, warning_count, info_count, 1)),
+        },
+        {
+            'label': 'Info',
+            'count': info_count,
+            'tone': 'info',
+            'bar': _bar(info_count, max(critical_count, warning_count, info_count, 1)),
+        },
     ]
 
     category_rows = _category_rows(alerts)
@@ -72,9 +86,17 @@ def build_alerts_anomalies_presentation(
     environment = sanitize_text(cluster.get('environment'), fallback='Not Available')
     executive_tone = 'critical' if critical_count else ('warning' if warning_count or anomaly_count else 'normal')
     executive_title = (
-        'Critical alerts require immediate operational ownership.' if critical_count
-        else ('Warning alerts require operational ownership and response validation.' if warning_count
-              else ('Anomaly evidence requires review.' if anomaly_count else 'No active alert or anomaly signal is committed.'))
+        'Critical alerts require immediate operational ownership.'
+        if critical_count
+        else (
+            'Warning alerts require operational ownership and response validation.'
+            if warning_count
+            else (
+                'Anomaly evidence requires review.'
+                if anomaly_count
+                else 'No active alert or anomaly signal is committed.'
+            )
+        )
     )
     executive_body = (
         f'{active_count} active alert(s) and {anomaly_count} anomaly candidate(s) are committed at the report cut-off. '
@@ -110,10 +132,25 @@ def build_alerts_anomalies_presentation(
         },
         'executive': {
             'metrics': [
-                _metric('Critical Alerts', str(critical_count), 'Immediate' if critical_count else 'Clear', 'critical' if critical_count else 'normal'),
-                _metric('Warning Alerts', str(warning_count), 'Requires Attention' if warning_count else 'Clear', 'warning' if warning_count else 'normal'),
+                _metric(
+                    'Critical Alerts',
+                    str(critical_count),
+                    'Immediate' if critical_count else 'Clear',
+                    'critical' if critical_count else 'normal',
+                ),
+                _metric(
+                    'Warning Alerts',
+                    str(warning_count),
+                    'Requires Attention' if warning_count else 'Clear',
+                    'warning' if warning_count else 'normal',
+                ),
                 _metric('Info Alerts', str(info_count), 'Informational', 'info'),
-                _metric('Anomalies', str(anomaly_count), 'Unusual Patterns' if anomaly_count else 'None', 'warning' if anomaly_count else 'normal'),
+                _metric(
+                    'Anomalies',
+                    str(anomaly_count),
+                    'Unusual Patterns' if anomaly_count else 'None',
+                    'warning' if anomaly_count else 'normal',
+                ),
             ],
             'severity_rows': severity_rows,
             'category_rows': category_rows,
@@ -127,8 +164,18 @@ def build_alerts_anomalies_presentation(
             'metrics': [
                 _metric('Active Alerts', str(active_count), 'At cut-off', 'warning' if active_count else 'normal'),
                 _metric('Categorized Alerts', str(categorized_count), 'Displayed', 'info'),
-                _metric('Uncategorized', str(uncategorized_count), 'Requires Review' if uncategorized_count else 'Clear', 'warning' if uncategorized_count else 'normal'),
-                _metric('Category Coverage', _percent(category_coverage), 'Partial' if uncategorized_count else 'Complete', 'warning' if uncategorized_count else 'normal'),
+                _metric(
+                    'Uncategorized',
+                    str(uncategorized_count),
+                    'Requires Review' if uncategorized_count else 'Clear',
+                    'warning' if uncategorized_count else 'normal',
+                ),
+                _metric(
+                    'Category Coverage',
+                    _percent(category_coverage),
+                    'Partial' if uncategorized_count else 'Complete',
+                    'warning' if uncategorized_count else 'normal',
+                ),
             ],
             'severity_rows': severity_rows,
             'category_rows': category_rows,
@@ -137,33 +184,102 @@ def build_alerts_anomalies_presentation(
         'active_alerts': {
             'metrics': [
                 _metric('Displayed Alerts', str(min(len(alerts), 8)), 'Top active', 'info'),
-                _metric('Namespaces', str(len({item['namespace'] for item in alerts if item['namespace'] != 'Not Available'})), 'Displayed', 'normal'),
-                _metric('Firing State', str(sum(1 for item in alerts if item['status_key'] == 'firing')), 'Active', 'warning'),
-                _metric('Oldest Since', _oldest_label(alerts), 'Sustained' if alerts else 'Not Available', 'warning' if alerts else 'muted'),
+                _metric(
+                    'Namespaces',
+                    str(len({item['namespace'] for item in alerts if item['namespace'] != 'Not Available'})),
+                    'Displayed',
+                    'normal',
+                ),
+                _metric(
+                    'Firing State',
+                    str(sum(1 for item in alerts if item['status_key'] == 'firing')),
+                    'Active',
+                    'warning',
+                ),
+                _metric(
+                    'Oldest Since',
+                    _oldest_label(alerts),
+                    'Sustained' if alerts else 'Not Available',
+                    'warning' if alerts else 'muted',
+                ),
             ],
             'rows': [_with_ref(item, f'A{index}') for index, item in enumerate(alerts[:8], start=1)],
             'references': _alert_references(alerts[:5]),
         },
         'anomalies': {
             'metrics': [
-                _metric('Detected Anomalies', str(anomaly_count), 'Committed count', 'warning' if anomaly_count else 'normal'),
+                _metric(
+                    'Detected Anomalies',
+                    str(anomaly_count),
+                    'Committed count',
+                    'warning' if anomaly_count else 'normal',
+                ),
                 _metric('Displayed Records', str(min(len(anomalies), 8)), 'Recent', 'info'),
-                _metric('Evidence Available', str(sum(1 for item in anomalies if item['evidence_available'])), 'Committed support', 'normal' if anomalies and all(item['evidence_available'] for item in anomalies) else 'warning'),
-                _metric('Namespaces', str(len({item['namespace'] for item in anomalies if item['namespace'] != 'Not Available'})), 'Displayed', 'normal'),
+                _metric(
+                    'Evidence Available',
+                    str(sum(1 for item in anomalies if item['evidence_available'])),
+                    'Committed support',
+                    'normal' if anomalies and all(item['evidence_available'] for item in anomalies) else 'warning',
+                ),
+                _metric(
+                    'Namespaces',
+                    str(len({item['namespace'] for item in anomalies if item['namespace'] != 'Not Available'})),
+                    'Displayed',
+                    'normal',
+                ),
             ],
             'rows': [_with_ref(item, f'N{index}') for index, item in enumerate(anomalies[:8], start=1)],
             'requirements': [
-                {'ref': 'E1', 'evidence': 'Observation Window', 'definition': 'Start, end, and comparison baseline', 'status': 'Missing', 'action': 'Required'},
-                {'ref': 'E2', 'evidence': 'Signal Evidence', 'definition': 'Metric, expected band, and deviation', 'status': 'Missing', 'action': 'Required'},
-                {'ref': 'E3', 'evidence': 'Entity Identity', 'definition': 'Pod, workload, namespace, and owner', 'status': 'Partial', 'action': 'Required'},
-                {'ref': 'E4', 'evidence': 'Correlation Evidence', 'definition': 'Related alerts, events, and changes', 'status': 'Missing', 'action': 'Required'},
+                {
+                    'ref': 'E1',
+                    'evidence': 'Observation Window',
+                    'definition': 'Start, end, and comparison baseline',
+                    'status': 'Missing',
+                    'action': 'Required',
+                },
+                {
+                    'ref': 'E2',
+                    'evidence': 'Signal Evidence',
+                    'definition': 'Metric, expected band, and deviation',
+                    'status': 'Missing',
+                    'action': 'Required',
+                },
+                {
+                    'ref': 'E3',
+                    'evidence': 'Entity Identity',
+                    'definition': 'Pod, workload, namespace, and owner',
+                    'status': 'Partial',
+                    'action': 'Required',
+                },
+                {
+                    'ref': 'E4',
+                    'evidence': 'Correlation Evidence',
+                    'definition': 'Related alerts, events, and changes',
+                    'status': 'Missing',
+                    'action': 'Required',
+                },
             ],
         },
         'ownership': {
             'metrics': [
-                _metric('Sustained Alerts', str(sum(1 for item in alerts if item['starts_at_display'] != 'Not Available')), 'Displayed', 'warning'),
-                _metric('Owner Coverage', str(sum(1 for item in alerts if item['owner'] != 'Not Available')), 'Committed', 'normal' if alerts and all(item['owner'] != 'Not Available' for item in alerts) else 'warning'),
-                _metric('Runbook Coverage', str(sum(1 for item in alerts if item['runbook'] != 'Not Available')), 'Committed', 'normal' if alerts and all(item['runbook'] != 'Not Available' for item in alerts) else 'warning'),
+                _metric(
+                    'Sustained Alerts',
+                    str(sum(1 for item in alerts if item['starts_at_display'] != 'Not Available')),
+                    'Displayed',
+                    'warning',
+                ),
+                _metric(
+                    'Owner Coverage',
+                    str(sum(1 for item in alerts if item['owner'] != 'Not Available')),
+                    'Committed',
+                    'normal' if alerts and all(item['owner'] != 'Not Available' for item in alerts) else 'warning',
+                ),
+                _metric(
+                    'Runbook Coverage',
+                    str(sum(1 for item in alerts if item['runbook'] != 'Not Available')),
+                    'Committed',
+                    'normal' if alerts and all(item['runbook'] != 'Not Available' for item in alerts) else 'warning',
+                ),
                 _metric('Response Validation', 'Required', 'All displayed', 'info'),
             ],
             'rows': ownership_rows,
@@ -171,7 +287,9 @@ def build_alerts_anomalies_presentation(
         'correlation': {
             'metrics': [
                 _metric('Alert Records', str(active_count), 'Active count', 'warning' if active_count else 'normal'),
-                _metric('Anomaly Records', str(anomaly_count), 'Detected count', 'warning' if anomaly_count else 'normal'),
+                _metric(
+                    'Anomaly Records', str(anomaly_count), 'Detected count', 'warning' if anomaly_count else 'normal'
+                ),
                 _metric('Direct Correlations', '0', 'Not committed', 'warning'),
                 _metric('Evidence Quality', 'Partial', 'Review', 'warning'),
             ],
@@ -181,10 +299,21 @@ def build_alerts_anomalies_presentation(
             'metrics': _recommendation_metrics(recommendations),
             'rows': recommendations,
             'governance': [
-                {'field': 'Primary Action', 'requirement': recommendations[0]['title'] if recommendations else 'Continue alert and anomaly monitoring.'},
-                {'field': 'Validation Criteria', 'requirement': 'Confirm live alert state, expected workload behavior, events, metrics, accountable owner, and approved response before closure.'},
+                {
+                    'field': 'Primary Action',
+                    'requirement': recommendations[0]['title']
+                    if recommendations
+                    else 'Continue alert and anomaly monitoring.',
+                },
+                {
+                    'field': 'Validation Criteria',
+                    'requirement': 'Confirm live alert state, expected workload behavior, events, metrics, accountable owner, and approved response before closure.',
+                },
                 {'field': 'Assigned Owners', 'requirement': _owner_summary(recommendations)},
-                {'field': 'Change Control', 'requirement': 'No workload or infrastructure change is authorized by this report alone.'},
+                {
+                    'field': 'Change Control',
+                    'requirement': 'No workload or infrastructure change is authorized by this report alone.',
+                },
             ],
         },
         'methodology': {
@@ -219,7 +348,11 @@ def build_alerts_anomalies_presentation(
             ],
             'status_language': [
                 {'ref': 'S1', 'title': 'Not Available', 'description': 'No supporting evidence exists.'},
-                {'ref': 'S2', 'title': 'Partial Coverage', 'description': 'Only part of the active set is categorized or evidenced.'},
+                {
+                    'ref': 'S2',
+                    'title': 'Partial Coverage',
+                    'description': 'Only part of the active set is categorized or evidenced.',
+                },
                 {'ref': 'S3', 'title': 'Firing', 'description': 'The alert was active at the committed cut-off.'},
                 {'ref': 'S4', 'title': 'Unconfirmed', 'description': 'A relationship is a review lead, not causality.'},
             ],
@@ -243,15 +376,27 @@ def _alert_row(value: Mapping[str, Any]) -> dict[str, Any]:
         'status': status.title(),
         'status_key': status,
         'namespace': sanitize_text(value.get('namespace') or labels.get('namespace'), fallback='Not Available'),
-        'target': sanitize_text(value.get('target') or labels.get('pod') or labels.get('instance'), fallback='Not Available'),
+        'target': sanitize_text(
+            value.get('target') or labels.get('pod') or labels.get('instance'), fallback='Not Available'
+        ),
         'source': sanitize_text(value.get('source'), fallback='Not Available'),
-        'summary': sanitize_text(value.get('summary') or annotations.get('summary') or value.get('description') or annotations.get('description'), fallback='No committed description.'),
-        'starts_at_display': sanitize_text(value.get('starts_at_display') or value.get('starts_at'), fallback='Not Available'),
+        'summary': sanitize_text(
+            value.get('summary')
+            or annotations.get('summary')
+            or value.get('description')
+            or annotations.get('description'),
+            fallback='No committed description.',
+        ),
+        'starts_at_display': sanitize_text(
+            value.get('starts_at_display') or value.get('starts_at'), fallback='Not Available'
+        ),
         'owner': sanitize_text(value.get('owner'), fallback='Not Available'),
         'runbook': sanitize_text(value.get('runbook_url'), fallback='Not Available'),
         'contact': sanitize_text(value.get('contact'), fallback='Not Available'),
         'category': category,
-        'tone': 'critical' if severity == 'critical' else ('warning' if severity == 'warning' else ('info' if severity == 'info' else 'muted')),
+        'tone': 'critical'
+        if severity == 'critical'
+        else ('warning' if severity == 'warning' else ('info' if severity == 'info' else 'muted')),
     }
 
 
@@ -263,10 +408,15 @@ def _anomaly_row(value: Mapping[str, Any]) -> dict[str, Any]:
         'namespace': sanitize_text(value.get('namespace'), fallback='Not Available'),
         'severity': sanitize_text(value.get('severity'), fallback='warning').title(),
         'status': sanitize_text(value.get('status'), fallback='Review').title(),
-        'summary': sanitize_text(value.get('description') or value.get('summary'), fallback='No committed anomaly description.'),
+        'summary': sanitize_text(
+            value.get('description') or value.get('summary'), fallback='No committed anomaly description.'
+        ),
         'evidence': sanitize_text(evidence, fallback='Not Available'),
         'evidence_available': evidence_available,
-        'starts_at_display': sanitize_text(value.get('starts_at_display') or value.get('timestamp') or value.get('observed_at'), fallback='Not Available'),
+        'starts_at_display': sanitize_text(
+            value.get('starts_at_display') or value.get('timestamp') or value.get('observed_at'),
+            fallback='Not Available',
+        ),
         'tone': 'warning',
     }
 
@@ -276,18 +426,35 @@ def _category_rows(alerts: list[dict[str, Any]]) -> list[dict[str, Any]]:
     if not counts:
         return []
     max_count = max(counts.values())
-    return [
-        {'label': label, 'count': count, 'bar': _bar(count, max_count)}
-        for label, count in counts.most_common(6)
-    ]
+    return [{'label': label, 'count': count, 'bar': _bar(count, max_count)} for label, count in counts.most_common(6)]
 
 
-def _severity_category_register(severity_rows: list[dict[str, Any]], category_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _severity_category_register(
+    severity_rows: list[dict[str, Any]], category_rows: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for index, item in enumerate(severity_rows, start=1):
-        rows.append({'ref': f'S{index}', 'dimension': item['label'], 'count': str(item['count']), 'evidence': 'Committed Severity', 'status': 'Review' if item['count'] else 'Clear', 'tone': item['tone'] if item['count'] else 'normal'})
+        rows.append(
+            {
+                'ref': f'S{index}',
+                'dimension': item['label'],
+                'count': str(item['count']),
+                'evidence': 'Committed Severity',
+                'status': 'Review' if item['count'] else 'Clear',
+                'tone': item['tone'] if item['count'] else 'normal',
+            }
+        )
     for index, item in enumerate(category_rows, start=1):
-        rows.append({'ref': f'C{index}', 'dimension': item['label'], 'count': str(item['count']), 'evidence': 'Displayed Category', 'status': 'Review', 'tone': 'warning'})
+        rows.append(
+            {
+                'ref': f'C{index}',
+                'dimension': item['label'],
+                'count': str(item['count']),
+                'evidence': 'Displayed Category',
+                'status': 'Review',
+                'tone': 'warning',
+            }
+        )
     return rows
 
 
@@ -296,7 +463,7 @@ def _alert_references(alerts: list[dict[str, Any]]) -> list[dict[str, str]]:
         {
             'ref': f'A{index}',
             'title': item['name'],
-            'description': f"Validate {item['namespace']} live state, expected behavior, and accountable ownership. {item['summary']}",
+            'description': f'Validate {item["namespace"]} live state, expected behavior, and accountable ownership. {item["summary"]}',
         }
         for index, item in enumerate(alerts, start=1)
     ]
@@ -307,20 +474,37 @@ def _ownership_rows(alerts: list[dict[str, Any]], anomalies: list[dict[str, Any]
     index = 1
     for item in alerts[:5]:
         owner_domain = item['owner'] if item['owner'] != 'Not Available' else _owner_domain(item['namespace'])
-        result.append({
-            'ref': f'O{index}', 'scope': item['namespace'], 'owner': owner_domain,
-            'focus': item['name'], 'coverage': _metadata_coverage(item), 'status': 'Review',
-        })
+        result.append(
+            {
+                'ref': f'O{index}',
+                'scope': item['namespace'],
+                'owner': owner_domain,
+                'focus': item['name'],
+                'coverage': _metadata_coverage(item),
+                'status': 'Review',
+            }
+        )
         index += 1
     for item in anomalies[:2]:
         if len(result) >= 6:
             break
-        result.append({'ref': f'O{index}', 'scope': item['namespace'], 'owner': _owner_domain(item['namespace']), 'focus': item['name'], 'coverage': 'Partial', 'status': 'Review'})
+        result.append(
+            {
+                'ref': f'O{index}',
+                'scope': item['namespace'],
+                'owner': _owner_domain(item['namespace']),
+                'focus': item['name'],
+                'coverage': 'Partial',
+                'status': 'Review',
+            }
+        )
         index += 1
     return result
 
 
-def _correlation_rows(alerts: list[dict[str, Any]], anomalies: list[dict[str, Any]], active_count: int, categorized_count: int) -> list[dict[str, Any]]:
+def _correlation_rows(
+    alerts: list[dict[str, Any]], anomalies: list[dict[str, Any]], active_count: int, categorized_count: int
+) -> list[dict[str, Any]]:
     alerts_by_namespace: dict[str, list[str]] = defaultdict(list)
     anomalies_by_namespace: dict[str, list[str]] = defaultdict(list)
     for item in alerts:
@@ -329,49 +513,112 @@ def _correlation_rows(alerts: list[dict[str, Any]], anomalies: list[dict[str, An
         anomalies_by_namespace[item['namespace']].append(item['name'])
     rows: list[dict[str, Any]] = []
     for namespace in sorted(set(alerts_by_namespace) & set(anomalies_by_namespace)):
-        rows.append({
-            'ref': f'C{len(rows)+1}', 'scope': namespace,
-            'signal_a': alerts_by_namespace[namespace][0], 'signal_b': anomalies_by_namespace[namespace][0],
-            'relationship': 'Unconfirmed', 'status': 'Review',
-        })
+        rows.append(
+            {
+                'ref': f'C{len(rows) + 1}',
+                'scope': namespace,
+                'signal_a': alerts_by_namespace[namespace][0],
+                'signal_b': anomalies_by_namespace[namespace][0],
+                'relationship': 'Unconfirmed',
+                'status': 'Review',
+            }
+        )
     if len(rows) < 5:
         for namespace, names in alerts_by_namespace.items():
             if len(names) >= 2 and len(rows) < 4:
-                rows.append({'ref': f'C{len(rows)+1}', 'scope': namespace, 'signal_a': names[0], 'signal_b': names[1], 'relationship': 'Related alerts', 'status': 'Review'})
-    rows.append({'ref': f'C{len(rows)+1}', 'scope': 'Category Coverage', 'signal_a': f'{active_count} active alerts', 'signal_b': f'{categorized_count} categorized', 'relationship': 'Partial' if categorized_count < active_count else 'Complete', 'status': 'Reconcile' if categorized_count < active_count else 'Current'})
+                rows.append(
+                    {
+                        'ref': f'C{len(rows) + 1}',
+                        'scope': namespace,
+                        'signal_a': names[0],
+                        'signal_b': names[1],
+                        'relationship': 'Related alerts',
+                        'status': 'Review',
+                    }
+                )
+    rows.append(
+        {
+            'ref': f'C{len(rows) + 1}',
+            'scope': 'Category Coverage',
+            'signal_a': f'{active_count} active alerts',
+            'signal_b': f'{categorized_count} categorized',
+            'relationship': 'Partial' if categorized_count < active_count else 'Complete',
+            'status': 'Reconcile' if categorized_count < active_count else 'Current',
+        }
+    )
     return rows[:5]
 
 
-def _recommendations(payload: Mapping[str, Any], alerts: list[dict[str, Any]], anomalies: list[dict[str, Any]], uncategorized_count: int) -> list[dict[str, Any]]:
+def _recommendations(
+    payload: Mapping[str, Any], alerts: list[dict[str, Any]], anomalies: list[dict[str, Any]], uncategorized_count: int
+) -> list[dict[str, Any]]:
     raw = _sequence(payload.get('actionable_recommendations') or payload.get('recommendations'))
     items: list[dict[str, Any]] = []
     for value in raw:
         if not isinstance(value, Mapping):
             continue
         priority = _priority(value.get('priority') or value.get('severity'))
-        items.append({
-            'ref': f'R{len(items)+1}', 'priority': priority,
-            'title': sanitize_text(value.get('title'), fallback='Review Alert and Anomaly Evidence'),
-            'description': sanitize_text(value.get('description'), fallback='Validate the signal against live state and expected workload behavior.'),
-            'owner': sanitize_text(value.get('owner'), fallback='Platform Operations'),
-            'target': 'This Week' if priority == 'P1' else ('Next Week' if priority == 'P2' else 'This Month'),
-            'status': 'Open' if priority in {'P1', 'P2'} else 'Planned',
-            'tone': 'critical' if priority == 'P1' else ('warning' if priority == 'P2' else 'info'),
-        })
+        items.append(
+            {
+                'ref': f'R{len(items) + 1}',
+                'priority': priority,
+                'title': sanitize_text(value.get('title'), fallback='Review Alert and Anomaly Evidence'),
+                'description': sanitize_text(
+                    value.get('description'),
+                    fallback='Validate the signal against live state and expected workload behavior.',
+                ),
+                'owner': sanitize_text(value.get('owner'), fallback='Platform Operations'),
+                'target': 'This Week' if priority == 'P1' else ('Next Week' if priority == 'P2' else 'This Month'),
+                'status': 'Open' if priority in {'P1', 'P2'} else 'Planned',
+                'tone': 'critical' if priority == 'P1' else ('warning' if priority == 'P2' else 'info'),
+            }
+        )
         if len(items) >= 5:
             break
     defaults: list[tuple[str, str, str, str]] = []
     for alert in alerts[:3]:
-        defaults.append(('P2', f"Validate {alert['name']}", f"Confirm live state, expected behavior, and ownership for {alert['namespace']}.", _owner_domain(alert['namespace'])))
+        defaults.append(
+            (
+                'P2',
+                f'Validate {alert["name"]}',
+                f'Confirm live state, expected behavior, and ownership for {alert["namespace"]}.',
+                _owner_domain(alert['namespace']),
+            )
+        )
     if anomalies and not all(item['evidence_available'] for item in anomalies):
-        defaults.append(('P2', 'Restore Anomaly Evidence', 'Commit observation window, metric deviation, entity identity, and related event evidence.', 'Observability Owner'))
+        defaults.append(
+            (
+                'P2',
+                'Restore Anomaly Evidence',
+                'Commit observation window, metric deviation, entity identity, and related event evidence.',
+                'Observability Owner',
+            )
+        )
     if uncategorized_count:
-        defaults.append(('P3', 'Reconcile Alert Categories', f'Reconcile {uncategorized_count} active alert(s) outside the displayed category summary.', 'Observability Owner'))
+        defaults.append(
+            (
+                'P3',
+                'Reconcile Alert Categories',
+                f'Reconcile {uncategorized_count} active alert(s) outside the displayed category summary.',
+                'Observability Owner',
+            )
+        )
     existing = {item['title'] for item in items}
     for priority, title, description, owner in defaults:
         if title in existing or len(items) >= 5:
             continue
-        items.append({'ref': f'R{len(items)+1}', 'priority': priority, 'title': title, 'description': description, 'owner': owner, 'target': 'Next Week' if priority == 'P2' else 'This Month', 'status': 'Open' if priority == 'P2' else 'Planned', 'tone': 'warning' if priority == 'P2' else 'info'})
+        items.append(
+            {
+                'ref': f'R{len(items) + 1}',
+                'priority': priority,
+                'title': title,
+                'description': description,
+                'owner': owner,
+                'target': 'Next Week' if priority == 'P2' else 'This Month',
+                'status': 'Open' if priority == 'P2' else 'Planned',
+                'tone': 'warning' if priority == 'P2' else 'info',
+            }
+        )
     items.sort(key=lambda item: (int(item['priority'][1]), item['ref']))
     for index, item in enumerate(items, start=1):
         item['ref'] = f'R{index}'
@@ -383,7 +630,9 @@ def _source_rows(payload: Mapping[str, Any]) -> list[dict[str, str]]:
     anomaly_status = _mapping(payload.get('anomaly_source_status'))
     rows = [
         {
-            'source': sanitize_text(source_status.get('label') or source_status.get('resolved_source'), fallback='Alert Source'),
+            'source': sanitize_text(
+                source_status.get('label') or source_status.get('resolved_source'), fallback='Alert Source'
+            ),
             'freshness': _response_time(source_status),
             'last_collected': 'At report cut-off',
         },
@@ -398,7 +647,12 @@ def _source_rows(payload: Mapping[str, Any]) -> list[dict[str, str]]:
 
 def _recommendation_metrics(items: list[dict[str, Any]]) -> list[dict[str, str]]:
     return [
-        _metric('P1 Actions', str(sum(1 for item in items if item['priority'] == 'P1')), 'Immediate', 'critical' if any(item['priority'] == 'P1' for item in items) else 'normal'),
+        _metric(
+            'P1 Actions',
+            str(sum(1 for item in items if item['priority'] == 'P1')),
+            'Immediate',
+            'critical' if any(item['priority'] == 'P1' for item in items) else 'normal',
+        ),
         _metric('P2 Actions', str(sum(1 for item in items if item['priority'] == 'P2')), 'Open', 'warning'),
         _metric('P3 Actions', str(sum(1 for item in items if item['priority'] == 'P3')), 'Planned', 'info'),
         _metric('Validation Gates', str(len(items)), 'Required', 'info'),
@@ -452,7 +706,11 @@ def _oldest_label(alerts: list[dict[str, Any]]) -> str:
 def _response_time(value: Mapping[str, Any]) -> str:
     response = value.get('response_time_ms')
     try:
-        return f'{int(response)} ms' if response is not None else ('Partial' if value.get('partial') else 'At report cut-off')
+        return (
+            f'{int(response)} ms'
+            if response is not None
+            else ('Partial' if value.get('partial') else 'At report cut-off')
+        )
     except (TypeError, ValueError):
         return 'At report cut-off'
 

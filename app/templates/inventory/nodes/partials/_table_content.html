@@ -8,12 +8,17 @@
         <caption class="sr-only">Node inventory records for {{ inventory.scope_label }}.</caption>
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
-                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[16rem]">Node</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Cluster</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[11rem]">Readiness</th>
+                <th scope="col"
+                    class="{{ table_ui.header_cell_classes() }} min-w-[16rem]">Node</th>
+                <th scope="col"
+                    class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Cluster</th>
+                <th scope="col"
+                    class="{{ table_ui.header_cell_classes() }} min-w-[11rem]">Readiness</th>
                 <th scope="col" class="{{ table_ui.header_cell_classes() }}">Role</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Capacity</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[11rem]">Network</th>
+                <th scope="col"
+                    class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Capacity</th>
+                <th scope="col"
+                    class="{{ table_ui.header_cell_classes() }} min-w-[11rem]">Network</th>
                 <th scope="col" class="{{ table_ui.header_cell_classes(true) }}">Details</th>
             </tr>
         </thead>
@@ -27,7 +32,8 @@
                     <td class="{{ table_ui.cell_classes() }}">
                         {{ table_label.status_indicator_label(node.status_display, node.status_tone) }}
                         <p class="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">
-                            {{ node.condition_summary }}{% if node.scheduling_display == 'Scheduling Not Reported' and node.condition_count == 0 %} · Scheduling not reported{% endif %}
+                            {{ node.condition_summary }}
+                            {% if node.scheduling_display == 'Scheduling Not Reported' and node.condition_count == 0 %} · Scheduling not reported{% endif %}
                         </p>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(node.role_display) }}</td>
@@ -40,7 +46,7 @@
                         <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ node.network_scope }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes(true) }}">
-                        {{ resource_detail_modal.detail_button(node.id, url_for('inventory.node_details', node_id=node.id), node.node_name, 'Node') }}
+                        {{ resource_detail_modal.detail_button(node.id, url_for('inventory.node_details', node_id=node.id) , node.node_name, 'Node') }}
                     </td>
                 </tr>
             {% else %}
@@ -59,8 +65,12 @@
 </div>
 <footer class="{{ pagination_ui.footer_classes() }}">
     <div class="{{ pagination_ui.summary_group_classes() }}">
-        <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ pagination_ui.resource_name('Nodes', pagination.total_items)|trim }}</p>
-        <form hx-get="{{ url_for('inventory.nodes') }}" hx-target="#nodes-table-content" hx-swap="innerHTML" hx-indicator="#nodes-table-loading" class="flex items-center gap-2">
+        <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ pagination_ui.resource_name('Nodes', pagination.total_items) |trim }}</p>
+        <form hx-get="{{ url_for('inventory.nodes') }}"
+              hx-target="#nodes-table-content"
+              hx-swap="innerHTML"
+              hx-indicator="#nodes-table-loading"
+              class="flex items-center gap-2">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="partial_mode" value="table_content">
             <input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}">
@@ -68,22 +78,39 @@
             <input type="hidden" name="status" value="{{ selected_status }}">
             <input type="hidden" name="search" value="{{ search }}">
             <label for="nodes-per-page" class="font-semibold text-content-secondary">Rows</label>
-            <select id="nodes-per-page" name="per_page" aria-label="Rows Per Page" data-kaori-auto-submit class="{{ pagination_ui.page_size_classes() }}">
-                {% for option in pagination.allowed_per_page %}<option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}
+            <select id="nodes-per-page"
+                    name="per_page"
+                    aria-label="Rows Per Page"
+                    data-kaori-auto-submit
+                    class="{{ pagination_ui.page_size_classes() }}">
+                {% for option in pagination.allowed_per_page %}
+                    <option value="{{ option }}"
+                            {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
             </select>
         </form>
     </div>
     <div class="{{ pagination_ui.navigation_group_classes() }}">
         {% if pagination.has_prev %}
             {% set prev_url = url_for('inventory.nodes', cluster_id=selected_cluster_id, role=selected_role, status=selected_status, search=search, page=pagination.prev_page, per_page=pagination.per_page) %}
-            <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#nodes-table-content" hx-swap="innerHTML" hx-indicator="#nodes-table-loading" class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+            <a href="{{ prev_url }}"
+               hx-get="{{ prev_url }}"
+               hx-target="#nodes-table-content"
+               hx-swap="innerHTML"
+               hx-indicator="#nodes-table-loading"
+               class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
         {% else %}
             <span class="{{ pagination_ui.navigation_classes(true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
         {% endif %}
         {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, hx_target='#nodes-table-content', hx_indicator='#nodes-table-loading') }}
         {% if pagination.has_next %}
             {% set next_url = url_for('inventory.nodes', cluster_id=selected_cluster_id, role=selected_role, status=selected_status, search=search, page=pagination.next_page, per_page=pagination.per_page) %}
-            <a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#nodes-table-content" hx-swap="innerHTML" hx-indicator="#nodes-table-loading" class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+            <a href="{{ next_url }}"
+               hx-get="{{ next_url }}"
+               hx-target="#nodes-table-content"
+               hx-swap="innerHTML"
+               hx-indicator="#nodes-table-loading"
+               class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
         {% else %}
             <span class="{{ pagination_ui.navigation_classes(true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
         {% endif %}

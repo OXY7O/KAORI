@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from app.common.presentation import present_user_datetime
 from app.common.job_execution_contract import job_operation_label
+from app.common.presentation import present_user_datetime
 from app.models.job import JobExecution
 
 _JOB_ICONS = {
@@ -51,11 +51,7 @@ def present_job_execution_row(job: JobExecution) -> dict[str, Any]:
     """Build canonical job identity, state, timing, and progress presentation."""
     total = max(job.progress_total, 0)
     current = max(job.progress_current, 0)
-    progress = (
-        min(int((current / total) * 100), 100)
-        if total
-        else (100 if job.is_terminal else 0)
-    )
+    progress = min(int((current / total) * 100), 100) if total else (100 if job.is_terminal else 0)
     if total > 0 or job.is_terminal:
         progress_mode = 'determinate'
         progress_label = f'{progress}%'
@@ -66,11 +62,7 @@ def present_job_execution_row(job: JobExecution) -> dict[str, Any]:
         progress_mode = 'indeterminate'
         progress_label = 'In Progress'
 
-    requester = (
-        job.requested_by.display_label
-        if job.requested_by is not None
-        else 'KAORI Scheduler'
-    )
+    requester = job.requested_by.display_label if job.requested_by is not None else 'KAORI Scheduler'
     status_label, status_tone, status_icon = _STATUS_PRESENTATION.get(
         job.status,
         (job.status.replace('_', ' ').title(), 'unknown', 'circle-help'),
@@ -123,17 +115,12 @@ def present_job_execution(job: JobExecution) -> dict[str, Any]:
     """Return compact execution presentation for Deck and configuration workspaces."""
     row = present_job_execution_row(job)
     payload = job.payload_json or {}
-    trigger_type = str(
-        payload.get('trigger_type')
-        or ('scheduled' if job.requested_by_user_id is None else 'manual')
-    )
+    trigger_type = str(payload.get('trigger_type') or ('scheduled' if job.requested_by_user_id is None else 'manual'))
     row.update(
         {
             'trigger_type': trigger_type,
             'trigger_label': trigger_type.replace('_', ' ').title(),
-            'trigger_icon': (
-                'calendar-clock' if trigger_type == 'scheduled' else 'mouse-pointer-click'
-            ),
+            'trigger_icon': ('calendar-clock' if trigger_type == 'scheduled' else 'mouse-pointer-click'),
             'target_count': int(
                 payload.get('target_count')
                 or payload.get('total_count')

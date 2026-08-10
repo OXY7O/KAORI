@@ -50,10 +50,7 @@ def _provider_configuration_complete(provider: IdentityProvider) -> bool:
             )
         )
     if provider.provider_type in {'google_oidc', 'github_oauth'}:
-        return all(
-            str(value or '').strip()
-            for value in (provider.oidc_client_id, provider.oidc_client_secret_env)
-        )
+        return all(str(value or '').strip() for value in (provider.oidc_client_id, provider.oidc_client_secret_env))
     return False
 
 
@@ -152,9 +149,7 @@ def build_identity_provider_payload(filters: dict[str, Any]) -> dict[str, Any]:
             ).lower()
         ]
     if filters['provider_type'] != 'all':
-        provider_rows = [
-            row for row in provider_rows if row['record'].provider_type == filters['provider_type']
-        ]
+        provider_rows = [row for row in provider_rows if row['record'].provider_type == filters['provider_type']]
     if filters['state'] == 'enabled':
         provider_rows = [row for row in provider_rows if row['record'].enabled]
     elif filters['state'] == 'disabled':

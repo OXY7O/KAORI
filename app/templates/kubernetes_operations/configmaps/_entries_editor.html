@@ -4,29 +4,65 @@
         <div class="configmap-entry {{ entry_editor.row_classes('configmap') }}">
             <label class="min-w-0">
                 <span class="mb-1 block {{ entry_editor.label_classes() }} lg:hidden">Key</span>
-                <input name="entry_key" value="{{ key }}" placeholder="Key" class="{{ entry_editor.control_classes() }}">
+                <input name="entry_key"
+                       value="{{ key }}"
+                       placeholder="Key"
+                       class="{{ entry_editor.control_classes() }}">
             </label>
             <label class="min-w-0">
                 <span class="mb-1 block {{ entry_editor.label_classes() }} lg:hidden">Content Type</span>
                 <select name="entry_kind" class="{{ entry_editor.control_classes() }}">
-                    <option value="text" {{ 'selected' if value.kind == 'text' else '' }}>Text</option>
-                    <option value="binary" {{ 'selected' if value.kind == 'binary' else '' }}>Binary / Base64</option>
+                    <option value="text" {{ 'selected' if value.kind == 'text' else '' }}>Text
+                    </option>
+                    <option value="binary" {{ 'selected' if value.kind == 'binary' else '' }}>Binary / Base64
+                    </option>
                 </select>
             </label>
             <label class="min-w-0">
                 <span class="mb-1 block {{ entry_editor.label_classes() }} lg:hidden">Value</span>
-                <textarea name="entry_value" rows="5" placeholder="Value" class="{{ entry_editor.textarea_classes() }} font-mono">{{ value.value }}</textarea>
+                <textarea name="entry_value"
+                          rows="5"
+                          placeholder="Value"
+                          class="{{ entry_editor.textarea_classes() }} font-mono">{{ value.value }}</textarea>
             </label>
-            <button type="button" data-remove-entry class="{{ entry_editor.remove_button_classes() }}" aria-label="Remove ConfigMap entry"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+            <button type="button"
+                    data-remove-entry
+                    class="{{ entry_editor.remove_button_classes() }}"
+                    aria-label="Remove ConfigMap entry">
+                <i data-lucide="trash-2" class="h-4 w-4"></i>
+            </button>
         </div>
     {% endfor %}
 </div>
-<button type="button" data-add-entry class="mt-3 {{ entry_editor.add_button_classes() }}"><i data-lucide="plus" class="h-4 w-4"></i>Add Key</button>
+<button type="button"
+        data-add-entry
+        class="mt-3 {{ entry_editor.add_button_classes() }}"><i data-lucide="plus" class="h-4 w-4"></i>Add Key</button>
 <template id="configmap-entry-template">
     <div class="configmap-entry {{ entry_editor.row_classes('configmap') }}">
-        <label class="min-w-0"><span class="mb-1 block {{ entry_editor.label_classes() }} lg:hidden">Key</span><input name="entry_key" placeholder="Key" class="{{ entry_editor.control_classes() }}"></label>
-        <label class="min-w-0"><span class="mb-1 block {{ entry_editor.label_classes() }} lg:hidden">Content Type</span><select name="entry_kind" class="{{ entry_editor.control_classes() }}"><option value="text">Text</option><option value="binary">Binary / Base64</option></select></label>
-        <label class="min-w-0"><span class="mb-1 block {{ entry_editor.label_classes() }} lg:hidden">Value</span><textarea name="entry_value" rows="5" placeholder="Value" class="{{ entry_editor.textarea_classes() }} font-mono"></textarea></label>
-        <button type="button" data-remove-entry class="{{ entry_editor.remove_button_classes() }}" aria-label="Remove ConfigMap entry"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+        <label class="min-w-0">
+            <span class="mb-1 block {{ entry_editor.label_classes() }} lg:hidden">Key</span>
+            <input name="entry_key"
+                   placeholder="Key"
+                   class="{{ entry_editor.control_classes() }}">
+        </label>
+        <label class="min-w-0">
+            <span class="mb-1 block {{ entry_editor.label_classes() }} lg:hidden">Content Type</span>
+            <select name="entry_kind" class="{{ entry_editor.control_classes() }}">
+                <option value="text">Text</option>
+                <option value="binary">Binary / Base64</option>
+            </select>
+        </label>
+        <label class="min-w-0">
+            <span class="mb-1 block {{ entry_editor.label_classes() }} lg:hidden">Value</span><textarea name="entry_value"
+          rows="5"
+          placeholder="Value"
+          class="{{ entry_editor.textarea_classes() }} font-mono"></textarea>
+        </label>
+        <button type="button"
+                data-remove-entry
+                class="{{ entry_editor.remove_button_classes() }}"
+                aria-label="Remove ConfigMap entry">
+            <i data-lucide="trash-2" class="h-4 w-4"></i>
+        </button>
     </div>
 </template>

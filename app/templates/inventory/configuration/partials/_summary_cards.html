@@ -14,11 +14,20 @@
     'Object composition, mutation configuration, key-index evidence, and evidence-aware Pod references for the active Configuration Inventory filters.',
     'braces',
     body_classes='p-0'
-) %}
+    ) %}
     {{ posture_grid.render(posture_metrics, columns=3) }}
     <div class="grid gap-2 border-t border-outline-subtle bg-surface-hover p-4 sm:grid-cols-3">
-        <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5"><p class="text-xs text-content-muted">ConfigMap Collection</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ inventory.configmap_collection_state }}</p></div>
-        <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5"><p class="text-xs text-content-muted">Secret Collection</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ inventory.secret_collection_state }}</p></div>
-        <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5"><p class="text-xs text-content-muted">Pod Reference Collection</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ inventory.pod_collection_state }}</p></div>
+        <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
+            <p class="text-xs text-content-muted">ConfigMap Collection</p>
+            <p class="mt-1 text-sm font-semibold text-content-primary">{{ inventory.configmap_collection_state }}</p>
+        </div>
+        <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
+            <p class="text-xs text-content-muted">Secret Collection</p>
+            <p class="mt-1 text-sm font-semibold text-content-primary">{{ inventory.secret_collection_state }}</p>
+        </div>
+        <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
+            <p class="text-xs text-content-muted">Pod Reference Collection</p>
+            <p class="mt-1 text-sm font-semibold text-content-primary">{{ inventory.pod_collection_state }}</p>
+        </div>
     </div>
 {% endcall %}

@@ -246,7 +246,6 @@ def _pod_owner_chain(
     return chain
 
 
-
 COLLECTED = 'Collected'
 PERMISSION_UNAVAILABLE = 'Permission Unavailable'
 API_UNAVAILABLE = 'API Unavailable'
@@ -352,9 +351,7 @@ def _pod_container_inventory(spec, status) -> dict[str, Any]:
         'container_images': regular_images,
         'init_container_images': init_images,
         'ephemeral_container_images': ephemeral_images,
-        'container_names': [
-            _model_value(item, 'name') for item in regular_specs if _model_value(item, 'name')
-        ],
+        'container_names': [_model_value(item, 'name') for item in regular_specs if _model_value(item, 'name')],
         'image_count': len(regular_images) + len(init_images) + len(ephemeral_images),
     }
 
@@ -483,9 +480,7 @@ def _pod_details(
             'node_selector': dict(
                 sorted((_model_value(spec, 'node_selector', 'nodeSelector', default={}) or {}).items())
             ),
-            'tolerations': [
-                _toleration_display(item) for item in _model_value(spec, 'tolerations', default=[]) or []
-            ],
+            'tolerations': [_toleration_display(item) for item in _model_value(spec, 'tolerations', default=[]) or []],
             'affinity_configured': _model_value(spec, 'affinity') is not None if spec is not None else None,
             'topology_spread_count': (
                 len(_model_value(spec, 'topology_spread_constraints', 'topologySpreadConstraints', default=[]) or [])

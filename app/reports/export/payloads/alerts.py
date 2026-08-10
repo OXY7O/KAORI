@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from app.analytics.alerts.application import present_alerts_materialized_context
-from app.analytics.alerts.contracts import AlertsSelection
+from app.analytics.alerts.contracts import AlertSourceStatus, AlertsSelection
 from app.analytics.alerts.health import build_summary, is_alert_evidence_complete
 from app.analytics.alerts.signals import build_selected_cluster_signal_overview
 from app.cluster.constants import get_environment_label
@@ -39,7 +39,7 @@ def get_report_alerts_anomalies_payload(report: Report) -> dict[str, Any]:
             )
             alerts = list(presented.get('filtered_alerts') or [])
             anomalies = list(presented.get('filtered_anomalies') or [])
-            source_status = presented.get('source_status') or {}
+            source_status = cast(AlertSourceStatus, presented.get('source_status') or {})
             summary = build_summary(
                 alerts=alerts,
                 anomalies=anomalies,

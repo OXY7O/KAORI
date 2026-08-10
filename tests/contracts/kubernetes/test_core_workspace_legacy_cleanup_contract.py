@@ -84,7 +84,10 @@ def test_ingress_inventory_uses_json_evidence_without_duplicate_columns() -> Non
 
     assert 'host:' not in ingress_class
     assert 'address:' not in ingress_class
-    assert "'namespace': str(namespace),\n                'ingress_name': str(name),\n                'ingress_class': ingress_class,\n                'tls_enabled': bool(tls_entries)" in collector
+    assert (
+        "'namespace': str(namespace),\n                'ingress_name': str(name),\n                'ingress_class': ingress_class,\n                'tls_enabled': bool(tls_entries)"
+        in collector
+    )
     assert "op.drop_column('ingress_inventory', 'host')" in migration
     assert "op.drop_column('ingress_inventory', 'address')" in migration
 

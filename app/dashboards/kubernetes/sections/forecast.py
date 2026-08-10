@@ -62,7 +62,8 @@ def build_forecast_snapshot(*, context: dict[str, Any] | None, unavailable_reaso
             )
 
     has_data = bool(payload.get('has_data')) and bool(items)
-    summary = payload.get('summary') if isinstance(payload.get('summary'), dict) else {}
+    raw_summary = payload.get('summary')
+    summary = raw_summary if isinstance(raw_summary, dict) else {}
     at_risk_count = sum(item.risk.lower() in _WARNING_RISKS | _CRITICAL_RISKS for item in items)
     critical_count = sum(item.risk.lower() in _CRITICAL_RISKS for item in items)
     highest_item = max(
@@ -91,7 +92,6 @@ def build_forecast_snapshot(*, context: dict[str, Any] | None, unavailable_reaso
         highest_projected_percent=highest_percent,
         has_historical_series=any(bool(item.historical_points) for item in items),
     )
-
 
 
 def _resource_key(*, item: dict[str, Any], position: int) -> str:
@@ -199,9 +199,7 @@ def _build_chart_points(
     if baseline is not None:
         forecast_line.append(baseline)
     forecast_line.extend(forecast)
-    if projected_percent is not None and (
-        not forecast_line or abs(forecast_line[-1] - projected_percent) > 0.01
-    ):
+    if projected_percent is not None and (not forecast_line or abs(forecast_line[-1] - projected_percent) > 0.01):
         forecast_line.append(projected_percent)
     if len(forecast_line) == 1:
         forecast_line.append(forecast_line[0])
@@ -237,4 +235,3 @@ def _trend_label(current: float | None, projected: float | None) -> str:
     if delta < -1:
         return 'Decreasing'
     return 'Stable'
-

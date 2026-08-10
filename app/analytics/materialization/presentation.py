@@ -94,16 +94,10 @@ def materialization_progress_context(snapshot: Any) -> dict[str, Any]:
                     ),
                 )
             if job.is_terminal and snapshot.status != 'ready' and not materialization_error:
-                materialization_error = (
-                    job.error_message
-                    or (
-                        'The background job completed without producing the requested analytics snapshot.'
-                        if job.status in {'succeeded', 'partially_succeeded'}
-                        else (
-                            'Analytics preparation ended with status '
-                            f'{job.status.replace("_", " ").title()}.'
-                        )
-                    )
+                materialization_error = job.error_message or (
+                    'The background job completed without producing the requested analytics snapshot.'
+                    if job.status in {'succeeded', 'partially_succeeded'}
+                    else (f'Analytics preparation ended with status {job.status.replace("_", " ").title()}.')
                 )
 
     failure = parse_materialization_error(materialization_error)

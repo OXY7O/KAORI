@@ -24,9 +24,19 @@ def _load_module_from_file(name: str, path: Path, monkeypatch: pytest.MonkeyPatc
 
 def _load_payload(monkeypatch: pytest.MonkeyPatch):
     module_names = (
-        'app', 'app.common', 'app.common.inventory_generation', 'app.extensions', 'app.extensions.db',
-        'app.inventory', 'app.inventory.resources', 'app.models', 'app.models.report', 'app.reports',
-        'app.reports.catalog', 'app.reports.export', 'app.reports.export.payloads',
+        'app',
+        'app.common',
+        'app.common.inventory_generation',
+        'app.extensions',
+        'app.extensions.db',
+        'app.inventory',
+        'app.inventory.resources',
+        'app.models',
+        'app.models.report',
+        'app.reports',
+        'app.reports.catalog',
+        'app.reports.export',
+        'app.reports.export.payloads',
         'app.reports.export.payloads.common',
     )
     modules = {name: ModuleType(name) for name in module_names}

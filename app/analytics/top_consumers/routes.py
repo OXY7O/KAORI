@@ -1,12 +1,18 @@
 from __future__ import annotations
 
-from flask import Response, make_response, redirect, render_template, request, url_for
+from typing import Any
 
-from app.analytics.materialization.presentation import (
-    blocked_page_context,
-    pending_page_context,
-    snapshot_meta,
+from flask import (
+    Response,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    url_for,
 )
+from flask.typing import ResponseReturnValue
+
+from app.analytics.materialization.presentation import blocked_page_context, pending_page_context, snapshot_meta
 from app.analytics.materialization.requests import resolve_materialized_request
 from app.analytics.top_consumers.presentation import present_materialized_context
 from app.rbac.decorators import permission_required
@@ -15,8 +21,7 @@ _PAGE = {
     'dataset_key': 'analytics.top_consumers',
     'title': 'Top Consumers',
     'description': (
-        'Consumer rankings use committed cluster or namespace snapshots; '
-        'record filters remain presentation-only.'
+        'Consumer rankings use committed cluster or namespace snapshots; record filters remain presentation-only.'
     ),
     'icon': 'list-ordered',
     'page_id': 'top-consumers-page',
@@ -69,7 +74,7 @@ def _is_htmx_request() -> bool:
 
 
 def _full_page_url() -> str:
-    query_args = request.args.to_dict(flat=True)
+    query_args: dict[str, Any] = request.args.to_dict(flat=True)
     query_args['tab'] = 'records'
     return url_for('analytics.top_consumers', **query_args)
 
@@ -83,7 +88,7 @@ def _table_response(template: str, context: dict[str, object]) -> Response:
 
 
 @permission_required('analytics.view')
-def top_consumers() -> str:
+def top_consumers() -> ResponseReturnValue:
     context, state = _context_or_state()
     if state:
         template = (
@@ -96,7 +101,7 @@ def top_consumers() -> str:
 
 
 @permission_required('analytics.view')
-def top_consumers_table() -> str | Response:
+def top_consumers_table() -> ResponseReturnValue:
     if not _is_htmx_request():
         return redirect(_full_page_url())
     context, state = _context_or_state()

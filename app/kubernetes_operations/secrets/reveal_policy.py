@@ -12,11 +12,7 @@ from app.kubernetes_operations.secrets.live_service import (
     list_verified_namespaces,
     verify_live_namespace,
 )
-from app.models import (
-    Cluster,
-    SecretRevealNamespacePolicy,
-    SecretRevealRequest,
-)
+from app.models import Cluster, SecretRevealNamespacePolicy, SecretRevealRequest
 
 REVEAL_NAMESPACE_POLICIES = {
     'disabled': 'Disabled',
@@ -25,7 +21,7 @@ REVEAL_NAMESPACE_POLICIES = {
 }
 ENABLED_REVEAL_NAMESPACE_POLICIES = {'step_up', 'approval_required'}
 
-_NAMESPACE_SOURCE_CACHE: dict[str, 'NamespaceSourceSnapshot'] = {}
+_NAMESPACE_SOURCE_CACHE: dict[str, NamespaceSourceSnapshot] = {}
 _NAMESPACE_SOURCE_CACHE_LOCK = Lock()
 
 

@@ -107,8 +107,20 @@ def _row_value(rows: list[dict[str, str]], *labels: str, default: str = '-') -> 
 
 def _compact_runtime_state_rows(workload_type: str, rows: list[dict[str, str]]) -> list[dict[str, str]]:
     preferred_labels = {
-        'Deployment': ('Desired Replicas', 'Updated Replicas', 'Ready Replicas', 'Available Replicas', 'Unavailable Replicas'),
-        'StatefulSet': ('Desired Replicas', 'Updated Replicas', 'Ready Replicas', 'Available Replicas', 'Current Revision'),
+        'Deployment': (
+            'Desired Replicas',
+            'Updated Replicas',
+            'Ready Replicas',
+            'Available Replicas',
+            'Unavailable Replicas',
+        ),
+        'StatefulSet': (
+            'Desired Replicas',
+            'Updated Replicas',
+            'Ready Replicas',
+            'Available Replicas',
+            'Current Revision',
+        ),
         'DaemonSet': ('Desired Scheduled', 'Ready', 'Available', 'Unavailable', 'Misscheduled'),
         'Job': ('Completions', 'Active', 'Succeeded', 'Failed', 'Backoff Limit'),
         'CronJob': ('Schedule', 'Suspended', 'Active Jobs', 'Last Schedule', 'Last Successful Execution'),
@@ -381,8 +393,8 @@ def get_workload_detail(workload_id: int) -> dict[str, Any] | None:
     for pod in related_pods:
         item = _pod_summary(pod)
         item['status_tone'] = _pod_tone(item.get('status'))
-        item['supporting_primary'] = f"Node {item.get('node') or '-'} · Ready {item.get('ready') or '-'}"
-        item['supporting_secondary'] = f"{item.get('container_count', 0)} Containers · Age {item.get('age') or '-'}"
+        item['supporting_primary'] = f'Node {item.get("node") or "-"} · Ready {item.get("ready") or "-"}'
+        item['supporting_secondary'] = f'{item.get("container_count", 0)} Containers · Age {item.get("age") or "-"}'
         pods.append(item)
 
     return {
@@ -671,7 +683,9 @@ def get_workload_inventory(
 
     controller_count = sum(type_counts.get(item, 0) for item in ('Deployment', 'StatefulSet', 'DaemonSet'))
     batch_count = sum(type_counts.get(item, 0) for item in ('Job', 'CronJob'))
-    exception_count = posture_counts.get('progressing', 0) + posture_counts.get('failed', 0) + posture_counts.get('unknown', 0)
+    exception_count = (
+        posture_counts.get('progressing', 0) + posture_counts.get('failed', 0) + posture_counts.get('unknown', 0)
+    )
 
     return {
         'total_workloads': total,

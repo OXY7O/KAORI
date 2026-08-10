@@ -41,6 +41,7 @@ def test_reports_overview_surfaces_s3_disconnect_as_compact_operational_incident
     assert 'Open Storage' in source
     assert 'Verify Now' in source
 
+
 def test_reports_storage_surfaces_s3_disconnect_with_safe_retry_banner() -> None:
     source = read('app/templates/reports/storage/index.html')
 

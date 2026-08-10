@@ -45,7 +45,9 @@ def build_top_consumers_analysis_presentation(
         displayed_total = sum(max(row['current_usage'], 0.0) for row in resource_rows[:3])
         for row in resource_rows[:3]:
             row['displayed_share'] = (row['current_usage'] / displayed_total * 100.0) if displayed_total > 0 else None
-            row['displayed_share_label'] = _percent(row['displayed_share']) if row['displayed_share'] is not None else 'Not Available'
+            row['displayed_share_label'] = (
+                _percent(row['displayed_share']) if row['displayed_share'] is not None else 'Not Available'
+            )
             row['displayed_share_bar'] = min(max(row['displayed_share'] or 0.0, 0.0), 100.0)
 
     cpu_rows = rows_by_resource.get('cpu', [])[:3]
@@ -55,8 +57,9 @@ def build_top_consumers_analysis_presentation(
 
     cpu_total = sum(row['current_usage'] for row in cpu_rows)
     memory_total = sum(row['current_usage'] for row in memory_rows)
-    namespaces = sorted({row['namespace'] for row in cpu_rows + memory_rows if row['namespace'] not in {'-', 'Not Available'}})
-    memory_namespaces = sorted({row['namespace'] for row in memory_rows if row['namespace'] not in {'-', 'Not Available'}})
+    memory_namespaces = sorted(
+        {row['namespace'] for row in memory_rows if row['namespace'] not in {'-', 'Not Available'}}
+    )
 
     coverage = _mapping(consumer_payload.get('coverage'))
     complete_count = _int(coverage.get('complete_count'))
@@ -74,8 +77,10 @@ def build_top_consumers_analysis_presentation(
 
     top_cpu = cpu_rows[0] if cpu_rows else None
     top_memory = memory_rows[0] if memory_rows else None
-    memory_namespace_label = memory_namespaces[0] if len(memory_namespaces) == 1 else (
-        f'{len(memory_namespaces)} Namespaces' if memory_namespaces else 'Not Available'
+    memory_namespace_label = (
+        memory_namespaces[0]
+        if len(memory_namespaces) == 1
+        else (f'{len(memory_namespaces)} Namespaces' if memory_namespaces else 'Not Available')
     )
     primary_interpretation = _primary_interpretation(cpu_rows, memory_rows)
 
@@ -117,7 +122,12 @@ def build_top_consumers_analysis_presentation(
                 _metric('Displayed CPU', _display_total(cpu_rows, cpu_total), 'Top 3 total', 'info'),
                 _metric('Displayed Memory', _display_total(memory_rows, memory_total), 'Top 3 total', 'warning'),
                 _metric('CPU Namespaces', str(len({row['namespace'] for row in cpu_rows})), 'Displayed set', 'normal'),
-                _metric('Memory Namespace', memory_namespace_label, 'Concentration', 'warning' if len(memory_namespaces) == 1 else 'muted'),
+                _metric(
+                    'Memory Namespace',
+                    memory_namespace_label,
+                    'Concentration',
+                    'warning' if len(memory_namespaces) == 1 else 'muted',
+                ),
             ],
             'cpu_rows': cpu_rows,
             'memory_rows': memory_rows,
@@ -132,7 +142,12 @@ def build_top_consumers_analysis_presentation(
         'namespace': {
             'metrics': [
                 _metric('CPU Namespaces', str(len({row['namespace'] for row in cpu_rows})), 'Displayed', 'normal'),
-                _metric('Memory Namespaces', str(len(memory_namespaces)), 'Displayed', 'warning' if len(memory_namespaces) == 1 else 'normal'),
+                _metric(
+                    'Memory Namespaces',
+                    str(len(memory_namespaces)),
+                    'Displayed',
+                    'warning' if len(memory_namespaces) == 1 else 'normal',
+                ),
                 _metric('Displayed Records', str(len(cpu_rows) + len(memory_rows)), 'CPU + Memory', 'info'),
                 _metric('Denominator', 'Partial', 'Displayed set only', 'warning'),
             ],
@@ -151,9 +166,19 @@ def build_top_consumers_analysis_presentation(
         },
         'risk': {
             'metrics': [
-                _metric('Critical Risks', str(_risk_count(normalized_rows, 'critical')), 'Consumer pressure', 'critical' if _risk_count(normalized_rows, 'critical') else 'normal'),
+                _metric(
+                    'Critical Risks',
+                    str(_risk_count(normalized_rows, 'critical')),
+                    'Consumer pressure',
+                    'critical' if _risk_count(normalized_rows, 'critical') else 'normal',
+                ),
                 _metric('Review Risks', str(_risk_count(normalized_rows, 'warning')), 'Open', 'warning'),
-                _metric('Evidence Gaps', str(partial_count + unavailable_count), 'Coverage', 'warning' if partial_count + unavailable_count else 'normal'),
+                _metric(
+                    'Evidence Gaps',
+                    str(partial_count + unavailable_count),
+                    'Coverage',
+                    'warning' if partial_count + unavailable_count else 'normal',
+                ),
                 _metric('Validation Gates', str(len(recommendations)), 'Required', 'info'),
             ],
             'rows': _risk_rows(normalized_rows, recommendations),
@@ -162,10 +187,21 @@ def build_top_consumers_analysis_presentation(
             'metrics': _recommendation_metrics(recommendations),
             'rows': recommendations,
             'governance': [
-                {'field': 'Primary Action', 'requirement': recommendations[0]['title'] if recommendations else 'Continue consumer evidence monitoring.'},
-                {'field': 'Validation Criteria', 'requirement': 'Confirm expected workload behavior, accountable owner, ranking denominator, live metric, and approved response before closure.'},
+                {
+                    'field': 'Primary Action',
+                    'requirement': recommendations[0]['title']
+                    if recommendations
+                    else 'Continue consumer evidence monitoring.',
+                },
+                {
+                    'field': 'Validation Criteria',
+                    'requirement': 'Confirm expected workload behavior, accountable owner, ranking denominator, live metric, and approved response before closure.',
+                },
                 {'field': 'Assigned Owners', 'requirement': _owner_summary(recommendations)},
-                {'field': 'Change Control', 'requirement': 'No infrastructure or workload change is authorized by this report alone.'},
+                {
+                    'field': 'Change Control',
+                    'requirement': 'No infrastructure or workload change is authorized by this report alone.',
+                },
             ],
         },
         'methodology': {
@@ -200,9 +236,21 @@ def build_top_consumers_analysis_presentation(
             ],
             'status_language': [
                 {'ref': 'S1', 'title': 'Not Available', 'description': 'No committed evidence exists.'},
-                {'ref': 'S2', 'title': 'Partial Coverage', 'description': 'Only part of the requested scope is represented.'},
-                {'ref': 'S3', 'title': 'Current Only', 'description': 'A cut-off value exists without historical direction.'},
-                {'ref': 'S4', 'title': 'Source Unavailable', 'description': 'The source was unreachable at the cut-off.'},
+                {
+                    'ref': 'S2',
+                    'title': 'Partial Coverage',
+                    'description': 'Only part of the requested scope is represented.',
+                },
+                {
+                    'ref': 'S3',
+                    'title': 'Current Only',
+                    'description': 'A cut-off value exists without historical direction.',
+                },
+                {
+                    'ref': 'S4',
+                    'title': 'Source Unavailable',
+                    'description': 'The source was unreachable at the cut-off.',
+                },
             ],
         },
     }
@@ -219,8 +267,13 @@ def _consumer_row(value: Mapping[str, Any]) -> dict[str, Any]:
     return {
         'ref': '',
         'resource_type': resource_type,
-        'resource_label': _RESOURCE_LABELS.get(resource_type, sanitize_text(value.get('resource_label'), fallback=resource_type.title())),
-        'identity': sanitize_text(identity.get('primary') or value.get('workload') or value.get('pod') or value.get('pvc_name'), fallback='Not Available'),
+        'resource_label': _RESOURCE_LABELS.get(
+            resource_type, sanitize_text(value.get('resource_label'), fallback=resource_type.title())
+        ),
+        'identity': sanitize_text(
+            identity.get('primary') or value.get('workload') or value.get('pod') or value.get('pvc_name'),
+            fallback='Not Available',
+        ),
         'secondary_identity': sanitize_text(identity.get('secondary'), fallback=''),
         'namespace': sanitize_text(value.get('namespace'), fallback='Not Available'),
         'current_usage': current_usage or 0.0,
@@ -233,7 +286,10 @@ def _consumer_row(value: Mapping[str, Any]) -> dict[str, Any]:
         'limit_display': sanitize_text(value.get('limit_display'), fallback='Not Available'),
         'risk_key': sanitize_text(risk.get('key'), fallback='unknown').lower(),
         'risk_label': sanitize_text(risk.get('label'), fallback='Unknown'),
-        'recommendation': sanitize_text(value.get('recommendation'), fallback='Validate the displayed consumer against live state and workload intent.'),
+        'recommendation': sanitize_text(
+            value.get('recommendation'),
+            fallback='Validate the displayed consumer against live state and workload intent.',
+        ),
         'color': _RESOURCE_COLORS.get(resource_type, '#7C3AED'),
         'displayed_share': None,
         'displayed_share_label': 'Not Available',
@@ -246,18 +302,31 @@ def _resource_page(label: str, rows: list[dict[str, Any]], top: dict[str, Any] |
     namespaces = sorted({row['namespace'] for row in rows})
     return {
         'metrics': [
-            _metric(f'Top {label}', top['current_display'] if top else 'Not Available', top['risk_label'] if top else 'No Evidence', _tone_from_risk(top['risk_key']) if top else 'warning'),
+            _metric(
+                f'Top {label}',
+                top['current_display'] if top else 'Not Available',
+                top['risk_label'] if top else 'No Evidence',
+                _tone_from_risk(top['risk_key']) if top else 'warning',
+            ),
             _metric('Displayed Total', _display_total(rows, total), f'Top {len(rows)}', 'info'),
             _metric('Namespaces', str(len(namespaces)), 'Displayed', 'normal'),
-            _metric('Largest Share', top['displayed_share_label'] if top else 'Not Available', 'Displayed set', 'warning' if top else 'muted'),
+            _metric(
+                'Largest Share',
+                top['displayed_share_label'] if top else 'Not Available',
+                'Displayed set',
+                'warning' if top else 'muted',
+            ),
         ],
         'rows': [_with_ref(row, index) for index, row in enumerate(rows, start=1)],
         'color': color,
-        'assessment_title': f'{label} consumer evidence requires workload validation.' if rows else f'{label} consumer evidence is not available.',
+        'assessment_title': f'{label} consumer evidence requires workload validation.'
+        if rows
+        else f'{label} consumer evidence is not available.',
         'assessment_body': (
             f'The displayed {label.lower()} set contains {len(rows)} record(s) across {len(namespaces)} namespace(s). '
             'Displayed share is calculated only from the published ranking set.'
-            if rows else f'No committed {label.lower()} consumer record is available for the selected reporting boundary.'
+            if rows
+            else f'No committed {label.lower()} consumer record is available for the selected reporting boundary.'
         ),
         'assessment_note': 'Consumer concentration does not establish aggregate capacity pressure or authorize remediation.',
     }
@@ -290,15 +359,17 @@ def _namespace_rows(cpu_rows: list[dict[str, Any]], memory_rows: list[dict[str, 
             bucket['value'] += row['current_usage']
             bucket['share'] += row.get('displayed_share') or 0.0
         for namespace, bucket in sorted(grouped.items(), key=lambda item: item[1]['value'], reverse=True):
-            result.append({
-                'ref': f'N{index}',
-                'namespace': namespace,
-                'signal': resource,
-                'value': _format_with_unit(bucket['value'], bucket['unit']),
-                'share': _percent(bucket['share']),
-                'status': 'Review',
-                'tone': 'warning',
-            })
+            result.append(
+                {
+                    'ref': f'N{index}',
+                    'namespace': namespace,
+                    'signal': resource,
+                    'value': _format_with_unit(bucket['value'], bucket['unit']),
+                    'share': _percent(bucket['share']),
+                    'status': 'Review',
+                    'tone': 'warning',
+                }
+            )
             index += 1
     return result
 
@@ -319,11 +390,17 @@ def _risk_rows(rows: list[dict[str, Any]], recommendations: list[dict[str, Any]]
     risky = [row for row in rows if row['risk_key'] in {'critical', 'warning'}]
     for index, row in enumerate(risky[:3], start=1):
         priority = 'P1' if row['risk_key'] == 'critical' else 'P2'
-        result.append({
-            'ref': f'R{index}', 'risk': f"{row['resource_label']} Consumer: {row['identity']}",
-            'priority': priority, 'impact': 'High' if priority == 'P1' else 'Medium',
-            'owner': 'Platform Operations', 'status': 'Open', 'tone': _tone_from_risk(row['risk_key']),
-        })
+        result.append(
+            {
+                'ref': f'R{index}',
+                'risk': f'{row["resource_label"]} Consumer: {row["identity"]}',
+                'priority': priority,
+                'impact': 'High' if priority == 'P1' else 'Medium',
+                'owner': 'Platform Operations',
+                'status': 'Open',
+                'tone': _tone_from_risk(row['risk_key']),
+            }
+        )
     defaults = [
         ('Displayed Denominator Limit', 'P2', 'Medium', 'Observability Owner', 'Review'),
         ('Consumer Trend Evidence', 'P3', 'Low', 'Observability Owner', 'Missing'),
@@ -332,48 +409,105 @@ def _risk_rows(rows: list[dict[str, Any]], recommendations: list[dict[str, Any]]
     for title, priority, impact, owner, status in defaults:
         if len(result) >= 5:
             break
-        result.append({'ref': f'R{len(result)+1}', 'risk': title, 'priority': priority, 'impact': impact, 'owner': owner, 'status': status, 'tone': 'warning' if priority == 'P2' else 'muted'})
+        result.append(
+            {
+                'ref': f'R{len(result) + 1}',
+                'risk': title,
+                'priority': priority,
+                'impact': impact,
+                'owner': owner,
+                'status': status,
+                'tone': 'warning' if priority == 'P2' else 'muted',
+            }
+        )
     return result
 
 
-def _recommendations(payload: Mapping[str, Any], cpu_rows: list[dict[str, Any]], memory_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _recommendations(
+    payload: Mapping[str, Any], cpu_rows: list[dict[str, Any]], memory_rows: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
     raw = _sequence(payload.get('actionable_recommendations'))
     items: list[dict[str, Any]] = []
     for value in raw:
         if not isinstance(value, Mapping):
             continue
         title = sanitize_text(value.get('title'), fallback='Review Top Consumer Evidence')
-        description = sanitize_text(value.get('description'), fallback='Validate the displayed record against live state and expected workload behavior.')
+        description = sanitize_text(
+            value.get('description'),
+            fallback='Validate the displayed record against live state and expected workload behavior.',
+        )
         priority = _priority(value.get('priority') or value.get('severity'))
-        items.append({
-            'ref': f'A{len(items)+1}', 'priority': priority, 'title': title, 'description': description,
-            'owner': sanitize_text(value.get('owner'), fallback='Platform Operations'),
-            'target': 'This Week' if priority == 'P1' else ('Next Week' if priority == 'P2' else 'This Month'),
-            'status': 'Open' if priority in {'P1', 'P2'} else 'Planned',
-            'tone': 'critical' if priority == 'P1' else ('warning' if priority == 'P2' else 'info'),
-        })
+        items.append(
+            {
+                'ref': f'A{len(items) + 1}',
+                'priority': priority,
+                'title': title,
+                'description': description,
+                'owner': sanitize_text(value.get('owner'), fallback='Platform Operations'),
+                'target': 'This Week' if priority == 'P1' else ('Next Week' if priority == 'P2' else 'This Month'),
+                'status': 'Open' if priority in {'P1', 'P2'} else 'Planned',
+                'tone': 'critical' if priority == 'P1' else ('warning' if priority == 'P2' else 'info'),
+            }
+        )
         if len(items) >= 5:
             break
     defaults = []
     if cpu_rows:
-        defaults.append(('P2', 'Validate Highest CPU Consumer', f"Confirm whether {cpu_rows[0]['identity']} is expected for the selected scope and reporting window.", 'Platform Operations'))
+        defaults.append(
+            (
+                'P2',
+                'Validate Highest CPU Consumer',
+                f'Confirm whether {cpu_rows[0]["identity"]} is expected for the selected scope and reporting window.',
+                'Platform Operations',
+            )
+        )
     if memory_rows:
-        defaults.append(('P2', 'Validate Memory Concentration', f"Confirm whether the displayed {memory_rows[0]['namespace']} memory concentration is expected.", 'Platform Operations'))
-    defaults.extend([
-        ('P2', 'Confirm Displayed Denominator', 'Document whether the published ranking set represents complete or partial resource evidence.', 'Observability Owner'),
-        ('P3', 'Restore Consumer Trend Evidence', 'Commit consumer-level historical direction before concluding sustained growth or decline.', 'Observability Owner'),
-        ('P3', 'Map Application Ownership', 'Resolve committed application ownership before assigning workload changes.', 'Application Owner'),
-    ])
+        defaults.append(
+            (
+                'P2',
+                'Validate Memory Concentration',
+                f'Confirm whether the displayed {memory_rows[0]["namespace"]} memory concentration is expected.',
+                'Platform Operations',
+            )
+        )
+    defaults.extend(
+        [
+            (
+                'P2',
+                'Confirm Displayed Denominator',
+                'Document whether the published ranking set represents complete or partial resource evidence.',
+                'Observability Owner',
+            ),
+            (
+                'P3',
+                'Restore Consumer Trend Evidence',
+                'Commit consumer-level historical direction before concluding sustained growth or decline.',
+                'Observability Owner',
+            ),
+            (
+                'P3',
+                'Map Application Ownership',
+                'Resolve committed application ownership before assigning workload changes.',
+                'Application Owner',
+            ),
+        ]
+    )
     existing = {item['title'] for item in items}
     for priority, title, description, owner in defaults:
         if title in existing or len(items) >= 5:
             continue
-        items.append({
-            'ref': f'A{len(items)+1}', 'priority': priority, 'title': title, 'description': description,
-            'owner': owner, 'target': 'Next Week' if priority == 'P2' else 'This Month',
-            'status': 'Open' if priority == 'P2' else 'Planned',
-            'tone': 'warning' if priority == 'P2' else 'info',
-        })
+        items.append(
+            {
+                'ref': f'A{len(items) + 1}',
+                'priority': priority,
+                'title': title,
+                'description': description,
+                'owner': owner,
+                'target': 'Next Week' if priority == 'P2' else 'This Month',
+                'status': 'Open' if priority == 'P2' else 'Planned',
+                'tone': 'warning' if priority == 'P2' else 'info',
+            }
+        )
     items.sort(key=lambda item: (int(item['priority'][1]), item['ref']))
     for index, item in enumerate(items, start=1):
         item['ref'] = f'A{index}'
@@ -382,7 +516,12 @@ def _recommendations(payload: Mapping[str, Any], cpu_rows: list[dict[str, Any]],
 
 def _recommendation_metrics(items: list[dict[str, Any]]) -> list[dict[str, str]]:
     return [
-        _metric('P1 Actions', str(sum(1 for item in items if item['priority'] == 'P1')), 'Immediate', 'critical' if any(item['priority'] == 'P1' for item in items) else 'normal'),
+        _metric(
+            'P1 Actions',
+            str(sum(1 for item in items if item['priority'] == 'P1')),
+            'Immediate',
+            'critical' if any(item['priority'] == 'P1' for item in items) else 'normal',
+        ),
         _metric('P2 Actions', str(sum(1 for item in items if item['priority'] == 'P2')), 'Open', 'warning'),
         _metric('P3 Actions', str(sum(1 for item in items if item['priority'] == 'P3')), 'Planned', 'info'),
         _metric('Validation Gates', str(len(items)), 'Required', 'info'),
@@ -418,11 +557,13 @@ def _source_evidence(payload: Mapping[str, Any], prometheus: Mapping[str, Any]) 
     result = []
     for value in raw:
         if isinstance(value, Mapping):
-            result.append({
-                'source': sanitize_text(value.get('source'), fallback='Consumer Evidence'),
-                'freshness': sanitize_text(value.get('freshness'), fallback='At report cut-off'),
-                'last_collected': sanitize_text(value.get('last_collected'), fallback='At report cut-off'),
-            })
+            result.append(
+                {
+                    'source': sanitize_text(value.get('source'), fallback='Consumer Evidence'),
+                    'freshness': sanitize_text(value.get('freshness'), fallback='At report cut-off'),
+                    'last_collected': sanitize_text(value.get('last_collected'), fallback='At report cut-off'),
+                }
+            )
     if not result:
         result = [
             {

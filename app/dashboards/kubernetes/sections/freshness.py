@@ -54,9 +54,7 @@ def build_data_freshness(
         prometheus_status = 'Ready' if has_prometheus_data else 'Unavailable'
         prometheus_tone = 'normal' if has_prometheus_data else 'unknown'
         prometheus_value = (
-            'Committed analytics snapshot available'
-            if has_prometheus_data
-            else 'No committed analytics snapshot'
+            'Committed analytics snapshot available' if has_prometheus_data else 'No committed analytics snapshot'
         )
         prometheus_description = (
             'Prometheus-backed utilization, capacity, consumer, and forecast data for the selected cluster.'
@@ -69,11 +67,7 @@ def build_data_freshness(
 
         alert_status = 'Ready' if has_alertmanager_data else 'Unavailable'
         alert_tone = 'normal' if has_alertmanager_data else 'unknown'
-        alert_value = (
-            'Committed alert snapshot available'
-            if has_alertmanager_data
-            else 'No committed alert snapshot'
-        )
+        alert_value = 'Committed alert snapshot available' if has_alertmanager_data else 'No committed alert snapshot'
         alert_description = (
             'Alertmanager or Prometheus alert data is available for the selected cluster.'
             if has_alertmanager_data
@@ -139,8 +133,7 @@ def build_data_freshness(
             ),
             icon='file-text',
             description=(
-                'Generated reports are retained operational artifacts, separate from current '
-                'Kubernetes health signals.'
+                'Generated reports are retained operational artifacts, separate from current Kubernetes health signals.'
             ),
         ),
     ]

@@ -15,9 +15,7 @@ def _load_delivery_policy_class():
     source = read('app/notifications/feedback.py')
     tree = ast.parse(source)
     class_node = next(
-        node
-        for node in tree.body
-        if isinstance(node, ast.ClassDef) and node.name == 'OperationalDeliveryPolicy'
+        node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == 'OperationalDeliveryPolicy'
     )
     module = ast.Module(body=[class_node], type_ignores=[])
     namespace = {'StrEnum': StrEnum}

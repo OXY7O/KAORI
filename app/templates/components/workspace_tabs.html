@@ -10,7 +10,9 @@
     <nav class="overflow-x-auto border-b border-outline-subtle"
          aria-label="{{ aria_label }}"
          data-kaori-tab-variant="integrated-workspace">
-        <div class="flex min-w-max gap-5" role="tablist" aria-label="{{ aria_label }}">
+        <div class="flex min-w-max gap-5"
+             role="tablist"
+             aria-label="{{ aria_label }}">
             {% for tab in tabs %}
                 {% set tab_key = tab[0] %}
                 {% set tab_label = tab[1] %}
@@ -22,9 +24,7 @@
                         aria-controls="{{ prefix }}-panel-{{ tab_key }}"
                         :aria-selected="activeTab === '{{ tab_key }}' ? 'true' : 'false'"
                         :tabindex="activeTab === '{{ tab_key }}' ? '0' : '-1'"
-                        :class="activeTab === '{{ tab_key }}'
-                            ? 'border-kaori-primary text-kaori-primary'
-                            : 'border-transparent text-content-muted hover:border-outline-strong hover:text-content-primary'"
+                        :class="activeTab === '{{ tab_key }}' ? 'border-kaori-primary text-kaori-primary' : 'border-transparent text-content-muted hover:border-outline-strong hover:text-content-primary'"
                         class="inline-flex min-h-11 shrink-0 items-center gap-2 border-b-2 px-1 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-inset"
                         @click="setTab('{{ tab_key }}')"
                         @keydown.arrow-right.prevent="moveTab('{{ tab_key }}', 1, '{{ prefix }}')"

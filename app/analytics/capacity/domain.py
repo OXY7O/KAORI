@@ -1,9 +1,16 @@
 from __future__ import annotations
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from app.analytics.capacity.evidence import AllocationEvidence, CapacityEvidence, ScalarEvidence
-from app.analytics.common.base_service import bytes_to_gib, clamp_percent, raw_percent, safe_percent, safe_round
+from app.analytics.common.base_service import (
+    bytes_to_gib,
+    clamp_percent,
+    raw_percent,
+    safe_percent,
+    safe_round,
+)
 
 SCHEDULING_RESOURCES = ('cpu', 'memory', 'pods')
 RESOURCE_DISPLAY_LABELS = {
@@ -142,7 +149,9 @@ def _pod_allocation_section(capacity: ScalarEvidence, current: ScalarEvidence) -
         available=capacity_available and current.available,
     )
     items = [
-        _allocation_item('Pod Capacity', capacity, capacity, 'pods', lambda value: safe_round(value, 0), fixed_tone='normal'),
+        _allocation_item(
+            'Pod Capacity', capacity, capacity, 'pods', lambda value: safe_round(value, 0), fixed_tone='normal'
+        ),
         _allocation_item('Current Pods', current, capacity, 'pods', lambda value: safe_round(value, 0)),
         _allocation_item(
             'Remaining Pod Slots',
@@ -179,9 +188,7 @@ def _allocation_item(
     raw_value = raw_percent(evidence.value, allocatable.value) if available else None
     percent = clamp_percent(raw_value or 0) if available else None
     tone = fixed_tone or (
-        allocation_headroom_tone(raw_value or 0)
-        if headroom
-        else allocation_pressure_tone(raw_value or 0)
+        allocation_headroom_tone(raw_value or 0) if headroom else allocation_pressure_tone(raw_value or 0)
     )
     return {
         'label': label,
@@ -248,22 +255,32 @@ def allocation_status(resource: str, evidence: AllocationEvidence) -> dict[str, 
     known = [value for value in percentages.values() if value is not None]
     pressure = max(known, default=0)
     if pressure >= 90:
-        return _status('Near Capacity', 'warning', 'At least one known commitment or usage signal is at 90% or higher.', missing)
+        return _status(
+            'Near Capacity', 'warning', 'At least one known commitment or usage signal is at 90% or higher.', missing
+        )
     if pressure >= 75:
-        return _status('Watch', 'warning', 'At least one known commitment or usage signal is at 75% or higher.', missing)
+        return _status(
+            'Watch', 'warning', 'At least one known commitment or usage signal is at 75% or higher.', missing
+        )
     if missing:
         return _status('Limited Evidence', 'unknown', 'Some commitment or usage signals are unavailable.', missing)
-    return _status('Healthy', 'normal', 'Requests, limits, current usage, and peak usage remain within the current envelope.')
+    return _status(
+        'Healthy', 'normal', 'Requests, limits, current usage, and peak usage remain within the current envelope.'
+    )
 
 
 def pod_allocation_status(capacity: ScalarEvidence, current: ScalarEvidence) -> dict[str, Any]:
     if not capacity.positive:
         return _status('Unknown', 'unknown', 'Pod allocatable capacity evidence is unavailable.')
     if not current.available:
-        return _status('Limited Evidence', 'unknown', 'Current pod placement evidence is unavailable.', ['current pods'])
+        return _status(
+            'Limited Evidence', 'unknown', 'Current pod placement evidence is unavailable.', ['current pods']
+        )
     percent = raw_percent(current.value, capacity.value)
     if percent >= 95:
-        return _status('Pod Capacity Critical', 'critical', 'Current pods consume at least 95% of Ready-worker pod slots.')
+        return _status(
+            'Pod Capacity Critical', 'critical', 'Current pods consume at least 95% of Ready-worker pod slots.'
+        )
     if percent >= 75:
         return _status('Watch', 'warning', 'Current pods consume at least 75% of Ready-worker pod slots.')
     return _status('Healthy', 'normal', 'Current pod placement remains within the Ready-worker pod envelope.')
@@ -293,10 +310,7 @@ def build_capacity_posture(
     capacity_summary: dict[str, dict[str, Any]],
     allocation_summary: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
-    statuses = [
-        allocation_summary.get(resource, {}).get('status', {})
-        for resource in SCHEDULING_RESOURCES
-    ]
+    statuses = [allocation_summary.get(resource, {}).get('status', {}) for resource in SCHEDULING_RESOURCES]
     evidence_complete = all(
         bool(capacity_summary.get(resource, {}).get('evidence_available'))
         and bool(allocation_summary.get(resource, {}).get('complete'))
@@ -304,40 +318,26 @@ def build_capacity_posture(
     )
 
     critical = next(
-        (
-            status
-            for status in statuses
-            if isinstance(status, dict) and status.get('tone') == 'critical'
-        ),
+        (status for status in statuses if isinstance(status, dict) and status.get('tone') == 'critical'),
         None,
     )
     if critical is not None:
         return {
             'label': 'Critical',
             'tone': 'critical',
-            'reason': str(
-                critical.get('reason')
-                or 'A scheduling capacity signal is critical.'
-            ),
+            'reason': str(critical.get('reason') or 'A scheduling capacity signal is critical.'),
             'evidence_complete': evidence_complete,
         }
 
     warning = next(
-        (
-            status
-            for status in statuses
-            if isinstance(status, dict) and status.get('tone') == 'warning'
-        ),
+        (status for status in statuses if isinstance(status, dict) and status.get('tone') == 'warning'),
         None,
     )
     if warning is not None:
         return {
             'label': 'Watch',
             'tone': 'warning',
-            'reason': str(
-                warning.get('reason')
-                or 'A scheduling capacity signal requires attention.'
-            ),
+            'reason': str(warning.get('reason') or 'A scheduling capacity signal requires attention.'),
             'evidence_complete': evidence_complete,
         }
 
@@ -355,10 +355,7 @@ def build_capacity_posture(
     has_evidence = any(
         bool(capacity_summary.get(resource, {}).get('capacity_evidence_available'))
         or bool(capacity_summary.get(resource, {}).get('usage_evidence_available'))
-        or (
-            isinstance(status, dict)
-            and str(status.get('label') or 'Unknown') not in {'', 'Unknown'}
-        )
+        or (isinstance(status, dict) and str(status.get('label') or 'Unknown') not in {'', 'Unknown'})
         for resource, status in zip(SCHEDULING_RESOURCES, statuses)
     )
     if has_evidence:
@@ -393,9 +390,7 @@ def build_cluster_info(
     worker_nodes = int(round(evidence.worker_nodes.value)) if worker_available else None
     ready_workers = int(round(evidence.ready_worker_nodes.value)) if ready_available else None
     not_ready_workers = (
-        max(worker_nodes - ready_workers, 0)
-        if worker_nodes is not None and ready_workers is not None
-        else None
+        max(worker_nodes - ready_workers, 0) if worker_nodes is not None and ready_workers is not None else None
     )
     return {
         'kubernetes_version': kubernetes_version,
@@ -469,7 +464,11 @@ def build_risk_summary(capacity_summary: dict[str, dict[str, Any]]) -> list[dict
         item = capacity_summary.get(resource, {})
         available = bool(item.get('evidence_available')) and item.get('headroom') is not None
         headroom = float(item['headroom']) if available else None
-        status = headroom_status(headroom) if available else {'label': 'Unknown', 'tone': 'unknown'}
+        status = (
+            headroom_status(headroom)
+            if available and headroom is not None
+            else {'label': 'Unknown', 'tone': 'unknown'}
+        )
         risks.append(
             {
                 'resource': resource,

@@ -36,9 +36,7 @@ def main() -> int:
             continue
 
         if artifact_format.value != output_format:
-            errors.append(
-                f'{output_format}: registry returned mismatched value {artifact_format.value!r}.'
-            )
+            errors.append(f'{output_format}: registry returned mismatched value {artifact_format.value!r}.')
         if not callable(artifact_format.renderer):
             errors.append(f'{output_format}: renderer is not callable.')
 

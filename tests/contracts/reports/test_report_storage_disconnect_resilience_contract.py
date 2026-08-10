@@ -35,7 +35,7 @@ def test_storage_page_stays_available_and_shows_reconnect_guidance() -> None:
     route_source = read(STORAGE_ROUTES)
     template = read(STORAGE_TEMPLATE)
 
-    assert "payload = get_report_storage_payload()" in route_source
+    assert 'payload = get_report_storage_payload()' in route_source
     assert "if payload['storage_actions_enabled']" in route_source
     assert 'report-storage-connectivity-title' in template
     assert 'Report registry and metadata remain readable.' in template

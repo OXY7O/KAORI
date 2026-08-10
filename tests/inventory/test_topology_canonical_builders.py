@@ -109,8 +109,8 @@ def _topology_builder_modules():
     contracts, presentation = _topology_modules()
 
     flask = ModuleType('flask')
-    flask.url_for = lambda endpoint, **values: f"/{endpoint}?" + '&'.join(
-        f'{key}={value}' for key, value in sorted(values.items())
+    flask.url_for = lambda endpoint, **values: (
+        f'/{endpoint}?' + '&'.join(f'{key}={value}' for key, value in sorted(values.items()))
     )
     sys.modules['flask'] = flask
 
@@ -323,9 +323,7 @@ def test_topology_builder_preserves_canonical_nodes_and_relationships() -> None:
     records = contracts.TopologyRecords(
         clusters=[cluster],
         cluster_by_id={'cluster-1': cluster},
-        latest_cluster_inventory={
-            'cluster-1': SimpleNamespace(kubernetes_version='v1.29.5', collected_at=collected)
-        },
+        latest_cluster_inventory={'cluster-1': SimpleNamespace(kubernetes_version='v1.29.5', collected_at=collected)},
         namespaces=[namespace],
         nodes=[node],
         workloads=[workload],
@@ -346,10 +344,7 @@ def test_topology_builder_preserves_canonical_nodes_and_relationships() -> None:
     node_types = {node['data']['type'] for node in payload['nodes']}
     relationships = {edge['data']['relationship'] for edge in payload['edges']}
     node_ids = {node['data']['id'] for node in payload['nodes']}
-    assert all(
-        edge['data']['source'] in node_ids and edge['data']['target'] in node_ids
-        for edge in payload['edges']
-    )
+    assert all(edge['data']['source'] in node_ids and edge['data']['target'] in node_ids for edge in payload['edges'])
     assert node_types == {
         'cluster',
         'namespace',
@@ -376,10 +371,7 @@ def test_topology_builder_preserves_canonical_nodes_and_relationships() -> None:
 
 def test_topology_limit_never_exceeds_maximum_when_many_resource_groups_compete() -> None:
     _, presentation = _topology_modules()
-    nodes = [
-        {'data': {'id': f'namespace:{index}', 'type': 'namespace'}}
-        for index in range(349)
-    ]
+    nodes = [{'data': {'id': f'namespace:{index}', 'type': 'namespace'}} for index in range(349)]
     nodes.extend(
         {'data': {'id': f'{resource_type}:1', 'type': resource_type}}
         for resource_type in ('node', 'workload', 'service', 'ingress', 'configmap', 'secret', 'pvc', 'pv', 'pod')

@@ -19,8 +19,8 @@
                 </div>
                 <aside class="{{ page_hero.aside_classes() }}"
                        aria-label="Kubernetes operation availability">
-                    {% set cluster_blocked_scope = 'Kubernetes Operations' %}
-                    {% set cluster_blocked_title = 'Cluster Setup Required' %}
+                    {% set cluster_blocked_scope = "Kubernetes Operations" %}
+                    {% set cluster_blocked_title = "Cluster Setup Required" %}
                     {% set cluster_blocked_info = requested_operation ~ ' requires a registered Kubernetes cluster and canonical connection.' %}
                     {% include 'components/cluster/_hero_blocked_context.html' %}
                 </aside>

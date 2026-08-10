@@ -13,7 +13,6 @@
             <p class="mt-1.5 text-sm font-semibold leading-6 text-content-primary">Telegram</p>
         </div>
     </div>
-
     <div class="space-y-2" aria-label="Generate report pipeline stages">
         {% for item in payload.pipeline_status %}
             <article class="relative overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
@@ -50,9 +49,10 @@
             </article>
         {% endfor %}
     </div>
-
     <div class="flex items-start gap-2 rounded-lg border border-kaori-primary/20 bg-kaori-soft px-3 py-2.5 text-xs leading-5 text-content-secondary">
-        <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+        <i data-lucide="info"
+           class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+           aria-hidden="true"></i>
         <p><span class="font-semibold text-content-primary">Canonical flow:</span> manual and scheduled requests both create a report record and enqueue one JobExecution on the dedicated Reports queue. The Reports worker renders and stores the artifact, then scheduled delivery sends Telegram when selected and configured.</p>
     </div>
 </div>

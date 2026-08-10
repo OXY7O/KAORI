@@ -10,7 +10,6 @@ from app.analytics.alerts.contracts import (
     AlertSourceStatus,
     NormalizedAlert,
 )
-from app.analytics.alerts.sources import load_alerts_by_source
 from app.models import Cluster
 
 
@@ -67,7 +66,6 @@ def build_bar_units(
         round((value / max_value) * 12),
         1,
     )
-
 
 
 def _signal_priority(
@@ -130,6 +128,7 @@ def _signal_action_hint(
     if not evidence_complete:
         return 'Restore complete anomaly evidence before confirming a stable signal posture.'
     return 'No immediate inspection is required.'
+
 
 def build_selected_cluster_signal_overview(
     *,

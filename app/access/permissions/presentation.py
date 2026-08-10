@@ -49,11 +49,7 @@ def _contract_matches(contract: Mapping[str, Any], *, search: str, module: str) 
 
 
 def _registry_rows(contracts: list[dict[str, Any]], filters: Mapping[str, Any]) -> list[dict[str, Any]]:
-    rows = [
-        row
-        for row in contracts
-        if _contract_matches(row, search=filters['search'], module=filters['module'])
-    ]
+    rows = [row for row in contracts if _contract_matches(row, search=filters['search'], module=filters['module'])]
     coverage = filters['coverage']
     if coverage == 'mapped':
         rows = [row for row in rows if row['role_count'] > 0]
@@ -94,9 +90,7 @@ def build_permission_catalog_context(filters: Mapping[str, Any] | None = None) -
     ]
 
     coverage_matches = [
-        row
-        for row in contracts
-        if _contract_matches(row, search=normalized['search'], module=normalized['module'])
+        row for row in contracts if _contract_matches(row, search=normalized['search'], module=normalized['module'])
     ]
     coverage_pagination = build_pagination_window(
         total_items=len(coverage_matches),

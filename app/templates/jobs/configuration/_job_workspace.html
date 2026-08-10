@@ -14,11 +14,9 @@
         </section>
     {% endif %}
 </div>
-
 {% if request.headers.get('HX-Request') == 'true' %}
     {% include "jobs/configuration/_catalog_status_oob.html" %}
 {% endif %}
-
 {% if operation_feedback %}
     {% include 'components/operation_feedback_oob.html' %}
 {% endif %}

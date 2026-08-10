@@ -8,7 +8,12 @@ from app.models.report import Report
 from app.reports.catalog import get_report_type_spec
 
 JOB_CONTRACT_VERSION = 'kaori-report-job-v1.0'
-ANALYTICS_PERIODS = {'24h': timedelta(hours=24), '7d': timedelta(days=7), '30d': timedelta(days=30), '90d': timedelta(days=90)}
+ANALYTICS_PERIODS = {
+    '24h': timedelta(hours=24),
+    '7d': timedelta(days=7),
+    '30d': timedelta(days=30),
+    '90d': timedelta(days=90),
+}
 
 
 @dataclass(frozen=True)

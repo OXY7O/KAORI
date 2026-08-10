@@ -2,29 +2,29 @@ from __future__ import annotations
 
 from typing import Any
 
-from flask import make_response, redirect, render_template, request, url_for
+from flask import (
+    make_response,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 
 from app.cluster.onboarding import has_registered_clusters
+from app.governance.tls_certificates.service import get_tls_certificate_detail, get_tls_certificate_page
+from app.governance.tls_certificates.updates import apply_bulk_update, apply_certificate_update, preview_uploaded_pair
 from app.kubernetes_operations.secrets.route_support import (
     notification_response_context as _notification_response_context,
     record_secret_activity as _record_secret_activity,
     validate_secret_operation_csrf as _validate_secret_operation_csrf,
 )
 from app.kubernetes_operations.secrets.tls_validation import validation_trigger
-from app.governance.tls_certificates.service import (
-    get_tls_certificate_detail,
-    get_tls_certificate_page,
-)
-from app.governance.tls_certificates.updates import (
-    apply_bulk_update,
-    apply_certificate_update,
-    preview_uploaded_pair,
-)
 from app.rbac.decorators import permission_required
+
+
 def _parse_certificate_ids(values: list[str]) -> list[int]:
     normalized_values = (value.strip() for value in values)
     return [int(value) for value in normalized_values if value.isdigit()]
-
 
 
 def _tls_workspace_redirect(location: str):
@@ -78,7 +78,6 @@ def _build_bulk_tls_rotation_preview_response(
     if trigger is not None:
         response.headers['HX-Trigger'] = trigger
     return response
-
 
 
 def _record_validation_activity(
@@ -179,9 +178,7 @@ def tls_secret_rotate(certificate_id: int):
 
 @permission_required('kubernetes_secrets.rotate_tls')
 def tls_secret_rotate_preview(certificate_id: int):
-    csrf_failure = _tls_csrf_guard(
-        url_for('kubernetes_operations.tls_secret_rotate', certificate_id=certificate_id)
-    )
+    csrf_failure = _tls_csrf_guard(url_for('kubernetes_operations.tls_secret_rotate', certificate_id=certificate_id))
     if csrf_failure is not None:
         return csrf_failure
     record = get_tls_certificate_detail(certificate_id)
@@ -216,9 +213,7 @@ def tls_secret_rotate_preview(certificate_id: int):
 
 @permission_required('kubernetes_secrets.rotate_tls')
 def tls_secret_rotate_apply(certificate_id: int):
-    csrf_failure = _tls_csrf_guard(
-        url_for('kubernetes_operations.tls_secret_rotate', certificate_id=certificate_id)
-    )
+    csrf_failure = _tls_csrf_guard(url_for('kubernetes_operations.tls_secret_rotate', certificate_id=certificate_id))
     if csrf_failure is not None:
         return csrf_failure
     record = get_tls_certificate_detail(certificate_id)
@@ -247,7 +242,7 @@ def tls_secret_rotate_apply(certificate_id: int):
         status='success' if is_success else 'warning' if is_warning else 'error',
         title=title,
         message=(
-            f"{target_metadata['secret_name']} was updated successfully."
+            f'{target_metadata["secret_name"]} was updated successfully.'
             if is_success and target_metadata['secret_name']
             else result['message']
         ),
@@ -308,9 +303,7 @@ def tls_secret_bulk_rotation_page():
 
 @permission_required('kubernetes_secrets.bulk_rotate_tls')
 def tls_secret_bulk_rotation_preview():
-    csrf_failure = _tls_csrf_guard(
-        url_for('kubernetes_operations.tls_secret_bulk_rotation')
-    )
+    csrf_failure = _tls_csrf_guard(url_for('kubernetes_operations.tls_secret_bulk_rotation'))
     if csrf_failure is not None:
         return csrf_failure
     payload = get_tls_certificate_page(request.form)
@@ -346,9 +339,7 @@ def tls_secret_bulk_rotation_preview():
 
 @permission_required('kubernetes_secrets.bulk_rotate_tls')
 def tls_secret_bulk_rotation_apply():
-    csrf_failure = _tls_csrf_guard(
-        url_for('kubernetes_operations.tls_secret_bulk_rotation')
-    )
+    csrf_failure = _tls_csrf_guard(url_for('kubernetes_operations.tls_secret_bulk_rotation'))
     if csrf_failure is not None:
         return csrf_failure
     payload = get_tls_certificate_page(request.form)
@@ -394,9 +385,7 @@ def tls_secret_bulk_rotation_apply():
     )
 
     if is_success:
-        return _tls_workspace_redirect(
-            url_for('kubernetes_operations.tls_secret_bulk_rotation')
-        )
+        return _tls_workspace_redirect(url_for('kubernetes_operations.tls_secret_bulk_rotation'))
 
     operation_feedback = _notification_response_context(feedback)
     if request.headers.get('HX-Request'):

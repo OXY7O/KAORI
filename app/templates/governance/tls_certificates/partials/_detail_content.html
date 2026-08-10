@@ -11,9 +11,11 @@
      data-kaori-detail-density="adaptive-stacks"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
-        <header data-resource-detail-header class="{{ detail.expanded_workspace_header_classes() }}">
+        <header data-resource-detail-header
+                class="{{ detail.expanded_workspace_header_classes() }}">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ detail.expanded_workspace_icon_classes() }}" aria-hidden="true">
+                <span class="{{ detail.expanded_workspace_icon_classes() }}"
+                      aria-hidden="true">
                     <i data-lucide="shield-check" class="h-5 w-5"></i>
                 </span>
                 <div class="min-w-0">
@@ -29,26 +31,24 @@
                 {{ table_label.status_indicator_label(presentation.status_label or 'Unknown', presentation.status_tone or 'unknown', size='detail') }}
             </div>
         </header>
-
         {{ detail.summary_strip([
-            ('Validity', presentation.status_label or 'Unknown', record.not_after|user_datetime('Not Reported')),
-            ('Days Remaining', record.days_remaining if record.days_remaining is not none else 'Not Reported', 'Timestamp-based validity'),
-            (
-                'Host Coverage',
-                presentation.coverage_label or 'Not Reported',
-                ((record.covered_host_count or 0) ~ '/' ~ record.declared_host_count ~ ' Declared Hosts')
-                if presentation.coverage_reported and (record.declared_host_count or 0) > 0
-                else 'No Declared Hosts'
-                if presentation.coverage_reported
-                else 'Mapping evidence unavailable'
-            ),
-            (
-                'Ingress Consumers',
-                presentation.ingress_consumer_count if presentation.ingress_mapping_reported else 'Not Reported',
-                'Committed relationship evidence' if presentation.ingress_mapping_reported else 'Ingress mapping unavailable'
-            )
+                ('Validity', presentation.status_label or 'Unknown', record.not_after|user_datetime('Not Reported') ),
+        ('Days Remaining', record.days_remaining if record.days_remaining is not none else 'Not Reported', 'Timestamp-based validity'),
+        (
+        'Host Coverage',
+        presentation.coverage_label or 'Not Reported',
+        ((record.covered_host_count or 0) ~ '/' ~ record.declared_host_count ~ ' Declared Hosts')
+        if presentation.coverage_reported and (record.declared_host_count or 0) > 0
+        else 'No Declared Hosts'
+        if presentation.coverage_reported
+        else 'Mapping evidence unavailable'
+        ),
+        (
+        'Ingress Consumers',
+        presentation.ingress_consumer_count if presentation.ingress_mapping_reported else 'Not Reported',
+        'Committed relationship evidence' if presentation.ingress_mapping_reported else 'Ingress mapping unavailable'
+        )
         ], compact=true) }}
-
         <div class="grid items-start gap-4 p-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
             <div class="space-y-4">
                 {% call detail.detail_card('Certificate Identity', 'badge-check', record.secret_type or 'kubernetes.io/tls', badge_size='detail', stretch=false, density='compact') %}
@@ -59,31 +59,28 @@
                     {{ detail.technical_row('Serial Number', record.serial_number or 'Not Reported', break_all=false) }}
                     {{ detail.technical_row('SHA-256 Fingerprint', record.fingerprint_sha256 or 'Not Reported', break_all=false) }}
                 {% endcall %}
-
                 {% call detail.detail_card('Issuer & Validity', 'calendar-clock', presentation.status_label or 'Unknown', 'status', presentation.status_tone or 'unknown', badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.evidence_grid([
-                        {'label': 'Valid From', 'value': record.not_before|user_datetime('Not Reported')},
-                        {'label': 'Expires At', 'value': record.not_after|user_datetime('Not Reported')},
-                        {'label': 'Days Remaining', 'value': record.days_remaining if record.days_remaining is not none else 'N/A'},
-                        {'label': 'Parsed Status', 'value': presentation.status_label or 'Unknown'}
+                                        {'label': 'Valid From', 'value': record.not_before|user_datetime('Not Reported') },
+                    {'label': 'Expires At', 'value': record.not_after|user_datetime('Not Reported')},
+                    {'label': 'Days Remaining', 'value': record.days_remaining if record.days_remaining is not none else 'N/A'},
+                    {'label': 'Parsed Status', 'value': presentation.status_label or 'Unknown'}
                     ], columns=2) }}
                     {% if record.parse_error %}
                         <div class="mt-3">{{ operational_callout.render('Certificate Parse Error', record.parse_error, 'triangle-alert', 'critical') }}</div>
                     {% endif %}
                 {% endcall %}
             </div>
-
             <div class="space-y-4">
                 {% call detail.detail_card('Host Coverage', 'globe-2', presentation.coverage_label or 'Not Reported', 'status', presentation.coverage_tone or 'unknown', badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.evidence_grid([
-                        {'label': 'Declared Hosts', 'value': record.declared_host_count if presentation.coverage_reported else 'Not Reported'},
-                        {'label': 'Covered Hosts', 'value': record.covered_host_count if presentation.coverage_reported else 'Not Reported'},
-                        {'label': 'Uncovered Hosts', 'value': (record.uncovered_hosts or [])|length if presentation.coverage_reported else 'Not Reported'},
-                        {'label': 'Certificate Identities', 'value': (record.dns_names or [])|length if record.dns_names else (1 if record.common_name else 0)}
+                                        {'label': 'Declared Hosts', 'value': record.declared_host_count if presentation.coverage_reported else 'Not Reported'},
+                                        {'label': 'Covered Hosts', 'value': record.covered_host_count if presentation.coverage_reported else 'Not Reported'},
+                                        {'label': 'Uncovered Hosts', 'value': (record.uncovered_hosts or []) |length if presentation.coverage_reported else 'Not Reported'},
+                    {'label': 'Certificate Identities', 'value': (record.dns_names or [])|length if record.dns_names else (1 if record.common_name else 0)}
                     ], columns=2) }}
                     <p class="mt-3 text-xs leading-5 text-content-muted">Coverage compares declared Ingress hosts with certificate SANs or the Common Name. It does not prove live reachability.</p>
                 {% endcall %}
-
                 {% call detail.detail_card('Collection Evidence', 'database-backup', presentation.ingress_mapping_label or 'Not Reported', 'status', presentation.ingress_mapping_tone or 'unknown', badge_size='detail', stretch=false, density='compact') %}
                     <div class="grid gap-2 sm:grid-cols-2">
                         <article class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5">
@@ -96,11 +93,11 @@
                         </article>
                         <article class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5">
                             <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Collected</p>
-                            <p class="mt-2 text-sm font-semibold leading-5 text-content-primary">{{ record.collected_at|user_datetime('Not Reported') }}</p>
+                            <p class="mt-2 text-sm font-semibold leading-5 text-content-primary">{{ record.collected_at|user_datetime("Not Reported") }}</p>
                         </article>
                         <article class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5">
                             <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Inventory Updated</p>
-                            <p class="mt-2 whitespace-nowrap text-sm font-semibold leading-5 text-content-primary">{{ record.updated_at|user_datetime('Not Updated') }}</p>
+                            <p class="mt-2 whitespace-nowrap text-sm font-semibold leading-5 text-content-primary">{{ record.updated_at|user_datetime("Not Updated") }}</p>
                         </article>
                     </div>
                     {% if presentation.secret_collection_detail or presentation.ingress_mapping_detail %}
@@ -108,17 +105,17 @@
                     {% endif %}
                 {% endcall %}
             </div>
-
             <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card xl:col-span-2">
                 <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3.5">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="route" class="h-4 w-4"></i></span>
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true"><i data-lucide="route" class="h-4 w-4"></i></span>
                         <div class="min-w-0">
                             <h4 class="text-sm font-semibold text-content-primary">Host Coverage Matrix</h4>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Declared host, matching certificate identity, and Ingress relationship evidence.</p>
                         </div>
                     </div>
-                    {{ table_label.metadata_label((presentation.host_coverage_rows or [])|length ~ ' ' ~ ('Host' if (presentation.host_coverage_rows or [])|length == 1 else 'Hosts')) }}
+                    {{ table_label.metadata_label((presentation.host_coverage_rows or []) |length ~ ' ' ~ ('Host' if (presentation.host_coverage_rows or [])|length == 1 else 'Hosts')) }}
                 </header>
                 {% if presentation.host_coverage_rows %}
                     <div class="overflow-x-auto overscroll-x-contain">
@@ -137,7 +134,7 @@
                                         <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(row.host, break_all=false, size='body') }}</td>
                                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(row.state, row.tone) }}</td>
                                         <td class="{{ table_ui.cell_classes() }}"><span class="break-words text-sm text-content-primary [overflow-wrap:anywhere]">{{ row.matched_identity }}</span></td>
-                                        <td class="{{ table_ui.cell_classes() }}"><span class="break-words text-sm text-content-secondary [overflow-wrap:anywhere]">{{ row.ingresses|join(', ') if row.ingresses else 'Not Reported' }}</span></td>
+                                        <td class="{{ table_ui.cell_classes() }}"><span class="break-words text-sm text-content-secondary [overflow-wrap:anywhere]">{{ row.ingresses|join(", ") if row.ingresses else 'Not Reported' }}</span></td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
@@ -149,27 +146,21 @@
                     <div class="p-4">{{ detail.empty_evidence('Host Mapping Not Reported', 'Ingress relationship evidence was not collected for this cluster. Run TLS synchronization after restoring API access.', 'database-zap') }}</div>
                 {% endif %}
             </section>
-
             <div class="grid items-start gap-4 xl:col-span-2 xl:grid-cols-2">
                 {% if presentation.ingress_mapping_reported %}
-                    {{ related_collection.render(
-                        'Ingress Consumers',
-                        'Ingress resources that declare this TLS Secret in the worker-generated governance snapshot.',
-                        presentation.ingress_resources or [],
-                        presentation.ingress_consumer_count or 0,
-                        'route',
-                        'No Ingress Consumers',
-                        'No Ingress consumer declares this TLS Secret in the committed mapping snapshot.'
-                    ) }}
+                    {{ related_collection.render('Ingress Consumers',
+                                        'Ingress resources that declare this TLS Secret in the worker-generated governance snapshot.',
+                                        presentation.ingress_resources or [],
+                                        presentation.ingress_consumer_count or 0,
+                                        'route',
+                                        'No Ingress Consumers',
+                                        'No Ingress consumer declares this TLS Secret in the committed mapping snapshot.') }}
                 {% else %}
-                    {{ operational_callout.render(
-                        'Ingress Consumer Evidence Not Reported',
-                        'KAORI cannot determine whether an Ingress declares this TLS Secret because Ingress mapping evidence is unavailable.',
-                        'database-zap',
-                        'warning'
-                    ) }}
+                    {{ operational_callout.render('Ingress Consumer Evidence Not Reported',
+                                        'KAORI cannot determine whether an Ingress declares this TLS Secret because Ingress mapping evidence is unavailable.',
+                                        'database-zap',
+                                        'warning') }}
                 {% endif %}
-
                 {% call detail.detail_card('Certificate Identities', 'badge-check', ((record.dns_names or [])|length) ~ ' SANs', badge_size='detail', stretch=false, density='compact') %}
                     {% if record.dns_names %}
                         <div class="grid gap-2 sm:grid-cols-2">
@@ -186,14 +177,11 @@
                     {% endif %}
                 {% endcall %}
             </div>
-
             <div class="xl:col-span-2 grid items-start gap-4 xl:grid-cols-2">
-                {{ operational_callout.render(
-                    'Governance Snapshot Boundary',
-                    'This detail reports worker-generated certificate metadata and declared Ingress relationships. It does not validate live traffic or endpoint reachability.',
-                    'database-backup',
-                    'info'
-                ) }}
+                {{ operational_callout.render('Governance Snapshot Boundary',
+                                'This detail reports worker-generated certificate metadata and declared Ingress relationships. It does not validate live traffic or endpoint reachability.',
+                                'database-backup',
+                                'info') }}
                 {% if can_rotate %}
                     <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -201,7 +189,8 @@
                                 <h4 class="text-sm font-semibold text-content-primary">Rotation Handoff</h4>
                                 <p class="mt-1 text-xs leading-5 text-content-muted">Certificate rotation is owned by Kubernetes Secret Operations.</p>
                             </div>
-                            <a href="{{ url_for('kubernetes_operations.tls_secret_rotate', certificate_id=record.id) }}" class="{{ action_button.classes('primary', false) }}">
+                            <a href="{{ url_for('kubernetes_operations.tls_secret_rotate', certificate_id=record.id) }}"
+                               class="{{ action_button.classes('primary', false) }}">
                                 <i data-lucide="rotate-cw" class="h-4 w-4"></i>
                                 Open TLS Rotation
                             </a>

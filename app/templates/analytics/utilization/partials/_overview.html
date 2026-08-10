@@ -8,36 +8,49 @@
     'Summarize current worker compute pressure, node filesystem use, and pod density before opening detailed analysis tabs.',
     'gauge',
     cluster.name if cluster else 'No Cluster'
-) %}
+    ) %}
     <div class="{{ analysis_surface.evidence_shell_classes() }}">
         <div class="{{ analysis_surface.metric_grid_classes(4) }}">
             {% for metric in presentation.resource_rows|default([]) %}
                 <article class="{{ analysis_surface.metric_cell_classes() }}">
                     <div class="flex items-start justify-between gap-3">
-                        <div class="flex min-w-0 items-center gap-2.5"><span class="{{ analysis_surface.resource_icon_classes(metric.short_label) }}"><i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i></span><p class="text-xs font-semibold text-content-primary">{{ metric.short_label }}</p></div>
+                        <div class="flex min-w-0 items-center gap-2.5">
+                            <span class="{{ analysis_surface.resource_icon_classes(metric.short_label) }}"><i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i></span>
+                            <p class="text-xs font-semibold text-content-primary">{{ metric.short_label }}</p>
+                        </div>
                         {{ table_label.status_label(metric.status, tone=metric.tone, size='compact') }}
                     </div>
-                    <div class="mt-4 flex items-end justify-between gap-3"><p class="text-2xl font-semibold tabular-nums text-content-primary">{{ metric.value_display }}</p><p class="max-w-[58%] text-right text-xs leading-5 text-content-muted">{{ metric.detail }}</p></div>
+                    <div class="mt-4 flex items-end justify-between gap-3">
+                        <p class="text-2xl font-semibold tabular-nums text-content-primary">{{ metric.value_display }}</p>
+                        <p class="max-w-[58%] text-right text-xs leading-5 text-content-muted">{{ metric.detail }}</p>
+                    </div>
                     {% if metric.available %}
                         {{ progress_bar.semantic_bar(metric.progress_value, metric.tone, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover', label=metric.short_label ~ ' utilization status') }}
                     {% else %}
-                        <div class="mt-3 h-2 overflow-hidden rounded-full bg-surface-hover" aria-label="{{ metric.short_label }} utilization unavailable"></div>
+                        <div class="mt-3 h-2 overflow-hidden rounded-full bg-surface-hover"
+                             aria-label="{{ metric.short_label }} utilization unavailable"></div>
                     {% endif %}
                 </article>
             {% endfor %}
         </div>
     </div>
     <div class="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)]">
-        <div class="{{ analysis_surface.nested_evidence_card_classes('px-4 py-4') }}"><div class="flex items-start gap-3"><span class="{{ analysis_surface.role_icon_classes('insight') }}"><i data-lucide="activity" class="h-4 w-4"></i></span><div><h3 class="text-sm font-semibold text-content-primary">Utilization Posture</h3><p class="mt-1 text-sm leading-6 text-content-secondary">CPU, memory, and pod density use worker allocatable capacity. Filesystem evidence uses canonical node identity and the validated /var or / mount contract.</p></div></div></div>
+        <div class="{{ analysis_surface.nested_evidence_card_classes('px-4 py-4') }}">
+            <div class="flex items-start gap-3">
+                <span class="{{ analysis_surface.role_icon_classes('insight') }}"><i data-lucide="activity" class="h-4 w-4"></i></span>
+                <div>
+                    <h3 class="text-sm font-semibold text-content-primary">Utilization Posture</h3>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">CPU, memory, and pod density use worker allocatable capacity. Filesystem evidence uses canonical node identity and the validated /var or / mount contract.</p>
+                </div>
+            </div>
+        </div>
         <div class="{{ analysis_surface.guidance_card_classes() }}">
-            {{ analysis_surface.interpretation_callout(
-                'Decision Thresholds',
-                'Warning At 75% · Critical Above 90%',
-                'Unknown capacity remains Unknown; it is never translated into zero utilization or a Healthy posture.',
-                icon='gauge',
-                role='insight',
-                tone='warning'
-            ) }}
+            {{ analysis_surface.interpretation_callout('Decision Thresholds',
+                        'Warning At 75% · Critical Above 90%',
+                        'Unknown capacity remains Unknown; it is never translated into zero utilization or a Healthy posture.',
+                        icon='gauge',
+                        role='insight',
+                        tone='warning') }}
         </div>
     </div>
 {% endcall %}

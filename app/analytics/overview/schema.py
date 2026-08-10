@@ -115,8 +115,18 @@ def _empty_health_summary() -> dict[str, Any]:
 def _empty_resource_snapshot() -> dict[str, Any]:
     definitions = {
         'cpu': ('CPU Utilization', 'cpu', 'CPU utilization data is not available.', '/analytics/utilization'),
-        'memory': ('Memory Utilization', 'memory-stick', 'Memory utilization data is not available.', '/analytics/utilization'),
-        'storage': ('Storage Utilization', 'database', 'Storage utilization data is not available.', '/analytics/storage'),
+        'memory': (
+            'Memory Utilization',
+            'memory-stick',
+            'Memory utilization data is not available.',
+            '/analytics/utilization',
+        ),
+        'storage': (
+            'Storage Utilization',
+            'database',
+            'Storage utilization data is not available.',
+            '/analytics/storage',
+        ),
         'pods': ('Pod Utilization', 'boxes', 'Pod utilization data is not available.', '/analytics/utilization'),
     }
     return {

@@ -5,7 +5,7 @@
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
-{% set panel_indicator = 'persistent-volume-claims-loading-indicator' %}
+{% set panel_indicator = "persistent-volume-claims-loading-indicator" %}
 {% set pvc = storage_summary.persistent_storage.pvc %}
 {% set pvc_coverage_label = 'Complete Coverage' if pvc.pressure_evidence_complete else ('Limited Evidence' if pvc.pressure_evidence_available else 'No Coverage') %}
 <div id="persistent-volume-claims-panel" class="space-y-5">
@@ -24,15 +24,14 @@
             </div>
         </div>
     </header>
-
     <section class="{{ analysis_surface.evidence_shell_classes() }}">
         <div class="{{ analysis_surface.metric_grid_classes(4) }}">
             {% set metrics = [
-                ('Claims', pvc.count_display, 'Inventory in active namespace scope', 'boxes'),
-                ('Requested', pvc.requested, (pvc.requested_coverage_display ~ ' with request evidence') if pvc.requested_evidence_available else 'Request evidence unavailable', 'hard-drive-upload'),
-                ('Observed Capacity', pvc.capacity, (pvc.capacity_coverage_display ~ ' reporting capacity') if pvc.capacity_evidence_available else 'Capacity evidence unavailable', 'database'),
-                ('Observed Usage', pvc.used, (pvc.used_coverage_display ~ ' reporting used bytes') if pvc.used_evidence_available else 'Usage evidence unavailable', 'hard-drive-download')
-            ] %}
+                            ('Claims', pvc.count_display, 'Inventory in active namespace scope', 'boxes'),
+                            ('Requested', pvc.requested, (pvc.requested_coverage_display ~ ' with request evidence') if pvc.requested_evidence_available else 'Request evidence unavailable', 'hard-drive-upload'),
+                            ('Observed Capacity', pvc.capacity, (pvc.capacity_coverage_display ~ ' reporting capacity') if pvc.capacity_evidence_available else 'Capacity evidence unavailable', 'database'),
+                            ('Observed Usage', pvc.used, (pvc.used_coverage_display ~ ' reporting used bytes') if pvc.used_evidence_available else 'Usage evidence unavailable', 'hard-drive-download')
+                        ] %}
             {% for label, value, helper, icon in metrics %}
                 <article class="{{ analysis_surface.metric_cell_classes() }}">
                     <div class="flex items-center gap-2.5">
@@ -50,7 +49,7 @@
                     <p class="text-xs font-medium text-content-secondary">Aggregate PVC Volume Utilization · {{ pvc.scope_label }}</p>
                     <p class="mt-1 text-xs text-content-muted">Usage is expressed as a percentage of observed capacity and uses only PVCs with paired capacity and used-byte evidence.</p>
                 </div>
-                <span class="font-semibold tabular-nums {{ 'text-content-primary' if pvc.pressure_evidence_available else analysis_surface.unavailable_value_classes() }}">{{ ('%.1f%%'|format(pvc.used_percent|float)) if pvc.pressure_evidence_available else 'N/A' }}</span>
+                <span class="font-semibold tabular-nums {{ 'text-content-primary' if pvc.pressure_evidence_available else analysis_surface.unavailable_value_classes() }}">{{ ('%.1f%%'|format(pvc.used_percent|float) ) if pvc.pressure_evidence_available else 'N/A' }}</span>
             </div>
             {% if pvc.pressure_evidence_available %}
                 {{ progress_bar.semantic_bar(pvc.used_percent, pvc.risk.tone, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover', label='Aggregate PVC volume utilization status') }}
@@ -66,8 +65,8 @@
             {% endif %}
         </div>
     </section>
-
-    <section class="{{ analysis_surface.snapshot_shell_classes() }}" data-kaori-storage-record-card="pvc">
+    <section class="{{ analysis_surface.snapshot_shell_classes() }}"
+             data-kaori-storage-record-card="pvc">
         <header class="{{ analysis_surface.snapshot_header_classes() }}">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-filter" class="h-4 w-4"></i></span>
@@ -78,7 +77,6 @@
             </div>
             {{ loading_bar.render(panel_indicator, label='Refreshing Persistent Volume Claims') }}
         </header>
-
         {% call record_filter.form(
             'persistent-volume-claims-filter-form',
             url_for('analytics.storage'),
@@ -86,17 +84,20 @@
             '#persistent-volume-claims-panel',
             '#' ~ panel_indicator,
             "change[event.target.matches('select')] delay:120ms, keyup[event.target.name === 'pvc_search'] changed delay:450ms, search[event.target.name === 'pvc_search']"
-        ) %}
-            <input type="hidden" name="cluster_id" value="{{ cluster.id if cluster else '' }}">
+            ) %}
+            <input type="hidden"
+                   name="cluster_id"
+                   value="{{ cluster.id if cluster else '' }}">
             <input type="hidden" name="namespace" value="{{ selected_namespace }}">
             <input type="hidden" name="tab" value="pvc">
             <input type="hidden" name="pvc_page" value="1">
-            <input type="hidden" name="pvc_per_page" value="{{ storage_summary.persistent_storage.pvc_pagination.per_page|default(5) }}">
+            <input type="hidden"
+                   name="pvc_per_page"
+                   value="{{ storage_summary.persistent_storage.pvc_pagination.per_page|default(5) }}">
             {{ record_filter.search('pvc_search', selected_pvc_search, 'Search PVC or namespace...', 'Search PVC') }}
             {{ record_filter.select('pvc_status', selected_pvc_status, storage_summary.persistent_storage.pvc_status_options, 'All Status', 'PVC Status') }}
             {{ record_filter.select('pvc_storage_class', selected_pvc_storage_class, storage_summary.persistent_storage.pvc_storage_class_options, 'All StorageClass', 'PVC Storage Class') }}
         {% endcall %}
-
         {% call evidence_list.shell('Persistent Volume Claim Records', embedded=true) %}
             {% call evidence_list.header() %}
                 {{ evidence_list.header_cell('PVC & Namespace', 4) }}
@@ -111,29 +112,29 @@
                             {{ evidence_list.identity('box', row.name, 'Namespace: ' ~ row.namespace) }}
                         {% endcall %}
                         {% call evidence_list.cell(3) %}
-                            {{ evidence_list.mobile_label('Binding & Storage Class') }}
+                            {{ evidence_list.mobile_label("Binding & Storage Class") }}
                             <div class="flex flex-wrap gap-2">
-                                {{ table_label.status_indicator_label(row.status, row.status_tone|default('unknown'), size='compact') }}
+                                {{ table_label.status_indicator_label(row.status, row.status_tone|default('unknown') , size='compact') }}
                                 {{ table_label.metadata_label(row.storage_class, 'layers', wrap=true, size='compact') }}
                             </div>
                             <p class="mt-2 text-xs text-content-muted">Requested: <span class="font-semibold text-content-secondary">{{ row.requested }}</span></p>
                         {% endcall %}
                         {% call evidence_list.cell(3) %}
-                            {{ evidence_list.mobile_label('Observed Capacity Usage') }}
+                            {{ evidence_list.mobile_label("Observed Capacity Usage") }}
                             <div class="flex items-center justify-between gap-3 text-xs">
                                 <span class="text-content-muted">{{ row.used }} / {{ row.capacity }}</span>
-                                <span class="font-semibold tabular-nums {{ 'text-content-primary' if row.evidence_available else analysis_surface.unavailable_value_classes() }}">{{ ('%.1f%%'|format(row.usage_percent|float)) if row.evidence_available else 'N/A' }}</span>
+                                <span class="font-semibold tabular-nums {{ 'text-content-primary' if row.evidence_available else analysis_surface.unavailable_value_classes() }}">{{ ('%.1f%%'|format(row.usage_percent|float) ) if row.evidence_available else 'N/A' }}</span>
                             </div>
                             {% if row.evidence_available %}
-                                {{ progress_bar.semantic_bar(row.usage_percent, row.risk.tone|default('unknown'), track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.name ~ ' volume utilization status') }}
+                                {{ progress_bar.semantic_bar(row.usage_percent, row.risk.tone|default('unknown') , track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.name ~ ' volume utilization status') }}
                                 <p class="mt-1 text-xs text-content-muted">{{ row.free }} Free · {{ row.free_source }}</p>
                             {% else %}
                                 <div class="mt-2 rounded-md border border-dashed border-outline-strong bg-surface-hover px-3 py-2 text-xs text-content-muted">Observed volume capacity or used-byte evidence is unavailable.</div>
                             {% endif %}
                         {% endcall %}
                         {% call evidence_list.cell(2, 'right') %}
-                            {{ evidence_list.mobile_label('Risk') }}
-                            {{ table_label.status_label(row.risk.label|default('Unknown'), row.risk.tone|default('unknown'), size='compact') }}
+                            {{ evidence_list.mobile_label("Risk") }}
+                            {{ table_label.status_label(row.risk.label|default('Unknown') , row.risk.tone|default('unknown'), size='compact') }}
                         {% endcall %}
                     {% endcall %}
                 {% else %}
@@ -145,29 +146,26 @@
                 {% endfor %}
             </div>
         {% endcall %}
-
         {% set pvc_pagination = storage_summary.persistent_storage.pvc_pagination %}
         {% set pvc_pagination_query = {
-            'cluster_id': cluster.id if cluster else '',
-            'namespace': selected_namespace,
-            'tab': 'pvc',
-            'pvc_search': selected_pvc_search,
-            'pvc_status': selected_pvc_status,
-            'pvc_storage_class': selected_pvc_storage_class,
-            'pvc_per_page': pvc_pagination.per_page|default(5)
-        } %}
-        {{ record_pagination.render(
-            pvc_pagination,
-            'pvc_page',
-            'pvc_per_page',
-            'persistent-volume-claims-panel',
-            'persistent-volume-claims-filter-form',
-            'persistent-volume-claims-loading-indicator',
-            'analytics.storage_persistent_summary',
-            'analytics.storage',
-            pvc_pagination_query,
-            'Claims',
-            embedded=true
-        ) }}
+                    'cluster_id': cluster.id if cluster else '',
+                    'namespace': selected_namespace,
+                    'tab': 'pvc',
+                    'pvc_search': selected_pvc_search,
+                    'pvc_status': selected_pvc_status,
+                    'pvc_storage_class': selected_pvc_storage_class,
+                    'pvc_per_page': pvc_pagination.per_page|default(5)
+                } %}
+        {{ record_pagination.render(pvc_pagination,
+                'pvc_page',
+                'pvc_per_page',
+                'persistent-volume-claims-panel',
+                'persistent-volume-claims-filter-form',
+                'persistent-volume-claims-loading-indicator',
+                'analytics.storage_persistent_summary',
+                'analytics.storage',
+                pvc_pagination_query,
+                'Claims',
+                embedded=true) }}
     </section>
 </div>

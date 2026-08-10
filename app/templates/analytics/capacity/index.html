@@ -3,7 +3,9 @@
 {% import "analytics/components/_analysis_workspace.html" as analytics_workspace %}
 {% block title %}Capacity Analysis{% endblock title %}
 {% block dashboard_content %}
-    <div id="capacity-page" class="kaori-analytics-page space-y-6" data-analytics-page-request-tracking="false">
+    <div id="capacity-page"
+         class="kaori-analytics-page space-y-6"
+         data-analytics-page-request-tracking="false">
         {% include "analytics/capacity/partials/_hero.html" %}
         {% if dependency_blocker %}
             {% include "components/dependencies/_blocker.html" %}
@@ -12,12 +14,7 @@
             {% include "analytics/capacity/partials/_controls_readiness.html" %}
             {% if cluster %}
                 {% include "analytics/capacity/partials/_overview.html" %}
-                {% set capacity_tabs = [
-                    ('summary', 'Worker Capacity Summary', 'server-cog'),
-                    ('allocation', 'Allocation & Headroom', 'chart-pie'),
-                    ('risk', 'Capacity Risk Summary', 'shield-alert'),
-                    ('recommendations', 'Capacity Recommendations', 'list-checks')
-                ] %}
+                {% set capacity_tabs = [('summary', 'Worker Capacity Summary', 'server-cog'), ('allocation', 'Allocation & Headroom', 'chart-pie'), ('risk', 'Capacity Risk Summary', 'shield-alert'), ('recommendations', 'Capacity Recommendations', 'list-checks')] %}
                 {% call analytics_workspace.tabbed(
                     'capacity-content',
                     capacity_tabs,
@@ -27,11 +24,43 @@
                     'server-cog',
                     initial_tab|default('summary'),
                     ['summary', 'allocation', 'risk', 'recommendations']
-                ) %}
-                    <div id="capacity-content-panel-summary" role="tabpanel" aria-labelledby="capacity-content-tab-summary" data-analytics-tab-panel="summary" x-show="activeTab === 'summary'" x-bind:hidden="activeTab !== 'summary'" {% if initial_tab|default('summary') != 'summary' %}hidden x-cloak{% endif %}>{% include "analytics/capacity/partials/_worker_summary.html" %}</div>
-                    <div id="capacity-content-panel-allocation" role="tabpanel" aria-labelledby="capacity-content-tab-allocation" data-analytics-tab-panel="allocation" x-show="activeTab === 'allocation'" x-bind:hidden="activeTab !== 'allocation'" {% if initial_tab|default('summary') != 'allocation' %}hidden x-cloak{% endif %}>{% include "analytics/capacity/partials/_allocation.html" %}</div>
-                    <div id="capacity-content-panel-risk" role="tabpanel" aria-labelledby="capacity-content-tab-risk" data-analytics-tab-panel="risk" x-show="activeTab === 'risk'" x-bind:hidden="activeTab !== 'risk'" {% if initial_tab|default('summary') != 'risk' %}hidden x-cloak{% endif %}>{% include "analytics/capacity/partials/_risk.html" %}</div>
-                    <div id="capacity-content-panel-recommendations" role="tabpanel" aria-labelledby="capacity-content-tab-recommendations" data-analytics-tab-panel="recommendations" x-show="activeTab === 'recommendations'" x-bind:hidden="activeTab !== 'recommendations'" {% if initial_tab|default('summary') != 'recommendations' %}hidden x-cloak{% endif %}>{% include "analytics/capacity/partials/_recommendations.html" %}</div>
+                    ) %}
+                    <div id="capacity-content-panel-summary"
+                         role="tabpanel"
+                         aria-labelledby="capacity-content-tab-summary"
+                         data-analytics-tab-panel="summary"
+                         x-show="activeTab === 'summary'"
+                         x-bind:hidden="activeTab !== 'summary'"
+                         {% if initial_tab|default('summary') != 'summary' %}hidden x-cloak{% endif %}>
+                        {% include "analytics/capacity/partials/_worker_summary.html" %}
+                    </div>
+                    <div id="capacity-content-panel-allocation"
+                         role="tabpanel"
+                         aria-labelledby="capacity-content-tab-allocation"
+                         data-analytics-tab-panel="allocation"
+                         x-show="activeTab === 'allocation'"
+                         x-bind:hidden="activeTab !== 'allocation'"
+                         {% if initial_tab|default('summary') != 'allocation' %}hidden x-cloak{% endif %}>
+                        {% include "analytics/capacity/partials/_allocation.html" %}
+                    </div>
+                    <div id="capacity-content-panel-risk"
+                         role="tabpanel"
+                         aria-labelledby="capacity-content-tab-risk"
+                         data-analytics-tab-panel="risk"
+                         x-show="activeTab === 'risk'"
+                         x-bind:hidden="activeTab !== 'risk'"
+                         {% if initial_tab|default('summary') != 'risk' %}hidden x-cloak{% endif %}>
+                        {% include "analytics/capacity/partials/_risk.html" %}
+                    </div>
+                    <div id="capacity-content-panel-recommendations"
+                         role="tabpanel"
+                         aria-labelledby="capacity-content-tab-recommendations"
+                         data-analytics-tab-panel="recommendations"
+                         x-show="activeTab === 'recommendations'"
+                         x-bind:hidden="activeTab !== 'recommendations'"
+                         {% if initial_tab|default('summary') != 'recommendations' %}hidden x-cloak{% endif %}>
+                        {% include "analytics/capacity/partials/_recommendations.html" %}
+                    </div>
                 {% endcall %}
             {% endif %}
         {% endif %}

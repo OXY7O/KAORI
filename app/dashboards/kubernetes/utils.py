@@ -157,7 +157,6 @@ def forecast_insight(payload: dict[str, Any]) -> str:
         return 'Forecast snapshot loaded from analytics forecast service.'
 
 
-
 def format_gib(value: Any) -> str:
     number = safe_float(value)
     gib = number / 1024**3

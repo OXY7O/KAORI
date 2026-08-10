@@ -35,36 +35,46 @@
                 <tr class="{{ table_ui.row_classes() }}">
                     <td class="{{ table_ui.cell_classes() }}">
                         <div class="flex max-w-[270px] items-start gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent" aria-hidden="true">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"
+                                  aria-hidden="true">
                                 <i data-lucide="siren" class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
-                                <p class="truncate text-sm font-semibold text-content-primary" title="{{ row.instance.name }}">{{ row.instance.name }}</p>
-                                <p class="mt-0.5 max-w-[18rem] truncate text-xs leading-5 text-content-muted" title="{{ row.instance.description or 'Reusable alert source' }}">{{ row.instance.description or 'Reusable alert source' }}</p>
+                                <p class="truncate text-sm font-semibold text-content-primary"
+                                   title="{{ row.instance.name }}">{{ row.instance.name }}</p>
+                                <p class="mt-0.5 max-w-[18rem] truncate text-xs leading-5 text-content-muted"
+                                   title="{{ row.instance.description or 'Reusable alert source' }}">{{ row.instance.description or 'Reusable alert source' }}</p>
                             </div>
                         </div>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
-                        <p class="max-w-[260px] truncate text-sm text-content-secondary" title="{{ row.endpoint }}">{{ row.endpoint }}</p>
+                        <p class="max-w-[260px] truncate text-sm text-content-secondary"
+                           title="{{ row.endpoint }}">{{ row.endpoint }}</p>
                         <p class="mt-0.5 text-xs leading-5 text-content-muted">Alertmanager API v2</p>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
-                        {{ table_label.metadata_label(row.deployment_type|replace('_', ' ')|title, 'boxes') }}
-                        <p class="mt-1 truncate text-xs leading-5 text-content-muted" title="{{ row.version or 'Not Detected' }}">Runtime · {{ row.version or 'Not Detected' }}</p>
+                        {{ table_label.metadata_label(row.deployment_type|replace('_', ' ') |title, 'boxes') }}
+                        <p class="mt-1 truncate text-xs leading-5 text-content-muted"
+                           title="{{ row.version or 'Not Detected' }}">Runtime · {{ row.version or 'Not Detected' }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">{{ integration_status(row.readiness, display='indicator') }}</td>
                     <td class="{{ table_ui.cell_classes() }}">
                         <p class="text-sm font-semibold tabular-nums text-content-primary">{{ row.binding_count }}</p>
-                        <p class="mt-0.5 max-w-[190px] truncate text-xs leading-5 text-content-muted" title="{{ row.scope_types|length }} bound scope type{{ '' if row.scope_types|length == 1 else 's' }}">
+                        <p class="mt-0.5 max-w-[190px] truncate text-xs leading-5 text-content-muted"
+                           title="{{ row.scope_types|length }} bound scope type{{ '' if row.scope_types|length == 1 else 's' }}">
                             {% if row.scope_types %}
-                                {% for scope_type in row.scope_types %}{{ scope_type_labels.get(scope_type, scope_type|replace('_', ' ')|title) }}{% if not loop.last %}, {% endif %}{% endfor %}
+                                {% for scope_type in row.scope_types %}
+                                    {{ scope_type_labels.get(scope_type, scope_type|replace('_', ' ') |title) }}
+                                    {% if not loop.last %},{% endif %}
+                                {% endfor %}
                             {% else %}
                                 No scope bindings
                             {% endif %}
                         </p>
                     </td>
                     <td class="{{ table_ui.cell_classes(action=true) }}">
-                        <a href="{{ url_for('alertmanager.instance_detail', instance_id=row.instance.id) }}" class="{{ table_ui.action_classes() }}">
+                        <a href="{{ url_for('alertmanager.instance_detail', instance_id=row.instance.id) }}"
+                           class="{{ table_ui.action_classes() }}">
                             <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>
                             Manage
                         </a>
@@ -99,12 +109,10 @@
     'coverage_environment': selected_coverage_environment,
     'coverage_status': selected_coverage_status
 } %}
-{{ provider_registry.pagination_footer(
-    pagination,
-    'integrations.alertmanager',
-    '#alertmanager-inventory-content',
-    '#alertmanager-inventory-loading',
-    registry_query_params,
-    item_label='Integration',
-    swap='innerHTML'
-) }}
+{{ provider_registry.pagination_footer(pagination,
+'integrations.alertmanager',
+'#alertmanager-inventory-content',
+'#alertmanager-inventory-loading',
+registry_query_params,
+item_label='Integration',
+swap='innerHTML') }}

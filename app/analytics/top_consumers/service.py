@@ -14,21 +14,14 @@ from app.analytics.top_consumers.contracts import (
     get_selected_tab,
     get_sort_options,
 )
-from app.analytics.top_consumers.domain import (
-    build_top_consumers_payload,
-    empty_payload,
-    is_current_payload,
-)
+from app.analytics.top_consumers.domain import build_top_consumers_payload, empty_payload, is_current_payload
 from app.analytics.top_consumers.evidence import (
     TOP_CONSUMERS_ADVISORY_CAPABILITIES,
     TopConsumersEvidenceCollector,
     metric_label,
     sample_metric,
 )
-from app.analytics.top_consumers.presentation import (
-    apply_record_presentation,
-    attach_recommendations,
-)
+from app.analytics.top_consumers.presentation import apply_record_presentation, attach_recommendations
 from app.analytics.utilization.service import UtilizationService
 from app.common.dependencies import prometheus_connection_blocker
 
@@ -46,9 +39,7 @@ class TopConsumersService:
 
     def __init__(self, utilization_service: UtilizationService) -> None:
         self.utilization_service = utilization_service
-        self.collector = TopConsumersEvidenceCollector(
-            utilization_service.consumer
-        )
+        self.collector = TopConsumersEvidenceCollector(utilization_service.consumer)
 
     def get_prometheus_status(self) -> dict[str, Any]:
         return self.utilization_service.get_prometheus_status()
@@ -57,9 +48,7 @@ class TopConsumersService:
         self,
         selection: TopConsumersSelection,
     ) -> dict[str, Any]:
-        requirements = self.collector.consumer.requirements(
-            TOP_CONSUMERS_ADVISORY_CAPABILITIES
-        )
+        requirements = self.collector.consumer.requirements(TOP_CONSUMERS_ADVISORY_CAPABILITIES)
         advisory_missing = frozenset(
             str(value)
             for value in (
@@ -123,9 +112,7 @@ def get_top_consumers_context(
             'sort_options': get_sort_options(selection.resource),
             'allowed_time_ranges': (),
             'allowed_per_page_values': ALLOWED_PER_PAGE_VALUES,
-            'namespace_options': (
-                [selection.namespace] if selection.namespace else []
-            ),
+            'namespace_options': ([selection.namespace] if selection.namespace else []),
             'consumer_payload': empty_payload(
                 message='No cluster available. Add a Kubernetes cluster first.',
                 page=selection.page,
@@ -139,25 +126,19 @@ def get_top_consumers_context(
     top_consumers_service = TopConsumersService(utilization_service)
     prometheus_status = top_consumers_service.get_prometheus_status()
     context['prometheus_status'] = prometheus_status
-    context['prometheus_connected'] = bool(
-        prometheus_status.get('connected', False)
-    )
+    context['prometheus_connected'] = bool(prometheus_status.get('connected', False))
     if not context['prometheus_connected']:
         context['dependency_blocker'] = prometheus_connection_blocker(
             cluster,
             detail=safe_message(
                 value=prometheus_status.get('error'),
-                default=(
-                    'Prometheus health check did not complete successfully.'
-                ),
+                default=('Prometheus health check did not complete successfully.'),
             ),
         )
         context['consumer_payload'] = empty_payload(
             message=safe_message(
                 value=prometheus_status.get('error'),
-                default=(
-                    'Prometheus is not connected for the selected cluster.'
-                ),
+                default=('Prometheus is not connected for the selected cluster.'),
             ),
             page=selection.page,
             per_page=selection.per_page,
@@ -185,11 +166,7 @@ def get_top_consumers_snapshot(
         dataset_key='analytics.top_consumers',
         parameters={'cluster_id': str(cluster_id)},
     )
-    payload = (
-        (result.context or {}).get('consumer_payload')
-        if result.available
-        else None
-    )
+    payload = (result.context or {}).get('consumer_payload') if result.available else None
     if not is_current_payload(payload):
         return None
     rows = list(payload.get('all_rows') or [])
@@ -199,9 +176,7 @@ def get_top_consumers_snapshot(
             limit=5,
         ),
         'memory': build_snapshot_items(
-            rows=[
-                row for row in rows if row.get('resource_type') == 'memory'
-            ],
+            rows=[row for row in rows if row.get('resource_type') == 'memory'],
             limit=5,
         ),
         'storage': build_snapshot_items(
@@ -212,9 +187,7 @@ def get_top_consumers_snapshot(
             rows=[row for row in rows if row.get('resource_type') == 'pods'],
             limit=5,
         ),
-        'recommendation_count': safe_int(
-            payload.get('recommendation_count', 0)
-        ),
+        'recommendation_count': safe_int(payload.get('recommendation_count', 0)),
     }
 
 
@@ -234,19 +207,10 @@ def build_snapshot_items(
     )
     items: list[dict[str, Any]] = []
     for row in top_rows:
-        identity = (
-            row.get('identity')
-            if isinstance(row.get('identity'), dict)
-            else {}
-        )
+        raw_identity = row.get('identity')
+        identity = raw_identity if isinstance(raw_identity, dict) else {}
         namespace = str(row.get('namespace') or '')
-        primary = str(
-            identity.get('primary')
-            or row.get('workload')
-            or row.get('pod')
-            or row.get('pvc_name')
-            or '-'
-        )
+        primary = str(identity.get('primary') or row.get('workload') or row.get('pod') or row.get('pvc_name') or '-')
         pressure = row.get('pressure_percent')
         contribution = row.get('contribution_percent')
         semantic_percent = (
@@ -263,9 +227,7 @@ def build_snapshot_items(
                 'namespace': namespace,
                 'pod': str(row.get('pod') or ''),
                 'container': str(row.get('container') or ''),
-                'workload': str(
-                    row.get('workload_owner') or row.get('workload') or ''
-                ),
+                'workload': str(row.get('workload_owner') or row.get('workload') or ''),
                 'identity': {
                     'primary': primary,
                     'secondary': str(identity.get('secondary') or namespace),
@@ -273,11 +235,7 @@ def build_snapshot_items(
                 },
                 'value': str(row.get('current_display') or 'N/A'),
                 'raw_value': raw_value,
-                'percent': (
-                    safe_int(semantic_percent)
-                    if semantic_percent is not None
-                    else None
-                ),
+                'percent': (safe_int(semantic_percent) if semantic_percent is not None else None),
                 'bar_percent': relative_percent(raw_value, max_value),
                 'pressure_percent': pressure,
                 'contribution_percent': contribution,

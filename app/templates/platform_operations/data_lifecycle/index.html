@@ -19,7 +19,8 @@
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="{{ page_hero.aside_classes() }}" aria-label="Data lifecycle posture">
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="Data lifecycle posture">
                     <div class="{{ page_hero.context_panel_classes() }}">
                         {{ page_hero.context_header('Lifecycle Control Plane', 'Archive-First Governance', 'archive-restore') }}
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
@@ -31,9 +32,8 @@
                 </aside>
             </div>
         </section>
-
         <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-            {{ framed_workspace_tabs.render([('policies', 'Retention Policies', 'sliders-horizontal'), ('history', 'Archive History', 'history'), ('storage', 'Archive Storage', 'hard-drive')], prefix='data-lifecycle', aria_label='Data Lifecycle Workspaces') }}
+            {{ framed_workspace_tabs.render([('policies', 'Retention Policies', 'sliders-horizontal') , ('history', 'Archive History', 'history'), ('storage', 'Archive Storage', 'hard-drive')], prefix='data-lifecycle', aria_label='Data Lifecycle Workspaces') }}
             <div class="p-5 lg:p-6">
                 <div id="data-lifecycle-panel-policies"
                      role="tabpanel"
@@ -44,7 +44,8 @@
                             <div class="rounded-xl border border-outline-default bg-surface-card p-3">
                                 <label class="text-xs font-semibold text-content-secondary">Search Data Domains</label>
                                 <div class="relative mt-2">
-                                    <i data-lucide="search" class="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-content-muted"></i>
+                                    <i data-lucide="search"
+                                       class="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-content-muted"></i>
                                     <input type="search"
                                            x-model.debounce.200ms="domainSearch"
                                            class="h-9 w-full rounded-md border border-outline-default bg-surface-card pl-9 pr-3 text-xs text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-accent/30"
@@ -52,7 +53,6 @@
                                 </div>
                                 <p class="mt-2 text-xs leading-4 text-content-muted">Only approved lifecycle domains are manageable.</p>
                             </div>
-
                             <div class="max-h-[580px] space-y-3 overflow-y-auto pr-1">
                                 {% for domain in lifecycle.domains %}
                                     <a href="{{ url_for('platform_operations.data_lifecycle.index', tab='policies', domain=domain.name) }}"
@@ -80,7 +80,6 @@
                                     </a>
                                 {% endfor %}
                             </div>
-
                             <div class="rounded-xl border border-outline-default bg-surface-subtle p-4">
                                 <div class="flex items-start gap-3">
                                     <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="list-checks" class="h-4 w-4"></i></span>
@@ -88,32 +87,26 @@
                                         <p class="text-sm font-semibold text-content-primary">Execution Boundary</p>
                                         <p class="mt-1 text-xs leading-5 text-content-muted">Lifecycle policy and archive evidence stay here. Worker runtime, retries, and cancellation remain canonical in Jobs &amp; Executions.</p>
                                         {% if current_user.has_permission('jobs.view') %}
-                                            <a href="{{ url_for('jobs.executions') }}" class="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-kaori-primary hover:underline dark:text-kaori-accent"><i data-lucide="external-link" class="h-3.5 w-3.5"></i>Open Jobs &amp; Executions</a>
+                                            <a href="{{ url_for('jobs.executions') }}"
+                                               class="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-kaori-primary hover:underline dark:text-kaori-accent"><i data-lucide="external-link" class="h-3.5 w-3.5"></i>Open Jobs &amp; Executions</a>
                                         {% endif %}
                                     </div>
                                 </div>
                             </div>
                         </aside>
-
                         <main class="min-w-0 xl:col-span-8">
                             {% include "platform_operations/data_lifecycle/partials/_domain_workspace.html" %}
                         </main>
                     </div>
                 </div>
-
                 <div id="data-lifecycle-panel-history"
                      role="tabpanel"
                      x-show="activeTab === 'history'"
-                     x-cloak>
-                    {% include "platform_operations/data_lifecycle/partials/_history.html" %}
-                </div>
-
+                     x-cloak>{% include "platform_operations/data_lifecycle/partials/_history.html" %}</div>
                 <div id="data-lifecycle-panel-storage"
                      role="tabpanel"
                      x-show="activeTab === 'storage'"
-                     x-cloak>
-                    {% include "platform_operations/data_lifecycle/partials/_storage.html" %}
-                </div>
+                     x-cloak>{% include "platform_operations/data_lifecycle/partials/_storage.html" %}</div>
             </div>
         </section>
     </div>

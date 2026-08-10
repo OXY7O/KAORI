@@ -9,7 +9,8 @@
                     <i data-lucide="database-zap" class="h-5 w-5"></i>
                 </span>
                 <div>
-                    <h2 id="infrastructure-data-collection-title" class="text-base font-semibold text-content-primary">Infrastructure Data Collection</h2>
+                    <h2 id="infrastructure-data-collection-title"
+                        class="text-base font-semibold text-content-primary">Infrastructure Data Collection</h2>
                     <p class="mt-0.5 text-xs leading-5 text-content-muted">Current, available, planned, and reserved integrations that can contribute source data, artifact storage, or report delivery.</p>
                 </div>
             </div>
@@ -20,7 +21,6 @@
             </a>
         </div>
     </header>
-
     <nav class="grid gap-1 border-b border-outline-subtle bg-kaori-soft p-1.5 sm:grid-cols-2 xl:grid-cols-4"
          aria-label="Infrastructure data collection readiness">
         {% for stage_key, stage_label, stage_icon in [
@@ -28,7 +28,7 @@
             ('available', 'Available to Configure', 'settings-2'),
             ('planned', 'Planned', 'calendar-range'),
             ('reserved', 'Reserved', 'archive')
-        ] %}
+            ] %}
             {% set stage_count = payload.data_collection_status|selectattr('stage', 'equalto', stage_key)|list|length %}
             <button type="button"
                     @click="collectionTab = '{{ stage_key }}'"
@@ -43,14 +43,13 @@
             </button>
         {% endfor %}
     </nav>
-
     <div class="p-5 sm:p-6">
         {% for stage_key, stage_label, stage_description, stage_tone in [
             ('ready', 'Ready Now', 'Operational sources and selected artifact services available to report generation.', 'normal'),
             ('available', 'Available to Configure', 'Supported services that can be selected without changing the report contract.', 'info'),
             ('planned', 'Planned', 'Defined integrations awaiting provider implementation or validation.', 'info'),
             ('reserved', 'Reserved', 'Provider slots retained for additional infrastructure domains.', 'unknown')
-        ] %}
+            ] %}
             {% set stage_items = payload.data_collection_status|selectattr('stage', 'equalto', stage_key)|list %}
             <div x-show="collectionTab === '{{ stage_key }}'" x-cloak role="tabpanel">
                 <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">

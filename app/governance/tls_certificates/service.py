@@ -10,14 +10,8 @@ from flask import current_app
 from sqlalchemy import case, func, or_
 
 from app.extensions.db import db
-from app.governance.tls_certificates.certificate import (
-    matching_certificate_pattern,
-    validity_policy_from_config,
-)
-from app.governance.tls_certificates.collector import (
-    TLSProgressCallback,
-    collect_tls_certificate_batch,
-)
+from app.governance.tls_certificates.certificate import matching_certificate_pattern, validity_policy_from_config
+from app.governance.tls_certificates.collector import TLSProgressCallback, collect_tls_certificate_batch
 from app.governance.tls_certificates.constants import (
     TLS_COLLECTION_COLLECTED,
     TLS_COVERAGE_FULL,
@@ -33,11 +27,7 @@ from app.governance.tls_certificates.readiness import (
     TLSGovernanceSchemaReadiness,
     check_tls_governance_schema_readiness,
 )
-from app.models import (
-    Cluster,
-    TLSCertificateCollectionState,
-    TLSCertificateInventory,
-)
+from app.models import Cluster, TLSCertificateCollectionState, TLSCertificateInventory
 
 
 @dataclass(frozen=True)
@@ -58,7 +48,6 @@ def _new_tls_inventory_record(
     record.namespace = namespace
     record.secret_name = secret_name
     return record
-
 
 
 def _normalize_per_page(value: str | None) -> int:
@@ -154,14 +143,18 @@ def _summary(query) -> dict[str, int]:
         for status, count in query.with_entities(
             TLSCertificateInventory.status,
             func.count(TLSCertificateInventory.id),
-        ).group_by(TLSCertificateInventory.status).all()
+        )
+        .group_by(TLSCertificateInventory.status)
+        .all()
     }
     coverage_counts = {
         state: count
         for state, count in query.with_entities(
             TLSCertificateInventory.coverage_state,
             func.count(TLSCertificateInventory.id),
-        ).group_by(TLSCertificateInventory.coverage_state).all()
+        )
+        .group_by(TLSCertificateInventory.coverage_state)
+        .all()
     }
     total = sum(status_counts.values())
     return {
@@ -177,9 +170,7 @@ def _summary(query) -> dict[str, int]:
         'coverage_uncovered': coverage_counts.get(TLS_COVERAGE_UNCOVERED, 0),
         'coverage_none': coverage_counts.get(TLS_COVERAGE_NONE, 0),
         'coverage_not_reported': coverage_counts.get(TLS_COVERAGE_NOT_REPORTED, 0),
-        'issuer_count': query.with_entities(
-            func.count(func.distinct(TLSCertificateInventory.issuer))
-        ).scalar() or 0,
+        'issuer_count': query.with_entities(func.count(func.distinct(TLSCertificateInventory.issuer))).scalar() or 0,
     }
 
 
@@ -215,9 +206,7 @@ def _collection_states(cluster_ids: Iterable[str]) -> dict[str, TLSCertificateCo
         return {}
     return {
         str(state.cluster_id): state
-        for state in TLSCertificateCollectionState.query.filter(
-            TLSCertificateCollectionState.cluster_id.in_(ids)
-        ).all()
+        for state in TLSCertificateCollectionState.query.filter(TLSCertificateCollectionState.cluster_id.in_(ids)).all()
     }
 
 
@@ -267,14 +256,14 @@ def _present_record(
         ingress_resources.append(
             {
                 'name': str(consumer.get('name') or 'Ingress'),
-                'supporting_primary': f"Namespace · {consumer.get('namespace') or record.namespace}",
-                'supporting_secondary': f"{len(hosts)} Declared Host{'s' if len(hosts) != 1 else ''}",
+                'supporting_primary': f'Namespace · {consumer.get("namespace") or record.namespace}',
+                'supporting_secondary': f'{len(hosts)} Declared Host{"s" if len(hosts) != 1 else ""}',
                 'status': None,
                 'status_tone': None,
             }
         )
 
-    record.presentation = {
+    setattr(record, 'presentation', {
         'status_label': status_label,
         'status_tone': status_tone,
         'status_icon': status_icon,
@@ -293,7 +282,7 @@ def _present_record(
         'ingress_mapping_reported': ingress_state == TLS_COLLECTION_COLLECTED,
         'ingress_consumer_count': len(ingress_resources) if ingress_state == TLS_COLLECTION_COLLECTED else None,
         'declared_host_count': record.declared_host_count if ingress_state == TLS_COLLECTION_COLLECTED else None,
-    }
+    })
     return record
 
 
@@ -304,20 +293,18 @@ def _collection_snapshot(
     summary: dict[str, int],
     sync_state: dict[str, Any],
 ) -> dict[str, Any]:
-    scoped_clusters = [cluster for cluster in clusters if not selected_cluster_id or str(cluster.id) == selected_cluster_id]
+    scoped_clusters = [
+        cluster for cluster in clusters if not selected_cluster_id or str(cluster.id) == selected_cluster_id
+    ]
     states = _collection_states([cluster.id for cluster in scoped_clusters])
     selected_cluster = next((cluster for cluster in scoped_clusters if str(cluster.id) == selected_cluster_id), None)
     scope_label = selected_cluster.name if selected_cluster else 'All Clusters'
     scoped_state_values = [states.get(str(cluster.id)) for cluster in scoped_clusters]
     secret_exceptions = sum(
-        1
-        for item in scoped_state_values
-        if item is None or item.secret_collection_status != TLS_COLLECTION_COLLECTED
+        1 for item in scoped_state_values if item is None or item.secret_collection_status != TLS_COLLECTION_COLLECTED
     )
     ingress_exceptions = sum(
-        1
-        for item in scoped_state_values
-        if item is None or item.ingress_mapping_status != TLS_COLLECTION_COLLECTED
+        1 for item in scoped_state_values if item is None or item.ingress_mapping_status != TLS_COLLECTION_COLLECTED
     )
     exceptions = secret_exceptions + ingress_exceptions
     if not scoped_clusters or all(item is None for item in scoped_state_values):
@@ -337,7 +324,7 @@ def _collection_snapshot(
         'latest_supporting': 'Worker-generated snapshot',
         'scope_label': scope_label,
         'scope_supporting': 'Selected cluster' if selected_cluster else 'Fleet scope',
-        'coverage_label': f"{summary['total']} TLS Secrets",
+        'coverage_label': f'{summary["total"]} TLS Secrets',
         'coverage_supporting': 'Collected certificate inventory',
         'coverage_tone': evidence_tone,
         'exceptions_label': 'No Exceptions' if exceptions == 0 else f'{exceptions} Collection Exceptions',
@@ -459,6 +446,7 @@ def get_tls_certificate_page(args: Any) -> dict[str, Any]:
     base_query = _base_query({**filters, 'page': 1})
     summary = _summary(base_query)
     from app.governance.tls_certificates.sync_state import build_tls_sync_state
+
     sync_state = build_tls_sync_state(cluster_id=filters['cluster_id'] or None)
     state_map = _collection_states([record.cluster_id for record in records])
     records = [_present_record(record, state_map.get(str(record.cluster_id))) for record in records]
@@ -590,11 +578,7 @@ def sync_tls_certificates_for_cluster(
     db.session.commit()
     if progress_callback is not None:
         progress_callback(100, f'TLS inventory snapshot committed for {cluster.name}.')
-    warning = (
-        evidence.ingress_mapping_detail
-        if evidence.ingress_mapping_status != TLS_COLLECTION_COLLECTED
-        else None
-    )
+    warning = evidence.ingress_mapping_detail if evidence.ingress_mapping_status != TLS_COLLECTION_COLLECTED else None
     return TLSClusterSyncResult(
         collected_count=len(records),
         warning=warning,

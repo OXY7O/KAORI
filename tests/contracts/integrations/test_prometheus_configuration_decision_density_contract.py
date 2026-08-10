@@ -47,5 +47,8 @@ def test_prometheus_configuration_keeps_symmetric_geometry_and_compact_boundary_
     prometheus = read('app/templates/prometheus/partials/_detail_configuration.html')
 
     assert 'grid items-stretch gap-4' in prometheus
-    assert 'Prometheus executes metric queries. KAORI governs source selection, validation evidence, bindings, and consumer eligibility.' in prometheus
+    assert (
+        'Prometheus executes metric queries. KAORI governs source selection, validation evidence, bindings, and consumer eligibility.'
+        in prometheus
+    )
     assert 'Prometheus remains authoritative for metric collection and query execution.' not in prometheus

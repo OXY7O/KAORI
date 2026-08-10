@@ -65,7 +65,7 @@ for needle in (
     'role="tablist"',
     'rounded-xl border border-kaori-primary/20 bg-kaori-soft p-1',
     "notificationDeckTab === 'activity' ? 'bg-surface-card text-kaori-primary shadow-sm'",
-    ':class="notificationDeckTab === \'activity\' ? \'block\' : \'hidden\'"',
+    ":class=\"notificationDeckTab === 'activity' ? 'block' : 'hidden'\"",
     'Auto refresh every 15 seconds',
     'Connection issue · retrying automatically',
     'Updated ${notificationDeckLastChecked}',
@@ -121,9 +121,7 @@ for forbidden in (
     'trigger_notification_refresh=True',
 ):
     if forbidden in quick_sync:
-        raise SystemExit(
-            f'Inventory Quick Action still forces Notification Deck refresh/open behavior: {forbidden}'
-        )
+        raise SystemExit(f'Inventory Quick Action still forces Notification Deck refresh/open behavior: {forbidden}')
 
 for needle in (
     'def _htmx_dispatch_response(',

@@ -12,13 +12,12 @@
             </span>
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
-                    <h2 id="reports-current-status-title" class="text-base font-semibold text-content-primary">Current Status</h2>
-                    {{ table_label.status_label(
-                        payload.current_status_summary.posture,
-                        payload.current_status_summary.tone,
-                        none,
-                        'detail'
-                    ) }}
+                    <h2 id="reports-current-status-title"
+                        class="text-base font-semibold text-content-primary">Current Status</h2>
+                    {{ table_label.status_label(payload.current_status_summary.posture,
+                                        payload.current_status_summary.tone,
+                                        none,
+                                        'detail') }}
                 </div>
                 <p class="mt-1 text-xs leading-5 text-content-muted">{{ payload.current_status_summary.ready }} Ready · {{ payload.current_status_summary.review }} Review · {{ payload.current_status_summary.neutral }} Informational</p>
             </div>
@@ -29,7 +28,10 @@
             <i data-lucide="chevron-down" class="h-4 w-4"></i>
         </span>
     </button>
-    <div class="border-t border-outline-subtle" x-show="open" x-collapse x-cloak>
+    <div class="border-t border-outline-subtle"
+         x-show="open"
+         x-collapse
+         x-cloak>
         <div class="divide-y divide-outline-subtle px-5 sm:px-6">
             {% for item in payload.current_status %}
                 <article class="py-3.5">

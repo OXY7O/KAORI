@@ -8,25 +8,24 @@
                     Review committed Kubernetes assets and fleet inventory signals.
                 </p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
-                    {{ page_hero.meta_label('server', overview.total_clusters ~ (' Cluster Registered' if overview.total_clusters == 1 else ' Clusters Registered')) }}
+                    {{ page_hero.meta_label('server', overview.total_clusters ~ (' Cluster Registered' if overview.total_clusters == 1 else ' Clusters Registered') ) }}
                     {{ page_hero.meta_label('layers-3', overview.asset_catalog|length ~ ' Asset Types') }}
                     {{ page_hero.meta_label('database', overview.inventory_total ~ ' Collected Objects') }}
                 </div>
             {% endcall %}
         </div>
-        {{ page_hero.context_card(
-            'Fleet Inventory Posture',
-            'Inventory Posture',
-            'Fleet Posture',
-            overview.posture.status,
-            overview.posture.tone,
-            [
-                ('server-cog', 'Connected', overview.health.connected_clusters ~ '/' ~ overview.total_clusters, 'Ready integrations'),
-                ('scan-search', 'Active Signals', overview.active_signal_count, 'Current exceptions')
-            ],
-            'Manage Clusters',
-            url_for('integrations.kubernetes'),
-            action_icon='server-cog'
+        {{ page_hero.context_card('Fleet Inventory Posture',
+                'Inventory Posture',
+                'Fleet Posture',
+                overview.posture.status,
+                overview.posture.tone,
+                [
+                ('server-cog', 'Connected', overview.health.connected_clusters ~ '/' ~ overview.total_clusters, 'Ready integrations') ,
+        ('scan-search', 'Active Signals', overview.active_signal_count, 'Current exceptions')
+        ],
+        'Manage Clusters',
+        url_for('integrations.kubernetes'),
+        action_icon='server-cog'
         ) }}
     </div>
 </section>

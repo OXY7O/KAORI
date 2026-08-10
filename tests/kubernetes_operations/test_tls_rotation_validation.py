@@ -30,29 +30,41 @@ def payload(*, valid: bool, targets=None) -> dict[str, object]:
 def test_single_tls_rotation_enables_only_valid_pair() -> None:
     validation = load_validation_module()
 
-    assert validation.validation_trigger(
-        payload(valid=True),
-        form_id='tls-secret-rotate-form',
-    ) == '{"kaori:operation-validated":{"formId":"tls-secret-rotate-form"}}'
-    assert validation.validation_trigger(
-        payload(valid=False),
-        form_id='tls-secret-rotate-form',
-    ) is None
+    assert (
+        validation.validation_trigger(
+            payload(valid=True),
+            form_id='tls-secret-rotate-form',
+        )
+        == '{"kaori:operation-validated":{"formId":"tls-secret-rotate-form"}}'
+    )
+    assert (
+        validation.validation_trigger(
+            payload(valid=False),
+            form_id='tls-secret-rotate-form',
+        )
+        is None
+    )
 
 
 def test_bulk_tls_rotation_requires_valid_pair_and_nonempty_targets() -> None:
     validation = load_validation_module()
 
-    assert validation.validation_trigger(
-        payload(valid=True, targets=[1]),
-        form_id='tls-secret-update-form',
-        require_targets=True,
-    ) == '{"kaori:operation-validated":{"formId":"tls-secret-update-form"}}'
-    assert validation.validation_trigger(
-        payload(valid=True),
-        form_id='tls-secret-update-form',
-        require_targets=True,
-    ) is None
+    assert (
+        validation.validation_trigger(
+            payload(valid=True, targets=[1]),
+            form_id='tls-secret-update-form',
+            require_targets=True,
+        )
+        == '{"kaori:operation-validated":{"formId":"tls-secret-update-form"}}'
+    )
+    assert (
+        validation.validation_trigger(
+            payload(valid=True),
+            form_id='tls-secret-update-form',
+            require_targets=True,
+        )
+        is None
+    )
 
 
 def test_kubernetes_administration_tab_normalization_source_contract() -> None:

@@ -27,8 +27,7 @@ def get_secret_impact_context(target: LiveSecretSnapshot) -> SecretImpactContext
     for pod in pods.yield_per(250):
         references = pod.configuration_references or []
         if not any(
-            str(reference.get('type') or '') == 'Secret'
-            and str(reference.get('name') or '') == target.name
+            str(reference.get('type') or '') == 'Secret' and str(reference.get('name') or '') == target.name
             for reference in references
         ):
             continue

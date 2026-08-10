@@ -15,19 +15,24 @@
     <dl class="divide-y divide-outline-subtle px-5 text-xs">
         <div class="py-4">
             <dt class="font-semibold text-content-primary">Required Variable</dt>
-            <dd class="mt-1 font-mono leading-5 text-kaori-primary">APP_VERSION={{ system_information.version }}</dd>
+            <dd class="mt-1 font-mono leading-5 text-kaori-primary">
+                APP_VERSION={{ system_information.version }}
+            </dd>
         </div>
         <div class="py-4">
             <dt class="font-semibold text-content-primary">Build Traceability</dt>
-            <dd class="mt-1 leading-5 text-content-muted">APP_BUILD_SHA and APP_BUILD_DATE identify the immutable release when supplied by the build or deployment pipeline.</dd>
+            <dd class="mt-1 leading-5 text-content-muted">
+                APP_BUILD_SHA and APP_BUILD_DATE identify the immutable release when supplied by the build or deployment pipeline.
+            </dd>
         </div>
         <div class="py-4">
             <dt class="font-semibold text-content-primary">Deployment Rule</dt>
-            <dd class="mt-1 leading-5 text-content-muted">Keep APP_VERSION aligned with the immutable KAORI image tag so support and rollback decisions remain unambiguous.</dd>
+            <dd class="mt-1 leading-5 text-content-muted">
+                Keep APP_VERSION aligned with the immutable KAORI image tag so support and rollback decisions remain unambiguous.
+            </dd>
         </div>
     </dl>
 </section>
-
 <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
     <header class="border-b border-outline-default px-5 py-4">
         <div class="flex items-start gap-3">

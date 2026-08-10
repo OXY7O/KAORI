@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import importlib.util
-import sys
 from contextlib import nullcontext
+import importlib.util
 from pathlib import Path
+import sys
 from types import ModuleType, SimpleNamespace
 
 import pytest
@@ -123,13 +123,17 @@ def _install_base_modules(monkeypatch: pytest.MonkeyPatch) -> dict[str, ModuleTy
     live.list_live_namespaces = lambda cluster_id: []
     live.list_live_secrets = lambda *args, **kwargs: []
     live.read_live_secret = lambda *args, **kwargs: None
-    live.scrub_secret_payload = lambda secret: (setattr(secret, 'data', None), setattr(secret, 'string_data', None)) if secret is not None else None
+    live.scrub_secret_payload = lambda secret: (
+        (setattr(secret, 'data', None), setattr(secret, 'string_data', None)) if secret is not None else None
+    )
     live.verify_live_namespace = lambda cluster, namespace: None
 
-    modules['app.kubernetes_operations.secrets.impact'].get_secret_impact_context = lambda target: contracts.SecretImpactContext(
-        items=[],
-        collection_state='Collected',
-        reported=True,
+    modules['app.kubernetes_operations.secrets.impact'].get_secret_impact_context = lambda target: (
+        contracts.SecretImpactContext(
+            items=[],
+            collection_state='Collected',
+            reported=True,
+        )
     )
     modules['app.models'].Cluster = type('Cluster', (), {})
     return modules
@@ -169,7 +173,6 @@ class _Form(dict):
 
 
 def test_create_service_executes_exactly_one_provider_call_per_mode(monkeypatch: pytest.MonkeyPatch) -> None:
-    modules = _install_base_modules(monkeypatch)
     service = _load_file('secret_create_under_test', SECRET_ROOT / 'create_service.py', monkeypatch)
     calls: list[dict[str, object]] = []
     cluster = SimpleNamespace(id=7, name='Development')
@@ -222,8 +225,7 @@ def test_replace_service_executes_exactly_one_resource_version_bound_patch_per_m
     target = _target()
     api = SimpleNamespace(
         patch_namespaced_secret=lambda **kwargs: (
-            calls.append(kwargs)
-            or SimpleNamespace(close=lambda: None, release_conn=lambda: None)
+            calls.append(kwargs) or SimpleNamespace(close=lambda: None, release_conn=lambda: None)
         )
     )
     monkeypatch.setattr(service, '_bound_target', lambda form: target)
@@ -248,8 +250,7 @@ def test_delete_validation_uses_one_non_destructive_authorization_preflight(
     reviews: list[object] = []
     authorization = SimpleNamespace(
         create_self_subject_access_review=lambda **kwargs: (
-            reviews.append(kwargs['body'])
-            or SimpleNamespace(status=SimpleNamespace(allowed=True))
+            reviews.append(kwargs['body']) or SimpleNamespace(status=SimpleNamespace(allowed=True))
         )
     )
     monkeypatch.setattr(service, '_bound_target', lambda form: target)

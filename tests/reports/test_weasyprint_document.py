@@ -102,11 +102,7 @@ def test_unavailable_payload_hides_technical_endpoint_details() -> None:
         },
     )
 
-    rendered = ' '.join(
-        finding.description
-        for section in document.sections
-        for finding in section.findings
-    )
+    rendered = ' '.join(finding.description for section in document.sections for finding in section.findings)
     assert 'internal-prometheus.example' not in rendered
     assert '/api/v1/query' not in rendered
     assert 'temporarily unreachable' in rendered

@@ -49,4 +49,9 @@ def test_tls_rotation_renders_an_operator_blocker_instead_of_a_500() -> None:
     assert 'readiness.required_revision' in blocker
     assert 'flask --app run:app db upgrade' in blocker
     assert 'docker compose -f compose.production.yml run --rm migrate' in blocker
-    assert route.count("'kubernetes_operations/secrets/tls_rotation.html',\n        'kubernetes_operations/secrets/tls_rotation.html'") == 0
+    assert (
+        route.count(
+            "'kubernetes_operations/secrets/tls_rotation.html',\n        'kubernetes_operations/secrets/tls_rotation.html'"
+        )
+        == 0
+    )

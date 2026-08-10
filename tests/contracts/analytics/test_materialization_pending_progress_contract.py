@@ -17,9 +17,7 @@ def _environment() -> Environment:
 
 
 def test_pending_partial_renders_without_optional_progress_values() -> None:
-    template = _environment().get_template(
-        'analytics/materialization/_pending.html'
-    )
+    template = _environment().get_template('analytics/materialization/_pending.html')
 
     rendered = template.render(
         materialization_status_url='/analytics/materialization/status',
@@ -32,9 +30,7 @@ def test_pending_partial_renders_without_optional_progress_values() -> None:
 
 
 def test_pending_partial_renders_numeric_worker_progress() -> None:
-    template = _environment().get_template(
-        'analytics/materialization/_pending.html'
-    )
+    template = _environment().get_template('analytics/materialization/_pending.html')
 
     rendered = template.render(
         materialization_status_url='/analytics/materialization/status',
@@ -53,9 +49,7 @@ def test_pending_partial_renders_numeric_worker_progress() -> None:
 
 
 def test_pending_context_contract_always_defines_progress_fields() -> None:
-    source = Path(
-        'app/analytics/materialization/presentation.py'
-    ).read_text()
+    source = Path('app/analytics/materialization/presentation.py').read_text()
 
     assert "'materialization_progress_message': progress_message" in source
     assert "'materialization_progress_percent': progress_percent" in source
@@ -65,5 +59,5 @@ def test_pending_context_contract_always_defines_progress_fields() -> None:
 def test_progress_bar_macro_is_safe_for_missing_optional_value() -> None:
     source = Path('app/templates/components/progress_bar.html').read_text()
 
-    assert "value | default(0, true) | int" in source
+    assert 'value | default(0, true) | int' in source
     assert 'aria-valuenow="{{ safe_value }}"' in source

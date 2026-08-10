@@ -40,14 +40,9 @@ def parse_resource_quota_map(
 def build_tenant_scope_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     total_namespaces = len(rows)
     evidence_available = total_namespaces > 0
-    covered_namespaces = sum(
-        1 for row in rows if row.get('quota_status', {}).get('label') in {'Complete', 'Partial'}
-    )
+    covered_namespaces = sum(1 for row in rows if row.get('quota_status', {}).get('label') in {'Complete', 'Partial'})
     near_limit_count = sum(
-        1
-        for row in rows
-        if row.get('quota_pressure_available')
-        and safe_float(row.get('quota_usage_percent')) >= 75
+        1 for row in rows if row.get('quota_pressure_available') and safe_float(row.get('quota_usage_percent')) >= 75
     )
     efficiency_risk_count = sum(
         1
@@ -94,9 +89,7 @@ def build_tenant_scope_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
                 'label': 'Allocation Efficiency Risk',
                 'value': efficiency_risk_count if evidence_available else 'N/A',
                 'caption': (
-                    'High Allocation, Low Runtime Demand'
-                    if evidence_available
-                    else 'Runtime Evidence Unavailable'
+                    'High Allocation, Low Runtime Demand' if evidence_available else 'Runtime Evidence Unavailable'
                 ),
                 'icon': 'activity',
             },
@@ -116,11 +109,7 @@ def get_effective_quota_resource(
         hard_value = safe_float(hard_values.get(resource))
         used_available = resource in used_objects.get(quota_name, {})
         used_value = safe_float(used_objects.get(quota_name, {}).get(resource))
-        percent = (
-            safe_round(raw_percent(used_value, hard_value), 2)
-            if used_available and hard_value > 0
-            else 0.0
-        )
+        percent = safe_round(raw_percent(used_value, hard_value), 2) if used_available and hard_value > 0 else 0.0
         candidates.append(
             {
                 'quota': quota_name,
@@ -132,8 +121,12 @@ def get_effective_quota_resource(
         )
     if not candidates:
         return {
-            'quota': '', 'hard': 0.0, 'used': 0.0, 'configured': False,
-            'used_available': False, 'percent': 0.0,
+            'quota': '',
+            'hard': 0.0,
+            'used': 0.0,
+            'configured': False,
+            'used_available': False,
+            'percent': 0.0,
         }
     observed = [item for item in candidates if item['used_available'] and item['hard'] > 0]
     selected = (
@@ -164,7 +157,12 @@ def tenant_risk(
         return {'label': 'Critical', 'tone': 'critical'}
     if quota_pressure_available and quota_usage_percent >= 90:
         return {'label': 'Critical', 'tone': 'critical'}
-    if quota_pressure_available and runtime_demand_available and quota_usage_percent >= 75 and actual_usage_percent < 40:
+    if (
+        quota_pressure_available
+        and runtime_demand_available
+        and quota_usage_percent >= 75
+        and actual_usage_percent < 40
+    ):
         return {'label': 'Medium', 'tone': 'warning'}
     if quota_pressure_available and quota_usage_percent >= 75:
         return {'label': 'High', 'tone': 'critical'}
@@ -247,9 +245,7 @@ def _runtime_signal(
         if not boundaries:
             continue
         hard_value, quota_name = min(boundaries, key=lambda item: item[0])
-        signals.append(
-            (raw_percent(safe_float(actual_values.get(namespace)), hard_value), label, quota_name)
-        )
+        signals.append((raw_percent(safe_float(actual_values.get(namespace)), hard_value), label, quota_name))
     if not signals:
         return 0.0, 'Unavailable', '', False
     percent, resource, quota_name = max(signals, key=lambda item: item[0])
@@ -266,7 +262,9 @@ def build_tenant_quota_summary(
     pod_actual: dict[str, float],
     selected_namespace: str = '',
 ) -> dict[str, Any]:
-    namespace_names = set(active_namespaces) | set(hard) | set(used) | set(cpu_actual) | set(memory_actual) | set(pod_actual)
+    namespace_names = (
+        set(active_namespaces) | set(hard) | set(used) | set(cpu_actual) | set(memory_actual) | set(pod_actual)
+    )
     rows = [
         _build_tenant_row(
             namespace,
@@ -294,10 +292,7 @@ def _build_tenant_row(
     missing_keys = [key for key in REQUIRED_QUOTA_KEYS if key not in configured_keys]
     quota_status = tenant_quota_status(configured_keys, missing_keys)
     quota_percent, pressure_resource, pressure_object, quota_available = _pressure_signal(hard_objects, used_objects)
-    resources = {
-        key: get_effective_quota_resource(hard_objects, used_objects, key)
-        for key in REQUIRED_QUOTA_KEYS
-    }
+    resources = {key: get_effective_quota_resource(hard_objects, used_objects, key) for key in REQUIRED_QUOTA_KEYS}
     runtime_percent, runtime_resource, runtime_object, runtime_available = _runtime_signal(
         namespace,
         hard_objects,
@@ -306,12 +301,17 @@ def _build_tenant_row(
         pod_actual,
     )
     risk = tenant_risk(
-        quota_status['label'], quota_percent, runtime_percent,
+        quota_status['label'],
+        quota_percent,
+        runtime_percent,
         quota_pressure_available=quota_available,
         runtime_demand_available=runtime_available,
     )
     recommendation = tenant_recommendation(
-        quota_status['label'], missing_keys, quota_percent, runtime_percent,
+        quota_status['label'],
+        missing_keys,
+        quota_percent,
+        runtime_percent,
         quota_pressure_available=quota_available,
         runtime_demand_available=runtime_available,
     )
@@ -347,10 +347,6 @@ def _tenant_row_payload(**data: Any) -> dict[str, Any]:
     cpu_value = safe_float(cpu_actual.get(namespace))
     memory_value = safe_float(memory_actual.get(namespace))
     pod_value = safe_float(pod_actual.get(namespace))
-    cpu_limit = resources['limits.cpu']
-    cpu_request = resources['requests.cpu']
-    memory_limit = resources['limits.memory']
-    memory_request = resources['requests.memory']
     return {
         'namespace': namespace,
         'quota_status': data['quota_status'],
@@ -395,10 +391,6 @@ def _tenant_cpu_memory_fields(
     cpu_actual: dict[str, float],
     memory_actual: dict[str, float],
 ) -> dict[str, Any]:
-    cpu_limit = resources['limits.cpu']
-    cpu_request = resources['requests.cpu']
-    memory_limit = resources['limits.memory']
-    memory_request = resources['requests.memory']
     cpu_value = safe_float(cpu_actual.get(namespace))
     memory_value = safe_float(memory_actual.get(namespace))
     return {
@@ -409,7 +401,9 @@ def _tenant_cpu_memory_fields(
         'cpu_actual_available': namespace in cpu_actual,
         'cpu_requested_percent': cpu_request['percent'],
         'cpu_limited_percent': cpu_limit['percent'],
-        'cpu_actual_percent': safe_round(raw_percent(cpu_value, cpu_limit['hard']), 2) if namespace in cpu_actual and cpu_limit['hard'] > 0 else 0.0,
+        'cpu_actual_percent': safe_round(raw_percent(cpu_value, cpu_limit['hard']), 2)
+        if namespace in cpu_actual and cpu_limit['hard'] > 0
+        else 0.0,
         'memory_quota': format_memory_gib(memory_limit['hard']) if memory_limit['configured'] else 'N/A',
         'memory_requested': format_memory_gib(memory_request['used']) if memory_request['used_available'] else 'N/A',
         'memory_limited': format_memory_gib(memory_limit['used']) if memory_limit['used_available'] else 'N/A',
@@ -417,5 +411,7 @@ def _tenant_cpu_memory_fields(
         'memory_actual_available': namespace in memory_actual,
         'memory_requested_percent': memory_request['percent'],
         'memory_limited_percent': memory_limit['percent'],
-        'memory_actual_percent': safe_round(raw_percent(memory_value, memory_limit['hard']), 2) if namespace in memory_actual and memory_limit['hard'] > 0 else 0.0,
+        'memory_actual_percent': safe_round(raw_percent(memory_value, memory_limit['hard']), 2)
+        if namespace in memory_actual and memory_limit['hard'] > 0
+        else 0.0,
     }

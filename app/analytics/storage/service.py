@@ -9,10 +9,7 @@ from app.analytics.common.context import build_analysis_utilization_context
 from app.analytics.common.payloads import get_empty_storage_payload
 from app.analytics.common.presentation import present_prometheus_status
 from app.analytics.storage.domain import build_storage_payload
-from app.analytics.storage.evidence import (
-    STORAGE_QUERY_CAPABILITIES,
-    StorageEvidenceCollector,
-)
+from app.analytics.storage.evidence import STORAGE_QUERY_CAPABILITIES, StorageEvidenceCollector
 from app.analytics.utilization.service import UtilizationService
 from app.common.dependencies import prometheus_capability_blocker
 from app.integrations.prometheus.capabilities import definition as capability_definition
@@ -40,18 +37,14 @@ def get_empty_storage_recommendation_context() -> dict[str, Any]:
 def build_storage_recommendation_context(
     storage_summary: dict[str, Any],
 ) -> dict[str, Any]:
-    recommendations = build_storage_actionable_recommendations(
-        {'storage_summary': storage_summary}
-    )
+    recommendations = build_storage_actionable_recommendations({'storage_summary': storage_summary})
     return {
         'actionable_recommendations': recommendations,
         'recommendation_cards': format_recommendation_cards(
             recommendations,
             include_presentation_classes=False,
         ),
-        'recommendation_count': count_actionable_recommendations(
-            recommendations
-        ),
+        'recommendation_count': count_actionable_recommendations(recommendations),
     }
 
 
@@ -74,9 +67,7 @@ class StorageAnalysisService(AnalyticsBaseService):
         return build_storage_payload(self.evidence_collector.collect())
 
     def get_prometheus_status(self) -> dict[str, Any]:
-        return present_prometheus_status(
-            self.utilization_service.get_prometheus_status()
-        )
+        return present_prometheus_status(self.utilization_service.get_prometheus_status())
 
 
 def get_storage_analysis_context(
@@ -138,9 +129,7 @@ def get_storage_analysis_context(
         blocker = prometheus_capability_blocker(
             cluster,
             feature_label='Storage Analytics Evidence',
-            missing_capabilities=[
-                'Storage filesystem, PVC, and PV query evidence'
-            ],
+            missing_capabilities=['Storage filesystem, PVC, and PV query evidence'],
         )
         blocker['diagnostic_detail'] = ' '.join(errors[:3]) or None
         context['dependency_blocker'] = blocker
@@ -149,9 +138,7 @@ def get_storage_analysis_context(
         return context
 
     advisory = consumer.requirements(StorageAnalysisService.ADVISORY_CAPABILITIES)
-    advisory_missing = list(
-        (advisory.payload or {}).get('missing_capabilities') or []
-    )
+    advisory_missing = list((advisory.payload or {}).get('missing_capabilities') or [])
     context['storage_capability_contract'] = {
         'required': list(StorageAnalysisService.REQUIRED_CAPABILITIES),
         'advisory': list(StorageAnalysisService.ADVISORY_CAPABILITIES),
@@ -161,11 +148,7 @@ def get_storage_analysis_context(
         'degraded': bool(advisory_missing),
     }
     context.update(payload)
-    context.update(
-        build_storage_recommendation_context(
-            as_dict(payload.get('storage_summary'))
-        )
-    )
+    context.update(build_storage_recommendation_context(as_dict(payload.get('storage_summary'))))
     return context
 
 
@@ -183,11 +166,10 @@ def get_storage_snapshot(cluster_id: str) -> dict[str, Any] | None:
         return None
     persistent = as_dict(storage_summary.get('persistent_storage'))
     pvc_summary = as_dict(persistent.get('pvc'))
-    pvc_rows = as_list(
-        persistent.get('pvc_all_rows') or persistent.get('pvc_rows') or []
-    )
+    pvc_rows = as_list(persistent.get('pvc_all_rows') or persistent.get('pvc_rows') or [])
     used_percent = _optional_float(pvc_summary.get('used_percent'))
     free_percent = _optional_float(pvc_summary.get('free_percent'))
+    actionable_recommendations = context.get('actionable_recommendations')
     return {
         'pvc_requested': str(pvc_summary.get('requested') or 'N/A'),
         'pvc_capacity': str(pvc_summary.get('capacity') or 'N/A'),
@@ -198,9 +180,7 @@ def get_storage_snapshot(cluster_id: str) -> dict[str, Any] | None:
         'free_percent': free_percent,
         'top_namespace': _top_storage_namespace(pvc_rows),
         'recommendation_count': count_actionable_recommendations(
-            context.get('actionable_recommendations')
-            if isinstance(context.get('actionable_recommendations'), list)
-            else []
+            actionable_recommendations if isinstance(actionable_recommendations, list) else []
         ),
     }
 
@@ -213,11 +193,7 @@ def _capability_label(key: str) -> str:
 def _has_observed_storage_query(evidence: Any) -> bool:
     if not isinstance(evidence, dict):
         return False
-    return any(
-        int(item.get('observed_queries') or 0) > 0
-        for item in evidence.values()
-        if isinstance(item, dict)
-    )
+    return any(int(item.get('observed_queries') or 0) > 0 for item in evidence.values() if isinstance(item, dict))
 
 
 def _storage_query_errors(evidence: Any) -> list[str]:

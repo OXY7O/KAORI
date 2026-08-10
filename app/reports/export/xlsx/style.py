@@ -1,8 +1,16 @@
 from __future__ import annotations
 
-from typing import Any, Final
+from typing import Any, Final, Literal
 
-from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.styles import (
+    Alignment,
+    Border,
+    Font,
+    PatternFill,
+    Side,
+)
+from openpyxl.worksheet.page import PageMargins, PrintPageSetup
+from openpyxl.worksheet.properties import PageSetupProperties
 from openpyxl.worksheet.worksheet import Worksheet
 
 KAORI_PRIMARY: Final = '7C3AED'
@@ -89,29 +97,38 @@ def configure_sheet_page(
     *,
     print_area: str,
     print_title_rows: str,
-    orientation: str = 'landscape',
+    orientation: Literal['landscape', 'portrait'] = 'landscape',
     fit_to_width: int = 1,
 ) -> None:
     sheet.sheet_view.showGridLines = False
     sheet.print_area = print_area
     sheet.print_title_rows = print_title_rows
-    sheet.page_setup.orientation = orientation
-    sheet.page_setup.paperSize = sheet.PAPERSIZE_A4
-    sheet.page_setup.fitToWidth = max(1, fit_to_width)
-    sheet.page_setup.fitToHeight = 0
-    sheet.sheet_properties.pageSetUpPr.fitToPage = True
-    sheet.page_margins.left = 0.25
-    sheet.page_margins.right = 0.25
-    sheet.page_margins.top = 0.45
-    sheet.page_margins.bottom = 0.45
-    sheet.page_margins.header = 0.2
-    sheet.page_margins.footer = 0.2
+    sheet.page_setup = PrintPageSetup(
+        worksheet=sheet,
+        orientation=orientation,
+        paperSize=sheet.PAPERSIZE_A4,
+        fitToWidth=max(1, fit_to_width),
+        fitToHeight=0,
+    )
+    sheet.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True)
+    sheet.page_margins = PageMargins(
+        left=0.25,
+        right=0.25,
+        top=0.45,
+        bottom=0.45,
+        header=0.2,
+        footer=0.2,
+    )
 
 
 def set_footer(sheet: Worksheet, document_reference: str) -> None:
-    sheet.oddFooter.left.text = document_reference
-    sheet.oddFooter.left.size = 8
-    sheet.oddFooter.left.color = KAORI_MUTED
-    sheet.oddFooter.right.text = 'Page &P of &N'
-    sheet.oddFooter.right.size = 8
-    sheet.oddFooter.right.color = KAORI_MUTED
+    left = sheet.oddFooter.left
+    right = sheet.oddFooter.right
+    if left is not None:
+        left.text = document_reference
+        left.size = 8
+        left.color = KAORI_MUTED
+    if right is not None:
+        right.text = 'Page &P of &N'
+        right.size = 8
+        right.color = KAORI_MUTED

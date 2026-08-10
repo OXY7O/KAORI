@@ -39,7 +39,10 @@ def test_template_registry_uses_full_width_kaori_workspace() -> None:
     assert '>Ownership<' in template
     assert '>Action<' in template
     assert 'components/loading_bar.html' in template
-    assert "loading_bar.render('templates-registry-loading', active=false, label='Refreshing Template Registry')" in template
+    assert (
+        "loading_bar.render('templates-registry-loading', active=false, label='Refreshing Template Registry')"
+        in template
+    )
     assert 'data-kaori-template-loading-region="true"' in template
     assert 'components/table_registry.html' in template
     assert 'registry_ui.filter_form(' in template

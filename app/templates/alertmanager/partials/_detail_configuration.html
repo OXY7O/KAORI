@@ -4,16 +4,15 @@
 {% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_configuration_decision.html" as configuration_decision %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-
 {% set current_auth_type = instance.auth_type or 'none' %}
 {% set field_classes = "h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-normal text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20" %}
 {% set textarea_classes = "min-h-24 w-full resize-y rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-normal leading-6 text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20" %}
 {% set readiness = instance.readiness_status or 'validation_required' %}
 {% set deployment_label = (instance.deployment_type or 'external_managed')|replace('_', ' ')|title %}
-
-<div id="alertmanager-configuration-workspace" class="space-y-4 font-sans" data-kaori-alertmanager-configuration-v2>
+<div id="alertmanager-configuration-workspace"
+     class="space-y-4 font-sans"
+     data-kaori-alertmanager-configuration-v2>
     <div class="grid items-stretch gap-4 xl:grid-cols-[minmax(0,1fr)_25rem] 2xl:grid-cols-[minmax(0,1fr)_27rem]">
-
         <form id="alertmanager-instance-form"
               method="post"
               action="{{ url_for('alertmanager.instance_detail', instance_id=instance.id) }}#configuration"
@@ -27,61 +26,192 @@
             <section class="flex h-full flex-col overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
                 <header class="border-b border-outline-subtle px-5 py-4">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent" aria-hidden="true"><i data-lucide="settings-2" class="h-4 w-4"></i></span>
-                        <div class="min-w-0"><h3 class="text-sm font-semibold text-content-primary">Connection Configuration</h3><p class="mt-1 text-xs leading-5 text-content-secondary">Saved changes return readiness to Validation Required until Full Validation rebuilds provider evidence.</p></div>
+                        <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"
+                              aria-hidden="true"><i data-lucide="settings-2" class="h-4 w-4"></i></span>
+                        <div class="min-w-0">
+                            <h3 class="text-sm font-semibold text-content-primary">Connection Configuration</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Saved changes return readiness to Validation Required until Full Validation rebuilds provider evidence.</p>
+                        </div>
                     </div>
                 </header>
                 <div class="flex-1 divide-y divide-outline-subtle">
                     <section class="px-5 py-5">
-                        <div class="mb-4 flex items-start gap-3"><span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"><i data-lucide="id-card" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Source Identity</h4><p class="mt-1 text-xs leading-5 text-content-secondary">Keep the provider identity stable while multiple scopes consume it.</p></div></div>
-                        <div class="grid gap-4 lg:grid-cols-2">
-                            <div><label for="alertmanager-name" class="mb-1.5 block text-sm font-semibold text-content-primary">Instance Name</label><input id="alertmanager-name" name="name" required value="{{ instance.name }}" class="{{ field_classes }}"></div>
-                            <div><label for="alertmanager-deployment-type" class="mb-1.5 block text-sm font-semibold text-content-primary">Connection Type</label><select id="alertmanager-deployment-type" name="deployment_type" class="{{ field_classes }}">{% for value, label in [('external_managed','Externally managed'),('standalone','Standalone'),('shared','Shared service'),('cluster_managed','Managed for a specific scope')] %}<option value="{{ value }}" {% if instance.deployment_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+                        <div class="mb-4 flex items-start gap-3">
+                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"><i data-lucide="id-card" class="h-4 w-4"></i></span>
+                            <div>
+                                <h4 class="text-sm font-semibold text-content-primary">Source Identity</h4>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">Keep the provider identity stable while multiple scopes consume it.</p>
+                            </div>
                         </div>
-                        <div class="mt-4"><label for="alertmanager-description" class="mb-1.5 block text-sm font-semibold text-content-primary">Description</label><textarea id="alertmanager-description" name="description" rows="3" class="{{ textarea_classes }}">{{ instance.description or '' }}</textarea></div>
+                        <div class="grid gap-4 lg:grid-cols-2">
+                            <div>
+                                <label for="alertmanager-name"
+                                       class="mb-1.5 block text-sm font-semibold text-content-primary">Instance Name</label>
+                                <input id="alertmanager-name"
+                                       name="name"
+                                       required
+                                       value="{{ instance.name }}"
+                                       class="{{ field_classes }}">
+                            </div>
+                            <div>
+                                <label for="alertmanager-deployment-type"
+                                       class="mb-1.5 block text-sm font-semibold text-content-primary">Connection Type</label>
+                                <select id="alertmanager-deployment-type"
+                                        name="deployment_type"
+                                        class="{{ field_classes }}">
+                                    {% for value, label in [('external_managed','Externally managed'),('standalone','Standalone'),('shared','Shared service'),('cluster_managed','Managed for a specific scope')] %}
+                                        <option value="{{ value }}"
+                                                {% if instance.deployment_type == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label for="alertmanager-description"
+                                   class="mb-1.5 block text-sm font-semibold text-content-primary">Description</label>
+                            <textarea id="alertmanager-description"
+                                      name="description"
+                                      rows="3"
+                                      class="{{ textarea_classes }}">{{ instance.description or '' }}</textarea>
+                        </div>
                     </section>
-
                     <section class="px-5 py-5">
                         <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                            <div class="flex items-start gap-3"><span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"><i data-lucide="network" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Endpoint &amp; Access</h4><p class="mt-1 text-xs leading-5 text-content-secondary">Reachability confirms transport only; Alert Management readiness still requires Full Validation.</p></div></div>
-                            <button type="button" hx-post="{{ url_for('alertmanager.test_instance_configuration', instance_id=instance.id) }}" hx-include="#alertmanager-instance-form" hx-target="#alertmanager-configuration-test-result" hx-swap="innerHTML" hx-indicator="#alertmanager-configuration-test-loading" hx-disabled-elt="this" class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary"><i data-lucide="plug-zap" class="h-4 w-4"></i>Test Connection</button>
+                            <div class="flex items-start gap-3">
+                                <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"><i data-lucide="network" class="h-4 w-4"></i></span>
+                                <div>
+                                    <h4 class="text-sm font-semibold text-content-primary">Endpoint &amp; Access</h4>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Reachability confirms transport only; Alert Management readiness still requires Full Validation.</p>
+                                </div>
+                            </div>
+                            <button type="button"
+                                    hx-post="{{ url_for('alertmanager.test_instance_configuration', instance_id=instance.id) }}"
+                                    hx-include="#alertmanager-instance-form"
+                                    hx-target="#alertmanager-configuration-test-result"
+                                    hx-swap="innerHTML"
+                                    hx-indicator="#alertmanager-configuration-test-loading"
+                                    hx-disabled-elt="this"
+                                    class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary"><i data-lucide="plug-zap" class="h-4 w-4"></i>Test Connection</button>
                         </div>
                         {{ loading_bar.render('alertmanager-configuration-test-loading', label='Testing Alertmanager configuration') }}
-                        <div><label for="alertmanager-endpoint" class="mb-1.5 block text-sm font-semibold text-content-primary">Endpoint URL</label><input id="alertmanager-endpoint" type="url" name="endpoint" required value="{{ instance.endpoint }}" class="{{ field_classes }}"><p class="mt-1.5 text-xs leading-5 text-content-muted">Provide the base URL reachable from KAORI. Do not append <span class="font-semibold text-kaori-primary">/api/v2</span>.</p></div>
-                        <div class="mt-4 grid gap-4 lg:grid-cols-2">
-                            <div><label for="alertmanager-auth-type" class="mb-1.5 block text-sm font-semibold text-content-primary">Authentication</label><select id="alertmanager-auth-type" name="auth_type" x-on:change="authType = $event.target.value" class="{{ field_classes }}">{% for value, label in [('none','No authentication'),('basic','Basic authentication'),('bearer','Bearer token')] %}<option value="{{ value }}" {% if current_auth_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
-                            <div><label for="alertmanager-timeout" class="mb-1.5 block text-sm font-semibold text-content-primary">Request Timeout</label><input id="alertmanager-timeout" type="number" name="timeout" min="1" max="30" value="{{ instance.timeout }}" class="{{ field_classes }}"><p class="mt-1.5 text-xs leading-5 text-content-muted">Allowed range: 1–30 seconds.</p></div>
+                        <div>
+                            <label for="alertmanager-endpoint"
+                                   class="mb-1.5 block text-sm font-semibold text-content-primary">Endpoint URL</label>
+                            <input id="alertmanager-endpoint"
+                                   type="url"
+                                   name="endpoint"
+                                   required
+                                   value="{{ instance.endpoint }}"
+                                   class="{{ field_classes }}">
+                            <p class="mt-1.5 text-xs leading-5 text-content-muted">Provide the base URL reachable from KAORI. Do not append <span class="font-semibold text-kaori-primary">/api/v2</span>.</p>
                         </div>
-                        <div x-show="authType === 'basic'" x-cloak class="mt-4 grid gap-4 lg:grid-cols-2"><div><label for="alertmanager-username" class="mb-1.5 block text-sm font-semibold text-content-primary">Username</label><input id="alertmanager-username" name="username" value="{{ instance.username or '' }}" class="{{ field_classes }}"></div><div><label for="alertmanager-password" class="mb-1.5 block text-sm font-semibold text-content-primary">Password</label><input id="alertmanager-password" type="password" name="password" autocomplete="new-password" placeholder="Leave blank to keep current password" class="{{ field_classes }}"></div></div>
-                        <div x-show="authType === 'bearer'" x-cloak class="mt-4"><label for="alertmanager-bearer-token" class="mb-1.5 block text-sm font-semibold text-content-primary">Bearer Token</label><input id="alertmanager-bearer-token" type="password" name="bearer_token" autocomplete="new-password" placeholder="Leave blank to keep current token" class="{{ field_classes }}"></div>
-                        <div id="alertmanager-configuration-test-result" class="sr-only" aria-live="polite"></div>
+                        <div class="mt-4 grid gap-4 lg:grid-cols-2">
+                            <div>
+                                <label for="alertmanager-auth-type"
+                                       class="mb-1.5 block text-sm font-semibold text-content-primary">Authentication</label>
+                                <select id="alertmanager-auth-type"
+                                        name="auth_type"
+                                        x-on:change="authType = $event.target.value"
+                                        class="{{ field_classes }}">
+                                    {% for value, label in [('none','No authentication'),('basic','Basic authentication'),('bearer','Bearer token')] %}
+                                        <option value="{{ value }}"
+                                                {% if current_auth_type == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label for="alertmanager-timeout"
+                                       class="mb-1.5 block text-sm font-semibold text-content-primary">Request Timeout</label>
+                                <input id="alertmanager-timeout"
+                                       type="number"
+                                       name="timeout"
+                                       min="1"
+                                       max="30"
+                                       value="{{ instance.timeout }}"
+                                       class="{{ field_classes }}">
+                                <p class="mt-1.5 text-xs leading-5 text-content-muted">Allowed range: 1–30 seconds.</p>
+                            </div>
+                        </div>
+                        <div x-show="authType === 'basic'"
+                             x-cloak
+                             class="mt-4 grid gap-4 lg:grid-cols-2">
+                            <div>
+                                <label for="alertmanager-username"
+                                       class="mb-1.5 block text-sm font-semibold text-content-primary">Username</label>
+                                <input id="alertmanager-username"
+                                       name="username"
+                                       value="{{ instance.username or '' }}"
+                                       class="{{ field_classes }}">
+                            </div>
+                            <div>
+                                <label for="alertmanager-password"
+                                       class="mb-1.5 block text-sm font-semibold text-content-primary">Password</label>
+                                <input id="alertmanager-password"
+                                       type="password"
+                                       name="password"
+                                       autocomplete="new-password"
+                                       placeholder="Leave blank to keep current password"
+                                       class="{{ field_classes }}">
+                            </div>
+                        </div>
+                        <div x-show="authType === 'bearer'" x-cloak class="mt-4">
+                            <label for="alertmanager-bearer-token"
+                                   class="mb-1.5 block text-sm font-semibold text-content-primary">Bearer Token</label>
+                            <input id="alertmanager-bearer-token"
+                                   type="password"
+                                   name="bearer_token"
+                                   autocomplete="new-password"
+                                   placeholder="Leave blank to keep current token"
+                                   class="{{ field_classes }}">
+                        </div>
+                        <div id="alertmanager-configuration-test-result"
+                             class="sr-only"
+                             aria-live="polite"></div>
                     </section>
-
                     <section class="px-5 py-5">
-                        <div class="mb-4 flex items-start gap-3"><span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"><i data-lucide="shield-check" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Security &amp; Operational Controls</h4><p class="mt-1 text-xs leading-5 text-content-secondary">Control endpoint trust and whether the resolver may select this source.</p></div></div>
+                        <div class="mb-4 flex items-start gap-3">
+                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
+                            <div>
+                                <h4 class="text-sm font-semibold text-content-primary">Security &amp; Operational Controls</h4>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">Control endpoint trust and whether the resolver may select this source.</p>
+                            </div>
+                        </div>
                         <div class="grid gap-3 lg:grid-cols-2">
-                            {% call operational_toggle.render('Verify TLS Certificate', 'Reject untrusted or mismatched certificates.') %}<input type="checkbox" name="verify_ssl" value="1" {% if instance.verify_ssl %}checked{% endif %} class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-2 focus:ring-outline-focus/20 focus:ring-offset-2">{% endcall %}
-                            {% call operational_toggle.render('Allow KAORI to Use This Connection', 'Disabled sources remain registered but are excluded from resolution.') %}<input type="checkbox" name="enabled" value="1" {% if instance.enabled %}checked{% endif %} class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-2 focus:ring-outline-focus/20 focus:ring-offset-2">{% endcall %}
+                            {% call operational_toggle.render('Verify TLS Certificate', 'Reject untrusted or mismatched certificates.') %}
+                                <input type="checkbox"
+                                       name="verify_ssl"
+                                       value="1"
+                                       {% if instance.verify_ssl %}checked{% endif %}
+                                       class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-2 focus:ring-outline-focus/20 focus:ring-offset-2">
+                            {% endcall %}
+                            {% call operational_toggle.render('Allow KAORI to Use This Connection', 'Disabled sources remain registered but are excluded from resolution.') %}
+                                <input type="checkbox"
+                                       name="enabled"
+                                       value="1"
+                                       {% if instance.enabled %}checked{% endif %}
+                                       class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-2 focus:ring-outline-focus/20 focus:ring-offset-2">
+                            {% endcall %}
                         </div>
                     </section>
                 </div>
-                {% call form_action_bar.render('Save changes, then run Full Validation.', aria_label='Alertmanager Configuration Actions', embedded=true) %}<button type="submit" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover"><i data-lucide="save" class="h-4 w-4"></i>Save Changes</button>{% endcall %}
+                {% call form_action_bar.render('Save changes, then run Full Validation.', aria_label='Alertmanager Configuration Actions', embedded=true) %}
+                    <button type="submit"
+                            class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover"><i data-lucide="save" class="h-4 w-4"></i>Save Changes</button>
+                {% endcall %}
             </section>
         </form>
-
-        {{ configuration_decision.side_panel(
-            'Alertmanager Configuration Decision',
-            'Current connection contract and the controlled path back to operational alert-management use.',
-            readiness,
-            [
-                ('API Contract', 'Alertmanager API v2', 'Canonical provider interface'),
-                ('Detected Runtime', instance.detected_version or 'Not Observed', 'Latest validated provider version'),
-                ('Compatibility Profile', instance.compatibility_profile or 'Validation Required', 'Validated compatibility contract'),
-                ('Capability Profile', instance.capability_profile or 'Validation Required', 'Validated alert-management capabilities')
-            ],
-            'Saving endpoint, authentication, TLS, or ownership settings resets readiness until Full Validation rebuilds API and capability evidence.',
-            'Consumer Boundary',
-            'Alertmanager remains authoritative for routing, grouping, inhibition, silences, and delivery. KAORI consumes validated API evidence and governed bindings.'
+        {{ configuration_decision.side_panel('Alertmanager Configuration Decision',
+                'Current connection contract and the controlled path back to operational alert-management use.',
+                readiness,
+                [
+                ('API Contract', 'Alertmanager API v2', 'Canonical provider interface') ,
+        ('Detected Runtime', instance.detected_version or 'Not Observed', 'Latest validated provider version'),
+        ('Compatibility Profile', instance.compatibility_profile or 'Validation Required', 'Validated compatibility contract'),
+        ('Capability Profile', instance.capability_profile or 'Validation Required', 'Validated alert-management capabilities')
+        ],
+        'Saving endpoint, authentication, TLS, or ownership settings resets readiness until Full Validation rebuilds API and capability evidence.',
+        'Consumer Boundary',
+        'Alertmanager remains authoritative for routing, grouping, inhibition, silences, and delivery. KAORI consumes validated API evidence and governed bindings.'
         ) }}
     </div>
 </div>

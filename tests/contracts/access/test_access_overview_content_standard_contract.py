@@ -44,7 +44,7 @@ def test_access_overview_workspace_metrics_are_operational_and_domain_owned() ->
 def test_access_overview_balances_five_workspace_cards_without_empty_quadrant() -> None:
     presentation = read('app/access/overview/presentation.py')
     assert 'def _workspace_grid_classes(workspace_count: int, index: int)' in presentation
-    assert "if workspace_count == 5:" in presentation
+    assert 'if workspace_count == 5:' in presentation
     assert "'xl:col-span-2' if index < 3 else 'xl:col-span-3'" in presentation
     assert "workspace['grid_classes'] = _workspace_grid_classes(workspace_count, index)" in presentation
 

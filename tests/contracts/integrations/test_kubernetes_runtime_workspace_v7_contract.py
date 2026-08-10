@@ -28,7 +28,9 @@ def test_primary_finding_is_compact_and_nonduplicative() -> None:
 def test_current_page_defers_long_diagnostic_detail_to_runtime_observation_modal() -> None:
     source = _source()
 
-    diagnostic = source.split('data-kaori-runtime-diagnostic-list', 1)[1].split('data-kaori-runtime-observation-boundary', 1)[0]
+    diagnostic = source.split('data-kaori-runtime-diagnostic-list', 1)[1].split(
+        'data-kaori-runtime-observation-boundary', 1
+    )[0]
     assert '{{ item.summary }}' in diagnostic
     assert '{{ item.detail }}' not in diagnostic
     assert '{{ item.recommendation }}' not in diagnostic

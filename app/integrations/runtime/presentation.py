@@ -147,9 +147,7 @@ def runtime_observation_state_view(
         'health_status': health_status,
         'health_status_label': present_key_label(health_status),
         'health_score': observation.health_score,
-        'health_score_display': (
-            f'{observation.health_score}/100' if observation.health_score is not None else 'N/A'
-        ),
+        'health_score_display': (f'{observation.health_score}/100' if observation.health_score is not None else 'N/A'),
         'compatibility_profile': observation.compatibility_profile or fallback_compatibility_profile,
         'capability_count': len(capabilities),
         'capability_count_display': present_count(len(capabilities), 'observed capability'),
@@ -277,7 +275,6 @@ def runtime_history_view(
     }
 
 
-
 def _effective_runtime_posture(health_status: str | None, readiness: str | None) -> str:
     """Return the worst current posture across runtime health and readiness."""
     health = str(health_status or 'not_observed').strip().lower()
@@ -298,7 +295,11 @@ def _diagnostic_summary(detail: str, *, label: str = 'Diagnostic') -> str:
     subject = 'Kubernetes API' if 'kubernetes' in label_lower else 'Provider'
     if not value:
         return f'{label} evidence was not recorded.'
-    if 'could not resolve' in lowered or 'name or service not known' in lowered or 'temporary failure in name resolution' in lowered:
+    if (
+        'could not resolve' in lowered
+        or 'name or service not known' in lowered
+        or 'temporary failure in name resolution' in lowered
+    ):
         return f'{subject} hostname could not be resolved.'
     if 'connection refused' in lowered:
         return f'{subject} connection was refused.'
@@ -329,12 +330,13 @@ def _runtime_primary_summary(
             summary = str(item.get('summary') or '').strip()
             if summary:
                 if provider == 'kubernetes' and summary.startswith('Provider '):
-                    return 'Kubernetes API ' + summary[len('Provider '):]
+                    return 'Kubernetes API ' + summary[len('Provider ') :]
                 return summary
     if message:
         label = 'Kubernetes API' if provider == 'kubernetes' else 'Runtime'
         return _diagnostic_summary(message, label=label)
     return 'No current runtime issue was recorded.'
+
 
 def _message_repeats_diagnostic(message: str, diagnostics: list[dict[str, object]]) -> bool:
     normalized = ' '.join(str(message or '').split()).strip().lower()
@@ -347,6 +349,7 @@ def _message_repeats_diagnostic(message: str, diagnostics: list[dict[str, object
         if normalized == detail or normalized in detail or detail in normalized:
             return True
     return False
+
 
 def _diagnostic_rows(items: list[object]) -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []

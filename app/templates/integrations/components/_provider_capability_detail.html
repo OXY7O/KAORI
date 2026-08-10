@@ -2,12 +2,12 @@
 {% import "components/technical_check.html" as technical_check %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-
 {% macro content(row, provider_label, evidence_owner, query_label, evidence_boundary) -%}
     {% set status_tone = 'ready' if row.available else ('blocked' if row.required else 'degraded') %}
     {% set icon_tone = 'normal' if row.available else ('critical' if row.required else 'warning') %}
     <div class="space-y-5" data-kaori-provider-capability-modal-content>
-        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card" data-kaori-provider-capability-contract>
+        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
+                 data-kaori-provider-capability-contract>
             <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
                 <div class="flex min-w-0 items-start gap-3">
                     {{ integration_ui.palette_icon('box', icon_tone, size='lg', rounded='xl') }}
@@ -18,26 +18,29 @@
                 </div>
                 {{ integration_status(status_tone, row.status_label, display='text') }}
             </header>
-
             <dl class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
                 {% set facts = [
-                    ('Category', row.category|title, provider_label ~ ' capability domain'),
-                    ('Requirement', 'Required' if row.required else 'Optional', 'Core contract' if row.required else 'Optional capability depth'),
-                    ('Evidence Owner', evidence_owner, 'Authoritative validation source'),
-                    ('Verification Coverage', row.technical_checks|length ~ ' Check' ~ ('' if row.technical_checks|length == 1 else 's'), 'Registered technical verification')
-                ] %}
+                                    ('Category', row.category|title, provider_label ~ ' capability domain'),
+                                    ('Requirement', 'Required' if row.required else 'Optional', 'Core contract' if row.required else 'Optional capability depth'),
+                                    ('Evidence Owner', evidence_owner, 'Authoritative validation source'),
+                                    ('Verification Coverage', row.technical_checks|length ~ ' Check' ~ ('' if row.technical_checks|length == 1 else 's'), 'Registered technical verification')
+                                ] %}
                 {% for label, value, helper in facts %}
                     <div class="bg-surface-card p-4">
                         <dt class="text-xs font-semibold text-content-muted">{{ label }}</dt>
-                        <dd class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</dd>
-                        <dd class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</dd>
+                        <dd class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">
+                            {{ value }}
+                        </dd>
+                        <dd class="mt-1 text-xs leading-5 text-content-secondary">
+                            {{ helper }}
+                        </dd>
                     </div>
                 {% endfor %}
             </dl>
         </section>
-
         <div class="grid gap-4 xl:grid-cols-2">
-            <section class="rounded-xl border border-outline-default bg-surface-card p-5" data-kaori-provider-capability-evidence>
+            <section class="rounded-xl border border-outline-default bg-surface-card p-5"
+                     data-kaori-provider-capability-evidence>
                 <div class="flex items-start gap-3">
                     {{ integration_ui.palette_icon('file-check-2', icon_tone, size='md') }}
                     <div class="min-w-0">
@@ -50,8 +53,8 @@
                     </div>
                 </div>
             </section>
-
-            <section class="rounded-xl border border-outline-default bg-surface-card p-5" data-kaori-provider-capability-impact>
+            <section class="rounded-xl border border-outline-default bg-surface-card p-5"
+                     data-kaori-provider-capability-impact>
                 <div class="flex items-start gap-3">
                     {{ integration_ui.palette_icon('workflow', 'info', size='md') }}
                     <div class="min-w-0">
@@ -61,8 +64,8 @@
                 </div>
             </section>
         </div>
-
-        <section class="rounded-xl border border-outline-default bg-surface-card p-5" data-kaori-provider-capability-action>
+        <section class="rounded-xl border border-outline-default bg-surface-card p-5"
+                 data-kaori-provider-capability-action>
             <div class="flex items-start gap-3">
                 {{ integration_ui.palette_icon('target', icon_tone, size='md') }}
                 <div class="min-w-0">
@@ -81,9 +84,9 @@
                 </div>
             </div>
         </section>
-
         {% if row.technical_checks %}
-            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card" data-kaori-provider-capability-technical-check>
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
+                     data-kaori-provider-capability-technical-check>
                 <header class="flex items-start gap-3 border-b border-outline-subtle bg-surface-subtle p-4 sm:p-5">
                     {{ integration_ui.palette_icon('terminal-square', 'info', size='md') }}
                     <div class="min-w-0">
@@ -98,8 +101,8 @@
                 </div>
             </section>
         {% endif %}
-
-        <section class="rounded-xl border border-outline-subtle bg-surface-subtle p-4" data-kaori-provider-capability-evidence-boundary>
+        <section class="rounded-xl border border-outline-subtle bg-surface-subtle p-4"
+                 data-kaori-provider-capability-evidence-boundary>
             <div class="flex items-start gap-3">
                 {{ integration_ui.palette_icon('shield-check', 'neutral', size='sm') }}
                 <div class="min-w-0">

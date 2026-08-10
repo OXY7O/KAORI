@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import argparse
 import ast
-import re
 from collections import defaultdict
 from pathlib import Path
+import re
 
 _MODULE_TOKEN = re.compile(r'^app(?:\.[A-Za-z_][A-Za-z0-9_]*)+$')
 
@@ -74,8 +74,9 @@ def validate(root: Path) -> list[str]:
                             incoming[target].add(path.relative_to(root).as_posix())
                 elif isinstance(node, ast.Constant) and isinstance(node.value, str):
                     value = node.value.strip()
-                    if _MODULE_TOKEN.match(value):
-                        target = _module_prefix(value, modules)
+                    module_value = value.partition(':')[0]
+                    if _MODULE_TOKEN.match(module_value):
+                        target = _module_prefix(module_value, modules)
                         if target:
                             incoming[target].add(path.relative_to(root).as_posix())
 

@@ -235,11 +235,7 @@ def save_nodes(
                 (metadata.labels or {}).items(),
             )
         )
-        node_inventory.unschedulable = (
-            bool(node.spec.unschedulable)
-            if node.spec is not None
-            else None
-        )
+        node_inventory.unschedulable = bool(node.spec.unschedulable) if node.spec is not None else None
         node_inventory.memory_pressure = _get_node_condition_status(
             node,
             'MemoryPressure',
@@ -274,20 +270,16 @@ def save_nodes(
         )
 
         node_inventory.os_image = getattr(node_info, 'os_image', None) or None
-        node_inventory.operating_system = (
-            getattr(node_info, 'operating_system', None)
-            or (metadata.labels or {}).get('kubernetes.io/os')
+        node_inventory.operating_system = getattr(node_info, 'operating_system', None) or (metadata.labels or {}).get(
+            'kubernetes.io/os'
         )
-        node_inventory.architecture = (
-            getattr(node_info, 'architecture', None)
-            or (metadata.labels or {}).get('kubernetes.io/arch')
+        node_inventory.architecture = getattr(node_info, 'architecture', None) or (metadata.labels or {}).get(
+            'kubernetes.io/arch'
         )
         node_inventory.kubelet_version = getattr(node_info, 'kubelet_version', None) or None
         node_inventory.kube_proxy_version = getattr(node_info, 'kube_proxy_version', None) or None
         node_inventory.kernel_version = getattr(node_info, 'kernel_version', None) or None
-        node_inventory.container_runtime = (
-            getattr(node_info, 'container_runtime_version', None) or None
-        )
+        node_inventory.container_runtime = getattr(node_info, 'container_runtime_version', None) or None
 
         node_inventory.cpu = cpu
         node_inventory.memory = capacity.get('memory')

@@ -67,7 +67,6 @@ def build_analytics_overview_presentation(
     overall_posture: str,
     overall_tone: str,
 ) -> dict[str, Any]:
-    selected_cluster = _mapping(payload.get('selected_cluster'))
     snapshot_summary = _mapping(payload.get('snapshot_summary'))
     resource_snapshot = _mapping(payload.get('resource_snapshot'))
     capacity_snapshot = _mapping(payload.get('capacity_snapshot'))
@@ -234,8 +233,12 @@ def build_analytics_overview_presentation(
     top_consumers_page = {
         'primary': consumer_groups['memory'] or consumer_groups['cpu'],
         'secondary': consumer_groups['cpu'] if consumer_groups['memory'] else consumer_groups['storage'],
-        'primary_label': 'By Namespace / Resource (Memory)' if consumer_groups['memory'] else 'By Namespace / Resource (CPU)',
-        'secondary_label': 'By Namespace / Resource (CPU)' if consumer_groups['memory'] else 'By Namespace / Resource (Storage)',
+        'primary_label': 'By Namespace / Resource (Memory)'
+        if consumer_groups['memory']
+        else 'By Namespace / Resource (CPU)',
+        'secondary_label': 'By Namespace / Resource (CPU)'
+        if consumer_groups['memory']
+        else 'By Namespace / Resource (Storage)',
         'mix': _consumer_mix(consumer_groups['memory'] or consumer_groups['cpu']),
         'resource_view': tuple(executive_metrics[:3]),
         'observation_scope': _observation_scope(source_rows, period_label),
@@ -251,7 +254,11 @@ def build_analytics_overview_presentation(
                 'label': 'Active Risks',
                 'value': str(len(recommendation_items)),
                 'status': 'Elevated' if recommendation_items else 'Normal',
-                'tone': 'critical' if len(recommendation_items) >= 5 else 'warning' if recommendation_items else 'normal',
+                'tone': 'critical'
+                if len(recommendation_items) >= 5
+                else 'warning'
+                if recommendation_items
+                else 'normal',
                 'note': 'Prioritized analytics recommendations.',
             },
         ),
@@ -451,7 +458,7 @@ def _reconcile_resource_metrics(
             result[key] = _set_metric_percent(
                 metric,
                 latest,
-                source_note=f"{_text(metric.get('label'), key.title())} utilization from the latest committed observation.",
+                source_note=f'{_text(metric.get("label"), key.title())} utilization from the latest committed observation.',
             )
 
     storage_used = _nested_number(
@@ -555,7 +562,7 @@ def _resource_metrics(
         percent = _percent(card)
         card_status = _status(card.get('status'), '')
         available = bool(card) and percent is not None and evidence_available and not _unavailable_state(card_status)
-        if available:
+        if percent is not None and available:
             tone = _tone(card.get('tone') or card.get('status'))
             status = card_status or 'Current'
             description = _text(card.get('description'), f'{label} utilization at the report cut-off.')
@@ -651,7 +658,9 @@ def _priority_findings(
                 )
 
     pvc_risks = _integer(storage_snapshot.get('pvc_risk_count'))
-    if pvc_risks and not any('volume' in item['title'].lower() or 'storage' in item['title'].lower() for item in findings):
+    if pvc_risks and not any(
+        'volume' in item['title'].lower() or 'storage' in item['title'].lower() for item in findings
+    ):
         findings.append(
             {
                 'title': f'{pvc_risks} persistent volume claim(s) require capacity review',
@@ -730,17 +739,17 @@ def _management_decision_summary(item: Mapping[str, Any], title: str, descriptio
     return text or f'Review {title.lower()} and confirm the accountable owner.'
 
 
-
 def _register_title(title: str) -> str:
     """Return a concise table label while preserving the full title in reference notes."""
     value = _text(title, 'Recommendation')
     for prefix in ('Review ', 'Validate ', 'Investigate ', 'Assess '):
         if value.lower().startswith(prefix.lower()):
-            value = value[len(prefix):].strip()
+            value = value[len(prefix) :].strip()
             break
     if len(value) > 48:
         value = value[:45].rsplit(' ', 1)[0].rstrip(' ,.;:') + '...'
     return value or _text(title, 'Recommendation')
+
 
 def _recommendations(actionable: Mapping[str, Any], payload: Mapping[str, Any]) -> list[dict[str, Any]]:
     items = _sequence(actionable.get('items'))
@@ -769,10 +778,7 @@ def _recommendations(actionable: Mapping[str, Any], payload: Mapping[str, Any]) 
         )
         management_summary = _management_decision_summary(item, title, description)
         scope = _text(
-            item.get('affected_scope')
-            or item.get('scope')
-            or item.get('namespace')
-            or item.get('resource'),
+            item.get('affected_scope') or item.get('scope') or item.get('namespace') or item.get('resource'),
             'Selected reporting scope',
         )
         normalized.append(
@@ -880,13 +886,11 @@ def _management_summary(
             )
         else:
             resource_sentence = (
-                f"{_text(highest.get('label'))} is the highest available shared-resource signal "
-                f"at {_display_percent(highest_percent)}."
+                f'{_text(highest.get("label"))} is the highest available shared-resource signal '
+                f'at {_display_percent(highest_percent)}.'
             )
     else:
-        resource_sentence = (
-            'Shared CPU and memory utilization are not available from the committed metric evidence.'
-        )
+        resource_sentence = 'Shared CPU and memory utilization are not available from the committed metric evidence.'
 
     concerns: list[str] = []
     not_ready = _integer(inventory.get('not_ready_nodes'))
@@ -981,8 +985,14 @@ def _capacity_rows(
         ('pods_remaining',),
         ('pod_capacity', 'remaining'),
     )
-    pods_total = pods_used_count + int(round(pods_remaining or 0)) if pods_used_count and pods_remaining is not None else 0
-    pods_capacity_label = f'{pods_total} Total' if pods_total else _text(_mapping(capacity_snapshot.get('pod_capacity_remaining')).get('value'), 'Not Available')
+    pods_total = (
+        pods_used_count + int(round(pods_remaining or 0)) if pods_used_count and pods_remaining is not None else 0
+    )
+    pods_capacity_label = (
+        f'{pods_total} Total'
+        if pods_total
+        else _text(_mapping(capacity_snapshot.get('pod_capacity_remaining')).get('value'), 'Not Available')
+    )
     pods_headroom_label = (
         f'{int(round(pods_remaining))} Remaining ({_display_percent(pods_metric.get("headroom_percent"))})'
         if pods_remaining is not None
@@ -994,7 +1004,9 @@ def _capacity_rows(
         storage_tone = 'warning' if storage_risks or storage_free < 30.0 else 'normal'
     storage_status = _status(storage_snapshot.get('status'), '')
     if not storage_status:
-        storage_status = 'Review' if storage_tone == 'warning' else 'Critical' if storage_tone == 'critical' else 'Normal'
+        storage_status = (
+            'Review' if storage_tone == 'warning' else 'Critical' if storage_tone == 'critical' else 'Normal'
+        )
     storage_used_percent = max(0.0, min(100.0, 100.0 - storage_free))
     return [
         {
@@ -1019,8 +1031,8 @@ def _capacity_rows(
             'capacity': pods_capacity_label,
             'headroom': pods_headroom_label,
             'chart_percent': _number(pods_metric.get('percent')),
-            'chart_value': f"{_text(pods_metric.get('value'))} used",
-            'chart_headroom': f"{_display_percent(pods_metric.get('headroom_percent'))} headroom",
+            'chart_value': f'{_text(pods_metric.get("value"))} used',
+            'chart_headroom': f'{_display_percent(pods_metric.get("headroom_percent"))} headroom',
             'interpretation': 'Current pod utilization and remaining schedulable slots.',
             'status': _text(pods_metric.get('status')),
             'tone': _tone(pods_metric.get('tone')),
@@ -1050,9 +1062,13 @@ def _resource_interpretation(
         highest_label = _text(highest.get('label'), 'Resource')
         highest_percent = _number(highest.get('percent'))
         if highest_percent < 0.5:
-            details = ['Shared-resource utilization is below 0.5%; source recency should be validated before operational use.']
+            details = [
+                'Shared-resource utilization is below 0.5%; source recency should be validated before operational use.'
+            ]
         else:
-            details = [f'{highest_label} is the highest available shared resource signal at {_display_percent(highest_percent)}.']
+            details = [
+                f'{highest_label} is the highest available shared resource signal at {_display_percent(highest_percent)}.'
+            ]
     else:
         details = ['Shared CPU and memory signals are not available from the committed metric evidence.']
     if pvc_risks:
@@ -1091,8 +1107,12 @@ def _forecast_series(forecast_snapshot: Mapping[str, Any]) -> list[dict[str, Any
     points = [item for item in raw_series if isinstance(item, Mapping)]
     if not points:
         return []
-    historical_values = [_number(item.get('value')) for item in points if str(item.get('kind') or '').lower() == 'historical']
-    forecast_values = [_number(item.get('value')) for item in points if str(item.get('kind') or '').lower() == 'forecast']
+    historical_values = [
+        _number(item.get('value')) for item in points if str(item.get('kind') or '').lower() == 'historical'
+    ]
+    forecast_values = [
+        _number(item.get('value')) for item in points if str(item.get('kind') or '').lower() == 'forecast'
+    ]
     all_values = historical_values + forecast_values
     if not all_values:
         return []
@@ -1105,7 +1125,9 @@ def _forecast_series(forecast_snapshot: Mapping[str, Any]) -> list[dict[str, Any
         else:
             step = (end - start) / (len(values) - 1)
             xs = [start + index * step for index in range(len(values))]
-        return ' '.join(f'{x:.2f},{100.0 - max(0.0, min(value, 100.0)):.2f}' for x, value in zip(xs, values, strict=False))
+        return ' '.join(
+            f'{x:.2f},{100.0 - max(0.0, min(value, 100.0)):.2f}' for x, value in zip(xs, values, strict=False)
+        )
 
     historical_points = chart_points(historical_values, 0.0, 54.0)
     forecast_points = chart_points(forecast_values, 54.0, 100.0)
@@ -1157,12 +1179,14 @@ def _forecast_svg(series: Sequence[Mapping[str, Any]]) -> str:
     historical_line = (
         f'<polyline points="{escape(historical)}" fill="none" stroke="#7c3aed" '
         'stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'
-        if historical else ''
+        if historical
+        else ''
     )
     forecast_line = (
         f'<polyline points="{escape(forecast)}" fill="none" stroke="#8b5cf6" '
         'stroke-width="3" stroke-dasharray="8 6" stroke-linecap="round" stroke-linejoin="round"/>'
-        if forecast else ''
+        if forecast
+        else ''
     )
     projected_y = _chart_y(projected)
     latest_y = _chart_y(latest)
@@ -1174,7 +1198,7 @@ def _forecast_svg(series: Sequence[Mapping[str, Any]]) -> str:
     threshold_label_x = min(610.0, forecast_start_x + 165.0)
 
     return f'''<svg class="ao-chart-svg chart" viewBox="0 0 800 230" role="img" aria-label="{label} demand forecast">
-        <rect x="{forecast_start_x:.1f}" y="18" width="{748-forecast_start_x:.1f}" height="164" fill="#faf7ff"/>
+        <rect x="{forecast_start_x:.1f}" y="18" width="{748 - forecast_start_x:.1f}" height="164" fill="#faf7ff"/>
         <text x="{forecast_start_x + 12:.1f}" y="32" fill="#6d28d9" font-size="10" font-weight="700">FORECAST</text>
         <g stroke="#e5e7eb" stroke-width="1">
             <line x1="68" x2="748" y1="182" y2="182"/><line x1="68" x2="748" y1="143" y2="143"/>
@@ -1250,7 +1274,15 @@ def _forecast_rows(
         trend = _text(item.get('trend'), _text(forecast_snapshot.get(f'{key}_trend'), 'Unknown'))
         eta = nearest_label if key == nearest_resource else 'Not projected'
         confidence = 'High' if item else 'Not Available'
-        tone = 'neutral' if projected is None else 'critical' if projected >= 85 else 'warning' if projected >= 70 else 'normal'
+        tone = (
+            'neutral'
+            if projected is None
+            else 'critical'
+            if projected >= 85
+            else 'warning'
+            if projected >= 70
+            else 'normal'
+        )
         rows.append(
             {
                 'resource': label,
@@ -1265,7 +1297,9 @@ def _forecast_rows(
                     if projected is not None and tone == 'critical'
                     else 'Projected to enter or remain in the warning band.'
                     if projected is not None and tone == 'warning'
-                    else 'Not available from the committed forecast evidence.' if projected is None else 'Stable within the current operating window.'
+                    else 'Not available from the committed forecast evidence.'
+                    if projected is None
+                    else 'Stable within the current operating window.'
                 ),
             }
         )
@@ -1371,10 +1405,7 @@ def _observation_scope(
     source_rows: Sequence[Mapping[str, Any]],
     period_label: str,
 ) -> list[dict[str, Any]]:
-    result = [
-        {'label': _text(row.get('label')), 'value': _text(row.get('source'))}
-        for row in source_rows[:3]
-    ]
+    result = [{'label': _text(row.get('label')), 'value': _text(row.get('source'))} for row in source_rows[:3]]
     result.append({'label': 'Time Window', 'value': period_label})
     return result
 
@@ -1442,7 +1473,7 @@ def _capacity_forecast_rows(
     return [
         {
             'resource': row['resource'],
-            'range': f"{row['current']} - {row['projected']}",
+            'range': f'{row["current"]} - {row["projected"]}',
             'pressure': 'High' if row['tone'] == 'critical' else 'Moderate' if row['tone'] == 'warning' else 'Low',
             'risk': 'Medium' if row['tone'] == 'critical' else 'Low',
             'tone': row['tone'],
@@ -1464,7 +1495,9 @@ def _capacity_interpretation(
         names = ' and '.join(_text(item.get('label')) for item in constrained)
         base = f'{names} are the most constrained shared resources in the current committed snapshot.'
     elif constrained:
-        base = 'Shared-resource utilization is below 0.5%; verify the current metric collection window before remediation.'
+        base = (
+            'Shared-resource utilization is below 0.5%; verify the current metric collection window before remediation.'
+        )
     else:
         base = 'Shared-resource utilization is not available from the committed metric evidence.'
     not_ready = _integer(inventory.get('not_ready_nodes'))
@@ -1479,10 +1512,7 @@ def _alerts(alert_detail: Mapping[str, Any]) -> list[dict[str, Any]]:
             continue
         severity = _text(item.get('severity') or item.get('severity_label'), 'Info')
         resource = _text(
-            item.get('affected_resource')
-            or item.get('resource_name')
-            or item.get('resource')
-            or item.get('instance'),
+            item.get('affected_resource') or item.get('resource_name') or item.get('resource') or item.get('instance'),
             'Not Available',
         )
         rows.append(
@@ -1493,7 +1523,9 @@ def _alerts(alert_detail: Mapping[str, Any]) -> list[dict[str, Any]]:
                 'name': _text(item.get('alertname') or item.get('name') or item.get('title'), 'Unnamed Alert'),
                 'resource': resource,
                 'namespace': _text(item.get('namespace'), 'Cluster Scoped'),
-                'since': _text(item.get('duration') or item.get('active_for') or item.get('starts_at'), 'Not Available'),
+                'since': _text(
+                    item.get('duration') or item.get('active_for') or item.get('starts_at'), 'Not Available'
+                ),
                 'status': _text(item.get('status'), 'Active'),
             }
         )
@@ -1510,7 +1542,9 @@ def _anomalies(alert_detail: Mapping[str, Any]) -> list[dict[str, Any]]:
                 'rank': index,
                 'name': _text(item.get('name') or item.get('title') or item.get('anomaly_type'), 'Unnamed Anomaly'),
                 'namespace': _text(item.get('namespace'), 'Cluster Scoped'),
-                'detected_at': _text(item.get('detected_at') or item.get('starts_at') or item.get('timestamp'), 'Not Available'),
+                'detected_at': _text(
+                    item.get('detected_at') or item.get('starts_at') or item.get('timestamp'), 'Not Available'
+                ),
                 'tone': _tone(item.get('severity') or item.get('status')),
             }
         )
@@ -1522,15 +1556,32 @@ def _alert_metrics(
     alert_detail: Mapping[str, Any],
 ) -> list[dict[str, Any]]:
     summary = _mapping(alert_detail.get('summary'))
-    critical = _integer(summary.get('critical') or summary.get('critical_alerts') or alerts_snapshot.get('critical_alerts'))
+    critical = _integer(
+        summary.get('critical') or summary.get('critical_alerts') or alerts_snapshot.get('critical_alerts')
+    )
     warning = _integer(summary.get('warning') or summary.get('warning_alerts') or alerts_snapshot.get('warning_alerts'))
     info = _integer(summary.get('info') or summary.get('info_alerts'))
     anomalies = _integer(summary.get('anomalies') or alerts_snapshot.get('recent_anomalies'))
     return [
-        {'label': 'Critical Alerts', 'value': str(critical), 'status': 'Requires Immediate Action' if critical else 'Clear', 'tone': 'critical' if critical else 'normal'},
-        {'label': 'Warning Alerts', 'value': str(warning), 'status': 'Requires Attention' if warning else 'Clear', 'tone': 'warning' if warning else 'normal'},
+        {
+            'label': 'Critical Alerts',
+            'value': str(critical),
+            'status': 'Requires Immediate Action' if critical else 'Clear',
+            'tone': 'critical' if critical else 'normal',
+        },
+        {
+            'label': 'Warning Alerts',
+            'value': str(warning),
+            'status': 'Requires Attention' if warning else 'Clear',
+            'tone': 'warning' if warning else 'normal',
+        },
         {'label': 'Info Alerts', 'value': str(info), 'status': 'Informational', 'tone': 'info'},
-        {'label': 'Anomalies Detected', 'value': str(anomalies), 'status': 'Unusual Patterns' if anomalies else 'None Detected', 'tone': 'info' if anomalies else 'normal'},
+        {
+            'label': 'Anomalies Detected',
+            'value': str(anomalies),
+            'status': 'Unusual Patterns' if anomalies else 'None Detected',
+            'tone': 'info' if anomalies else 'normal',
+        },
     ]
 
 
@@ -1616,7 +1667,9 @@ def _alert_intelligence_summary(
     critical = _integer(alerts_snapshot.get('critical_alerts'))
     warning = _integer(alerts_snapshot.get('warning_alerts'))
     if critical or warning:
-        return f'{critical} critical and {warning} warning alert(s) require operational ownership and response validation.'
+        return (
+            f'{critical} critical and {warning} warning alert(s) require operational ownership and response validation.'
+        )
     if alerts:
         return 'Active alert details are available, but no critical or warning total was reported.'
     return 'No active alert detail was returned for the selected reporting boundary.'
@@ -1695,9 +1748,24 @@ def _reporting(reporting_summary: Mapping[str, Any]) -> dict[str, Any]:
     activity = _report_activity(normalized_recent)
     metrics = [
         {'label': 'Reports Generated', 'value': str(generated), 'note': 'Current reporting period', 'tone': 'info'},
-        {'label': 'Scheduled Reports', 'value': str(_integer(counts.get('active_schedules'))), 'note': 'Active schedules', 'tone': 'normal'},
-        {'label': 'Ready Reports', 'value': str(_integer(counts.get('ready'))), 'note': 'Available for download', 'tone': 'info'},
-        {'label': 'Failed Reports', 'value': str(_integer(counts.get('failed'))), 'note': 'Requires review', 'tone': 'critical' if _integer(counts.get('failed')) else 'normal'},
+        {
+            'label': 'Scheduled Reports',
+            'value': str(_integer(counts.get('active_schedules'))),
+            'note': 'Active schedules',
+            'tone': 'normal',
+        },
+        {
+            'label': 'Ready Reports',
+            'value': str(_integer(counts.get('ready'))),
+            'note': 'Available for download',
+            'tone': 'info',
+        },
+        {
+            'label': 'Failed Reports',
+            'value': str(_integer(counts.get('failed'))),
+            'note': 'Requires review',
+            'tone': 'critical' if _integer(counts.get('failed')) else 'normal',
+        },
     ]
     return {
         'metrics': metrics,
@@ -1710,7 +1778,8 @@ def _reporting(reporting_summary: Mapping[str, Any]) -> dict[str, Any]:
             'tone': _tone(storage.get('tone')),
             'description': _text(storage.get('description'), 'Storage utilization detail is not available.'),
         },
-        'notes': _sequence(reporting_summary.get('notes')) or [
+        'notes': _sequence(reporting_summary.get('notes'))
+        or [
             'Generated report records use the canonical KAORI WeasyPrint pipeline.',
             'Scheduled definitions and generated artifacts remain separate governed records.',
         ],
@@ -1727,7 +1796,9 @@ def _normalize_recent_report(item: Any) -> dict[str, Any]:
     return {
         'name': _text(row.get('name'), 'Unnamed Report'),
         'type': _text(row.get('report_type_label') or row.get('type'), 'Report'),
-        'generated_at': _text(row.get('created_at_display') or row.get('generated_at') or row.get('created_at'), 'Not Available'),
+        'generated_at': _text(
+            row.get('created_at_display') or row.get('generated_at') or row.get('created_at'), 'Not Available'
+        ),
         'size': _text(row.get('file_size_display') or row.get('size'), 'Not Available'),
         'status': _text(row.get('status_label') or row.get('status'), 'Unknown'),
         'tone': _tone(row.get('status_tone') or row.get('status')),
@@ -1773,13 +1844,25 @@ def _inventory(inventory_snapshot: Mapping[str, Any], selected_cluster_id: Any) 
         )
     totals = {
         'clusters': len(clusters) if selected_cluster_id else _integer(inventory_snapshot.get('total_clusters')),
-        'nodes': sum(item['nodes'] for item in clusters) if selected_cluster_id else _integer(inventory_snapshot.get('total_nodes')),
-        'namespaces': sum(item['namespaces'] for item in clusters) if selected_cluster_id else _integer(inventory_snapshot.get('total_namespaces')),
-        'workloads': sum(item['workloads'] for item in clusters) if selected_cluster_id else _integer(inventory_snapshot.get('total_workloads')),
-        'pods': sum(item['pods'] for item in clusters) if selected_cluster_id else _integer(inventory_snapshot.get('total_pods')),
-        'services': sum(item['services'] for item in clusters) if selected_cluster_id else _integer(inventory_snapshot.get('total_services')),
+        'nodes': sum(item['nodes'] for item in clusters)
+        if selected_cluster_id
+        else _integer(inventory_snapshot.get('total_nodes')),
+        'namespaces': sum(item['namespaces'] for item in clusters)
+        if selected_cluster_id
+        else _integer(inventory_snapshot.get('total_namespaces')),
+        'workloads': sum(item['workloads'] for item in clusters)
+        if selected_cluster_id
+        else _integer(inventory_snapshot.get('total_workloads')),
+        'pods': sum(item['pods'] for item in clusters)
+        if selected_cluster_id
+        else _integer(inventory_snapshot.get('total_pods')),
+        'services': sum(item['services'] for item in clusters)
+        if selected_cluster_id
+        else _integer(inventory_snapshot.get('total_services')),
         'ingresses': _integer(inventory_snapshot.get('total_ingresses')),
-        'storage': sum(item['storage'] for item in clusters) if selected_cluster_id else _integer(inventory_snapshot.get('total_storage')),
+        'storage': sum(item['storage'] for item in clusters)
+        if selected_cluster_id
+        else _integer(inventory_snapshot.get('total_storage')),
         'configuration': _integer(inventory_snapshot.get('total_configuration')),
     }
     health = _mapping(inventory_snapshot.get('health'))
@@ -1826,7 +1909,11 @@ def _inventory(inventory_snapshot: Mapping[str, Any], selected_cluster_id: Any) 
             {'label': 'Clusters', 'value': str(totals['clusters']), 'tone': 'info'},
             {'label': 'Nodes', 'value': str(totals['nodes']), 'tone': 'info'},
             {'label': 'Namespaces', 'value': str(totals['namespaces']), 'tone': 'normal'},
-            {'label': 'Workloads', 'value': str(totals['workloads']), 'tone': 'warning' if totals['workloads'] else 'neutral'},
+            {
+                'label': 'Workloads',
+                'value': str(totals['workloads']),
+                'tone': 'warning' if totals['workloads'] else 'neutral',
+            },
             {'label': 'Pods', 'value': str(totals['pods']), 'tone': 'info'},
             {'label': 'Persistent Volumes', 'value': str(totals['storage']), 'tone': 'neutral'},
         ],
@@ -1878,8 +1965,8 @@ def _inventory_health_summary(
     if clusters:
         result.append(f'{len(clusters)} cluster inventory snapshot(s) are included in this report.')
     if health:
-        result.append(f"Inventory coverage score: {_integer(health.get('coverage_score'))}%.")
-        result.append(f"Inventory freshness score: {_integer(health.get('freshness_score'))}%.")
+        result.append(f'Inventory coverage score: {_integer(health.get("coverage_score"))}%.')
+        result.append(f'Inventory freshness score: {_integer(health.get("freshness_score"))}%.')
     if not result:
         result.append('Inventory health evidence is not available for the selected reporting boundary.')
     return result
@@ -1963,7 +2050,9 @@ def _freshness_page(
     scores = []
     for row in source_rows:
         tone = _tone(row.get('tone'))
-        scores.append(100 if tone == 'normal' else 75 if tone in {'info', 'warning'} else 40 if tone == 'critical' else 0)
+        scores.append(
+            100 if tone == 'normal' else 75 if tone in {'info', 'warning'} else 40 if tone == 'critical' else 0
+        )
     overall = sum(scores) / len(scores) if scores else 0
     expected = _integer(snapshot_summary.get('expected_dataset_count'))
     current = _integer(snapshot_summary.get('current_dataset_count'))
@@ -1982,20 +2071,52 @@ def _freshness_page(
         ]
     return {
         'metrics': [
-            {'label': 'Overall Freshness', 'value': _display_percent(overall), 'status': 'Good' if overall >= 85 else 'Attention', 'tone': 'normal' if overall >= 85 else 'warning'},
+            {
+                'label': 'Overall Freshness',
+                'value': _display_percent(overall),
+                'status': 'Good' if overall >= 85 else 'Attention',
+                'tone': 'normal' if overall >= 85 else 'warning',
+            },
             {'label': 'Data Sources', 'value': str(len(source_rows)), 'status': 'Active', 'tone': 'info'},
-            {'label': 'Dataset Completeness', 'value': _display_percent(completeness), 'status': 'Healthy' if completeness >= 90 else 'Attention', 'tone': 'normal' if completeness >= 90 else 'warning'},
-            {'label': 'Failed Datasets', 'value': str(failed), 'status': 'Attention' if failed else 'Healthy', 'tone': 'critical' if failed else 'normal'},
-            {'label': 'Data Quality Score', 'value': _display_percent((overall + completeness) / 2), 'status': 'Good' if (overall + completeness) / 2 >= 85 else 'Attention', 'tone': 'normal' if (overall + completeness) / 2 >= 85 else 'warning'},
+            {
+                'label': 'Dataset Completeness',
+                'value': _display_percent(completeness),
+                'status': 'Healthy' if completeness >= 90 else 'Attention',
+                'tone': 'normal' if completeness >= 90 else 'warning',
+            },
+            {
+                'label': 'Failed Datasets',
+                'value': str(failed),
+                'status': 'Attention' if failed else 'Healthy',
+                'tone': 'critical' if failed else 'normal',
+            },
+            {
+                'label': 'Data Quality Score',
+                'value': _display_percent((overall + completeness) / 2),
+                'status': 'Good' if (overall + completeness) / 2 >= 85 else 'Attention',
+                'tone': 'normal' if (overall + completeness) / 2 >= 85 else 'warning',
+            },
         ],
         'sources': list(source_rows),
         'freshness_svg': _freshness_svg(freshness),
         'reliability': [
-            {'label': 'Completeness', 'value': _display_percent(completeness), 'tone': 'normal' if completeness >= 90 else 'warning'},
-            {'label': 'Consistency', 'value': _display_percent(overall), 'tone': 'normal' if overall >= 85 else 'warning'},
+            {
+                'label': 'Completeness',
+                'value': _display_percent(completeness),
+                'tone': 'normal' if completeness >= 90 else 'warning',
+            },
+            {
+                'label': 'Consistency',
+                'value': _display_percent(overall),
+                'tone': 'normal' if overall >= 85 else 'warning',
+            },
             {'label': 'Accuracy', 'value': 'Committed Evidence', 'tone': 'info'},
             {'label': 'Latency', 'value': _text(freshness.get('average_latency'), 'Not Available'), 'tone': 'neutral'},
-            {'label': 'Retention Coverage', 'value': _text(freshness.get('retention_coverage'), 'Policy Managed'), 'tone': 'info'},
+            {
+                'label': 'Retention Coverage',
+                'value': _text(freshness.get('retention_coverage'), 'Policy Managed'),
+                'tone': 'info',
+            },
         ],
         'recency': _recency_distribution(source_rows),
         'issues': [_normalize_quality_issue(item) for item in issues[:8]],
@@ -2122,9 +2243,21 @@ def _recommendation_page(recommendations: Sequence[Mapping[str, Any]]) -> dict[s
         owner_counts[owner] = owner_counts.get(owner, 0) + 1
     return {
         'metrics': [
-            {'label': 'P1 Actions', 'value': str(sum(1 for item in items if item.get('priority') == 'P1')), 'tone': 'critical'},
-            {'label': 'P2 Actions', 'value': str(sum(1 for item in items if item.get('priority') == 'P2')), 'tone': 'warning'},
-            {'label': 'Owner Assignment Pending', 'value': str(sum(1 for item in items if 'required' in _text(item.get('owner')).lower())), 'tone': 'info'},
+            {
+                'label': 'P1 Actions',
+                'value': str(sum(1 for item in items if item.get('priority') == 'P1')),
+                'tone': 'critical',
+            },
+            {
+                'label': 'P2 Actions',
+                'value': str(sum(1 for item in items if item.get('priority') == 'P2')),
+                'tone': 'warning',
+            },
+            {
+                'label': 'Owner Assignment Pending',
+                'value': str(sum(1 for item in items if 'required' in _text(item.get('owner')).lower())),
+                'tone': 'info',
+            },
             {'label': 'Validation Gates', 'value': str(len(items)), 'tone': 'normal'},
         ],
         'items': items,
@@ -2155,21 +2288,34 @@ def _methodology_page(
     snapshot_summary: Mapping[str, Any],
 ) -> dict[str, Any]:
     totals = _mapping(inventory.get('totals'))
-    coverage = f"{_integer(totals.get('nodes'))} Nodes / {_integer(totals.get('namespaces'))} Namespaces"
+    coverage = f'{_integer(totals.get("nodes"))} Nodes / {_integer(totals.get("namespaces"))} Namespaces'
     return {
         'metrics': [
             {'label': 'Data Sources', 'value': str(len(source_rows)), 'tone': 'info'},
             {'label': 'Coverage', 'value': coverage, 'tone': 'info'},
-            {'label': 'Forecast Window', 'value': _text(forecast_snapshot.get('forecast_horizon'), 'Not Available'), 'tone': 'info'},
+            {
+                'label': 'Forecast Window',
+                'value': _text(forecast_snapshot.get('forecast_horizon'), 'Not Available'),
+                'tone': 'info',
+            },
             {'label': 'Observation Boundary', 'value': 'Committed Snapshot', 'tone': 'info'},
         ],
         'sources': list(source_rows),
         'methodology': [
             {'label': 'Reporting Period', 'value': period_label},
             {'label': 'Data Cut-Off', 'value': data_cutoff},
-            {'label': 'Forecast Method', 'value': 'Holt-Winters exponential smoothing where committed forecast evidence is available.'},
-            {'label': 'Severity Interpretation', 'value': 'Derived from thresholds, impact scope, and operational urgency.'},
-            {'label': 'Priority Interpretation', 'value': 'Based on operational impact, recoverability, and risk to service continuity.'},
+            {
+                'label': 'Forecast Method',
+                'value': 'Holt-Winters exponential smoothing where committed forecast evidence is available.',
+            },
+            {
+                'label': 'Severity Interpretation',
+                'value': 'Derived from thresholds, impact scope, and operational urgency.',
+            },
+            {
+                'label': 'Priority Interpretation',
+                'value': 'Based on operational impact, recoverability, and risk to service continuity.',
+            },
             {'label': 'Snapshot Status', 'value': _text(snapshot_summary.get('status'), 'Unknown')},
         ],
         'included': (
@@ -2192,10 +2338,22 @@ def _methodology_page(
             'Data freshness may differ by source based on collection intervals and retention policies.',
         ),
         'status_language': (
-            {'label': 'Not Available', 'description': 'No data exists for the requested dimension within the reporting period.'},
-            {'label': 'Not Collected', 'description': 'Data was not collected because of configuration, permission, or collection failure.'},
-            {'label': 'Partial Coverage', 'description': 'Data was collected, but coverage is incomplete for the requested scope.'},
-            {'label': 'Source Unavailable', 'description': 'The source was unreachable or not providing data at the cut-off.'},
+            {
+                'label': 'Not Available',
+                'description': 'No data exists for the requested dimension within the reporting period.',
+            },
+            {
+                'label': 'Not Collected',
+                'description': 'Data was not collected because of configuration, permission, or collection failure.',
+            },
+            {
+                'label': 'Partial Coverage',
+                'description': 'Data was collected, but coverage is incomplete for the requested scope.',
+            },
+            {
+                'label': 'Source Unavailable',
+                'description': 'The source was unreachable or not providing data at the cut-off.',
+            },
         ),
         'guidance': (
             'This report supports operational planning and decision-making. Validate all findings '

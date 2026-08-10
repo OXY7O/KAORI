@@ -51,10 +51,7 @@ def get_report_tls_inventory_payload(report: Report) -> dict[str, Any]:
         query = query.filter(TLSCertificateInventory.namespace == report.namespace)
 
     severity_order = case(
-        *(
-            (TLSCertificateInventory.status == status, order)
-            for status, order in _STATUS_ORDER.items()
-        ),
+        *((TLSCertificateInventory.status == status, order) for status, order in _STATUS_ORDER.items()),
         else_=99,
     )
     records = query.order_by(
@@ -65,10 +62,7 @@ def get_report_tls_inventory_payload(report: Report) -> dict[str, Any]:
         TLSCertificateInventory.secret_name.asc(),
     ).all()
 
-    presented_records = [
-        _present_record(record, collection_states.get(str(record.cluster_id)))
-        for record in records
-    ]
+    presented_records = [_present_record(record, collection_states.get(str(record.cluster_id))) for record in records]
     summary = _summary(presented_records, scoped_clusters, collection_states)
     latest_collected = _latest_datetime(
         [record.collected_at for record in records]
@@ -76,8 +70,10 @@ def get_report_tls_inventory_payload(report: Report) -> dict[str, Any]:
     )
 
     environments = sorted({cluster.environment for cluster in scoped_clusters if cluster.environment})
-    environment = environments[0] if len(environments) == 1 else (
-        f'{len(environments)} Environments' if environments else 'Not Available'
+    environment = (
+        environments[0]
+        if len(environments) == 1
+        else (f'{len(environments)} Environments' if environments else 'Not Available')
     )
 
     return {
@@ -88,8 +84,7 @@ def get_report_tls_inventory_payload(report: Report) -> dict[str, Any]:
         'records': presented_records,
         'summary': summary,
         'collection_states': [
-            _present_collection_state(cluster, collection_states.get(str(cluster.id)))
-            for cluster in scoped_clusters
+            _present_collection_state(cluster, collection_states.get(str(cluster.id))) for cluster in scoped_clusters
         ],
         'source_evidence': _source_evidence(scoped_clusters, collection_states),
         'validity_policy': {
@@ -118,9 +113,7 @@ def _collection_state_map(cluster_ids: Iterable[str]) -> dict[str, TLSCertificat
         return {}
     return {
         str(state.cluster_id): state
-        for state in TLSCertificateCollectionState.query.filter(
-            TLSCertificateCollectionState.cluster_id.in_(ids)
-        ).all()
+        for state in TLSCertificateCollectionState.query.filter(TLSCertificateCollectionState.cluster_id.in_(ids)).all()
     }
 
 
@@ -129,8 +122,7 @@ def _present_record(
     collection_state: TLSCertificateCollectionState | None,
 ) -> dict[str, Any]:
     ingress_mapping_collected = bool(
-        collection_state
-        and collection_state.ingress_mapping_status == TLS_COLLECTION_COLLECTED
+        collection_state and collection_state.ingress_mapping_status == TLS_COLLECTION_COLLECTED
     )
     consumers = [item for item in (record.used_by or []) if isinstance(item, Mapping)]
     if consumers:
@@ -174,11 +166,9 @@ def _present_record(
         'fingerprint_sha256': fingerprint or 'Not Available',
         'fingerprint_short': fingerprint[-16:] if fingerprint else 'Not Available',
         'dns_names': [str(item) for item in (record.dns_names or []) if item],
-        'dns_names_label': ', '.join(str(item) for item in (record.dns_names or []) if item)
-        or 'Not Available',
+        'dns_names_label': ', '.join(str(item) for item in (record.dns_names or []) if item) or 'Not Available',
         'ingress_hosts': [str(item) for item in (record.ingress_hosts or []) if item],
-        'ingress_hosts_label': ', '.join(str(item) for item in (record.ingress_hosts or []) if item)
-        or 'Not Available',
+        'ingress_hosts_label': ', '.join(str(item) for item in (record.ingress_hosts or []) if item) or 'Not Available',
         'used_by': consumers,
         'reference_count': len(consumers),
         'references': references,
@@ -204,8 +194,7 @@ def _present_record(
         'declared_host_count': int(record.declared_host_count or 0),
         'covered_host_count': int(record.covered_host_count or 0),
         'uncovered_hosts': [str(item) for item in (record.uncovered_hosts or []) if item],
-        'uncovered_hosts_label': ', '.join(str(item) for item in (record.uncovered_hosts or []) if item)
-        or 'None',
+        'uncovered_hosts_label': ', '.join(str(item) for item in (record.uncovered_hosts or []) if item) or 'None',
         'collected_at': record.collected_at,
         'updated_at': record.updated_at,
         'key_pair_state': 'Not Collected',
@@ -236,24 +225,15 @@ def _summary(
         if issuer and issuer != 'Not Available':
             issuer_values.add(issuer)
 
-    expired_in_use = sum(
-        1 for record in records
-        if record['status'] == 'expired' and record['usage_state'] == 'in_use'
-    )
+    expired_in_use = sum(1 for record in records if record['status'] == 'expired' and record['usage_state'] == 'in_use')
     critical_in_use = sum(
-        1 for record in records
-        if record['status'] == 'critical' and record['usage_state'] == 'in_use'
+        1 for record in records if record['status'] == 'critical' and record['usage_state'] == 'in_use'
     )
-    warning_in_use = sum(
-        1 for record in records
-        if record['status'] == 'warning' and record['usage_state'] == 'in_use'
-    )
-    invalid_in_use = sum(
-        1 for record in records
-        if record['status'] == 'invalid' and record['usage_state'] == 'in_use'
-    )
+    warning_in_use = sum(1 for record in records if record['status'] == 'warning' and record['usage_state'] == 'in_use')
+    invalid_in_use = sum(1 for record in records if record['status'] == 'invalid' and record['usage_state'] == 'in_use')
     uncovered_in_use = sum(
-        1 for record in records
+        1
+        for record in records
         if record['coverage_state'] in {'partial', 'uncovered'} and record['usage_state'] == 'in_use'
     )
     secret_collection_exceptions = sum(

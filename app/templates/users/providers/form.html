@@ -22,19 +22,18 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ page_hero.context_card(
-                    'Identity Provider Configuration',
-                    'Authentication Source',
-                    'Configuration Scope',
-                    ('Enabled' if provider and provider.enabled else ('Disabled' if provider else 'Draft')),
-                    ('normal' if provider and provider.enabled else 'unknown'),
-                    [
-                        ('settings-2', 'Mode', 'Edit' if provider else 'Add', 'Administrative configuration'),
-                        ('key-round', 'Credential Owner', 'Runtime Environment', 'Secret values stay external')
-                    ],
-                    'Back to Providers',
-                    url_for('users.providers'),
-                    action_icon='arrow-left'
+                {{ page_hero.context_card('Identity Provider Configuration',
+                                'Authentication Source',
+                                'Configuration Scope',
+                                ('Enabled' if provider and provider.enabled else ('Disabled' if provider else 'Draft') ),
+                ('normal' if provider and provider.enabled else 'unknown'),
+                [
+                ('settings-2', 'Mode', 'Edit' if provider else 'Add', 'Administrative configuration'),
+                ('key-round', 'Credential Owner', 'Runtime Environment', 'Secret values stay external')
+                ],
+                'Back to Providers',
+                url_for('users.providers'),
+                action_icon='arrow-left'
                 ) }}
             </div>
         </section>
@@ -98,10 +97,13 @@
                 {% include "users/providers/partials/_sso_configuration.html" %}
                 {% if test_result %}
                     {% set test_passed = test_result.status == 'success' %}
-                    <section class="rounded-xl border {{ 'border-status-normal-border bg-status-normal-soft' if test_passed else 'border-status-critical-border bg-status-critical-soft' }} p-4 shadow-sm" aria-live="polite">
+                    <section class="rounded-xl border {{ 'border-status-normal-border bg-status-normal-soft' if test_passed else 'border-status-critical-border bg-status-critical-soft' }} p-4 shadow-sm"
+                             aria-live="polite">
                         <div class="flex items-start gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card {{ 'text-status-normal-text' if test_passed else 'text-status-critical-text' }}" aria-hidden="true">
-                                <i data-lucide="{{ 'circle-check' if test_passed else 'circle-alert' }}" class="h-4 w-4"></i>
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card {{ 'text-status-normal-text' if test_passed else 'text-status-critical-text' }}"
+                                  aria-hidden="true">
+                                <i data-lucide="{{ 'circle-check' if test_passed else 'circle-alert' }}"
+                                   class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
                                 <h2 class="text-sm font-semibold {{ 'text-status-normal-text' if test_passed else 'text-status-critical-text' }}">{{ test_result.title }}</h2>

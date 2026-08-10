@@ -1,13 +1,12 @@
 {% import "components/table.html" as table_ui %}
 <section id="ingresses-inventory-card" class="{{ table_ui.block_classes() }}">
-    {{ table_ui.inventory_block_header(
-        'route',
+    {{ table_ui.inventory_block_header('route',
         'Ingress Inventory',
         'Ingress identity, publication evidence, TLS references, and backend routes collected from connected clusters.',
         'ingresses-table-loading',
         'Refreshing Ingress Inventory',
-        url_for('integrations.kubernetes'),
-        'Open Cluster List'
+        url_for('integrations.kubernetes') ,
+    'Open Cluster List'
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form hx-get="{{ url_for('inventory.ingresses') }}"
@@ -24,21 +23,29 @@
                 <label class="{{ table_ui.filter_label_classes() }}">Cluster</label>
                 <select name="cluster_id" class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Clusters</option>
-                    {% for cluster in clusters %}<option value="{{ cluster.id }}" {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>{% endfor %}
+                    {% for cluster in clusters %}
+                        <option value="{{ cluster.id }}"
+                                {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div>
                 <label class="{{ table_ui.filter_label_classes() }}">Namespace</label>
                 <select name="namespace" class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Namespaces</option>
-                    {% for ns in inventory.namespaces %}<option value="{{ ns }}" {% if selected_namespace == ns %}selected{% endif %}>{{ ns }}</option>{% endfor %}
+                    {% for ns in inventory.namespaces %}
+                        <option value="{{ ns }}" {% if selected_namespace == ns %}selected{% endif %}>{{ ns }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div>
                 <label class="{{ table_ui.filter_label_classes() }}">Ingress Class</label>
                 <select name="class" class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Class States</option>
-                    {% for option in inventory.classes %}<option value="{{ option.value }}" {% if selected_class == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
+                    {% for option in inventory.classes %}
+                        <option value="{{ option.value }}"
+                                {% if selected_class == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div>
@@ -46,7 +53,8 @@
                 <select name="tls" class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All TLS States</option>
                     <option value="enabled" {% if selected_tls == 'enabled' %}selected{% endif %}>TLS Declared</option>
-                    <option value="disabled" {% if selected_tls == 'disabled' %}selected{% endif %}>No TLS Declaration</option>
+                    <option value="disabled"
+                            {% if selected_tls == 'disabled' %}selected{% endif %}>No TLS Declaration</option>
                 </select>
             </div>
             <div>

@@ -152,7 +152,9 @@ def build_secret_reveal_settings_context(
             if namespace_source is not None
             else 'No successful refresh'
         ),
-        'has_successful_snapshot': bool(namespace_source is not None and namespace_source.last_successful_at is not None),
+        'has_successful_snapshot': bool(
+            namespace_source is not None and namespace_source.last_successful_at is not None
+        ),
     }
 
     return {

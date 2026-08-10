@@ -34,8 +34,8 @@ def test_runtime_observation_details_use_one_shared_native_dialog() -> None:
     assert 'data-kaori-runtime-observation-dialog-v4' in modal
     assert 'onclick=' not in history
     assert 'onclick=' not in modal
-    assert "dialog.showModal()" in controller
-    assert "js/native_dialogs.js" in layout
+    assert 'dialog.showModal()' in controller
+    assert 'js/native_dialogs.js' in layout
 
 
 def test_provider_bound_scope_tables_are_full_width_before_decision_split() -> None:
@@ -75,7 +75,7 @@ def test_operational_toast_countdown_has_visible_htmx_safe_animation() -> None:
     assert 'data-operational-toast-timer' in toast
     assert 'origin-left' in toast
     assert 'style=' not in toast
-    assert "timerBar.animate" in script
+    assert 'timerBar.animate' in script
     assert 'void timerBar.offsetWidth' in script
     assert "timerBar.style.transform = 'scaleX(0)'" in script
     assert 'current.animation?.pause?.()' in script

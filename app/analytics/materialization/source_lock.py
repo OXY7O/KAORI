@@ -67,9 +67,7 @@ def _provider_lock_names(
                     scope_key=str(cluster_id),
                 )
                 if alertmanager.selected is not None:
-                    lock_names.add(
-                        f'analytics-source:alertmanager:{alertmanager.selected.instance.id}'
-                    )
+                    lock_names.add(f'analytics-source:alertmanager:{alertmanager.selected.instance.id}')
             if requested_source in {'auto', 'prometheus'}:
                 prometheus = resolve_prometheus_sources(
                     scope_type=KUBERNETES_CLUSTER_SCOPE,
@@ -78,9 +76,7 @@ def _provider_lock_names(
                     required_technical_capabilities=('instant_query',),
                 )
                 if prometheus.selected is not None:
-                    lock_names.add(
-                        f'analytics-source:prometheus:{prometheus.selected.instance.id}'
-                    )
+                    lock_names.add(f'analytics-source:prometheus:{prometheus.selected.instance.id}')
     except Exception:
         current_app.logger.warning(
             'Could not resolve provider-specific analytics query locks; using cluster fallback.',
@@ -153,8 +149,7 @@ def analytics_source_lock(
                     sleep(0.25)
                 if not acquired:
                     raise AnalyticsSourceBusyError(
-                        f'Provider query slot {lock_name} was not available within '
-                        f'{timeout_seconds} seconds.'
+                        f'Provider query slot {lock_name} was not available within {timeout_seconds} seconds.'
                     )
             yield max(int((monotonic() - started) * 1000), 0)
         finally:
@@ -176,8 +171,7 @@ def analytics_source_lock(
             lock = _fallback_locks.setdefault(lock_name, Lock())
             if not lock.acquire(timeout=remaining):
                 raise AnalyticsSourceBusyError(
-                    f'Provider query slot {lock_name} was not available within '
-                    f'{timeout_seconds} seconds.'
+                    f'Provider query slot {lock_name} was not available within {timeout_seconds} seconds.'
                 )
             acquired_locks.append(lock)
         yield max(int((monotonic() - started) * 1000), 0)

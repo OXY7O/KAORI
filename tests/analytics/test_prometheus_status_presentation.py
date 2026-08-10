@@ -45,9 +45,7 @@ def test_degraded_status_is_not_reported_as_ready() -> None:
 
 def test_not_configured_and_waiting_states_remain_distinct() -> None:
     waiting = present_prometheus_status({'configured': False, 'label': 'Waiting for Cluster'})
-    not_configured = present_prometheus_status(
-        {'configured': False, 'label': 'Prometheus Not Configured'}
-    )
+    not_configured = present_prometheus_status({'configured': False, 'label': 'Prometheus Not Configured'})
 
     assert waiting['state'] == 'waiting_for_cluster'
     assert waiting['status_label'] == 'Waiting for Cluster'

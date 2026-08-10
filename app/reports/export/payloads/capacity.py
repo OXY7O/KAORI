@@ -6,9 +6,9 @@ from app.analytics.capacity.service import CapacityService
 from app.analytics.utilization.service import UtilizationService
 from app.cluster.constants import get_environment_label
 from app.models.report import Report
-from app.reports.export.payloads.common import get_report_selected_cluster, report_payload_error
 from app.prometheus.consumer import PrometheusConsumer
 from app.prometheus.service import PrometheusService
+from app.reports.export.payloads.common import get_report_selected_cluster, report_payload_error
 
 
 def get_report_capacity_analysis_payload(

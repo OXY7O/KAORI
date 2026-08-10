@@ -95,7 +95,6 @@ def test_secret_validation_and_feedback_are_shared_canonical_components() -> Non
     assert 'border border-brand-outline bg-kaori-soft' in choice
 
 
-
 def test_retired_tls_permission_and_sync_compatibility_paths_are_removed() -> None:
     defaults = read('app/rbac/defaults.py')
     dependencies = read('app/rbac/service.py')

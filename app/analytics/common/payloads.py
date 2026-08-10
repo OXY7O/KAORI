@@ -96,9 +96,7 @@ def get_empty_capacity_payload(
             'storage': {
                 **empty_resource,
                 'scheduling_resource': False,
-                'scope_label': (
-                    'Operational node-filesystem reference; not Kubernetes allocatable capacity'
-                ),
+                'scope_label': ('Operational node-filesystem reference; not Kubernetes allocatable capacity'),
             },
             'pods': dict(empty_resource),
         },
@@ -337,11 +335,7 @@ def get_empty_storage_payload(
                     'pressure_free': 'N/A',
                     'used_percent': None,
                     'free_percent': None,
-                    'scope_label': (
-                        f'Namespace · {selected_namespace}'
-                        if selected_namespace
-                        else 'All Namespaces'
-                    ),
+                    'scope_label': (f'Namespace · {selected_namespace}' if selected_namespace else 'All Namespaces'),
                     'risk': unknown_risk,
                     'critical_count': 0,
                     'warning_count': 0,

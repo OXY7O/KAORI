@@ -35,10 +35,11 @@
         </div>
         {{ loading_bar.render('integration-runtime-loading', label='Refreshing integration runtime overview') }}
     </header>
-
     {% if not runtime_has_targets %}
         <div class="px-5 py-12 text-center sm:px-8">
-            <span class="mx-auto {{ integration_ui.palette_icon_classes('brand', size='xl', rounded='xl') }}" aria-hidden="true" data-kaori-palette-icon="brand">
+            <span class="mx-auto {{ integration_ui.palette_icon_classes('brand', size='xl', rounded='xl') }}"
+                  aria-hidden="true"
+                  data-kaori-palette-icon="brand">
                 <i data-lucide="plug-zap" class="h-5 w-5"></i>
             </span>
             <h3 class="mt-4 text-base font-semibold text-content-primary">No Runtime Targets Yet</h3>
@@ -52,11 +53,10 @@
                 ('Unhealthy', runtime_stats.unhealthy, 'Runtime intervention is required', 'circle-x', 'brand'),
                 ('Not Observed', runtime_stats.not_observed, 'No persisted runtime observation', 'circle-help', 'brand'),
                 ('Capability Attention', runtime_stats.capability_attention, 'Targets requiring capability review', 'puzzle', 'brand')
-            ] %}
+                ] %}
                 {{ integration_ui.metric_card(label, value, helper, icon, tone) }}
             {% endfor %}
         </div>
-
         <div class="{{ table_ui.inventory_filter_bar_classes() }}">
             <form hx-get="{{ url_for('integrations.overview', tab='runtime') }}"
                   hx-target="#integration-runtime-overview"
@@ -68,37 +68,50 @@
                   class="grid gap-4 md:grid-cols-3 md:items-end">
                 <input type="hidden" name="tab" value="runtime" />
                 <input type="hidden" name="page" value="1" />
-                <input type="hidden" name="per_page" value="{{ runtime_pagination.per_page }}" />
+                <input type="hidden"
+                       name="per_page"
+                       value="{{ runtime_pagination.per_page }}" />
                 <div>
-                    <label for="runtime-provider-filter" class="{{ table_ui.filter_label_classes() }}">Provider</label>
-                    <select id="runtime-provider-filter" name="provider" class="{{ table_ui.filter_select_classes() }}">
+                    <label for="runtime-provider-filter"
+                           class="{{ table_ui.filter_label_classes() }}">Provider</label>
+                    <select id="runtime-provider-filter"
+                            name="provider"
+                            class="{{ table_ui.filter_select_classes() }}">
                         <option value="">All Providers</option>
                         {% for item in provider_options %}
-                            <option value="{{ item.value }}" {% if selected_provider == item.value %}selected{% endif %}>{{ item.label }}</option>
+                            <option value="{{ item.value }}"
+                                    {% if selected_provider == item.value %}selected{% endif %}>{{ item.label }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div>
-                    <label for="runtime-health-filter" class="{{ table_ui.filter_label_classes() }}">Runtime Health</label>
-                    <select id="runtime-health-filter" name="health" class="{{ table_ui.filter_select_classes() }}">
+                    <label for="runtime-health-filter"
+                           class="{{ table_ui.filter_label_classes() }}">Runtime Health</label>
+                    <select id="runtime-health-filter"
+                            name="health"
+                            class="{{ table_ui.filter_select_classes() }}">
                         <option value="">All Health States</option>
                         {% for item in health_options %}
-                            <option value="{{ item.value }}" {% if selected_health == item.value %}selected{% endif %}>{{ item.label }}</option>
+                            <option value="{{ item.value }}"
+                                    {% if selected_health == item.value %}selected{% endif %}>{{ item.label }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div>
-                    <label for="runtime-readiness-filter" class="{{ table_ui.filter_label_classes() }}">Validation Readiness</label>
-                    <select id="runtime-readiness-filter" name="readiness" class="{{ table_ui.filter_select_classes() }}">
+                    <label for="runtime-readiness-filter"
+                           class="{{ table_ui.filter_label_classes() }}">Validation Readiness</label>
+                    <select id="runtime-readiness-filter"
+                            name="readiness"
+                            class="{{ table_ui.filter_select_classes() }}">
                         <option value="">All Readiness States</option>
                         {% for item in runtime_readiness_options %}
-                            <option value="{{ item.value }}" {% if selected_readiness == item.value %}selected{% endif %}>{{ item.label }}</option>
+                            <option value="{{ item.value }}"
+                                    {% if selected_readiness == item.value %}selected{% endif %}>{{ item.label }}</option>
                         {% endfor %}
                     </select>
                 </div>
             </form>
         </div>
-
         <div class="overflow-hidden">
             <table class="{{ table_ui.table_classes() }} table-fixed">
                 <colgroup>
@@ -129,8 +142,10 @@
                                 <div class="flex min-w-0 items-center gap-2.5">
                                     {{ integration_ui.palette_icon(row.provider_icon, 'brand', size='lg', rounded='md') }}
                                     <div class="min-w-0">
-                                        <p class="truncate text-sm font-semibold text-content-primary" title="{{ row.instance_name }}">{{ row.instance_name }}</p>
-                                        <p class="mt-0.5 truncate text-xs text-content-muted" title="{{ row.provider_label }} · {{ row.endpoint_product }} · {{ row.scope_label }}">{{ row.provider_label }} · {{ row.endpoint_product }} · {{ row.scope_label }}</p>
+                                        <p class="truncate text-sm font-semibold text-content-primary"
+                                           title="{{ row.instance_name }}">{{ row.instance_name }}</p>
+                                        <p class="mt-0.5 truncate text-xs text-content-muted"
+                                           title="{{ row.provider_label }} · {{ row.endpoint_product }} · {{ row.scope_label }}">{{ row.provider_label }} · {{ row.endpoint_product }} · {{ row.scope_label }}</p>
                                     </div>
                                 </div>
                             </td>
@@ -144,7 +159,7 @@
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
                                 {{ integration_status(row.readiness, display='indicator') }}
-                                <p class="mt-1 text-xs text-content-muted">Connection · {{ row.connection_status|replace('_', ' ')|title }}</p>
+                                <p class="mt-1 text-xs text-content-muted">Connection · {{ row.connection_status|replace('_', ' ') |title }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
                                 <p class="text-sm font-semibold text-content-primary">{{ row.capability_profile or 'Not Observed' }}</p>
@@ -155,21 +170,20 @@
                                 <p class="mt-1 text-xs text-content-muted">{{ row.latency_display or 'Latency unavailable' }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes(true) }} whitespace-nowrap">
-                                {{ record_actions.view_more(
-                                    detail_target_id,
-                                    role='runtime-overview',
-                                    hx_get=url_for('integrations.runtime_overview_details', detail_key=row.detail_key),
-                                    hx_target='#integration-runtime-modal-host'
+                                {{ record_actions.view_more(detail_target_id,
+                                                                role='runtime-overview',
+                                                                hx_get=url_for('integrations.runtime_overview_details', detail_key=row.detail_key) ,
+                                hx_target='#integration-runtime-modal-host'
                                 ) }}
                             </td>
                         </tr>
                     {% else %}
                         <tr>
                             <td colspan="6" class="p-0">
-                                {% set empty_state_icon = 'search-x' %}
-                                {% set empty_state_title = 'No Runtime Targets Match These Filters' %}
-                                {% set empty_state_description = 'Change one of the provider, health, or readiness filters to expand the result set.' %}
-                                {% set empty_state_min_height = 'min-h-[190px]' %}
+                                {% set empty_state_icon = "search-x" %}
+                                {% set empty_state_title = "No Runtime Targets Match These Filters" %}
+                                {% set empty_state_description = "Change one of the provider, health, or readiness filters to expand the result set." %}
+                                {% set empty_state_min_height = "min-h-[190px]" %}
                                 {% include 'components/states/_empty_state.html' %}
                             </td>
                         </tr>
@@ -177,22 +191,19 @@
                 </tbody>
             </table>
         </div>
-
         {% set runtime_query_params = {
-            'tab': 'runtime',
-            'provider': selected_provider,
-            'health': selected_health,
-            'readiness': selected_readiness
-        } %}
-        {{ provider_registry.pagination_footer(
-            runtime_pagination,
-            'integrations.overview',
-            '#integration-runtime-overview',
-            '#integration-runtime-loading',
-            runtime_query_params,
-            item_label='Integration',
-            swap='outerHTML'
-        ) }}
+                    'tab': 'runtime',
+                    'provider': selected_provider,
+                    'health': selected_health,
+                    'readiness': selected_readiness
+                } %}
+        {{ provider_registry.pagination_footer(runtime_pagination,
+                'integrations.overview',
+                '#integration-runtime-overview',
+                '#integration-runtime-loading',
+                runtime_query_params,
+                item_label='Integration',
+                swap='outerHTML') }}
     {% endif %}
     <div id="integration-runtime-modal-host"></div>
 </section>

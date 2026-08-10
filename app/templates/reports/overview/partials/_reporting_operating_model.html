@@ -11,7 +11,8 @@
                 <i data-lucide="badge-check" class="h-5 w-5"></i>
             </span>
             <div class="min-w-0">
-                <h2 id="reporting-operating-model-title" class="text-base font-semibold text-content-primary">Reporting Operating Model</h2>
+                <h2 id="reporting-operating-model-title"
+                    class="text-base font-semibold text-content-primary">Reporting Operating Model</h2>
                 <p class="mt-1 text-xs leading-5 text-content-muted">{{ payload.reporting_operating_model.description }}</p>
             </div>
         </div>
@@ -21,7 +22,10 @@
             <i data-lucide="chevron-down" class="h-4 w-4"></i>
         </span>
     </button>
-    <div class="border-t border-outline-subtle" x-show="open" x-collapse x-cloak>
+    <div class="border-t border-outline-subtle"
+         x-show="open"
+         x-collapse
+         x-cloak>
         <div class="divide-y divide-outline-subtle px-5 sm:px-6">
             {% for card in payload.reporting_operating_model.cards %}
                 <article class="py-3.5">

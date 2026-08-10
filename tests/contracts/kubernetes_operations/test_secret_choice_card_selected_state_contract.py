@@ -13,6 +13,6 @@ def test_secret_choice_card_selected_state_has_no_double_ring():
 def test_selected_indicator_uses_soft_badge_without_extra_border():
     template = Path('app/templates/components/choice_card_group.html').read_text()
     marker = 'secret-type-selected-indicator inline-flex'
-    selected = template[template.index(marker): template.index(marker) + 260]
+    selected = template[template.index(marker) : template.index(marker) + 260]
     assert 'bg-kaori-soft' in selected
     assert 'border border-brand-outline' not in selected

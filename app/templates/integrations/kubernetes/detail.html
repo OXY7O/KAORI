@@ -31,7 +31,7 @@
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Posture</p>
                                 <h2 class="{{ page_hero.context_panel_title_classes() }}">Kubernetes API Readiness</h2>
                             </div>
-                            {{ integration_status('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else 'validation_required'), source_posture, display='text') }}
+                            {{ integration_status('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else 'validation_required') , source_posture, display='text') }}
                         </div>
                         <div class="mt-4 grid grid-cols-2 gap-2">
                             <div class="{{ page_hero.context_metric_card_classes() }}">
@@ -80,15 +80,14 @@
         </section>
         <section id="kubernetes-detail-tabs"
                  class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
-            {{ framed_workspace_tabs.render(
-                [
-                    ('configuration', 'Configuration', 'settings-2', cluster.environment|environment_name),
-                    ('validation', 'Validation & Capabilities', 'scan-search', readiness|replace('_', ' ')|title),
-                    ('runtime', 'Runtime & History', 'activity', runtime_state.health_status_label),
-                    ('inventory', 'Inventory & Lifecycle', 'database', (capability_scope|length|string) ~ ' Scopes'),
-                ],
-                prefix='kubernetes',
-                aria_label='Kubernetes Connection Domains'
+            {{ framed_workspace_tabs.render([
+                        ('configuration', 'Configuration', 'settings-2', cluster.environment|environment_name) ,
+            ('validation', 'Validation & Capabilities', 'scan-search', readiness|replace('_', ' ')|title),
+            ('runtime', 'Runtime & History', 'activity', runtime_state.health_status_label),
+            ('inventory', 'Inventory & Lifecycle', 'database', (capability_scope|length|string) ~ ' Scopes'),
+            ],
+            prefix='kubernetes',
+            aria_label='Kubernetes Connection Domains'
             ) }}
             <div class="p-4 sm:p-5 lg:p-6">
                 <div id="kubernetes-panel-configuration"

@@ -1,5 +1,4 @@
 {% import "components/content_tabs.html" as content_tabs %}
-
 {#
   Backward-compatible Analytics wrapper around the shared KAORI content-tab
   component. Existing Analytics call sites keep the same API while Reports
@@ -7,11 +6,9 @@
   themselves to analytics-specific templates.
 #}
 {% macro render(tabset_id, tabs, aria_label, embedded=false) -%}
-    {{ content_tabs.render_buttons(
-        tabset_id,
+    {{ content_tabs.render_buttons(tabset_id,
         tabs,
         aria_label,
         embedded=embedded,
-        data_namespace='analytics'
-    ) }}
+        data_namespace='analytics') }}
 {%- endmacro %}

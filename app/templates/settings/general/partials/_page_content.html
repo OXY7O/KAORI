@@ -2,15 +2,12 @@
     {% include "settings/general/partials/_hero.html" %}
     <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
         {% include "settings/general/partials/_tabs.html" %}
-
         {% if active_tab == 'time-locale' %}
-            <div class="p-5 xl:p-6"
-                 data-timezone-workspace-layout="full-width">
+            <div class="p-5 xl:p-6" data-timezone-workspace-layout="full-width">
                 {% include "settings/general/partials/_time_locale.html" %}
             </div>
         {% elif active_tab == 'regional-format' %}
-            <div class="p-5 xl:p-6"
-                 data-regional-format-workspace-layout="full-width">
+            <div class="p-5 xl:p-6" data-regional-format-workspace-layout="full-width">
                 {% include "settings/general/partials/_regional_format.html" %}
             </div>
         {% else %}

@@ -53,7 +53,6 @@ def _to_modelish(value: Any) -> Any:
     return SimpleNamespace(**{snake(key): _to_modelish(item) for key, item in value.items()})
 
 
-
 def _mapping_dict(value: Any) -> dict[str, Any]:
     """Return Kubernetes mapping fields from model, dict, or raw discovery objects."""
     if isinstance(value, dict):

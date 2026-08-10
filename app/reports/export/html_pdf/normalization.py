@@ -98,7 +98,9 @@ def sanitize_error_message(value: Any) -> str:
     if any(token in lowered for token in ('401', '403', 'unauthorized', 'forbidden')):
         return 'The data source rejected the current integration credentials. Review integration readiness before regenerating.'
     if any(token in lowered for token in ('certificate', 'ssl', 'tls')):
-        return 'The data source could not be reached because its TLS trust or certificate configuration requires review.'
+        return (
+            'The data source could not be reached because its TLS trust or certificate configuration requires review.'
+        )
 
     text = _URL_PATTERN.sub('[endpoint hidden]', text)
     text = _EXCEPTION_PATTERN.sub('integration error', text)

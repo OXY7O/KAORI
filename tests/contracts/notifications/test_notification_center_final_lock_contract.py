@@ -150,7 +150,9 @@ def test_notification_center_service_forwards_all_filter_arguments() -> None:
     service = read('app/notifications/service.py')
 
     signature = service.split('def get_notification_center_page_context(', 1)[1].split(') -> dict[str, Any]:', 1)[0]
-    body = service.split('def get_notification_center_page_context(', 1)[1].split('def get_notification_activity_context(', 1)[0]
+    body = service.split('def get_notification_center_page_context(', 1)[1].split(
+        'def get_notification_activity_context(', 1
+    )[0]
 
     for token in (
         "status: str = 'all'",

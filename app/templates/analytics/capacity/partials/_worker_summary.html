@@ -11,7 +11,6 @@
         </div>
         {{ table_label.metadata_label('Lowest Headroom ' ~ lowest_headroom_display, 'gauge') }}
     </div>
-
     <section class="{{ analysis_surface.evidence_shell_classes() }}">
         <div class="{{ analysis_surface.metric_grid_classes(4) }}">
             {% for card in kpi_cards %}
@@ -22,24 +21,32 @@
                     </div>
                     <p class="mt-3 break-words text-2xl font-semibold tabular-nums {{ 'text-content-primary' if card.available else analysis_surface.unavailable_value_classes() }}">{{ card.value }}</p>
                     <p class="mt-1 text-xs leading-5 text-content-muted">{{ card.caption }}</p>
-                    {% if card.footer %}<p class="mt-3 border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">{{ card.footer }}</p>{% endif %}
+                    {% if card.footer %}
+                        <p class="mt-3 border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">{{ card.footer }}</p>
+                    {% endif %}
                 </article>
             {% endfor %}
         </div>
         <div class="{{ analysis_surface.compact_scope_grid_classes(3) }} border-t border-outline-subtle">
-            <div class="px-4 py-3"><p class="{{ analysis_surface.metric_label_classes() }}">Observation Window</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ selected_time_range }}</p></div>
-            <div class="px-4 py-3"><p class="{{ analysis_surface.metric_label_classes() }}">Capacity Baseline</p><p class="mt-1 text-sm font-semibold text-content-primary">Ready Worker Nodes</p></div>
-            <div class="px-4 py-3"><p class="{{ analysis_surface.metric_label_classes() }}">Scheduling Boundary</p><p class="mt-1 text-sm font-semibold text-content-primary">Allocatable Resources</p></div>
+            <div class="px-4 py-3">
+                <p class="{{ analysis_surface.metric_label_classes() }}">Observation Window</p>
+                <p class="mt-1 text-sm font-semibold text-content-primary">{{ selected_time_range }}</p>
+            </div>
+            <div class="px-4 py-3">
+                <p class="{{ analysis_surface.metric_label_classes() }}">Capacity Baseline</p>
+                <p class="mt-1 text-sm font-semibold text-content-primary">Ready Worker Nodes</p>
+            </div>
+            <div class="px-4 py-3">
+                <p class="{{ analysis_surface.metric_label_classes() }}">Scheduling Boundary</p>
+                <p class="mt-1 text-sm font-semibold text-content-primary">Allocatable Resources</p>
+            </div>
         </div>
     </section>
-
     <div class="{{ analysis_surface.guidance_card_classes() }}">
-        {{ analysis_surface.interpretation_callout(
-            'Operational Reading',
-            'Use Ready-Worker Capacity As The Scheduling Baseline',
-            'Use this fleet baseline before evaluating quota changes or workload placement. A healthy node count does not guarantee capacity when one resource domain has low headroom.',
-            icon='server-cog',
-                role='insight'
-        ) }}
+        {{ analysis_surface.interpretation_callout('Operational Reading',
+                'Use Ready-Worker Capacity As The Scheduling Baseline',
+                'Use this fleet baseline before evaluating quota changes or workload placement. A healthy node count does not guarantee capacity when one resource domain has low headroom.',
+                icon='server-cog',
+                role='insight') }}
     </div>
 </div>

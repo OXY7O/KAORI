@@ -70,10 +70,13 @@ def test_update_policy_rejects_unsafe_interval(monkeypatch) -> None:
 
 
 def test_scheduled_inventory_sync_is_not_visible_as_user_toast() -> None:
-    assert sync_snapshot_visible_to_user(
-        {'requested_by_user_id': None},
-        user_id=7,
-    ) is False
+    assert (
+        sync_snapshot_visible_to_user(
+            {'requested_by_user_id': None},
+            user_id=7,
+        )
+        is False
+    )
 
 
 def test_manual_inventory_sync_toast_is_scoped_to_requester() -> None:

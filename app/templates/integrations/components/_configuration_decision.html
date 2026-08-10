@@ -1,6 +1,5 @@
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-
 {#
   Shared side configuration-decision panel for provider detail pages.
   Configuration is the exception to the full-width decision pattern because the
@@ -12,103 +11,101 @@
   the canonical symmetric configuration geometry.
 #}
 {% macro side_panel(title, description, readiness, metrics, change_impact, boundary_title, boundary_copy, operational_effects=none, validation_boundary=none) -%}
-<aside class="{{ integration_ui.section_shell_classes() }} flex h-full min-h-full flex-col self-stretch"
-       data-kaori-configuration-decision
-       data-kaori-configuration-decision-side>
-    <header class="border-b border-outline-subtle px-4 py-4 xl:px-5">
-        <div class="flex items-start justify-between gap-3">
-            <div class="flex min-w-0 items-start gap-3">
-                {{ integration_ui.palette_icon('gauge', 'brand', size='md') }}
-                <div class="min-w-0">
-                    <h3 class="text-sm font-semibold text-content-primary">{{ title }}</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ description }}</p>
-                </div>
-            </div>
-            <div class="shrink-0">{{ integration_status(readiness, readiness|replace('_', ' ')|title, display='text') }}</div>
-        </div>
-    </header>
-
-    <section class="border-b border-outline-subtle px-4 py-4 xl:px-5">
-        <h4 class="text-xs font-semibold text-content-muted">Connection Contract</h4>
-        <dl class="mt-3 divide-y divide-outline-subtle rounded-lg border border-outline-subtle">
-            {% for label, value, helper in metrics %}
-                <div class="px-3.5 py-2.5">
-                    <div class="flex items-start justify-between gap-4">
-                        <dt class="text-xs text-content-secondary">{{ label }}</dt>
-                        <dd class="max-w-[58%] text-right text-xs font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</dd>
+    <aside class="{{ integration_ui.section_shell_classes() }} flex h-full min-h-full flex-col self-stretch"
+           data-kaori-configuration-decision
+           data-kaori-configuration-decision-side>
+        <header class="border-b border-outline-subtle px-4 py-4 xl:px-5">
+            <div class="flex items-start justify-between gap-3">
+                <div class="flex min-w-0 items-start gap-3">
+                    {{ integration_ui.palette_icon('gauge', 'brand', size='md') }}
+                    <div class="min-w-0">
+                        <h3 class="text-sm font-semibold text-content-primary">{{ title }}</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ description }}</p>
                     </div>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
                 </div>
-            {% endfor %}
-        </dl>
-    </section>
-
-    <section class="border-b border-outline-subtle px-4 py-3.5 xl:px-5">
-        <div class="flex items-start gap-3">
-            {{ integration_ui.palette_icon('refresh-ccw', 'brand', size='sm') }}
-            <div class="min-w-0">
-                <h4 class="text-sm font-semibold text-content-primary">Change Impact</h4>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ change_impact }}</p>
+                <div class="shrink-0">{{ integration_status(readiness, readiness|replace('_', ' ') |title, display='text') }}</div>
             </div>
-        </div>
-    </section>
-
-    <section class="flex-1 border-b border-outline-subtle px-4 py-4 xl:px-5">
-        <h4 class="text-sm font-semibold text-content-primary">Controlled Flow</h4>
-        <div class="mt-3 grid gap-2 sm:grid-cols-2">
-            {% for step_title, copy in [
-                ('Configure', 'Save source and access settings.'),
-                ('Validate', 'Rebuild readiness evidence.'),
-                ('Observe', 'Refresh runtime health.'),
-                ('Resolve', 'Confirm governed consumer use.')
-            ] %}
-                <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                    <div class="flex items-center gap-2">
-                        <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-outline-default bg-surface-card text-xs font-semibold text-content-primary">{{ loop.index }}</span>
-                        <p class="text-xs font-semibold text-content-primary">{{ step_title }}</p>
-                    </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ copy }}</p>
-                </div>
-            {% endfor %}
-        </div>
-
-        {% if operational_effects %}
-            <div class="mt-4">
-                <h4 class="text-xs font-semibold text-content-muted">Operational Effects</h4>
-                <div class="mt-2 grid gap-2 sm:grid-cols-2">
-                    {% for label, copy in operational_effects %}
-                        <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
-                            <p class="text-xs font-semibold text-content-primary">{{ label }}</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ copy }}</p>
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-        {% endif %}
-
-        {% if validation_boundary %}
-            <div class="mt-4">
-                <h4 class="text-xs font-semibold text-content-muted">Validation Boundary</h4>
-                <dl class="mt-2 divide-y divide-outline-subtle rounded-lg border border-outline-subtle bg-surface-card">
-                    {% for label, owner in validation_boundary %}
-                        <div class="flex items-start justify-between gap-3 px-3 py-2">
+        </header>
+        <section class="border-b border-outline-subtle px-4 py-4 xl:px-5">
+            <h4 class="text-xs font-semibold text-content-muted">Connection Contract</h4>
+            <dl class="mt-3 divide-y divide-outline-subtle rounded-lg border border-outline-subtle">
+                {% for label, value, helper in metrics %}
+                    <div class="px-3.5 py-2.5">
+                        <div class="flex items-start justify-between gap-4">
                             <dt class="text-xs text-content-secondary">{{ label }}</dt>
-                            <dd class="text-right text-xs font-semibold text-content-primary">{{ owner }}</dd>
+                            <dd class="max-w-[58%] text-right text-xs font-semibold text-content-primary [overflow-wrap:anywhere]">
+                                {{ value }}
+                            </dd>
                         </div>
-                    {% endfor %}
-                </dl>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                    </div>
+                {% endfor %}
+            </dl>
+        </section>
+        <section class="border-b border-outline-subtle px-4 py-3.5 xl:px-5">
+            <div class="flex items-start gap-3">
+                {{ integration_ui.palette_icon('refresh-ccw', 'brand', size='sm') }}
+                <div class="min-w-0">
+                    <h4 class="text-sm font-semibold text-content-primary">Change Impact</h4>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ change_impact }}</p>
+                </div>
             </div>
-        {% endif %}
-    </section>
-
-    <section class="px-4 py-4 xl:px-5">
-        <div class="flex items-start gap-3">
-            {{ integration_ui.palette_icon('shield-check', 'brand', size='sm') }}
-            <div class="min-w-0">
-                <h4 class="text-sm font-semibold text-content-primary">{{ boundary_title }}</h4>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ boundary_copy }}</p>
+        </section>
+        <section class="flex-1 border-b border-outline-subtle px-4 py-4 xl:px-5">
+            <h4 class="text-sm font-semibold text-content-primary">Controlled Flow</h4>
+            <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                {% for step_title, copy in [
+                    ('Configure', 'Save source and access settings.'),
+                    ('Validate', 'Rebuild readiness evidence.'),
+                    ('Observe', 'Refresh runtime health.'),
+                    ('Resolve', 'Confirm governed consumer use.')
+                    ] %}
+                    <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-outline-default bg-surface-card text-xs font-semibold text-content-primary">{{ loop.index }}</span>
+                            <p class="text-xs font-semibold text-content-primary">{{ step_title }}</p>
+                        </div>
+                        <p class="mt-2 text-xs leading-5 text-content-secondary">{{ copy }}</p>
+                    </div>
+                {% endfor %}
             </div>
-        </div>
-    </section>
-</aside>
+            {% if operational_effects %}
+                <div class="mt-4">
+                    <h4 class="text-xs font-semibold text-content-muted">Operational Effects</h4>
+                    <div class="mt-2 grid gap-2 sm:grid-cols-2">
+                        {% for label, copy in operational_effects %}
+                            <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
+                                <p class="text-xs font-semibold text-content-primary">{{ label }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ copy }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+            {% if validation_boundary %}
+                <div class="mt-4">
+                    <h4 class="text-xs font-semibold text-content-muted">Validation Boundary</h4>
+                    <dl class="mt-2 divide-y divide-outline-subtle rounded-lg border border-outline-subtle bg-surface-card">
+                        {% for label, owner in validation_boundary %}
+                            <div class="flex items-start justify-between gap-3 px-3 py-2">
+                                <dt class="text-xs text-content-secondary">{{ label }}</dt>
+                                <dd class="text-right text-xs font-semibold text-content-primary">
+                                    {{ owner }}
+                                </dd>
+                            </div>
+                        {% endfor %}
+                    </dl>
+                </div>
+            {% endif %}
+        </section>
+        <section class="px-4 py-4 xl:px-5">
+            <div class="flex items-start gap-3">
+                {{ integration_ui.palette_icon('shield-check', 'brand', size='sm') }}
+                <div class="min-w-0">
+                    <h4 class="text-sm font-semibold text-content-primary">{{ boundary_title }}</h4>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ boundary_copy }}</p>
+                </div>
+            </div>
+        </section>
+    </aside>
 {%- endmacro %}

@@ -40,7 +40,10 @@ def get_ingress_filter_classes(cluster_id: str | None = None, namespace: str | N
         query = query.filter(IngressInventory.cluster_id == cluster_id)
     if namespace:
         query = query.filter(IngressInventory.namespace == namespace)
-    values = {str(value).strip() if value and str(value).strip() else UNSET_CLASS_FILTER for (value,) in query.distinct().all()}
+    values = {
+        str(value).strip() if value and str(value).strip() else UNSET_CLASS_FILTER
+        for (value,) in query.distinct().all()
+    }
     return sorted(values, key=lambda value: (value == UNSET_CLASS_FILTER, value.lower()))
 
 
@@ -342,7 +345,15 @@ def _tls_resources(
         state, tone = tls_reference_state(secret is not None, secret_collection_state)
         missing += int(state == 'Missing')
         not_reported += int(state == 'Not Reported')
-        hosts = sorted({str(host) for item in tls_entries if item.get('secret_name') == name for host in (item.get('hosts') or []) if host})
+        hosts = sorted(
+            {
+                str(host)
+                for item in tls_entries
+                if item.get('secret_name') == name
+                for host in (item.get('hosts') or [])
+                if host
+            }
+        )
         resources.append(
             {
                 'name': name,

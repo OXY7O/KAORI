@@ -7,8 +7,8 @@ def read(path: str) -> str:
 
 def test_recommendations_and_rule_catalog_are_separate_workspaces():
     routes = read('app/intelligence/routes.py')
-    assert "intelligence/recommendations.html" in routes
-    assert "intelligence/rule_catalog.html" in routes
+    assert 'intelligence/recommendations.html' in routes
+    assert 'intelligence/rule_catalog.html' in routes
     assert Path('app/templates/intelligence/rule_catalog.html').exists()
 
 
@@ -26,10 +26,10 @@ def test_reserved_plan_language_replaces_placeholder_language():
 def test_automation_control_mutations_are_fail_closed_by_default():
     routes = read('app/automation_control/routes.py')
     presentation = read('app/automation_control/presentation.py')
-    assert "AUTOMATION_CONTROL_MUTATIONS_ENABLED" in routes
-    assert "AUTOMATION_CONTROL_MUTATIONS_ENABLED" in presentation
-    assert "detail=str(exc)" not in routes
-    assert "Automation Control Reserved Plan" in routes
+    assert 'AUTOMATION_CONTROL_MUTATIONS_ENABLED' in routes
+    assert 'AUTOMATION_CONTROL_MUTATIONS_ENABLED' in presentation
+    assert 'detail=str(exc)' not in routes
+    assert 'Automation Control Reserved Plan' in routes
 
 
 def test_automation_workspace_uses_integrated_tabs_and_grouped_foundations():
@@ -57,8 +57,8 @@ def test_rule_catalog_uses_adjacent_inline_rule_definition_instead_of_modal():
     assert 'data-detail-context="Rule Definition"' in records
     assert '<details' not in records
     assert 'resource_detail_modal' not in records
-    assert "def catalog_rule_details(" in routes
-    assert "_catalog_detail_content.html" in routes
+    assert 'def catalog_rule_details(' in routes
+    assert '_catalog_detail_content.html' in routes
     assert 'Evaluation Logic' in details
     assert 'Operator Response' in details
     assert 'Coverage Contract' in details

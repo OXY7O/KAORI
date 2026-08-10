@@ -93,7 +93,6 @@ def test_generate_report_copy_matches_automatic_worker_dispatch() -> None:
     assert 'manual and scheduled requests both create a report record' in pipeline
 
 
-
 def test_live_reports_worker_verifier_checks_queue_and_task_registration() -> None:
     verifier = read('scripts/verify_reports_worker_runtime.py')
 

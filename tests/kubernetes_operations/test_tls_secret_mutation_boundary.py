@@ -76,7 +76,7 @@ class Upload:
     def read(self, size: int = -1) -> bytes:
         if size < 0:
             size = len(self.payload) - self.offset
-        result = self.payload[self.offset:self.offset + size]
+        result = self.payload[self.offset : self.offset + size]
         self.offset += len(result)
         return result
 

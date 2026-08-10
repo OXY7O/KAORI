@@ -47,6 +47,8 @@ run_static() {
     python scripts/verify_analytics_compact_label_standard.py
     python scripts/verify_sidebar_navigation_standard.py
     python scripts/verify_snapshot_context_bar_standard.py
+    python scripts/verify_pre_release_lint_cleanup.py
+    python scripts/verify_pre_release_type_safety.py
     python -m ruff check app migrations tests scripts
     python -m ruff format --check app migrations tests scripts
     python -m djlint app/templates --check

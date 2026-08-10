@@ -57,8 +57,12 @@
             </div>
             {% if lifecycle.coverage_note or lifecycle.exclusion_note %}
                 <footer class="grid gap-3 border-t border-outline-subtle bg-surface-subtle px-4 py-3 text-xs leading-5 text-content-muted sm:grid-cols-2">
-                    {% if lifecycle.coverage_note %}<p><span class="font-semibold text-content-primary">Coverage:</span> {{ lifecycle.coverage_note }}</p>{% endif %}
-                    {% if lifecycle.exclusion_note %}<p><span class="font-semibold text-content-primary">Excluded:</span> {{ lifecycle.exclusion_note }}</p>{% endif %}
+                    {% if lifecycle.coverage_note %}
+                        <p><span class="font-semibold text-content-primary">Coverage:</span> {{ lifecycle.coverage_note }}</p>
+                    {% endif %}
+                    {% if lifecycle.exclusion_note %}
+                        <p><span class="font-semibold text-content-primary">Excluded:</span> {{ lifecycle.exclusion_note }}</p>
+                    {% endif %}
                 </footer>
             {% endif %}
         </section>

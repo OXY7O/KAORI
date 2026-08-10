@@ -14,7 +14,7 @@ def test_workload_collector_uses_canonical_operational_posture() -> None:
     assert "workload_status = 'Stable'" in source
     assert "workload_status = 'Progressing'" in source
     assert "job_status = 'Suspended'" in source
-    assert "_deployment_progress_deadline_exceeded(status)" in source
+    assert '_deployment_progress_deadline_exceeded(status)' in source
     assert "_condition_is_true(status, 'ReplicaFailure')" in source
     assert 'observed_generation is not None and int(observed_generation) >= int(metadata_generation)' in source
     assert "_condition_is_true(status, 'Failed')" in source
@@ -50,7 +50,10 @@ def test_workload_filters_refresh_complete_workspace_and_use_canonical_state() -
     workspace = _read('app/templates/inventory/workloads/partials/_page_workspace.html')
     service = _read('app/inventory/resources/workloads.py')
 
-    assert "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')" in routes
+    assert (
+        "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')"
+        in routes
+    )
     assert 'id="workloads-page-workspace"' in workspace
     assert 'inventory/components/_data_freshness.html' in workspace
     assert 'hx-target="#workloads-page-workspace"' in table

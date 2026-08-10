@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import hashlib
 from datetime import UTC, datetime, timedelta
+import hashlib
 from typing import Any
 from uuid import uuid4
 
@@ -9,7 +9,7 @@ from flask import current_app
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
-from app.jobs.registry import job_operation_label
+from app.common.job_execution_contract import job_operation_label
 from app.extensions.db import db
 from app.jobs.audit import is_automatic_execution
 from app.jobs.constants import ACTIVE_JOB_STATUSES, DEFAULT_PRIORITIES, HEAVY_WORKLOAD_CLASSES
@@ -541,4 +541,3 @@ def recover_stale_jobs() -> dict[str, int]:
     if recovered:
         db.session.commit()
     return {'recovered': recovered, 'expired': expired, 'canceled': canceled}
-

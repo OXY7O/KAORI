@@ -26,14 +26,13 @@
                         <div class="flex max-w-[360px] items-center gap-2.5">
                             <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="box" class="h-4 w-4"></i></span>
                             <div class="min-w-0">
-                                <div class="truncate font-semibold text-content-primary" title="{{ row.namespace }}">{{ row.namespace }}</div>
+                                <div class="truncate font-semibold text-content-primary"
+                                     title="{{ row.namespace }}">{{ row.namespace }}</div>
                                 <div class="mt-0.5 text-xs text-content-muted">Namespace-scoped Secret access</div>
                             </div>
                         </div>
                     </td>
-                    <td class="px-5 py-3 text-left align-middle">
-                        {{ table_label.status_label(live_label, live_tone) }}
-                    </td>
+                    <td class="px-5 py-3 text-left align-middle">{{ table_label.status_label(live_label, live_tone) }}</td>
                     <td class="px-5 py-3 text-left align-middle">
                         {{ table_label.status_label(reveal_policy_choices.get(row.policy, row.policy.replace('_', ' ') | title), policy_tone) }}
                     </td>
@@ -49,10 +48,16 @@
                               class="ml-auto flex w-full items-center justify-end gap-2">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="namespace" value="{{ row.namespace }}">
-                            <input type="hidden" name="namespace_q" value="{{ namespace_filters.query }}">
-                            <input type="hidden" name="namespace_policy" value="{{ namespace_filters.policy }}">
+                            <input type="hidden"
+                                   name="namespace_q"
+                                   value="{{ namespace_filters.query }}">
+                            <input type="hidden"
+                                   name="namespace_policy"
+                                   value="{{ namespace_filters.policy }}">
                             <input type="hidden" name="page" value="{{ namespace_pagination.page }}">
-                            <input type="hidden" name="per_page" value="{{ namespace_pagination.per_page }}">
+                            <input type="hidden"
+                                   name="per_page"
+                                   value="{{ namespace_pagination.per_page }}">
                             <select name="policy"
                                     x-model="current"
                                     aria-label="Reveal policy for {{ row.namespace }}"
@@ -101,7 +106,7 @@
 </div>
 <footer class="{{ pagination_ui.footer_classes() }}">
     <div class="{{ pagination_ui.summary_group_classes() }}">
-        <p>Showing <span class="font-semibold text-content-primary">{{ namespace_pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ namespace_pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ namespace_pagination.total_items }}</span> {{ pagination_ui.resource_name('Namespaces', namespace_pagination.total_items)|trim }}</p>
+        <p>Showing <span class="font-semibold text-content-primary">{{ namespace_pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ namespace_pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ namespace_pagination.total_items }}</span> {{ pagination_ui.resource_name('Namespaces', namespace_pagination.total_items) |trim }}</p>
         <form method="get"
               action="{{ url_for('platform_operations.kubernetes.index', tab='secret-reveal') }}"
               hx-get="{{ url_for('platform_operations.kubernetes.secret_reveal.workspace') }}"
@@ -112,13 +117,21 @@
               hx-indicator="#secret-reveal-namespace-loading"
               class="flex items-center gap-2">
             <input type="hidden" name="cluster_id" value="{{ selected_cluster.id }}">
-            <input type="hidden" name="namespace_q" value="{{ namespace_filters.query }}">
-            <input type="hidden" name="namespace_policy" value="{{ namespace_filters.policy }}">
+            <input type="hidden"
+                   name="namespace_q"
+                   value="{{ namespace_filters.query }}">
+            <input type="hidden"
+                   name="namespace_policy"
+                   value="{{ namespace_filters.policy }}">
             <input type="hidden" name="page" value="1">
             <span class="font-semibold text-content-secondary">Rows</span>
-            <select name="per_page" aria-label="Rows Per Page" data-kaori-auto-submit class="{{ pagination_ui.page_size_classes() }}">
+            <select name="per_page"
+                    aria-label="Rows Per Page"
+                    data-kaori-auto-submit
+                    class="{{ pagination_ui.page_size_classes() }}">
                 {% for option in namespace_per_page_options %}
-                    <option value="{{ option }}" {% if namespace_pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                    <option value="{{ option }}"
+                            {% if namespace_pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
                 {% endfor %}
             </select>
         </form>
@@ -127,7 +140,14 @@
         {% if namespace_pagination.has_prev %}
             {% set prev_url = url_for('platform_operations.kubernetes.index', tab='secret-reveal', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.prev_page, per_page=namespace_pagination.per_page) %}
             {% set prev_partial_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.prev_page, per_page=namespace_pagination.per_page) %}
-            <a href="{{ prev_url }}" hx-get="{{ prev_partial_url }}" hx-target="#secret-reveal-namespace-table-content" hx-select="#secret-reveal-namespace-table-content" hx-swap="innerHTML" hx-push-url="true" hx-indicator="#secret-reveal-namespace-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+            <a href="{{ prev_url }}"
+               hx-get="{{ prev_partial_url }}"
+               hx-target="#secret-reveal-namespace-table-content"
+               hx-select="#secret-reveal-namespace-table-content"
+               hx-swap="innerHTML"
+               hx-push-url="true"
+               hx-indicator="#secret-reveal-namespace-loading"
+               class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
         {% else %}
             <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
         {% endif %}
@@ -135,7 +155,14 @@
         {% if namespace_pagination.has_next %}
             {% set next_url = url_for('platform_operations.kubernetes.index', tab='secret-reveal', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.next_page, per_page=namespace_pagination.per_page) %}
             {% set next_partial_url = url_for('platform_operations.kubernetes.secret_reveal.workspace', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.next_page, per_page=namespace_pagination.per_page) %}
-            <a href="{{ next_url }}" hx-get="{{ next_partial_url }}" hx-target="#secret-reveal-namespace-table-content" hx-select="#secret-reveal-namespace-table-content" hx-swap="innerHTML" hx-push-url="true" hx-indicator="#secret-reveal-namespace-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+            <a href="{{ next_url }}"
+               hx-get="{{ next_partial_url }}"
+               hx-target="#secret-reveal-namespace-table-content"
+               hx-select="#secret-reveal-namespace-table-content"
+               hx-swap="innerHTML"
+               hx-push-url="true"
+               hx-indicator="#secret-reveal-namespace-loading"
+               class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
         {% else %}
             <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
         {% endif %}

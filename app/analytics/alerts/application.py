@@ -1,16 +1,20 @@
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from datetime import UTC, datetime
-from typing import Any, Mapping
+from typing import Any, cast
 
 from app.analytics.alerts.anomalies import filter_anomalies, load_prometheus_anomaly_metrics
 from app.analytics.alerts.contracts import (
+    AlertSelectedClusterSignalOverview,
+    AlertSourceStatus,
+    AlertsSelection,
+    NormalizedAlert,
     PER_PAGE_OPTIONS,
     SEVERITY_OPTIONS,
     SOURCE_OPTIONS,
     STATUS_OPTIONS,
-    AlertsSelection,
     normalize_option,
     normalize_page,
     normalize_per_page,
@@ -28,11 +32,7 @@ from app.analytics.alerts.ownership import build_ownership_summary
 from app.analytics.alerts.readiness import build_incident_readiness
 from app.analytics.alerts.records import filter_items
 from app.analytics.alerts.routing import build_routing_summary
-from app.analytics.alerts.selection import (
-    get_clusters_for_filter,
-    get_namespace_options,
-    get_selected_cluster,
-)
+from app.analytics.alerts.selection import get_clusters_for_filter, get_namespace_options, get_selected_cluster
 from app.analytics.alerts.signals import build_resource_links, build_selected_cluster_signal_overview
 from app.analytics.alerts.silences import build_silence_summary
 from app.analytics.alerts.sources import load_alerts_by_source
@@ -75,16 +75,20 @@ def _normalize_selection(selection: AlertsSelection) -> dict[str, Any]:
 
 def _load_anomaly_evidence(cluster) -> tuple[list[dict[str, Any]], dict[str, Any], list[dict[str, str]]]:
     if cluster is None:
-        return [], {
-            'configured': False,
-            'connected': False,
-            'label': 'Cluster Required',
-            'error': None,
-            'response_time_ms': None,
-            'partial': False,
-            'available_queries': [],
-            'failed_queries': [],
-        }, []
+        return (
+            [],
+            {
+                'configured': False,
+                'connected': False,
+                'label': 'Cluster Required',
+                'error': None,
+                'response_time_ms': None,
+                'partial': False,
+                'available_queries': [],
+                'failed_queries': [],
+            },
+            [],
+        )
 
     anomalies, status = load_prometheus_anomaly_metrics(cluster=cluster)
     if not status.get('partial', False):
@@ -98,8 +102,7 @@ def _load_anomaly_evidence(cluster) -> tuple[list[dict[str, Any]], dict[str, Any
             else 'Prometheus Anomaly Evidence Is Unavailable'
         ),
         'detail': str(
-            status.get('error')
-            or 'One or more optional Prometheus anomaly queries did not return usable evidence.'
+            status.get('error') or 'One or more optional Prometheus anomaly queries did not return usable evidence.'
         ),
         'remediation': (
             'Review the Analytics Worker job log and Prometheus query pressure. '
@@ -112,8 +115,8 @@ def _load_anomaly_evidence(cluster) -> tuple[list[dict[str, Any]], dict[str, Any
 def _namespace_options(
     *,
     inventory_options: list[str],
-    alerts: list[dict[str, Any]],
-    anomalies: list[dict[str, Any]],
+    alerts: Sequence[Mapping[str, Any]],
+    anomalies: Sequence[Mapping[str, Any]],
 ) -> list[str]:
     observed = {
         str(item.get('namespace') or '').strip()
@@ -126,7 +129,7 @@ def _namespace_options(
 
 def _present_collections(
     *,
-    raw_alerts: list[dict[str, Any]],
+    raw_alerts: list[NormalizedAlert],
     raw_anomalies: list[dict[str, Any]],
     selected: dict[str, Any],
 ) -> dict[str, Any]:
@@ -165,13 +168,13 @@ def _present_collections(
 
 def _build_recommendation_context(
     *,
-    alerts: list[dict[str, Any]],
+    alerts: list[NormalizedAlert],
     anomalies: list[dict[str, Any]],
     summary: dict[str, Any],
-    source_status: dict[str, Any],
+    source_status: AlertSourceStatus,
     collection_warnings: list[dict[str, str]],
     anomaly_source_status: dict[str, Any],
-    signal_overview: dict[str, Any],
+    signal_overview: AlertSelectedClusterSignalOverview,
 ) -> dict[str, Any]:
     recommendations = build_alerts_actionable_recommendations(
         {
@@ -205,7 +208,7 @@ def _build_recommendation_context(
     }
 
 
-def _dependency_blocker(*, cluster, source_status: dict[str, Any], selected_source: str):
+def _dependency_blocker(*, cluster, source_status: AlertSourceStatus, selected_source: str):
     if cluster is None:
         return cluster_required_blocker()
     if source_status.get('connected', False):
@@ -222,11 +225,11 @@ def _dependency_blocker(*, cluster, source_status: dict[str, Any], selected_sour
 def _operational_context(
     *,
     cluster,
-    source_status: dict[str, Any],
+    source_status: AlertSourceStatus,
     anomaly_source_status: dict[str, Any],
-    raw_alerts: list[dict[str, Any]],
+    raw_alerts: list[NormalizedAlert],
     raw_anomalies: list[dict[str, Any]],
-    signal_overview: dict[str, Any],
+    signal_overview: AlertSelectedClusterSignalOverview,
 ) -> dict[str, Any]:
     integration_status = build_integration_status(
         cluster=cluster,
@@ -383,21 +386,17 @@ def present_alerts_materialized_context(
     presented = deepcopy(context)
     selected = _normalize_selection(selection)
     namespace_options = list(presented.get('namespace_options') or [])
-    if (
-        selected['namespace']
-        and selected['namespace'] not in namespace_options
-        and not selection.preserve_namespace
-    ):
+    if selected['namespace'] and selected['namespace'] not in namespace_options and not selection.preserve_namespace:
         selected['namespace'] = ''
 
-    raw_alerts = list(presented.get('all_alerts') or [])
+    raw_alerts = cast(list[NormalizedAlert], list(presented.get('all_alerts') or []))
     raw_anomalies = list(presented.get('all_anomalies') or [])
     collections = _present_collections(
         raw_alerts=raw_alerts,
         raw_anomalies=raw_anomalies,
         selected=selected,
     )
-    source_status = presented.get('source_status') or {}
+    source_status = cast(AlertSourceStatus, presented.get('source_status') or {})
     global_summary = presented.get('summary')
     if not isinstance(global_summary, dict):
         global_summary = build_summary(

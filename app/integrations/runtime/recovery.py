@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, TypedDict
 
 logger = logging.getLogger(__name__)
 
@@ -10,6 +10,13 @@ _KUBERNETES_CLUSTER_SCOPE = 'kubernetes_cluster'
 _INVENTORY_JOB_KEY = 'kubernetes.inventory.sync'
 _TLS_CERTIFICATE_JOB_KEY = 'governance.tls_certificates.sync'
 _ANALYTICS_JOB_KEY = 'analytics.materialize'
+
+
+class RecoveryDispatchResult(TypedDict):
+    provider_type: str
+    clusters: list[str]
+    queued: int
+    skipped: int
 
 
 def latest_runtime_health(integration_instance_id: int | None) -> str | None:
@@ -69,12 +76,12 @@ def _dispatch_recovery_job(*, job_key: str, parameters: dict[str, Any]) -> bool:
     return bool(outcome.accepted and outcome.created)
 
 
-def _record_dispatch(result: dict[str, object], *, created: bool) -> None:
-    result['queued'] = int(result['queued']) + int(created)
-    result['skipped'] = int(result['skipped']) + int(not created)
+def _record_dispatch(result: RecoveryDispatchResult, *, created: bool) -> None:
+    result['queued'] += int(created)
+    result['skipped'] += int(not created)
 
 
-def enqueue_recovery_work(*, provider_type: str, instance: Any) -> dict[str, object]:
+def enqueue_recovery_work(*, provider_type: str, instance: Any) -> RecoveryDispatchResult:
     """Queue focused data refresh after a provider transitions back to healthy.
 
     Recovery dispatch is best-effort. A failed enqueue must never turn a healthy
@@ -83,7 +90,7 @@ def enqueue_recovery_work(*, provider_type: str, instance: Any) -> dict[str, obj
     does not import Inventory, Governance, or Analytics implementations directly.
     """
     cluster_ids = _bound_cluster_ids(instance)
-    result: dict[str, object] = {
+    result: RecoveryDispatchResult = {
         'provider_type': provider_type,
         'clusters': cluster_ids,
         'queued': 0,
@@ -110,7 +117,7 @@ def enqueue_recovery_work(*, provider_type: str, instance: Any) -> dict[str, obj
                         label,
                         cluster_id,
                     )
-                    result['skipped'] = int(result['skipped']) + 1
+                    result['skipped'] += 1
                 else:
                     _record_dispatch(result, created=created)
         return result
@@ -139,7 +146,7 @@ def enqueue_recovery_work(*, provider_type: str, instance: Any) -> dict[str, obj
                     dataset_key,
                     cluster_id,
                 )
-                result['skipped'] = int(result['skipped']) + 1
+                result['skipped'] += 1
             else:
                 _record_dispatch(result, created=created)
     return result

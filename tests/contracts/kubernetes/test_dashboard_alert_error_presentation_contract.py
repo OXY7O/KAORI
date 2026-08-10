@@ -24,5 +24,5 @@ def test_alert_summary_does_not_repeat_raw_snapshot_message_in_insight_footer() 
 def test_alert_snapshot_builder_sanitizes_legacy_snapshot_errors() -> None:
     source = (ROOT / 'app/dashboards/kubernetes/sections/alerts.py').read_text()
 
-    assert "else friendly_combined_alert_error()" in source
+    assert 'else friendly_combined_alert_error()' in source
     assert "message=str(context.get('message') or unavailable_reason)" not in source

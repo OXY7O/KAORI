@@ -12,19 +12,18 @@
                 </div>
             {% endcall %}
         </div>
-        {{ page_hero.context_card(
-            'Binding & Provisioning Posture',
-            'Storage Posture',
-            'Storage Lifecycle',
-            inventory.overall_posture,
-            inventory.overall_posture_tone,
-            [
-                ('link-2', 'Bound', inventory.bound_resource_count, 'Claims and volumes'),
-                ('triangle-alert', 'Active Signals', inventory.exception_count, 'Lifecycle or evidence')
-            ],
-            'Manage Clusters',
-            url_for('integrations.kubernetes'),
-            'server-cog'
+        {{ page_hero.context_card('Binding & Provisioning Posture',
+                'Storage Posture',
+                'Storage Lifecycle',
+                inventory.overall_posture,
+                inventory.overall_posture_tone,
+                [
+                ('link-2', 'Bound', inventory.bound_resource_count, 'Claims and volumes') ,
+        ('triangle-alert', 'Active Signals', inventory.exception_count, 'Lifecycle or evidence')
+        ],
+        'Manage Clusters',
+        url_for('integrations.kubernetes'),
+        'server-cog'
         ) }}
     </div>
 </section>

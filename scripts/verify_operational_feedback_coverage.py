@@ -58,9 +58,21 @@ def main() -> int:
         "event_type='governance_tls_secret_sync_dispatch'",
     )
     for path, tokens in {
-        'app/cluster/routes.py': ("event_type='cluster_create'", "event_type='cluster_update'", "event_type='cluster_delete'"),
-        'app/prometheus/routes.py': ("event_type='prometheus_instance_created'", "event_type='prometheus_instance_updated'", "event_type='prometheus_instance_deleted'"),
-        'app/alertmanager/routes.py': ("event_type='alertmanager_instance_created'", "event_type='alertmanager_instance_updated'", "event_type='alertmanager_instance_deleted'"),
+        'app/cluster/routes.py': (
+            "event_type='cluster_create'",
+            "event_type='cluster_update'",
+            "event_type='cluster_delete'",
+        ),
+        'app/prometheus/routes.py': (
+            "event_type='prometheus_instance_created'",
+            "event_type='prometheus_instance_updated'",
+            "event_type='prometheus_instance_deleted'",
+        ),
+        'app/alertmanager/routes.py': (
+            "event_type='alertmanager_instance_created'",
+            "event_type='alertmanager_instance_updated'",
+            "event_type='alertmanager_instance_deleted'",
+        ),
     }.items():
         require(path, *tokens)
     require(

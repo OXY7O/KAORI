@@ -8,20 +8,23 @@
         <caption class="sr-only">Kubernetes Pod inventory for the active committed-snapshot scope.</caption>
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
-                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[18rem]">Pod</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Scope</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Runtime State</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[13rem]">Placement</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Ownership & Activity</th>
+                <th scope="col"
+                    class="{{ table_ui.header_cell_classes() }} min-w-[18rem]">Pod</th>
+                <th scope="col"
+                    class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Scope</th>
+                <th scope="col"
+                    class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Runtime State</th>
+                <th scope="col"
+                    class="{{ table_ui.header_cell_classes() }} min-w-[13rem]">Placement</th>
+                <th scope="col"
+                    class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Ownership & Activity</th>
                 <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
             </tr>
         </thead>
         <tbody class="{{ table_ui.body_classes() }}">
             {% for pod in inventory.pods %}
                 <tr id="pod-row-{{ pod.id }}" class="{{ table_ui.row_classes() }}">
-                    <td class="{{ table_ui.cell_classes() }}">
-                        {{ table_ui.title_cell(pod.name, pod.identity_supporting, 'package') }}
-                    </td>
+                    <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(pod.name, pod.identity_supporting, 'package') }}</td>
                     <td class="{{ table_ui.cell_classes() }}">
                         {{ table_ui.namespaced_scope_identity(pod.cluster_name, pod.cluster_environment, pod.namespace) }}
                     </td>
@@ -38,7 +41,7 @@
                         <p class="mt-1 text-xs leading-5 text-content-muted">{{ pod.activity_secondary }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes(action=true) }}">
-                        {{ resource_detail_modal.detail_button(pod.id, url_for('inventory.pod_details', pod_id=pod.id), pod.name, 'Pod') }}
+                        {{ resource_detail_modal.detail_button(pod.id, url_for('inventory.pod_details', pod_id=pod.id) , pod.name, 'Pod') }}
                     </td>
                 </tr>
             {% else %}
@@ -57,13 +60,14 @@
 </div>
 <footer class="{{ pagination_ui.footer_classes() }}">
     <div class="{{ pagination_ui.summary_group_classes() }}">
-        <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ pagination_ui.resource_name('Pods', pagination.total_items)|trim }}</p>
+        <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ pagination_ui.resource_name('Pods', pagination.total_items) |trim }}</p>
         <form hx-get="{{ url_for('inventory.pods') }}"
               hx-target="#pods-table-content"
               hx-swap="innerHTML"
               hx-indicator="#pods-table-loading"
               class="flex items-center gap-2">
-            <label for="pods-per-page" class="text-xs font-semibold text-content-secondary">Rows</label>
+            <label for="pods-per-page"
+                   class="text-xs font-semibold text-content-secondary">Rows</label>
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}">
             <input type="hidden" name="namespace" value="{{ selected_namespace }}">
@@ -77,38 +81,49 @@
                     aria-label="Rows Per Page"
                     data-kaori-auto-submit
                     class="{{ pagination_ui.page_size_classes() }}">
-                {% for size in pagination.allowed_per_page %}<option value="{{ size }}" {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}
+                {% for size in pagination.allowed_per_page %}
+                    <option value="{{ size }}"
+                            {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>
+                {% endfor %}
             </select>
         </form>
     </div>
     <div class="{{ pagination_ui.navigation_group_classes() }}">
         {% set pagination_params = {
-            'cluster_id': selected_cluster_id,
-            'namespace': selected_namespace,
-            'status': selected_status,
-            'owner_type': selected_owner_type,
-            'node': selected_node,
-            'search': search,
-            'per_page': pagination.per_page,
-            'partial_mode': 'table_content'
-        } %}
+                    'cluster_id': selected_cluster_id,
+                    'namespace': selected_namespace,
+                    'status': selected_status,
+                    'owner_type': selected_owner_type,
+                    'node': selected_node,
+                    'search': search,
+                    'per_page': pagination.per_page,
+                    'partial_mode': 'table_content'
+                } %}
         {% if pagination.has_prev %}
             {% set prev_url = url_for('inventory.pods', cluster_id=selected_cluster_id, namespace=selected_namespace, status=selected_status, owner_type=selected_owner_type, node=selected_node, search=search, per_page=pagination.per_page, partial_mode='table_content', page=pagination.prev_page) %}
-            <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#pods-table-content" hx-swap="innerHTML" hx-indicator="#pods-table-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+            <a href="{{ prev_url }}"
+               hx-get="{{ prev_url }}"
+               hx-target="#pods-table-content"
+               hx-swap="innerHTML"
+               hx-indicator="#pods-table-loading"
+               class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
         {% else %}
             <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
         {% endif %}
-        {{ pagination_ui.numeric_pages(
-            pagination.page,
-            pagination.total_pages,
-            endpoint='inventory.pods',
-            query_params=pagination_params,
-            hx_target='#pods-table-content',
-            hx_indicator='#pods-table-loading'
-        ) }}
+        {{ pagination_ui.numeric_pages(pagination.page,
+                pagination.total_pages,
+                endpoint='inventory.pods',
+                query_params=pagination_params,
+                hx_target='#pods-table-content',
+                hx_indicator='#pods-table-loading') }}
         {% if pagination.has_next %}
             {% set next_url = url_for('inventory.pods', cluster_id=selected_cluster_id, namespace=selected_namespace, status=selected_status, owner_type=selected_owner_type, node=selected_node, search=search, per_page=pagination.per_page, partial_mode='table_content', page=pagination.next_page) %}
-            <a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#pods-table-content" hx-swap="innerHTML" hx-indicator="#pods-table-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+            <a href="{{ next_url }}"
+               hx-get="{{ next_url }}"
+               hx-target="#pods-table-content"
+               hx-swap="innerHTML"
+               hx-indicator="#pods-table-loading"
+               class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
         {% else %}
             <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
         {% endif %}

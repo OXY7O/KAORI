@@ -56,9 +56,7 @@ class TopologyGraphBuilder:
             type_counts[node['data']['type']] += 1
 
         collected = [
-            normalized
-            for value in self.state.collected_values
-            if (normalized := normalize_datetime(value)) is not None
+            normalized for value in self.state.collected_values if (normalized := normalize_datetime(value)) is not None
         ]
         latest_collected = max(collected, default=None)
         cluster_count = type_counts.get('cluster', 0)

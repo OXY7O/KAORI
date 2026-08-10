@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import signal
 from collections.abc import Iterator
 from contextlib import contextmanager
+import signal
 from threading import current_thread, main_thread
 from typing import Any
 from urllib.parse import urlencode
@@ -11,22 +11,19 @@ from billiard.exceptions import SoftTimeLimitExceeded
 from celery import shared_task
 from flask import current_app
 
-from app.analytics.materialization.catalog import (
-    dataset_task_budget_seconds,
-    get_dataset,
-)
+from app.analytics.materialization.catalog import dataset_task_budget_seconds, get_dataset
 from app.analytics.materialization.errors import (
     AnalyticsDatasetTimeoutError,
     AnalyticsDependencyError,
     classify_analytics_failure,
 )
-from app.analytics.materialization.source_lock import analytics_source_lock
 from app.analytics.materialization.service import (
     fail_snapshot,
     mark_snapshot_pending,
     normalize_parameters,
     store_snapshot,
 )
+from app.analytics.materialization.source_lock import analytics_source_lock
 from app.common.provider_query_runtime import provider_query_runtime
 from app.extensions.db import db
 from app.jobs.execution import JobCancellationRequested, JobExecutionContext
@@ -38,11 +35,7 @@ def _dataset_timeout_seconds(
     parameters: dict[str, Any] | None,
 ) -> int:
     forecasting = dataset_key == 'analytics.forecast'
-    config_key = (
-        'FORECASTING_DATASET_TIMEOUT_SECONDS'
-        if forecasting
-        else 'ANALYTICS_DATASET_TIMEOUT_SECONDS'
-    )
+    config_key = 'FORECASTING_DATASET_TIMEOUT_SECONDS' if forecasting else 'ANALYTICS_DATASET_TIMEOUT_SECONDS'
     configured = int(current_app.config.get(config_key, 600 if forecasting else 300))
     estimated = dataset_task_budget_seconds(dataset_key, parameters)
     maximum = 3600 if forecasting else 1800
@@ -75,9 +68,7 @@ def _dataset_time_limit(
     previous_handler = signal.getsignal(signal.SIGALRM)
 
     def handle_timeout(_signum, _frame) -> None:
-        raise AnalyticsDatasetTimeoutError(
-            f'{dataset_key} exceeded its {timeout_seconds}-second execution limit.'
-        )
+        raise AnalyticsDatasetTimeoutError(f'{dataset_key} exceeded its {timeout_seconds}-second execution limit.')
 
     signal.signal(signal.SIGALRM, handle_timeout)
     signal.setitimer(signal.ITIMER_REAL, timeout_seconds)
@@ -130,12 +121,7 @@ def _fail_unfinished_work_items(
 def _dependency_blocker_message(blocker: Any) -> str:
     if isinstance(blocker, dict):
         title = str(blocker.get('title') or 'Analytics dependency unavailable')
-        detail = str(
-            blocker.get('diagnostic_detail')
-            or blocker.get('description')
-            or blocker.get('badge')
-            or ''
-        )
+        detail = str(blocker.get('diagnostic_detail') or blocker.get('description') or blocker.get('badge') or '')
     else:
         title = str(getattr(blocker, 'title', '') or 'Analytics dependency unavailable')
         detail = str(
@@ -227,14 +213,10 @@ def _materialize(
                             dataset_key=dataset_key,
                             timeout_seconds=timeout_seconds,
                         ):
-                            with current_app.test_request_context(
-                                f'/analytics/materialize?{query_string}'
-                            ):
+                            with current_app.test_request_context(f'/analytics/materialize?{query_string}'):
                                 context = dataset.builder(parameters)
                     if not isinstance(context, dict):
-                        raise TypeError(
-                            f'{dataset.key} returned {type(context).__name__}; expected a context mapping.'
-                        )
+                        raise TypeError(f'{dataset.key} returned {type(context).__name__}; expected a context mapping.')
                     blocker = context.get('dependency_blocker')
                     if blocker:
                         raise AnalyticsDependencyError(_dependency_blocker_message(blocker))
@@ -245,12 +227,8 @@ def _materialize(
                         parameters=parameters,
                         context=context,
                         job_execution_id=job_execution_id,
-                        freshness_minutes=int(
-                            item.get('freshness_minutes') or dataset.freshness_minutes
-                        ),
-                        stale_grace_minutes=int(
-                            item.get('stale_grace_minutes') or dataset.stale_grace_minutes
-                        ),
+                        freshness_minutes=int(item.get('freshness_minutes') or dataset.freshness_minutes),
+                        stale_grace_minutes=int(item.get('stale_grace_minutes') or dataset.stale_grace_minutes),
                     )
                     current_app.logger.info(
                         'Analytics snapshot materialized.',
@@ -320,7 +298,7 @@ def _materialize(
     except SoftTimeLimitExceeded as exc:
         message = 'Analytics materialization exceeded its global worker time limit.'
         _fail_unfinished_work_items(
-            work_items=work_items[max(current_index - 1, 0):],
+            work_items=work_items[max(current_index - 1, 0) :],
             job_execution_id=job_execution_id,
             error=exc,
         )
@@ -343,22 +321,14 @@ def _materialize(
             'total': len(work_items),
             'succeeded': succeeded,
             'failed': failed,
-            'status': (
-                'failed'
-                if failed and not succeeded
-                else ('partially_succeeded' if failed else 'succeeded')
-            ),
+            'status': ('failed' if failed and not succeeded else ('partially_succeeded' if failed else 'succeeded')),
         },
     )
     if failed and not succeeded:
         first_failure = failures[0] if failures else {}
         lifecycle.fail(
-            RuntimeError(
-                str(first_failure.get('title') or 'All analytics snapshot requests failed.')
-            ),
-            error_code=str(
-                first_failure.get('code') or 'analytics_materialization_all_failed'
-            ),
+            RuntimeError(str(first_failure.get('title') or 'All analytics snapshot requests failed.')),
+            error_code=str(first_failure.get('code') or 'analytics_materialization_all_failed'),
         )
         return summary
     lifecycle.succeed(

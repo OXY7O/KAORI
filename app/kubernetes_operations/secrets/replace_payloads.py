@@ -14,6 +14,7 @@ from app.kubernetes_operations.secrets.validation import (
     validate_ssh_private_key,
 )
 
+
 def _build_opaque_patch(form: Any, target: Any) -> dict[str, str]:
     existing_names = form.getlist('existing_key_name')
     existing_values = form.getlist('existing_key_value')

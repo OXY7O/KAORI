@@ -25,7 +25,7 @@ def test_scheduled_and_manual_fleet_sync_share_registered_dispatch() -> None:
     quick_sync = _source('app/cluster/quick_sync.py')
     sync_jobs = _source('app/cluster/sync_jobs.py')
 
-    assert "dispatch_registered_job(" in scheduler
+    assert 'dispatch_registered_job(' in scheduler
     assert "job_key='kubernetes.inventory.sync'" in quick_sync
     assert 'enqueue_canonical_job(' in sync_jobs
     assert "resource_group='kubernetes-inventory:global'" in sync_jobs

@@ -35,7 +35,7 @@ def test_node_filters_are_human_readable_and_accessible() -> None:
     table = read('app/templates/inventory/nodes/partials/_table_card.html')
     shared_table = read('app/templates/components/table.html')
 
-    assert "_canonical_role_filter(value): _role_display(value)" in backend
+    assert '_canonical_role_filter(value): _role_display(value)' in backend
     assert "func.lower(NodeInventory.role).in_(('control-plane', 'master'))" in backend
     assert "'value': value, 'label': _status_display(value)" in backend
     assert "valid_roles = {option['value'] for option in node_roles}" in routes
@@ -87,7 +87,7 @@ def test_node_detail_reuses_shared_metadata_and_avoids_duplicate_badges() -> Non
 
 def test_node_collection_preserves_incomplete_evidence() -> None:
     persistence = read('app/inventory/persistence.py')
-    save_nodes = persistence[persistence.index('def save_nodes'):persistence.index('def _namespace_count_snapshot')]
+    save_nodes = persistence[persistence.index('def save_nodes') : persistence.index('def _namespace_count_snapshot')]
 
     assert 'if metadata is None or not metadata.name' in save_nodes
     assert 'if status is None:' not in save_nodes

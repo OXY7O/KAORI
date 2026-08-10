@@ -1,6 +1,14 @@
 from __future__ import annotations
 
-from flask import Blueprint, jsonify, make_response, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    jsonify,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask.typing import ResponseReturnValue
 from flask_login import current_user, login_required
 
@@ -22,6 +30,19 @@ notifications_bp = Blueprint(
 )
 
 _ALLOWED_CENTER_VIEWS = frozenset({'activity', 'notifications'})
+
+
+def _count_value(value: object) -> int:
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return 0
+    return 0
 
 
 def _request_int(
@@ -65,8 +86,8 @@ def _render_status_snapshot() -> ResponseReturnValue:
     context = _navigation_context()
     response = jsonify(
         {
-            'active_count': int(context.get('active_count', 0)),
-            'unread_count': int(context.get('unread_count', 0)),
+            'active_count': _count_value(context.get('active_count', 0)),
+            'unread_count': _count_value(context.get('unread_count', 0)),
             'activity_html': render_template(
                 'notifications/partials/_notification_deck_activity_jobs.html',
                 activity_center=context,

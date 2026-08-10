@@ -293,9 +293,12 @@ def _domain_label(name: str) -> str:
 
 
 def _domain_icon(name: str) -> str:
-    return {'operational_activity': 'scroll-text', 'job_execution': 'workflow', 'runtime_observation': 'activity', 'analytics_snapshot': 'chart-no-axes-combined'}.get(
-        name, 'database'
-    )
+    return {
+        'operational_activity': 'scroll-text',
+        'job_execution': 'workflow',
+        'runtime_observation': 'activity',
+        'analytics_snapshot': 'chart-no-axes-combined',
+    }.get(name, 'database')
 
 
 def _domain_description(name: str) -> str:

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from datetime import datetime
-from typing import Any, Iterable
+from typing import Any
 
 from app.analytics.alerts.contracts import NormalizedAlert
 from app.analytics.alerts.metrics import get_metric_labels
@@ -86,34 +87,15 @@ def normalize_alertmanager_item(item: dict[str, Any]) -> NormalizedAlert:
 
     starts_at = item.get('starts_at') or item.get('startsAt')
     ends_at = item.get('ends_at') or item.get('endsAt')
-    alert_name = (
-        item.get('alertname')
-        or labels.get('alertname')
-        or item.get('name')
-        or 'Unknown Alert'
-    )
+    alert_name = item.get('alertname') or labels.get('alertname') or item.get('name') or 'Unknown Alert'
     severity = normalize_severity(item.get('severity') or labels.get('severity'))
-    raw_status = (
-        item.get('status')
-        if isinstance(item.get('status'), str)
-        else status_payload.get('state', 'active')
-    )
+    raw_status = item.get('status') if isinstance(item.get('status'), str) else status_payload.get('state', 'active')
     status = normalize_status(raw_status)
     namespace = item.get('namespace') or labels.get('namespace') or '-'
     target = (
-        item.get('pod')
-        or labels.get('pod')
-        or labels.get('node')
-        or labels.get('instance')
-        or labels.get('job')
-        or '-'
+        item.get('pod') or labels.get('pod') or labels.get('node') or labels.get('instance') or labels.get('job') or '-'
     )
-    summary = (
-        item.get('summary')
-        or annotations.get('summary')
-        or annotations.get('message')
-        or '-'
-    )
+    summary = item.get('summary') or annotations.get('summary') or annotations.get('message') or '-'
     description = item.get('description') or annotations.get('description') or summary
 
     return {
@@ -154,13 +136,7 @@ def normalize_prometheus_alert(item: dict[str, Any]) -> NormalizedAlert:
     alert_value = str(value[1]) if isinstance(value, list) and len(value) >= 2 else '-'
     alert_name = str(metric.get('alertname') or 'Unknown Alert')
     namespace = str(metric.get('namespace') or '-')
-    target = str(
-        metric.get('pod')
-        or metric.get('node')
-        or metric.get('instance')
-        or metric.get('job')
-        or '-'
-    )
+    target = str(metric.get('pod') or metric.get('node') or metric.get('instance') or metric.get('job') or '-')
 
     return {
         'name': alert_name,
@@ -258,11 +234,7 @@ def filter_items(
 
     if namespace:
         namespace_query = namespace.strip().lower()
-        filtered = [
-            item
-            for item in filtered
-            if str(item.get('namespace', '')).strip().lower() == namespace_query
-        ]
+        filtered = [item for item in filtered if str(item.get('namespace', '')).strip().lower() == namespace_query]
 
     if search:
         search_query = search.lower()

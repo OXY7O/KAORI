@@ -67,7 +67,6 @@ def test_access_navigation_uses_canonical_endpoints() -> None:
     assert "('roles.view', 'access.overview.index')" in welcome
 
 
-
 def test_no_access_legacy_route_references_remain_in_runtime_code() -> None:
     forbidden = (
         'settings.access_compat',
@@ -86,6 +85,7 @@ def test_no_access_legacy_route_references_remain_in_runtime_code() -> None:
         text = target.read_text(errors='ignore')
         for token in forbidden:
             assert token not in text, f'{target.relative_to(ROOT)} contains {token!r}'
+
 
 def test_access_ui_is_not_final_locked_by_this_refactor() -> None:
     readme = read('app/access/README.md')

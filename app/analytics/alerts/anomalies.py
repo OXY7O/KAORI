@@ -256,15 +256,9 @@ def load_prometheus_anomaly_metrics(
         if isinstance(item, dict) and (anomaly := normalize_not_ready_anomaly(item)) is not None:
             anomalies.append(anomaly)
 
-    errors = {
-        name: error
-        for name, error in (('restart', restart_error), ('readiness', readiness_error))
-        if error
-    }
+    errors = {name: error for name, error in (('restart', restart_error), ('readiness', readiness_error)) if error}
     available_queries = [
-        name
-        for name, error in (('restart', restart_error), ('readiness', readiness_error))
-        if not error
+        name for name, error in (('restart', restart_error), ('readiness', readiness_error)) if not error
     ]
     partial = bool(errors)
     connected = bool(available_queries)
@@ -313,11 +307,7 @@ def filter_anomalies(
     if namespace:
         namespace_query = namespace.lower()
 
-        filtered = [
-            item
-            for item in filtered
-            if str(item.get('namespace', '')).strip().lower() == namespace_query
-        ]
+        filtered = [item for item in filtered if str(item.get('namespace', '')).strip().lower() == namespace_query]
 
     if search:
         search_query = search.lower()

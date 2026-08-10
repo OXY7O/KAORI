@@ -110,9 +110,7 @@ def main() -> int:
             errors.append('Report export service does not resolve renderers through the artifact registry.')
 
         function_names = {
-            node.name
-            for node in service_tree.body
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            node.name for node in service_tree.body if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
         }
         forbidden_functions = {
             'render_' + 'report_pdf',

@@ -53,15 +53,38 @@ def test_configmap_and_secret_crud_use_canonical_operational_feedback() -> None:
 
 def test_tls_integrations_platform_operations_access_and_settings_are_covered() -> None:
     sources = {
-        'app/kubernetes_operations/secrets/tls_routes.py': ('kubernetes_tls_secret_rotation', 'kubernetes_tls_secret_bulk_rotation'),
+        'app/kubernetes_operations/secrets/tls_routes.py': (
+            'kubernetes_tls_secret_rotation',
+            'kubernetes_tls_secret_bulk_rotation',
+        ),
         'app/governance/tls_certificates/routes.py': ('governance_tls_secret_sync_dispatch',),
         'app/cluster/routes.py': ('cluster_create', 'cluster_update', 'cluster_delete'),
-        'app/prometheus/routes.py': ('prometheus_instance_created', 'prometheus_instance_updated', 'prometheus_instance_deleted'),
-        'app/alertmanager/routes.py': ('alertmanager_instance_created', 'alertmanager_instance_updated', 'alertmanager_instance_deleted'),
+        'app/prometheus/routes.py': (
+            'prometheus_instance_created',
+            'prometheus_instance_updated',
+            'prometheus_instance_deleted',
+        ),
+        'app/alertmanager/routes.py': (
+            'alertmanager_instance_created',
+            'alertmanager_instance_updated',
+            'alertmanager_instance_deleted',
+        ),
         'app/jobs/routes.py': ('job_policy_updated', 'job_manual_dispatch', 'job_cancellation_requested'),
-        'app/platform_operations/data_lifecycle/service.py': ('data_lifecycle_policy_updated', 'data_lifecycle_execution_requested'),
-        'app/platform_operations/kubernetes/secret_reveal/routes.py': ('kubernetes_secret_reveal_cluster_readiness_updated', 'kubernetes_secret_reveal_namespace_policy_updated'),
-        'app/users/routes.py': ('user_created', 'user_updated', 'user_deleted', 'identity_provider_created', 'identity_provider_updated'),
+        'app/platform_operations/data_lifecycle/service.py': (
+            'data_lifecycle_policy_updated',
+            'data_lifecycle_execution_requested',
+        ),
+        'app/platform_operations/kubernetes/secret_reveal/routes.py': (
+            'kubernetes_secret_reveal_cluster_readiness_updated',
+            'kubernetes_secret_reveal_namespace_policy_updated',
+        ),
+        'app/users/routes.py': (
+            'user_created',
+            'user_updated',
+            'user_deleted',
+            'identity_provider_created',
+            'identity_provider_updated',
+        ),
         'app/access/roles/routes.py': ('rbac_role_created', 'rbac_role_updated', 'rbac_role_deleted'),
         'app/settings/routes.py': ('account_security', 'user_preference'),
     }
@@ -74,7 +97,7 @@ def test_tls_integrations_platform_operations_access_and_settings_are_covered() 
 def test_general_settings_preference_save_has_toast_and_audit_without_inbox_noise() -> None:
     settings = read('app/settings/routes.py')
     assert 'OperationalDeliveryPolicy.AUDIT_ONLY' in settings
-    assert 'queue_feedback=not bool(request.headers.get(\'HX-Request\'))' in settings
+    assert "queue_feedback=not bool(request.headers.get('HX-Request'))" in settings
     assert 'toast_oob=True' in settings
     assert "notification_changed = bool(operation_feedback.get('notification_deck_visible'))" in settings
     assert 'general_settings_saved = True' in settings

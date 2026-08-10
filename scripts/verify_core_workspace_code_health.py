@@ -94,9 +94,7 @@ def main() -> int:
             checked += 1
             source = path.read_text(encoding='utf-8')
             if len(source.splitlines()) > MAX_MODULE_LINES:
-                errors.append(
-                    f'{path.relative_to(ROOT)}: {len(source.splitlines())} lines exceeds {MAX_MODULE_LINES}'
-                )
+                errors.append(f'{path.relative_to(ROOT)}: {len(source.splitlines())} lines exceeds {MAX_MODULE_LINES}')
             tree = ast.parse(source, filename=str(path))
             errors.extend(_function_errors(path, tree))
 

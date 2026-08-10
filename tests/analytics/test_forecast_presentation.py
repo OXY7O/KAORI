@@ -32,9 +32,7 @@ def test_summary_ignores_unavailable_and_marks_limited_evidence() -> None:
 
 
 def test_overview_snapshot_preserves_unavailable_forecast_semantics() -> None:
-    overview = (ROOT / 'app/templates/analytics/overview/partials/_forecast_snapshot.html').read_text(
-        encoding='utf-8'
-    )
+    overview = (ROOT / 'app/templates/analytics/overview/partials/_forecast_snapshot.html').read_text(encoding='utf-8')
     assert "'highest_projected_percent': None" in PRESENTATION
     assert "return 'Low' if has_forecast_evidence else 'Unknown'" in PRESENTATION
     assert "if forecast_risk == 'Unknown'" in PRESENTATION
@@ -45,5 +43,5 @@ def test_overview_snapshot_preserves_unavailable_forecast_semantics() -> None:
 
 def test_chart_payload_aligns_dates_and_preserves_projection_boundary() -> None:
     assert 'all_dates = sorted(' in CALCULATION
-    assert "forecast_map.setdefault(boundary_date, historical_map[boundary_date])" in CALCULATION
+    assert 'forecast_map.setdefault(boundary_date, historical_map[boundary_date])' in CALCULATION
     assert "'labels': all_dates" in CALCULATION

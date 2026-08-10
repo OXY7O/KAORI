@@ -58,8 +58,7 @@ def standardize_activity_title(value: str | None) -> str | None:
             return override
         return token[:1].upper() + token[1:].lower()
 
-    return re.sub(r"[A-Za-z0-9]+", _word, normalized)
-
+    return re.sub(r'[A-Za-z0-9]+', _word, normalized)
 
 
 def activity_failure_message(event_type: str, text: str) -> str:

@@ -7,8 +7,9 @@ from app.analytics.workload.service import WorkloadAnalysisService
 from app.cluster.constants import get_environment_label
 from app.intelligence.recommendation_engine import build_workload_actionable_recommendations
 from app.models.report import Report
-from app.reports.export.payloads.common import get_report_selected_cluster, report_payload_error
 from app.prometheus.service import PrometheusService
+from app.reports.export.payloads.common import get_report_selected_cluster, report_payload_error
+
 
 def get_report_workload_analysis_payload(
     report: Report,
@@ -82,9 +83,7 @@ def get_report_workload_analysis_payload(
             if str(row.get('namespace') or '').strip()
         }
         pod_count = sum(
-            _safe_non_negative_int(row.get('replicas'))
-            for row in workload_mapping_rows
-            if isinstance(row, dict)
+            _safe_non_negative_int(row.get('replicas')) for row in workload_mapping_rows if isinstance(row, dict)
         )
         response_time_ms = prometheus_status.get('response_time_ms')
         response_time_display = (

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from app.analytics.alerts.contracts import (
     AlertSelectedClusterSignalOverview,
@@ -32,8 +32,11 @@ def get_alerts_snapshot(
         return None
     alerts = list(context.get('all_alerts') or [])
     anomalies = list(context.get('all_anomalies') or [])
-    source_status = context.get('source_status') or _empty_source_status()
-    signal_overview = context.get('selected_cluster_signal_overview') or {}
+    source_status = cast(AlertSourceStatus, context.get('source_status') or _empty_source_status())
+    signal_overview = cast(
+        AlertSelectedClusterSignalOverview,
+        context.get('selected_cluster_signal_overview') or {},
+    )
     firing_alerts = _count_alerts_by_status(alerts=alerts, statuses=['firing', 'active'])
     pending_alerts = _count_alerts_by_status(alerts=alerts, statuses=['pending'])
     critical_alerts = _count_alerts_by_severity(alerts=alerts, severity='critical')
@@ -55,7 +58,9 @@ def get_alerts_snapshot(
         anomalies=anomalies,
         evidence_complete=evidence_complete,
     )
-    return {
+    return cast(
+        AlertsSnapshot,
+        {
         'firing_alerts': firing_alerts,
         'pending_alerts': pending_alerts,
         'critical_alerts': critical_alerts,
@@ -83,9 +88,8 @@ def get_alerts_snapshot(
         'source_health': context.get('source_health') or {},
         'routing_summary': context.get('routing_summary') or build_empty_routing_summary(),
         'silence_summary': context.get('silence_summary') or build_empty_silence_summary(),
-        'inhibition_summary': context.get('inhibition_summary') or build_inhibition_summary(
-            alerts=[], source_status=_empty_source_status()
-        ),
+        'inhibition_summary': context.get('inhibition_summary')
+        or build_inhibition_summary(alerts=[], source_status=_empty_source_status()),
         'ownership_summary': context.get('ownership_summary') or build_empty_ownership_summary(),
         'incident_readiness': context.get('incident_readiness') or build_empty_incident_readiness(),
         'priority': signal_overview.get('priority', {}),
@@ -97,7 +101,9 @@ def get_alerts_snapshot(
         'anomaly_evidence_partial': anomaly_evidence_partial,
         'status': status,
         'tone': tone,
-    }
+        },
+    )
+
 
 def _snapshot_posture(
     *,

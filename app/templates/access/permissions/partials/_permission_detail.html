@@ -1,11 +1,15 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/details/_detail_content.html" as detail_ui %}
 {% import "components/table.html" as table_ui %}
-<div data-kaori-detail-variant="full-workspace-modal" data-kaori-detail-density="adaptive-stacks" class="{{ detail_ui.expanded_workspace_outer_classes() }}">
+<div data-kaori-detail-variant="full-workspace-modal"
+     data-kaori-detail-density="adaptive-stacks"
+     class="{{ detail_ui.expanded_workspace_outer_classes() }}">
     <div class="{{ detail_ui.expanded_workspace_shell_classes() }}">
-        <header data-resource-detail-header class="{{ detail_ui.expanded_workspace_header_classes() }}">
+        <header data-resource-detail-header
+                class="{{ detail_ui.expanded_workspace_header_classes() }}">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ detail_ui.expanded_workspace_icon_classes() }}" aria-hidden="true"><i data-lucide="key-round" class="h-5 w-5"></i></span>
+                <span class="{{ detail_ui.expanded_workspace_icon_classes() }}"
+                      aria-hidden="true"><i data-lucide="key-round" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ permission.title }}</h3>
@@ -17,22 +21,19 @@
                 </div>
             </div>
         </header>
-
         {{ detail_ui.summary_strip([
-            ('Control Module', permission.module_label, 'Current code-owned module'),
-            ('Mapped Roles', permission.role_count, 'Effective role mappings'),
-            ('Requires', requires|length, 'Baseline dependencies'),
-            ('Required By', required_by|length, 'Dependent permission contracts')
+                ('Control Module', permission.module_label, 'Current code-owned module') ,
+        ('Mapped Roles', permission.role_count, 'Effective role mappings'),
+        ('Requires', requires|length, 'Baseline dependencies'),
+        ('Required By', required_by|length, 'Dependent permission contracts')
         ], compact=true) }}
-
         <div class="grid items-start gap-4 p-5 xl:grid-cols-2">
             {% call detail_ui.detail_card('Permission Identity', 'badge-info', permission.state.label, badge_type='status', badge_tone=permission.state.tone, badge_size='detail', stretch=false, density='compact') %}
                 {{ detail_ui.detail_row('Permission Key', permission.key) }}
                 {{ detail_ui.detail_row('Control Module', permission.module_label) }}
-                {{ detail_ui.detail_row('Action', permission.action|replace('_', ' ')|title) }}
+                {{ detail_ui.detail_row('Action', permission.action|replace('_', ' ') |title) }}
                 {{ detail_ui.stacked_detail_row('Description', permission.description or 'No permission description is defined.') }}
             {% endcall %}
-
             {% call detail_ui.detail_card('Dependency Contract', 'git-merge', (requires|length + required_by|length) ~ ' Links', badge_size='detail', stretch=false, density='compact') %}
                 <div>
                     <p class="text-xs font-semibold text-content-secondary">Requires</p>
@@ -55,17 +56,17 @@
                     {% endif %}
                 </div>
             {% endcall %}
-
             <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card xl:col-span-2">
                 <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
                         <div class="min-w-0">
                             <h4 class="text-sm font-semibold text-content-primary">Role Coverage</h4>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Current roles that include this effective permission contract.</p>
                         </div>
                     </div>
-                    {{ table_label.metadata_label(permission.role_count ~ ' ' ~ ('Role' if permission.role_count == 1 else 'Roles'), 'shield-check') }}
+                    {{ table_label.metadata_label(permission.role_count ~ ' ' ~ ('Role' if permission.role_count == 1 else 'Roles') , 'shield-check') }}
                 </header>
                 {% if role_rows %}
                     <div class="overflow-x-auto">
@@ -92,7 +93,6 @@
                     <div class="p-4">{{ detail_ui.empty_evidence('No Role Coverage', 'This permission is not currently mapped to a role. Unused code-owned contracts are not automatically treated as errors.', 'shield-check') }}</div>
                 {% endif %}
             </section>
-
             {% call detail_ui.detail_card('Registry Boundary', 'database-zap', permission.state.label, badge_type='status', badge_tone=permission.state.tone, badge_size='detail', stretch=false, density='compact', class_name='xl:col-span-2') %}
                 {% if permission.state_key == 'canonical' %}
                     {{ detail_ui.stacked_detail_row('Registry State', 'The persisted permission metadata matches the application code contract.') }}

@@ -24,7 +24,7 @@ def test_last_super_admin_mutations_use_transaction_safe_boundary() -> None:
     assert 'def lock_active_super_admin_boundary(target: User)' in service
     assert '.with_for_update()' in service
     assert 'db.session.refresh(target)' in service
-    assert "removes_active_super_admin_authority = bool(" in routes
+    assert 'removes_active_super_admin_authority = bool(' in routes
     assert routes.count('lock_active_super_admin_boundary(user)') >= 3
     assert 'The last active super admin cannot be deactivated.' in service
     assert 'The last active super admin cannot be deleted.' in service
@@ -47,7 +47,7 @@ def test_user_management_hero_matches_inventory_hero_contract() -> None:
     assert "hero_action_href = url_for('users.create') if can_manage_users else '#user-directory'" in template
     assert "'managed': int(population.total or 0) + int(deleted_users or 0)" in service
     assert "'posture_label': 'Review Required' if posture_requires_review else 'Ready'" in service
-    assert "hero_oob=True" in routes
+    assert 'hero_oob=True' in routes
     assert 'hx-swap-oob="outerHTML"' in template
 
 
@@ -92,7 +92,10 @@ def test_user_directory_uses_shared_kaori_loading_filters_labels_and_expand_deta
 
 def test_user_directory_pagination_uses_current_kaori_rows_and_previous_next_contract() -> None:
     table = read('app/templates/users/partials/_table.html')
-    assert "Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} {{ pagination_ui.resource_name('Users', pagination.total_items) }}" in table
+    assert (
+        "Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} {{ pagination_ui.resource_name('Users', pagination.total_items) }}"
+        in table
+    )
     assert '>Rows</span>' in table
     assert 'aria-label="Rows Per Page"' in table
     assert 'Previous' in table
@@ -108,12 +111,12 @@ def test_user_delete_uses_shared_destructive_confirmation_component() -> None:
     script = read('app/static/js/destructive_confirmation_modal.js')
     assert not (ROOT / 'app/templates/users/partials/_delete_modal.html').exists()
     assert '{% import "components/destructive_confirmation_modal.html" as destructive_confirmation %}' in index
-    assert "destructive_confirmation.render(" in index
-    assert "destructive_confirmation_modal.js" in index
+    assert 'destructive_confirmation.render(' in index
+    assert 'destructive_confirmation_modal.js' in index
     assert 'data-destructive-submit-button-id' in detail
     assert 'data-destructive-scope' in detail
-    assert "opener?.dataset.destructiveSubmitButtonId" in script
-    assert "button.dataset.destructiveScope" in script
+    assert 'opener?.dataset.destructiveSubmitButtonId' in script
+    assert 'button.dataset.destructiveScope' in script
     assert "notice='This final action cannot be reversed by KAORI.'" in modal
 
 
@@ -147,7 +150,7 @@ def test_reset_password_matches_kaori_hero_impact_and_secure_delivery_contract()
     assert "('database', 'Credential Owner', 'KAORI'" in template
     assert "'Account State'" in template
     assert '{% import "components/view_more_content.html" as view_more %}' in template
-    assert "view_more.render(" in template
+    assert 'view_more.render(' in template
     assert "'Reset Impact'" in template
     assert 'open_by_default=false' in template
     assert "closed_label='View Details'" in template

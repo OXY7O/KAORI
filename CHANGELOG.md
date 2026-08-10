@@ -7,9 +7,12 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 ### Added
 
 - Release-governance documentation and an automated release-metadata verifier.
+- Pre-release type-safety guardrails for provider exceptions, Secret scrubbing, snapshot boundaries, recovery counters, ORM construction, and XLSX page setup.
 
 ### Changed
 
+- Normalized Python and Jinja sources to the canonical Ruff and djLint formatting contracts used by the release quality gate.
+- Modernized typed dictionaries, generic declarations, type aliases, collection ABC imports, and response annotations for the Python 3.12+ baseline.
 - Kubernetes Dashboard Top Consumers now uses KAORI Violet for normal CPU and memory ranking signals.
 - Dashboard consumer copy now describes committed snapshot evidence instead of implying direct browser-time Prometheus access.
 - Analytics materialization builders are resolved only when worker materialization executes, removing an eager service-registry import cycle.
@@ -18,6 +21,9 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ### Fixed
 
+- Resolved pre-release lint and type-safety defects across Analytics, Inventory, Governance, Kubernetes Operations, Reports, Integrations, Platform Operations, Access support code, and release scripts.
+- Restored required Prometheus exception and Secret scrubber imports, eliminating two runtime-name failures detected by the quality gate.
+- Aligned formatter-sensitive lock verifiers with semantic module, symbol, tab-order, and loading-indicator contracts instead of whitespace-specific assertions.
 - Restored the Reports Storage S3 connectivity banner with sanitized operator guidance and an explicit retry action when artifact storage is unreachable.
 - Added the Analytics compact-label verifier to the canonical static quality gate.
 - Removed runtime import cycles in Analytics, TLS Governance, and the Prometheus query-profile package.

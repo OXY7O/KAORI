@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-from typing import Literal, TypedDict
+from typing import Literal, Protocol, TypedDict
 
 from flask import render_template, url_for
-
-from app.models.cluster import Cluster
 
 DependencyKind = Literal[
     'cluster_required',
@@ -14,6 +12,14 @@ DependencyKind = Literal[
     'alert_source_setup',
     'alert_source_connection',
 ]
+
+
+class ClusterIdentity(Protocol):
+    @property
+    def id(self) -> object: ...
+
+    @property
+    def name(self) -> str: ...
 
 
 class DependencyBlocker(TypedDict):
@@ -44,7 +50,7 @@ def cluster_required_blocker() -> DependencyBlocker:
     }
 
 
-def prometheus_setup_blocker(cluster: Cluster) -> DependencyBlocker:
+def prometheus_setup_blocker(cluster: ClusterIdentity) -> DependencyBlocker:
     return {
         'kind': 'prometheus_setup',
         'stage': 2,
@@ -62,7 +68,7 @@ def prometheus_setup_blocker(cluster: Cluster) -> DependencyBlocker:
 
 
 def prometheus_connection_blocker(
-    cluster: Cluster,
+    cluster: ClusterIdentity,
     *,
     detail: str | None = None,
 ) -> DependencyBlocker:
@@ -83,7 +89,7 @@ def prometheus_connection_blocker(
 
 
 def prometheus_capability_blocker(
-    cluster: Cluster,
+    cluster: ClusterIdentity,
     *,
     capability_labels: list[str] | None = None,
     feature_label: str = 'Storage Analytics',
@@ -110,7 +116,7 @@ def prometheus_capability_blocker(
 
 
 def alert_source_setup_blocker(
-    cluster: Cluster,
+    cluster: ClusterIdentity,
     *,
     source: str,
 ) -> DependencyBlocker:
@@ -147,7 +153,7 @@ def alert_source_setup_blocker(
 
 
 def alert_source_connection_blocker(
-    cluster: Cluster,
+    cluster: ClusterIdentity,
     *,
     source: str,
     detail: str | None = None,

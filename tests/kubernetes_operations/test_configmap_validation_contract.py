@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import importlib.util
-import sys
 from pathlib import Path
+import sys
 from types import ModuleType
 
 import pytest
@@ -60,12 +60,10 @@ def load_validation(monkeypatch: pytest.MonkeyPatch):
 
 def test_binary_entries_remain_canonical_base64_strings(monkeypatch: pytest.MonkeyPatch) -> None:
     validation = load_validation(monkeypatch)
-    entries = validation.parse_entries(
-        FormData(keys=['binary.bin'], values=['aGVsbG8='], kinds=['binary'])
-    )
+    entries = validation.parse_entries(FormData(keys=['binary.bin'], values=['aGVsbG8='], kinds=['binary']))
 
     assert entries.binary_data == {'binary.bin': 'aGVsbG8='}
-    assert entries.payload_size_bytes == len('binary.bin'.encode()) + len(b'hello')
+    assert entries.payload_size_bytes == len(b'binary.bin') + len(b'hello')
 
 
 def test_blank_key_with_value_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -84,9 +82,7 @@ def test_unsupported_entry_kind_is_rejected(monkeypatch: pytest.MonkeyPatch) -> 
 
 def test_merge_recalculates_complete_payload_size(monkeypatch: pytest.MonkeyPatch) -> None:
     validation = load_validation(monkeypatch)
-    submitted = validation.parse_entries(
-        FormData(keys=['new'], values=['two'], kinds=['text'])
-    )
+    submitted = validation.parse_entries(FormData(keys=['new'], values=['two'], kinds=['text']))
 
     merged = validation.merge_entries(
         {'data': {'existing': 'one'}, 'binary_data': {}},
@@ -100,9 +96,7 @@ def test_merge_recalculates_complete_payload_size(monkeypatch: pytest.MonkeyPatc
 
 def test_replace_diff_reports_removed_keys(monkeypatch: pytest.MonkeyPatch) -> None:
     validation = load_validation(monkeypatch)
-    submitted = validation.parse_entries(
-        FormData(keys=['new'], values=['two'], kinds=['text'])
-    )
+    submitted = validation.parse_entries(FormData(keys=['new'], values=['two'], kinds=['text']))
 
     diff = validation.diff_entries(
         {'data': {'existing': 'one'}, 'binary_data': {}},
@@ -123,7 +117,7 @@ def test_configmap_name_rejects_empty_or_oversized_dns_labels(monkeypatch: pytes
     with pytest.raises(ValueError, match='DNS subdomain'):
         module.validate_name('api..config', 'ConfigMap name')
     with pytest.raises(ValueError, match='DNS subdomain'):
-        module.validate_name(f"{'a' * 64}.config", 'ConfigMap name')
+        module.validate_name(f'{"a" * 64}.config', 'ConfigMap name')
 
 
 def test_configmap_name_accepts_valid_multi_label_dns_subdomain(monkeypatch: pytest.MonkeyPatch) -> None:

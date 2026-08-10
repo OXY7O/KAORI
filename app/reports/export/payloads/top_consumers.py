@@ -7,11 +7,9 @@ from app.analytics.top_consumers.service import TopConsumersService
 from app.analytics.utilization.service import UtilizationService
 from app.cluster.constants import get_environment_label
 from app.models.report import Report
-from app.reports.export.payloads.common import (
-    get_report_selected_cluster,
-    report_payload_error,
-)
 from app.prometheus.service import PrometheusService
+from app.reports.export.payloads.common import get_report_selected_cluster, report_payload_error
+
 
 def get_report_top_consumers_payload(
     report: Report,
@@ -45,9 +43,7 @@ def get_report_top_consumers_payload(
             )
         )
 
-        namespace_options = list(
-            consumer_payload.get('namespace_options') or []
-        )
+        namespace_options = list(consumer_payload.get('namespace_options') or [])
         return {
             'cluster': {
                 'id': str(

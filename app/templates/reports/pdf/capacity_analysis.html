@@ -1,291 +1,530 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>{{ document.report_name }}</title>
-</head>
-<body class="kaori-analytics-publication kaori-capacity-analysis-report">
-{% set p = document.presentation %}
-{% import 'reports/pdf/components/analytics_publication.html' as ui %}
-
-{% macro report_header() -%}{{ ui.report_header('Capacity Analysis') }}{%- endmacro %}
-
-{% macro page_title(number, title, subtitle) -%}{{ ui.page_title(number, title, subtitle, p.data_cutoff) }}{%- endmacro %}
-
-{% macro footer(page_number) -%}{{ ui.footer(p.report_id, p.classification, page_number, p.page_count) }}{%- endmacro %}
-
-{% macro metric_strip(items, limit=4) -%}{{ ui.metric_strip(items, limit) }}{%- endmacro %}
-
-{% macro section(title, subtitle='', extra_class='') -%}{% call ui.section(title, subtitle, extra_class) %}{{ caller() }}{% endcall %}{%- endmacro %}
-
-{% macro capacity_bar(item, label='Used') -%}
-<div class="capacity-row">
-  <strong>{{ label }}</strong>
-  <div class="capacity-track">
-    {% if item.evidence_available %}<i style="width: {{ item.used_percent }}%"></i>{% endif %}
-    <b class="warning-marker"></b><b class="critical-marker"></b>
-  </div>
-  <span>{{ item.used_display }}</span>
-</div>
-{%- endmacro %}
-
-{% macro allocation_rows(allocation) -%}
-<div class="allocation-list">
-  {% if allocation['available'] and allocation['items'] %}
-    {% for item in allocation['items'] %}
-    <div class="allocation-row">
-      <div class="allocation-copy"><strong>{{ item.label }}</strong><span>{{ item.display }}</span></div>
-      <div class="allocation-track"><i class="{{ item.tone }}" style="width: {{ item.percent }}%"></i></div>
-    </div>
-    {% endfor %}
-  {% else %}
-    <div class="empty-evidence">Allocation evidence is not available for this resource.</div>
-  {% endif %}
-</div>
-{%- endmacro %}
-
-{% macro reference_item(item) -%}
-<div class="reference-item">
-  <span class="reference-code">{{ item.ref }}</span>
-  <div><strong>{{ item.title }}</strong><p>{{ item.description }}</p></div>
-</div>
-{%- endmacro %}
-
-<article class="page cover-page">
-  <div class="cover-band">
-    {{ ui.cover_brand(p.report_id, p.classification, 'ANALYTICS REPORT') }}
-    {{ ui.cover_title('Capacity Analysis', 'A focused operational view of compute, scheduling, storage evidence, headroom, threshold exposure, and accountable capacity actions.') }}
-  </div>
-  <div class="cover-main">
-    <div class="cover-grid">
-      <section>
-        <h2>Reporting Boundary</h2>
-        <dl class="context-list">
-          <dt>Cluster</dt><dd>{{ p.cluster_scope }}</dd>
-          <dt>Environment</dt><dd>{{ p.cover.environment }}</dd>
-          <dt>Namespace</dt><dd>{{ p.namespace_scope }}</dd>
-          <dt>Reporting Period</dt><dd>{{ p.period_label }}</dd>
-          <dt>Data Cut-off</dt><dd>{{ p.data_cutoff }}</dd>
-        </dl>
-      </section>
-      <section><h2>Report Purpose</h2><p>{{ p.cover.purpose }}</p></section>
-    </div>
-    <div class="cover-context"><strong>Evidence Context</strong><p>{{ p.cover.context }}</p></div>
-    {{ ui.cover_contents(['01 Executive Brief', '02 Compute Capacity', '03 Scheduling Capacity', '04 Storage Capacity', '05 Capacity Forecast', '06 Capacity Risk Register', '07 Recommendation Plan', '08 Methodology and Evidence Boundary']) }}
-  </div>
-  {{ footer(1) }}
-</article>
-
-<article class="page page-executive">
-  {{ report_header() }}
-  <div class="page-content">
-    {{ page_title(1, 'Executive Brief', 'Management position for committed capacity at the report cut-off.') }}
-    {{ metric_strip(p.executive.metrics) }}
-    <div class="two-column primary-split">
-      {% call ui.section('Figure 1 - Capacity Posture', 'Committed utilization and remaining headroom by resource.') %}
-      <div class="capacity-bars">
-        {% for item in p.executive.resources %}
-        <div class="capacity-row">
-          <strong>{{ item.label }}</strong>
-          <div class="capacity-track">
-            {% if item.evidence_available %}<i class="{% if item.key == 'nodes' %}node-fill{% endif %}" style="width: {{ item.used_percent }}%"></i>{% endif %}
-            {% if item.key != 'nodes' %}<b class="warning-marker"></b><b class="critical-marker"></b>{% endif %}
-          </div>
-          <span>{{ item.used_display }}</span>
-        </div>
-        {% endfor %}
-      </div>
-      {% endcall %}
-      {% call ui.section('Management Interpretation', 'The principal capacity signal and the decision required.') %}
-      <div class="interpretation-card executive-callout">
-        <strong>{{ p.executive.interpretation_title }}</strong>
-        <p>{{ p.executive.interpretation_body }}</p>
-        <small>{{ p.executive.interpretation_note }}</small>
-      </div>
-      {% endcall %}
-    </div>
-    {% call ui.section('Priority Findings Register', 'Decision fields remain concise; full interpretation is maintained by reference.') %}
-    <table class="report-table findings-register">
-      <thead><tr><th>Ref.</th><th>Priority</th><th>Finding</th><th>Owner</th><th>Status</th></tr></thead>
-      <tbody>{% for item in p.executive.findings %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.priority }}</td><td>{{ item.title }}</td><td>{{ item.owner }}</td><td class="status {{ item.tone }}">{{ item.status }}</td></tr>{% endfor %}</tbody>
-    </table>
-    <div class="reference-grid executive-references">{% for item in p.executive.findings %}{{ reference_item(item) }}{% endfor %}</div>
-    {% endcall %}
-  </div>
-  {{ footer(2) }}
-</article>
-
-<article class="page page-compute">
-  {{ report_header() }}
-  <div class="page-content">
-    {{ page_title(2, 'Compute Capacity', 'CPU and memory headroom, allocation pressure, and planning interpretation.') }}
-    {{ metric_strip(p.compute.metrics) }}
-    <div class="two-column compute-split">
-      {% call ui.section('CPU Capacity Position', 'Current committed utilization, headroom, requests, limits, and usage.') %}
-        {{ capacity_bar(p.compute.cpu) }}
-        <div class="headroom-line"><span>Remaining Headroom</span><strong>{{ p.compute.cpu.headroom_display }}</strong></div>
-        {{ allocation_rows(p.compute.cpu.allocation) }}
-      {% endcall %}
-      {% call ui.section('Memory Capacity Position', 'Current committed utilization, headroom, requests, limits, and usage.') %}
-        {{ capacity_bar(p.compute.memory) }}
-        <div class="headroom-line"><span>Remaining Headroom</span><strong>{{ p.compute.memory.headroom_display }}</strong></div>
-        {{ allocation_rows(p.compute.memory.allocation) }}
-      {% endcall %}
-    </div>
-    {% call ui.section('Compute Capacity Register', 'Used, headroom, threshold state, and planning interpretation.') %}
-    <table class="report-table compute-register">
-      <thead><tr><th>Ref.</th><th>Resource</th><th>Used</th><th>Headroom</th><th>Status</th><th>Interpretation</th></tr></thead>
-      <tbody>{% for item in p.compute.register %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.resource }}</td><td>{{ item.used }}</td><td>{{ item.headroom }}</td><td class="status {{ item.tone }}">{{ item.status }}</td><td>{{ item.interpretation }}</td></tr>{% endfor %}</tbody>
-    </table>
-    {% endcall %}
-    {% call ui.section('Management Decision', 'Use aggregate posture and allocation evidence as separate signals.') %}<p>{{ p.compute.decision }}</p>{% endcall %}
-  </div>
-  {{ footer(3) }}
-</article>
-
-<article class="page page-scheduling">
-  {{ report_header() }}
-  <div class="page-content">
-    {{ page_title(3, 'Scheduling Capacity', 'Pod headroom, node participation, and schedulable-capacity evidence.') }}
-    {{ metric_strip(p.scheduling.metrics) }}
-    <div class="two-column scheduling-split">
-      {% call ui.section('Pod Scheduling Position', 'Committed utilization, capacity, and remaining scheduling slots.') %}
-        {{ capacity_bar(p.scheduling.pods) }}
-        <div class="headroom-line"><span>Remaining Headroom</span><strong>{{ p.scheduling.pods.headroom_display }}</strong></div>
-        <div class="summary-box-grid">
-          <div class="summary-box"><span>Reported Capacity</span><strong>{{ p.scheduling.pods.capacity_display }}</strong><small>Committed pod capacity</small></div>
-          <div class="summary-box"><span>Reported Remaining</span><strong>{{ p.scheduling.pods.available_display }}</strong><small>Schedulable slots</small></div>
-        </div>
-        {{ allocation_rows(p.scheduling.pods.allocation) }}
-      {% endcall %}
-      {% call ui.section('Node Participation', 'Ready nodes included in active capacity assumptions.') %}
-      <div class="node-card">
-        <div class="node-donut">{{ p.scheduling.nodes.donut_svg|safe }}</div>
-        <div class="node-legend">
-          <div><i class="ready-key"></i><span>Ready</span><strong>{{ p.scheduling.nodes.ready }}</strong></div>
-          <div><i class="not-ready-key"></i><span>Not Ready</span><strong>{{ p.scheduling.nodes.not_ready }}</strong></div>
-          <div><i class="participation-key"></i><span>Participation</span><strong>{{ '%.0f'|format(p.scheduling.nodes.participation) }}%</strong></div>
-          <div><i class="worker-key"></i><span>Workers / Control Plane</span><strong>{{ p.scheduling.nodes.workers }} / {{ p.scheduling.nodes.control_plane }}</strong></div>
-        </div>
-      </div>
-      {% endcall %}
-    </div>
-    {% call ui.section('Scheduling Capacity Register', 'Fixed scope, count, headroom, and readiness evidence.') %}
-    <table class="report-table scheduling-register"><thead><tr><th>Ref.</th><th>Resource</th><th>Used / State</th><th>Capacity</th><th>Headroom</th><th>Status</th></tr></thead><tbody>{% for item in p.scheduling.register %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.resource }}</td><td>{{ item.used_state }}</td><td>{{ item.capacity }}</td><td>{{ item.headroom }}</td><td class="status {{ item.tone }}">{{ item.status }}</td></tr>{% endfor %}</tbody></table>
-    {% endcall %}
-    {% call ui.section('Operational Interpretation', 'Capacity counts retain their committed source scope.') %}<p>{{ p.scheduling.interpretation }}</p>{% endcall %}
-  </div>
-  {{ footer(4) }}
-</article>
-
-<article class="page page-storage">
-  {{ report_header() }}
-  <div class="page-content">
-    {{ page_title(4, 'Storage Capacity', 'Committed storage evidence, availability state, and validation requirements.') }}
-    {{ metric_strip(p.storage.metrics) }}
-    <div class="two-column storage-split">
-      {% call ui.section('Storage Evidence State', 'Missing evidence remains explicit and is not interpreted as zero.') %}
-      {% if p.storage.resource.evidence_available %}
-        <div class="storage-ready">
-          {{ capacity_bar(p.storage.resource) }}
-          <div class="storage-values"><span>Used <strong>{{ p.storage.resource.used_value_display }}</strong></span><span>Capacity <strong>{{ p.storage.resource.capacity_value_display }}</strong></span><span>Available <strong>{{ p.storage.resource.available_display }}</strong></span></div>
-        </div>
-      {% else %}
-        <div class="unavailable-card"><span class="unavailable-icon">N/A</span><div><strong>Storage capacity evidence is not available</strong><p>The committed payload does not provide storage used, total capacity, or matching-scope headroom values.</p></div></div>
-      {% endif %}
-      {% endcall %}
-      {% call ui.section('Decision Boundary', 'What may and may not be concluded from the available evidence.') %}
-      <div class="interpretation-card storage-callout">
-        <strong>{% if p.storage.resource.evidence_available %}Storage evidence is available for review.{% else %}Do not infer a healthy storage posture.{% endif %}</strong>
-        <p>{% if p.storage.resource.evidence_available %}Validate units, scope, filesystem, PVC, PV, and local-volume risk before remediation.{% else %}No storage value means no storage capacity conclusion can be made at this cut-off.{% endif %}</p>
-        <small>The report must never translate missing evidence into 0% used, 100% headroom, or Normal.</small>
-      </div>
-      {% endcall %}
-    </div>
-    {% call ui.section('Storage Evidence Requirements', 'Minimum committed fields required before storage capacity can be assessed.') %}
-    <table class="report-table storage-register"><thead><tr><th>Ref.</th><th>Evidence</th><th>Definition</th><th>Status</th><th>Action</th></tr></thead><tbody>{% for item in p.storage.requirements %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.evidence }}</td><td>{{ item.definition }}</td><td>{{ item.status }}</td><td>{{ item.action }}</td></tr>{% endfor %}</tbody></table>
-    {% endcall %}
-    {% call ui.section('Management Decision', 'Assign a storage status only after evidence validation.') %}<p>{{ p.storage.decision }}</p>{% endcall %}
-  </div>
-  {{ footer(5) }}
-</article>
-
-<article class="page page-forecast">
-  {{ report_header() }}
-  <div class="page-content">
-    {{ page_title(5, 'Capacity Forecast', 'Projected threshold pressure and planning horizon for committed capacity signals.') }}
-    {{ metric_strip(p.forecast.metrics) }}
-    {% call ui.section('Figure 2 - Capacity Projection Outlook', 'Historical and projected endpoints remain within the committed evidence boundary.') %}
-      <div class="forecast-chart-frame">{{ p.forecast.chart_svg|safe }}</div>
-      <div class="chart-legend"><span class="legend-memory">Memory</span><span class="legend-pods">Pods</span><span class="legend-cpu">CPU</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
-    {% endcall %}
-    <div class="two-column forecast-bottom-split">
-      {% call ui.section('Forecast Interpretation', 'Resource-level direction remains explicit.') %}
-      <table class="report-table forecast-register"><thead><tr><th>Ref.</th><th>Resource</th><th>Current</th><th>Projection</th><th>Assessment</th></tr></thead><tbody>{% for item in p.forecast.rows %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.resource }}</td><td>{{ item.current }}</td><td>{{ item.projection }}</td><td class="status {{ item.tone }}">{{ item.assessment }}</td></tr>{% endfor %}</tbody></table>
-      {% endcall %}
-      {% call ui.section('Evidence Boundary', 'What the forecast does and does not represent.') %}
-      <div class="interpretation-card evidence-card"><strong>Forecast values use committed historical observations.</strong><p>Planned deployments, approved expansion, workload migrations, and live state after the cut-off are not modeled.</p><small>Missing observations remain visible as gaps and are not converted to zero.</small></div>
-      {% endcall %}
-    </div>
-    {% call ui.section('Management Interpretation', 'Planning conclusion for the committed forecast horizon.') %}<p>{{ p.forecast.interpretation }}</p>{% endcall %}
-  </div>
-  {{ footer(6) }}
-</article>
-
-<article class="page page-risks">
-  {{ report_header() }}
-  <div class="page-content">
-    {{ page_title(6, 'Capacity Risk Register', 'Capacity pressure, evidence gaps, impact, and accountable review state.') }}
-    {{ metric_strip(p.risks.metrics) }}
-    {% call ui.section('Capacity Risk Register', 'Risk status distinguishes capacity pressure from missing evidence.') %}
-    <table class="report-table risk-register"><thead><tr><th>Ref.</th><th>Risk</th><th>Priority</th><th>Impact</th><th>Owner</th><th>Status</th></tr></thead><tbody>{% for item in p.risks.rows %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.title }}</td><td>{{ item.priority }}</td><td>{{ item.impact }}</td><td>{{ item.owner }}</td><td class="status {{ item.tone }}">{{ item.status }}</td></tr>{% endfor %}</tbody></table>
-    {% endcall %}
-    {% call ui.section('Risk References', 'Operational meaning and validation criteria remain outside the fixed register.') %}
-    <div class="reference-grid risk-reference-grid">{% for item in p.risks.rows %}{{ reference_item(item) }}{% endfor %}</div>
-    {% endcall %}
-    {% call ui.section('Management Interpretation', 'The register separates current pressure from evidence completeness.') %}<p>{{ p.risks.interpretation }}</p>{% endcall %}
-  </div>
-  {{ footer(7) }}
-</article>
-
-<article class="page page-recommendations">
-  {{ report_header() }}
-  <div class="page-content">
-    {{ page_title(7, 'Recommendation Plan', 'Prioritized actions, accountable owners, target windows, and validation gates.') }}
-    {{ metric_strip(p.recommendations.metrics) }}
-    {% call ui.section('Priority Recommendations', 'The register contains fixed decision fields. Full context remains in the reference notes.') %}
-    <table class="report-table recommendation-register"><thead><tr><th>Ref.</th><th>Priority</th><th>Recommendation</th><th>Owner</th><th>Target</th><th>Status</th></tr></thead><tbody>{% for item in p.recommendations.rows %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.priority }}</td><td>{{ item.title }}</td><td>{{ item.owner }}</td><td>{{ item.target }}</td><td class="status {{ item.tone }}">{{ item.status }}</td></tr>{% endfor %}</tbody></table>
-    {% endcall %}
-    {% call ui.section('Recommendation References', 'Descriptions expand below the register without changing table row heights.') %}
-    <div class="reference-grid recommendations-grid">{% for item in p.recommendations.rows %}{{ reference_item(item) }}{% endfor %}</div>
-    {% endcall %}
-    {% call ui.section('Execution Governance', 'Remediation remains subject to live-state validation and approved change controls.') %}
-    <table class="report-table governance-table"><tbody>{% for item in p.recommendations.governance %}<tr><th>{{ item.field }}</th><td>{{ item.requirement }}</td></tr>{% endfor %}</tbody></table>
-    {% endcall %}
-  </div>
-  {{ footer(8) }}
-</article>
-
-<article class="page page-methodology">
-  {{ report_header() }}
-  <div class="page-content">
-    {{ page_title(8, 'Methodology and Evidence Boundary', 'Data sources, capacity rules, freshness, and explicit limitations.') }}
-    {{ metric_strip(p.methodology.metrics) }}
-    {% call ui.section('Data Sources and Methodology', 'Source names, timestamps, and rules remain explicit and are not merged across boundaries.') %}
-    {{ ui.methodology_register(p.methodology.sources, p.methodology.rules, 'data-source-table compact-register', 'compact-register') }}
-{% endcall %}
-    {% call ui.section('Methodology References') %}<div class="reference-grid methodology-reference-grid">{% for item in p.methodology.references %}{{ reference_item(item) }}{% endfor %}</div>{% endcall %}
-    {% call ui.section('Evidence Boundary', 'This report is built strictly within the committed observation boundary defined by the data cut-off.') %}
-    {{ ui.evidence_boundary(p.methodology.included, p.methodology.excluded) }}
-{% endcall %}
-    {% call ui.section('Limitations and Status Language') %}
-    <div class="limitations-grid">
-      <div class="limitations-copy"><h3>Known Limitations and Operational Use</h3><ul>{% for item in p.methodology.limitations %}<li>{{ item }}</li>{% endfor %}</ul></div>
-      <div class="status-language-block"><h3>Status Language</h3>{{ ui.status_language(p.methodology.status_language) }}</div>
-    </div>
-{% endcall %}
-  </div>
-  {{ footer(9) }}
-</article>
-</body>
-</html>
+    <head>
+        <meta charset="utf-8">
+        <title>{{ document.report_name }}</title>
+    </head>
+    <body class="kaori-analytics-publication kaori-capacity-analysis-report">
+        {% set p = document.presentation %}
+        {% import 'reports/pdf/components/analytics_publication.html' as ui %}
+        {% macro report_header() -%}
+            {{ ui.report_header("Capacity Analysis") }}{%- endmacro %}
+            {% macro page_title(number, title, subtitle) -%}
+                {{ ui.page_title(number, title, subtitle, p.data_cutoff) }}{%- endmacro %}
+                {% macro footer(page_number) -%}
+                    {{ ui.footer(p.report_id, p.classification, page_number, p.page_count) }}{%- endmacro %}
+                    {% macro metric_strip(items, limit=4) -%}
+                        {{ ui.metric_strip(items, limit) }}{%- endmacro %}
+                        {% macro section(title, subtitle='', extra_class='') -%}
+                            {% call ui.section(title, subtitle, extra_class) %}
+                                {{ caller() }}
+                            {% endcall %}
+                        {%- endmacro %}
+                        {% macro capacity_bar(item, label='Used') -%}
+                            <div class="capacity-row">
+                                <strong>{{ label }}</strong>
+                                <div class="capacity-track">
+                                    {% if item.evidence_available %}
+                                        <i style="width: {{ item.used_percent }}%"></i>
+                                    {% endif %}
+                                    <b class="warning-marker"></b><b class="critical-marker"></b>
+                                </div>
+                                <span>{{ item.used_display }}</span>
+                            </div>
+                        {%- endmacro %}
+                        {% macro allocation_rows(allocation) -%}
+                            <div class="allocation-list">
+                                {% if allocation['available'] and allocation['items'] %}
+                                    {% for item in allocation['items'] %}
+                                        <div class="allocation-row">
+                                            <div class="allocation-copy"><strong>{{ item.label }}</strong><span>{{ item.display }}</span></div>
+                                            <div class="allocation-track">
+                                                <i class="{{ item.tone }}" style="width: {{ item.percent }}%"></i>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="empty-evidence">Allocation evidence is not available for this resource.</div>
+                                {% endif %}
+                            </div>
+                        {%- endmacro %}
+                        {% macro reference_item(item) -%}
+                            <div class="reference-item">
+                                <span class="reference-code">{{ item.ref }}</span>
+                                <div>
+                                    <strong>{{ item.title }}</strong>
+                                    <p>{{ item.description }}</p>
+                                </div>
+                            </div>
+                        {%- endmacro %}
+                        <article class="page cover-page">
+                            <div class="cover-band">
+                                {{ ui.cover_brand(p.report_id, p.classification, 'ANALYTICS REPORT') }}
+                                {{ ui.cover_title('Capacity Analysis', 'A focused operational view of compute, scheduling, storage evidence, headroom, threshold exposure, and accountable capacity actions.') }}
+                            </div>
+                            <div class="cover-main">
+                                <div class="cover-grid">
+                                    <section>
+                                        <h2>Reporting Boundary</h2>
+                                        <dl class="context-list">
+                                            <dt>Cluster</dt>
+                                            <dd>
+                                                {{ p.cluster_scope }}
+                                            </dd>
+                                            <dt>Environment</dt>
+                                            <dd>
+                                                {{ p.cover.environment }}
+                                            </dd>
+                                            <dt>Namespace</dt>
+                                            <dd>
+                                                {{ p.namespace_scope }}
+                                            </dd>
+                                            <dt>Reporting Period</dt>
+                                            <dd>
+                                                {{ p.period_label }}
+                                            </dd>
+                                            <dt>Data Cut-off</dt>
+                                            <dd>
+                                                {{ p.data_cutoff }}
+                                            </dd>
+                                        </dl>
+                                    </section>
+                                    <section>
+                                        <h2>Report Purpose</h2>
+                                        <p>{{ p.cover.purpose }}</p>
+                                    </section>
+                                </div>
+                                <div class="cover-context">
+                                    <strong>Evidence Context</strong>
+                                    <p>{{ p.cover.context }}</p>
+                                </div>
+                                {{ ui.cover_contents([
+                                    "01 Executive Brief",
+                                    "02 Compute Capacity",
+                                    "03 Scheduling Capacity",
+                                    "04 Storage Capacity",
+                                    "05 Capacity Forecast",
+                                    "06 Capacity Risk Register",
+                                    "07 Recommendation Plan",
+                                    "08 Methodology and Evidence Boundary"
+                                ]) }}
+                            </div>
+                            {{ footer(1) }}
+                        </article>
+                        <article class="page page-executive">
+                            {{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(1, 'Executive Brief', 'Management position for committed capacity at the report cut-off.') }}
+                                {{ metric_strip(p.executive.metrics) }}
+                                <div class="two-column primary-split">
+                                    {% call ui.section('Figure 1 - Capacity Posture', 'Committed utilization and remaining headroom by resource.') %}
+                                        <div class="capacity-bars">
+                                            {% for item in p.executive.resources %}
+                                                <div class="capacity-row">
+                                                    <strong>{{ item.label }}</strong>
+                                                    <div class="capacity-track">
+                                                        {% if item.evidence_available %}
+                                                            <i class="{% if item.key == 'nodes' %}node-fill{% endif %}"
+                                                               style="width: {{ item.used_percent }}%"></i>
+                                                        {% endif %}
+                                                        {% if item.key != 'nodes' %}<b class="warning-marker"></b><b class="critical-marker"></b>{% endif %}
+                                                    </div>
+                                                    <span>{{ item.used_display }}</span>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endcall %}
+                                    {% call ui.section('Management Interpretation', 'The principal capacity signal and the decision required.') %}
+                                        <div class="interpretation-card executive-callout">
+                                            <strong>{{ p.executive.interpretation_title }}</strong>
+                                            <p>{{ p.executive.interpretation_body }}</p>
+                                            <small>{{ p.executive.interpretation_note }}</small>
+                                        </div>
+                                    {% endcall %}
+                                </div>
+                                {% call ui.section('Priority Findings Register', 'Decision fields remain concise; full interpretation is maintained by reference.') %}
+                                    <table class="report-table findings-register">
+                                        <thead>
+                                            <tr>
+                                                <th>Ref.</th>
+                                                <th>Priority</th>
+                                                <th>Finding</th>
+                                                <th>Owner</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in p.executive.findings %}
+                                                <tr>
+                                                    <td class="ref">{{ item.ref }}</td>
+                                                    <td>{{ item.priority }}</td>
+                                                    <td>{{ item.title }}</td>
+                                                    <td>{{ item.owner }}</td>
+                                                    <td class="status {{ item.tone }}">{{ item.status }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                    <div class="reference-grid executive-references">
+                                        {% for item in p.executive.findings %}{{ reference_item(item) }}{% endfor %}
+                                    </div>
+                                {% endcall %}
+                            </div>
+                            {{ footer(2) }}
+                        </article>
+                        <article class="page page-compute">
+                            {{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(2, 'Compute Capacity', 'CPU and memory headroom, allocation pressure, and planning interpretation.') }}
+                                {{ metric_strip(p.compute.metrics) }}
+                                <div class="two-column compute-split">
+                                    {% call ui.section('CPU Capacity Position', 'Current committed utilization, headroom, requests, limits, and usage.') %}
+                                        {{ capacity_bar(p.compute.cpu) }}
+                                        <div class="headroom-line"><span>Remaining Headroom</span><strong>{{ p.compute.cpu.headroom_display }}</strong></div>
+                                        {{ allocation_rows(p.compute.cpu.allocation) }}
+                                    {% endcall %}
+                                    {% call ui.section('Memory Capacity Position', 'Current committed utilization, headroom, requests, limits, and usage.') %}
+                                        {{ capacity_bar(p.compute.memory) }}
+                                        <div class="headroom-line"><span>Remaining Headroom</span><strong>{{ p.compute.memory.headroom_display }}</strong></div>
+                                        {{ allocation_rows(p.compute.memory.allocation) }}
+                                    {% endcall %}
+                                </div>
+                                {% call ui.section('Compute Capacity Register', 'Used, headroom, threshold state, and planning interpretation.') %}
+                                    <table class="report-table compute-register">
+                                        <thead>
+                                            <tr>
+                                                <th>Ref.</th>
+                                                <th>Resource</th>
+                                                <th>Used</th>
+                                                <th>Headroom</th>
+                                                <th>Status</th>
+                                                <th>Interpretation</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in p.compute.register %}
+                                                <tr>
+                                                    <td class="ref">{{ item.ref }}</td>
+                                                    <td>{{ item.resource }}</td>
+                                                    <td>{{ item.used }}</td>
+                                                    <td>{{ item.headroom }}</td>
+                                                    <td class="status {{ item.tone }}">{{ item.status }}</td>
+                                                    <td>{{ item.interpretation }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                {% endcall %}
+                                {% call ui.section('Management Decision', 'Use aggregate posture and allocation evidence as separate signals.') %}
+                                    <p>{{ p.compute.decision }}</p>
+                                {% endcall %}
+                            </div>
+                            {{ footer(3) }}
+                        </article>
+                        <article class="page page-scheduling">
+                            {{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(3, 'Scheduling Capacity', 'Pod headroom, node participation, and schedulable-capacity evidence.') }}
+                                {{ metric_strip(p.scheduling.metrics) }}
+                                <div class="two-column scheduling-split">
+                                    {% call ui.section('Pod Scheduling Position', 'Committed utilization, capacity, and remaining scheduling slots.') %}
+                                        {{ capacity_bar(p.scheduling.pods) }}
+                                        <div class="headroom-line"><span>Remaining Headroom</span><strong>{{ p.scheduling.pods.headroom_display }}</strong></div>
+                                        <div class="summary-box-grid">
+                                            <div class="summary-box"><span>Reported Capacity</span><strong>{{ p.scheduling.pods.capacity_display }}</strong><small>Committed pod capacity</small></div>
+                                            <div class="summary-box"><span>Reported Remaining</span><strong>{{ p.scheduling.pods.available_display }}</strong><small>Schedulable slots</small></div>
+                                        </div>
+                                        {{ allocation_rows(p.scheduling.pods.allocation) }}
+                                    {% endcall %}
+                                    {% call ui.section('Node Participation', 'Ready nodes included in active capacity assumptions.') %}
+                                        <div class="node-card">
+                                            <div class="node-donut">{{ p.scheduling.nodes.donut_svg|safe }}</div>
+                                            <div class="node-legend">
+                                                <div><i class="ready-key"></i><span>Ready</span><strong>{{ p.scheduling.nodes.ready }}</strong></div>
+                                                <div><i class="not-ready-key"></i><span>Not Ready</span><strong>{{ p.scheduling.nodes.not_ready }}</strong></div>
+                                                <div><i class="participation-key"></i><span>Participation</span><strong>{{ '%.0f'|format(p.scheduling.nodes.participation) }}%</strong></div>
+                                                <div><i class="worker-key"></i><span>Workers / Control Plane</span><strong>{{ p.scheduling.nodes.workers }} / {{ p.scheduling.nodes.control_plane }}</strong></div>
+                                            </div>
+                                        </div>
+                                    {% endcall %}
+                                </div>
+                                {% call ui.section('Scheduling Capacity Register', 'Fixed scope, count, headroom, and readiness evidence.') %}
+                                    <table class="report-table scheduling-register">
+                                        <thead>
+                                            <tr>
+                                                <th>Ref.</th>
+                                                <th>Resource</th>
+                                                <th>Used / State</th>
+                                                <th>Capacity</th>
+                                                <th>Headroom</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in p.scheduling.register %}
+                                                <tr>
+                                                    <td class="ref">{{ item.ref }}</td>
+                                                    <td>{{ item.resource }}</td>
+                                                    <td>{{ item.used_state }}</td>
+                                                    <td>{{ item.capacity }}</td>
+                                                    <td>{{ item.headroom }}</td>
+                                                    <td class="status {{ item.tone }}">{{ item.status }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                {% endcall %}
+                                {% call ui.section('Operational Interpretation', 'Capacity counts retain their committed source scope.') %}
+                                    <p>{{ p.scheduling.interpretation }}</p>
+                                {% endcall %}
+                            </div>
+                            {{ footer(4) }}
+                        </article>
+                        <article class="page page-storage">
+                            {{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(4, 'Storage Capacity', 'Committed storage evidence, availability state, and validation requirements.') }}
+                                {{ metric_strip(p.storage.metrics) }}
+                                <div class="two-column storage-split">
+                                    {% call ui.section('Storage Evidence State', 'Missing evidence remains explicit and is not interpreted as zero.') %}
+                                        {% if p.storage.resource.evidence_available %}
+                                            <div class="storage-ready">
+                                                {{ capacity_bar(p.storage.resource) }}
+                                                <div class="storage-values"><span>Used <strong>{{ p.storage.resource.used_value_display }}</strong></span><span>Capacity <strong>{{ p.storage.resource.capacity_value_display }}</strong></span><span>Available <strong>{{ p.storage.resource.available_display }}</strong></span></div>
+                                            </div>
+                                        {% else %}
+                                            <div class="unavailable-card">
+                                                <span class="unavailable-icon">N/A</span>
+                                                <div>
+                                                    <strong>Storage capacity evidence is not available</strong>
+                                                    <p>The committed payload does not provide storage used, total capacity, or matching-scope headroom values.</p>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    {% endcall %}
+                                    {% call ui.section('Decision Boundary', 'What may and may not be concluded from the available evidence.') %}
+                                        <div class="interpretation-card storage-callout">
+                                            <strong>
+                                                {% if p.storage.resource.evidence_available %}
+                                                    Storage evidence is available for review.
+                                                {% else %}
+                                                    Do not infer a healthy storage posture.
+                                                {% endif %}
+                                            </strong>
+                                            <p>
+                                                {% if p.storage.resource.evidence_available %}
+                                                    Validate units, scope, filesystem, PVC, PV, and local-volume risk before remediation.
+                                                {% else %}
+                                                    No storage value means no storage capacity conclusion can be made at this cut-off.
+                                                {% endif %}
+                                            </p>
+                                            <small>The report must never translate missing evidence into 0% used, 100% headroom, or Normal.</small>
+                                        </div>
+                                    {% endcall %}
+                                </div>
+                                {% call ui.section('Storage Evidence Requirements', 'Minimum committed fields required before storage capacity can be assessed.') %}
+                                    <table class="report-table storage-register">
+                                        <thead>
+                                            <tr>
+                                                <th>Ref.</th>
+                                                <th>Evidence</th>
+                                                <th>Definition</th>
+                                                <th>Status</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in p.storage.requirements %}
+                                                <tr>
+                                                    <td class="ref">{{ item.ref }}</td>
+                                                    <td>{{ item.evidence }}</td>
+                                                    <td>{{ item.definition }}</td>
+                                                    <td>{{ item.status }}</td>
+                                                    <td>{{ item.action }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                {% endcall %}
+                                {% call ui.section('Management Decision', 'Assign a storage status only after evidence validation.') %}
+                                    <p>{{ p.storage.decision }}</p>
+                                {% endcall %}
+                            </div>
+                            {{ footer(5) }}
+                        </article>
+                        <article class="page page-forecast">
+                            {{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(5, 'Capacity Forecast', 'Projected threshold pressure and planning horizon for committed capacity signals.') }}
+                                {{ metric_strip(p.forecast.metrics) }}
+                                {% call ui.section('Figure 2 - Capacity Projection Outlook', 'Historical and projected endpoints remain within the committed evidence boundary.') %}
+                                    <div class="forecast-chart-frame">{{ p.forecast.chart_svg|safe }}</div>
+                                    <div class="chart-legend"><span class="legend-memory">Memory</span><span class="legend-pods">Pods</span><span class="legend-cpu">CPU</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
+                                {% endcall %}
+                                <div class="two-column forecast-bottom-split">
+                                    {% call ui.section('Forecast Interpretation', 'Resource-level direction remains explicit.') %}
+                                        <table class="report-table forecast-register">
+                                            <thead>
+                                                <tr>
+                                                    <th>Ref.</th>
+                                                    <th>Resource</th>
+                                                    <th>Current</th>
+                                                    <th>Projection</th>
+                                                    <th>Assessment</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for item in p.forecast.rows %}
+                                                    <tr>
+                                                        <td class="ref">{{ item.ref }}</td>
+                                                        <td>{{ item.resource }}</td>
+                                                        <td>{{ item.current }}</td>
+                                                        <td>{{ item.projection }}</td>
+                                                        <td class="status {{ item.tone }}">{{ item.assessment }}</td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    {% endcall %}
+                                    {% call ui.section('Evidence Boundary', 'What the forecast does and does not represent.') %}
+                                        <div class="interpretation-card evidence-card">
+                                            <strong>Forecast values use committed historical observations.</strong>
+                                            <p>Planned deployments, approved expansion, workload migrations, and live state after the cut-off are not modeled.</p>
+                                            <small>Missing observations remain visible as gaps and are not converted to zero.</small>
+                                        </div>
+                                    {% endcall %}
+                                </div>
+                                {% call ui.section('Management Interpretation', 'Planning conclusion for the committed forecast horizon.') %}
+                                    <p>{{ p.forecast.interpretation }}</p>
+                                {% endcall %}
+                            </div>
+                            {{ footer(6) }}
+                        </article>
+                        <article class="page page-risks">
+                            {{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(6, 'Capacity Risk Register', 'Capacity pressure, evidence gaps, impact, and accountable review state.') }}
+                                {{ metric_strip(p.risks.metrics) }}
+                                {% call ui.section('Capacity Risk Register', 'Risk status distinguishes capacity pressure from missing evidence.') %}
+                                    <table class="report-table risk-register">
+                                        <thead>
+                                            <tr>
+                                                <th>Ref.</th>
+                                                <th>Risk</th>
+                                                <th>Priority</th>
+                                                <th>Impact</th>
+                                                <th>Owner</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in p.risks.rows %}
+                                                <tr>
+                                                    <td class="ref">{{ item.ref }}</td>
+                                                    <td>{{ item.title }}</td>
+                                                    <td>{{ item.priority }}</td>
+                                                    <td>{{ item.impact }}</td>
+                                                    <td>{{ item.owner }}</td>
+                                                    <td class="status {{ item.tone }}">{{ item.status }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                {% endcall %}
+                                {% call ui.section('Risk References', 'Operational meaning and validation criteria remain outside the fixed register.') %}
+                                    <div class="reference-grid risk-reference-grid">
+                                        {% for item in p.risks.rows %}{{ reference_item(item) }}{% endfor %}
+                                    </div>
+                                {% endcall %}
+                                {% call ui.section('Management Interpretation', 'The register separates current pressure from evidence completeness.') %}
+                                    <p>{{ p.risks.interpretation }}</p>
+                                {% endcall %}
+                            </div>
+                            {{ footer(7) }}
+                        </article>
+                        <article class="page page-recommendations">
+                            {{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(7, 'Recommendation Plan', 'Prioritized actions, accountable owners, target windows, and validation gates.') }}
+                                {{ metric_strip(p.recommendations.metrics) }}
+                                {% call ui.section('Priority Recommendations', 'The register contains fixed decision fields. Full context remains in the reference notes.') %}
+                                    <table class="report-table recommendation-register">
+                                        <thead>
+                                            <tr>
+                                                <th>Ref.</th>
+                                                <th>Priority</th>
+                                                <th>Recommendation</th>
+                                                <th>Owner</th>
+                                                <th>Target</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in p.recommendations.rows %}
+                                                <tr>
+                                                    <td class="ref">{{ item.ref }}</td>
+                                                    <td>{{ item.priority }}</td>
+                                                    <td>{{ item.title }}</td>
+                                                    <td>{{ item.owner }}</td>
+                                                    <td>{{ item.target }}</td>
+                                                    <td class="status {{ item.tone }}">{{ item.status }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                {% endcall %}
+                                {% call ui.section('Recommendation References', 'Descriptions expand below the register without changing table row heights.') %}
+                                    <div class="reference-grid recommendations-grid">
+                                        {% for item in p.recommendations.rows %}{{ reference_item(item) }}{% endfor %}
+                                    </div>
+                                {% endcall %}
+                                {% call ui.section('Execution Governance', 'Remediation remains subject to live-state validation and approved change controls.') %}
+                                    <table class="report-table governance-table">
+                                        <tbody>
+                                            {% for item in p.recommendations.governance %}
+                                                <tr>
+                                                    <th>{{ item.field }}</th>
+                                                    <td>{{ item.requirement }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                {% endcall %}
+                            </div>
+                            {{ footer(8) }}
+                        </article>
+                        <article class="page page-methodology">
+                            {{ report_header() }}
+                            <div class="page-content">
+                                {{ page_title(8, 'Methodology and Evidence Boundary', 'Data sources, capacity rules, freshness, and explicit limitations.') }}
+                                {{ metric_strip(p.methodology.metrics) }}
+                                {% call ui.section('Data Sources and Methodology', 'Source names, timestamps, and rules remain explicit and are not merged across boundaries.') %}
+                                    {{ ui.methodology_register(p.methodology.sources, p.methodology.rules, 'data-source-table compact-register', 'compact-register') }}
+                                {% endcall %}
+                                {% call ui.section('Methodology References') %}
+                                    <div class="reference-grid methodology-reference-grid">
+                                        {% for item in p.methodology.references %}{{ reference_item(item) }}{% endfor %}
+                                    </div>
+                                {% endcall %}
+                                {% call ui.section('Evidence Boundary', 'This report is built strictly within the committed observation boundary defined by the data cut-off.') %}
+                                    {{ ui.evidence_boundary(p.methodology.included, p.methodology.excluded) }}
+                                {% endcall %}
+                                {% call ui.section('Limitations and Status Language') %}
+                                    <div class="limitations-grid">
+                                        <div class="limitations-copy">
+                                            <h3>Known Limitations and Operational Use</h3>
+                                            <ul>
+                                                {% for item in p.methodology.limitations %}<li>{{ item }}</li>{% endfor %}
+                                            </ul>
+                                        </div>
+                                        <div class="status-language-block">
+                                            <h3>Status Language</h3>
+                                            {{ ui.status_language(p.methodology.status_language) }}
+                                        </div>
+                                    </div>
+                                {% endcall %}
+                            </div>
+                            {{ footer(9) }}
+                        </article>
+                    </body>
+                </html>

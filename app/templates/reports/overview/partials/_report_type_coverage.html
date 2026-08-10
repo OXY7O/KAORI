@@ -13,7 +13,6 @@
             <p class="mt-1.5 text-sm font-semibold leading-6 text-content-primary">Connected Sources</p>
         </div>
     </div>
-
     <div class="space-y-2" aria-label="Report coverage domains">
         {% for domain in payload.report_type_coverage.domains %}
             <article class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
@@ -39,7 +38,6 @@
                        :class="{ 'rotate-180': openCoverageDomain === {{ loop.index0 }} }"
                        aria-hidden="true"></i>
                 </button>
-
                 <div id="report-coverage-domain-{{ loop.index0 }}"
                      x-show="openCoverageDomain === {{ loop.index0 }}"
                      x-collapse
@@ -75,9 +73,10 @@
             </article>
         {% endfor %}
     </div>
-
     <div class="flex items-start gap-2 rounded-lg border border-outline-subtle bg-surface-hover px-3 py-2.5 text-xs leading-5 text-content-secondary">
-        <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+        <i data-lucide="info"
+           class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+           aria-hidden="true"></i>
         <p>Use Types to choose an output supported by the currently connected and validated data sources.</p>
     </div>
 </div>

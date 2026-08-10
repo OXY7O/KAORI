@@ -5,6 +5,7 @@ The scope list expands only after a workspace completes manual pre-release revie
 Narrative copy is intentionally excluded; headings, table headers, form labels,
 and button labels are checked. Technical/Jinja-driven values are skipped.
 """
+
 from __future__ import annotations
 
 import html
@@ -46,7 +47,7 @@ _TAG_PATTERN = re.compile(
 _HTML_TAG = re.compile(r'<[^>]+>')
 _JINJA_BLOCK = re.compile(r'{[%#].*?[%#]}', re.DOTALL)
 _JINJA_EXPR = re.compile(r'{{.*?}}', re.DOTALL)
-_WORD = re.compile(r"[A-Za-z][A-Za-z0-9]*(?:[-/&][A-Za-z0-9]+)*")
+_WORD = re.compile(r'[A-Za-z][A-Za-z0-9]*(?:[-/&][A-Za-z0-9]+)*')
 
 
 def _visible_static_text(body: str) -> str:
@@ -58,13 +59,7 @@ def _visible_static_text(body: str) -> str:
 
 def _is_capitalized_or_technical(word: str) -> bool:
     parts = re.split(r'[-/&]', word)
-    return all(
-        not part
-        or part[0].isdigit()
-        or part[0].isupper()
-        or part.isupper()
-        for part in parts
-    )
+    return all(not part or part[0].isdigit() or part[0].isupper() or part.isupper() for part in parts)
 
 
 def _title_case_error(text: str) -> str | None:

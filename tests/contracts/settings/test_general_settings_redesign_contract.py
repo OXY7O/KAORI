@@ -5,102 +5,102 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 def read(relative_path: str) -> str:
-    return (ROOT / relative_path).read_text(encoding="utf-8")
+    return (ROOT / relative_path).read_text(encoding='utf-8')
 
 
 def test_general_hero_uses_compact_context_without_duplicate_actions() -> None:
-    hero = read("app/templates/settings/general/partials/_hero.html")
-    assert "Current Presentation" in hero
-    assert "Account Preference" in hero
-    assert "Canonical operational timestamps remain UTC" in hero
-    assert "Release Identity" in hero
-    assert "Compatibility Policy" in hero
-    assert "context_header" in hero
-    assert "context_panel_metrics_classes" in hero
-    assert "primary_action_classes" not in hero
+    hero = read('app/templates/settings/general/partials/_hero.html')
+    assert 'Current Presentation' in hero
+    assert 'Account Preference' in hero
+    assert 'Canonical operational timestamps remain UTC' in hero
+    assert 'Release Identity' in hero
+    assert 'Compatibility Policy' in hero
+    assert 'context_header' in hero
+    assert 'context_panel_metrics_classes' in hero
+    assert 'primary_action_classes' not in hero
 
 
 def test_time_zone_workspace_has_clear_configuration_sequence() -> None:
-    template = read("app/templates/settings/general/partials/_time_locale.html")
-    page = read("app/templates/settings/general/partials/_page_content.html")
+    template = read('app/templates/settings/general/partials/_time_locale.html')
+    page = read('app/templates/settings/general/partials/_page_content.html')
     for token in (
-        "Selection Mode",
-        "Browser Detection",
-        "Manual Time Zone",
-        "Preference Scope &amp; Boundary",
-        "Presentation Scope",
-        "Canonical Data",
-        "External Systems",
-        "Display preference only.",
-        "Effective Time Zone",
-        "Save Time Zone",
-        "Personal Preference",
+        'Selection Mode',
+        'Browser Detection',
+        'Manual Time Zone',
+        'Preference Scope &amp; Boundary',
+        'Presentation Scope',
+        'Canonical Data',
+        'External Systems',
+        'Display preference only.',
+        'Effective Time Zone',
+        'Save Time Zone',
+        'Personal Preference',
     ):
         assert token in template
     assert 'data-timezone-workspace-layout="full-width"' in page
     assert 'data-timezone-preference-boundary="inline"' in template
-    assert "general-current-time" in template
-    assert "detect-browser-timezone" in template
-    assert "pointer-events-none" in template
+    assert 'general-current-time' in template
+    assert 'detect-browser-timezone' in template
+    assert 'pointer-events-none' in template
 
 
 def test_regional_format_is_one_full_width_workspace_with_inline_boundary() -> None:
-    template = read("app/templates/settings/general/partials/_regional_format.html")
-    page = read("app/templates/settings/general/partials/_page_content.html")
+    template = read('app/templates/settings/general/partials/_regional_format.html')
+    page = read('app/templates/settings/general/partials/_page_content.html')
     for token in (
-        "Format Controls",
-        "Regional Locale",
-        "Date Format",
-        "Time Format",
-        "Current Presentation Preview",
-        "Preference Scope &amp; Boundary",
-        "Presentation Scope",
-        "Interface Language",
-        "Data &amp; Execution",
-        "Display preference only.",
-        "Effective Format:",
-        "Save Regional Format",
+        'Format Controls',
+        'Regional Locale',
+        'Date Format',
+        'Time Format',
+        'Current Presentation Preview',
+        'Preference Scope &amp; Boundary',
+        'Presentation Scope',
+        'Interface Language',
+        'Data &amp; Execution',
+        'Display preference only.',
+        'Effective Format:',
+        'Save Regional Format',
     ):
         assert token in template
     assert 'data-regional-format-workspace-layout="full-width"' in page
     assert 'data-regional-format-workspace="unified"' in template
     assert 'data-regional-format-controls="inline-grid"' in template
     assert 'data-regional-preference-boundary="inline"' in template
-    assert "settings/general/partials/_impact_information.html" not in page
-    assert template.count("rounded-xl border border-outline-default bg-surface-subtle p-4") == 0
+    assert 'settings/general/partials/_impact_information.html' not in page
+    assert template.count('rounded-xl border border-outline-default bg-surface-subtle p-4') == 0
 
 
 def test_personal_preference_context_explains_scope_and_boundary() -> None:
-    template = read("app/templates/settings/general/partials/_impact_information.html")
-    assert "Presentation Scope" in template
-    assert "Data & Execution Boundary" in template
-    assert "Canonical Storage" in template
-    assert "Execution Schedules" in template
-    assert "External Systems" in template
-    assert "Presentation only." in template
+    template = read('app/templates/settings/general/partials/_impact_information.html')
+    assert 'Presentation Scope' in template
+    assert 'Data & Execution Boundary' in template
+    assert 'Canonical Storage' in template
+    assert 'Execution Schedules' in template
+    assert 'External Systems' in template
+    assert 'Presentation only.' in template
 
 
 def test_system_information_is_explicitly_read_only_and_traceable() -> None:
-    main = read("app/templates/settings/general/partials/_system_information.html")
-    context = read("app/templates/settings/general/partials/_system_information_context.html")
-    assert "Release Identity" in main
-    assert "Read-Only Metadata" in main
-    assert "Build Reference" in main
-    assert "Build Date" in main
-    assert "Capability Catalog" in main
-    assert "Release Governance" in context
-    assert "Information Boundary" in context
-    assert "Not Exposed" in context
+    main = read('app/templates/settings/general/partials/_system_information.html')
+    context = read('app/templates/settings/general/partials/_system_information_context.html')
+    assert 'Release Identity' in main
+    assert 'Read-Only Metadata' in main
+    assert 'Build Reference' in main
+    assert 'Build Date' in main
+    assert 'Capability Catalog' in main
+    assert 'Release Governance' in context
+    assert 'Information Boundary' in context
+    assert 'Not Exposed' in context
 
 
 def test_compatibility_workspace_keeps_version_and_readiness_decisions_separate() -> None:
-    main = read("app/templates/settings/general/partials/_compatibility_versions.html")
-    context = read("app/templates/settings/general/partials/_compatibility_versions_context.html")
-    assert "Integration Compatibility" in main
-    assert "Validation Required" in main
-    assert "Supported Version Matrix" in main
-    assert "Capability Validation Basis" in main
-    assert "Reading the Matrix" in context
-    assert "Minimum Compatible" in context
-    assert "Recommended Baseline" in context
-    assert "Live Readiness" in context
+    main = read('app/templates/settings/general/partials/_compatibility_versions.html')
+    context = read('app/templates/settings/general/partials/_compatibility_versions_context.html')
+    assert 'Integration Compatibility' in main
+    assert 'Validation Required' in main
+    assert 'Supported Version Matrix' in main
+    assert 'Capability Validation Basis' in main
+    assert 'Reading the Matrix' in context
+    assert 'Minimum Compatible' in context
+    assert 'Recommended Baseline' in context
+    assert 'Live Readiness' in context

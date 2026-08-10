@@ -11,7 +11,7 @@
     surface_classes='bg-surface-card',
     aria_label='Historical and projected resource utilization',
     show_time_axis=true
-) -%}
+    ) -%}
     <div class="flex gap-2">
         <div class="flex {{ height_classes }} w-8 shrink-0 flex-col justify-between py-0.5 text-right text-xs font-medium text-content-disabled"
              aria-hidden="true">
@@ -38,34 +38,21 @@
                 {% endif %}
                 {% for item in series %}
                     {% if item.key == 'cpu' %}
-                        {% set stroke_class = 'stroke-status-info' %}
+                        {% set stroke_class = "stroke-status-info" %}
                     {% elif item.key == 'memory' %}
-                        {% set stroke_class = 'stroke-kaori-primary' %}
+                        {% set stroke_class = "stroke-kaori-primary" %}
                     {% elif item.key == 'storage' %}
-                        {% set stroke_class = 'stroke-status-normal' %}
+                        {% set stroke_class = "stroke-status-normal" %}
                     {% elif item.key == 'pods' %}
-                        {% set stroke_class = 'stroke-status-pending' %}
+                        {% set stroke_class = "stroke-status-pending" %}
                     {% else %}
-                        {% set stroke_class = 'stroke-content-muted' %}
+                        {% set stroke_class = "stroke-content-muted" %}
                     {% endif %}
                     {% if item.historical_points %}
-                        <polyline points="{{ item.historical_points }}"
-                                  fill="none"
-                                  class="{{ stroke_class }}"
-                                  stroke-width="2"
-                                  vector-effect="non-scaling-stroke"
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"></polyline>
+                        <polyline points="{{ item.historical_points }}" fill="none" class="{{ stroke_class }}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"></polyline>
                     {% endif %}
                     {% if item.forecast_points %}
-                        <polyline points="{{ item.forecast_points }}"
-                                  fill="none"
-                                  class="{{ stroke_class }}"
-                                  stroke-width="2"
-                                  stroke-dasharray="6 5"
-                                  vector-effect="non-scaling-stroke"
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"></polyline>
+                        <polyline points="{{ item.forecast_points }}" fill="none" class="{{ stroke_class }}" stroke-width="2" stroke-dasharray="6 5" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"></polyline>
                     {% endif %}
                 {% endfor %}
             </svg>

@@ -5,7 +5,6 @@
   a primary visualization surface, optional controls, and contextual inspection.
 #}
 {% import "components/loading_bar.html" as loading_bar %}
-
 {% macro render(
     id,
     title,
@@ -15,7 +14,7 @@
     action_label=None,
     action_icon='refresh-cw',
     loading_id=None
-) -%}
+    ) -%}
     <section id="{{ id }}"
              data-kaori-visualization-workspace="adaptive-explorer"
              class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
@@ -45,15 +44,12 @@
         {{ caller() }}
     </section>
 {%- endmacro %}
-
 {% macro adaptive_grid_classes() -%}
     relative min-h-[38rem]
 {%- endmacro %}
-
 {% macro drawer_pane_classes(side='left') -%}
     fixed inset-y-0 {{ 'left-0 border-r max-w-sm' if side == 'left' else 'right-0 border-l max-w-md' }} z-50 hidden w-full overflow-y-auto border-outline-default bg-surface-card shadow-xl
 {%- endmacro %}
-
 {% macro canvas_classes() -%}
     kaori-visualization-canvas relative min-w-0 overflow-hidden bg-surface-card
 {%- endmacro %}

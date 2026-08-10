@@ -122,9 +122,7 @@ def build_resource_rows(summary: Mapping[str, Any] | None) -> list[dict[str, Any
                 'value': value,
                 'value_display': f'{value:.1f}%' if value is not None else 'N/A',
                 'detail': (
-                    _format_resource_detail(spec, usage, capacity)
-                    if available
-                    else 'Capacity evidence unavailable'
+                    _format_resource_detail(spec, usage, capacity) if available else 'Capacity evidence unavailable'
                 ),
                 'tone': utilization_tone(value),
                 'status': utilization_status(value),
@@ -184,14 +182,16 @@ def build_trend_presentation(
     selected_node: str,
 ) -> dict[str, Any]:
     source = trend_summary if isinstance(trend_summary, Mapping) else {}
-    resources = source.get('resources') if isinstance(source.get('resources'), Mapping) else {}
+    raw_resources = source.get('resources')
+    resources = raw_resources if isinstance(raw_resources, Mapping) else {}
     rows: list[dict[str, Any]] = []
     for key, label, icon in (
         ('cpu', 'CPU', 'cpu'),
         ('memory', 'Memory', 'memory-stick'),
         ('pods', 'Pods', 'boxes'),
     ):
-        metric = resources.get(key) if isinstance(resources.get(key), Mapping) else {}
+        raw_metric = resources.get(key)
+        metric = raw_metric if isinstance(raw_metric, Mapping) else {}
         sample_count = safe_int(metric.get('sample_count'))
         available = sample_count > 0
         current = round(safe_float(metric.get('current')), 2) if available else None
@@ -245,20 +245,26 @@ def build_node_presentation(
     for row in all_rows:
         if row['key'] == 'storage':
             continue
-        risk = risks.get(row['key']) if isinstance(risks.get(row['key']), Mapping) else {}
+        raw_risk = risks.get(row['key'])
+        risk = raw_risk if isinstance(raw_risk, Mapping) else {}
         row = dict(row)
         row['reason'] = str(risk.get('reason') or ('Evidence unavailable' if not row['available'] else '-'))
         row['tone'] = utilization_tone(row['value']) if row['available'] else 'unknown'
         resource_rows.append(row)
 
     storage = next(row for row in all_rows if row['key'] == 'storage')
-    storage_risk = risks.get('storage') if isinstance(risks.get('storage'), Mapping) else {}
+    raw_storage_risk = risks.get('storage')
+    storage_risk = raw_storage_risk if isinstance(raw_storage_risk, Mapping) else {}
     storage['reason'] = str(
         storage_risk.get('reason')
-        or ('Restore filesystem capacity evidence before taking action.' if not storage['available'] else 'Review Filesystem Pressure')
+        or (
+            'Restore filesystem capacity evidence before taking action.'
+            if not storage['available']
+            else 'Review Filesystem Pressure'
+        )
     )
     storage['usage_summary'] = (
-        f"{storage['usage'] / 1024**3:.2f} GiB used from {storage['capacity'] / 1024**3:.2f} GiB capacity."
+        f'{storage["usage"] / 1024**3:.2f} GiB used from {storage["capacity"] / 1024**3:.2f} GiB capacity.'
         if storage['available']
         else 'Filesystem capacity and usage evidence is unavailable for this scope.'
     )

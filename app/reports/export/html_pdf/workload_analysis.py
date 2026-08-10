@@ -125,8 +125,18 @@ def build_workload_analysis_presentation(
         'recommendations': recommendations,
         'methodology': {
             'metrics': (
-                _metric('Data Sources', str(len(sources)), 'Active' if sources else 'Not Available', 'normal' if sources else 'warning'),
-                _metric('Workload Scope', inventory['workload_display'], 'Committed' if inventory['available'] else 'Not Available', inventory['tone']),
+                _metric(
+                    'Data Sources',
+                    str(len(sources)),
+                    'Active' if sources else 'Not Available',
+                    'normal' if sources else 'warning',
+                ),
+                _metric(
+                    'Workload Scope',
+                    inventory['workload_display'],
+                    'Committed' if inventory['available'] else 'Not Available',
+                    inventory['tone'],
+                ),
                 _metric('Quota Scope', quota['coverage_display'], quota['status'], quota['tone']),
                 _metric('Observation Boundary', 'Snapshot', 'Committed', 'normal'),
             ),
@@ -140,8 +150,16 @@ def build_workload_analysis_presentation(
             ),
             'references': (
                 _reference('M3', 'Quota Coverage', 'Coverage is derived only from committed namespace quota rows.'),
-                _reference('M4', 'Configuration Basis', 'Workload configuration uses committed requests, limits, QoS, and metrics coverage.'),
-                _reference('M5', 'Missing Evidence', 'Unavailable evidence remains explicit and is never converted to compliant or zero.'),
+                _reference(
+                    'M4',
+                    'Configuration Basis',
+                    'Workload configuration uses committed requests, limits, QoS, and metrics coverage.',
+                ),
+                _reference(
+                    'M5',
+                    'Missing Evidence',
+                    'Unavailable evidence remains explicit and is never converted to compliant or zero.',
+                ),
             ),
             'included': (
                 'Committed workload, pod, and namespace scope derived from workload analysis rows.',
@@ -162,7 +180,9 @@ def build_workload_analysis_presentation(
                 _reference('S1', 'Not Available', 'No evidence exists for the requested dimension.'),
                 _reference('S2', 'Not Collected', 'Collection was prevented by configuration or failure.'),
                 _reference('S3', 'Partial Coverage', 'Evidence exists but does not cover the full requested scope.'),
-                _reference('S4', 'Source Unavailable', 'The source was unreachable or not providing data at the cut-off.'),
+                _reference(
+                    'S4', 'Source Unavailable', 'The source was unreachable or not providing data at the cut-off.'
+                ),
             ),
         },
     }
@@ -176,9 +196,7 @@ def _inventory_summary(
     workload_count = len(mapping_rows)
     pod_count = sum(max(_int(row.get('replicas')), 0) for row in mapping_rows)
     namespaces = {
-        _text(row.get('namespace'), '')
-        for row in [*quota_rows, *mapping_rows]
-        if _text(row.get('namespace'), '')
+        _text(row.get('namespace'), '') for row in [*quota_rows, *mapping_rows] if _text(row.get('namespace'), '')
     }
     namespace_options = payload.get('namespace_options')
     if not namespaces and isinstance(namespace_options, Sequence) and not isinstance(namespace_options, (str, bytes)):
@@ -212,14 +230,10 @@ def _quota_analysis(summary: Mapping[str, Any], rows: list[dict[str, Any]]) -> d
     partial = sum(1 for row in rows if _label(row.get('quota_status')) == 'Partial')
     missing = sum(1 for row in rows if _label(row.get('quota_status')) == 'Missing')
     near_limit = _int(summary.get('scope_near_limit_count')) or sum(
-        1
-        for row in rows
-        if bool(row.get('quota_pressure_available')) and _float(row.get('quota_usage_percent')) >= 75
+        1 for row in rows if bool(row.get('quota_pressure_available')) and _float(row.get('quota_usage_percent')) >= 75
     )
     over_quota = sum(
-        1
-        for row in rows
-        if bool(row.get('quota_pressure_available')) and _float(row.get('quota_usage_percent')) >= 100
+        1 for row in rows if bool(row.get('quota_pressure_available')) and _float(row.get('quota_usage_percent')) >= 100
     )
     coverage = _percent(covered, total) if total else None
     available = bool(rows)
@@ -261,17 +275,58 @@ def _quota_analysis(summary: Mapping[str, Any], rows: list[dict[str, Any]]) -> d
         'status': status,
         'tone': tone,
         'metrics': (
-            _metric('Namespaces', str(total) if total else 'Not Available', 'Committed Scope' if total else 'Not Available', 'normal' if total else 'warning'),
-            _metric('Quota Coverage', _percent_display(coverage) if coverage is not None else 'Not Available', status, tone),
-            _metric('Missing Quota', str(missing) if available else 'Not Available', 'Review' if missing else 'Clear' if available else 'Not Available', 'warning' if missing or not available else 'normal'),
-            _metric('Near / Over Limit', str(near_limit), 'Review' if near_limit else 'Clear', 'warning' if near_limit else 'normal'),
+            _metric(
+                'Namespaces',
+                str(total) if total else 'Not Available',
+                'Committed Scope' if total else 'Not Available',
+                'normal' if total else 'warning',
+            ),
+            _metric(
+                'Quota Coverage', _percent_display(coverage) if coverage is not None else 'Not Available', status, tone
+            ),
+            _metric(
+                'Missing Quota',
+                str(missing) if available else 'Not Available',
+                'Review' if missing else 'Clear' if available else 'Not Available',
+                'warning' if missing or not available else 'normal',
+            ),
+            _metric(
+                'Near / Over Limit',
+                str(near_limit),
+                'Review' if near_limit else 'Clear',
+                'warning' if near_limit else 'normal',
+            ),
         ),
         'records': records,
         'requirements': (
-            {'ref': 'QE1', 'evidence': 'ResourceQuota Inventory', 'definition': 'Quota object and namespace scope', 'status': 'Current' if available else 'Missing', 'action': 'Monitor' if available else 'Required'},
-            {'ref': 'QE2', 'evidence': 'Quota Used / Hard', 'definition': 'Used and hard values by resource', 'status': 'Current' if available else 'Missing', 'action': 'Review' if near_limit else 'Monitor' if available else 'Required'},
-            {'ref': 'QE3', 'evidence': 'LimitRange Inventory', 'definition': 'Default and min/max controls', 'status': 'Not Collected', 'action': 'Required'},
-            {'ref': 'QE4', 'evidence': 'Enforcement Result', 'definition': 'Quota rejection or policy evidence', 'status': 'Not Collected', 'action': 'Validate'},
+            {
+                'ref': 'QE1',
+                'evidence': 'ResourceQuota Inventory',
+                'definition': 'Quota object and namespace scope',
+                'status': 'Current' if available else 'Missing',
+                'action': 'Monitor' if available else 'Required',
+            },
+            {
+                'ref': 'QE2',
+                'evidence': 'Quota Used / Hard',
+                'definition': 'Used and hard values by resource',
+                'status': 'Current' if available else 'Missing',
+                'action': 'Review' if near_limit else 'Monitor' if available else 'Required',
+            },
+            {
+                'ref': 'QE3',
+                'evidence': 'LimitRange Inventory',
+                'definition': 'Default and min/max controls',
+                'status': 'Not Collected',
+                'action': 'Required',
+            },
+            {
+                'ref': 'QE4',
+                'evidence': 'Enforcement Result',
+                'definition': 'Quota rejection or policy evidence',
+                'status': 'Not Collected',
+                'action': 'Validate',
+            },
         ),
         'decision': (
             'Review namespaces with missing or partial quota definitions before approving additional workload growth.'
@@ -298,7 +353,9 @@ def _mapping_analysis(payload: Mapping[str, Any], rows: list[dict[str, Any]]) ->
                 'workload': _text(row.get('workload'), '-'),
                 'type': _text(row.get('type'), '-'),
                 'namespace': _text(row.get('namespace'), '-'),
-                'mapping': f'{_int(row.get("replicas"))} pod(s)' if row.get('replicas') is not None else 'Inventory row',
+                'mapping': f'{_int(row.get("replicas"))} pod(s)'
+                if row.get('replicas') is not None
+                else 'Inventory row',
                 'status': _label(row.get('risk'), 'Unknown'),
                 'tone': _tone(_label(row.get('risk'), 'Unknown')),
             }
@@ -307,9 +364,24 @@ def _mapping_analysis(payload: Mapping[str, Any], rows: list[dict[str, Any]]) ->
     return {
         'available': available,
         'metrics': (
-            _metric('Workloads', str(total) if available else 'Not Available', 'Inventory Available' if available else 'Not Available', 'normal' if available else 'warning'),
-            _metric('Namespaces', str(namespace_count) if namespace_count else 'Not Available', 'Committed Scope' if namespace_count else 'Not Available', 'normal' if namespace_count else 'warning'),
-            _metric('Resource Mapping', _percent_display(_percent(complete_metrics, total)) if total else 'Not Available', 'Complete Metrics' if total else 'Not Available', 'normal' if total and complete_metrics == total else 'warning'),
+            _metric(
+                'Workloads',
+                str(total) if available else 'Not Available',
+                'Inventory Available' if available else 'Not Available',
+                'normal' if available else 'warning',
+            ),
+            _metric(
+                'Namespaces',
+                str(namespace_count) if namespace_count else 'Not Available',
+                'Committed Scope' if namespace_count else 'Not Available',
+                'normal' if namespace_count else 'warning',
+            ),
+            _metric(
+                'Resource Mapping',
+                _percent_display(_percent(complete_metrics, total)) if total else 'Not Available',
+                'Complete Metrics' if total else 'Not Available',
+                'normal' if total and complete_metrics == total else 'warning',
+            ),
             _metric('Owner Mapping', 'Not Available', 'Not Committed', 'warning'),
         ),
         'records': records,
@@ -317,14 +389,29 @@ def _mapping_analysis(payload: Mapping[str, Any], rows: list[dict[str, Any]]) ->
             {
                 'ref': item['ref'],
                 'title': item['workload'],
-                'metadata': f"Namespace: {item['namespace']} · Type: {item['type']}",
+                'metadata': f'Namespace: {item["namespace"]} · Type: {item["type"]}',
             }
             for item in records
         ),
         'coverage': (
-            {'label': 'Inventory to Namespace', 'value': 100.0 if available else 0.0, 'display': 'Available' if available else 'Not Available', 'available': available},
-            {'label': 'Requests Coverage', 'value': _percent(complete_requests, total) or 0.0, 'display': _percent_display(_percent(complete_requests, total)) if total else 'Not Available', 'available': available},
-            {'label': 'Limits Coverage', 'value': _percent(complete_limits, total) or 0.0, 'display': _percent_display(_percent(complete_limits, total)) if total else 'Not Available', 'available': available},
+            {
+                'label': 'Inventory to Namespace',
+                'value': 100.0 if available else 0.0,
+                'display': 'Available' if available else 'Not Available',
+                'available': available,
+            },
+            {
+                'label': 'Requests Coverage',
+                'value': _percent(complete_requests, total) or 0.0,
+                'display': _percent_display(_percent(complete_requests, total)) if total else 'Not Available',
+                'available': available,
+            },
+            {
+                'label': 'Limits Coverage',
+                'value': _percent(complete_limits, total) or 0.0,
+                'display': _percent_display(_percent(complete_limits, total)) if total else 'Not Available',
+                'available': available,
+            },
             {'label': 'Application Owner', 'value': 0.0, 'display': 'Not Available', 'available': False},
         ),
         'interpretation_title': (
@@ -388,22 +475,57 @@ def _configuration_analysis(payload: Mapping[str, Any], rows: list[dict[str, Any
         'limit_coverage': _percent(limit_complete, total),
         'metrics_coverage': _percent(metrics_complete, total),
         'metrics': (
-            _metric('CPU / Memory Requests', _percent_display(_percent(request_complete, total)) if total else 'Not Available', 'Complete Rows' if total else 'Not Available', 'normal' if total and request_complete == total else 'warning'),
-            _metric('Limits Coverage', _percent_display(_percent(limit_complete, total)) if total else 'Not Available', 'Complete Rows' if total else 'Not Available', 'normal' if total and limit_complete == total else 'warning'),
-            _metric('BestEffort', str(best_effort) if available else 'Not Available', 'Review' if best_effort else 'Clear' if available else 'Not Available', 'warning' if best_effort or not available else 'normal'),
-            _metric('Metrics Coverage', _percent_display(_percent(metrics_complete, total)) if total else 'Not Available', 'Complete Rows' if total else 'Not Available', 'normal' if total and metrics_complete == total else 'warning'),
+            _metric(
+                'CPU / Memory Requests',
+                _percent_display(_percent(request_complete, total)) if total else 'Not Available',
+                'Complete Rows' if total else 'Not Available',
+                'normal' if total and request_complete == total else 'warning',
+            ),
+            _metric(
+                'Limits Coverage',
+                _percent_display(_percent(limit_complete, total)) if total else 'Not Available',
+                'Complete Rows' if total else 'Not Available',
+                'normal' if total and limit_complete == total else 'warning',
+            ),
+            _metric(
+                'BestEffort',
+                str(best_effort) if available else 'Not Available',
+                'Review' if best_effort else 'Clear' if available else 'Not Available',
+                'warning' if best_effort or not available else 'normal',
+            ),
+            _metric(
+                'Metrics Coverage',
+                _percent_display(_percent(metrics_complete, total)) if total else 'Not Available',
+                'Complete Rows' if total else 'Not Available',
+                'normal' if total and metrics_complete == total else 'warning',
+            ),
         ),
         'coverage_rows': (
-            {'label': 'Requests Complete', 'value': _percent(request_complete, total) or 0.0, 'display': _percent_display(_percent(request_complete, total)) if total else 'Not Available', 'available': available},
-            {'label': 'Limits Complete', 'value': _percent(limit_complete, total) or 0.0, 'display': _percent_display(_percent(limit_complete, total)) if total else 'Not Available', 'available': available},
-            {'label': 'Metrics Complete', 'value': _percent(metrics_complete, total) or 0.0, 'display': _percent_display(_percent(metrics_complete, total)) if total else 'Not Available', 'available': available},
+            {
+                'label': 'Requests Complete',
+                'value': _percent(request_complete, total) or 0.0,
+                'display': _percent_display(_percent(request_complete, total)) if total else 'Not Available',
+                'available': available,
+            },
+            {
+                'label': 'Limits Complete',
+                'value': _percent(limit_complete, total) or 0.0,
+                'display': _percent_display(_percent(limit_complete, total)) if total else 'Not Available',
+                'available': available,
+            },
+            {
+                'label': 'Metrics Complete',
+                'value': _percent(metrics_complete, total) or 0.0,
+                'display': _percent_display(_percent(metrics_complete, total)) if total else 'Not Available',
+                'available': available,
+            },
         ),
         'records': records,
         'identities': tuple(
             {
                 'ref': item['ref'],
                 'title': item['workload'],
-                'metadata': f"Namespace: {item['namespace']}",
+                'metadata': f'Namespace: {item["namespace"]}',
             }
             for item in records
         ),
@@ -429,7 +551,11 @@ def _governance_analysis(
                 'ref': f'G{index}',
                 'title': title,
                 'priority': _priority_from_severity(severity),
-                'impact': 'High' if severity in {'critical', 'high'} else 'Medium' if severity in {'warning', 'medium'} else 'Low',
+                'impact': 'High'
+                if severity in {'critical', 'high'}
+                else 'Medium'
+                if severity in {'warning', 'medium'}
+                else 'Low',
                 'owner': 'Application Owner',
                 'status': 'Open' if severity in {'critical', 'warning'} else 'Current',
                 'tone': _tone(severity),
@@ -471,10 +597,30 @@ def _governance_analysis(
         'critical_count': critical_count,
         'review_count': review_count,
         'metrics': (
-            _metric('Critical Findings', str(critical_count), 'Open' if critical_count else 'Clear', 'critical' if critical_count else 'normal'),
-            _metric('Review Findings', str(review_count), 'Requires Ownership' if review_count else 'Clear', 'warning' if review_count else 'normal'),
-            _metric('Quota Rows', str(len(quota_rows)) if quota_rows else 'Not Available', 'Committed' if quota_rows else 'Not Available', 'normal' if quota_rows else 'warning'),
-            _metric('Workload Rows', str(len(mapping_rows)) if mapping_rows else 'Not Available', 'Committed' if mapping_rows else 'Not Available', 'normal' if mapping_rows else 'warning'),
+            _metric(
+                'Critical Findings',
+                str(critical_count),
+                'Open' if critical_count else 'Clear',
+                'critical' if critical_count else 'normal',
+            ),
+            _metric(
+                'Review Findings',
+                str(review_count),
+                'Requires Ownership' if review_count else 'Clear',
+                'warning' if review_count else 'normal',
+            ),
+            _metric(
+                'Quota Rows',
+                str(len(quota_rows)) if quota_rows else 'Not Available',
+                'Committed' if quota_rows else 'Not Available',
+                'normal' if quota_rows else 'warning',
+            ),
+            _metric(
+                'Workload Rows',
+                str(len(mapping_rows)) if mapping_rows else 'Not Available',
+                'Committed' if mapping_rows else 'Not Available',
+                'normal' if mapping_rows else 'warning',
+            ),
         ),
         'interpretation': (
             'Workload governance risk is derived from committed quota, configuration, QoS, metrics, and recommendation evidence. '
@@ -555,9 +701,15 @@ def _recommendation_plan(
         'items': items,
         'governance': (
             {'field': 'Primary Action', 'requirement': items[0]['title']},
-            {'field': 'Validation Criteria', 'requirement': 'Confirm live state, owner, service objective, rollout window, and rollback readiness before closure.'},
+            {
+                'field': 'Validation Criteria',
+                'requirement': 'Confirm live state, owner, service objective, rollout window, and rollback readiness before closure.',
+            },
             {'field': 'Assigned Owners', 'requirement': f'Application Owner: {len(items)} action(s).'},
-            {'field': 'Change Control', 'requirement': 'No request, limit, quota, replica, or autoscaling change is authorized by this report alone.'},
+            {
+                'field': 'Change Control',
+                'requirement': 'No request, limit, quota, replica, or autoscaling change is authorized by this report alone.',
+            },
         ),
     }
 
@@ -569,15 +721,55 @@ def _executive_findings(
 ) -> tuple[dict[str, Any], ...]:
     candidates = []
     if quota.get('missing'):
-        candidates.append(('P1', 'Restore Missing ResourceQuota Coverage', f'{quota["missing"]} namespace(s) have missing quota coverage.', 'Open', 'critical'))
+        candidates.append(
+            (
+                'P1',
+                'Restore Missing ResourceQuota Coverage',
+                f'{quota["missing"]} namespace(s) have missing quota coverage.',
+                'Open',
+                'critical',
+            )
+        )
     if configuration.get('missing_requests'):
-        candidates.append(('P1', 'Validate Incomplete Resource Requests', f'{configuration["missing_requests"]} workload(s) have incomplete requests.', 'Open', 'critical'))
+        candidates.append(
+            (
+                'P1',
+                'Validate Incomplete Resource Requests',
+                f'{configuration["missing_requests"]} workload(s) have incomplete requests.',
+                'Open',
+                'critical',
+            )
+        )
     if configuration.get('limit_review'):
-        candidates.append(('P2', 'Review Workload Limits', f'{configuration["limit_review"]} workload(s) require limit review.', 'Review', 'warning'))
+        candidates.append(
+            (
+                'P2',
+                'Review Workload Limits',
+                f'{configuration["limit_review"]} workload(s) require limit review.',
+                'Review',
+                'warning',
+            )
+        )
     if configuration.get('best_effort'):
-        candidates.append(('P1', 'Review BestEffort Workloads', f'{configuration["best_effort"]} BestEffort workload(s) were detected.', 'Open', 'critical'))
+        candidates.append(
+            (
+                'P1',
+                'Review BestEffort Workloads',
+                f'{configuration["best_effort"]} BestEffort workload(s) were detected.',
+                'Open',
+                'critical',
+            )
+        )
     if not candidates:
-        candidates.append(('P3', 'Maintain Workload Governance Evidence', 'No critical configuration gap was derived from the committed rows.', 'Current', 'normal'))
+        candidates.append(
+            (
+                'P3',
+                'Maintain Workload Governance Evidence',
+                'No critical configuration gap was derived from the committed rows.',
+                'Current',
+                'normal',
+            )
+        )
 
     findings = []
     for index, (priority, title, description, status, tone) in enumerate(candidates[:4], start=1):
@@ -597,10 +789,38 @@ def _executive_findings(
 
 def _inventory_register(inventory: Mapping[str, Any], governance: Mapping[str, Any]) -> tuple[dict[str, Any], ...]:
     return (
-        {'ref': 'I1', 'dimension': 'Workload Inventory', 'scope': inventory['workload_display'], 'evidence': 'Workload mapping rows', 'status': inventory['status'], 'tone': inventory['tone']},
-        {'ref': 'I2', 'dimension': 'Pod Participation', 'scope': inventory['pod_display'], 'evidence': 'Replica totals', 'status': inventory['status'], 'tone': inventory['tone']},
-        {'ref': 'I3', 'dimension': 'Namespace Scope', 'scope': inventory['namespace_display'], 'evidence': 'Quota and mapping rows', 'status': inventory['status'], 'tone': inventory['tone']},
-        {'ref': 'I4', 'dimension': 'Governance Signals', 'scope': str(governance['review_count']), 'evidence': 'Committed findings', 'status': 'Review' if governance['review_count'] else 'Current', 'tone': 'warning' if governance['review_count'] else 'normal'},
+        {
+            'ref': 'I1',
+            'dimension': 'Workload Inventory',
+            'scope': inventory['workload_display'],
+            'evidence': 'Workload mapping rows',
+            'status': inventory['status'],
+            'tone': inventory['tone'],
+        },
+        {
+            'ref': 'I2',
+            'dimension': 'Pod Participation',
+            'scope': inventory['pod_display'],
+            'evidence': 'Replica totals',
+            'status': inventory['status'],
+            'tone': inventory['tone'],
+        },
+        {
+            'ref': 'I3',
+            'dimension': 'Namespace Scope',
+            'scope': inventory['namespace_display'],
+            'evidence': 'Quota and mapping rows',
+            'status': inventory['status'],
+            'tone': inventory['tone'],
+        },
+        {
+            'ref': 'I4',
+            'dimension': 'Governance Signals',
+            'scope': str(governance['review_count']),
+            'evidence': 'Committed findings',
+            'status': 'Review' if governance['review_count'] else 'Current',
+            'tone': 'warning' if governance['review_count'] else 'normal',
+        },
     )
 
 
@@ -630,9 +850,21 @@ def _source_rows(
     freshness = f'{_float(response):.0f} ms' if response is not None and _float(response) > 0 else 'Committed'
     return (
         {'source': 'Prometheus Workload Evidence', 'freshness': freshness, 'last_collected': 'At report cut-off'},
-        {'source': 'Tenant Quota Analysis', 'freshness': 'Committed' if quota['available'] else 'Not Available', 'last_collected': 'At report cut-off'},
-        {'source': 'Workload Resource Mapping', 'freshness': 'Committed' if mapping['available'] else 'Not Available', 'last_collected': 'At report cut-off'},
-        {'source': 'Governance Recommendation Evidence', 'freshness': 'Committed', 'last_collected': 'At report cut-off'},
+        {
+            'source': 'Tenant Quota Analysis',
+            'freshness': 'Committed' if quota['available'] else 'Not Available',
+            'last_collected': 'At report cut-off',
+        },
+        {
+            'source': 'Workload Resource Mapping',
+            'freshness': 'Committed' if mapping['available'] else 'Not Available',
+            'last_collected': 'At report cut-off',
+        },
+        {
+            'source': 'Governance Recommendation Evidence',
+            'freshness': 'Committed',
+            'last_collected': 'At report cut-off',
+        },
     )
 
 

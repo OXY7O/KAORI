@@ -18,7 +18,9 @@
     {% set tone_classes = 'border-status-normal-border kaori-hero-status-normal' if tone == 'normal' else ('border-status-warning-border kaori-hero-status-warning' if tone == 'warning' else ('border-status-critical-border kaori-hero-status-critical' if tone == 'critical' else ('border-status-unknown-border kaori-hero-status-unknown' if tone == 'unknown' else 'border-status-info-border kaori-hero-status-info'))) %}
     <span class="kaori-hero-status-badge inline-flex min-h-7 max-w-full shrink-0 items-center gap-1.5 rounded-md border bg-white/95 px-2.5 py-1 text-xs font-semibold leading-5 shadow-sm {{ tone_classes }}"
           title="{{ label }}">
-        <i data-lucide="{{ status_icon }}" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"></i>
+        <i data-lucide="{{ status_icon }}"
+           class="h-3.5 w-3.5 shrink-0"
+           aria-hidden="true"></i>
         <span class="break-words [overflow-wrap:anywhere]">{{ label }}</span>
     </span>
 {%- endmacro %}
@@ -40,25 +42,23 @@
                 {{ context_metric(metric_icon, metric_label, metric_value, metric_description) }}
             {% endfor %}
         </div>
-        <a href="{{ action_href }}" class="{{ context_single_action_classes() }}">
+        <a href="{{ action_href }}"
+           class="{{ context_single_action_classes() }}">
             <i data-lucide="{{ action_icon }}" class="h-4 w-4" aria-hidden="true"></i>
             {{ action_label }}
         </a>
     </div>
 {%- endmacro %}
-
 {% macro context_card(aria_label, eyebrow_label, title, status_label, status_tone, metrics, action_label, action_href, action_icon='server-cog') -%}
     <aside class="{{ aside_classes() }}" aria-label="{{ aria_label }}">
-        {{ context_card_body(
-            eyebrow_label,
-            title,
-            status_label,
-            status_tone,
-            metrics,
-            action_label,
-            action_href,
-            action_icon
-        ) }}
+        {{ context_card_body(eyebrow_label,
+                title,
+                status_label,
+                status_tone,
+                metrics,
+                action_label,
+                action_href,
+                action_icon) }}
     </aside>
 {%- endmacro %}
 {% macro context_panel_eyebrow_classes() -%}
@@ -107,7 +107,9 @@
 {%- endmacro %}
 {% macro context_info(icon, text) -%}
     <div class="{{ context_info_classes() }}">
-        <i data-lucide="{{ icon }}" class="h-3.5 w-3.5 shrink-0 text-brand-foreground" aria-hidden="true"></i>
+        <i data-lucide="{{ icon }}"
+           class="h-3.5 w-3.5 shrink-0 text-brand-foreground"
+           aria-hidden="true"></i>
         <p>{{ text }}</p>
     </div>
 {%- endmacro %}

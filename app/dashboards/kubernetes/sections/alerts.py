@@ -33,11 +33,7 @@ def build_alerts_snapshot(*, context: dict[str, Any] | None, unavailable_reason:
         if isinstance(item, dict)
     ]
     connected = bool(context.get('source_connected'))
-    message = (
-        str(context.get('message') or 'Alert source connected.')
-        if connected
-        else friendly_combined_alert_error()
-    )
+    message = str(context.get('message') or 'Alert source connected.') if connected else friendly_combined_alert_error()
     return AlertsSnapshot(
         critical=int(context.get('critical') or 0),
         warning=int(context.get('warning') or 0),

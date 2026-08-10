@@ -42,9 +42,7 @@ def test_postgresql_jsonb_containment_and_overlap_compile_to_native_operators() 
     statements = (
         (select(table).where(cast(table.c.labels, JSONB).contains({'app': 'demo'})), '@>'),
         (
-            select(table).where(
-                cast(table.c.persistent_volume_claims, JSONB).op('?|')(array(['claim']))
-            ),
+            select(table).where(cast(table.c.persistent_volume_claims, JSONB).op('?|')(array(['claim']))),
             '?|',
         ),
     )

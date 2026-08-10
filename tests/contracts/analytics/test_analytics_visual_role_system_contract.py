@@ -41,7 +41,7 @@ def _iter_calls(source: str, name: str):
                 elif char == quote:
                     quote = None
             else:
-                if char in "'\"":
+                if char in '\'"':
                     quote = char
                 elif char == '(':
                     depth += 1
@@ -81,7 +81,11 @@ def test_every_analytics_page_uses_the_shared_token_scope() -> None:
 def test_analytics_templates_do_not_duplicate_brand_icon_geometry() -> None:
     violations = []
     for template in ANALYTICS_ROOT.rglob('*.html'):
-        if template in {SURFACE, ANALYTICS_ROOT / 'components/_content_tabs.html', ANALYTICS_ROOT / 'components/_record_detail_modal.html'}:
+        if template in {
+            SURFACE,
+            ANALYTICS_ROOT / 'components/_content_tabs.html',
+            ANALYTICS_ROOT / 'components/_record_detail_modal.html',
+        }:
             continue
         source = read(template)
         if 'bg-kaori-soft text-kaori-primary' in source:
@@ -103,11 +107,7 @@ def test_every_interpretation_call_declares_a_visual_role() -> None:
 
 
 def test_visual_roles_are_used_for_their_intended_meaning() -> None:
-    all_templates = '\n'.join(
-        read(path)
-        for path in ANALYTICS_ROOT.rglob('*.html')
-        if path != SURFACE
-    )
+    all_templates = '\n'.join(read(path) for path in ANALYTICS_ROOT.rglob('*.html') if path != SURFACE)
 
     assert "role='insight'" in all_templates
     assert "role='brand'" in all_templates

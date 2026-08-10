@@ -13,41 +13,46 @@
     'Summarize node filesystem capacity, namespace PVC evidence, and cluster PV provisioning without mixing their scopes or denominators.',
     'hard-drive',
     selected_namespace if selected_namespace else 'All Namespaces'
-) %}
+    ) %}
     <div class="{{ analysis_surface.evidence_shell_classes() }}">
         <div class="{{ analysis_surface.metric_grid_classes(4) }}">
             {% set metrics = [
-                ('Filesystem Capacity', filesystem.capacity, filesystem.used ~ ' Used' if filesystem.evidence_available else 'Evidence unavailable', 'server'),
-                ('Highest Node Pressure', ('%.1f%%'|format(filesystem.highest_usage|float)) if filesystem.highest_usage is not none else 'N/A', (filesystem.highest_node ~ ' · ' ~ filesystem.highest_mountpoint) if filesystem.highest_usage is not none else 'No complete node evidence', 'gauge'),
-                ('Persistent Volumes', pv.count_display, pv.capacity ~ ' Provisioned' if pv.capacity_evidence_available else 'Provisioning evidence unavailable', 'database'),
-                ('Persistent Claims', pvc.count_display, pvc.requested ~ ' Requested' if pvc.requested_evidence_available else 'Claim inventory or request evidence unavailable', 'box')
-            ] %}
+                            ('Filesystem Capacity', filesystem.capacity, filesystem.used ~ ' Used' if filesystem.evidence_available else 'Evidence unavailable', 'server'),
+                            ('Highest Node Pressure', ('%.1f%%'|format(filesystem.highest_usage|float)) if filesystem.highest_usage is not none else 'N/A', (filesystem.highest_node ~ ' · ' ~ filesystem.highest_mountpoint) if filesystem.highest_usage is not none else 'No complete node evidence', 'gauge'),
+                            ('Persistent Volumes', pv.count_display, pv.capacity ~ ' Provisioned' if pv.capacity_evidence_available else 'Provisioning evidence unavailable', 'database'),
+                            ('Persistent Claims', pvc.count_display, pvc.requested ~ ' Requested' if pvc.requested_evidence_available else 'Claim inventory or request evidence unavailable', 'box')
+                        ] %}
             {% for label, value, helper, icon in metrics %}
                 <article class="{{ analysis_surface.metric_cell_classes() }}">
-                    <div class="flex items-center gap-2.5"><span class="{{ analysis_surface.resource_icon_classes(label) }}"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p></div>
+                    <div class="flex items-center gap-2.5">
+                        <span class="{{ analysis_surface.resource_icon_classes(label) }}"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                        <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                    </div>
                     <p class="mt-3 break-words text-2xl font-semibold tabular-nums {{ 'text-content-primary' if value != 'N/A' else analysis_surface.unavailable_value_classes() }}">{{ value }}</p>
                     <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
                 </article>
             {% endfor %}
         </div>
     </div>
-
     <div class="mt-4 space-y-4">
         <section class="{{ analysis_surface.evidence_shell_classes('p-4 sm:p-5') }}">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div><h3 class="{{ analysis_surface.section_title_classes() }}">Storage Pressure Snapshot</h3><p class="{{ analysis_surface.section_description_classes() }}">Filesystem pressure uses filesystem capacity. PVC pressure uses observed volume capacity, not requested capacity.</p></div>
+                <div>
+                    <h3 class="{{ analysis_surface.section_title_classes() }}">Storage Pressure Snapshot</h3>
+                    <p class="{{ analysis_surface.section_description_classes() }}">Filesystem pressure uses filesystem capacity. PVC pressure uses observed volume capacity, not requested capacity.</p>
+                </div>
                 {{ table_label.status_label(posture.label, posture.tone, size='compact') }}
             </div>
             <div class="mt-4 grid gap-4 lg:grid-cols-2">
                 <div class="rounded-lg border border-outline-subtle bg-surface-card px-4 py-4">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div>
-                            <p class="text-xs font-medium text-content-secondary">Node Filesystem · {{ storage_summary.node_filesystem.scope_label|default('All Nodes') }}</p>
+                            <p class="text-xs font-medium text-content-secondary">Node Filesystem · {{ storage_summary.node_filesystem.scope_label|default("All Nodes") }}</p>
                             <p class="mt-1 text-xs text-content-muted">Aggregate uses nodes with paired filesystem capacity and available-byte evidence.</p>
                         </div>
                         <div class="flex items-center gap-2">
                             {{ table_label.status_label(filesystem_coverage_label, 'normal' if filesystem.evidence_complete else 'unknown', size='compact') }}
-                            <span class="font-semibold tabular-nums {{ 'text-content-primary' if filesystem.evidence_available else analysis_surface.unavailable_value_classes() }}">{{ ('%.1f%% Used'|format(filesystem.usage_percent|float)) if filesystem.evidence_available else 'N/A' }}</span>
+                            <span class="font-semibold tabular-nums {{ 'text-content-primary' if filesystem.evidence_available else analysis_surface.unavailable_value_classes() }}">{{ ('%.1f%% Used'|format(filesystem.usage_percent|float) ) if filesystem.evidence_available else 'N/A' }}</span>
                         </div>
                     </div>
                     {% if filesystem.evidence_available %}
@@ -75,7 +80,7 @@
                         </div>
                         <div class="flex items-center gap-2">
                             {{ table_label.status_label(pvc_coverage_label, 'normal' if pvc.pressure_evidence_complete else 'unknown', size='compact') }}
-                            <span class="font-semibold tabular-nums {{ 'text-content-primary' if pvc.pressure_evidence_available else analysis_surface.unavailable_value_classes() }}">{{ ('%.1f%% Used'|format(pvc.used_percent|float)) if pvc.pressure_evidence_available else 'N/A' }}</span>
+                            <span class="font-semibold tabular-nums {{ 'text-content-primary' if pvc.pressure_evidence_available else analysis_surface.unavailable_value_classes() }}">{{ ('%.1f%% Used'|format(pvc.used_percent|float) ) if pvc.pressure_evidence_available else 'N/A' }}</span>
                         </div>
                     </div>
                     {% if pvc.pressure_evidence_available %}
@@ -93,18 +98,17 @@
                 </div>
             </div>
         </section>
-        <section class="{{ analysis_surface.guidance_card_classes() }}" data-kaori-operational-reading>
+        <section class="{{ analysis_surface.guidance_card_classes() }}"
+                 data-kaori-operational-reading>
             <div class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
                 <div class="min-w-0">
-                    {{ analysis_surface.interpretation_content(
-                        'Operational Reading',
-                        'Keep Node, Namespace, And Cluster Storage Evidence Separate',
-                        posture.reason ~ ' Review node filesystem pressure independently from namespace claim usage and cluster PV provisioning.',
-                        icon='scan-search',
-                        role='status',
-                        tone=posture.tone,
-                        compact=true
-                    ) }}
+                    {{ analysis_surface.interpretation_content('Operational Reading',
+                                        'Keep Node, Namespace, And Cluster Storage Evidence Separate',
+                                        posture.reason ~ ' Review node filesystem pressure independently from namespace claim usage and cluster PV provisioning.',
+                                        icon='scan-search',
+                                        role='status',
+                                        tone=posture.tone,
+                                        compact=true) }}
                 </div>
                 <div class="shrink-0 pl-10 sm:pl-0">{{ table_label.status_label(posture.label, posture.tone, size='compact') }}</div>
             </div>
@@ -113,10 +117,12 @@
                     ('Filesystem Scope', storage_summary.node_filesystem.scope_label|default('All Nodes')),
                     ('PVC Scope', pvc.scope_label),
                     ('PV Scope', 'Cluster')
-                ] %}
+                    ] %}
                     <div class="{{ analysis_surface.guidance_fact_classes('flex items-center justify-between gap-4 md:block') }}">
                         <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
-                        <dd class="min-w-0 break-words text-right text-sm font-semibold text-content-primary md:mt-1 md:text-left">{{ value }}</dd>
+                        <dd class="min-w-0 break-words text-right text-sm font-semibold text-content-primary md:mt-1 md:text-left">
+                            {{ value }}
+                        </dd>
                     </div>
                 {% endfor %}
             </dl>

@@ -8,7 +8,8 @@
 {% set warning_count = actionable_summary.priority_summary.warning|default(0) %}
 {% set evidence_available = actionable_summary.evidence_available|default(false) %}
 {% set evidence_complete = actionable_summary.evidence_complete|default(false) %}
-<section data-analytics-overview-panel="recommendations" class="{{ overview_surface.snapshot_shell_classes() }}">
+<section data-analytics-overview-panel="recommendations"
+         class="{{ overview_surface.snapshot_shell_classes() }}">
     <header class="{{ overview_surface.snapshot_header_classes() }}">
         <div class="flex min-w-0 items-start gap-3">
             <span class="{{ overview_surface.snapshot_header_icon_classes() }}">
@@ -27,7 +28,6 @@
             {{ table_label.status_label(warning_count ~ ' Warning', tone='warning', size='compact') }}
         </div>
     </header>
-
     {% if recommendations %}
         <div data-kaori-recommendation-pager data-page-size="3">
             <div class="divide-y divide-outline-subtle">

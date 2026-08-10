@@ -59,10 +59,7 @@ def _collect_reporting_summary(report: Report) -> dict[str, Any]:
             return int(db.session.scalar(statement) or 0)
 
         recent_reports = db.session.scalars(
-            select(Report)
-            .where(Report.cluster_id == cluster_id)
-            .order_by(Report.created_at.desc())
-            .limit(8)
+            select(Report).where(Report.cluster_id == cluster_id).order_by(Report.created_at.desc()).limit(8)
         ).all()
         schedules = db.session.scalars(
             select(ReportSchedule)
@@ -80,10 +77,7 @@ def _collect_reporting_summary(report: Report) -> dict[str, Any]:
             or 0
         )
         schedule_count = int(
-            db.session.scalar(
-                select(func.count(ReportSchedule.id)).where(ReportSchedule.cluster_id == cluster_id)
-            )
-            or 0
+            db.session.scalar(select(func.count(ReportSchedule.id)).where(ReportSchedule.cluster_id == cluster_id)) or 0
         )
 
         return {
@@ -113,6 +107,7 @@ def _collect_reporting_summary(report: Report) -> dict[str, Any]:
             'storage': {},
             'notes': ['Selected-cluster reporting operation evidence was unavailable during payload collection.'],
         }
+
 
 def _serialize_schedule(schedule: ReportSchedule) -> dict[str, Any]:
     return {
@@ -186,6 +181,7 @@ def _collect_inventory_snapshot(report: Report) -> dict[str, Any]:
             'health': {},
             'posture': {'status': 'Unknown', 'tone': 'unknown'},
         }
+
 
 def _collect_data_freshness(payload: dict[str, Any]) -> dict[str, Any]:
     snapshot = payload.get('snapshot_summary') or {}

@@ -24,16 +24,15 @@ def test_service_inventory_uses_canonical_resource_page_pattern() -> None:
 
 def test_service_detail_uses_adaptive_stacks_and_factual_network_configuration() -> None:
     detail = read('app/templates/inventory/services/partials/_service_detail_content.html')
-    service = read('app/inventory/resources/services.py')
     semantics = read('app/inventory/resources/service_semantics.py')
 
     assert 'data-kaori-detail-density="adaptive-stacks"' in detail
-    assert "detail.expanded_workspace_shell_classes()" in detail
-    assert "Technical Metadata Collection" not in detail
+    assert 'detail.expanded_workspace_shell_classes()' in detail
+    assert 'Technical Metadata Collection' not in detail
     assert 'metadata_collection.render(' in detail
     assert 'related_collection.render(' in detail
     assert 'Traffic policies and publication configuration remain factual evidence' in detail
-    assert 'status_row(\'IP Family Policy\'' not in detail
+    assert "status_row('IP Family Policy'" not in detail
     assert "'No Registered Backends'" in semantics
     assert "'External Destination'" in semantics
     assert "'Manually Managed'" in semantics
@@ -60,4 +59,4 @@ def test_service_filters_and_page_size_refresh_the_complete_workspace() -> None:
     assert "endpoint='inventory.services'" in table
     assert 'hx-target="#services-page-workspace"' in card
     assert 'name="partial_mode" value="page_workspace"' in card
-    assert "hx-trigger=\"change, keyup changed delay:500ms from:find input[name='search']\"" in card
+    assert 'hx-trigger="change, keyup changed delay:500ms from:find input[name=\'search\']"' in card

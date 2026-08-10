@@ -115,11 +115,7 @@ def _service(*, name='api', namespace='payments', service_type='LoadBalancer', p
         load_balancer_class=None,
         allocate_load_balancer_node_ports=True,
     )
-    status = SimpleNamespace(
-        load_balancer=SimpleNamespace(
-            ingress=[SimpleNamespace(ip='203.0.113.10', hostname=None)]
-        )
-    )
+    status = SimpleNamespace(load_balancer=SimpleNamespace(ingress=[SimpleNamespace(ip='203.0.113.10', hostname=None)]))
     return SimpleNamespace(metadata=_metadata(name, namespace), spec=spec, status=status)
 
 
@@ -229,7 +225,9 @@ def test_missing_backend_permissions_are_committed_as_missing_evidence(monkeypat
     assert rows[0]['details']['endpoints']['reported'] is False
 
 
-def test_invalid_service_identity_is_skipped_and_canonical_details_are_complete(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_invalid_service_identity_is_skipped_and_canonical_details_are_complete(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     collector, _ = _load_collector(monkeypatch)
     many_ports = [_port(value=10000 + index, target=str(20000 + index), node_port=30000 + index) for index in range(60)]
     many_ips = [f'203.0.113.{index}' for index in range(1, 40)]

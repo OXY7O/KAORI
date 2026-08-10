@@ -1,15 +1,25 @@
 from __future__ import annotations
 
-import logging
 from importlib import import_module
+import logging
 
 from celery.exceptions import CeleryError
-from flask import Blueprint, abort, current_app, make_response, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    abort,
+    current_app,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from kombu.exceptions import OperationalError as KombuOperationalError
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.common.job_execution_contract import job_operation_label
 from app.common.job_execution_presentation import present_job_execution_detail
 from app.extensions.db import db
 from app.jobs.configuration import build_job_configuration_context
@@ -18,12 +28,8 @@ from app.jobs.dispatcher import dispatch_registered_job
 from app.jobs.policies.forms import JobPolicyForm, ManualJobRunForm
 from app.jobs.policies.service import update_job_policy
 from app.jobs.presentation import build_job_execution_context, build_job_execution_status_context
-from app.jobs.registry import get_job_definition, job_operation_label
-from app.jobs.service import (
-    JobCancellationNotAllowed,
-    JobQuotaExceeded,
-    cancel_job_execution,
-)
+from app.jobs.registry import get_job_definition
+from app.jobs.service import JobCancellationNotAllowed, JobQuotaExceeded, cancel_job_execution
 from app.models.job import JobExecution
 from app.notifications.service import get_navigation_notification_context, record_operational_activity
 from app.rbac.decorators import permission_required
@@ -136,9 +142,7 @@ def _render_configuration_job(
     )
     context['operation_feedback'] = operation_feedback
     if operation_feedback is not None:
-        context['notification_context'] = get_navigation_notification_context(
-            user_id=int(current_user.id)
-        )
+        context['notification_context'] = get_navigation_notification_context(user_id=int(current_user.id))
     response = make_response(
         render_template('jobs/configuration/_job_workspace.html', **context),
         status_code,
@@ -205,9 +209,7 @@ def configuration() -> ResponseReturnValue:
         context = _configuration_context(selected_job_key=selected_job_key)
         fragment = request.args.get('fragment', 'page').strip()
         template = (
-            'jobs/configuration/_job_workspace.html'
-            if fragment == 'job'
-            else 'jobs/configuration/_workspace.html'
+            'jobs/configuration/_job_workspace.html' if fragment == 'job' else 'jobs/configuration/_workspace.html'
         )
         response = make_response(render_template(template, **context))
         if fragment == 'job':
@@ -226,9 +228,7 @@ def configuration() -> ResponseReturnValue:
 @permission_required('jobs.view')
 def configuration_status(job_key: str) -> ResponseReturnValue:
     context = _configuration_context(selected_job_key=job_key)
-    response = make_response(
-        render_template('jobs/configuration/_live_status_response.html', **context)
-    )
+    response = make_response(render_template('jobs/configuration/_live_status_response.html', **context))
     response.headers['Cache-Control'] = 'no-store, max-age=0'
     return response
 
@@ -261,9 +261,7 @@ def update_policy(job_key: str) -> ResponseReturnValue:
         elif job_key == 'analytics.forecast.materialize':
             configuration.update(
                 {
-                    'history_windows': list(
-                        form.forecast_history_windows.data or ['7d', '30d', '90d']
-                    ),
+                    'history_windows': list(form.forecast_history_windows.data or ['7d', '30d', '90d']),
                     'freshness_minutes': int(form.freshness_minutes.data or 120),
                     'stale_grace_minutes': int(form.stale_grace_minutes.data or 4320),
                 }

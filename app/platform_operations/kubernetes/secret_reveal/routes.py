@@ -25,8 +25,8 @@ from app.kubernetes_operations.secrets.reveal_policy import (
 from app.models import Cluster
 from app.notifications.feedback import queue_operational_feedback
 from app.notifications.service import record_operational_activity
-from app.rbac.decorators import permission_required
 from app.platform_operations.kubernetes.secret_reveal.service import build_secret_reveal_settings_context
+from app.rbac.decorators import permission_required
 
 bp = Blueprint('secret_reveal', __name__)
 

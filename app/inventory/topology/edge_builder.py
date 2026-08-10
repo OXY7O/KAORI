@@ -86,16 +86,12 @@ class TopologyEdgeBuilder:
 
     def add_ingress_routes(self) -> None:
         for ingress in self.records.ingresses:
-            ingress_id = self.state.ingress_node_ids.get(
-                (ingress.cluster_id, ingress.namespace, ingress.ingress_name)
-            )
+            ingress_id = self.state.ingress_node_ids.get((ingress.cluster_id, ingress.namespace, ingress.ingress_name))
             if not ingress_id:
                 continue
             for index, backend in enumerate(ingress.backend_paths or []):
                 service_name = str(backend.get('service_name') or '').strip()
-                service_id = self.state.service_node_ids.get(
-                    (ingress.cluster_id, ingress.namespace, service_name)
-                )
+                service_id = self.state.service_node_ids.get((ingress.cluster_id, ingress.namespace, service_name))
                 if not service_id:
                     continue
                 self._append(
@@ -116,9 +112,7 @@ class TopologyEdgeBuilder:
 
     def add_service_selectors(self) -> None:
         for service in self.records.services:
-            service_id = self.state.service_node_ids.get(
-                (service.cluster_id, service.namespace, service.service_name)
-            )
+            service_id = self.state.service_node_ids.get((service.cluster_id, service.namespace, service.service_name))
             if not service_id or not service.selector:
                 continue
             for pod in self.pods_by_scope.get((service.cluster_id, service.namespace), []):
@@ -146,9 +140,7 @@ class TopologyEdgeBuilder:
             for index, reference in enumerate(pod.configuration_references or []):
                 object_type = str(reference.get('type') or '').strip()
                 object_name = str(reference.get('name') or '').strip()
-                config_id = self.state.config_node_ids.get(
-                    (pod.cluster_id, pod.namespace, object_type, object_name)
-                )
+                config_id = self.state.config_node_ids.get((pod.cluster_id, pod.namespace, object_type, object_name))
                 if not config_id:
                     continue
                 self._append(

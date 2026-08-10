@@ -1,11 +1,14 @@
 from dataclasses import dataclass
 from datetime import datetime
 from math import ceil
-from typing import Any, Literal, NotRequired, TypeAlias, TypedDict, TypeVar
+from typing import (
+    Any,
+    Literal,
+    NotRequired,
+    TypedDict,
+)
 
 DEFAULT_PER_PAGE = 5
-
-ItemT = TypeVar('ItemT')
 
 PER_PAGE_OPTIONS = [5, 10, 25, 50]
 SOURCE_OPTIONS = ['auto', 'alertmanager', 'prometheus']
@@ -75,20 +78,16 @@ class AlertSourceHealthCheck(TypedDict):
     description: str
 
 
-AlertSourceHealthSummary = TypedDict(
-    'AlertSourceHealthSummary',
-    {
-        'score': int,
-        'level': Literal['healthy', 'fallback', 'degraded', 'unavailable'],
-        'label': str,
-        'description': str,
-        'icon': str,
-        'checks': list[AlertSourceHealthCheck],
-        'selected_source': NotRequired[str],
-        'resolved_source': NotRequired[str],
-        'fallback_used': NotRequired[bool],
-    },
-)
+class AlertSourceHealthSummary(TypedDict):
+    score: int
+    level: Literal['healthy', 'fallback', 'degraded', 'unavailable']
+    label: str
+    description: str
+    icon: str
+    checks: list[AlertSourceHealthCheck]
+    selected_source: NotRequired[str]
+    resolved_source: NotRequired[str]
+    fallback_used: NotRequired[bool]
 
 
 class AlertRoutingGroup(TypedDict):
@@ -97,26 +96,22 @@ class AlertRoutingGroup(TypedDict):
     percent: float
 
 
-AlertRoutingSummary = TypedDict(
-    'AlertRoutingSummary',
-    {
-        'enabled': bool,
-        'level': Literal['available', 'limited', 'unavailable'],
-        'label': str,
-        'description': str,
-        'icon': str,
-        'source': str,
-        'alert_count': int,
-        'receiver_count': int,
-        'group_count': int,
-        'fingerprint_count': int,
-        'namespace_count': int,
-        'severity_groups': list[AlertRoutingGroup],
-        'receiver_groups': list[AlertRoutingGroup],
-        'namespace_groups': list[AlertRoutingGroup],
-        'grouping_keys': list[AlertRoutingGroup],
-    },
-)
+class AlertRoutingSummary(TypedDict):
+    enabled: bool
+    level: Literal['available', 'limited', 'unavailable']
+    label: str
+    description: str
+    icon: str
+    source: str
+    alert_count: int
+    receiver_count: int
+    group_count: int
+    fingerprint_count: int
+    namespace_count: int
+    severity_groups: list[AlertRoutingGroup]
+    receiver_groups: list[AlertRoutingGroup]
+    namespace_groups: list[AlertRoutingGroup]
+    grouping_keys: list[AlertRoutingGroup]
 
 
 class AlertSilenceApiStatus(TypedDict):
@@ -143,24 +138,20 @@ class AlertSilenceItem(TypedDict):
     matched_alerts: int
 
 
-AlertSilenceSummary = TypedDict(
-    'AlertSilenceSummary',
-    {
-        'enabled': bool,
-        'level': Literal['available', 'limited', 'unavailable'],
-        'label': str,
-        'description': str,
-        'icon': str,
-        'source': str,
-        'active_silences': int,
-        'pending_silences': int,
-        'expired_silences': int,
-        'matched_alerts': int,
-        'silenced_namespaces': list[str],
-        'silenced_matchers': list[str],
-        'items': list[AlertSilenceItem],
-    },
-)
+class AlertSilenceSummary(TypedDict):
+    enabled: bool
+    level: Literal['available', 'limited', 'unavailable']
+    label: str
+    description: str
+    icon: str
+    source: str
+    active_silences: int
+    pending_silences: int
+    expired_silences: int
+    matched_alerts: int
+    silenced_namespaces: list[str]
+    silenced_matchers: list[str]
+    items: list[AlertSilenceItem]
 
 
 class AlertInhibitionItem(TypedDict):
@@ -171,22 +162,18 @@ class AlertInhibitionItem(TypedDict):
     inhibited_by: Any
 
 
-AlertInhibitionSummary = TypedDict(
-    'AlertInhibitionSummary',
-    {
-        'enabled': bool,
-        'level': Literal['available', 'limited', 'unavailable'],
-        'label': str,
-        'description': str,
-        'icon': str,
-        'source': str,
-        'rules_detected': int,
-        'matched_alerts': int,
-        'source_equal_labels': list[str],
-        'target_matchers': list[str],
-        'items': list[AlertInhibitionItem],
-    },
-)
+class AlertInhibitionSummary(TypedDict):
+    enabled: bool
+    level: Literal['available', 'limited', 'unavailable']
+    label: str
+    description: str
+    icon: str
+    source: str
+    rules_detected: int
+    matched_alerts: int
+    source_equal_labels: list[str]
+    target_matchers: list[str]
+    items: list[AlertInhibitionItem]
 
 
 class AlertOwnershipGroup(TypedDict):
@@ -209,27 +196,23 @@ class AlertMissingMetadataItem(TypedDict):
     missing: list[str]
 
 
-AlertOwnershipSummary = TypedDict(
-    'AlertOwnershipSummary',
-    {
-        'score': int,
-        'level': Literal['ready', 'partial', 'weak', 'unknown'],
-        'label': str,
-        'description': str,
-        'icon': str,
-        'source': str,
-        'alert_count': int,
-        'owner_count': int,
-        'runbook_count': int,
-        'contact_count': int,
-        'missing_owner_count': int,
-        'missing_runbook_count': int,
-        'missing_contact_count': int,
-        'owner_groups': list[AlertOwnershipGroup],
-        'runbook_items': list[AlertRunbookItem],
-        'missing_metadata_items': list[AlertMissingMetadataItem],
-    },
-)
+class AlertOwnershipSummary(TypedDict):
+    score: int
+    level: Literal['ready', 'partial', 'weak', 'unknown']
+    label: str
+    description: str
+    icon: str
+    source: str
+    alert_count: int
+    owner_count: int
+    runbook_count: int
+    contact_count: int
+    missing_owner_count: int
+    missing_runbook_count: int
+    missing_contact_count: int
+    owner_groups: list[AlertOwnershipGroup]
+    runbook_items: list[AlertRunbookItem]
+    missing_metadata_items: list[AlertMissingMetadataItem]
 
 
 class AlertResourceLink(TypedDict):
@@ -298,26 +281,22 @@ class AlertIncidentReadinessCheck(TypedDict):
     description: str
 
 
-AlertIncidentReadinessSummary = TypedDict(
-    'AlertIncidentReadinessSummary',
-    {
-        'score': int,
-        'level': Literal['ready', 'watch', 'degraded', 'incident_risk'],
-        'label': str,
-        'description': str,
-        'icon': str,
-        'critical_signals': int,
-        'warning_signals': int,
-        'anomaly_signals': int,
-        'ownership_score': int,
-        'source_score': int,
-        'silence_risk': int,
-        'inhibition_risk': int,
-        'routing_ready': bool,
-        'recommended_action': str,
-        'checks': list[AlertIncidentReadinessCheck],
-    },
-)
+class AlertIncidentReadinessSummary(TypedDict):
+    score: int
+    level: Literal['ready', 'watch', 'degraded', 'incident_risk']
+    label: str
+    description: str
+    icon: str
+    critical_signals: int
+    warning_signals: int
+    anomaly_signals: int
+    ownership_score: int
+    source_score: int
+    silence_risk: int
+    inhibition_risk: int
+    routing_ready: bool
+    recommended_action: str
+    checks: list[AlertIncidentReadinessCheck]
 
 
 class AlertsSnapshot(TypedDict):
@@ -348,7 +327,7 @@ class AlertsSnapshot(TypedDict):
     tone: str
 
 
-AlertLoadResult: TypeAlias = tuple[list[NormalizedAlert], AlertSourceStatus]
+type AlertLoadResult = tuple[list[NormalizedAlert], AlertSourceStatus]
 
 
 @dataclass(frozen=True, slots=True)
@@ -488,7 +467,7 @@ def build_pagination(
     )
 
 
-def paginate_items(
+def paginate_items[ItemT](
     items: list[ItemT],
     *,
     page: int,

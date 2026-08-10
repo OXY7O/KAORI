@@ -9,12 +9,7 @@
 {% set error_remediation = materialization_error_remediation if materialization_error_remediation is defined else none %}
 <section id="analytics-materialization-status"
          class="overflow-hidden rounded-xl border border-brand-outline bg-surface-card shadow-sm"
-         {% if not preparation_error %}
-             hx-get="{{ materialization_status_url }}"
-             hx-trigger="every 5s"
-             hx-swap="outerHTML swap:0ms settle:0ms"
-             hx-sync="this:replace"
-         {% endif %}>
+         {% if not preparation_error %} hx-get="{{ materialization_status_url }}" hx-trigger="every 5s" hx-swap="outerHTML swap:0ms settle:0ms" hx-sync="this:replace" {% endif %}>
     <header class="border-b border-brand-outline bg-kaori-soft px-5 py-4">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
@@ -28,10 +23,8 @@
                     </p>
                 </div>
             </div>
-            {{ table_label.status_label(
-                'Failed' if preparation_error else 'Preparing',
-                'critical' if preparation_error else 'pending'
-            ) }}
+            {{ table_label.status_label('Failed' if preparation_error else 'Preparing',
+                        'critical' if preparation_error else 'pending') }}
         </div>
     </header>
     <div class="p-5">
@@ -40,25 +33,21 @@
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div class="min-w-0">
                         <div class="flex flex-wrap items-center gap-2">
-                            <p class="text-sm font-semibold text-content-primary">
-                                {{ error_title or 'Analytics Data Preparation Failed' }}
-                            </p>
+                            <p class="text-sm font-semibold text-content-primary">{{ error_title or 'Analytics Data Preparation Failed' }}</p>
                             {% if materialization_error_code is defined and materialization_error_code %}
-                                {{ table_label.metadata_label(materialization_error_code|replace('_', ' ')|title, size='compact') }}
+                                {{ table_label.metadata_label(materialization_error_code|replace('_', ' ') |title, size='compact') }}
                             {% endif %}
                         </div>
                         <p class="mt-2 text-sm leading-6 text-status-critical-text">{{ error_detail }}</p>
                         {% if error_remediation %}
                             <div class="mt-3 border-t border-status-critical-border pt-3">
-                                {{ analysis_surface.interpretation_content(
-                                    'Recommended Action',
-                                    'Restore Analytics Materialization',
-                                    error_remediation,
-                                    icon='triangle-alert',
-                role='brand',
-                                    tone='critical',
-                                    compact=true
-                                ) }}
+                                {{ analysis_surface.interpretation_content('Recommended Action',
+                                                                'Restore Analytics Materialization',
+                                                                error_remediation,
+                                                                icon='triangle-alert',
+                                                                role='brand',
+                                                                tone='critical',
+                                                                compact=true) }}
                             </div>
                         {% endif %}
                         {% if materialization_job_public_id is defined and materialization_job_public_id %}
@@ -71,12 +60,14 @@
                     </div>
                     <div class="flex shrink-0 flex-wrap gap-2">
                         {% if materialization_job_url is defined and materialization_job_url %}
-                            <a href="{{ materialization_job_url }}" class="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border border-outline-default bg-surface-card px-2.5 text-xs font-medium text-content-secondary transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-1">
+                            <a href="{{ materialization_job_url }}"
+                               class="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border border-outline-default bg-surface-card px-2.5 text-xs font-medium text-content-secondary transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-1">
                                 <i data-lucide="list-checks" class="h-4 w-4"></i>
                                 Job Log
                             </a>
                         {% endif %}
-                        <a href="{{ materialization_return_url }}" class="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border border-outline-default bg-surface-card px-2.5 text-xs font-medium text-content-secondary transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-1">
+                        <a href="{{ materialization_return_url }}"
+                           class="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border border-outline-default bg-surface-card px-2.5 text-xs font-medium text-content-secondary transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-1">
                             <i data-lucide="refresh-cw" class="h-4 w-4"></i>
                             Retry
                         </a>
@@ -90,12 +81,10 @@
                     <span class="shrink-0 text-sm font-semibold text-kaori-primary">{{ progress_percent }}%</span>
                 </div>
                 <div class="mt-3">
-                    {{ progress_bar.bar(
-                        progress_percent,
-                        track_classes='h-1.5 overflow-hidden rounded-full bg-kaori-soft',
-                        fill_classes='h-full rounded-full bg-kaori-primary',
-                        label='Analytics data preparation progress'
-                    ) }}
+                    {{ progress_bar.bar(progress_percent,
+                                        track_classes='h-1.5 overflow-hidden rounded-full bg-kaori-soft',
+                                        fill_classes='h-full rounded-full bg-kaori-primary',
+                                        label='Analytics data preparation progress') }}
                 </div>
             {% else %}
                 <div class="flex items-center gap-3 rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3"
@@ -103,7 +92,8 @@
                      aria-label="Analytics data preparation in progress"
                      aria-valuemin="0"
                      aria-valuemax="100">
-                    <span class="h-2 w-2 shrink-0 rounded-full bg-status-info" aria-hidden="true"></span>
+                    <span class="h-2 w-2 shrink-0 rounded-full bg-status-info"
+                          aria-hidden="true"></span>
                     <div>
                         <p class="text-sm font-medium text-content-primary">Waiting for analytics worker progress</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">

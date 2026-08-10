@@ -145,9 +145,7 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
             'task': 'app.jobs.tasks.dispatch_scheduled_jobs',
             'schedule': crontab(minute='*'),
             'options': {
-                'queue': (
-                    _env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'
-                ),
+                'queue': (_env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'),
             },
         }
     if _env_bool('INTEGRATION_RUNTIME_MONITORING_ENABLED', True):
@@ -166,9 +164,7 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
             'task': 'app.jobs.tasks.reconcile_stale_jobs',
             'schedule': crontab(minute=f'*/{_bounded_env_int("JOB_RECOVERY_INTERVAL_MINUTES", 5, 1, 60)}'),
             'options': {
-                'queue': (
-                    _env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'
-                ),
+                'queue': (_env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'),
             },
         }
     if _env_bool('RESOLVER_MAINTENANCE_ENABLED', True):
@@ -183,15 +179,13 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
     if _env_bool('REPORT_STORAGE_HEALTH_MONITOR_ENABLED', True):
         schedule['report-storage-readiness'] = {
             'task': 'app.reports.storage.tasks.refresh_report_storage_readiness_task',
-            'schedule': crontab(
-                minute=f'*/{_bounded_env_int("REPORT_STORAGE_HEALTH_INTERVAL_MINUTES", 1, 1, 60)}'
-            ),
+            'schedule': crontab(minute=f'*/{_bounded_env_int("REPORT_STORAGE_HEALTH_INTERVAL_MINUTES", 1, 1, 60)}'),
             'options': {
-                'queue': _env_str('REPORT_STORAGE_HEALTH_CELERY_QUEUE', 'maintenance').strip()
-                or 'maintenance'
+                'queue': _env_str('REPORT_STORAGE_HEALTH_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'
             },
         }
     return schedule
+
 
 def _normalize_storage_backend(
     value: str | None,
@@ -342,12 +336,8 @@ class Config:
     FORECASTING_CELERY_QUEUE = _env_str('FORECASTING_CELERY_QUEUE', 'forecasting').strip() or 'forecasting'
     REPORTS_CELERY_QUEUE = _env_str('REPORTS_CELERY_QUEUE', 'reports').strip() or 'reports'
     REPORT_STORAGE_HEALTH_MONITOR_ENABLED = _env_bool('REPORT_STORAGE_HEALTH_MONITOR_ENABLED', True)
-    REPORT_STORAGE_HEALTH_INTERVAL_MINUTES = _bounded_env_int(
-        'REPORT_STORAGE_HEALTH_INTERVAL_MINUTES', 1, 1, 60
-    )
-    REPORT_STORAGE_HEALTH_STALE_SECONDS = _bounded_env_int(
-        'REPORT_STORAGE_HEALTH_STALE_SECONDS', 120, 30, 3600
-    )
+    REPORT_STORAGE_HEALTH_INTERVAL_MINUTES = _bounded_env_int('REPORT_STORAGE_HEALTH_INTERVAL_MINUTES', 1, 1, 60)
+    REPORT_STORAGE_HEALTH_STALE_SECONDS = _bounded_env_int('REPORT_STORAGE_HEALTH_STALE_SECONDS', 120, 30, 3600)
     REPORT_STORAGE_HEALTH_STATE_TTL_SECONDS = _bounded_env_int(
         'REPORT_STORAGE_HEALTH_STATE_TTL_SECONDS', 600, 120, 86400
     )
@@ -358,18 +348,12 @@ class Config:
     REPORT_TELEGRAM_CHAT_ID = _env_optional_str('REPORT_TELEGRAM_CHAT_ID')
     REPORT_PUBLIC_BASE_URL = _env_str('REPORT_PUBLIC_BASE_URL', '').strip()
     REPORT_DELIVERY_TIMEOUT_SECONDS = _bounded_env_int('REPORT_DELIVERY_TIMEOUT_SECONDS', 10, 1, 60)
-    ANALYTICS_TASK_SOFT_TIME_LIMIT_SECONDS = _bounded_env_int(
-        'ANALYTICS_TASK_SOFT_TIME_LIMIT_SECONDS', 900, 60, 7200
-    )
-    ANALYTICS_TASK_HARD_TIME_LIMIT_SECONDS = _bounded_env_int(
-        'ANALYTICS_TASK_HARD_TIME_LIMIT_SECONDS', 960, 120, 7260
-    )
+    ANALYTICS_TASK_SOFT_TIME_LIMIT_SECONDS = _bounded_env_int('ANALYTICS_TASK_SOFT_TIME_LIMIT_SECONDS', 900, 60, 7200)
+    ANALYTICS_TASK_HARD_TIME_LIMIT_SECONDS = _bounded_env_int('ANALYTICS_TASK_HARD_TIME_LIMIT_SECONDS', 960, 120, 7260)
     ANALYTICS_TASK_MAX_SOFT_TIME_LIMIT_SECONDS = _bounded_env_int(
         'ANALYTICS_TASK_MAX_SOFT_TIME_LIMIT_SECONDS', 7200, 900, 7200
     )
-    ANALYTICS_DATASET_TIMEOUT_SECONDS = _bounded_env_int(
-        'ANALYTICS_DATASET_TIMEOUT_SECONDS', 300, 30, 1800
-    )
+    ANALYTICS_DATASET_TIMEOUT_SECONDS = _bounded_env_int('ANALYTICS_DATASET_TIMEOUT_SECONDS', 300, 30, 1800)
     FORECASTING_TASK_SOFT_TIME_LIMIT_SECONDS = _bounded_env_int(
         'FORECASTING_TASK_SOFT_TIME_LIMIT_SECONDS', 2700, 300, 14400
     )
@@ -379,24 +363,18 @@ class Config:
     FORECASTING_TASK_MAX_SOFT_TIME_LIMIT_SECONDS = _bounded_env_int(
         'FORECASTING_TASK_MAX_SOFT_TIME_LIMIT_SECONDS', 14400, 2700, 14400
     )
-    FORECASTING_DATASET_TIMEOUT_SECONDS = _bounded_env_int(
-        'FORECASTING_DATASET_TIMEOUT_SECONDS', 600, 60, 3600
-    )
+    FORECASTING_DATASET_TIMEOUT_SECONDS = _bounded_env_int('FORECASTING_DATASET_TIMEOUT_SECONDS', 600, 60, 3600)
     PROMETHEUS_ANALYTICS_QUERY_TIMEOUT_SECONDS = _bounded_env_int(
         'PROMETHEUS_ANALYTICS_QUERY_TIMEOUT_SECONDS', 30, 5, 120
     )
     PROMETHEUS_ANALYTICS_RANGE_QUERY_TIMEOUT_SECONDS = _bounded_env_int(
         'PROMETHEUS_ANALYTICS_RANGE_QUERY_TIMEOUT_SECONDS', 120, 15, 300
     )
-    PROMETHEUS_ANALYTICS_QUERY_RETRIES = _bounded_env_int(
-        'PROMETHEUS_ANALYTICS_QUERY_RETRIES', 2, 0, 5
-    )
+    PROMETHEUS_ANALYTICS_QUERY_RETRIES = _bounded_env_int('PROMETHEUS_ANALYTICS_QUERY_RETRIES', 2, 0, 5)
     PROMETHEUS_ANALYTICS_RETRY_BACKOFF_SECONDS = _bounded_env_int(
         'PROMETHEUS_ANALYTICS_RETRY_BACKOFF_SECONDS', 1, 0, 10
     )
-    ANALYTICS_SOURCE_LOCK_TIMEOUT_SECONDS = _bounded_env_int(
-        'ANALYTICS_SOURCE_LOCK_TIMEOUT_SECONDS', 900, 5, 1800
-    )
+    ANALYTICS_SOURCE_LOCK_TIMEOUT_SECONDS = _bounded_env_int('ANALYTICS_SOURCE_LOCK_TIMEOUT_SECONDS', 900, 5, 1800)
     JOB_MAINTENANCE_CELERY_QUEUE = _env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'
     RESOLVER_EXECUTION_CELERY_QUEUE = (
         _env_str('RESOLVER_EXECUTION_CELERY_QUEUE', 'resolver-execution').strip() or 'resolver-execution'
@@ -734,10 +712,13 @@ class Config:
         'Asia/Jakarta',
     )
 
-    REPORT_PDF_CLASSIFICATION = _env_str(
-        'REPORT_PDF_CLASSIFICATION',
-        'Internal',
-    ).strip() or 'Internal'
+    REPORT_PDF_CLASSIFICATION = (
+        _env_str(
+            'REPORT_PDF_CLASSIFICATION',
+            'Internal',
+        ).strip()
+        or 'Internal'
+    )
 
     # Reports storage.
     # Supported values:

@@ -33,11 +33,11 @@ def test_capacity_templates_use_backend_status_and_semantic_progress() -> None:
     risk = read('app/templates/analytics/capacity/partials/_risk.html')
 
     assert "section['status']" in allocation
-    assert "progress_bar.pressure_tone" not in allocation
-    assert "progress_bar.headroom_tone" not in allocation
+    assert 'progress_bar.pressure_tone' not in allocation
+    assert 'progress_bar.headroom_tone' not in allocation
     assert "progress_bar.semantic_bar(allocation_item['percent'], allocation_item['tone']" in allocation
-    assert "item.label" in risk
-    assert "progress_bar.semantic_bar(item.headroom, tone" in risk
+    assert 'item.label' in risk
+    assert 'progress_bar.semantic_bar(item.headroom, tone' in risk
 
 
 def test_capacity_pod_profile_has_no_duplicate_usage_row() -> None:

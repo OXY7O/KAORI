@@ -324,8 +324,7 @@ REPORT_TYPE_SPECS: tuple[ReportTypeSpec, ...] = (
 _REPORT_TYPE_BY_VALUE = {item.value: item for item in REPORT_TYPE_SPECS}
 
 OUTPUT_FORMAT_OPTIONS: list[dict[str, str]] = [
-    {'value': spec.value, 'label': spec.label}
-    for spec in OUTPUT_FORMAT_SPECS.values()
+    {'value': spec.value, 'label': spec.label} for spec in OUTPUT_FORMAT_SPECS.values()
 ]
 
 REPORT_TYPE_OPTIONS: list[dict[str, Any]] = [
@@ -344,16 +343,10 @@ REPORT_TYPE_OPTIONS: list[dict[str, Any]] = [
     for spec in REPORT_TYPE_SPECS
 ]
 
-REQUIRES_SELECTED_CLUSTER_REPORT_TYPES = frozenset(
-    spec.value for spec in REPORT_TYPE_SPECS if spec.requires_cluster
-)
+REQUIRES_SELECTED_CLUSTER_REPORT_TYPES = frozenset(spec.value for spec in REPORT_TYPE_SPECS if spec.requires_cluster)
 
-ANALYTICS_REPORT_TYPES = frozenset(
-    spec.value for spec in REPORT_TYPE_SPECS if spec.family == REPORT_FAMILY_ANALYTICS
-)
-INVENTORY_REPORT_TYPES = frozenset(
-    spec.value for spec in REPORT_TYPE_SPECS if spec.family == REPORT_FAMILY_INVENTORY
-)
+ANALYTICS_REPORT_TYPES = frozenset(spec.value for spec in REPORT_TYPE_SPECS if spec.family == REPORT_FAMILY_ANALYTICS)
+INVENTORY_REPORT_TYPES = frozenset(spec.value for spec in REPORT_TYPE_SPECS if spec.family == REPORT_FAMILY_INVENTORY)
 
 
 class ReportContractError(ValueError):
@@ -399,9 +392,7 @@ def validate_report_contract(
         )
     if normalized_format not in spec.allowed_formats:
         allowed = ', '.join(value.upper() for value in spec.allowed_formats)
-        raise ReportContractError(
-            f'{spec.label} supports only {allowed} output.'
-        )
+        raise ReportContractError(f'{spec.label} supports only {allowed} output.')
 
 
 def require_selected_cluster(report: Any) -> str:

@@ -12,13 +12,10 @@
             <span data-activity-count-label>{{ active_count }}</span>&nbsp;active
         </span>
     </div>
-
     <div data-local-activity-list class="space-y-2"></div>
-
     <div id="notification-deck-active-job-list" class="space-y-2">
         {% include "notifications/partials/_notification_deck_activity_jobs.html" %}
     </div>
-
     <div data-running-empty
          class="hidden rounded-xl border border-dashed border-outline-default bg-surface-card px-4 py-10 text-center">
         <span class="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
@@ -28,7 +25,6 @@
         <p class="mt-1 text-xs leading-5 text-content-muted">Queued work and active page operations will appear here automatically.</p>
     </div>
 </div>
-
 {% if emit_oob|default(false) %}
     {% include "notifications/partials/_notification_deck_oob.html" %}
 {% endif %}

@@ -6,14 +6,13 @@
 {% import "integrations/components/_provider_capability_detail.html" as provider_capability_detail %}
 {% import "integrations/components/_record_actions.html" as record_actions %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-
 {% set registry = capability_registry %}
 {% set filters = registry.filters %}
 {% set pagination = registry.pagination %}
-{% set registry_endpoint = 'prometheus.instance_capability_registry' %}
-{% set detail_endpoint = 'prometheus.instance_detail' %}
-{% set target_id = 'prometheus-capability-registry' %}
-{% set loading_id = 'prometheus-capability-loading' %}
+{% set registry_endpoint = "prometheus.instance_capability_registry" %}
+{% set detail_endpoint = "prometheus.instance_detail" %}
+{% set target_id = "prometheus-capability-registry" %}
+{% set loading_id = "prometheus-capability-loading" %}
 <section id="{{ target_id }}"
          class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
          aria-labelledby="prometheus-capability-registry-title"
@@ -22,9 +21,11 @@
     <header class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
         <div class="flex items-start justify-between gap-3">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent" aria-hidden="true"><i data-lucide="braces" class="h-4 w-4"></i></span>
+                <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"
+                      aria-hidden="true"><i data-lucide="braces" class="h-4 w-4"></i></span>
                 <div class="min-w-0">
-                    <h3 id="prometheus-capability-registry-title" class="text-sm font-semibold text-content-primary">PromQL Capability Registry</h3>
+                    <h3 id="prometheus-capability-registry-title"
+                        class="text-sm font-semibold text-content-primary">PromQL Capability Registry</h3>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Compare required provider capabilities and inspect exact query evidence only when needed.</p>
                 </div>
             </div>
@@ -32,8 +33,8 @@
         </div>
         {{ loading_bar.render(loading_id, active=validation_job and validation_job.is_active, label='Refreshing PromQL Capability Registry') }}
     </header>
-
-    <div class="{{ table_ui.inventory_filter_bar_classes() }}" data-kaori-promql-capability-filters>
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}"
+         data-kaori-promql-capability-filters>
         <form method="get"
               action="{{ url_for(detail_endpoint, instance_id=instance.id, tab='validation') }}"
               hx-get="{{ url_for(registry_endpoint, instance_id=instance.id) }}"
@@ -46,43 +47,84 @@
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
             <div>
-                <label for="promql-capability-query" class="{{ table_ui.filter_label_classes() }}">Search Capability</label>
+                <label for="promql-capability-query"
+                       class="{{ table_ui.filter_label_classes() }}">Search Capability</label>
                 <div class="relative">
-                    <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted" aria-hidden="true"></i>
-                    <input id="promql-capability-query" type="search" name="query" value="{{ filters.query }}" placeholder="Search capability, category, or source..." class="{{ table_ui.filter_input_classes() }} pl-9">
+                    <i data-lucide="search"
+                       class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
+                       aria-hidden="true"></i>
+                    <input id="promql-capability-query"
+                           type="search"
+                           name="query"
+                           value="{{ filters.query }}"
+                           placeholder="Search capability, category, or source..."
+                           class="{{ table_ui.filter_input_classes() }} pl-9">
                 </div>
             </div>
             <div>
-                <label for="promql-capability-requirement" class="{{ table_ui.filter_label_classes() }}">Requirement</label>
-                <select id="promql-capability-requirement" name="requirement" class="{{ table_ui.filter_select_classes() }}">
+                <label for="promql-capability-requirement"
+                       class="{{ table_ui.filter_label_classes() }}">Requirement</label>
+                <select id="promql-capability-requirement"
+                        name="requirement"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="all" {% if filters.requirement == 'all' %}selected{% endif %}>All Requirements</option>
-                    <option value="required" {% if filters.requirement == 'required' %}selected{% endif %}>Required</option>
-                    <option value="optional" {% if filters.requirement == 'optional' %}selected{% endif %}>Optional</option>
+                    <option value="required"
+                            {% if filters.requirement == 'required' %}selected{% endif %}>Required</option>
+                    <option value="optional"
+                            {% if filters.requirement == 'optional' %}selected{% endif %}>Optional</option>
                 </select>
             </div>
             <div>
-                <label for="promql-capability-status" class="{{ table_ui.filter_label_classes() }}">Validation Status</label>
-                <select id="promql-capability-status" name="status" class="{{ table_ui.filter_select_classes() }}">
+                <label for="promql-capability-status"
+                       class="{{ table_ui.filter_label_classes() }}">Validation Status</label>
+                <select id="promql-capability-status"
+                        name="status"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="all" {% if filters.status == 'all' %}selected{% endif %}>All Statuses</option>
                     <option value="ready" {% if filters.status == 'ready' %}selected{% endif %}>Ready</option>
-                    <option value="blocked" {% if filters.status == 'blocked' %}selected{% endif %}>Blocked / Missing</option>
+                    <option value="blocked"
+                            {% if filters.status == 'blocked' %}selected{% endif %}>Blocked / Missing</option>
                 </select>
             </div>
         </form>
     </div>
-
     {% if registry.rows %}
         <div class="overflow-hidden">
             <table class="{{ table_ui.table_classes() }} table-fixed">
-                <colgroup><col class="w-[43%]"><col class="w-[19%]"><col class="w-[14%]"><col class="w-[12%]"><col class="w-[12%]"></colgroup>
-                <thead class="{{ table_ui.head_classes() }}"><tr><th class="{{ table_ui.header_cell_classes() }}">Capability</th><th class="{{ table_ui.header_cell_classes() }}">Contract</th><th class="{{ table_ui.header_cell_classes() }}">Requirement</th><th class="{{ table_ui.header_cell_classes() }}">Status</th><th class="{{ table_ui.header_cell_classes(action=true) }}">Details</th></tr></thead>
+                <colgroup>
+                    <col class="w-[43%]">
+                    <col class="w-[19%]">
+                    <col class="w-[14%]">
+                    <col class="w-[12%]">
+                    <col class="w-[12%]">
+                </colgroup>
+                <thead class="{{ table_ui.head_classes() }}">
+                    <tr>
+                        <th class="{{ table_ui.header_cell_classes() }}">Capability</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Contract</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Requirement</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Status</th>
+                        <th class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
+                    </tr>
+                </thead>
                 <tbody class="{{ table_ui.body_classes() }}">
                     {% for row in registry.rows %}
                         <tr class="{{ table_ui.row_classes() }}">
-                            <td class="{{ table_ui.cell_classes() }}"><div class="flex min-w-0 items-start gap-3"><span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent" aria-hidden="true"><i data-lucide="activity" class="h-4 w-4"></i></span><div class="min-w-0"><p class="truncate text-sm font-semibold text-content-primary" title="{{ row.label }}">{{ row.label }}</p><p class="mt-0.5 truncate text-xs leading-5 text-content-muted" title="{{ row.category }}">{{ row.category }}</p></div></div></td>
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"
+                                          aria-hidden="true"><i data-lucide="activity" class="h-4 w-4"></i></span>
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-semibold text-content-primary"
+                                           title="{{ row.label }}">{{ row.label }}</p>
+                                        <p class="mt-0.5 truncate text-xs leading-5 text-content-muted"
+                                           title="{{ row.category }}">{{ row.category }}</p>
+                                    </div>
+                                </div>
+                            </td>
                             <td class="{{ table_ui.cell_classes() }} whitespace-nowrap">{{ table_label.metadata_label(row.category) }}</td>
                             <td class="{{ table_ui.cell_classes() }} whitespace-nowrap">{{ table_label.metadata_label('Required' if row.required else 'Optional') }}</td>
-                            <td class="{{ table_ui.cell_classes() }} whitespace-nowrap">{{ integration_status('ready' if row.available else ('blocked' if row.required else 'degraded'), row.status_label, display='indicator') }}</td>
+                            <td class="{{ table_ui.cell_classes() }} whitespace-nowrap">{{ integration_status('ready' if row.available else ('blocked' if row.required else 'degraded') , row.status_label, display='indicator') }}</td>
                             <td class="{{ table_ui.cell_classes(action=true) }} whitespace-nowrap">{{ record_actions.view_more('prometheus-capability-detail-' ~ loop.index) }}</td>
                         </tr>
                     {% endfor %}
@@ -95,42 +137,79 @@
             <p class="mt-1 text-sm leading-6 text-content-secondary">Adjust Search Capability, Requirement, or Validation Status to broaden the registry results.</p>
         </div>
     {% endif %}
-
-    <footer class="{{ pagination_ui.footer_classes() }}" data-kaori-promql-capability-pagination>
+    <footer class="{{ pagination_ui.footer_classes() }}"
+            data-kaori-promql-capability-pagination>
         <div class="{{ pagination_ui.summary_group_classes() }}">
             <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> Capabilities</p>
-            <form method="get" action="{{ url_for(detail_endpoint, instance_id=instance.id, tab='validation') }}" hx-get="{{ url_for(registry_endpoint, instance_id=instance.id) }}" hx-target="#{{ target_id }}" hx-swap="outerHTML" hx-indicator="#{{ loading_id }}" class="{{ pagination_ui.rows_group_classes() }}">
-                <input type="hidden" name="page" value="1"><input type="hidden" name="query" value="{{ filters.query }}"><input type="hidden" name="requirement" value="{{ filters.requirement }}"><input type="hidden" name="status" value="{{ filters.status }}">
-                <label for="promql-capability-page-size" class="font-semibold text-content-secondary">Rows</label>
-                <select id="promql-capability-page-size" name="per_page" data-kaori-auto-submit class="{{ pagination_ui.page_size_classes() }}" aria-label="PromQL capabilities per page">{% for option in pagination.allowed_per_page %}<option value="{{ option }}" {% if option == pagination.per_page %}selected{% endif %}>{{ option }}</option>{% endfor %}</select>
+            <form method="get"
+                  action="{{ url_for(detail_endpoint, instance_id=instance.id, tab='validation') }}"
+                  hx-get="{{ url_for(registry_endpoint, instance_id=instance.id) }}"
+                  hx-target="#{{ target_id }}"
+                  hx-swap="outerHTML"
+                  hx-indicator="#{{ loading_id }}"
+                  class="{{ pagination_ui.rows_group_classes() }}">
+                <input type="hidden" name="page" value="1">
+                <input type="hidden" name="query" value="{{ filters.query }}">
+                <input type="hidden" name="requirement" value="{{ filters.requirement }}">
+                <input type="hidden" name="status" value="{{ filters.status }}">
+                <label for="promql-capability-page-size"
+                       class="font-semibold text-content-secondary">Rows</label>
+                <select id="promql-capability-page-size"
+                        name="per_page"
+                        data-kaori-auto-submit
+                        class="{{ pagination_ui.page_size_classes() }}"
+                        aria-label="PromQL capabilities per page">
+                    {% for option in pagination.allowed_per_page %}
+                        <option value="{{ option }}"
+                                {% if option == pagination.per_page %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
             </form>
         </div>
-        <nav class="{{ pagination_ui.navigation_group_classes() }}" aria-label="PromQL Capability Registry pagination">
+        <nav class="{{ pagination_ui.navigation_group_classes() }}"
+             aria-label="PromQL Capability Registry pagination">
             {% set query_params = {'query': filters.query, 'requirement': filters.requirement, 'status': filters.status, 'per_page': pagination.per_page} %}
-            {% if pagination.has_prev %}<a href="{{ url_for(detail_endpoint, instance_id=instance.id, tab='validation') }}" hx-get="{{ url_for(registry_endpoint, instance_id=instance.id, page=pagination.prev_page, per_page=pagination.per_page, query=filters.query, requirement=filters.requirement, status=filters.status) }}" hx-target="#{{ target_id }}" hx-swap="outerHTML" hx-indicator="#{{ loading_id }}" class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>{% else %}<span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>{% endif %}
+            {% if pagination.has_prev %}
+                <a href="{{ url_for(detail_endpoint, instance_id=instance.id, tab='validation') }}"
+                   hx-get="{{ url_for(registry_endpoint, instance_id=instance.id, page=pagination.prev_page, per_page=pagination.per_page, query=filters.query, requirement=filters.requirement, status=filters.status) }}"
+                   hx-target="#{{ target_id }}"
+                   hx-swap="outerHTML"
+                   hx-indicator="#{{ loading_id }}"
+                   class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(true) }}"
+                      aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+            {% endif %}
             {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, 'page', hx_target='#' ~ target_id, hx_indicator='#' ~ loading_id, endpoint=registry_endpoint, query_params=query_params, hx_swap='outerHTML', href_endpoint=detail_endpoint) }}
-            {% if pagination.has_next %}<a href="{{ url_for(detail_endpoint, instance_id=instance.id, tab='validation') }}" hx-get="{{ url_for(registry_endpoint, instance_id=instance.id, page=pagination.next_page, per_page=pagination.per_page, query=filters.query, requirement=filters.requirement, status=filters.status) }}" hx-target="#{{ target_id }}" hx-swap="outerHTML" hx-indicator="#{{ loading_id }}" class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>{% else %}<span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>{% endif %}
+            {% if pagination.has_next %}
+                <a href="{{ url_for(detail_endpoint, instance_id=instance.id, tab='validation') }}"
+                   hx-get="{{ url_for(registry_endpoint, instance_id=instance.id, page=pagination.next_page, per_page=pagination.per_page, query=filters.query, requirement=filters.requirement, status=filters.status) }}"
+                   hx-target="#{{ target_id }}"
+                   hx-swap="outerHTML"
+                   hx-indicator="#{{ loading_id }}"
+                   class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(true) }}"
+                      aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+            {% endif %}
         </nav>
     </footer>
-
-            {% for row in capability_registry.rows %}
-                {% call record_detail_modal.render(
-                    'prometheus-capability-detail-' ~ loop.index,
-                    row.key,
-                    'Prometheus Capability Evidence',
-                    row.label,
-                    row.category ~ ' · ' ~ ('Required' if row.required else 'Optional') ~ ' capability',
-                    icon='scan-search',
-                    footer_text='Capability details use the latest completed Prometheus Full Validation evidence.',
-                    size='standard'
-                ) %}
-                    {{ provider_capability_detail.content(
-                        row,
+    {% for row in capability_registry.rows %}
+        {% call record_detail_modal.render(
+            'prometheus-capability-detail-' ~ loop.index,
+            row.key,
+            'Prometheus Capability Evidence',
+            row.label,
+            row.category ~ ' · ' ~ ('Required' if row.required else 'Optional') ~ ' capability',
+            icon='scan-search',
+            footer_text='Capability details use the latest completed Prometheus Full Validation evidence.',
+            size='standard'
+            ) %}
+            {{ provider_capability_detail.content(row,
                         'Prometheus',
                         row.source_owner,
                         'Runnable PromQL Query',
-                        'Full Validation owns PromQL contract, metric and label evidence. Runtime Refresh owns current endpoint reachability and provider health; effective Analytics resolution remains a separate binding decision.'
-                    ) }}
-                {% endcall %}
-            {% endfor %}
+                        'Full Validation owns PromQL contract, metric and label evidence. Runtime Refresh owns current endpoint reachability and provider health; effective Analytics resolution remains a separate binding decision.') }}
+        {% endcall %}
+    {% endfor %}
 </section>

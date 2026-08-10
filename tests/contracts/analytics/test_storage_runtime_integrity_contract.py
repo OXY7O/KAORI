@@ -25,12 +25,10 @@ def test_storage_runtime_has_explicit_evidence_domain_and_presentation_ownership
 
 def test_storage_collector_queries_each_canonical_signal_once() -> None:
     evidence = read('app/analytics/storage/evidence.py')
-    query_profile = read(
-        'app/integrations/prometheus/query_profiles/kubernetes_v1.py'
-    )
+    query_profile = read('app/integrations/prometheus/query_profiles/kubernetes_v1.py')
 
     assert 'PVC_CAPACITY_BY_CLAIM_QUERY' in evidence
-    assert "max by (namespace, persistentvolumeclaim)" in query_profile
+    assert 'max by (namespace, persistentvolumeclaim)' in query_profile
     for legacy in (
         'PVC_REQUESTED_TOTAL_QUERY',
         'PVC_USED_TOTAL_QUERY',
@@ -48,7 +46,7 @@ def test_storage_partial_endpoints_are_htmx_only_and_not_cacheable() -> None:
 
     assert "request.headers.get('HX-Request'" in routes
     assert "return redirect(_full_storage_url('filesystem'))" in routes
-    assert "return redirect(_full_storage_url(selected_tab))" in routes
+    assert 'return redirect(_full_storage_url(selected_tab))' in routes
     assert "response.headers['Cache-Control'] = 'no-store, max-age=0'" in routes
     assert "response.headers['Vary'] = 'HX-Request'" in routes
 
@@ -76,15 +74,11 @@ def test_storage_templates_render_domain_status_without_local_threshold_logic() 
         assert '>= 90' not in source, path
         assert '>= 75' not in source, path
         assert 'pressure_tone(' not in source, path
-    assert 'table_label.status_label(posture.label' in read(
-        'app/templates/analytics/storage/partials/_overview.html'
-    )
+    assert 'table_label.status_label(posture.label' in read('app/templates/analytics/storage/partials/_overview.html')
 
 
 def test_pvc_ui_and_report_use_observed_capacity_as_pressure_denominator() -> None:
-    pvc = read(
-        'app/templates/analytics/storage/partials/_persistent_volume_claims_panel.html'
-    )
+    pvc = read('app/templates/analytics/storage/partials/_persistent_volume_claims_panel.html')
     report = read('app/reports/export/html_pdf/storage_analysis.py')
 
     assert 'of observed capacity' in pvc

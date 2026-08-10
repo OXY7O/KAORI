@@ -231,15 +231,11 @@ class AnalyticsBaseService:
         utilization_service = getattr(self, 'utilization_service', None)
         consumer = getattr(utilization_service, 'consumer', None)
         if consumer is None:
-            raise PrometheusError(
-                'A cluster-scoped Prometheus consumer is required for analytics queries.'
-            )
+            raise PrometheusError('A cluster-scoped Prometheus consumer is required for analytics queries.')
 
         response = consumer.query(query)
         if not isinstance(response, dict):
-            raise PrometheusError(
-                f'Prometheus returned {type(response).__name__}; expected a response mapping.'
-            )
+            raise PrometheusError(f'Prometheus returned {type(response).__name__}; expected a response mapping.')
         data = response.get('data', {})
         result = data.get('result', []) if isinstance(data, dict) else []
         if not isinstance(result, list):
@@ -464,12 +460,14 @@ class AnalyticsBaseService:
         utilization_service = getattr(self, 'utilization_service', None)
         consumer = getattr(utilization_service, 'consumer', None)
         if consumer is None:
-            return present_prometheus_status({
-                'configured': False,
-                'connected': False,
-                'response_time_ms': None,
-                'label': 'Prometheus Not Configured',
-            })
+            return present_prometheus_status(
+                {
+                    'configured': False,
+                    'connected': False,
+                    'response_time_ms': None,
+                    'label': 'Prometheus Not Configured',
+                }
+            )
 
         response = consumer.analytics_status()
         payload = response.payload if isinstance(response.payload, dict) else {}
@@ -481,18 +479,22 @@ class AnalyticsBaseService:
                 if response.diagnostics and response.diagnostics[0].detail
                 else (response.diagnostics[0].message if response.diagnostics else 'Prometheus is unavailable.')
             )
-            return present_prometheus_status({
-                'configured': bool(payload.get('configured', True)),
-                'connected': False,
+            return present_prometheus_status(
+                {
+                    'configured': bool(payload.get('configured', True)),
+                    'connected': False,
+                    'response_time_ms': response_time,
+                    'last_checked_at': payload.get('last_checked_at'),
+                    'error': detail,
+                }
+            )
+        return present_prometheus_status(
+            {
+                'configured': True,
+                'connected': True,
                 'response_time_ms': response_time,
                 'last_checked_at': payload.get('last_checked_at'),
-                'error': detail,
-            })
-        return present_prometheus_status({
-            'configured': True,
-            'connected': True,
-            'response_time_ms': response_time,
-            'last_checked_at': payload.get('last_checked_at'),
-            'observation_degraded': observation_degraded,
-            'last_error': payload.get('last_error'),
-        })
+                'observation_degraded': observation_degraded,
+                'last_error': payload.get('last_error'),
+            }
+        )

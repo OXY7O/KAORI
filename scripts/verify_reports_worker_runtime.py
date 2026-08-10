@@ -52,11 +52,7 @@ def main() -> int:
     queue_workers = sorted(
         worker_name
         for worker_name, queues in queue_map.items()
-        if queue_name
-        in {
-            str(queue.get('name') or '').strip()
-            for queue in queues or []
-        }
+        if queue_name in {str(queue.get('name') or '').strip() for queue in queues or []}
     )
 
     if not queue_workers:
@@ -82,8 +78,7 @@ def main() -> int:
     if missing_by_worker:
         for worker_name, missing in missing_by_worker.items():
             print(
-                f'FAILED: {worker_name} consumes {queue_name!r} but is missing tasks: '
-                f'{", ".join(missing)}',
+                f'FAILED: {worker_name} consumes {queue_name!r} but is missing tasks: {", ".join(missing)}',
                 file=sys.stderr,
             )
         return 1

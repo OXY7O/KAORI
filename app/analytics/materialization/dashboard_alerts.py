@@ -17,11 +17,7 @@ def build_dashboard_alerts_context(query_args: Mapping[str, Any]) -> dict[str, A
         return _empty_alerts_context('Cluster is unavailable for alert materialization.')
 
     alerts, source_status = load_alerts_by_source(cluster=cluster, source='auto')
-    active_alerts = [
-        item
-        for item in alerts
-        if str(item.get('status', 'active')).lower() in _ACTIVE_ALERT_STATES
-    ]
+    active_alerts = [item for item in alerts if str(item.get('status', 'active')).lower() in _ACTIVE_ALERT_STATES]
     critical = sum(1 for item in active_alerts if str(item.get('severity', '')).lower() == 'critical')
     warning = sum(1 for item in active_alerts if str(item.get('severity', '')).lower() == 'warning')
     info = max(len(active_alerts) - critical - warning, 0)
@@ -38,7 +34,7 @@ def build_dashboard_alerts_context(query_args: Mapping[str, Any]) -> dict[str, A
                 'description': str(
                     item.get('summary')
                     or item.get('description')
-                    or f"{item.get('namespace') or '-'} / {item.get('target') or '-'}"
+                    or f'{item.get("namespace") or "-"} / {item.get("target") or "-"}'
                 ),
                 'severity': str(item.get('severity') or 'none').title(),
                 'age': item.get('starts_at') or '',

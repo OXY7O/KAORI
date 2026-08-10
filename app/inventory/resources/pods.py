@@ -9,11 +9,7 @@ from app.common.pagination import paginate_query
 from app.extensions.db import db
 from app.inventory.resources.common import format_age
 from app.inventory.resources.pod_detail import build_pod_detail
-from app.inventory.resources.pod_semantics import (
-    OPERATIONAL_STATE_TONES,
-    pod_operational_state,
-    pod_ready_values,
-)
+from app.inventory.resources.pod_semantics import OPERATIONAL_STATE_TONES, pod_operational_state, pod_ready_values
 from app.models import Cluster, PodInventory
 
 
@@ -106,11 +102,7 @@ def get_pod_filter_nodes(
     query = filter_current_generation(db.session.query(PodInventory.node_name), PodInventory)
     query = _apply_pod_filters(query, cluster_id=cluster_id, namespace=namespace, owner_type=owner_type)
     rows = query.distinct().order_by(PodInventory.node_name).all()
-    options = [
-        {'value': str(row[0]), 'label': str(row[0])}
-        for row in rows
-        if row[0] and str(row[0]).strip()
-    ]
+    options = [{'value': str(row[0]), 'label': str(row[0])} for row in rows if row[0] and str(row[0]).strip()]
     if any(not row[0] or not str(row[0]).strip() for row in rows):
         options.insert(0, {'value': UNSCHEDULED_FILTER, 'label': 'Not Scheduled'})
     return options
@@ -210,9 +202,7 @@ def _pod_list_row(pod: PodInventory, cluster_name: str, cluster_environment: str
         )
     )
     owner_display = (
-        f'{pod.workload_type} · {pod.workload_name}'
-        if pod.workload_type and pod.workload_name
-        else 'Standalone'
+        f'{pod.workload_type} · {pod.workload_name}' if pod.workload_type and pod.workload_name else 'Standalone'
     )
     restart_count = int(pod.restart_count or 0)
     return {
@@ -236,10 +226,11 @@ def _pod_list_row(pod: PodInventory, cluster_name: str, cluster_environment: str
         'owner_display': owner_display,
         'container_count': container_count if specification_evidence_reported else None,
         'identity_supporting': (
-            f"{container_count} Container" + ('s' if container_count != 1 else '')
+            f'{container_count} Container' + ('s' if container_count != 1 else '')
             if specification_evidence_reported
             else 'Container Specification Not Reported'
-        ) + f' · Age {format_age(pod.created_at)}',
+        )
+        + f' · Age {format_age(pod.created_at)}',
         'placement_primary': pod.node_name or 'Not Scheduled',
         'placement_secondary': pod.pod_ip or 'Pod IP Not Reported',
         'activity_secondary': (
@@ -273,9 +264,7 @@ def get_pod_inventory(
     owner_type_count = (
         query.with_entities(
             func.count(
-                func.distinct(
-                    func.coalesce(func.nullif(func.trim(PodInventory.workload_type), ''), 'Standalone')
-                )
+                func.distinct(func.coalesce(func.nullif(func.trim(PodInventory.workload_type), ''), 'Standalone'))
             )
         ).scalar()
         or 0
@@ -293,11 +282,7 @@ def get_pod_inventory(
         'total_pods': total_pods,
         'ready_count': counts['Ready'],
         'exception_count': (
-            counts['Starting']
-            + counts['Not Ready']
-            + counts['Terminating']
-            + counts['Failed']
-            + counts['Unknown']
+            counts['Starting'] + counts['Not Ready'] + counts['Terminating'] + counts['Failed'] + counts['Unknown']
         ),
         'starting_count': counts['Starting'],
         'not_ready_count': counts['Not Ready'],

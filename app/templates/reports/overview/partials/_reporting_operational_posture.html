@@ -9,11 +9,11 @@
                 <i data-lucide="activity" class="h-5 w-5"></i>
             </span>
             <div class="min-w-0">
-                <h2 id="reporting-operational-posture-title" class="text-base font-bold text-content-primary">Reporting Operational Posture</h2>
+                <h2 id="reporting-operational-posture-title"
+                    class="text-base font-bold text-content-primary">Reporting Operational Posture</h2>
                 <p class="mt-1 text-xs leading-5 text-content-muted">Worker, schedule, storage, and generation health in one operational view.</p>
             </div>
         </div>
-
         {% if payload.storage_context.degraded %}
             <a href="{{ url_for('reports.storage') }}"
                class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-status-warning-border bg-status-warning-soft px-3 text-xs font-semibold text-status-warning-text transition hover:bg-surface-card">
@@ -28,23 +28,25 @@
             </a>
         {% endif %}
     </header>
-
     <div class="grid lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle">
         <article class="border-b border-outline-subtle px-5 py-5 sm:px-6 lg:border-b-0"
                  aria-labelledby="reporting-runtime-health-title">
             <div class="mb-4 flex items-center justify-between gap-3">
                 <div>
-                    <h3 id="reporting-runtime-health-title" class="text-sm font-bold text-content-primary">Runtime Health</h3>
+                    <h3 id="reporting-runtime-health-title"
+                        class="text-sm font-bold text-content-primary">Runtime Health</h3>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Live dependencies required to create and retain reporting artifacts.</p>
                 </div>
-                <i data-lucide="heart-pulse" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                <i data-lucide="heart-pulse"
+                   class="h-4 w-4 shrink-0 text-kaori-primary"
+                   aria-hidden="true"></i>
             </div>
-
             <div class="divide-y divide-outline-subtle border-y border-outline-subtle">
                 {% for item in payload.reporting_operations %}
                     <div class="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                         <div class="flex min-w-0 items-start gap-3">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
                                 <i data-lucide="{{ item.icon }}" class="h-3.5 w-3.5"></i>
                             </span>
                             <div class="min-w-0">
@@ -65,30 +67,32 @@
                 {% endfor %}
             </div>
         </article>
-
         <article class="px-5 py-5 sm:px-6"
                  aria-labelledby="generation-performance-title">
             <div class="mb-4 flex items-center justify-between gap-3">
                 <div>
-                    <h3 id="generation-performance-title" class="text-sm font-bold text-content-primary">Generation Performance</h3>
+                    <h3 id="generation-performance-title"
+                        class="text-sm font-bold text-content-primary">Generation Performance</h3>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Current reporting demand and resolved generation quality.</p>
                 </div>
-                <i data-lucide="chart-no-axes-combined" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                <i data-lucide="chart-no-axes-combined"
+                   class="h-4 w-4 shrink-0 text-kaori-primary"
+                   aria-hidden="true"></i>
             </div>
-
             <div class="grid divide-y divide-outline-subtle border-y border-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0">
                 {% for item in payload.artifact_statistics[:2] %}
                     <div class="px-0 py-4 sm:px-5 sm:first:pl-0 sm:last:pr-0">
                         <div class="flex items-center justify-between gap-3">
                             <p class="text-xs font-semibold text-content-muted">{{ item.label }}</p>
-                            <i data-lucide="{{ item.icon }}" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                            <i data-lucide="{{ item.icon }}"
+                               class="h-4 w-4 shrink-0 text-kaori-primary"
+                               aria-hidden="true"></i>
                         </div>
                         <p class="mt-2 text-3xl font-bold tracking-tight text-content-primary">{{ item.value }}</p>
                         <p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.caption }}</p>
                     </div>
                 {% endfor %}
             </div>
-
             <div class="mt-4 rounded-xl border border-kaori-primary/20 bg-kaori-soft/55 px-4 py-3"
                  data-reporting-performance-tip="true">
                 <div class="flex items-start gap-3">
@@ -106,7 +110,6 @@
             </div>
         </article>
     </div>
-
     {% if payload.storage_context.backend == 's3' and payload.storage_context.degraded %}
         <div class="border-t border-status-warning-border/60 bg-status-warning-soft/45 px-5 py-4 sm:px-6"
              data-report-storage-incident="overview">
@@ -133,7 +136,8 @@
                             Report history and configuration remain available. New artifact generation and S3-backed access stay paused until storage readiness is restored.
                         </p>
                         <p class="mt-2 text-xs font-medium text-content-muted">
-                            {{ payload.storage_context.checked_label }} · {{ payload.storage_context.source_label }} · automatic check every {{ payload.storage_context.monitor_interval_minutes }} minute{% if payload.storage_context.monitor_interval_minutes != 1 %}s{% endif %}
+                            {{ payload.storage_context.checked_label }} · {{ payload.storage_context.source_label }} · automatic check every {{ payload.storage_context.monitor_interval_minutes }} minute
+                            {% if payload.storage_context.monitor_interval_minutes != 1 %}s{% endif %}
                         </p>
                     </div>
                 </div>

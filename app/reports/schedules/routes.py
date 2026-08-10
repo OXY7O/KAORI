@@ -1,6 +1,11 @@
 import logging
 
-from flask import redirect, render_template, request, url_for
+from flask import (
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from werkzeug.exceptions import HTTPException
@@ -9,7 +14,6 @@ from app.notifications.feedback import OperationalDeliveryPolicy
 from app.notifications.service import queue_transient_feedback, record_operational_activity
 from app.rbac.decorators import permission_required
 from app.reports.schedules.job_adapter import run_schedule_now
-from app.reports.web import render_reports_unavailable
 from app.reports.schedules.service import (
     create_report_schedule,
     delete_report_schedule,
@@ -18,6 +22,7 @@ from app.reports.schedules.service import (
     toggle_report_schedule,
     update_report_schedule,
 )
+from app.reports.web import render_reports_unavailable
 
 
 logger = logging.getLogger(__name__)
@@ -69,9 +74,7 @@ def _record_schedule_feedback(
         metadata=metadata,
         queue_feedback=True,
         delivery_policy=(
-            OperationalDeliveryPolicy.AUDIT_ONLY
-            if success
-            else OperationalDeliveryPolicy.DECK_ON_FAILURE
+            OperationalDeliveryPolicy.AUDIT_ONLY if success else OperationalDeliveryPolicy.DECK_ON_FAILURE
         ),
     )
 

@@ -24,18 +24,9 @@ from app.analytics.top_consumers.contracts import (
     get_selected_tab,
     get_sort_options,
 )
-from app.analytics.top_consumers.domain import (
-    dominant_namespace_names,
-    empty_payload,
-    is_current_payload,
-)
-from app.analytics.top_consumers.recommendations import (
-    build_top_consumers_actionable_recommendations,
-)
-from app.intelligence.recommendation_engine import (
-    count_actionable_recommendations,
-    format_recommendation_cards,
-)
+from app.analytics.top_consumers.domain import dominant_namespace_names, empty_payload, is_current_payload
+from app.analytics.top_consumers.recommendations import build_top_consumers_actionable_recommendations
+from app.intelligence.recommendation_engine import count_actionable_recommendations, format_recommendation_cards
 
 
 def filter_rows(
@@ -56,26 +47,17 @@ def filter_rows(
         pressure = row.get('pressure_percent')
         namespace = str(row.get('namespace') or '')
         if selected_focus == 'missing_requests' and not (
-            resource_type in {'cpu', 'memory'}
-            and row.get('request_evidence_available') is True
-            and request <= 0
+            resource_type in {'cpu', 'memory'} and row.get('request_evidence_available') is True and request <= 0
         ):
             continue
         if selected_focus == 'high_usage' and not (
-            resource_type in {'cpu', 'memory'}
-            and pressure is not None
-            and safe_float(pressure) >= 75
+            resource_type in {'cpu', 'memory'} and pressure is not None and safe_float(pressure) >= 75
         ):
             continue
-        if (
-            selected_focus == 'dominant_namespaces'
-            and namespace not in dominant_namespaces
-        ):
+        if selected_focus == 'dominant_namespaces' and namespace not in dominant_namespaces:
             continue
         if selected_focus == 'high_pvc' and not (
-            resource_type == 'pvc'
-            and pressure is not None
-            and safe_float(pressure) >= 80
+            resource_type == 'pvc' and pressure is not None and safe_float(pressure) >= 80
         ):
             continue
         if selected_resource != 'all' and resource_type != selected_resource:
@@ -89,7 +71,8 @@ def filter_rows(
 
 
 def search_haystack(row: dict[str, Any]) -> str:
-    identity = row.get('identity') if isinstance(row.get('identity'), dict) else {}
+    raw_identity = row.get('identity')
+    identity = raw_identity if isinstance(raw_identity, dict) else {}
     values = (
         row.get('namespace', ''),
         identity.get('primary', ''),
@@ -125,9 +108,7 @@ def sort_rows(
     if selected_sort == 'contribution':
         return sorted(
             rows,
-            key=lambda row: optional_metric_sort_key(
-                row.get('contribution_percent')
-            ),
+            key=lambda row: optional_metric_sort_key(row.get('contribution_percent')),
             reverse=True,
         )
     if selected_sort == 'namespace':
@@ -143,9 +124,7 @@ def sort_rows(
             rows,
             key=lambda row: (
                 str(row.get('resource_type', '')),
-                -optional_metric_sort_key(
-                    row.get('contribution_percent')
-                )[1],
+                -optional_metric_sort_key(row.get('contribution_percent'))[1],
             ),
         )
     return sorted(
@@ -201,10 +180,7 @@ def apply_record_presentation(
         selected_sort=selected_sort,
         selected_resource=selected_resource,
     )
-    ranked = [
-        dict(row, rank=index)
-        for index, row in enumerate(sorted_records, start=1)
-    ]
+    ranked = [dict(row, rank=index) for index, row in enumerate(sorted_records, start=1)]
     page_payload = AnalyticsBaseService().paginate_rows_with_options(
         rows=ranked,
         page=page,
@@ -243,9 +219,7 @@ def attach_recommendations(payload: dict[str, Any]) -> dict[str, Any]:
     cards = format_recommendation_cards(
         recommendations,
         default_title='Review Top Consumers',
-        default_description=(
-            'Review CPU, memory, pod, and PVC consumer hotspots.'
-        ),
+        default_description=('Review CPU, memory, pod, and PVC consumer hotspots.'),
         default_source='top_consumers',
         default_action_type='consumer_review',
     )
@@ -253,9 +227,7 @@ def attach_recommendations(payload: dict[str, Any]) -> dict[str, Any]:
         {
             'actionable_recommendations': recommendations,
             'recommendation_cards': cards,
-            'recommendation_count': count_actionable_recommendations(
-                recommendations
-            ),
+            'recommendation_count': count_actionable_recommendations(recommendations),
             'recommendations': cards,
         }
     )
@@ -291,11 +263,7 @@ def present_materialized_context(
         )
         payload['snapshot_schema_outdated'] = True
         payload['scope'] = {
-            'label': (
-                f'Namespace · {selected_namespace}'
-                if selected_namespace
-                else 'Cluster'
-            ),
+            'label': (f'Namespace · {selected_namespace}' if selected_namespace else 'Cluster'),
             'namespace': selected_namespace,
             'snapshot_dimension': 'namespace' if selected_namespace else 'cluster',
         }

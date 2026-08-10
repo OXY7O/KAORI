@@ -80,10 +80,7 @@ def get_namespaces(cluster_id: str) -> list[str]:
             raise ValueError('Kubernetes authentication failed while loading live namespaces.') from exc
         raise ValueError('KAORI could not load live namespaces from the selected Kubernetes cluster.') from exc
 
-    names = {
-        str(getattr(getattr(item, 'metadata', None), 'name', '') or '').strip()
-        for item in response.items or []
-    }
+    names = {str(getattr(getattr(item, 'metadata', None), 'name', '') or '').strip() for item in response.items or []}
     return sorted(name for name in names if name)
 
 
@@ -271,8 +268,7 @@ def get_impact_context(target: ConfigMapTarget) -> ConfigMapImpactContext:
     for pod in pods.yield_per(250):
         references = pod.configuration_references or []
         if not any(
-            str(reference.get('type') or '') == 'ConfigMap'
-            and str(reference.get('name') or '') == target.name
+            str(reference.get('type') or '') == 'ConfigMap' and str(reference.get('name') or '') == target.name
             for reference in references
         ):
             continue

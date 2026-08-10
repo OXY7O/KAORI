@@ -1,30 +1,25 @@
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {% import "intelligence/components/_pagination.html" as intelligence_pagination %}
-
 <section class="grid gap-px overflow-hidden rounded-xl border border-outline-default bg-outline-subtle shadow-sm sm:grid-cols-2 xl:grid-cols-4">
     {{ intelligence_ui.metric('clock-3', 'Queued', payload.metrics.queued, 'Awaiting resolver lease', 'info') }}
     {{ intelligence_ui.metric('loader-circle', 'Running', payload.metrics.running, 'Active execution journals', 'normal') }}
     {{ intelligence_ui.metric('rotate-ccw', 'Retry Wait', payload.metrics.retry_wait, 'Backoff before another attempt', 'warning') }}
     {{ intelligence_ui.metric('triangle-alert', 'Dead Letter', payload.metrics.dead_letter, 'Retained terminal failures', 'critical' if payload.metrics.dead_letter else 'normal') }}
 </section>
-
 {% call intelligence_ui.section(
     'Resolver Safety Boundary',
     'Registry descriptors, deployment policies, operational controls, and dead-letter evidence define where resolver execution is allowed.',
     'server-cog',
     'Read-Only',
     'unknown'
-) %}
+    ) %}
     <div class="p-4 sm:p-5">
-        {{ intelligence_ui.reserved_plan(
-            'Resolver Mutations',
-            'Deployment-policy updates, kill switch changes, rate limits, concurrency controls, circuit changes, and dead-letter requeue remain disabled until behavior tests are enabled.',
-            action_label='Reserved Plan',
-            icon='shield-alert'
-        ) }}
+        {{ intelligence_ui.reserved_plan('Resolver Mutations',
+                'Deployment-policy updates, kill switch changes, rate limits, concurrency controls, circuit changes, and dead-letter requeue remain disabled until behavior tests are enabled.',
+                action_label='Reserved Plan',
+                icon='shield-alert') }}
     </div>
 {% endcall %}
-
 <section class="grid gap-4 xl:grid-cols-2">
     {% call intelligence_ui.section('Resolver Registry', 'Allowlisted action descriptors, capability requirements, compatibility profiles, and rollback expectations.', 'list-tree') %}
         <div class="grid gap-3 p-4 sm:p-5">
@@ -40,7 +35,6 @@
             {% endfor %}
         </div>
     {% endcall %}
-
     {% call intelligence_ui.section('Safety Controls', 'Current global and cluster-specific kill switch, maintenance, circuit, concurrency, and rate-limit evidence.', 'shield-alert') %}
         <div class="grid gap-3 p-4 sm:p-5">
             {% for row in payload.control_rows %}
@@ -58,7 +52,6 @@
         </div>
     {% endcall %}
 </section>
-
 {% call intelligence_ui.section('Deployment Policies', 'Scoped allowlists that bind registered resolver actions to clusters and namespaces.', 'shield-check') %}
     <div class="grid gap-3 p-4 sm:p-5">
         {% for row in payload.policy_rows %}
@@ -73,10 +66,9 @@
             {{ intelligence_ui.empty_state('No Deployment Policies Available', 'No cluster and resolver action allowlist has been recorded.', 'shield-check') }}
         {% endfor %}
     </div>
-    {% set query_params = {'workspace': 'operations'} %}
+    {% set query_params = {"workspace": "operations"} %}
     {{ intelligence_pagination.render(payload, 'automation_control.index', query_params, resource_label='Deployment Policies', per_page_options=payload.per_page_options) }}
 {% endcall %}
-
 {% call intelligence_ui.section('Dead-Letter Review', 'Terminal execution journals retained for diagnosis and controlled requeue decisions.', 'triangle-alert', payload.metrics.dead_letter ~ ' Records', 'critical' if payload.metrics.dead_letter else 'normal') %}
     <div class="grid gap-3 p-4 sm:p-5">
         {% for row in payload.journal_rows %}

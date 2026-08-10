@@ -8,25 +8,21 @@
   render_buttons(): Alpine/client-owned tab state.
   render_links(): server/URL-owned workspace state.
 #}
-
 {% macro shell_classes(embedded=false) -%}
     {{ 'border-b border-outline-subtle bg-surface-hover px-5 py-2 sm:px-6' if embedded else 'rounded-xl border border-outline-default bg-surface-card p-2 shadow-sm' }}
 {%- endmacro %}
-
 {% macro item_classes() -%}
     inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg border px-3.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card
 {%- endmacro %}
-
 {% macro active_classes() -%}
     border-kaori-primary bg-kaori-soft text-kaori-primary-dark dark:text-kaori-accent
 {%- endmacro %}
-
 {% macro inactive_classes() -%}
     border-transparent bg-surface-card text-content-secondary hover:border-outline-default hover:bg-surface-card hover:text-content-primary
 {%- endmacro %}
-
 {% macro render_buttons(tabset_id, tabs, aria_label, embedded=false, data_namespace='content') -%}
-    <div class="{{ shell_classes(embedded) }}" data-kaori-tab-variant="content-tabs">
+    <div class="{{ shell_classes(embedded) }}"
+         data-kaori-tab-variant="content-tabs">
         <div class="flex flex-wrap gap-2"
              role="tablist"
              aria-label="{{ aria_label }}">
@@ -38,7 +34,9 @@
                 <button type="button"
                         id="{{ tabset_id }}-tab-{{ tab_id }}"
                         role="tab"
-                        data-{{ data_namespace }}-tab-button="{{ tab_id }}"
+                        data-
+                        {{ data_namespace }}
+                        -tab-button="{{ tab_id }}"
                         aria-controls="{{ tabset_id }}-panel-{{ tab_id }}"
                         :aria-selected="activeTab === '{{ tab_id }}' ? 'true' : 'false'"
                         :tabindex="activeTab === '{{ tab_id }}' ? 0 : -1"
@@ -54,7 +52,6 @@
         </div>
     </div>
 {%- endmacro %}
-
 {% macro render_links(tabset_id, tabs, active_key, aria_label, embedded=false, data_namespace='content', hx_target=none, hx_select=none, hx_swap='outerHTML', hx_push_url='true') -%}
     <nav class="{{ shell_classes(embedded) }}"
          aria-label="{{ aria_label }}"
@@ -68,7 +65,9 @@
                 {% set tab_badge = tab[4] if tab|length > 4 else none %}
                 <a id="{{ tabset_id }}-nav-{{ tab_id }}"
                    href="{{ tab_href }}"
-                   data-{{ data_namespace }}-tab-link="{{ tab_id }}"
+                   data-
+                   {{ data_namespace }}
+                   -tab-link="{{ tab_id }}"
                    {% if active_key == tab_id %}aria-current="page"{% endif %}
                    {% if hx_target %}hx-get="{{ tab_href }}" hx-target="{{ hx_target }}" hx-swap="{{ hx_swap }}" hx-push-url="{{ hx_push_url }}"{% endif %}
                    {% if hx_select %}hx-select="{{ hx_select }}"{% endif %}

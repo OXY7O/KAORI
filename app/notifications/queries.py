@@ -3,7 +3,12 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import and_, case, func, or_
+from sqlalchemy import (
+    and_,
+    case,
+    func,
+    or_,
+)
 from sqlalchemy.orm import joinedload
 
 from app.common.celery_queue_health import get_queue_readiness, inspect_celery_topology
@@ -21,7 +26,7 @@ from app.notifications.constants import (
     ALLOWED_STATUSES,
     NAVIGATION_NOTIFICATION_LIMIT,
 )
-from app.notifications.event_catalog import CATEGORY_LABELS, event_label
+from app.notifications.event_catalog import CATEGORY_LABELS
 from app.notifications.presentation import _serialize_notification, _user_label
 
 
@@ -195,9 +200,7 @@ def get_activity_center_context(
         .all()
     )
 
-    active_query = (
-        JobExecution.query if include_all_jobs else _user_job_query(user_id)
-    ).filter(
+    active_query = (JobExecution.query if include_all_jobs else _user_job_query(user_id)).filter(
         JobExecution.status.in_(ACTIVITY_CENTER_ACTIVE_JOB_STATUSES),
     )
     active_count = active_query.count()
@@ -300,21 +303,17 @@ def get_notification_center_page_context(
             )
         )
 
-    pagination = (
-        filtered_query
-        .order_by(Notification.created_at.desc(), Notification.id.desc())
-        .paginate(page=normalized_page, per_page=normalized_per_page, error_out=False)
+    pagination = filtered_query.order_by(Notification.created_at.desc(), Notification.id.desc()).paginate(
+        page=normalized_page, per_page=normalized_per_page, error_out=False
     )
     total = int(pagination.total or 0)
     base_context.update(
         {
             'history_items': [
-                _serialize_notification(notification, include_metadata=False)
-                for notification in pagination.items
+                _serialize_notification(notification, include_metadata=False) for notification in pagination.items
             ],
             'items': [
-                _serialize_notification(notification, include_metadata=False)
-                for notification in pagination.items
+                _serialize_notification(notification, include_metadata=False) for notification in pagination.items
             ],
             'notification_filters': {
                 'status': normalized_status,
@@ -323,8 +322,7 @@ def get_notification_center_page_context(
                 'search': normalized_search,
             },
             'notification_category_options': [
-                {'key': key, 'label': CATEGORY_LABELS[key]}
-                for key in _CENTER_CATEGORY_ORDER
+                {'key': key, 'label': CATEGORY_LABELS[key]} for key in _CENTER_CATEGORY_ORDER
             ],
             'notification_pagination': {
                 'page': pagination.page,
@@ -443,10 +441,7 @@ def get_notification_activity_context(
             }
             for user in user_options
         ],
-        'category_options': [
-            {'key': key, 'label': CATEGORY_LABELS[key]}
-            for key in _AUDIT_CATEGORY_ORDER
-        ],
+        'category_options': [{'key': key, 'label': CATEGORY_LABELS[key]} for key in _AUDIT_CATEGORY_ORDER],
         'time_range_options': [
             ('24h', '24 Hours'),
             ('7d', '7 Days'),
@@ -471,12 +466,16 @@ def get_notification_activity_context(
 
     if include_summary:
         cutoff_24h = datetime.now(UTC) - timedelta(hours=24)
-        events_24h, success_24h, attention_24h, actors_24h = db.session.query(
-            func.count(Notification.id),
-            func.coalesce(func.sum(case((Notification.status == 'success', 1), else_=0)), 0),
-            func.coalesce(func.sum(case((Notification.status.in_(['warning', 'error']), 1), else_=0)), 0),
-            func.count(func.distinct(func.coalesce(Notification.user_id, 0))),
-        ).filter(Notification.created_at >= cutoff_24h).one()
+        events_24h, success_24h, attention_24h, actors_24h = (
+            db.session.query(
+                func.count(Notification.id),
+                func.coalesce(func.sum(case((Notification.status == 'success', 1), else_=0)), 0),
+                func.coalesce(func.sum(case((Notification.status.in_(['warning', 'error']), 1), else_=0)), 0),
+                func.count(func.distinct(func.coalesce(Notification.user_id, 0))),
+            )
+            .filter(Notification.created_at >= cutoff_24h)
+            .one()
+        )
 
         context['summary'] = {
             'events_24h': int(events_24h or 0),

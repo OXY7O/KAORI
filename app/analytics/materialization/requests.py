@@ -120,14 +120,10 @@ def _prometheus_resolution(
         scope_type=KUBERNETES_CLUSTER_SCOPE,
         scope_key=str(cluster_id),
         required_binding_capabilities=(
-            dataset.required_binding_capabilities
-            if strict
-            else source_binding_capabilities(dataset_key)
+            dataset.required_binding_capabilities if strict else source_binding_capabilities(dataset_key)
         ),
         required_technical_capabilities=(
-            dataset.required_capabilities
-            if strict
-            else source_technical_capabilities(dataset_key)
+            dataset.required_capabilities if strict else source_technical_capabilities(dataset_key)
         ),
     )
 
@@ -218,21 +214,20 @@ def selected_cluster_from_request(
     if dataset_key is None:
         from app.prometheus.repository import resolve_instance_for_cluster
 
-        readiness = lambda cluster_id: resolve_instance_for_cluster(cluster_id) is not None
+        def readiness(cluster_id: str) -> bool:
+            return resolve_instance_for_cluster(cluster_id) is not None
     else:
         normalized = parameters or {}
-        readiness = lambda cluster_id: (
-            _cluster_has_snapshot(
+        def readiness(cluster_id: str) -> bool:
+            return _cluster_has_snapshot(
                 dataset_key=dataset_key,
                 cluster_id=cluster_id,
                 parameters=normalized,
-            )
-            or _dataset_source_is_ready(
+            ) or _dataset_source_is_ready(
                 dataset_key=dataset_key,
                 cluster=cluster_by_id[cluster_id],
                 parameters=normalized,
             )
-        )
 
     return choose_cluster_reference(
         raw_cluster_id=raw_cluster_id,
@@ -245,11 +240,7 @@ def _capability_labels(keys: tuple[str, ...]) -> list[str]:
     labels: list[str] = []
     for key in keys:
         capability = capability_definition(key)
-        labels.append(
-            capability.label
-            if capability is not None
-            else str(key).replace('_', ' ').title()
-        )
+        labels.append(capability.label if capability is not None else str(key).replace('_', ' ').title())
     return labels
 
 
@@ -327,9 +318,9 @@ def _prometheus_dependency_state(
 
     capability_warning = prometheus_capability_blocker(
         cluster,
-            capability_labels=_capability_labels(missing_capabilities),
-            feature_label=get_dataset(dataset_key).label,
-        )
+        capability_labels=_capability_labels(missing_capabilities),
+        feature_label=get_dataset(dataset_key).label,
+    )
     return (
         None,
         capability_warning,
@@ -397,12 +388,8 @@ def _alert_dependency_blocker(
     details = [
         candidate.decision_reason
         for candidate in (
-            alertmanager_resolution.candidates[0]
-            if alertmanager_resolution.candidates
-            else None,
-            prometheus_resolution.candidates[0]
-            if prometheus_resolution.candidates
-            else None,
+            alertmanager_resolution.candidates[0] if alertmanager_resolution.candidates else None,
+            prometheus_resolution.candidates[0] if prometheus_resolution.candidates else None,
         )
         if candidate is not None
     ]

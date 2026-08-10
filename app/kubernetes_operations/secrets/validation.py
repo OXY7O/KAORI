@@ -5,7 +5,6 @@ from typing import Any
 
 from app.common.sensitive_uploads import (
     MAX_SENSITIVE_UPLOAD_BYTES,
-    decode_utf8,
     read_optional_upload_text,
     read_required_upload_bytes,
 )
@@ -25,10 +24,7 @@ def required(value: str | None, label: str) -> str:
 
 def validate_secret_name(name: str) -> None:
     labels = name.split('.')
-    invalid_label = any(
-        not label or len(label) > 63 or not DNS_LABEL_PATTERN.fullmatch(label)
-        for label in labels
-    )
+    invalid_label = any(not label or len(label) > 63 or not DNS_LABEL_PATTERN.fullmatch(label) for label in labels)
     if len(name) > 253 or invalid_label:
         raise ValueError(
             'Secret name must be a valid lowercase DNS subdomain using letters, numbers, dots, or hyphens.'
@@ -42,16 +38,11 @@ def validate_namespace_name(namespace: str) -> None:
 
 def validate_data_key(key: str) -> None:
     if len(key) > 253 or not SECRET_DATA_KEY_PATTERN.fullmatch(key):
-        raise ValueError(
-            f'Invalid Secret data key: {key}. Use letters, numbers, dots, hyphens, or underscores.'
-        )
+        raise ValueError(f'Invalid Secret data key: {key}. Use letters, numbers, dots, hyphens, or underscores.')
 
 
 def validate_secret_size(string_data: dict[str, str], *, label: str = 'Secret content') -> None:
-    payload_size = sum(
-        len(key.encode('utf-8')) + len(value.encode('utf-8'))
-        for key, value in string_data.items()
-    )
+    payload_size = sum(len(key.encode('utf-8')) + len(value.encode('utf-8')) for key, value in string_data.items())
     if payload_size >= MAX_KUBERNETES_SECRET_BYTES:
         raise ValueError(f'{label} must be smaller than the Kubernetes 1 MiB limit.')
 
@@ -96,6 +87,4 @@ def validate_ssh_private_key(raw_key: str) -> None:
         except ValueError:
             serialization.load_ssh_private_key(key_bytes, password=None)
     except (TypeError, ValueError, UnsupportedAlgorithm) as exc:
-        raise ValueError(
-            'SSH private key must be a valid, unencrypted PEM or OpenSSH private key.'
-        ) from exc
+        raise ValueError('SSH private key must be a valid, unencrypted PEM or OpenSSH private key.') from exc

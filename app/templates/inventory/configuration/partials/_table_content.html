@@ -7,17 +7,23 @@
         <caption class="sr-only">Committed ConfigMap and Secret key-index metadata for the active Configuration Inventory scope.</caption>
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
-                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[18rem]">Configuration Object</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Scope</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Object Type</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Key Index & Mutation</th>
-                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Current Pod References</th>
+                <th scope="col"
+                    class="{{ table_ui.header_cell_classes() }} min-w-[18rem]">Configuration Object</th>
+                <th scope="col"
+                    class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Scope</th>
+                <th scope="col"
+                    class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Object Type</th>
+                <th scope="col"
+                    class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Key Index & Mutation</th>
+                <th scope="col"
+                    class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Current Pod References</th>
                 <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
             </tr>
         </thead>
         <tbody class="{{ table_ui.body_classes() }}">
             {% for item in inventory['items'] %}
-                <tr id="configuration-row-{{ item.id }}" class="{{ table_ui.row_classes() }}">
+                <tr id="configuration-row-{{ item.id }}"
+                    class="{{ table_ui.row_classes() }}">
                     <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(item.name, item.identity_supporting, 'key-round' if item.type == 'Secret' else 'file-json-2') }}</td>
                     <td class="{{ table_ui.cell_classes() }}">{{ table_ui.namespaced_scope_identity(item.cluster_name, item.cluster_environment, item.namespace) }}</td>
                     <td class="{{ table_ui.cell_classes() }}">
@@ -33,33 +39,69 @@
                         <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.reference_supporting }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes(action=true) }}">
-                        {{ resource_detail_modal.detail_button(item.id, url_for('inventory.configuration_details', configuration_id=item.id), item.name, 'Configuration') }}
+                        {{ resource_detail_modal.detail_button(item.id, url_for('inventory.configuration_details', configuration_id=item.id) , item.name, 'Configuration') }}
                     </td>
                 </tr>
             {% else %}
-                <tr><td colspan="6" class="p-0">{% set empty_state_icon = "file-key-2" %}{% set empty_state_title = "No Configuration Objects Found" %}{% set empty_state_description = "Adjust the active filters or sync inventory to collect ConfigMap and Secret key-index metadata." %}{% set empty_state_min_height = "min-h-[190px]" %}{% include "components/states/_empty_state.html" %}</td></tr>
+                <tr>
+                    <td colspan="6" class="p-0">{% set empty_state_icon = "file-key-2" %}{% set empty_state_title = "No Configuration Objects Found" %}{% set empty_state_description = "Adjust the active filters or sync inventory to collect ConfigMap and Secret key-index metadata." %}{% set empty_state_min_height = "min-h-[190px]" %}
+                        {% include "components/states/_empty_state.html" %}
+                    </td>
+                </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
 <footer class="{{ pagination_ui.footer_classes() }}">
     <div class="{{ pagination_ui.summary_group_classes() }}">
-        <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ pagination_ui.resource_name('Configuration Objects', pagination.total_items)|trim }}</p>
-        <form hx-get="{{ url_for('inventory.configuration') }}" hx-target="#configuration-table-content" hx-swap="innerHTML" hx-indicator="#configuration-table-loading" class="flex items-center gap-2">
-            <label for="configuration-per-page" class="text-xs font-semibold text-content-secondary">Rows</label>
+        <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ pagination_ui.resource_name('Configuration Objects', pagination.total_items) |trim }}</p>
+        <form hx-get="{{ url_for('inventory.configuration') }}"
+              hx-target="#configuration-table-content"
+              hx-swap="innerHTML"
+              hx-indicator="#configuration-table-loading"
+              class="flex items-center gap-2">
+            <label for="configuration-per-page"
+                   class="text-xs font-semibold text-content-secondary">Rows</label>
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}">
             <input type="hidden" name="namespace" value="{{ selected_namespace }}">
             <input type="hidden" name="type" value="{{ selected_type }}">
             <input type="hidden" name="search" value="{{ search }}">
             <input type="hidden" name="partial_mode" value="table_content">
-            <select id="configuration-per-page" name="per_page" aria-label="Rows Per Page" data-kaori-auto-submit class="{{ pagination_ui.page_size_classes() }}">{% for option in pagination.allowed_per_page %}<option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}</select>
+            <select id="configuration-per-page"
+                    name="per_page"
+                    aria-label="Rows Per Page"
+                    data-kaori-auto-submit
+                    class="{{ pagination_ui.page_size_classes() }}">
+                {% for option in pagination.allowed_per_page %}
+                    <option value="{{ option }}"
+                            {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
+            </select>
         </form>
     </div>
     <div class="{{ pagination_ui.navigation_group_classes() }}">
         {% set pagination_params = {'cluster_id': selected_cluster_id, 'namespace': selected_namespace, 'type': selected_type, 'search': search, 'per_page': pagination.per_page, 'partial_mode': 'table_content'} %}
-        {% if pagination.has_prev %}{% set prev_url = url_for('inventory.configuration', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, search=search, per_page=pagination.per_page, partial_mode='table_content', page=pagination.prev_page) %}<a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#configuration-table-content" hx-swap="innerHTML" hx-indicator="#configuration-table-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>{% else %}<span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>{% endif %}
+        {% if pagination.has_prev %}
+            {% set prev_url = url_for('inventory.configuration', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, search=search, per_page=pagination.per_page, partial_mode='table_content', page=pagination.prev_page) %}<a href="{{ prev_url }}"
+   hx-get="{{ prev_url }}"
+   hx-target="#configuration-table-content"
+   hx-swap="innerHTML"
+   hx-indicator="#configuration-table-loading"
+   class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+        {% else %}
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+        {% endif %}
         {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, endpoint='inventory.configuration', query_params=pagination_params, hx_target='#configuration-table-content', hx_indicator='#configuration-table-loading') }}
-        {% if pagination.has_next %}{% set next_url = url_for('inventory.configuration', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, search=search, per_page=pagination.per_page, partial_mode='table_content', page=pagination.next_page) %}<a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#configuration-table-content" hx-swap="innerHTML" hx-indicator="#configuration-table-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>{% else %}<span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>{% endif %}
+        {% if pagination.has_next %}
+            {% set next_url = url_for('inventory.configuration', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, search=search, per_page=pagination.per_page, partial_mode='table_content', page=pagination.next_page) %}<a href="{{ next_url }}"
+   hx-get="{{ next_url }}"
+   hx-target="#configuration-table-content"
+   hx-swap="innerHTML"
+   hx-indicator="#configuration-table-loading"
+   class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+        {% else %}
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+        {% endif %}
     </div>
 </footer>

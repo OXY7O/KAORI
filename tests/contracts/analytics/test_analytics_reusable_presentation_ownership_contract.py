@@ -24,10 +24,7 @@ def test_page_hero_owns_inventory_aligned_context_card_contract() -> None:
 def test_every_analytics_hero_uses_shared_context_card_contract() -> None:
     for filename in HERO_FILES:
         template = Path(filename).read_text()
-        assert (
-            'page_hero.context_card(' in template
-            or 'page_hero.context_card_body(' in template
-        ), filename
+        assert 'page_hero.context_card(' in template or 'page_hero.context_card_body(' in template, filename
         assert 'value_classes=' not in template, filename
         assert 'context_posture_header' not in template, filename
         assert 'context_posture_note' not in template, filename

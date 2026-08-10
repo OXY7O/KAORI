@@ -126,8 +126,7 @@ def _bound_target(form: Any) -> LiveSecretSnapshot:
     )
     if selected != bound:
         raise ValueError(
-            'The Secret selection changed after the deletion review was loaded. '
-            'Reload the target and retry.'
+            'The Secret selection changed after the deletion review was loaded. Reload the target and retry.'
         )
     return read_live_secret(*bound, blocked_types=BLOCKED_DELETE_TYPES)
 
@@ -161,37 +160,27 @@ def _validate_delete_authorization(target: LiveSecretSnapshot) -> None:
     )
     try:
         with weak_tls_context(enabled=tls_policy_for_cluster(target.cluster)[1]):
-            response = authorization_api(
-                target.cluster
-            ).create_self_subject_access_review(
+            response = authorization_api(target.cluster).create_self_subject_access_review(
                 body=review,
                 _request_timeout=10,
             )
     except ApiException as exc:
         if exc.status == 401:
-            raise ValueError(
-                'Kubernetes authentication failed while validating Secret delete access.'
-            ) from exc
+            raise ValueError('Kubernetes authentication failed while validating Secret delete access.') from exc
         if exc.status == 403:
             raise ValueError(
                 'Kubernetes denied the delete authorization preflight. '
                 'Verify SelfSubjectAccessReview access for this cluster.'
             ) from exc
-        raise ValueError(
-            'KAORI could not validate Secret delete authorization against Kubernetes.'
-        ) from exc
+        raise ValueError('KAORI could not validate Secret delete authorization against Kubernetes.') from exc
     except ConfigException as exc:
         raise ValueError('The selected cluster kubeconfig is invalid or incomplete.') from exc
     except (OSError, Urllib3HTTPError) as exc:
-        raise ValueError(
-            'KAORI could not reach the Kubernetes API while validating Secret delete access.'
-        ) from exc
+        raise ValueError('KAORI could not reach the Kubernetes API while validating Secret delete access.') from exc
 
     status = getattr(response, 'status', None)
     if not bool(getattr(status, 'allowed', False)):
-        raise ValueError(
-            'Kubernetes denied Secret deletion for this namespace. Verify Secret delete RBAC.'
-        )
+        raise ValueError('Kubernetes denied Secret deletion for this namespace. Verify Secret delete RBAC.')
 
 
 def execute_secret_deletion(
@@ -206,9 +195,7 @@ def execute_secret_deletion(
 
     resource_version = str(target.resource_version or '')
     if not resource_version:
-        raise ValueError(
-            'Kubernetes did not return a Secret resource version. Reload the target and retry.'
-        )
+        raise ValueError('Kubernetes did not return a Secret resource version. Reload the target and retry.')
     if expected_resource_version and resource_version != expected_resource_version:
         raise ValueError('The Secret changed after validation. Run deletion validation again.')
 
@@ -237,21 +224,13 @@ def execute_secret_deletion(
     except ConfigException as exc:
         raise ValueError('The selected cluster kubeconfig is invalid or incomplete.') from exc
     except (OSError, Urllib3HTTPError) as exc:
-        operation = (
-            'validating Secret delete access'
-            if validate_only
-            else 'deleting the live Secret'
-        )
+        operation = 'validating Secret delete access' if validate_only else 'deleting the live Secret'
         raise ValueError(f'KAORI could not reach the Kubernetes API while {operation}.') from exc
 
     operation = 'validation' if validate_only else 'deletion'
     return SecretOperationResult(
         status='success',
-        title=(
-            'Secret deletion validation completed'
-            if validate_only
-            else 'Secret deleted'
-        ),
+        title=('Secret deletion validation completed' if validate_only else 'Secret deleted'),
         message=(
             'KAORI verified the live Secret identity, resource version, and effective '
             'delete authorization without sending a DELETE request.'
@@ -272,9 +251,7 @@ def execute_secret_deletion(
             'impact_reported': impacts.reported,
             'resource_version': resource_version,
             'operation': operation,
-            'validation_mode': (
-                'authorization_preflight' if validate_only else 'validated_receipt'
-            ),
+            'validation_mode': ('authorization_preflight' if validate_only else 'validated_receipt'),
             'live_target_source': True,
             'secret_value_recorded': False,
         },

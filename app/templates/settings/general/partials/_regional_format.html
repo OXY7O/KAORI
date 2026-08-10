@@ -7,7 +7,6 @@
       hx-push-url="true"
       class="space-y-5">
     {{ regional_form.hidden_tag() }}
-
     <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card"
              data-regional-format-workspace="unified">
         <header class="flex flex-col gap-4 border-b border-outline-default px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
@@ -24,27 +23,26 @@
             </div>
             {{ table_label.metadata_label('Personal Preference', 'user-round-cog') }}
         </header>
-
         <div class="space-y-6 p-5">
             <section aria-labelledby="regional-format-controls-title">
                 <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <h3 id="regional-format-controls-title" class="text-sm font-bold text-content-primary">
-                            Format Controls
-                        </h3>
+                        <h3 id="regional-format-controls-title"
+                            class="text-sm font-bold text-content-primary">Format Controls</h3>
                         <p class="mt-1 text-xs leading-5 text-content-muted">
                             Choose the locale convention, date pattern, and clock style used across your KAORI workspace.
                         </p>
                     </div>
                     {{ table_label.metadata_label('3 Preferences', 'sliders-horizontal') }}
                 </div>
-
                 <div class="grid border-y border-outline-subtle lg:grid-cols-3 lg:divide-x lg:divide-outline-subtle"
                      data-regional-format-controls="inline-grid">
                     <div class="py-4 lg:pr-5">
                         <label for="{{ regional_form.locale.id }}"
                                class="flex items-center gap-2 text-sm font-bold text-content-primary">
-                            <i data-lucide="languages" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                            <i data-lucide="languages"
+                               class="h-4 w-4 text-kaori-primary"
+                               aria-hidden="true"></i>
                             Regional Locale
                         </label>
                         {{ regional_form.locale(class_='mt-3 h-11 w-full rounded-xl border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10') }}
@@ -55,11 +53,12 @@
                             <p class="mt-2 text-xs font-semibold text-status-critical-text">{{ error }}</p>
                         {% endfor %}
                     </div>
-
                     <div class="border-t border-outline-subtle py-4 lg:border-t-0 lg:px-5">
                         <label for="{{ regional_form.date_format.id }}"
                                class="flex items-center gap-2 text-sm font-bold text-content-primary">
-                            <i data-lucide="calendar-days" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                            <i data-lucide="calendar-days"
+                               class="h-4 w-4 text-kaori-primary"
+                               aria-hidden="true"></i>
                             Date Format
                         </label>
                         {{ regional_form.date_format(class_='mt-3 h-11 w-full rounded-xl border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10') }}
@@ -70,11 +69,12 @@
                             <p class="mt-2 text-xs font-semibold text-status-critical-text">{{ error }}</p>
                         {% endfor %}
                     </div>
-
                     <div class="border-t border-outline-subtle py-4 lg:border-t-0 lg:pl-5">
                         <label for="{{ regional_form.time_format.id }}"
                                class="flex items-center gap-2 text-sm font-bold text-content-primary">
-                            <i data-lucide="clock-3" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                            <i data-lucide="clock-3"
+                               class="h-4 w-4 text-kaori-primary"
+                               aria-hidden="true"></i>
                             Time Format
                         </label>
                         {{ regional_form.time_format(class_='mt-3 h-11 w-full rounded-xl border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10') }}
@@ -87,7 +87,6 @@
                     </div>
                 </div>
             </section>
-
             <section class="rounded-xl border border-kaori-primary/25 bg-kaori-soft/60 px-4 py-4"
                      aria-labelledby="regional-preview-title"
                      data-regional-format-preview="persisted">
@@ -97,9 +96,8 @@
                             <i data-lucide="scan-eye" class="h-4 w-4" aria-hidden="true"></i>
                         </span>
                         <div>
-                            <h3 id="regional-preview-title" class="text-sm font-bold text-content-primary">
-                                Current Presentation Preview
-                            </h3>
+                            <h3 id="regional-preview-title"
+                                class="text-sm font-bold text-content-primary">Current Presentation Preview</h3>
                             <p class="mt-1 text-xs leading-5 text-content-muted">
                                 Preview of the regional preferences currently saved for this account.
                             </p>
@@ -111,22 +109,19 @@
                     </div>
                 </div>
             </section>
-
             <section class="border-t border-outline-subtle pt-5"
                      aria-labelledby="regional-preference-boundary-title"
                      data-regional-preference-boundary="inline">
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <h3 id="regional-preference-boundary-title" class="text-sm font-bold text-content-primary">
-                            Preference Scope &amp; Boundary
-                        </h3>
+                        <h3 id="regional-preference-boundary-title"
+                            class="text-sm font-bold text-content-primary">Preference Scope &amp; Boundary</h3>
                         <p class="mt-1 text-xs leading-5 text-content-muted">
                             Regional formatting changes presentation only; it never becomes an operational source of truth.
                         </p>
                     </div>
                     {{ table_label.metadata_label('Presentation Only', 'eye') }}
                 </div>
-
                 <div class="mt-4 grid border-y border-outline-subtle lg:grid-cols-3 lg:divide-x lg:divide-outline-subtle">
                     <div class="py-4 lg:pr-5">
                         <div class="flex items-center gap-2 text-xs font-semibold text-kaori-primary">
@@ -137,7 +132,6 @@
                             Inventory, Analytics, Activity Audit, Governance, Operations, and report views use these preferences when rendering dates and times.
                         </p>
                     </div>
-
                     <div class="border-t border-outline-subtle py-4 lg:border-t-0 lg:px-5">
                         <div class="flex items-center gap-2 text-xs font-semibold text-kaori-primary">
                             <i data-lucide="languages" class="h-4 w-4" aria-hidden="true"></i>
@@ -147,7 +141,6 @@
                             Locale controls regional formatting conventions only. KAORI interface labels and application language remain unchanged.
                         </p>
                     </div>
-
                     <div class="border-t border-outline-subtle py-4 lg:border-t-0 lg:pl-5">
                         <div class="flex items-center gap-2 text-xs font-semibold text-kaori-primary">
                             <i data-lucide="database" class="h-4 w-4" aria-hidden="true"></i>
@@ -158,9 +151,10 @@
                         </p>
                     </div>
                 </div>
-
                 <div class="mt-4 flex items-start gap-2 rounded-xl border border-kaori-primary/20 bg-kaori-soft/60 px-4 py-3 text-xs leading-5 text-content-secondary">
-                    <i data-lucide="shield-check" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                    <i data-lucide="shield-check"
+                       class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+                       aria-hidden="true"></i>
                     <p>
                         <strong class="text-content-primary">Display preference only.</strong>
                         Saving regional format changes how dates and times look for you; stored data and execution behavior stay unchanged.
@@ -168,11 +162,12 @@
                 </div>
             </section>
         </div>
-
         <footer class="flex flex-col gap-3 border-t border-outline-default bg-surface-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-content-muted">
                 <span class="inline-flex items-center gap-2">
-                    <i data-lucide="circle-check" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                    <i data-lucide="circle-check"
+                       class="h-4 w-4 text-kaori-primary"
+                       aria-hidden="true"></i>
                     Effective Format:
                 </span>
                 <strong class="text-content-primary">{{ regional_form.locale.data }}</strong>
@@ -181,7 +176,6 @@
                 <span aria-hidden="true">·</span>
                 <strong class="text-content-primary">{{ regional_form.time_format.data }}</strong>
             </div>
-
             <button type="submit"
                     name="{{ regional_form.submit_regional.name }}"
                     value="1"

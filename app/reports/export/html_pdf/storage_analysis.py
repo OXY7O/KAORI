@@ -178,18 +178,57 @@ def build_storage_analysis_presentation(
                     'Committed' if filesystem_records else 'Not Available',
                     'normal' if filesystem_records else 'warning',
                 ),
-                _metric('Nodes in Scope', str(node_count) if node_count else 'Not Available', 'Committed Inventory' if node_count else 'Unknown', 'normal' if node_count else 'muted'),
-                _metric('Highest Usage', _percent(filesystem_summary.get('highest_usage')), _risk_label(filesystem_summary.get('risk')), _risk_tone(filesystem_summary.get('risk'))),
-                _metric('Coverage', 'Current' if filesystem_records else 'Partial', 'Query Ready' if filesystem_records else 'Requires Validation', 'normal' if filesystem_records else 'warning'),
+                _metric(
+                    'Nodes in Scope',
+                    str(node_count) if node_count else 'Not Available',
+                    'Committed Inventory' if node_count else 'Unknown',
+                    'normal' if node_count else 'muted',
+                ),
+                _metric(
+                    'Highest Usage',
+                    _percent(filesystem_summary.get('highest_usage')),
+                    _risk_label(filesystem_summary.get('risk')),
+                    _risk_tone(filesystem_summary.get('risk')),
+                ),
+                _metric(
+                    'Coverage',
+                    'Current' if filesystem_records else 'Partial',
+                    'Query Ready' if filesystem_records else 'Requires Validation',
+                    'normal' if filesystem_records else 'warning',
+                ),
             ),
             'available': bool(filesystem_records),
             'summary': capacity,
             'rows': filesystem_records[:5],
             'requirements': (
-                {'ref': 'N1', 'evidence': 'Node Identity', 'definition': 'Node and role', 'status': 'Current' if filesystem_records else 'Missing', 'action': 'Monitor' if filesystem_records else 'Required'},
-                {'ref': 'N2', 'evidence': 'Filesystem Identity', 'definition': 'Device, mount, and filesystem type', 'status': 'Partial' if filesystem_records else 'Missing', 'action': 'Validate'},
-                {'ref': 'N3', 'evidence': 'Capacity Position', 'definition': 'Used, total, and available', 'status': 'Current' if capacity['evidence_available'] else 'Missing', 'action': 'Monitor' if capacity['evidence_available'] else 'Required'},
-                {'ref': 'N4', 'evidence': 'Operational State', 'definition': 'Read-only, inode, and pressure state', 'status': 'Partial' if filesystem_records else 'Missing', 'action': 'Validate'},
+                {
+                    'ref': 'N1',
+                    'evidence': 'Node Identity',
+                    'definition': 'Node and role',
+                    'status': 'Current' if filesystem_records else 'Missing',
+                    'action': 'Monitor' if filesystem_records else 'Required',
+                },
+                {
+                    'ref': 'N2',
+                    'evidence': 'Filesystem Identity',
+                    'definition': 'Device, mount, and filesystem type',
+                    'status': 'Partial' if filesystem_records else 'Missing',
+                    'action': 'Validate',
+                },
+                {
+                    'ref': 'N3',
+                    'evidence': 'Capacity Position',
+                    'definition': 'Used, total, and available',
+                    'status': 'Current' if capacity['evidence_available'] else 'Missing',
+                    'action': 'Monitor' if capacity['evidence_available'] else 'Required',
+                },
+                {
+                    'ref': 'N4',
+                    'evidence': 'Operational State',
+                    'definition': 'Read-only, inode, and pressure state',
+                    'status': 'Partial' if filesystem_records else 'Missing',
+                    'action': 'Validate',
+                },
             ),
             'interpretation': (
                 f'{len(filesystem_records)} committed filesystem row(s) are available. '
@@ -201,19 +240,64 @@ def build_storage_analysis_presentation(
         },
         'persistent': {
             'metrics': (
-                _metric('Persistent Volumes', pv_summary['count_display'], 'Committed Inventory' if pv_summary['count'] else 'Not Available', 'normal' if pv_summary['count'] else 'warning'),
-                _metric('PVC Utilization', pvc_summary['used_percent_display'], pvc_summary['status'], pvc_summary['tone']),
-                _metric('Binding Coverage', _binding_coverage(pv_rows, pvc_rows), 'Review' if pv_rows or pvc_rows else 'Not Available', 'warning' if pv_rows or pvc_rows else 'muted'),
-                _metric('Expansion Evidence', 'Available' if _expansion_evidence_available(pv_rows, pvc_rows) else 'Not Available', 'Validate' if _expansion_evidence_available(pv_rows, pvc_rows) else 'Coverage Gap', 'normal' if _expansion_evidence_available(pv_rows, pvc_rows) else 'warning'),
+                _metric(
+                    'Persistent Volumes',
+                    pv_summary['count_display'],
+                    'Committed Inventory' if pv_summary['count'] else 'Not Available',
+                    'normal' if pv_summary['count'] else 'warning',
+                ),
+                _metric(
+                    'PVC Utilization', pvc_summary['used_percent_display'], pvc_summary['status'], pvc_summary['tone']
+                ),
+                _metric(
+                    'Binding Coverage',
+                    _binding_coverage(pv_rows, pvc_rows),
+                    'Review' if pv_rows or pvc_rows else 'Not Available',
+                    'warning' if pv_rows or pvc_rows else 'muted',
+                ),
+                _metric(
+                    'Expansion Evidence',
+                    'Available' if _expansion_evidence_available(pv_rows, pvc_rows) else 'Not Available',
+                    'Validate' if _expansion_evidence_available(pv_rows, pvc_rows) else 'Coverage Gap',
+                    'normal' if _expansion_evidence_available(pv_rows, pvc_rows) else 'warning',
+                ),
             ),
             'pv': pv_summary,
             'pvc': pvc_summary,
             'pv_donut_svg': _count_donut_svg(pv_summary['count'], 'Persistent Volumes'),
             'register': (
-                {'ref': 'P1', 'evidence': 'Persistent Volumes', 'value': pv_summary['count_display'], 'boundary': 'Committed Inventory', 'status': 'Current' if pv_summary['count'] else 'Not Available', 'tone': 'normal' if pv_summary['count'] else 'warning'},
-                {'ref': 'P2', 'evidence': 'Persistent Volume Claims', 'value': pvc_summary['count_display'], 'boundary': pvc_summary['scope'], 'status': pvc_summary['status'], 'tone': pvc_summary['tone']},
-                {'ref': 'P3', 'evidence': 'Claim Filesystem Usage', 'value': pvc_summary['used_percent_display'], 'boundary': 'Observed Volume Capacity', 'status': pvc_summary['status'], 'tone': pvc_summary['tone']},
-                {'ref': 'P4', 'evidence': 'Expansion Support', 'value': 'Available' if _expansion_evidence_available(pv_rows, pvc_rows) else 'Not Available', 'boundary': 'StorageClass / PVC', 'status': 'Review', 'tone': 'warning'},
+                {
+                    'ref': 'P1',
+                    'evidence': 'Persistent Volumes',
+                    'value': pv_summary['count_display'],
+                    'boundary': 'Committed Inventory',
+                    'status': 'Current' if pv_summary['count'] else 'Not Available',
+                    'tone': 'normal' if pv_summary['count'] else 'warning',
+                },
+                {
+                    'ref': 'P2',
+                    'evidence': 'Persistent Volume Claims',
+                    'value': pvc_summary['count_display'],
+                    'boundary': pvc_summary['scope'],
+                    'status': pvc_summary['status'],
+                    'tone': pvc_summary['tone'],
+                },
+                {
+                    'ref': 'P3',
+                    'evidence': 'Claim Filesystem Usage',
+                    'value': pvc_summary['used_percent_display'],
+                    'boundary': 'Observed Volume Capacity',
+                    'status': pvc_summary['status'],
+                    'tone': pvc_summary['tone'],
+                },
+                {
+                    'ref': 'P4',
+                    'evidence': 'Expansion Support',
+                    'value': 'Available' if _expansion_evidence_available(pv_rows, pvc_rows) else 'Not Available',
+                    'boundary': 'StorageClass / PVC',
+                    'status': 'Review',
+                    'tone': 'warning',
+                },
             ),
             'pv_rows': _pv_records(pv_rows)[:3],
             'pvc_rows': _pvc_records(pvc_rows)[:3],
@@ -223,9 +307,26 @@ def build_storage_analysis_presentation(
         },
         'risk': {
             'metrics': (
-                _metric('Actionable Findings', str(max(actionable_count, len([item for item in risk_register if item['priority'] in {'P1', 'P2'}]))), 'Storage Review', 'warning'),
-                _metric('Local Risks', str(local_risks), 'Open' if local_risks else 'Clear', 'warning' if local_risks else 'normal'),
-                _metric('Expansion Candidates', 'Not Available' if not _expansion_evidence_available(pv_rows, pvc_rows) else 'Review', 'Coverage Gap' if not _expansion_evidence_available(pv_rows, pvc_rows) else 'Validate', 'warning'),
+                _metric(
+                    'Actionable Findings',
+                    str(
+                        max(actionable_count, len([item for item in risk_register if item['priority'] in {'P1', 'P2'}]))
+                    ),
+                    'Storage Review',
+                    'warning',
+                ),
+                _metric(
+                    'Local Risks',
+                    str(local_risks),
+                    'Open' if local_risks else 'Clear',
+                    'warning' if local_risks else 'normal',
+                ),
+                _metric(
+                    'Expansion Candidates',
+                    'Not Available' if not _expansion_evidence_available(pv_rows, pvc_rows) else 'Review',
+                    'Coverage Gap' if not _expansion_evidence_available(pv_rows, pvc_rows) else 'Validate',
+                    'warning',
+                ),
                 _metric('Validation Gates', '5', 'Required', 'info'),
             ),
             'local_risks': local_risks,
@@ -253,7 +354,12 @@ def build_storage_analysis_presentation(
             'metrics': (
                 _metric('Current Utilization', capacity['used_display'], capacity['status'], capacity['tone']),
                 _metric('Current Headroom', capacity['headroom_display'], capacity['status'], capacity['tone']),
-                _metric('Historical Series', 'Committed' if trend['historical_available'] else 'Not Available', 'Evidence State', 'normal' if trend['historical_available'] else 'warning'),
+                _metric(
+                    'Historical Series',
+                    'Committed' if trend['historical_available'] else 'Not Available',
+                    'Evidence State',
+                    'normal' if trend['historical_available'] else 'warning',
+                ),
                 _metric('Forecast Evidence', trend['projection_display'], trend['status'], trend['tone']),
             ),
             **trend,
@@ -281,16 +387,37 @@ def build_storage_analysis_presentation(
             'metrics': _recommendation_metrics(recommendations),
             'items': recommendations,
             'governance': (
-                {'field': 'Primary Action', 'requirement': recommendations[0]['title'] if recommendations else 'Maintain committed storage evidence.'},
-                {'field': 'Validation Criteria', 'requirement': 'Confirm unit, scope, identity, live metric, owner, maintenance window, and rollback plan.'},
+                {
+                    'field': 'Primary Action',
+                    'requirement': recommendations[0]['title']
+                    if recommendations
+                    else 'Maintain committed storage evidence.',
+                },
+                {
+                    'field': 'Validation Criteria',
+                    'requirement': 'Confirm unit, scope, identity, live metric, owner, maintenance window, and rollback plan.',
+                },
                 {'field': 'Assigned Owners', 'requirement': _assigned_owners(recommendations)},
-                {'field': 'Change Control', 'requirement': 'No storage expansion, cleanup, or migration is authorized by this report alone.'},
+                {
+                    'field': 'Change Control',
+                    'requirement': 'No storage expansion, cleanup, or migration is authorized by this report alone.',
+                },
             ),
         },
         'methodology': {
             'metrics': (
-                _metric('Data Sources', str(len(source_rows)), 'Active / Partial', 'warning' if evidence_gap_count else 'normal'),
-                _metric('Coverage', f'{node_count} Nodes' if node_count else 'Node Scope', namespace_scope, 'normal' if node_count else 'muted'),
+                _metric(
+                    'Data Sources',
+                    str(len(source_rows)),
+                    'Active / Partial',
+                    'warning' if evidence_gap_count else 'normal',
+                ),
+                _metric(
+                    'Coverage',
+                    f'{node_count} Nodes' if node_count else 'Node Scope',
+                    namespace_scope,
+                    'normal' if node_count else 'muted',
+                ),
                 _metric('Capacity Basis', 'Used / Total', 'Committed', 'normal'),
                 _metric('Observation Boundary', 'Snapshot', 'Committed', 'normal'),
             ),
@@ -303,9 +430,21 @@ def build_storage_analysis_presentation(
                 {'ref': 'M5', 'rule': 'Missing Evidence', 'setting': 'Explicit Not Available'},
             ),
             'references': (
-                {'ref': 'M3', 'title': 'Threshold Bands', 'description': 'Normal below 70%, warning from 70% to 84.9%, and critical at 85% or above.'},
-                {'ref': 'M4', 'title': 'Capacity Basis', 'description': 'Used and total must share units, scope, resource identity, and data cut-off.'},
-                {'ref': 'M5', 'title': 'Missing Evidence', 'description': 'Unavailable evidence remains explicit and is never converted to zero.'},
+                {
+                    'ref': 'M3',
+                    'title': 'Threshold Bands',
+                    'description': 'Normal below 70%, warning from 70% to 84.9%, and critical at 85% or above.',
+                },
+                {
+                    'ref': 'M4',
+                    'title': 'Capacity Basis',
+                    'description': 'Used and total must share units, scope, resource identity, and data cut-off.',
+                },
+                {
+                    'ref': 'M5',
+                    'title': 'Missing Evidence',
+                    'description': 'Unavailable evidence remains explicit and is never converted to zero.',
+                },
             ),
             'included': (
                 'Committed aggregate filesystem capacity and utilization when available.',
@@ -323,10 +462,26 @@ def build_storage_analysis_presentation(
                 'Validate all recommendations against live cluster state before remediation.',
             ),
             'status_language': (
-                {'ref': 'S1', 'title': 'Not Available', 'description': 'No evidence exists for the requested dimension.'},
-                {'ref': 'S2', 'title': 'Not Collected', 'description': 'Collection was prevented by configuration, permission, or failure.'},
-                {'ref': 'S3', 'title': 'Partial Coverage', 'description': 'Evidence exists but does not cover the full requested scope.'},
-                {'ref': 'S4', 'title': 'Source Unavailable', 'description': 'The source was unreachable or not providing data at the cut-off.'},
+                {
+                    'ref': 'S1',
+                    'title': 'Not Available',
+                    'description': 'No evidence exists for the requested dimension.',
+                },
+                {
+                    'ref': 'S2',
+                    'title': 'Not Collected',
+                    'description': 'Collection was prevented by configuration, permission, or failure.',
+                },
+                {
+                    'ref': 'S3',
+                    'title': 'Partial Coverage',
+                    'description': 'Evidence exists but does not cover the full requested scope.',
+                },
+                {
+                    'ref': 'S4',
+                    'title': 'Source Unavailable',
+                    'description': 'The source was unreachable or not providing data at the cut-off.',
+                },
             ),
         },
     }
@@ -384,9 +539,15 @@ def _status_from_percent(percent: float | None) -> tuple[str, str]:
 
 
 def _capacity_resource(summary: Mapping[str, Any], rows: list[dict[str, Any]]) -> dict[str, Any]:
-    capacity_bytes = sum(max(0.0, _safe_float(item.get('capacity_bytes'), 0.0) or 0.0) for item in rows if item.get('evidence_available'))
-    used_bytes = sum(max(0.0, _safe_float(item.get('used_bytes'), 0.0) or 0.0) for item in rows if item.get('evidence_available'))
-    free_bytes = sum(max(0.0, _safe_float(item.get('free_bytes'), 0.0) or 0.0) for item in rows if item.get('evidence_available'))
+    capacity_bytes = sum(
+        max(0.0, _safe_float(item.get('capacity_bytes'), 0.0) or 0.0) for item in rows if item.get('evidence_available')
+    )
+    used_bytes = sum(
+        max(0.0, _safe_float(item.get('used_bytes'), 0.0) or 0.0) for item in rows if item.get('evidence_available')
+    )
+    free_bytes = sum(
+        max(0.0, _safe_float(item.get('free_bytes'), 0.0) or 0.0) for item in rows if item.get('evidence_available')
+    )
     evidence_available = bool(summary.get('evidence_available')) or capacity_bytes > 0
     used_percent = _safe_float(summary.get('usage_percent'))
     headroom_percent = _safe_float(summary.get('free_percent'))
@@ -469,21 +630,29 @@ def _persistent_volume_summary(summary: Mapping[str, Any], rows: list[dict[str, 
         'count_display': str(count) if summary.get('inventory_evidence_available') or rows else 'Not Available',
         'capacity': _text(summary.get('capacity')) if evidence_available else 'Not Available',
         'observed_claim_usage': _text(summary.get('observed_claim_usage')) if evidence_available else 'Not Available',
-        'requested_claim_capacity': _text(summary.get('requested_claim_capacity')) if evidence_available else 'Not Available',
-        'unallocated': _text(summary.get('unallocated_provisioned_difference')) if evidence_available else 'Not Available',
+        'requested_claim_capacity': _text(summary.get('requested_claim_capacity'))
+        if evidence_available
+        else 'Not Available',
+        'unallocated': _text(summary.get('unallocated_provisioned_difference'))
+        if evidence_available
+        else 'Not Available',
     }
 
 
 def _persistent_claim_summary(summary: Mapping[str, Any], rows: list[dict[str, Any]]) -> dict[str, Any]:
     count = _safe_int(summary.get('count'), len(rows))
     used_percent = _safe_float(summary.get('used_percent'))
-    evidence_available = bool(summary.get('pressure_evidence_available')) or any(item.get('evidence_available') for item in rows)
+    evidence_available = bool(summary.get('pressure_evidence_available')) or any(
+        item.get('evidence_available') for item in rows
+    )
     status, tone = _status_from_percent(used_percent) if evidence_available else ('Unknown', 'muted')
     return {
         'evidence_available': evidence_available,
         'count': count,
         'count_display': str(count) if summary.get('inventory_evidence_available') or rows else 'Not Available',
-        'requested': _text(summary.get('requested')) if summary.get('requested_evidence_available') else 'Not Available',
+        'requested': _text(summary.get('requested'))
+        if summary.get('requested_evidence_available')
+        else 'Not Available',
         'used': _text(summary.get('used')) if evidence_available else 'Not Available',
         'free': _text(summary.get('free')) if evidence_available else 'Not Available',
         'used_percent': round(used_percent, 1) if used_percent is not None else None,
@@ -556,11 +725,15 @@ def _recommendation_cards(payload: Mapping[str, Any]) -> list[dict[str, Any]]:
         if not isinstance(item, Mapping):
             continue
         priority_raw = _text(item.get('priority'), 'Info')
-        priority = {'critical': 'P1', 'warning': 'P2', 'review': 'P2', 'normal': 'P3', 'info': 'P3'}.get(priority_raw.lower(), priority_raw if priority_raw in {'P1', 'P2', 'P3'} else 'P3')
+        priority = {'critical': 'P1', 'warning': 'P2', 'review': 'P2', 'normal': 'P3', 'info': 'P3'}.get(
+            priority_raw.lower(), priority_raw if priority_raw in {'P1', 'P2', 'P3'} else 'P3'
+        )
         result.append(
             {
                 'title': _text(item.get('title'), 'Review Storage Evidence'),
-                'description': _text(item.get('description'), 'Validate the committed storage evidence and ownership boundary.'),
+                'description': _text(
+                    item.get('description'), 'Validate the committed storage evidence and ownership boundary.'
+                ),
                 'priority': priority,
                 'owner': _owner_for_source(_text(item.get('source'), 'storage')),
                 'actionable': bool(item.get('is_actionable', True)),
@@ -575,20 +748,77 @@ def _owner_for_source(source: str) -> str:
     return 'Platform Operations'
 
 
-def _executive_findings(*, capacity: Mapping[str, Any], local_risks: int, filesystem_available: bool, pvc_available: bool, pv_available: bool) -> tuple[dict[str, str], ...]:
+def _executive_findings(
+    *,
+    capacity: Mapping[str, Any],
+    local_risks: int,
+    filesystem_available: bool,
+    pvc_available: bool,
+    pv_available: bool,
+) -> tuple[dict[str, str], ...]:
     findings: list[dict[str, str]] = []
     if local_risks:
-        findings.append(_finding('F1', 'P2', 'Review Local Filesystem Risk', 'Platform Operations', 'Open', 'warning', f'{local_risks} filesystem risk item(s) require identity, owner, live-state, and remediation validation.'))
+        findings.append(
+            _finding(
+                'F1',
+                'P2',
+                'Review Local Filesystem Risk',
+                'Platform Operations',
+                'Open',
+                'warning',
+                f'{local_risks} filesystem risk item(s) require identity, owner, live-state, and remediation validation.',
+            )
+        )
     if not filesystem_available:
-        findings.append(_finding('F2', 'P2', 'Restore Node Filesystem Coverage', 'Observability Owner', 'Review', 'warning', 'Collect node, mount, used, capacity, available, and operational-state evidence.'))
+        findings.append(
+            _finding(
+                'F2',
+                'P2',
+                'Restore Node Filesystem Coverage',
+                'Observability Owner',
+                'Review',
+                'warning',
+                'Collect node, mount, used, capacity, available, and operational-state evidence.',
+            )
+        )
     if not pvc_available or not pv_available:
-        findings.append(_finding('F3', 'P3', 'Restore PV/PVC Evidence Coverage', 'Observability Owner', 'Planned', 'info', 'Keep persistent inventory, claim utilization, and lifecycle evidence explicit and scope-aligned.'))
-    findings.append(_finding('F4', 'P3', 'Maintain Aggregate Headroom Monitoring', 'Platform Operations', 'Current' if capacity.get('evidence_available') else 'Review', 'normal' if capacity.get('evidence_available') else 'warning', 'Continue threshold monitoring without using aggregate headroom to clear localized risk.'))
+        findings.append(
+            _finding(
+                'F3',
+                'P3',
+                'Restore PV/PVC Evidence Coverage',
+                'Observability Owner',
+                'Planned',
+                'info',
+                'Keep persistent inventory, claim utilization, and lifecycle evidence explicit and scope-aligned.',
+            )
+        )
+    findings.append(
+        _finding(
+            'F4',
+            'P3',
+            'Maintain Aggregate Headroom Monitoring',
+            'Platform Operations',
+            'Current' if capacity.get('evidence_available') else 'Review',
+            'normal' if capacity.get('evidence_available') else 'warning',
+            'Continue threshold monitoring without using aggregate headroom to clear localized risk.',
+        )
+    )
     return tuple(findings[:4])
 
 
-def _finding(ref: str, priority: str, title: str, owner: str, status: str, tone: str, description: str) -> dict[str, str]:
-    return {'ref': ref, 'priority': priority, 'title': title, 'owner': owner, 'status': status, 'tone': tone, 'description': description}
+def _finding(
+    ref: str, priority: str, title: str, owner: str, status: str, tone: str, description: str
+) -> dict[str, str]:
+    return {
+        'ref': ref,
+        'priority': priority,
+        'title': title,
+        'owner': owner,
+        'status': status,
+        'tone': tone,
+        'description': description,
+    }
 
 
 def _executive_title(capacity: Mapping[str, Any], local_risks: int) -> str:
@@ -608,28 +838,119 @@ def _executive_body(capacity: Mapping[str, Any], local_risks: int, gaps: int) ->
     )
 
 
-def _risk_register(*, capacity: Mapping[str, Any], local_risks: int, filesystem_available: bool, pvc_risks: int, pvc_available: bool, pv_risks: int, expansion_available: bool) -> tuple[dict[str, str], ...]:
+def _risk_register(
+    *,
+    capacity: Mapping[str, Any],
+    local_risks: int,
+    filesystem_available: bool,
+    pvc_risks: int,
+    pvc_available: bool,
+    pv_risks: int,
+    expansion_available: bool,
+) -> tuple[dict[str, str], ...]:
     rows: list[dict[str, str]] = []
     if local_risks:
-        rows.append(_risk('R1', 'Local Filesystem Risk', 'P2', 'Medium', 'Platform Operations', 'Open', 'warning', 'Resolve filesystem identity, owner, impact, and live pressure before remediation.'))
+        rows.append(
+            _risk(
+                'R1',
+                'Local Filesystem Risk',
+                'P2',
+                'Medium',
+                'Platform Operations',
+                'Open',
+                'warning',
+                'Resolve filesystem identity, owner, impact, and live pressure before remediation.',
+            )
+        )
     if not filesystem_available:
-        rows.append(_risk('R2', 'Filesystem Coverage Gap', 'P2', 'Medium', 'Observability Owner', 'Review', 'warning', 'Node filesystem evidence is incomplete or unavailable.'))
+        rows.append(
+            _risk(
+                'R2',
+                'Filesystem Coverage Gap',
+                'P2',
+                'Medium',
+                'Observability Owner',
+                'Review',
+                'warning',
+                'Node filesystem evidence is incomplete or unavailable.',
+            )
+        )
     if pvc_risks or not pvc_available:
-        rows.append(_risk('R3', 'PVC Utilization Coverage', 'P2' if pvc_risks else 'P3', 'Medium' if pvc_risks else 'Low', 'Observability Owner', 'Open' if pvc_risks else 'Planned', 'warning' if pvc_risks else 'info', f'{pvc_risks} PVC risk item(s) detected; claim utilization coverage must remain explicit.'))
+        rows.append(
+            _risk(
+                'R3',
+                'PVC Utilization Coverage',
+                'P2' if pvc_risks else 'P3',
+                'Medium' if pvc_risks else 'Low',
+                'Observability Owner',
+                'Open' if pvc_risks else 'Planned',
+                'warning' if pvc_risks else 'info',
+                f'{pvc_risks} PVC risk item(s) detected; claim utilization coverage must remain explicit.',
+            )
+        )
     if pv_risks:
-        rows.append(_risk('R4', 'PV Lifecycle Risk', 'P2', 'Medium', 'Platform Operations', 'Open', 'warning', f'{pv_risks} PV lifecycle risk item(s) require reclaim-policy and binding review.'))
+        rows.append(
+            _risk(
+                'R4',
+                'PV Lifecycle Risk',
+                'P2',
+                'Medium',
+                'Platform Operations',
+                'Open',
+                'warning',
+                f'{pv_risks} PV lifecycle risk item(s) require reclaim-policy and binding review.',
+            )
+        )
     if not expansion_available:
-        rows.append(_risk('R5', 'Expansion Support Unknown', 'P3', 'Low', 'Platform Operations', 'Planned', 'info', 'StorageClass expansion and filesystem growth capability are not committed in the current evidence.'))
+        rows.append(
+            _risk(
+                'R5',
+                'Expansion Support Unknown',
+                'P3',
+                'Low',
+                'Platform Operations',
+                'Planned',
+                'info',
+                'StorageClass expansion and filesystem growth capability are not committed in the current evidence.',
+            )
+        )
     if not rows:
-        rows.append(_risk('R1', 'Aggregate Capacity Monitoring', 'P3', 'Low', 'Platform Operations', 'Current', 'normal', f'Aggregate storage remains {capacity.get("status", "Normal")} at the committed cut-off.'))
+        rows.append(
+            _risk(
+                'R1',
+                'Aggregate Capacity Monitoring',
+                'P3',
+                'Low',
+                'Platform Operations',
+                'Current',
+                'normal',
+                f'Aggregate storage remains {capacity.get("status", "Normal")} at the committed cut-off.',
+            )
+        )
     return tuple(rows[:5])
 
 
-def _risk(ref: str, title: str, priority: str, impact: str, owner: str, status: str, tone: str, description: str) -> dict[str, str]:
-    return {'ref': ref, 'title': title, 'priority': priority, 'impact': impact, 'owner': owner, 'status': status, 'tone': tone, 'description': description}
+def _risk(
+    ref: str, title: str, priority: str, impact: str, owner: str, status: str, tone: str, description: str
+) -> dict[str, str]:
+    return {
+        'ref': ref,
+        'title': title,
+        'priority': priority,
+        'impact': impact,
+        'owner': owner,
+        'status': status,
+        'tone': tone,
+        'description': description,
+    }
 
 
-def _recommendation_plan(*, recommendation_cards: list[dict[str, Any]], risk_register: tuple[dict[str, str], ...], capacity: Mapping[str, Any]) -> tuple[dict[str, str], ...]:
+def _recommendation_plan(
+    *,
+    recommendation_cards: list[dict[str, Any]],
+    risk_register: tuple[dict[str, str], ...],
+    capacity: Mapping[str, Any],
+) -> tuple[dict[str, str], ...]:
     items: list[dict[str, str]] = []
     for card in recommendation_cards:
         if not card['actionable']:
@@ -661,11 +982,18 @@ def _recommendation_plan(*, recommendation_cards: list[dict[str, Any]], risk_reg
                 'description': risk['description'],
             }
         )
-    if capacity.get('evidence_available') and not any('headroom' in item['title'].lower() or 'capacity monitoring' in item['title'].lower() for item in items):
+    if capacity.get('evidence_available') and not any(
+        'headroom' in item['title'].lower() or 'capacity monitoring' in item['title'].lower() for item in items
+    ):
         items.append(
             {
-                'ref': '', 'priority': 'P3', 'title': 'Maintain Aggregate Capacity Monitoring',
-                'owner': 'Platform Operations', 'target': 'This Month', 'status': 'Current', 'tone': 'normal',
+                'ref': '',
+                'priority': 'P3',
+                'title': 'Maintain Aggregate Capacity Monitoring',
+                'owner': 'Platform Operations',
+                'target': 'This Month',
+                'status': 'Current',
+                'tone': 'normal',
                 'description': f'Continue monitoring {capacity.get("used_percent_display")} aggregate utilization while preserving threshold and denominator evidence.',
             }
         )
@@ -689,9 +1017,18 @@ def _recommendation_title(risk_title: str) -> str:
 def _recommendation_metrics(items: tuple[dict[str, str], ...]) -> tuple[dict[str, str], ...]:
     counts = {priority: sum(1 for item in items if item['priority'] == priority) for priority in ('P1', 'P2', 'P3')}
     return (
-        _metric('P1 Actions', str(counts['P1']), 'Open' if counts['P1'] else 'None', 'critical' if counts['P1'] else 'normal'),
-        _metric('P2 Actions', str(counts['P2']), 'Open' if counts['P2'] else 'None', 'warning' if counts['P2'] else 'normal'),
-        _metric('P3 Actions', str(counts['P3']), 'Planned' if counts['P3'] else 'None', 'info' if counts['P3'] else 'normal'),
+        _metric(
+            'P1 Actions',
+            str(counts['P1']),
+            'Open' if counts['P1'] else 'None',
+            'critical' if counts['P1'] else 'normal',
+        ),
+        _metric(
+            'P2 Actions', str(counts['P2']), 'Open' if counts['P2'] else 'None', 'warning' if counts['P2'] else 'normal'
+        ),
+        _metric(
+            'P3 Actions', str(counts['P3']), 'Planned' if counts['P3'] else 'None', 'info' if counts['P3'] else 'normal'
+        ),
         _metric('Validation Gates', str(len(items)), 'Required', 'info'),
     )
 
@@ -715,8 +1052,16 @@ def _storage_trend(payload: Mapping[str, Any], *, current: float) -> dict[str, A
     historical_available = bool(historical)
     available = bool(historical or projected or projected_percent is not None)
     projection_display = _percent(projected_percent)
-    assessment_status, assessment_tone = _status_from_percent(projected_percent if projected_percent is not None else current if available else None)
-    assessment = 'Stable' if projected_percent is not None and projected_percent < 70 else assessment_status if available else 'Review'
+    assessment_status, assessment_tone = _status_from_percent(
+        projected_percent if projected_percent is not None else current if available else None
+    )
+    assessment = (
+        'Stable'
+        if projected_percent is not None and projected_percent < 70
+        else assessment_status
+        if available
+        else 'Review'
+    )
     return {
         'available': available,
         'historical_available': historical_available,
@@ -727,7 +1072,9 @@ def _storage_trend(payload: Mapping[str, Any], *, current: float) -> dict[str, A
         'assessment': assessment,
         'method': _text(forecast.get('method_label') or forecast.get('forecast_method'), 'Not Available'),
         'horizon': _text(forecast.get('forecast_horizon'), 'Not Available'),
-        'chart_svg': _trend_svg(historical, projected, current=current, projection=projected_percent) if available else '',
+        'chart_svg': _trend_svg(historical, projected, current=current, projection=projected_percent)
+        if available
+        else '',
     }
 
 
@@ -748,7 +1095,9 @@ def _trend_interpretation(capacity: Mapping[str, Any], trend: Mapping[str, Any])
     projection = _safe_float(trend.get('projection_percent'))
     if projection is not None and projection >= 70:
         return f'Storage is projected to reach {projection:.1f}%, which requires planning review before the warning-band exposure becomes operational.'
-    return 'Current and projected aggregate storage remain below the warning band within the available committed horizon.'
+    return (
+        'Current and projected aggregate storage remain below the warning band within the available committed horizon.'
+    )
 
 
 def _source_rows(payload: Mapping[str, Any]) -> tuple[dict[str, str], ...]:
@@ -788,7 +1137,9 @@ def _node_count(payload: Mapping[str, Any], filesystem: Mapping[str, Any]) -> in
     nodes = filesystem.get('available_nodes')
     if isinstance(nodes, Sequence) and not isinstance(nodes, (str, bytes, bytearray)):
         return len(set(str(item) for item in nodes if item))
-    return len({str(row.get('node')) for row in _rows(filesystem.get('all_rows') or filesystem.get('rows')) if row.get('node')})
+    return len(
+        {str(row.get('node')) for row in _rows(filesystem.get('all_rows') or filesystem.get('rows')) if row.get('node')}
+    )
 
 
 def _count_donut_svg(count: int, label: str) -> str:
@@ -830,23 +1181,41 @@ def _trend_svg(historical: list[float], projected: list[float], *, current: floa
         yy = y(float(tick))
         color = '#D97706' if tick == 70 else '#DC2626' if tick == 85 else '#E2E8F0'
         dash = ' stroke-dasharray="5 5"' if tick in {70, 85} else ''
-        parts.append(f'<line x1="{left}" y1="{yy:.1f}" x2="{width-right}" y2="{yy:.1f}" stroke="{color}" stroke-width="1"{dash}/>')
-        parts.append(f'<text x="{left-12}" y="{yy+3:.1f}" text-anchor="end" font-size="9" fill="#64748B">{tick}%</text>')
+        parts.append(
+            f'<line x1="{left}" y1="{yy:.1f}" x2="{width - right}" y2="{yy:.1f}" stroke="{color}" stroke-width="1"{dash}/>'
+        )
+        parts.append(
+            f'<text x="{left - 12}" y="{yy + 3:.1f}" text-anchor="end" font-size="9" fill="#64748B">{tick}%</text>'
+        )
     cutoff_x = x(cutoff_index)
-    parts.append(f'<line x1="{cutoff_x:.1f}" y1="{top}" x2="{cutoff_x:.1f}" y2="{height-bottom}" stroke="#A78BFA" stroke-width="1" stroke-dasharray="4 4"/>')
+    parts.append(
+        f'<line x1="{cutoff_x:.1f}" y1="{top}" x2="{cutoff_x:.1f}" y2="{height - bottom}" stroke="#A78BFA" stroke-width="1" stroke-dasharray="4 4"/>'
+    )
     history_points = ' '.join(f'{x(index):.1f},{y(value):.1f}' for index, value in enumerate(history_values))
-    parts.append(f'<polyline points="{history_points}" fill="none" stroke="#7C3AED" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>')
+    parts.append(
+        f'<polyline points="{history_points}" fill="none" stroke="#7C3AED" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>'
+    )
     if forecast_values:
         forecast_series = [history_values[-1], *forecast_values]
-        forecast_points = ' '.join(f'{x(cutoff_index + index):.1f},{y(value):.1f}' for index, value in enumerate(forecast_series))
-        parts.append(f'<polyline points="{forecast_points}" fill="none" stroke="#7C3AED" stroke-width="4" stroke-dasharray="8 6" stroke-linejoin="round" stroke-linecap="round"/>')
+        forecast_points = ' '.join(
+            f'{x(cutoff_index + index):.1f},{y(value):.1f}' for index, value in enumerate(forecast_series)
+        )
+        parts.append(
+            f'<polyline points="{forecast_points}" fill="none" stroke="#7C3AED" stroke-width="4" stroke-dasharray="8 6" stroke-linejoin="round" stroke-linecap="round"/>'
+        )
     end_value = forecast_values[-1] if forecast_values else history_values[-1]
     end_x = x(cutoff_index + len(forecast_values))
     end_y = y(end_value)
     parts.append(f'<circle cx="{end_x:.1f}" cy="{end_y:.1f}" r="5" fill="#7C3AED"/>')
-    parts.append(f'<text x="{end_x-6:.1f}" y="{end_y-10:.1f}" text-anchor="end" font-size="12" font-weight="700" fill="#7C3AED">{end_value:.1f}%</text>')
-    parts.append(f'<text x="{left}" y="{height-14}" font-size="10" fill="#64748B">Historical Start</text>')
-    parts.append(f'<text x="{cutoff_x:.1f}" y="{height-14}" text-anchor="middle" font-size="10" fill="#64748B">Cut-off</text>')
-    parts.append(f'<text x="{width-right}" y="{height-14}" text-anchor="end" font-size="10" fill="#64748B">Horizon</text>')
+    parts.append(
+        f'<text x="{end_x - 6:.1f}" y="{end_y - 10:.1f}" text-anchor="end" font-size="12" font-weight="700" fill="#7C3AED">{end_value:.1f}%</text>'
+    )
+    parts.append(f'<text x="{left}" y="{height - 14}" font-size="10" fill="#64748B">Historical Start</text>')
+    parts.append(
+        f'<text x="{cutoff_x:.1f}" y="{height - 14}" text-anchor="middle" font-size="10" fill="#64748B">Cut-off</text>'
+    )
+    parts.append(
+        f'<text x="{width - right}" y="{height - 14}" text-anchor="end" font-size="10" fill="#64748B">Horizon</text>'
+    )
     parts.append('</svg>')
     return ''.join(parts)

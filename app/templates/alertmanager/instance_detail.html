@@ -67,15 +67,14 @@
         </section>
         <section id="alertmanager-detail-tabs"
                  class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
-            {{ framed_workspace_tabs.render(
-                [
-                    ('configuration', 'Configuration', 'settings-2', instance.environment|default('')|title),
-                    ('validation', 'Validation & Capabilities', 'scan-search', (instance.readiness_status or 'validation_required')|replace('_', ' ')|title),
-                    ('runtime', 'Runtime & History', 'activity', runtime_state.health_status_label|default('Not Observed')),
-                    ('scope', 'Bindings & Consumers', 'waypoints', (binding_rows|default([])|length|string) ~ ' Bindings'),
-                ],
-                prefix='alertmanager',
-                aria_label='Alertmanager Connection Domains'
+            {{ framed_workspace_tabs.render([
+                        ('configuration', 'Configuration', 'settings-2', instance.environment|default('') |title),
+            ('validation', 'Validation & Capabilities', 'scan-search', (instance.readiness_status or 'validation_required')|replace('_', ' ')|title),
+            ('runtime', 'Runtime & History', 'activity', runtime_state.health_status_label|default('Not Observed')),
+            ('scope', 'Bindings & Consumers', 'waypoints', (binding_rows|default([])|length|string) ~ ' Bindings'),
+            ],
+            prefix='alertmanager',
+            aria_label='Alertmanager Connection Domains'
             ) }}
             <div class="p-4 sm:p-5 lg:p-6">
                 <div id="alertmanager-panel-configuration"

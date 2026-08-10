@@ -1,6 +1,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
-<section id="activity-register-workspace" class="{{ table_ui.block_classes() }}">
+<section id="activity-register-workspace"
+         class="{{ table_ui.block_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
@@ -14,7 +15,6 @@
         </div>
         {{ loading_bar.render('operational-activity-loading', label='Refreshing Activity Register') }}
     </header>
-
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form id="operational-activity-filter-form"
               hx-get="{{ url_for('notifications.activity_log') }}"
@@ -26,41 +26,58 @@
               class="grid w-full gap-3 sm:grid-cols-2 xl:grid-cols-5">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
-
             <div>
                 <label class="{{ table_ui.filter_label_classes() }}" for="activity-search">Search Activity</label>
                 {{ table_ui.search_field('search', filters.search, 'Title, event, message, or actor', 'activity-search') }}
             </div>
             <div>
                 <label class="{{ table_ui.filter_label_classes() }}" for="activity-category">Category</label>
-                <select id="activity-category" name="category" class="{{ table_ui.filter_select_classes() }}">
+                <select id="activity-category"
+                        name="category"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="all">All Categories</option>
-                    {% for option in category_options %}<option value="{{ option.key }}" {% if filters.category == option.key %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
+                    {% for option in category_options %}
+                        <option value="{{ option.key }}"
+                                {% if filters.category == option.key %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div>
                 <label class="{{ table_ui.filter_label_classes() }}" for="activity-status">Status</label>
-                <select id="activity-status" name="status" class="{{ table_ui.filter_select_classes() }}">
+                <select id="activity-status"
+                        name="status"
+                        class="{{ table_ui.filter_select_classes() }}">
                     {% for value, label in [('all', 'All Statuses'), ('success', 'Success'), ('warning', 'Warning'), ('error', 'Failed'), ('info', 'Information')] %}
-                        <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+                        <option value="{{ value }}"
+                                {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
                 <label class="{{ table_ui.filter_label_classes() }}" for="activity-actor">Actor</label>
-                <select id="activity-actor" name="user_id" class="{{ table_ui.filter_select_classes() }}">
+                <select id="activity-actor"
+                        name="user_id"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Actors</option>
-                    {% for option in user_options %}<option value="{{ option.id }}" {% if filters.user_id == option.id %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
+                    {% for option in user_options %}
+                        <option value="{{ option.id }}"
+                                {% if filters.user_id == option.id %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div>
-                <label class="{{ table_ui.filter_label_classes() }}" for="activity-time-range">Time Range</label>
-                <select id="activity-time-range" name="time_range" class="{{ table_ui.filter_select_classes() }}">
-                    {% for value, label in time_range_options %}<option value="{{ value }}" {% if filters.time_range == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                <label class="{{ table_ui.filter_label_classes() }}"
+                       for="activity-time-range">Time Range</label>
+                <select id="activity-time-range"
+                        name="time_range"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    {% for value, label in time_range_options %}
+                        <option value="{{ value }}"
+                                {% if filters.time_range == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
                 </select>
             </div>
         </form>
     </div>
-
     {% include "notifications/partials/_activity_table_content.html" %}
 </section>

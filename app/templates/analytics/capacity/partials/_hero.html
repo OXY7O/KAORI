@@ -20,24 +20,24 @@
             {% endcall %}
         </div>
         {% if dependency_blocker %}
-            <aside class="{{ page_hero.aside_classes() }}" aria-label="Capacity Readiness">
-                {% set analytics_posture_label = 'Capacity Posture' %}
+            <aside class="{{ page_hero.aside_classes() }}"
+                   aria-label="Capacity Readiness">
+                {% set analytics_posture_label = "Capacity Posture" %}
                 {% include "analytics/components/_blocked_posture.html" %}
             </aside>
         {% else %}
-            {{ page_hero.context_card(
-                'Capacity Posture',
-                'Capacity Posture',
-                'Capacity Headroom',
-                posture_label,
-                posture_tone,
-                [
-                    ('gauge', 'Lowest Headroom', lowest_headroom_metric_display, 'Ready-Worker capacity'),
-                    ('clock-3', 'Time Range', selected_time_range, 'Observation window')
-                ],
-                'Manage Clusters',
-                url_for('integrations.kubernetes'),
-                'server-cog'
+            {{ page_hero.context_card('Capacity Posture',
+                        'Capacity Posture',
+                        'Capacity Headroom',
+                        posture_label,
+                        posture_tone,
+                        [
+                        ('gauge', 'Lowest Headroom', lowest_headroom_metric_display, 'Ready-Worker capacity') ,
+            ('clock-3', 'Time Range', selected_time_range, 'Observation window')
+            ],
+            'Manage Clusters',
+            url_for('integrations.kubernetes'),
+            'server-cog'
             ) }}
         {% endif %}
     </div>

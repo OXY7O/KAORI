@@ -96,7 +96,9 @@ def main() -> int:
     if 'role="tablist"' in content:
         errors.append('Notification Center must use shared server-owned framed navigation')
     if 'macro render_navigation' not in framed_tabs or 'framed-workspace-v2-server' not in framed_tabs:
-        errors.append('shared framed workspace component must own server-backed Notification Center navigation geometry')
+        errors.append(
+            'shared framed workspace component must own server-backed Notification Center navigation geometry'
+        )
     if 'components/progress_bar.html' not in items or 'progress_bar.determinate(' not in items:
         errors.append('Notification Center Active Work must use shared determinate progress presentation')
 
@@ -113,7 +115,7 @@ def main() -> int:
         'def get_notification_center_page_context(',
         '_user_notification_query(user_id)',
         'ACTIVITY_PER_PAGE_OPTIONS',
-        "Notification.deck_visible.is_(True)",
+        'Notification.deck_visible.is_(True)',
         "Notification.event_type != 'authentication'",
         "'notification_filters': {",
         "'notification_category_options': [",

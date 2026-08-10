@@ -37,6 +37,7 @@ _RESOURCE_META = {
 _WARNING_THRESHOLD = WARNING_THRESHOLD
 _CRITICAL_THRESHOLD = CRITICAL_THRESHOLD
 
+
 def build_forecast_analysis_presentation(
     report: Any,
     payload: Mapping[str, Any],
@@ -54,14 +55,23 @@ def build_forecast_analysis_presentation(
     cluster = _mapping(payload.get('cluster'))
     forecast_payload = _mapping(payload.get('forecast_payload'))
     items = _resource_map(forecast_payload)
-    resources = {
-        key: _resource_presentation(key, _mapping(items.get(key)))
-        for key in _RESOURCE_ORDER
-    }
+    resources = {key: _resource_presentation(key, _mapping(items.get(key))) for key in _RESOURCE_ORDER}
     available = [item for item in resources.values() if item['available']]
-    highest = max(available, key=lambda item: item['peak_projected_percent']) if available else None
-    warning_count = sum(1 for item in available if item['peak_projected_percent'] >= _WARNING_THRESHOLD)
-    critical_count = sum(1 for item in available if item['peak_projected_percent'] >= _CRITICAL_THRESHOLD)
+    highest = (
+        max(available, key=lambda item: _float(item.get('peak_projected_percent')) or 0.0)
+        if available
+        else None
+    )
+    warning_count = sum(
+        1
+        for item in available
+        if (_float(item.get('peak_projected_percent')) or 0.0) >= _WARNING_THRESHOLD
+    )
+    critical_count = sum(
+        1
+        for item in available
+        if (_float(item.get('peak_projected_percent')) or 0.0) >= _CRITICAL_THRESHOLD
+    )
     coverage_count = len(available)
 
     method = sanitize_text(
@@ -137,7 +147,12 @@ def build_forecast_analysis_presentation(
                     _horizon_status(warning_count, horizon),
                     'warning' if warning_count else 'normal',
                 ),
-                _metric('Forecast Method', method, 'Committed' if available else 'Not Available', 'info' if available else 'muted'),
+                _metric(
+                    'Forecast Method',
+                    method,
+                    'Committed' if available else 'Not Available',
+                    'info' if available else 'muted',
+                ),
                 _metric(
                     'Forecast Coverage',
                     f'{coverage_count} / {len(_RESOURCE_ORDER)}',
@@ -159,7 +174,7 @@ def build_forecast_analysis_presentation(
         'portfolio': {
             'metrics': tuple(
                 _metric(
-                    f"{item['label']} Projection",
+                    f'{item["label"]} Projection',
                     item['projected_display'],
                     item['status'],
                     item['tone'],
@@ -174,10 +189,30 @@ def build_forecast_analysis_presentation(
         'memory': _resource_page(resources['memory'], 'Memory'),
         'pod_storage': {
             'metrics': (
-                _metric('Pod Current', resources['pods']['current_display'], resources['pods']['status'], resources['pods']['tone']),
-                _metric('Pod Projection', resources['pods']['projected_display'], resources['pods']['status'], resources['pods']['tone']),
-                _metric('Storage Current', resources['storage']['current_display'], resources['storage']['status'], resources['storage']['tone']),
-                _metric('Storage Projection', resources['storage']['projected_display'], resources['storage']['status'], resources['storage']['tone']),
+                _metric(
+                    'Pod Current',
+                    resources['pods']['current_display'],
+                    resources['pods']['status'],
+                    resources['pods']['tone'],
+                ),
+                _metric(
+                    'Pod Projection',
+                    resources['pods']['projected_display'],
+                    resources['pods']['status'],
+                    resources['pods']['tone'],
+                ),
+                _metric(
+                    'Storage Current',
+                    resources['storage']['current_display'],
+                    resources['storage']['status'],
+                    resources['storage']['tone'],
+                ),
+                _metric(
+                    'Storage Projection',
+                    resources['storage']['projected_display'],
+                    resources['storage']['status'],
+                    resources['storage']['tone'],
+                ),
             ),
             'pods': _resource_page(resources['pods'], 'Pods'),
             'storage': _resource_page(resources['storage'], 'Storage'),
@@ -190,10 +225,30 @@ def build_forecast_analysis_presentation(
         },
         'exposure': {
             'metrics': (
-                _metric('Warning Exposures', str(warning_count), _horizon_status(warning_count, horizon), 'warning' if warning_count else 'normal'),
-                _metric('Critical Exposures', str(critical_count), _horizon_status(critical_count, horizon), 'critical' if critical_count else 'normal'),
-                _metric('Committed Forecasts', str(coverage_count), 'Available Resources', 'normal' if coverage_count else 'muted'),
-                _metric('Evidence Gaps', str(len(_RESOURCE_ORDER) - coverage_count), 'Requires Review' if coverage_count < len(_RESOURCE_ORDER) else 'Clear', 'warning' if coverage_count < len(_RESOURCE_ORDER) else 'normal'),
+                _metric(
+                    'Warning Exposures',
+                    str(warning_count),
+                    _horizon_status(warning_count, horizon),
+                    'warning' if warning_count else 'normal',
+                ),
+                _metric(
+                    'Critical Exposures',
+                    str(critical_count),
+                    _horizon_status(critical_count, horizon),
+                    'critical' if critical_count else 'normal',
+                ),
+                _metric(
+                    'Committed Forecasts',
+                    str(coverage_count),
+                    'Available Resources',
+                    'normal' if coverage_count else 'muted',
+                ),
+                _metric(
+                    'Evidence Gaps',
+                    str(len(_RESOURCE_ORDER) - coverage_count),
+                    'Requires Review' if coverage_count < len(_RESOURCE_ORDER) else 'Clear',
+                    'warning' if coverage_count < len(_RESOURCE_ORDER) else 'normal',
+                ),
             ),
             'rows': tuple(_exposure_row(resources[key], idx + 1) for idx, key in enumerate(_RESOURCE_ORDER)),
             'confidence_title': _confidence_title(resources),
@@ -208,9 +263,19 @@ def build_forecast_analysis_presentation(
         'recommendations': recommendations,
         'methodology': {
             'metrics': (
-                _metric('Data Sources', str(len(sources)), 'Committed' if sources else 'Not Available', 'normal' if sources else 'muted'),
+                _metric(
+                    'Data Sources',
+                    str(len(sources)),
+                    'Committed' if sources else 'Not Available',
+                    'normal' if sources else 'muted',
+                ),
                 _metric('Forecast Horizon', _human_window(horizon), 'Configured', 'info'),
-                _metric('Forecast Method', method, 'Committed' if available else 'Not Available', 'info' if available else 'muted'),
+                _metric(
+                    'Forecast Method',
+                    method,
+                    'Committed' if available else 'Not Available',
+                    'info' if available else 'muted',
+                ),
                 _metric('Observation Boundary', 'Snapshot', 'Committed', 'normal'),
             ),
             'sources': sources,
@@ -222,9 +287,19 @@ def build_forecast_analysis_presentation(
                 {'ref': 'M5', 'rule': 'Missing Evidence', 'setting': 'Explicit Not Available'},
             ),
             'references': (
-                _reference('M3', 'Threshold Bands', 'Normal below 75%, warning from 75% to 89.9%, and critical at 90% or above.'),
-                _reference('M4', 'Forecast Method', f'{method} is used where committed historical evidence is available.'),
-                _reference('M5', 'Missing Evidence', 'Unavailable forecast dimensions remain explicit and are never converted to zero.'),
+                _reference(
+                    'M3',
+                    'Threshold Bands',
+                    'Normal below 75%, warning from 75% to 89.9%, and critical at 90% or above.',
+                ),
+                _reference(
+                    'M4', 'Forecast Method', f'{method} is used where committed historical evidence is available.'
+                ),
+                _reference(
+                    'M5',
+                    'Missing Evidence',
+                    'Unavailable forecast dimensions remain explicit and are never converted to zero.',
+                ),
             ),
             'included': (
                 'Committed resource history and projected endpoints returned by the materialized forecast dataset.',
@@ -245,13 +320,16 @@ def build_forecast_analysis_presentation(
                 _reference('S1', 'Not Available', 'No committed forecast exists for the requested dimension.'),
                 _reference('S2', 'Not Collected', 'Collection was prevented by configuration or failure.'),
                 _reference('S3', 'Partial Coverage', 'Evidence exists but does not cover the full requested scope.'),
-                _reference('S4', 'Source Unavailable', 'The source was unreachable or not providing data at the cut-off.'),
+                _reference(
+                    'S4', 'Source Unavailable', 'The source was unreachable or not providing data at the cut-off.'
+                ),
             ),
             'history_window': history_window,
             'horizon': horizon,
             'horizon_days': horizon_days,
         },
     }
+
 
 def _resource_map(forecast_payload: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
     result: dict[str, Mapping[str, Any]] = {}
@@ -264,6 +342,7 @@ def _resource_map(forecast_payload: Mapping[str, Any]) -> dict[str, Mapping[str,
         if key in _RESOURCE_META:
             result[key] = item
     return result
+
 
 def _resource_presentation(key: str, item: Mapping[str, Any]) -> dict[str, Any]:
     meta = _RESOURCE_META[key]
@@ -352,17 +431,24 @@ def _resource_presentation(key: str, item: Mapping[str, Any]) -> dict[str, Any]:
         'method': sanitize_text(item.get('method_label') or item.get('forecast_method'), fallback='Not Available'),
     }
 
+
 def _resource_page(resource: Mapping[str, Any], title: str) -> dict[str, Any]:
     projected = _float(resource.get('peak_projected_percent'))
     available = bool(resource.get('available'))
     if not available:
         assessment_title = f'{title} forecast evidence is not available.'
         assessment_body = resource['empty_reason']
-        assessment_note = 'The report does not convert missing evidence into zero usage, stable direction, or healthy capacity.'
+        assessment_note = (
+            'The report does not convert missing evidence into zero usage, stable direction, or healthy capacity.'
+        )
     elif projected >= _CRITICAL_THRESHOLD:
         assessment_title = f'{title} is projected in the critical operating band.'
-        assessment_body = 'Immediate ownership and live-state validation are required before capacity or workload changes.'
-        assessment_note = 'Forecast conclusions remain subject to model confidence, source freshness, and approved change controls.'
+        assessment_body = (
+            'Immediate ownership and live-state validation are required before capacity or workload changes.'
+        )
+        assessment_note = (
+            'Forecast conclusions remain subject to model confidence, source freshness, and approved change controls.'
+        )
     elif projected >= _WARNING_THRESHOLD:
         assessment_title = f'{title} is projected in the warning operating band.'
         assessment_body = 'Review growth assumptions, accountable ownership, and the available threshold ETA.'
@@ -376,19 +462,58 @@ def _resource_page(resource: Mapping[str, Any], title: str) -> dict[str, Any]:
         'metrics': (
             _metric('Current', resource['current_display'], resource['status'], resource['tone']),
             _metric('Peak Projection', resource['peak_projected_display'], resource['status'], resource['tone']),
-            _metric('Projected Headroom', resource['headroom_display'], 'Available' if available else 'Not Available', 'normal' if available else 'warning'),
-            _metric('Warning ETA', resource['warning_eta'], 'Threshold Timing', 'warning' if resource['warning_eta'] not in {'Not projected', 'Not Available'} else 'muted'),
+            _metric(
+                'Projected Headroom',
+                resource['headroom_display'],
+                'Available' if available else 'Not Available',
+                'normal' if available else 'warning',
+            ),
+            _metric(
+                'Warning ETA',
+                resource['warning_eta'],
+                'Threshold Timing',
+                'warning' if resource['warning_eta'] not in {'Not projected', 'Not Available'} else 'muted',
+            ),
         ),
         'assessment_title': assessment_title,
         'assessment_body': assessment_body,
         'assessment_note': assessment_note,
         'register': (
-            {'ref': f"{resource['key'][:1].upper()}1", 'dimension': 'Current Signal', 'value': resource['current_display'], 'evidence': 'Committed' if available else 'Missing', 'status': resource['status'], 'tone': resource['tone']},
-            {'ref': f"{resource['key'][:1].upper()}2", 'dimension': 'Peak Projected Signal', 'value': resource['peak_projected_display'], 'evidence': 'Committed' if available else 'Missing', 'status': resource['status'], 'tone': resource['tone']},
-            {'ref': f"{resource['key'][:1].upper()}3", 'dimension': 'Projected Headroom', 'value': resource['headroom_display'], 'evidence': 'Derived' if available else 'Missing', 'status': 'Available' if available else 'Not Available', 'tone': 'normal' if available else 'warning'},
-            {'ref': f"{resource['key'][:1].upper()}4", 'dimension': 'Warning ETA', 'value': resource['warning_eta'], 'evidence': resource['confidence'], 'status': 'Review' if available else 'Not Available', 'tone': 'warning' if available else 'muted'},
+            {
+                'ref': f'{resource["key"][:1].upper()}1',
+                'dimension': 'Current Signal',
+                'value': resource['current_display'],
+                'evidence': 'Committed' if available else 'Missing',
+                'status': resource['status'],
+                'tone': resource['tone'],
+            },
+            {
+                'ref': f'{resource["key"][:1].upper()}2',
+                'dimension': 'Peak Projected Signal',
+                'value': resource['peak_projected_display'],
+                'evidence': 'Committed' if available else 'Missing',
+                'status': resource['status'],
+                'tone': resource['tone'],
+            },
+            {
+                'ref': f'{resource["key"][:1].upper()}3',
+                'dimension': 'Projected Headroom',
+                'value': resource['headroom_display'],
+                'evidence': 'Derived' if available else 'Missing',
+                'status': 'Available' if available else 'Not Available',
+                'tone': 'normal' if available else 'warning',
+            },
+            {
+                'ref': f'{resource["key"][:1].upper()}4',
+                'dimension': 'Warning ETA',
+                'value': resource['warning_eta'],
+                'evidence': resource['confidence'],
+                'status': 'Review' if available else 'Not Available',
+                'tone': 'warning' if available else 'muted',
+            },
         ),
     }
+
 
 def _portfolio_row(resource: Mapping[str, Any], index: int) -> dict[str, Any]:
     return {
@@ -402,6 +527,7 @@ def _portfolio_row(resource: Mapping[str, Any], index: int) -> dict[str, Any]:
         'tone': resource['tone'],
     }
 
+
 def _resource_register_row(resource: Mapping[str, Any], ref: str) -> dict[str, Any]:
     return {
         'ref': ref,
@@ -413,27 +539,32 @@ def _resource_register_row(resource: Mapping[str, Any], ref: str) -> dict[str, A
         'tone': resource['tone'],
     }
 
+
 def _headroom_row(resource: Mapping[str, Any], ref: str) -> dict[str, Any]:
     return {
         'ref': ref,
-        'dimension': f"{resource['label']} Projected Headroom",
-        'current': _percent(max(0.0, 100.0 - resource['current_percent'])) if resource['available'] else 'Not Available',
+        'dimension': f'{resource["label"]} Projected Headroom',
+        'current': _percent(max(0.0, 100.0 - resource['current_percent']))
+        if resource['available']
+        else 'Not Available',
         'projection': resource['headroom_display'],
         'evidence': 'Derived' if resource['available'] else 'Missing',
         'status': 'Available' if resource['available'] else 'Not Available',
         'tone': 'normal' if resource['available'] else 'warning',
     }
 
+
 def _threshold_row(resource: Mapping[str, Any], ref: str) -> dict[str, Any]:
     return {
         'ref': ref,
-        'dimension': f"{resource['label']} Threshold ETA",
+        'dimension': f'{resource["label"]} Threshold ETA',
         'current': resource['warning_eta'],
         'projection': resource['critical_eta'],
         'evidence': resource['confidence'],
         'status': 'Review' if resource['available'] else 'Not Available',
         'tone': 'warning' if resource['available'] else 'muted',
     }
+
 
 def _exposure_row(resource: Mapping[str, Any], index: int) -> dict[str, Any]:
     exposure = 'Not Assessable'
@@ -455,6 +586,7 @@ def _exposure_row(resource: Mapping[str, Any], index: int) -> dict[str, Any]:
         'tone': resource['tone'],
     }
 
+
 def _recommendation_plan(
     *,
     forecast_payload: Mapping[str, Any],
@@ -464,14 +596,16 @@ def _recommendation_plan(
 ) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     candidates = _sequence(
-        forecast_payload.get('actionable_recommendations')
-        or forecast_payload.get('recommendation_cards')
+        forecast_payload.get('actionable_recommendations') or forecast_payload.get('recommendation_cards')
     )
     for item in candidates:
         if not isinstance(item, Mapping):
             continue
         title = sanitize_text(item.get('title') or item.get('label'), fallback='Review Forecast Evidence')
-        description = sanitize_text(item.get('description') or item.get('message'), fallback='Validate committed forecast evidence and live state.')
+        description = sanitize_text(
+            item.get('description') or item.get('message'),
+            fallback='Validate committed forecast evidence and live state.',
+        )
         priority = _priority(item.get('priority') or item.get('severity'))
         rows.append(
             {
@@ -492,7 +626,7 @@ def _recommendation_plan(
             {
                 'priority': 'P2',
                 'title': 'Review Memory Long-Range Direction',
-                'description': f"Validate the projected memory position of {memory['projected_display']} and threshold ETA {memory['warning_eta']}.",
+                'description': f'Validate the projected memory position of {memory["projected_display"]} and threshold ETA {memory["warning_eta"]}.',
                 'owner': 'Platform Operations',
                 'target': 'Next Week',
                 'status': 'Open',
@@ -518,9 +652,9 @@ def _recommendation_plan(
                 'priority': 'P3',
                 'title': title,
                 'description': (
-                    f"Keep committed {resource['label']} history and projected endpoints available for the selected reporting boundary."
+                    f'Keep committed {resource["label"]} history and projected endpoints available for the selected reporting boundary.'
                     if resource['available']
-                    else f"Restore committed {resource['label']} history and projected endpoint evidence."
+                    else f'Restore committed {resource["label"]} history and projected endpoint evidence.'
                 ),
                 'owner': 'Observability Owner' if key == 'cpu' else 'Platform Operations',
                 'target': 'This Month',
@@ -601,8 +735,16 @@ def _source_rows(
     if not rows:
         rows.extend(
             [
-                {'source': 'Forecast Materialized Snapshot', 'freshness': history_window, 'last_collected': _format_datetime(forecast_payload.get('generated_at'))},
-                {'source': 'Forecast Projection Evidence', 'freshness': horizon, 'last_collected': _format_datetime(forecast_payload.get('generated_at'))},
+                {
+                    'source': 'Forecast Materialized Snapshot',
+                    'freshness': history_window,
+                    'last_collected': _format_datetime(forecast_payload.get('generated_at')),
+                },
+                {
+                    'source': 'Forecast Projection Evidence',
+                    'freshness': horizon,
+                    'last_collected': _format_datetime(forecast_payload.get('generated_at')),
+                },
             ]
         )
     return tuple(rows[:5])
@@ -620,10 +762,16 @@ def _combined_chart_svg(resources: Mapping[str, Mapping[str, Any]]) -> str:
         y = top + chart_h - chart_h * value / 100.0
         dash = ' stroke-dasharray="5 5"' if value in {75, 90} else ''
         color = '#D97706' if value == 75 else '#DC2626' if value == 90 else '#E2E8F0'
-        parts.append(f'<line x1="{left}" y1="{y:.1f}" x2="{left+chart_w}" y2="{y:.1f}" stroke="{color}" stroke-width="1"{dash}/>' )
-        parts.append(f'<text x="{left-10}" y="{y+4:.1f}" text-anchor="end" font-size="10" fill="#64748B">{value}%</text>')
+        parts.append(
+            f'<line x1="{left}" y1="{y:.1f}" x2="{left + chart_w}" y2="{y:.1f}" stroke="{color}" stroke-width="1"{dash}/>'
+        )
+        parts.append(
+            f'<text x="{left - 10}" y="{y + 4:.1f}" text-anchor="end" font-size="10" fill="#64748B">{value}%</text>'
+        )
     cutoff_x = left + chart_w * 0.68
-    parts.append(f'<line x1="{cutoff_x:.1f}" y1="{top}" x2="{cutoff_x:.1f}" y2="{top+chart_h}" stroke="#A78BFA" stroke-dasharray="4 4"/>')
+    parts.append(
+        f'<line x1="{cutoff_x:.1f}" y1="{top}" x2="{cutoff_x:.1f}" y2="{top + chart_h}" stroke="#A78BFA" stroke-dasharray="4 4"/>'
+    )
 
     endpoint_labels: list[tuple[str, float]] = []
     endpoint_meta: dict[str, tuple[float, str, str]] = {}
@@ -638,9 +786,13 @@ def _combined_chart_svg(resources: Mapping[str, Mapping[str, Any]]) -> str:
         proj_points = _series_points(proj_values, cutoff_x, left + chart_w, top, chart_h)
         color = resource['color']
         if hist_points:
-            parts.append(f'<polyline points="{hist_points}" fill="none" stroke="{color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>')
+            parts.append(
+                f'<polyline points="{hist_points}" fill="none" stroke="{color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'
+            )
         if proj_points:
-            parts.append(f'<polyline points="{proj_points}" fill="none" stroke="{color}" stroke-width="3" stroke-dasharray="8 6" stroke-linecap="round" stroke-linejoin="round"/>')
+            parts.append(
+                f'<polyline points="{proj_points}" fill="none" stroke="{color}" stroke-width="3" stroke-dasharray="8 6" stroke-linecap="round" stroke-linejoin="round"/>'
+            )
         end_y = top + chart_h - chart_h * resource['projected_percent'] / 100.0
         end_x = left + chart_w
         parts.append(f'<circle cx="{end_x:.1f}" cy="{end_y:.1f}" r="4" fill="{color}"/>')
@@ -651,14 +803,18 @@ def _combined_chart_svg(resources: Mapping[str, Mapping[str, Any]]) -> str:
     for key, label_y in resolved.items():
         end_x, color, text = endpoint_meta[key]
         data_y = dict(endpoint_labels)[key]
-        parts.append(f'<path d="M {end_x+3:.1f} {data_y:.1f} L {label_x-8:.1f} {label_y:.1f}" fill="none" stroke="{color}" stroke-width="1" opacity=".75"/>')
-        parts.append(f'<text x="{label_x:.1f}" y="{label_y+4:.1f}" font-size="10.5" font-weight="700" fill="{color}">{escape(text)}</text>')
+        parts.append(
+            f'<path d="M {end_x + 3:.1f} {data_y:.1f} L {label_x - 8:.1f} {label_y:.1f}" fill="none" stroke="{color}" stroke-width="1" opacity=".75"/>'
+        )
+        parts.append(
+            f'<text x="{label_x:.1f}" y="{label_y + 4:.1f}" font-size="10.5" font-weight="700" fill="{color}">{escape(text)}</text>'
+        )
 
     parts.extend(
         [
-            f'<text x="{left}" y="{top+chart_h+24}" font-size="10" fill="#64748B">Historical Start</text>',
-            f'<text x="{cutoff_x}" y="{top+chart_h+24}" text-anchor="middle" font-size="10" fill="#64748B">Cut-off</text>',
-            f'<text x="{left+chart_w}" y="{top+chart_h+24}" text-anchor="end" font-size="10" fill="#64748B">Horizon</text>',
+            f'<text x="{left}" y="{top + chart_h + 24}" font-size="10" fill="#64748B">Historical Start</text>',
+            f'<text x="{cutoff_x}" y="{top + chart_h + 24}" text-anchor="middle" font-size="10" fill="#64748B">Cut-off</text>',
+            f'<text x="{left + chart_w}" y="{top + chart_h + 24}" text-anchor="end" font-size="10" fill="#64748B">Horizon</text>',
             '</svg>',
         ]
     )
@@ -688,24 +844,38 @@ def _single_chart_svg(
         y = top + chart_h - chart_h * value / 100.0
         dash = ' stroke-dasharray="5 5"' if value in {75, 90} else ''
         grid = '#D97706' if value == 75 else '#DC2626' if value == 90 else '#E2E8F0'
-        parts.append(f'<line x1="{left}" y1="{y:.1f}" x2="{left+chart_w}" y2="{y:.1f}" stroke="{grid}" stroke-width="1"{dash}/>' )
-        parts.append(f'<text x="{left-10}" y="{y+4:.1f}" text-anchor="end" font-size="10" fill="#64748B">{value}%</text>')
-    parts.append(f'<line x1="{cutoff_x:.1f}" y1="{top}" x2="{cutoff_x:.1f}" y2="{top+chart_h}" stroke="#A78BFA" stroke-dasharray="4 4"/>')
+        parts.append(
+            f'<line x1="{left}" y1="{y:.1f}" x2="{left + chart_w}" y2="{y:.1f}" stroke="{grid}" stroke-width="1"{dash}/>'
+        )
+        parts.append(
+            f'<text x="{left - 10}" y="{y + 4:.1f}" text-anchor="end" font-size="10" fill="#64748B">{value}%</text>'
+        )
+    parts.append(
+        f'<line x1="{cutoff_x:.1f}" y1="{top}" x2="{cutoff_x:.1f}" y2="{top + chart_h}" stroke="#A78BFA" stroke-dasharray="4 4"/>'
+    )
     hist_values = history or [current]
     proj_values = [current, *(projection or [projected])]
-    parts.append(f'<polyline points="{_series_points(hist_values, left, cutoff_x, top, chart_h)}" fill="none" stroke="{color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>')
-    parts.append(f'<polyline points="{_series_points(proj_values, cutoff_x, left+chart_w, top, chart_h)}" fill="none" stroke="{color}" stroke-width="3" stroke-dasharray="8 6" stroke-linecap="round" stroke-linejoin="round"/>')
+    parts.append(
+        f'<polyline points="{_series_points(hist_values, left, cutoff_x, top, chart_h)}" fill="none" stroke="{color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'
+    )
+    parts.append(
+        f'<polyline points="{_series_points(proj_values, cutoff_x, left + chart_w, top, chart_h)}" fill="none" stroke="{color}" stroke-width="3" stroke-dasharray="8 6" stroke-linecap="round" stroke-linejoin="round"/>'
+    )
     current_y = top + chart_h - chart_h * current / 100.0
     projected_y = top + chart_h - chart_h * projected / 100.0
     parts.append(f'<circle cx="{cutoff_x:.1f}" cy="{current_y:.1f}" r="4" fill="{color}"/>')
-    parts.append(f'<circle cx="{left+chart_w:.1f}" cy="{projected_y:.1f}" r="4" fill="{color}"/>')
-    parts.append(f'<text x="{cutoff_x-8:.1f}" y="{current_y-8:.1f}" text-anchor="end" font-size="11" font-weight="700" fill="#0F172A">{current:.1f}%</text>')
-    parts.append(f'<text x="{left+chart_w-6:.1f}" y="{projected_y-8:.1f}" text-anchor="end" font-size="11" font-weight="700" fill="{color}">{projected:.1f}%</text>')
+    parts.append(f'<circle cx="{left + chart_w:.1f}" cy="{projected_y:.1f}" r="4" fill="{color}"/>')
+    parts.append(
+        f'<text x="{cutoff_x - 8:.1f}" y="{current_y - 8:.1f}" text-anchor="end" font-size="11" font-weight="700" fill="#0F172A">{current:.1f}%</text>'
+    )
+    parts.append(
+        f'<text x="{left + chart_w - 6:.1f}" y="{projected_y - 8:.1f}" text-anchor="end" font-size="11" font-weight="700" fill="{color}">{projected:.1f}%</text>'
+    )
     parts.extend(
         [
-            f'<text x="{left}" y="{top+chart_h+24}" font-size="10" fill="#64748B">Historical</text>',
-            f'<text x="{cutoff_x}" y="{top+chart_h+24}" text-anchor="middle" font-size="10" fill="#64748B">Cut-off</text>',
-            f'<text x="{left+chart_w}" y="{top+chart_h+24}" text-anchor="end" font-size="10" fill="#64748B">Horizon</text>',
+            f'<text x="{left}" y="{top + chart_h + 24}" font-size="10" fill="#64748B">Historical</text>',
+            f'<text x="{cutoff_x}" y="{top + chart_h + 24}" text-anchor="middle" font-size="10" fill="#64748B">Cut-off</text>',
+            f'<text x="{left + chart_w}" y="{top + chart_h + 24}" text-anchor="end" font-size="10" fill="#64748B">Horizon</text>',
             '</svg>',
         ]
     )
@@ -761,7 +931,7 @@ def _confidence_title(resources: Mapping[str, Mapping[str, Any]]) -> str:
 
 
 def _confidence_body(resources: Mapping[str, Mapping[str, Any]]) -> str:
-    parts = [f"{item['label']}: {item['confidence']}" for item in resources.values()]
+    parts = [f'{item["label"]}: {item["confidence"]}' for item in resources.values()]
     return '; '.join(parts) + '. Confidence must be reviewed with history completeness and source freshness.'
 
 
@@ -789,7 +959,7 @@ def _executive_title(highest: Mapping[str, Any] | None, warning_count: int, crit
     if warning_count:
         return 'Forecast warning exposure requires planning review.'
     if highest:
-        return f"{highest['label']} is the leading projected resource signal."
+        return f'{highest["label"]} is the leading projected resource signal.'
     return 'Committed forecast evidence is not available.'
 
 
@@ -797,9 +967,9 @@ def _executive_body(highest: Mapping[str, Any] | None, warning_count: int, criti
     if not highest:
         return 'No committed resource projection can be assigned for the selected reporting boundary.'
     return (
-        f"The highest peak projected signal is {highest['label']} at {highest['peak_projected_display']}. "
-        f"The configured horizon is {_human_window(horizon)} with {warning_count} warning and "
-        f"{critical_count} critical exposure(s)."
+        f'The highest peak projected signal is {highest["label"]} at {highest["peak_projected_display"]}. '
+        f'The configured horizon is {_human_window(horizon)} with {warning_count} warning and '
+        f'{critical_count} critical exposure(s).'
     )
 
 
@@ -809,9 +979,9 @@ def _portfolio_interpretation(resources: Mapping[str, Mapping[str, Any]], horizo
     if not available:
         return 'Committed forecast evidence was not available for any resource.'
     highest = max(available, key=lambda item: item['peak_projected_percent'])
-    message = f"{highest['label']} is the highest peak projected resource at {highest['peak_projected_display']} within {_human_window(horizon)}."
+    message = f'{highest["label"]} is the highest peak projected resource at {highest["peak_projected_display"]} within {_human_window(horizon)}.'
     if missing:
-        message += f" Missing forecast evidence remains explicit for {', '.join(missing)}."
+        message += f' Missing forecast evidence remains explicit for {", ".join(missing)}.'
     return message
 
 
@@ -855,11 +1025,13 @@ def _owner_summary(rows: Sequence[Mapping[str, Any]]) -> str:
     for item in rows:
         owner = sanitize_text(item.get('owner'), fallback='Platform Operations')
         counts[owner] = counts.get(owner, 0) + 1
-    return '; '.join(f'{owner}: {count} action(s)' for owner, count in counts.items()) or 'No owner assignment available.'
+    return (
+        '; '.join(f'{owner}: {count} action(s)' for owner, count in counts.items()) or 'No owner assignment available.'
+    )
 
 
 def _horizon_status(count: int, horizon: str) -> str:
-    return f"Within {_human_window(horizon)}" if count else f"None within {_human_window(horizon)}"
+    return f'Within {_human_window(horizon)}' if count else f'None within {_human_window(horizon)}'
 
 
 def _human_window(value: str) -> str:

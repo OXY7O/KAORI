@@ -1,13 +1,17 @@
 import logging
 
-from flask import redirect, render_template, request, url_for
+from flask import (
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from werkzeug.exceptions import HTTPException
 
 from app.notifications.service import record_operational_activity
 from app.rbac.decorators import permission_required
-from app.reports.web import render_reports_unavailable
 from app.reports.storage.service import (
     build_report_cleanup_dry_run,
     build_storage_integrity_presentation,
@@ -17,6 +21,7 @@ from app.reports.storage.service import (
     scan_report_storage_integrity,
     verify_active_report_storage,
 )
+from app.reports.web import render_reports_unavailable
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +49,7 @@ def storage() -> ResponseReturnValue:
         try:
             payload = get_report_storage_payload(workspace='integrity')
             if payload['storage_actions_enabled']:
-                payload['integrity_result'] = build_storage_integrity_presentation(
-                    scan_report_storage_integrity()
-                )
+                payload['integrity_result'] = build_storage_integrity_presentation(scan_report_storage_integrity())
         except Exception:
             logger.exception('Report storage integrity scan failed.')
             return render_reports_unavailable(

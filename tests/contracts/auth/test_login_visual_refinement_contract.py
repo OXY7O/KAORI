@@ -14,7 +14,7 @@ def _read(path: Path) -> str:
 def test_login_brand_panel_uses_operations_fabric_visual() -> None:
     source = _read(TEMPLATES / '_brand_panel.html')
 
-    assert "images/kaori-login-operations-fabric.svg" in source
+    assert 'images/kaori-login-operations-fabric.svg' in source
     assert 'kaori-operations-fabric' in source
     assert 'Operate with <span class="kaori-login-brand__clarity">Clarity</span>.' in source
     assert 'Infrastructure Operations Platform' in source

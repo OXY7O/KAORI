@@ -14,7 +14,6 @@
         </div>
         {{ table_label.special_label('Read-Only Metadata', 'info', 'lock-keyhole') }}
     </header>
-
     <div class="p-5">
         <dl class="grid overflow-hidden rounded-xl border border-outline-default bg-surface-subtle sm:grid-cols-2 xl:grid-cols-4">
             {% for icon, label, value in [
@@ -28,11 +27,12 @@
                         <i data-lucide="{{ icon }}" class="h-4 w-4 text-kaori-primary"></i>
                         {{ label }}
                     </dt>
-                    <dd class="mt-2 break-words text-sm font-bold text-content-primary">{{ value }}</dd>
+                    <dd class="mt-2 break-words text-sm font-bold text-content-primary">
+                        {{ value }}
+                    </dd>
                 </div>
             {% endfor %}
         </dl>
-
         <div class="mt-4 grid gap-4 rounded-xl border border-kaori-primary/20 bg-kaori-soft/55 p-4 sm:grid-cols-2">
             <div class="min-w-0">
                 <p class="flex items-center gap-2 text-xs font-semibold text-kaori-primary">
@@ -51,7 +51,6 @@
         </div>
     </div>
 </section>
-
 <section class="mt-5 overflow-hidden rounded-2xl border border-outline-default bg-surface-card">
     <header class="border-b border-outline-default px-5 py-4">
         <div class="flex items-start gap-3">
@@ -78,7 +77,6 @@
         {% endfor %}
     </div>
 </section>
-
 <section class="mt-5 overflow-hidden rounded-2xl border border-outline-default bg-surface-card">
     <header class="flex flex-col gap-3 border-b border-outline-default px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
         <div class="flex items-start gap-3">
@@ -111,14 +109,16 @@
                     <span class="ml-2 flex shrink-0 items-center gap-1.5 pt-0.5 text-xs font-semibold text-content-muted transition group-hover:text-kaori-primary">
                         <span class="group-open:hidden">Details</span>
                         <span class="hidden group-open:inline">Collapse</span>
-                        <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
+                        <i data-lucide="chevron-down"
+                           class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
                     </span>
                 </summary>
                 <div class="border-t border-outline-default bg-surface-card px-4 py-4">
                     <ul class="space-y-2.5">
                         {% for feature in group.features %}
                             <li class="flex items-start gap-2.5 text-xs leading-5 text-content-secondary">
-                                <i data-lucide="circle-check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
+                                <i data-lucide="circle-check"
+                                   class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
                                 <span>{{ feature }}</span>
                             </li>
                         {% endfor %}

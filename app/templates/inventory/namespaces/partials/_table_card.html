@@ -1,13 +1,12 @@
 {% import "components/table.html" as table_ui %}
 <section class="{{ table_ui.block_classes() }}">
-    {{ table_ui.inventory_block_header(
-        'folders',
+    {{ table_ui.inventory_block_header('folders',
         'Namespace Inventory',
         'Kubernetes namespaces collected from connected clusters.',
         'namespaces-table-loading',
         'Refreshing Namespace Inventory',
-        url_for('integrations.kubernetes'),
-        'Open Cluster List'
+        url_for('integrations.kubernetes') ,
+    'Open Cluster List'
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form hx-get="{{ url_for('inventory.namespaces') }}"
@@ -21,20 +20,28 @@
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}" />
             <input type="hidden" name="partial_mode" value="page_workspace" />
             <div>
-                <label for="namespaces-cluster-filter" class="{{ table_ui.filter_label_classes() }}">Cluster</label>
-                <select id="namespaces-cluster-filter" name="cluster_id" class="{{ table_ui.filter_select_classes() }}">
+                <label for="namespaces-cluster-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Cluster</label>
+                <select id="namespaces-cluster-filter"
+                        name="cluster_id"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Clusters</option>
                     {% for cluster in clusters %}
-                        <option value="{{ cluster.id }}" {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
+                        <option value="{{ cluster.id }}"
+                                {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
-                <label for="namespaces-status-filter" class="{{ table_ui.filter_label_classes() }}">Lifecycle</label>
-                <select id="namespaces-status-filter" name="status" class="{{ table_ui.filter_select_classes() }}">
+                <label for="namespaces-status-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Lifecycle</label>
+                <select id="namespaces-status-filter"
+                        name="status"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="" {% if not selected_status %}selected{% endif %}>All Lifecycle States</option>
                     {% for status_name in inventory.namespace_statuses %}
-                        <option value="{{ status_name }}" {% if selected_status == status_name %}selected{% endif %}>{{ status_name }}</option>
+                        <option value="{{ status_name }}"
+                                {% if selected_status == status_name %}selected{% endif %}>{{ status_name }}</option>
                     {% endfor %}
                 </select>
             </div>

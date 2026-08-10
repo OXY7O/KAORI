@@ -34,24 +34,48 @@ def _load_payload(monkeypatch: pytest.MonkeyPatch):
         'app.reports.export.payloads.common',
     )
     modules = {name: ModuleType(name) for name in module_names}
-    for name in ('app', 'app.common', 'app.extensions', 'app.inventory', 'app.inventory.resources', 'app.models', 'app.reports', 'app.reports.export', 'app.reports.export.payloads'):
+    for name in (
+        'app',
+        'app.common',
+        'app.extensions',
+        'app.inventory',
+        'app.inventory.resources',
+        'app.models',
+        'app.reports',
+        'app.reports.export',
+        'app.reports.export.payloads',
+    ):
         modules[name].__path__ = []
 
     modules['app.common.inventory_generation'].filter_current_generation = lambda query, _model: query
     modules['app.extensions.db'].db = SimpleNamespace()
     modules['app.inventory.formatting'].format_kubernetes_size = lambda value: '-' if value is None else str(value)
     ingress_semantics = modules['app.inventory.resources.ingress_semantics']
-    ingress_semantics.ingress_class_presentation = lambda value, source=None: (value or 'Not Explicitly Set', source or 'Not Explicitly Set')
+    ingress_semantics.ingress_class_presentation = lambda value, source=None: (
+        value or 'Not Explicitly Set',
+        source or 'Not Explicitly Set',
+    )
     ingress_semantics.host_presentation = lambda details: ('All Hosts', 'Host scope', 0)
     ingress_semantics.publication_presentation = lambda details: {
-        'label': 'Not Reported', 'tone': 'unknown', 'address': 'Not Reported',
-        'addresses': [], 'supporting': 'Not Reported', 'exception': True, 'reported': False,
+        'label': 'Not Reported',
+        'tone': 'unknown',
+        'address': 'Not Reported',
+        'addresses': [],
+        'supporting': 'Not Reported',
+        'exception': True,
+        'reported': False,
     }
     service_semantics = modules['app.inventory.resources.service_semantics']
-    service_semantics.effective_service_type = lambda service_type, cluster_ip: ('Headless' if service_type == 'ClusterIP' and cluster_ip == 'None' else (service_type or 'Unknown'))
+    service_semantics.effective_service_type = lambda service_type, cluster_ip: (
+        'Headless' if service_type == 'ClusterIP' and cluster_ip == 'None' else (service_type or 'Unknown')
+    )
     service_semantics.access_model = lambda service_type: service_type
     service_semantics.backend_registration = lambda service_type, selector, endpoints: {
-        'label': 'Registered', 'ready': 0, 'not_ready': 0, 'reported': True, 'source': 'EndpointSlice'
+        'label': 'Registered',
+        'ready': 0,
+        'not_ready': 0,
+        'reported': True,
+        'source': 'EndpointSlice',
     }
 
     model_names = (

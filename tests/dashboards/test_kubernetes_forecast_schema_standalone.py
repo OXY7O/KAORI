@@ -1,7 +1,7 @@
 import importlib.util
+from pathlib import Path
 import sys
 import types
-from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -40,9 +40,7 @@ def test_forecast_builder_accepts_latest_daily_average_payload_without_flask() -
         utils = types.ModuleType('app.dashboards.kubernetes.utils')
         utils.forecast_insight = lambda items: 'Forecast insight'
         sys.modules[utils.__name__] = utils
-        sys.modules['app.dashboards.kubernetes.sections'] = types.ModuleType(
-            'app.dashboards.kubernetes.sections'
-        )
+        sys.modules['app.dashboards.kubernetes.sections'] = types.ModuleType('app.dashboards.kubernetes.sections')
         forecast = _load_module(
             'app.dashboards.kubernetes.sections.forecast',
             ROOT / 'app/dashboards/kubernetes/sections/forecast.py',

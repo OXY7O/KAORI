@@ -52,7 +52,7 @@ def run_report_schedule_job(
             lifecycle.checkpoint(
                 current=result['due_count'],
                 total=max(result['due_count'], 1),
-                message=f"Processed {result['due_count']} due report schedule(s).",
+                message=f'Processed {result["due_count"]} due report schedule(s).',
             )
             if failures:
                 result['partial'] = True

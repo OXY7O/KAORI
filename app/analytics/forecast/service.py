@@ -273,6 +273,7 @@ class ForecastAnalysisService(AnalyticsBaseService):
         )
         return _extract_instant_value(result)
 
+
 def get_forecast_analysis_context(
     query_args: Mapping[str, Any],
 ) -> dict[str, Any]:
@@ -313,7 +314,6 @@ def get_forecast_analysis_context(
         {'cpu', 'memory', 'storage', 'pods', 'trend', 'recommendations'},
     )
     selected_method = _normalize_option(
-
         get_query_value(
             query_args=query_args,
             name='method',
@@ -398,6 +398,7 @@ def get_forecast_analysis_context(
 
     return context
 
+
 def _get_resource_definitions(
     namespace: str,
 ) -> list[ForecastResourceDefinition]:
@@ -448,11 +449,11 @@ def _get_resource_definitions(
             description='Projected PVC usage compared with the observed mounted-volume capacity baseline.',
             scope_label=namespace_scope,
             comparison_label=(
-                'Namespace PVC Usage vs Namespace Observed Capacity'
-                if namespace
-                else 'PVC Usage vs Observed Capacity'
+                'Namespace PVC Usage vs Namespace Observed Capacity' if namespace else 'PVC Usage vs Observed Capacity'
             ),
-            capacity_label=(f'Namespace {namespace} observed volume capacity' if namespace else 'All observed volume capacity'),
+            capacity_label=(
+                f'Namespace {namespace} observed volume capacity' if namespace else 'All observed volume capacity'
+            ),
             usage_query=_render_namespace_query(
                 namespace=namespace,
                 all_query=STORAGE_USAGE_QUERY,
@@ -483,6 +484,7 @@ def _get_resource_definitions(
             capacity_query=POD_WORKER_CAPACITY_QUERY,
         ),
     ]
+
 
 def _render_namespace_query(
     *,

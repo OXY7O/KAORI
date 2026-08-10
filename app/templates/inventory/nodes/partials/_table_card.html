@@ -1,13 +1,12 @@
 {% import "components/table.html" as table_ui %}
 <section class="{{ table_ui.block_classes() }}">
-    {{ table_ui.inventory_block_header(
-        'server-cog',
+    {{ table_ui.inventory_block_header('server-cog',
         'Node Inventory',
         'Latest committed Kubernetes node records for the active inventory scope.',
         'nodes-table-loading',
         'Refreshing Node Inventory',
-        url_for('integrations.kubernetes'),
-        'Open Cluster Integrations'
+        url_for('integrations.kubernetes') ,
+    'Open Cluster Integrations'
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form hx-get="{{ url_for('inventory.nodes') }}"
@@ -21,29 +20,40 @@
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}" />
             <input type="hidden" name="partial_mode" value="page_workspace" />
             <div>
-                <label for="nodes-cluster-filter" class="{{ table_ui.filter_label_classes() }}">Cluster</label>
-                <select id="nodes-cluster-filter" name="cluster_id" class="{{ table_ui.filter_select_classes() }}">
+                <label for="nodes-cluster-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Cluster</label>
+                <select id="nodes-cluster-filter"
+                        name="cluster_id"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Clusters</option>
                     {% for cluster in clusters %}
-                        <option value="{{ cluster.id }}" {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
+                        <option value="{{ cluster.id }}"
+                                {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
                 <label for="nodes-role-filter" class="{{ table_ui.filter_label_classes() }}">Role</label>
-                <select id="nodes-role-filter" name="role" class="{{ table_ui.filter_select_classes() }}">
+                <select id="nodes-role-filter"
+                        name="role"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="" {% if not selected_role %}selected{% endif %}>All Roles</option>
                     {% for role_option in inventory.node_roles %}
-                        <option value="{{ role_option.value }}" {% if selected_role == role_option.value %}selected{% endif %}>{{ role_option.label }}</option>
+                        <option value="{{ role_option.value }}"
+                                {% if selected_role == role_option.value %}selected{% endif %}>{{ role_option.label }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
-                <label for="nodes-status-filter" class="{{ table_ui.filter_label_classes() }}">Readiness</label>
-                <select id="nodes-status-filter" name="status" class="{{ table_ui.filter_select_classes() }}">
+                <label for="nodes-status-filter"
+                       class="{{ table_ui.filter_label_classes() }}">Readiness</label>
+                <select id="nodes-status-filter"
+                        name="status"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="" {% if not selected_status %}selected{% endif %}>All Readiness States</option>
                     {% for status_option in inventory.node_statuses %}
-                        <option value="{{ status_option.value }}" {% if selected_status == status_option.value %}selected{% endif %}>{{ status_option.label }}</option>
+                        <option value="{{ status_option.value }}"
+                                {% if selected_status == status_option.value %}selected{% endif %}>{{ status_option.label }}</option>
                     {% endfor %}
                 </select>
             </div>

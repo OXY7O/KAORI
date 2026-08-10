@@ -14,14 +14,13 @@
             {{ table_label.metadata_label('Lifecycle Governed', icon='shield-check') }}
         </div>
     </header>
-
     <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
         {% set metrics = [
-            ('circle-check', 'Active Accounts', summary.active, 'Accounts currently allowed to authenticate.', 'bg-status-normal-soft text-status-normal-text'),
-            ('pause-circle', 'Inactive Accounts', summary.inactive, 'Access is paused while the account record remains managed.', 'bg-status-info-soft text-status-info-text'),
-            ('archive', 'Deleted Accounts', summary.deleted, 'Soft-deleted accounts remain recoverable and auditable.', 'bg-status-warning-soft text-status-warning-text'),
-            ('shield-check', 'Super Admins', summary.active_super_admins, 'Active emergency administrative authority.', 'bg-kaori-soft text-kaori-primary')
-        ] %}
+                    ('circle-check', 'Active Accounts', summary.active, 'Accounts currently allowed to authenticate.', 'bg-status-normal-soft text-status-normal-text'),
+                    ('pause-circle', 'Inactive Accounts', summary.inactive, 'Access is paused while the account record remains managed.', 'bg-status-info-soft text-status-info-text'),
+                    ('archive', 'Deleted Accounts', summary.deleted, 'Soft-deleted accounts remain recoverable and auditable.', 'bg-status-warning-soft text-status-warning-text'),
+                    ('shield-check', 'Super Admins', summary.active_super_admins, 'Active emergency administrative authority.', 'bg-kaori-soft text-kaori-primary')
+                ] %}
         {% for icon, label, value, description, tone in metrics %}
             <article class="flex min-h-[11rem] flex-col bg-surface-card p-5">
                 <div class="flex items-start justify-between gap-3">
@@ -37,15 +36,14 @@
             </article>
         {% endfor %}
     </div>
-
     <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6">
         <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             {% set boundaries = [
-                ('database', 'Local Database', summary.local ~ (' Account' if summary.local == 1 else ' Accounts'), 'KAORI owns local credentials and password lifecycle.'),
-                ('building-2', 'LDAP Directory', summary.ldap ~ (' Account' if summary.ldap == 1 else ' Accounts'), 'Directory credentials remain authoritative outside KAORI.'),
-                ('fingerprint', 'SSO Providers', summary.sso ~ (' Account' if summary.sso == 1 else ' Accounts'), 'Google and GitHub identities remain provider-owned.'),
-                ('rotate-ccw', 'Restore Boundary', 'Deleted → Inactive', 'Restore never reactivates access; activation remains explicit.')
-            ] %}
+                            ('database', 'Local Database', summary.local ~ (' Account' if summary.local == 1 else ' Accounts'), 'KAORI owns local credentials and password lifecycle.'),
+                            ('building-2', 'LDAP Directory', summary.ldap ~ (' Account' if summary.ldap == 1 else ' Accounts'), 'Directory credentials remain authoritative outside KAORI.'),
+                            ('fingerprint', 'SSO Providers', summary.sso ~ (' Account' if summary.sso == 1 else ' Accounts'), 'Google and GitHub identities remain provider-owned.'),
+                            ('rotate-ccw', 'Restore Boundary', 'Deleted → Inactive', 'Restore never reactivates access; activation remains explicit.')
+                        ] %}
             {% for icon, title, value, description in boundaries %}
                 <div class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">

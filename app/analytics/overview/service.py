@@ -10,17 +10,13 @@ from sqlalchemy import select
 from app.analytics.common.coercion import as_dict as _as_dict
 from app.analytics.common.presentation import present_prometheus_status
 from app.analytics.overview.health import build_health_summary
-from app.analytics.overview.schema import (
-    build_empty_overview_payload,
-    classify_count_risk,
-    classify_percent,
-)
+from app.analytics.overview.schema import build_empty_overview_payload, classify_count_risk, classify_percent
+from app.analytics.overview.sections import get_overview_section
 from app.analytics.overview.snapshot_summary import (
     OVERVIEW_SNAPSHOT_DATASETS,
     overview_snapshot_parameters,
     present_snapshot_summary,
 )
-from app.analytics.overview.sections import get_overview_section
 from app.extensions.db import db
 from app.intelligence.recommendation_engine import (
     build_operational_recommendations,
@@ -103,9 +99,7 @@ ACTIONABLE_DOMAINS: tuple[ActionableDomain, ...] = (
         source_description='Based on forecasted growth and projected threshold breaches.',
         aggregate_title='Review Forecast Capacity Findings',
         aggregate_noun='forecast',
-        aggregate_guidance=(
-            'Open Resource Forecast to inspect projected threshold breaches and growth trends.'
-        ),
+        aggregate_guidance=('Open Resource Forecast to inspect projected threshold breaches and growth trends.'),
         icon='line-chart',
         critical_threshold=3,
     ),
@@ -128,13 +122,10 @@ ACTIONABLE_DOMAINS: tuple[ActionableDomain, ...] = (
         source_description='Based on active alerts, source health, and anomaly candidates.',
         aggregate_title='Review Alert and Anomaly Findings',
         aggregate_noun='alert/anomaly',
-        aggregate_guidance=(
-            'Open Alerts & Anomalies to inspect active alerts, source health, and anomaly candidates.'
-        ),
+        aggregate_guidance=('Open Alerts & Anomalies to inspect active alerts, source health, and anomaly candidates.'),
         icon='bell',
     ),
 )
-
 
 
 def get_analytics_overview(
@@ -343,7 +334,6 @@ def _get_snapshot_summary(*, cluster_id: str, time_range: str) -> dict[str, Any]
         time_range=time_range,
         expected_parameters=expected_parameters,
     )
-
 
 
 def _utc_now_display() -> str:
@@ -597,7 +587,9 @@ def _get_capacity_snapshot(*, cluster_id: str, time_range: str) -> dict[str, Any
         },
         'memory_headroom': {
             **default['memory_headroom'],
-            'value': raw.get('memory_headroom') if raw.get('memory_headroom') is not None else raw.get('memory_available', '-'),
+            'value': raw.get('memory_headroom')
+            if raw.get('memory_headroom') is not None
+            else raw.get('memory_available', '-'),
             'unit': raw.get('memory_unit', 'GiB'),
             'status': 'Available',
             'tone': 'blue',
@@ -641,9 +633,7 @@ def _get_storage_snapshot(*, cluster_id: str) -> dict[str, Any]:
         return default
 
     used_percent = _maybe_float(
-        raw.get('used_percent')
-        if raw.get('used_percent') is not None
-        else raw.get('pvc_used_percent')
+        raw.get('used_percent') if raw.get('used_percent') is not None else raw.get('pvc_used_percent')
     )
     free_percent = (
         _maybe_float(raw.get('free_percent'))
@@ -704,11 +694,7 @@ def _get_workload_snapshot(*, cluster_id: str, time_range: str) -> dict[str, Any
     under_provisioned = _safe_int(_as_float_like(raw.get('under_provisioned')))
 
     issue_count = (
-        missing_cpu_requests
-        + missing_memory_requests
-        + memory_limits_missing
-        + over_provisioned
-        + under_provisioned
+        missing_cpu_requests + missing_memory_requests + memory_limits_missing + over_provisioned + under_provisioned
     )
 
     recommendation_count = _get_snapshot_recommendation_count(
@@ -849,12 +835,7 @@ def _get_alerts_snapshot(*, cluster_id: str) -> dict[str, Any]:
     recent_anomalies = _safe_int(_as_float_like(raw.get('recent_anomalies')))
 
     source_connected = bool(raw.get('source_connected', False))
-    recommendation_fallback_count = (
-        critical_alerts
-        + warning_alerts
-        + recent_anomalies
-        + (0 if source_connected else 1)
-    )
+    recommendation_fallback_count = critical_alerts + warning_alerts + recent_anomalies + (0 if source_connected else 1)
 
     risk_count = firing_alerts + critical_alerts + warning_alerts + pending_alerts
     risk_meta = classify_count_risk(risk_count)
@@ -947,9 +928,7 @@ def _build_actionable_context(payload: dict[str, Any]) -> dict[str, Any]:
         1,
         _safe_int(_as_float_like(summary.get('expected_dataset_count', 7))),
     )
-    utilization_recommendations = _build_utilization_actionable_recommendations_from_overview(
-        payload
-    )
+    utilization_recommendations = _build_utilization_actionable_recommendations_from_overview(payload)
     counts = {
         'capacity': _get_capacity_actionable_recommendation_count(snapshots['capacity']),
         'utilization': count_actionable_recommendations(utilization_recommendations),
@@ -1031,8 +1010,7 @@ def _actionable_status(
             'status': 'Limited',
             'tone': 'amber',
             'description': (
-                'No actionable finding is present in the available datasets, '
-                'but evidence coverage is incomplete.'
+                'No actionable finding is present in the available datasets, but evidence coverage is incomplete.'
             ),
         }
     return {
@@ -1324,9 +1302,7 @@ def _build_utilization_actionable_recommendations_from_overview(
         return []
 
     recommendation_payload = {
-        'risk_assessment': _build_utilization_risk_assessment_from_resource_snapshot(
-            resource_snapshot
-        ),
+        'risk_assessment': _build_utilization_risk_assessment_from_resource_snapshot(resource_snapshot),
         'top_cpu_consumers': _normalize_overview_consumers_for_recommendations(
             (
                 payload.get(
@@ -1499,7 +1475,6 @@ def _count_recommendations_by_priority(
         ).lower()
         == normalized_priority
     )
-
 
 
 def _log_optional_snapshot_failure(

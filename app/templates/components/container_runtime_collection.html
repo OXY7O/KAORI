@@ -6,7 +6,8 @@
     <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
         <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3.5">
             <div class="flex items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
                     <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                 </span>
                 <div>
@@ -14,7 +15,7 @@
                     <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
                 </div>
             </div>
-            {{ table_label.metadata_label(containers|length ~ ' ' ~ ('Container' if containers|length == 1 else 'Containers')) }}
+            {{ table_label.metadata_label(containers|length ~ ' ' ~ ('Container' if containers|length == 1 else 'Containers') ) }}
         </header>
         {% if containers %}
             <div class="overflow-x-auto">
@@ -34,13 +35,19 @@
                             <tr class="{{ table_ui.row_classes() }}">
                                 <td class="{{ table_ui.cell_classes() }}">
                                     <p class="text-sm font-semibold text-content-primary">{{ container.name }}</p>
-                                    {% if container.reason %}<p class="mt-0.5 break-words [overflow-wrap:anywhere] text-xs leading-5 text-content-muted">{{ container.reason }}</p>{% endif %}
-                                    {% if container.exit_code is not none %}<p class="text-xs leading-5 text-content-muted">Exit Code {{ container.exit_code }}</p>{% endif %}
+                                    {% if container.reason %}
+                                        <p class="mt-0.5 break-words [overflow-wrap:anywhere] text-xs leading-5 text-content-muted">{{ container.reason }}</p>
+                                    {% endif %}
+                                    {% if container.exit_code is not none %}
+                                        <p class="text-xs leading-5 text-content-muted">Exit Code {{ container.exit_code }}</p>
+                                    {% endif %}
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(container.kind) }}</td>
                                 <td class="{{ table_ui.cell_classes() }}">
                                     {{ table_label.status_indicator_label(container.runtime_state_label, container.runtime_state_tone) }}
-                                    {% if container.state and container.state != container.runtime_state_label %}<p class="mt-1 text-xs leading-5 text-content-muted">Kubernetes State · {{ container.state }}</p>{% endif %}
+                                    {% if container.state and container.state != container.runtime_state_label %}
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">Kubernetes State · {{ container.state }}</p>
+                                    {% endif %}
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }}">
                                     {{ technical_value.render(container.image or 'Not Reported', break_all=true) }}
@@ -50,8 +57,12 @@
                                     <span class="text-sm font-medium tabular-nums text-content-primary">{{ container.restart_activity }}</span>
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }}">
-                                    {% if container.started_at_value %}<p class="text-xs leading-5 text-content-secondary">Started {{ container.started_at_value|user_datetime }}</p>{% endif %}
-                                    {% if container.finished_at_value %}<p class="text-xs leading-5 text-content-secondary">Finished {{ container.finished_at_value|user_datetime }}</p>{% endif %}
+                                    {% if container.started_at_value %}
+                                        <p class="text-xs leading-5 text-content-secondary">Started {{ container.started_at_value|user_datetime }}</p>
+                                    {% endif %}
+                                    {% if container.finished_at_value %}
+                                        <p class="text-xs leading-5 text-content-secondary">Finished {{ container.finished_at_value|user_datetime }}</p>
+                                    {% endif %}
                                     {% if not container.started_at_value and not container.finished_at_value %}<span class="text-xs text-content-muted">Not Reported</span>{% endif %}
                                 </td>
                             </tr>

@@ -1,6 +1,6 @@
 import ast
-import re
 from pathlib import Path
+import re
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -21,7 +21,10 @@ def test_workload_table_pagination_uses_full_page_and_partial_endpoint_ownership
     tenant = read('app/templates/analytics/workload/partials/_tenant_quota_section.html')
     mapping = read('app/templates/analytics/workload/partials/_workload_mapping_section.html')
 
-    assert "numeric_pages(current_page, total_pages, page_param='page', hx_target=None, hx_indicator=None, endpoint=None, query_params=None, hx_swap='innerHTML', href_endpoint=None)" in pagination
+    assert (
+        "numeric_pages(current_page, total_pages, page_param='page', hx_target=None, hx_indicator=None, endpoint=None, query_params=None, hx_swap='innerHTML', href_endpoint=None)"
+        in pagination
+    )
     assert 'href_endpoint_name = href_endpoint or endpoint_name' in pagination
     assert 'data-page-param="{{ page_param }}"' in pagination
     assert 'container.dataset.pageParam || PAGE_PARAM' in pagination_js
@@ -117,7 +120,7 @@ def test_kubernetes_analytics_recommendation_lists_use_simple_previous_next_page
         assert 'data-kaori-recommendation-item' in content
         assert 'loop.index > 3' in content
         assert 'recommendation_pager.controls' in content
-        assert ", 3)" in content
+        assert ', 3)' in content
 
     pager = read('app/templates/components/recommendation_pager.html')
     pager_js = read('app/static/js/recommendation_pagination.js')
@@ -142,12 +145,10 @@ def test_kubernetes_analytics_recommendation_lists_use_simple_previous_next_page
     assert "filename='js/recommendation_pagination.js'" in layout
 
 
-
 def test_recommendation_pager_remains_visible_on_a_single_page() -> None:
     environment = Environment(loader=FileSystemLoader(TEMPLATES))
     template = environment.from_string(
-        "{% import 'components/recommendation_pager.html' as pager %}"
-        "{{ pager.controls(3, 'Recommendations', 3) }}"
+        "{% import 'components/recommendation_pager.html' as pager %}{{ pager.controls(3, 'Recommendations', 3) }}"
     )
 
     rendered = template.render()
@@ -162,7 +163,7 @@ def test_intelligence_recommendations_use_shared_server_side_pagination() -> Non
     results = read('app/templates/intelligence/partials/_recommendations_results.html')
     pagination = read('app/templates/intelligence/components/_pagination.html')
 
-    assert "intelligence_pagination.render(" in results
+    assert 'intelligence_pagination.render(' in results
     assert 'pagination_ui.numeric_pages(' in pagination
     assert 'Rows per page' in pagination
     assert "indicator='#recommendations-loading-bar'" in results
@@ -170,7 +171,6 @@ def test_intelligence_recommendations_use_shared_server_side_pagination() -> Non
 
 def test_recommendation_titles_and_workspace_labels_are_title_case() -> None:
     catalog = read('app/intelligence/catalog.py')
-    service = read('app/intelligence/service.py')
     template = read('app/templates/intelligence/recommendations.html')
 
     for title in (
@@ -209,8 +209,26 @@ def test_kubernetes_recommendation_title_literals_follow_title_case() -> None:
         'app/analytics/utilization/materialization.py',
     )
     minor_words = {
-        'a', 'an', 'and', 'as', 'at', 'but', 'by', 'for', 'from', 'in',
-        'nor', 'of', 'on', 'or', 'per', 'the', 'to', 'via', 'with', 'without',
+        'a',
+        'an',
+        'and',
+        'as',
+        'at',
+        'but',
+        'by',
+        'for',
+        'from',
+        'in',
+        'nor',
+        'of',
+        'on',
+        'or',
+        'per',
+        'the',
+        'to',
+        'via',
+        'with',
+        'without',
     }
     titles: list[tuple[str, int, str]] = []
 
@@ -220,9 +238,7 @@ def test_kubernetes_recommendation_title_literals_follow_title_case() -> None:
             candidates = []
             if isinstance(node, ast.Call):
                 candidates.extend(
-                    keyword.value
-                    for keyword in node.keywords
-                    if keyword.arg in {'title', 'default_title'}
+                    keyword.value for keyword in node.keywords if keyword.arg in {'title', 'default_title'}
                 )
             elif isinstance(node, ast.Dict):
                 candidates.extend(

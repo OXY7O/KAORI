@@ -67,9 +67,7 @@ def test_resource_quota_uses_configured_spec_hard_limits() -> None:
             used={'requests.cpu': '1500m', 'requests.memory': '4Gi'},
         ),
     )
-    api = SimpleNamespace(
-        list_resource_quota_for_all_namespaces=lambda: FakeResourceQuotaList([quota])
-    )
+    api = SimpleNamespace(list_resource_quota_for_all_namespaces=lambda: FakeResourceQuotaList([quota]))
 
     get_resource_quotas = load_collector()
     rows, evidence = get_resource_quotas(api, with_evidence=True)

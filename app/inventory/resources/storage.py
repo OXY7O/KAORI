@@ -170,8 +170,7 @@ def _collection_context(cluster_id: str | None) -> dict[str, Any]:
         PERSISTENT_VOLUME_CLAIM_EVIDENCE_KEY,
     )
     states_by_key = {
-        key: [str(rows.get(item_id, {}).get(key) or NOT_REPORTED) for item_id in cluster_ids]
-        for key in keys
+        key: [str(rows.get(item_id, {}).get(key) or NOT_REPORTED) for item_id in cluster_ids] for key in keys
     }
     all_states = [state for states in states_by_key.values() for state in states]
     state, tone, exception_count = collection_posture(all_states)
@@ -242,8 +241,7 @@ def _summary_metrics(rows: list[tuple[str, str | None, dict[str, Any]]]) -> dict
         metrics['bound_claims'] += int(storage_type == 'PersistentVolumeClaim' and lifecycle == 'Bound')
         metrics['pending_claims'] += int(storage_type == 'PersistentVolumeClaim' and lifecycle == 'Pending')
         metrics['lifecycle_exceptions'] += int(
-            storage_type != 'StorageClass'
-            and lifecycle in {'Pending', 'Released', 'Terminating', 'Failed', 'Lost'}
+            storage_type != 'StorageClass' and lifecycle in {'Pending', 'Released', 'Terminating', 'Failed', 'Lost'}
         )
         metrics['not_reported_objects'] += int(lifecycle == NOT_REPORTED)
         metrics['critical_lifecycle_exceptions'] += int(lifecycle in {'Failed', 'Lost'})
@@ -341,12 +339,10 @@ def get_storage_inventory_view(
     if cluster_id:
         scope_label = db.session.query(Cluster.name).filter(Cluster.id == cluster_id).scalar() or 'Selected Cluster'
     resource_type_count = sum(
-        int(metrics[key] > 0)
-        for key in ('storage_classes', 'persistent_volumes', 'persistent_volume_claims')
+        int(metrics[key] > 0) for key in ('storage_classes', 'persistent_volumes', 'persistent_volume_claims')
     )
     binding_evidence_reported = (
-        collection['persistent_volume_state'] == COLLECTED
-        and collection['persistent_volume_claim_state'] == COLLECTED
+        collection['persistent_volume_state'] == COLLECTED and collection['persistent_volume_claim_state'] == COLLECTED
     )
     return {
         'total_storage': pagination['total_items'],
@@ -356,16 +352,15 @@ def get_storage_inventory_view(
         'overall_posture': posture,
         'overall_posture_tone': posture_tone,
         'bound_resource_count': (
-            metrics['bound_volumes'] + metrics['bound_claims']
-            if binding_evidence_reported
-            else NOT_REPORTED
+            metrics['bound_volumes'] + metrics['bound_claims'] if binding_evidence_reported else NOT_REPORTED
         ),
         'binding_evidence_reported': binding_evidence_reported,
-        'exception_count': metrics['lifecycle_exceptions'] + metrics['not_reported_objects'] + collection['exception_count'],
+        'exception_count': metrics['lifecycle_exceptions']
+        + metrics['not_reported_objects']
+        + collection['exception_count'],
         'collection': collection,
         'storage_items': [
-            _present_storage_row(item, cluster_name, environment)
-            for item, cluster_name, environment in rows
+            _present_storage_row(item, cluster_name, environment) for item, cluster_name, environment in rows
         ],
         'pagination': pagination,
     }
@@ -448,9 +443,7 @@ def _related_storage_resources(item: StorageInventory, states: dict[str, str]) -
         clauses = [
             and_(
                 PodInventory.namespace == namespace,
-                cast(PodInventory.persistent_volume_claims, JSONB).op('?|')(
-                    array(sorted(names))
-                ),
+                cast(PodInventory.persistent_volume_claims, JSONB).op('?|')(array(sorted(names))),
             )
             for namespace, names in names_by_namespace.items()
         ]
@@ -462,9 +455,7 @@ def _related_storage_resources(item: StorageInventory, states: dict[str, str]) -
         matched = [
             pod
             for pod in candidates
-            if names_by_namespace.get(pod.namespace, set()).intersection(
-                set(pod.persistent_volume_claims or [])
-            )
+            if names_by_namespace.get(pod.namespace, set()).intersection(set(pod.persistent_volume_claims or []))
         ]
         pod_count = len(matched)
         pod_rows = matched[:8]
@@ -562,7 +553,9 @@ def _condition_rows(details: dict[str, Any]) -> list[dict[str, Any]]:
             continue
         status = str(condition.get('status') or 'Unknown')
         condition_type = str(condition.get('type') or 'Unknown')
-        tone = 'warning' if status == 'True' and condition_type in {'Resizing', 'FileSystemResizePending'} else 'unknown'
+        tone = (
+            'warning' if status == 'True' and condition_type in {'Resizing', 'FileSystemResizePending'} else 'unknown'
+        )
         result.append(
             {
                 **condition,
@@ -581,8 +574,7 @@ def _string_map(value: Any) -> dict[str, str]:
 
 def _mount_option_map(details: dict[str, Any]) -> dict[str, str]:
     return {
-        f'Mount Option {index}': str(value)
-        for index, value in enumerate(details.get('mount_options') or [], start=1)
+        f'Mount Option {index}': str(value) for index, value in enumerate(details.get('mount_options') or [], start=1)
     }
 
 
@@ -590,11 +582,7 @@ def _source_map(details: dict[str, Any]) -> tuple[dict[str, str], str]:
     source = details.get('source')
     if not isinstance(source, dict):
         return {}, NOT_REPORTED
-    presented = {
-        str(key): str(value)
-        for key, value in source.items()
-        if key != 'reported' and value not in (None, '')
-    }
+    presented = {str(key): str(value) for key, value in source.items() if key != 'reported' and value not in (None, '')}
     return presented, str(source.get('type') or NOT_REPORTED)
 
 
@@ -720,17 +708,13 @@ def _detail_provisioning_fields(item: StorageInventory, details: dict[str, Any])
         ),
         'expansion': expansion_presentation(item.storage_type, details),
         'provisioner': (
-            str(details.get('provisioner') or NOT_REPORTED)
-            if item.storage_type == 'StorageClass'
-            else 'Not Applicable'
+            str(details.get('provisioner') or NOT_REPORTED) if item.storage_type == 'StorageClass' else 'Not Applicable'
         ),
         'parameters': _string_map(details.get('parameters')),
         'mount_options': _mount_option_map(details),
         'mount_options_reported': mount_options_reported,
         'allowed_topology_count': (
-            int(details.get('allowed_topology_count') or 0)
-            if item.storage_type == 'StorageClass'
-            else 'Not Applicable'
+            int(details.get('allowed_topology_count') or 0) if item.storage_type == 'StorageClass' else 'Not Applicable'
         ),
         'is_default': bool(details.get('is_default')),
         'source': source,

@@ -3,6 +3,12 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
+from app.analytics.materialization.keys import (
+    CAPACITY_DATASET_KEY,
+    DASHBOARD_ALERTS_DATASET_KEY,
+    FORECAST_DATASET_KEY,
+    TOP_CONSUMERS_DATASET_KEY,
+)
 from app.dashboards.kubernetes.repository import (
     count_records,
     count_records_with_values,
@@ -29,10 +35,6 @@ from app.dashboards.kubernetes.sections import (
     paginate_sequence,
 )
 from app.dashboards.kubernetes.snapshots import (
-    ALERTS_DATASET_KEY,
-    CAPACITY_DATASET_KEY,
-    FORECAST_DATASET_KEY,
-    TOP_CONSUMERS_DATASET_KEY,
     alerts_parameters,
     capacity_parameters,
     forecast_parameters,
@@ -119,7 +121,7 @@ def _alerts_signal(cluster: Any):
     cluster_id = str(cluster.id)
     result = read_dashboard_snapshot(
         cluster_id=cluster_id,
-        dataset_key=ALERTS_DATASET_KEY,
+        dataset_key=DASHBOARD_ALERTS_DATASET_KEY,
         parameters=alerts_parameters(cluster_id),
     )
     return build_alerts_snapshot(
@@ -178,10 +180,7 @@ def _inventory_snapshot(selected_cluster_id: str | None) -> InventorySnapshot:
 
 
 def _latest_inventory_sync(selected_cluster_id: str | None):
-    timestamps = [
-        coerce_datetime(latest_record_timestamp(model, selected_cluster_id))
-        for model in _INVENTORY_MODELS
-    ]
+    timestamps = [coerce_datetime(latest_record_timestamp(model, selected_cluster_id)) for model in _INVENTORY_MODELS]
     return max((value for value in timestamps if value is not None), default=None)
 
 
@@ -278,9 +277,7 @@ def get_dashboard_section(
             selected_cluster_id,
         )
         active_alerts = (
-            dashboard.alerts_snapshot.critical
-            + dashboard.alerts_snapshot.warning
-            + dashboard.alerts_snapshot.info
+            dashboard.alerts_snapshot.critical + dashboard.alerts_snapshot.warning + dashboard.alerts_snapshot.info
         )
         dashboard.global_kpis = build_kpis(
             DashboardKpiContext(
@@ -299,8 +296,7 @@ def get_dashboard_section(
                 live_cluster=selected,
                 active_alerts_label=str(active_alerts) if selected is not None else 'N/A',
                 active_alerts_description=(
-                    f'{dashboard.alerts_snapshot.critical} Critical • '
-                    f'{dashboard.alerts_snapshot.warning} Warning'
+                    f'{dashboard.alerts_snapshot.critical} Critical • {dashboard.alerts_snapshot.warning} Warning'
                     if selected is not None
                     else 'Select a cluster to view committed alert signals'
                 ),

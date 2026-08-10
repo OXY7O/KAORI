@@ -153,9 +153,7 @@ class PrometheusConsumer:
                 payload={
                     'readiness': self.config.readiness_status,
                     'missing_capabilities': list(execution_capabilities),
-                    'advisory_missing_capabilities': list(
-                        self._missing_capabilities(required_capabilities)
-                    ),
+                    'advisory_missing_capabilities': list(self._missing_capabilities(required_capabilities)),
                 },
                 source=self._source(),
                 diagnostics=(
@@ -175,9 +173,7 @@ class PrometheusConsumer:
             payload={
                 'readiness': selected.instance.readiness_status,
                 'missing_capabilities': [],
-                'advisory_missing_capabilities': list(
-                    self._missing_capabilities(required_capabilities)
-                ),
+                'advisory_missing_capabilities': list(self._missing_capabilities(required_capabilities)),
             },
             source=self._source_from(selected),
             required_capabilities=required_capabilities,
@@ -203,10 +199,7 @@ class PrometheusConsumer:
             diagnostics = (
                 ConsumerDiagnostic(
                     code='runtime_unhealthy',
-                    message=(
-                        self.config.last_error
-                        or 'The latest Prometheus runtime observation is unhealthy.'
-                    ),
+                    message=(self.config.last_error or 'The latest Prometheus runtime observation is unhealthy.'),
                     category='provider_runtime',
                     remediation='Review Runtime Health, restore connectivity, then retry materialization.',
                     source_owner='Prometheus / Thanos metrics pipeline',
@@ -264,7 +257,10 @@ class PrometheusConsumer:
 
         observed_health = str(selected.instance.last_status or '').strip().lower()
         observation_degraded = observed_health in {
-            'unhealthy', 'error', 'failed', 'disconnected',
+            'unhealthy',
+            'error',
+            'failed',
+            'disconnected',
         }
         return ConsumerResult(
             ok=True,
@@ -433,11 +429,7 @@ class PrometheusConsumer:
     def _execution_capabilities(
         required_capabilities: tuple[str, ...],
     ) -> tuple[str, ...]:
-        return tuple(
-            capability
-            for capability in required_capabilities
-            if capability in _EXECUTION_CAPABILITIES
-        )
+        return tuple(capability for capability in required_capabilities if capability in _EXECUTION_CAPABILITIES)
 
     def _source_for(
         self,

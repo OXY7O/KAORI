@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-from importlib import import_module
 from dataclasses import dataclass
+from importlib import import_module
 from typing import Any, cast
 
 ContextBuilder = Callable[[Mapping[str, Any]], dict[str, Any]]
@@ -223,10 +223,7 @@ FORECAST_DATASET = AnalyticsDataset(
     key='analytics.forecast',
     label='Capacity Forecast',
     builder_path='app.analytics.forecast.service:get_forecast_analysis_context',
-    default_parameters=tuple(
-        {'history_window': history_window}
-        for history_window in ('7d', '30d', '90d')
-    ),
+    default_parameters=tuple({'history_window': history_window} for history_window in ('7d', '30d', '90d')),
     freshness_minutes=120,
     stale_grace_minutes=4320,
     snapshot_parameter_keys=('history_window', 'namespace'),
@@ -279,9 +276,7 @@ def source_technical_capabilities(dataset_key: str) -> tuple[str, ...]:
 
     dataset = get_dataset(dataset_key)
     return tuple(
-        capability
-        for capability in dataset.required_capabilities
-        if capability in {'instant_query', 'range_query'}
+        capability for capability in dataset.required_capabilities if capability in {'instant_query', 'range_query'}
     )
 
 

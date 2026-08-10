@@ -193,12 +193,8 @@ def _pod_row(item: PodInventory, cluster_name: str, environment: str) -> dict[st
         'restarts': item.restart_count if runtime_reported else None,
         'container_count': configured_container_count if specification_reported else None,
         'image_count': item.image_count if specification_reported else None,
-        'configuration_references': (
-            len(item.configuration_references or []) if specification_reported else None
-        ),
-        'persistent_volume_claims': (
-            len(item.persistent_volume_claims or []) if specification_reported else None
-        ),
+        'configuration_references': (len(item.configuration_references or []) if specification_reported else None),
+        'persistent_volume_claims': (len(item.persistent_volume_claims or []) if specification_reported else None),
         'qos_class': _text(details.get('qos_class'), 'Not Reported'),
         'created_at': item.created_at,
         'collected_at': item.collected_at,
@@ -313,7 +309,9 @@ def _ingress_row(item: IngressInventory, cluster_name: str, environment: str) ->
         'address_count': len(publication['addresses']) if publication['reported'] else None,
         'tls_enabled': bool(item.tls_enabled),
         'tls_status': (
-            'TLS Referenced' if tls_secrets else ('TLS Declared · No Secret Reference' if tls_entries else 'No TLS Declaration')
+            'TLS Referenced'
+            if tls_secrets
+            else ('TLS Declared · No Secret Reference' if tls_entries else 'No TLS Declaration')
         ),
         'tls_secret_count': len(tls_secrets),
         'tls_hosts': ', '.join(sorted(tls_hosts)) or 'Not Configured',
@@ -337,7 +335,8 @@ def _storage_row(item: StorageInventory, cluster_name: str, environment: str) ->
         item.storage_class,
         details,
     )[0]
-    source = details.get('source') if isinstance(details.get('source'), dict) else {}
+    raw_source = details.get('source')
+    source = raw_source if isinstance(raw_source, dict) else {}
     if item.storage_type == 'PersistentVolumeClaim':
         requested_access_modes = details.get('requested_access_modes') or []
         reported_access_modes = details.get('reported_access_modes') or []
@@ -435,11 +434,7 @@ def _configuration_row(
         'namespace': item.namespace,
         'name': item.name,
         'resource_type': _text(item.object_type, 'Unknown'),
-        'secret_type': (
-            _text(item.secret_type, 'Opaque')
-            if item.object_type == 'Secret'
-            else 'Not Applicable'
-        ),
+        'secret_type': (_text(item.secret_type, 'Opaque') if item.object_type == 'Secret' else 'Not Applicable'),
         'key_count': len(item.key_names or []),
         'key_names': item.key_names or [],
         'immutable': item.immutable,
@@ -585,9 +580,7 @@ def _collect_overview_payload(report: Report) -> dict[str, Any]:
             for item, _cluster_name, _environment in results
             if str(getattr(item, 'namespace', '') or '').strip()
         }
-        category_collected_at = _latest_collected_at(
-            item for item, _cluster_name, _environment in results
-        )
+        category_collected_at = _latest_collected_at(item for item, _cluster_name, _environment in results)
         by_cluster.update(cluster_name for _item, cluster_name, _environment in results)
         collected_values.extend(
             item.collected_at
@@ -646,10 +639,7 @@ def _collect_overview_payload(report: Report) -> dict[str, Any]:
             'node_readiness_percent': (ready_nodes / len(node_rows) * 100.0) if node_rows else None,
         },
         'inventory_distribution': {
-            'by_cluster': [
-                {'cluster': label, 'assets': count}
-                for label, count in sorted(by_cluster.items())
-            ],
+            'by_cluster': [{'cluster': label, 'assets': count} for label, count in sorted(by_cluster.items())],
             'by_status': [
                 {'status': 'Ready Nodes', 'assets': ready_nodes},
                 {'status': 'Not Ready Nodes', 'assets': not_ready_nodes},
@@ -690,8 +680,7 @@ def get_report_kubernetes_inventory_payload(report: Report) -> dict[str, Any]:
         type_builder: InventoryTypeBuilder = config['type_builder']
 
         rows = [
-            row_builder(item, cluster_name, cluster_environment)
-            for item, cluster_name, cluster_environment in results
+            row_builder(item, cluster_name, cluster_environment) for item, cluster_name, cluster_environment in results
         ]
         status_counts = Counter(status_builder(item) for item, _cluster_name, _environment in results)
         type_counts = Counter(type_builder(item) for item, _cluster_name, _environment in results)
@@ -737,21 +726,12 @@ def get_report_kubernetes_inventory_payload(report: Report) -> dict[str, Any]:
                 'collected_at': collected_at,
             },
             'inventory_distribution': {
-                'by_cluster': [
-                    {'cluster': label, 'assets': count}
-                    for label, count in sorted(cluster_counts.items())
-                ],
-                'by_status': [
-                    {'status': label, 'assets': count}
-                    for label, count in sorted(status_counts.items())
-                ],
-                'by_type': [
-                    {'resource_type': label, 'assets': count}
-                    for label, count in sorted(type_counts.items())
-                ],
+                'by_cluster': [{'cluster': label, 'assets': count} for label, count in sorted(cluster_counts.items())],
+                'by_status': [{'status': label, 'assets': count} for label, count in sorted(status_counts.items())],
+                'by_type': [{'resource_type': label, 'assets': count} for label, count in sorted(type_counts.items())],
             },
             'inventory_assets': rows,
-                'collected_at': collected_at,
+            'collected_at': collected_at,
             'generated_at': datetime.now(UTC),
         }
     except Exception as exc:

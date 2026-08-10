@@ -1,6 +1,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/operational_callout.html" as operational_callout %}
-<section id="secret-reveal-namespace-section" class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+<section id="secret-reveal-namespace-section"
+         class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
     <div class="border-b border-outline-default px-6 py-5">
         <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div class="flex items-start gap-3">
@@ -43,7 +44,8 @@
                 Refresh
             </a>
         </div>
-        <div id="secret-reveal-namespace-loading" class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
+        <div id="secret-reveal-namespace-loading"
+             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
             <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
         </div>
     </div>
@@ -73,19 +75,28 @@
               class="grid gap-4 md:grid-cols-[minmax(0,1fr)_18rem] md:items-end">
             <input type="hidden" name="cluster_id" value="{{ selected_cluster.id }}">
             <input type="hidden" name="page" value="1">
-            <input type="hidden" name="per_page" value="{{ namespace_pagination.per_page }}">
+            <input type="hidden"
+                   name="per_page"
+                   value="{{ namespace_pagination.per_page }}">
             <div class="min-w-0">
                 <label class="mb-2 block text-sm font-medium text-content-secondary">Search Namespace</label>
                 <div class="relative">
-                    <i data-lucide="search" class="absolute left-3 top-3.5 h-4 w-4 text-content-muted"></i>
-                    <input type="search" name="namespace_q" value="{{ namespace_filters.query }}" placeholder="Search namespace name..." class="h-11 w-full rounded-lg border border-outline-default bg-surface-card py-2 pr-3 pl-10 text-sm text-content-primary transition outline-none placeholder:text-content-muted focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
+                    <i data-lucide="search"
+                       class="absolute left-3 top-3.5 h-4 w-4 text-content-muted"></i>
+                    <input type="search"
+                           name="namespace_q"
+                           value="{{ namespace_filters.query }}"
+                           placeholder="Search namespace name..."
+                           class="h-11 w-full rounded-lg border border-outline-default bg-surface-card py-2 pr-3 pl-10 text-sm text-content-primary transition outline-none placeholder:text-content-muted focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
                 </div>
             </div>
             <div>
                 <label class="mb-2 block text-sm font-medium text-content-secondary">Reveal Policy</label>
-                <select name="namespace_policy" class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
+                <select name="namespace_policy"
+                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary transition outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
                     {% for value, label in namespace_filter_options.items() %}
-                        <option value="{{ value }}" {% if namespace_filters.policy == value %}selected{% endif %}>{{ label }}</option>
+                        <option value="{{ value }}"
+                                {% if namespace_filters.policy == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>

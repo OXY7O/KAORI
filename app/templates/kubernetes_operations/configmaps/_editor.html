@@ -44,7 +44,10 @@
                 {% set _ = entries.append((key, {'kind':'binary','value':value})) %}
             {% endfor %}
             {% include 'kubernetes_operations/configmaps/_entries_editor.html' %}
-            <label data-configmap-replace-confirmation hidden aria-hidden="true" class="flex items-start gap-3 rounded-lg border border-outline-default bg-status-critical-soft p-4 text-status-critical-text">
+            <label data-configmap-replace-confirmation
+                   hidden
+                   aria-hidden="true"
+                   class="flex items-start gap-3 rounded-lg border border-outline-default bg-status-critical-soft p-4 text-status-critical-text">
                 <input type="checkbox"
                        name="confirm_replace"
                        value="yes"

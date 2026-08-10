@@ -6,7 +6,6 @@
 {% import "integrations/components/_record_detail_modal.html" as record_detail_modal %}
 {% import "integrations/components/_record_actions.html" as record_actions %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-
 {% set registry = capability_registry %}
 {% set filters = registry.filters %}
 {% set pagination = registry.pagination %}
@@ -24,7 +23,8 @@
             <div class="flex min-w-0 items-start gap-3">
                 {{ integration_ui.palette_icon('blocks', 'info', size='lg', rounded='xl') }}
                 <div class="min-w-0">
-                    <h3 id="kubernetes-capability-matrix-title" class="text-base font-semibold text-content-primary">Capability Registry</h3>
+                    <h3 id="kubernetes-capability-matrix-title"
+                        class="text-base font-semibold text-content-primary">Capability Registry</h3>
                     <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">Review capability identity, Kubernetes resource, active API contract, requirement level, and validation state. Detailed decision and verification evidence remains behind View More.</p>
                 </div>
             </div>
@@ -34,7 +34,6 @@
             {{ loading_bar.render('kubernetes-capability-loading', active=validation_job and validation_job.is_active, label='Refreshing Capability Registry') }}
         </div>
     </header>
-
     <form method="get"
           action="{{ url_for('integrations.kubernetes_detail', cluster_id=cluster.id, tab='validation') }}"
           hx-get="{{ url_for('integrations.kubernetes_capability_registry', cluster_id=cluster.id) }}"
@@ -46,12 +45,16 @@
           data-kaori-capability-filters>
         <input type="hidden" name="tab" value="validation">
         <input type="hidden" name="capability_page" value="1">
-        <input type="hidden" name="capability_per_page" value="{{ pagination.per_page }}">
+        <input type="hidden"
+               name="capability_per_page"
+               value="{{ pagination.per_page }}">
         <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_14rem_14rem]">
             <label class="block min-w-0">
                 <span class="{{ integration_ui.control_label_classes() }}">Search Capability</span>
                 <span class="relative block">
-                    <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted" aria-hidden="true"></i>
+                    <i data-lucide="search"
+                       class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
+                       aria-hidden="true"></i>
                     <input id="kubernetes-capability-search"
                            type="search"
                            name="capability_q"
@@ -63,24 +66,28 @@
             </label>
             <label class="block">
                 <span class="{{ integration_ui.control_label_classes() }}">Requirement</span>
-                <select name="capability_requirement" class="{{ integration_ui.control_classes() }}">
+                <select name="capability_requirement"
+                        class="{{ integration_ui.control_classes() }}">
                     <option value="" {% if not filters.requirement %}selected{% endif %}>All Requirements</option>
-                    <option value="required" {% if filters.requirement == 'required' %}selected{% endif %}>Required</option>
-                    <option value="optional" {% if filters.requirement == 'optional' %}selected{% endif %}>Optional</option>
+                    <option value="required"
+                            {% if filters.requirement == 'required' %}selected{% endif %}>Required</option>
+                    <option value="optional"
+                            {% if filters.requirement == 'optional' %}selected{% endif %}>Optional</option>
                 </select>
             </label>
             <label class="block">
                 <span class="{{ integration_ui.control_label_classes() }}">Validation Status</span>
-                <select name="capability_status" class="{{ integration_ui.control_classes() }}">
+                <select name="capability_status"
+                        class="{{ integration_ui.control_classes() }}">
                     <option value="" {% if not filters.status %}selected{% endif %}>All Statuses</option>
                     <option value="ready" {% if filters.status == 'ready' %}selected{% endif %}>Ready</option>
                     <option value="legacy" {% if filters.status == 'legacy' %}selected{% endif %}>Legacy Fallback</option>
-                    <option value="blocked" {% if filters.status == 'blocked' %}selected{% endif %}>Blocked</option>
+                    <option value="blocked"
+                            {% if filters.status == 'blocked' %}selected{% endif %}>Blocked</option>
                 </select>
             </label>
         </div>
     </form>
-
     <div class="overflow-hidden" data-kaori-capability-records>
         <table class="{{ table_ui.table_classes() }} table-fixed">
             <colgroup>
@@ -91,7 +98,8 @@
                 <col class="w-[12%]">
                 <col class="w-[11%]">
             </colgroup>
-            <thead class="{{ table_ui.head_classes() }}" data-kaori-capability-matrix-header>
+            <thead class="{{ table_ui.head_classes() }}"
+                   data-kaori-capability-matrix-header>
                 <tr>
                     <th class="{{ table_ui.header_cell_classes() }}">Capability</th>
                     <th class="{{ table_ui.header_cell_classes() }}">Resource</th>
@@ -105,23 +113,30 @@
                 {% for row in registry.rows %}
                     {% set tone = 'ready' if row.status == 'ready' else ('degraded' if row.status == 'legacy' else 'blocked') %}
                     {% set row_icon_tone = 'normal' if row.status == 'ready' else ('warning' if row.status == 'legacy' else 'critical') %}
-                    <tr class="{{ table_ui.row_classes() }}" data-kaori-capability-record data-kaori-capability-matrix-row>
+                    <tr class="{{ table_ui.row_classes() }}"
+                        data-kaori-capability-record
+                        data-kaori-capability-matrix-row>
                         <td class="{{ table_ui.cell_classes() }}">
                             <div class="flex min-w-0 items-start gap-3">
                                 {{ integration_ui.palette_icon('box' if row.required else 'shield', row_icon_tone, size='md') }}
                                 <div class="min-w-0">
-                                    <p class="truncate text-sm font-semibold text-content-primary" title="{{ row.key|replace('.', ' · ')|replace('_', ' ')|title }}">{{ row.key|replace('.', ' · ')|replace('_', ' ')|title }}</p>
+                                    <p class="truncate text-sm font-semibold text-content-primary"
+                                       title="{{ row.key|replace('.', ' · ') |replace('_', ' ')|title }}">{{ row.key|replace('.', ' · ') |replace('_', ' ')|title }}</p>
                                     <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">{{ 'Core Contract' if row.required else 'Optional Contract' }}</p>
                                 </div>
                             </div>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}"><p class="truncate font-medium text-content-primary" title="{{ row.resource }}">{{ row.resource }}</p></td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            <p class="truncate font-semibold text-content-primary" title="{{ row.api_version }}">{{ row.api_version }}</p>
+                            <p class="truncate font-medium text-content-primary"
+                               title="{{ row.resource }}">{{ row.resource }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="truncate font-semibold text-content-primary"
+                               title="{{ row.api_version }}">{{ row.api_version }}</p>
                             <p class="mt-0.5 truncate text-xs text-content-muted">{{ row.stability|title }} API</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(row.requirement_label) }}</td>
-                        <td class="{{ table_ui.cell_classes() }}">{{ integration_status(tone, 'Ready' if row.status == 'ready' else ('Legacy Fallback' if row.status == 'legacy' else 'Blocked'), display='indicator') }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ integration_status(tone, 'Ready' if row.status == 'ready' else ('Legacy Fallback' if row.status == 'legacy' else 'Blocked') , display='indicator') }}</td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">{{ record_actions.view_more('capability-detail-modal-' ~ loop.index, role='capability') }}</td>
                     </tr>
                 {% else %}
@@ -143,10 +158,10 @@
             </tbody>
         </table>
     </div>
-
-    <footer class="{{ pagination_ui.footer_classes() }}" data-kaori-capability-pagination>
+    <footer class="{{ pagination_ui.footer_classes() }}"
+            data-kaori-capability-pagination>
         <div class="{{ pagination_ui.summary_group_classes() }}">
-            <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ pagination_ui.resource_name('Capabilities', pagination.total_items)|trim }}</p>
+            <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ pagination_ui.resource_name('Capabilities', pagination.total_items) |trim }}</p>
             <form method="get"
                   action="{{ url_for('integrations.kubernetes_detail', cluster_id=cluster.id, tab='validation') }}"
                   hx-get="{{ url_for('integrations.kubernetes_capability_registry', cluster_id=cluster.id) }}"
@@ -157,51 +172,69 @@
                 <input type="hidden" name="tab" value="validation">
                 <input type="hidden" name="capability_page" value="1">
                 <input type="hidden" name="capability_q" value="{{ filters.query }}">
-                <input type="hidden" name="capability_requirement" value="{{ filters.requirement }}">
+                <input type="hidden"
+                       name="capability_requirement"
+                       value="{{ filters.requirement }}">
                 <input type="hidden" name="capability_status" value="{{ filters.status }}">
-                <label for="capability-registry-page-size" class="font-semibold text-content-secondary">Rows</label>
-                <select id="capability-registry-page-size" name="capability_per_page" aria-label="Capabilities per page" data-kaori-auto-submit class="{{ pagination_ui.page_size_classes() }}">
-                    {% for option in pagination.allowed_per_page %}<option value="{{ option }}" {% if option == pagination.per_page %}selected{% endif %}>{{ option }}</option>{% endfor %}
+                <label for="capability-registry-page-size"
+                       class="font-semibold text-content-secondary">Rows</label>
+                <select id="capability-registry-page-size"
+                        name="capability_per_page"
+                        aria-label="Capabilities per page"
+                        data-kaori-auto-submit
+                        class="{{ pagination_ui.page_size_classes() }}">
+                    {% for option in pagination.allowed_per_page %}
+                        <option value="{{ option }}"
+                                {% if option == pagination.per_page %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
                 </select>
             </form>
         </div>
         {% set pagination_params = {
-            'tab': 'validation',
-            'capability_q': filters.query,
-            'capability_requirement': filters.requirement,
-            'capability_status': filters.status,
-            'capability_per_page': pagination.per_page
-        } %}
-        <nav class="{{ pagination_ui.navigation_group_classes() }}" aria-label="Capability Registry pagination">
+                    'tab': 'validation',
+                    'capability_q': filters.query,
+                    'capability_requirement': filters.requirement,
+                    'capability_status': filters.status,
+                    'capability_per_page': pagination.per_page
+                } %}
+        <nav class="{{ pagination_ui.navigation_group_classes() }}"
+             aria-label="Capability Registry pagination">
             {% if pagination.has_prev %}
                 {% set prev_url = url_for('integrations.kubernetes_detail', cluster_id=cluster.id, capability_page=pagination.prev_page, **pagination_params) %}
                 {% set prev_hx_url = url_for('integrations.kubernetes_capability_registry', cluster_id=cluster.id, capability_page=pagination.prev_page, **pagination_params) %}
-                <a href="{{ prev_url }}" hx-get="{{ prev_hx_url }}" hx-target="#kubernetes-capability-registry" hx-swap="outerHTML" hx-indicator="#kubernetes-capability-loading" class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous</a>
+                <a href="{{ prev_url }}"
+                   hx-get="{{ prev_hx_url }}"
+                   hx-target="#kubernetes-capability-registry"
+                   hx-swap="outerHTML"
+                   hx-indicator="#kubernetes-capability-loading"
+                   class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous</a>
             {% else %}
                 <span class="{{ pagination_ui.navigation_classes(true) }}"><i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous</span>
             {% endif %}
-            {{ pagination_ui.numeric_pages(
-                pagination.page,
-                pagination.total_pages,
-                page_param='capability_page',
-                endpoint='integrations.kubernetes_capability_registry',
-                href_endpoint='integrations.kubernetes_detail',
-                query_params=pagination_params,
-                hx_target='#kubernetes-capability-registry',
-                hx_indicator='#kubernetes-capability-loading',
-                hx_swap='outerHTML'
-            ) }}
+            {{ pagination_ui.numeric_pages(pagination.page,
+                        pagination.total_pages,
+                        page_param='capability_page',
+                        endpoint='integrations.kubernetes_capability_registry',
+                        href_endpoint='integrations.kubernetes_detail',
+                        query_params=pagination_params,
+                        hx_target='#kubernetes-capability-registry',
+                        hx_indicator='#kubernetes-capability-loading',
+                        hx_swap='outerHTML') }}
             {% if pagination.has_next %}
                 {% set next_url = url_for('integrations.kubernetes_detail', cluster_id=cluster.id, capability_page=pagination.next_page, **pagination_params) %}
                 {% set next_hx_url = url_for('integrations.kubernetes_capability_registry', cluster_id=cluster.id, capability_page=pagination.next_page, **pagination_params) %}
-                <a href="{{ next_url }}" hx-get="{{ next_hx_url }}" hx-target="#kubernetes-capability-registry" hx-swap="outerHTML" hx-indicator="#kubernetes-capability-loading" class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i></a>
+                <a href="{{ next_url }}"
+                   hx-get="{{ next_hx_url }}"
+                   hx-target="#kubernetes-capability-registry"
+                   hx-swap="outerHTML"
+                   hx-indicator="#kubernetes-capability-loading"
+                   class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i></a>
             {% else %}
                 <span class="{{ pagination_ui.navigation_classes(true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i></span>
             {% endif %}
         </nav>
     </footer>
 </section>
-
 {% for row in capability_registry.rows %}
     {% set tone = 'ready' if row.status == 'ready' else ('degraded' if row.status == 'legacy' else 'blocked') %}
     {% set row_icon_tone = 'normal' if row.status == 'ready' else ('warning' if row.status == 'legacy' else 'critical') %}
@@ -213,30 +246,29 @@
     {% set api_group_argument = '--api-group=' ~ api_group if api_group else '--api-group=""' %}
     {% if row.required %}
         {% set runnable_script = [
-            'set -euo pipefail',
-            '# Confirm the selected API version is served',
-            'kubectl get --raw "' ~ discovery_path ~ '" >/dev/null',
-            '# Confirm the expected resource is discoverable',
-            'kubectl api-resources ' ~ api_group_argument ~ ' -o name | grep -Fx "' ~ api_resource ~ '"',
-            '# Confirm the current identity can list the required resource',
-            'kubectl auth can-i list "' ~ api_resource ~ '" --all-namespaces',
-            '# Execute a bounded live read through the same API contract',
-            'kubectl get "' ~ api_resource ~ '" --all-namespaces --limit=1 -o name'
-        ] | join('\n') %}
+                    'set -euo pipefail',
+                    '# Confirm the selected API version is served',
+                    'kubectl get --raw "' ~ discovery_path ~ '" >/dev/null',
+                    '# Confirm the expected resource is discoverable',
+                    'kubectl api-resources ' ~ api_group_argument ~ ' -o name | grep -Fx "' ~ api_resource ~ '"',
+                    '# Confirm the current identity can list the required resource',
+                    'kubectl auth can-i list "' ~ api_resource ~ '" --all-namespaces',
+                    '# Execute a bounded live read through the same API contract',
+                    'kubectl get "' ~ api_resource ~ '" --all-namespaces --limit=1 -o name'
+                ] | join('\n') %}
     {% else %}
         {% set runnable_script = [
-            'set -euo pipefail',
-            'NAMESPACE="<approved-namespace>"',
-            '# Optional sensitive-resource access is namespace scoped',
-            'kubectl auth can-i list "' ~ api_resource ~ '" --namespace="${NAMESPACE}"',
-            '# Execute a bounded read only in the approved namespace',
-            'kubectl get "' ~ api_resource ~ '" --namespace="${NAMESPACE}" --limit=1 -o name'
-        ] | join('\n') %}
+                    'set -euo pipefail',
+                    'NAMESPACE="<approved-namespace>"',
+                    '# Optional sensitive-resource access is namespace scoped',
+                    'kubectl auth can-i list "' ~ api_resource ~ '" --namespace="${NAMESPACE}"',
+                    '# Execute a bounded read only in the approved namespace',
+                    'kubectl get "' ~ api_resource ~ '" --namespace="${NAMESPACE}" --limit=1 -o name'
+                ] | join('\n') %}
     {% endif %}
     {% set decision_title = 'Capability Available' if row.status == 'ready' else ('Legacy API Fallback Active' if row.status == 'legacy' else 'Capability Blocked') %}
     {% set scope_label = 'Cluster-wide required contract' if row.required else 'Namespace-scoped optional contract' %}
     {% set authorization_scope = 'All namespaces' if row.required else 'Approved namespace only' %}
-
     {% call record_detail_modal.render(
         'capability-detail-modal-' ~ loop.index,
         row.key,
@@ -246,8 +278,11 @@
         icon='scan-search',
         footer_text='Capability details use the latest completed Full Validation evidence.',
         size='standard'
-    ) %}
-        <div class="space-y-4" data-kaori-capability-modal-content data-kaori-capability-modal-v2 data-kaori-capability-modal-v3>
+        ) %}
+        <div class="space-y-4"
+             data-kaori-capability-modal-content
+             data-kaori-capability-modal-v2
+             data-kaori-capability-modal-v3>
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
                      data-kaori-capability-decision-summary>
                 <div class="p-5 sm:p-6">
@@ -263,7 +298,6 @@
                         <span class="shrink-0">{{ integration_status(tone, check_status, display='indicator') }}</span>
                     </div>
                 </div>
-
                 <div class="border-t border-outline-subtle bg-surface-subtle px-5 py-4 sm:px-6"
                      data-kaori-capability-contract-snapshot>
                     <div class="flex items-center gap-2">
@@ -272,21 +306,22 @@
                     </div>
                     <dl class="mt-3 grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2 lg:grid-cols-4">
                         {% set context_rows = [
-                            ('Requirement', row.requirement_label),
-                            ('Selected API', row.api_version),
-                            ('API Resource', api_resource),
-                            ('Required Verbs', row.required_verbs_display)
-                        ] %}
+                                                    ('Requirement', row.requirement_label),
+                                                    ('Selected API', row.api_version),
+                                                    ('API Resource', api_resource),
+                                                    ('Required Verbs', row.required_verbs_display)
+                                                ] %}
                         {% for label, value in context_rows %}
                             <div class="min-w-0 bg-surface-card px-4 py-3">
                                 <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
-                                <dd class="mt-1 break-words text-xs font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</dd>
+                                <dd class="mt-1 break-words text-xs font-semibold text-content-primary [overflow-wrap:anywhere]">
+                                    {{ value }}
+                                </dd>
                             </div>
                         {% endfor %}
                     </dl>
                 </div>
             </section>
-
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
                      data-kaori-capability-validation-evidence>
                 <header class="border-b border-outline-subtle px-5 py-4">
@@ -298,13 +333,12 @@
                         </div>
                     </div>
                 </header>
-
                 <ol class="grid gap-px bg-outline-subtle lg:grid-cols-3">
                     {% set validation_steps = [
-                        ('01', 'API Serving', row.api_version, 'Selected API is served by the registered Kubernetes API.'),
-                        ('02', 'Resource Discovery', api_resource, 'Expected resource is discoverable through the selected API contract.'),
-                        ('03', 'Effective Authorization', row.required_verbs_display, 'Required verbs are evaluated for ' ~ authorization_scope|lower ~ '.')
-                    ] %}
+                                            ('01', 'API Serving', row.api_version, 'Selected API is served by the registered Kubernetes API.'),
+                                            ('02', 'Resource Discovery', api_resource, 'Expected resource is discoverable through the selected API contract.'),
+                                            ('03', 'Effective Authorization', row.required_verbs_display, 'Required verbs are evaluated for ' ~ authorization_scope|lower ~ '.')
+                                        ] %}
                     {% for number, title, evidence, description in validation_steps %}
                         <li class="min-w-0 bg-surface-card p-4 sm:p-5">
                             <div class="flex items-start gap-3">
@@ -319,7 +353,6 @@
                     {% endfor %}
                 </ol>
             </section>
-
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
                      data-kaori-capability-operational-decision>
                 <header class="border-b border-outline-subtle px-5 py-4">
@@ -331,7 +364,6 @@
                         </div>
                     </div>
                 </header>
-
                 <div class="grid gap-px bg-outline-subtle lg:grid-cols-2">
                     <article class="bg-surface-card p-5">
                         <div class="flex items-start gap-3">
@@ -352,7 +384,6 @@
                             </div>
                         </div>
                     </article>
-
                     <article class="bg-surface-card p-5">
                         <div class="flex items-start gap-3">
                             {{ integration_ui.palette_icon('arrow-right-circle', 'brand', size='sm') }}
@@ -373,7 +404,6 @@
                         </div>
                     </article>
                 </div>
-
                 <div class="border-t border-outline-subtle bg-surface-subtle px-5 py-4"
                      data-kaori-capability-governance-boundary>
                     <div class="flex items-start gap-3">
@@ -385,7 +415,6 @@
                     </div>
                 </div>
             </section>
-
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
                      data-kaori-capability-verification-command
                      x-data="{ copied: false }">
@@ -404,15 +433,13 @@
                         <span x-text="copied ? 'Copied' : 'Copy Script'">Copy Script</span>
                     </button>
                 </header>
-
                 <div class="border-b border-outline-subtle bg-surface-subtle px-5 py-3">
                     <div class="flex flex-wrap gap-2">
                         {{ table_label.metadata_label('Scope · ' ~ authorization_scope) }}
                         {{ table_label.metadata_label('Stability · ' ~ row.stability|title ~ ' API') }}
-                        {{ table_label.metadata_label('Identity · Registered Kubernetes Connection') }}
+                        {{ table_label.metadata_label("Identity · Registered Kubernetes Connection") }}
                     </div>
                 </div>
-
                 <pre class="max-h-64 overflow-auto whitespace-pre-wrap break-words bg-surface-card px-5 py-4 text-xs leading-5 text-content-secondary"><code x-ref="script">{{ runnable_script }}</code></pre>
             </section>
         </div>

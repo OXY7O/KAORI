@@ -120,8 +120,7 @@ def generate_report_artifact(
                 failed_report.file_path = previous_file_path
                 failed_report.file_size_bytes = previous_file_size_bytes
                 failed_report.error_message = (
-                    'Regeneration failed. The existing ready artifact was retained. '
-                    f'{failure_detail}'
+                    f'Regeneration failed. The existing ready artifact was retained. {failure_detail}'
                 )
             else:
                 failed_report.status = 'failed'

@@ -44,7 +44,7 @@ def test_capacity_unavailable_state_is_unknown_na_and_suppresses_progress() -> N
     assert "'utilization_percent': utilization" in presenter
     assert "'headroom': normalized_headroom" in presenter
     assert "'capacity': converter(capacity.value) if capacity_available else None" in domain
-    assert "if resolved_available" in lane
+    assert 'if resolved_available' in lane
     assert 'Capacity evidence unavailable' in lane
     assert 'No committed capacity evidence' in overview
     assert 'Missing capacity evidence is not zero utilization' in contract
@@ -63,9 +63,9 @@ def test_capacity_semantic_status_is_owned_by_domain_not_css_or_jinja() -> None:
     assert "'icon_class':" not in domain
     assert 'bar_class' not in domain
     assert 'include_presentation_classes=False' in service
-    capacity_payload = payloads.split('def get_empty_capacity_payload', 1)[1].split(
-        'def get_empty_storage_payload', 1
-    )[0]
+    capacity_payload = payloads.split('def get_empty_capacity_payload', 1)[1].split('def get_empty_storage_payload', 1)[
+        0
+    ]
     assert "'class': 'bg-" not in capacity_payload
     assert "'icon_class':" not in capacity_payload
     assert "'tone': 'unknown'" in capacity_payload

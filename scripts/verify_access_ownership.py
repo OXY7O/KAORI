@@ -133,7 +133,9 @@ def main() -> None:
                 relative = target.relative_to(ROOT).as_posix()
                 raise AssertionError(f'legacy Access compatibility reference in {relative}: {token!r}')
 
-    print('KAORI Access ownership baseline v1.1 passed: canonical Access ownership with legacy Settings role/permission code and compatibility shims removed.')
+    print(
+        'KAORI Access ownership baseline v1.1 passed: canonical Access ownership with legacy Settings role/permission code and compatibility shims removed.'
+    )
 
 
 if __name__ == '__main__':

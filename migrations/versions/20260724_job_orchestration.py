@@ -88,13 +88,13 @@ def upgrade() -> None:
     op.create_index('ix_job_policies_updated_by_user_id', 'job_policies', ['updated_by_user_id'], unique=False)
 
     op.execute(
-        "INSERT INTO job_policies "
-        "(job_key, enabled, trigger_type, interval_minutes, timezone, scope_type, scope_key, "
-        " next_run_at, last_dispatched_at, updated_by_user_id, created_at, updated_at) "
+        'INSERT INTO job_policies '
+        '(job_key, enabled, trigger_type, interval_minutes, timezone, scope_type, scope_key, '
+        ' next_run_at, last_dispatched_at, updated_by_user_id, created_at, updated_at) '
         "SELECT 'kubernetes.inventory.sync', enabled, 'interval', interval_minutes, 'UTC', "
         "       'kubernetes_fleet', 'all', next_run_at, last_dispatched_at, updated_by_user_id, "
-        "       updated_at, updated_at "
-        "FROM inventory_sync_policies"
+        '       updated_at, updated_at '
+        'FROM inventory_sync_policies'
     )
     op.drop_table('inventory_sync_policies')
 
@@ -198,12 +198,12 @@ def downgrade() -> None:
         sa.PrimaryKeyConstraint('id'),
     )
     op.execute(
-        "INSERT INTO inventory_sync_policies "
-        "(id, enabled, interval_minutes, next_run_at, last_dispatched_at, updated_by_user_id, updated_at) "
-        "SELECT 1, enabled, COALESCE(interval_minutes, 60), next_run_at, last_dispatched_at, "
-        "       updated_by_user_id, updated_at "
+        'INSERT INTO inventory_sync_policies '
+        '(id, enabled, interval_minutes, next_run_at, last_dispatched_at, updated_by_user_id, updated_at) '
+        'SELECT 1, enabled, COALESCE(interval_minutes, 60), next_run_at, last_dispatched_at, '
+        '       updated_by_user_id, updated_at '
         "FROM job_policies WHERE job_key = 'kubernetes.inventory.sync' "
-        "ORDER BY id LIMIT 1"
+        'ORDER BY id LIMIT 1'
     )
 
     op.drop_index('ix_job_policies_updated_by_user_id', table_name='job_policies')

@@ -43,7 +43,7 @@ def test_operational_toast_timer_is_script_owned():
     assert 'data-operational-toast-timer' in source
     assert 'style=' not in source
     assert 'timerBar.animate' in script
-    assert "scaleX(0)" in script
+    assert 'scaleX(0)' in script
 
 
 def test_lock_verifier_is_a_static_quality_gate():

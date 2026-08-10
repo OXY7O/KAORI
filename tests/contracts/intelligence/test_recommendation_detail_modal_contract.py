@@ -28,11 +28,14 @@ def test_shared_resource_detail_host_supports_drawer_without_main_layout_lock():
     javascript = Path('app/static/js/detail_rows.js').read_text()
     app_layout = Path('app/templates/layouts/app.html').read_text()
 
-    assert "macro host(resource_type, detail_url_template, footer_text='Details come from the latest committed inventory snapshot.')" in component
+    assert (
+        "macro host(resource_type, detail_url_template, footer_text='Details come from the latest committed inventory snapshot.')"
+        in component
+    )
     assert 'data-resource-detail-presentation="{{ presentation }}"' in component
     assert "presentation == 'drawer'" in component
     assert 'translate-x-full' in component
-    assert "resource_detail_modal.drawer_host(" in page
+    assert 'resource_detail_modal.drawer_host(' in page
     assert "dialog_max_width='max-w-2xl'" in page
     assert "label='Review'" in records
     assert "controls='resource-detail-drawer'" in records

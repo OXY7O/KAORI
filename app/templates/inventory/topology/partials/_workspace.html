@@ -2,7 +2,6 @@
 {% import "components/segmented_tabs.html" as segmented_tabs %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table.html" as table_ui %}
-
 {% call visualization_workspace.render(
     'topology-workspace',
     'Inventory Relationship Map',
@@ -12,7 +11,7 @@
     action_label='Refresh Graph',
     action_icon='refresh-cw',
     loading_id='topology-loading'
-) %}
+    ) %}
     <div class="border-b border-outline-subtle bg-surface-elevated px-5 py-4">
         <form id="topology-filter-form"
               class="grid gap-4 xl:grid-cols-12 xl:items-end">
@@ -97,34 +96,36 @@
             <span id="topology-search-summary">Search and open a resource in the current topology scope.</span>
         </div>
     </div>
-
     <div id="topology-limit-warning"
          class="{% if not graph.summary.truncated %}hidden {% endif %}border-b border-status-warning-border bg-status-warning-soft px-5 py-3 text-xs text-status-warning-text">
         <span class="inline-flex items-start gap-2">
-            <i data-lucide="triangle-alert" class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true"></i>
+            <i data-lucide="triangle-alert"
+               class="mt-0.5 h-4 w-4 shrink-0"
+               aria-hidden="true"></i>
             <span id="topology-limit-message">The graph was limited for readability. Narrow the cluster or namespace scope to display more resources.</span>
         </span>
     </div>
     <div id="topology-error"
          role="alert"
-         class="hidden border-b border-status-critical-border bg-status-critical-soft px-5 py-3 text-xs text-status-critical-text"></div>
+         class="hidden border-b border-status-critical-border bg-status-critical-soft px-5 py-3 text-xs text-status-critical-text">
+    </div>
     <div id="topology-runtime-status"
          role="status"
          class="border-b border-status-pending-border bg-status-pending-soft px-5 py-3 text-xs text-status-pending-text">
         <span class="inline-flex items-center gap-2">
-            <i data-lucide="loader-circle" class="h-4 w-4 animate-spin" aria-hidden="true"></i>
+            <i data-lucide="loader-circle"
+               class="h-4 w-4 animate-spin"
+               aria-hidden="true"></i>
             Preparing the topology renderer and committed inventory snapshot...
         </span>
     </div>
-
     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3 sm:px-5">
         <div class="flex flex-wrap items-center gap-2">
-            {{ segmented_tabs.render(
-                [('graph', 'Graph', 'share-2'), ('list', 'Resource List', 'list-tree')],
-                prefix='topology-view',
-                active_key='graph',
-                aria_label='Topology View',
-                data_attribute='data-topology-view-tab'
+            {{ segmented_tabs.render([('graph', 'Graph', 'share-2') , ('list', 'Resource List', 'list-tree')],
+            prefix='topology-view',
+            active_key='graph',
+            aria_label='Topology View',
+            data_attribute='data-topology-view-tab'
             ) }}
             <button type="button"
                     id="topology-controls-button"
@@ -143,27 +144,37 @@
             <button type="button"
                     id="topology-fit-button"
                     class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                <i data-lucide="maximize-2" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                <i data-lucide="maximize-2"
+                   class="h-4 w-4 text-kaori-primary"
+                   aria-hidden="true"></i>
                 Fit
             </button>
             <button type="button"
                     id="topology-reset-button"
                     class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                <i data-lucide="rotate-ccw" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                <i data-lucide="rotate-ccw"
+                   class="h-4 w-4 text-kaori-primary"
+                   aria-hidden="true"></i>
                 Reset
             </button>
             <details class="relative">
                 <summary class="inline-flex min-h-9 cursor-pointer list-none items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-                    <i data-lucide="download" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                    <i data-lucide="download"
+                       class="h-4 w-4 text-kaori-primary"
+                       aria-hidden="true"></i>
                     Export
                     <i data-lucide="chevron-down" class="h-3.5 w-3.5" aria-hidden="true"></i>
                 </summary>
                 <div class="absolute right-0 z-30 mt-2 w-44 rounded-xl border border-outline-default bg-surface-card p-1.5 shadow-xl">
-                    <button type="button" id="topology-export-png-button" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-content-secondary transition hover:bg-kaori-soft hover:text-kaori-primary">
+                    <button type="button"
+                            id="topology-export-png-button"
+                            class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-content-secondary transition hover:bg-kaori-soft hover:text-kaori-primary">
                         <i data-lucide="image-down" class="h-4 w-4" aria-hidden="true"></i>
                         Export PNG
                     </button>
-                    <button type="button" id="topology-export-json-button" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-content-secondary transition hover:bg-kaori-soft hover:text-kaori-primary">
+                    <button type="button"
+                            id="topology-export-json-button"
+                            class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-content-secondary transition hover:bg-kaori-soft hover:text-kaori-primary">
                         <i data-lucide="braces" class="h-4 w-4" aria-hidden="true"></i>
                         Export JSON
                     </button>
@@ -171,11 +182,9 @@
             </details>
         </div>
     </div>
-
     <div id="topology-pane-backdrop"
          class="fixed inset-0 z-40 hidden bg-surface-overlay/70 backdrop-blur-sm"
          aria-hidden="true"></div>
-
     <div class="{{ visualization_workspace.adaptive_grid_classes() }}">
         <aside id="topology-controls-panel"
                aria-label="Topology Display Controls"
@@ -185,7 +194,10 @@
                     <h3 class="text-base font-semibold text-content-primary">Display Controls</h3>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Adjust the current graph presentation.</p>
                 </div>
-                <button type="button" data-topology-close-pane class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default text-content-secondary hover:bg-surface-hover" aria-label="Close Display Controls">
+                <button type="button"
+                        data-topology-close-pane
+                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default text-content-secondary hover:bg-surface-hover"
+                        aria-label="Close Display Controls">
                     <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
                 </button>
             </div>
@@ -205,7 +217,8 @@
                         </label>
                     {% endfor %}
                     <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
-                        <label for="topology-layout-mode" class="block text-xs font-semibold text-content-secondary">Layout Mode</label>
+                        <label for="topology-layout-mode"
+                               class="block text-xs font-semibold text-content-secondary">Layout Mode</label>
                         <select id="topology-layout-mode"
                                 class="mt-2 h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                             <option value="hierarchy">Hierarchy View</option>
@@ -213,8 +226,8 @@
                         </select>
                     </div>
                 </div>
-
-                <details open class="mt-5 rounded-xl border border-outline-subtle bg-surface-card p-3">
+                <details open
+                         class="mt-5 rounded-xl border border-outline-subtle bg-surface-card p-3">
                     <summary class="cursor-pointer text-sm font-semibold text-content-primary">Resource Visibility</summary>
                     <div class="mt-3 grid gap-1.5 text-xs text-content-secondary">
                         {% for value, label, icon, domain in [
@@ -232,13 +245,15 @@
                             ] %}
                             <label class="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-1.5 transition hover:bg-surface-hover">
                                 <span class="inline-flex min-w-0 items-center gap-2">
-                                    <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border kaori-topology-domain-{{ domain }}" aria-hidden="true">
+                                    <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border kaori-topology-domain-{{ domain }}"
+                                          aria-hidden="true">
                                         <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
                                     </span>
                                     <span class="truncate">{{ label }}</span>
                                 </span>
                                 <span class="flex items-center gap-2">
-                                    <span data-topology-count-type="{{ value }}" class="text-xs font-semibold text-content-muted">0</span>
+                                    <span data-topology-count-type="{{ value }}"
+                                          class="text-xs font-semibold text-content-muted">0</span>
                                     <input type="checkbox"
                                            checked
                                            data-topology-resource-toggle="{{ value }}"
@@ -248,8 +263,8 @@
                         {% endfor %}
                     </div>
                 </details>
-
-                <details open class="mt-4 rounded-xl border border-outline-subtle bg-surface-card p-3">
+                <details open
+                         class="mt-4 rounded-xl border border-outline-subtle bg-surface-card p-3">
                     <summary class="cursor-pointer text-sm font-semibold text-content-primary">Relationship Visibility</summary>
                     <div class="mt-3 grid gap-2 text-xs text-content-secondary">
                         {% for value, label, edge_class in [
@@ -264,7 +279,8 @@
                             ] %}
                             <label class="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-1.5 transition hover:bg-surface-hover">
                                 <span class="inline-flex min-w-0 items-center gap-2">
-                                    <span class="h-0.5 w-7 shrink-0 rounded-full kaori-topology-edge-{{ edge_class }}" aria-hidden="true"></span>
+                                    <span class="h-0.5 w-7 shrink-0 rounded-full kaori-topology-edge-{{ edge_class }}"
+                                          aria-hidden="true"></span>
                                     <span>{{ label }}</span>
                                 </span>
                                 <input type="checkbox"
@@ -275,7 +291,6 @@
                         {% endfor %}
                     </div>
                 </details>
-
                 <div class="mt-5">
                     <h3 class="text-sm font-semibold text-content-primary">Status Legend</h3>
                     <div class="mt-3 flex flex-wrap gap-2">
@@ -287,18 +302,21 @@
                 </div>
             </div>
         </aside>
-
         <main class="min-w-0">
-            <section id="topology-view-panel-graph" data-topology-view-panel="graph"
+            <section id="topology-view-panel-graph"
+                     data-topology-view-panel="graph"
                      role="tabpanel"
                      aria-labelledby="topology-view-tab-graph">
-                <div id="topology-canvas-shell" class="{{ visualization_workspace.canvas_classes() }}">
-                    <div id="topology-namespace-boundaries" class="pointer-events-none absolute inset-0 z-0"></div>
+                <div id="topology-canvas-shell"
+                     class="{{ visualization_workspace.canvas_classes() }}">
+                    <div id="topology-namespace-boundaries"
+                         class="pointer-events-none absolute inset-0 z-0"></div>
                     <div id="topology-canvas"
                          role="img"
                          aria-label="Kubernetes resource relationship graph. Use Resource List for a keyboard-accessible representation."
                          class="absolute inset-0 z-10 h-full w-full"></div>
-                    <div id="topology-empty-state" class="pointer-events-none absolute inset-0 hidden items-center justify-center p-8">
+                    <div id="topology-empty-state"
+                         class="pointer-events-none absolute inset-0 hidden items-center justify-center p-8">
                         <div class="pointer-events-auto w-full max-w-md">
                             {% set empty_state_icon = "waypoints" %}
                             {% set empty_state_label = "No Results" %}
@@ -311,8 +329,8 @@
                     </div>
                 </div>
             </section>
-
-            <section id="topology-view-panel-list" data-topology-view-panel="list"
+            <section id="topology-view-panel-list"
+                     data-topology-view-panel="list"
                      role="tabpanel"
                      aria-labelledby="topology-view-tab-list"
                      hidden
@@ -330,7 +348,9 @@
                                 <th class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
                             </tr>
                         </thead>
-                        <tbody id="topology-resource-list-body" class="{{ table_ui.body_classes() }}"></tbody>
+                        <tbody id="topology-resource-list-body"
+                               class="{{ table_ui.body_classes() }}">
+                        </tbody>
                     </table>
                 </div>
                 <div id="topology-resource-list-empty" class="hidden p-6">
@@ -344,13 +364,13 @@
                 </div>
             </section>
         </main>
-
         <aside id="topology-details-panel"
                aria-label="Topology Details"
                class="{{ visualization_workspace.drawer_pane_classes('right') }}">
             <div class="flex items-start justify-between gap-4 border-b border-outline-subtle px-4 py-4">
                 <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
                         <i data-lucide="panel-right" class="h-4 w-4"></i>
                     </span>
                     <div>
@@ -358,13 +378,15 @@
                         <p class="mt-1 text-xs leading-5 text-content-muted">Inspect a selected resource or relationship.</p>
                     </div>
                 </div>
-                <button type="button" data-topology-close-pane class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default text-content-secondary hover:bg-surface-hover" aria-label="Close Topology Details">
+                <button type="button"
+                        data-topology-close-pane
+                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default text-content-secondary hover:bg-surface-hover"
+                        aria-label="Close Topology Details">
                     <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
                 </button>
             </div>
             <div id="topology-detail-content" class="p-4"></div>
         </aside>
     </div>
-
     {% include "inventory/topology/partials/_inspector_templates.html" %}
 {% endcall %}

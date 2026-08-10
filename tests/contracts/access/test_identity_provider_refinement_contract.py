@@ -13,7 +13,7 @@ def test_identity_provider_route_uses_server_side_filter_payload_and_htmx_regist
     assert 'normalize_provider_filters(request.args.to_dict())' in routes
     assert 'build_identity_provider_payload(filters)' in routes
     assert "request.headers.get('HX-Request') == 'true'" in routes
-    assert "users/providers/partials/_registry.html" in routes
+    assert 'users/providers/partials/_registry.html' in routes
     assert 'PROVIDER_TYPE_OPTIONS' in service
     assert 'PROVIDER_STATE_OPTIONS' in service
     assert 'ExternalIdentityLink.provider_id' in service
@@ -53,14 +53,14 @@ def test_provider_registry_uses_shared_kaori_table_filter_loading_detail_and_pag
     assert 'identity-provider-registry-loading' in registry
     assert "loading_bar.render('identity-provider-registry-loading', label='Refreshing Provider Registry')" in registry
     assert 'scan-search' in registry
-    assert "{{ summary.matching }} Matching" in registry
+    assert '{{ summary.matching }} Matching' in registry
     assert 'table_ui.title_cell(provider.display_name, provider.key, row.type.icon)' in registry
     assert 'font-mono text-xs text-content-muted' not in registry
     for heading in ('Provider', 'Type', 'Configuration', 'State', 'Identity Links', 'Action'):
         assert heading in registry
     assert "expandable.toggle_button('identity-providers'" in registry
     assert 'users/providers/partials/_provider_detail.html' in registry
-    assert "table_ui.table_classes()" in registry
+    assert 'table_ui.table_classes()' in registry
     assert "table_ui.table_classes('min-w-[980px]')" not in registry
     assert 'Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }}' in registry
     assert '>Rows<' in registry
@@ -112,7 +112,6 @@ def test_identity_provider_form_uses_shared_hero_live_test_and_standard_guidance
     guidance = read('app/templates/users/providers/partials/_provider_guidance.html')
     ldap_config = read('app/templates/users/providers/partials/_ldap_configuration.html')
     routes = read('app/users/routes.py')
-    script = read('app/static/js/identity_provider_form.js')
     assert 'page_hero.context_card(' in form
     assert 'page_hero.context_panel_classes()' not in form
     assert "'Configuration Scope'" in form

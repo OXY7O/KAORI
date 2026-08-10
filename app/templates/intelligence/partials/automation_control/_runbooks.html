@@ -1,29 +1,25 @@
 {% import "components/table_label.html" as table_label %}
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {% import "intelligence/components/_pagination.html" as intelligence_pagination %}
-
 {% call intelligence_ui.section(
     'Runbook Governance',
     'Stable runbook identities, immutable revisions, and deterministic alert bindings define the knowledge boundary for future automation.',
     'book-open-check',
     'Read-Only',
     'unknown'
-) %}
+    ) %}
     <div class="p-4 sm:p-5">
-        {{ intelligence_ui.reserved_plan(
-            'Authoring & Publication Controls',
-            'Runbook creation, revision publication, withdrawal, and alert-binding mutations remain disabled until validation behavior and confirmation gates are enabled.',
-            action_label='Reserved Plan',
-            icon='book-lock'
-        ) }}
+        {{ intelligence_ui.reserved_plan('Authoring & Publication Controls',
+                'Runbook creation, revision publication, withdrawal, and alert-binding mutations remain disabled until validation behavior and confirmation gates are enabled.',
+                action_label='Reserved Plan',
+                icon='book-lock') }}
     </div>
 {% endcall %}
-
 {% call intelligence_ui.section(
     'Runbook Library',
     'Primary runbook identities ordered by the latest update. Each identity summarizes revision and publication coverage.',
     'library'
-) %}
+    ) %}
     <div class="grid gap-3 p-4 sm:p-5">
         {% for row in payload.runbook_rows %}
             {% call intelligence_ui.record(row.title, row.description, icon='book-open-check', status_text=row.status|replace('_',' ')|title, status_tone='normal' if row.status == 'active' else 'warning') %}
@@ -38,10 +34,9 @@
             {{ intelligence_ui.empty_state('No Runbooks Available', 'Create and publication controls remain reserved until the runbook behavior contract is enabled.', 'book-open-check') }}
         {% endfor %}
     </div>
-    {% set query_params = {'workspace': 'runbooks'} %}
+    {% set query_params = {"workspace": "runbooks"} %}
     {{ intelligence_pagination.render(payload, 'automation_control.index', query_params, resource_label='Runbooks', per_page_options=payload.per_page_options) }}
 {% endcall %}
-
 <section class="grid gap-4 xl:grid-cols-2">
     {% call intelligence_ui.section('Recent Revisions', 'Publication state and validation evidence for the latest immutable revisions.', 'file-check-2') %}
         <div class="grid gap-3 p-4 sm:p-5">
@@ -49,8 +44,8 @@
                 {% call intelligence_ui.record(row.runbook_key ~ ' · ' ~ row.version, row.action_key, icon='file-check-2', status_text=row.status|title, status_tone='normal' if row.status == 'published' else ('warning' if row.status == 'draft' else 'unknown')) %}
                     <dl class="mt-3 grid gap-3 sm:grid-cols-2">
                         {{ intelligence_ui.field('Resolver', row.resolver_key, true) }}
-                        {{ intelligence_ui.field('Approval Policy', row.approval_policy|replace('_',' ')|title) }}
-                        {{ intelligence_ui.field('Validation', 'Passed' if row.validation_valid else ('Failed' if row.validation_valid is sameas false else 'Not Recorded')) }}
+                        {{ intelligence_ui.field('Approval Policy', row.approval_policy|replace('_',' ') |title) }}
+                        {{ intelligence_ui.field('Validation', 'Passed' if row.validation_valid else ('Failed' if row.validation_valid is sameas false else 'Not Recorded') ) }}
                         {{ intelligence_ui.field('Created', row.created_at) }}
                     </dl>
                 {% endcall %}
@@ -59,7 +54,6 @@
             {% endfor %}
         </div>
     {% endcall %}
-
     {% call intelligence_ui.section('Alert Bindings', 'Deterministic selectors linking published revisions to alert evidence.', 'link') %}
         <div class="grid gap-3 p-4 sm:p-5">
             {% for row in payload.binding_rows %}

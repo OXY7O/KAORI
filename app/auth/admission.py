@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 from app.auth.providers.catalog import AuthProviderType
-from app.auth.results import ACCESS_NOT_PERMITTED_MESSAGE, USER_INACTIVE_MESSAGE, AuthResult
+from app.auth.results import (
+    ACCESS_NOT_PERMITTED_MESSAGE,
+    AuthReason,
+    AuthResult,
+    USER_INACTIVE_MESSAGE,
+)
 from app.models.user import User
 
 
-def session_admission_reason(user: User, *, source: str) -> str | None:
+def session_admission_reason(user: User, *, source: str) -> AuthReason | None:
     """Return the reason a verified identity may not hold a KAORI session."""
 
     if not user.is_active:

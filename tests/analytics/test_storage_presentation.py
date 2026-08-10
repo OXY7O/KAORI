@@ -23,9 +23,9 @@ def test_storage_domain_owns_semantic_tones_and_pressure_thresholds() -> None:
 
 def test_storage_payload_distinguishes_unavailable_from_zero() -> None:
     payloads = read('app/analytics/common/payloads.py')
-    storage_payload = payloads.split('def get_empty_storage_payload', 1)[1].split(
-        'def get_empty_workload_payload', 1
-    )[0]
+    storage_payload = payloads.split('def get_empty_storage_payload', 1)[1].split('def get_empty_workload_payload', 1)[
+        0
+    ]
 
     assert "'evidence_available': False" in storage_payload
     assert "'pressure_evidence_available': False" in storage_payload
@@ -36,12 +36,8 @@ def test_storage_payload_distinguishes_unavailable_from_zero() -> None:
 
 def test_storage_pv_summary_uses_factual_provisioning_semantics() -> None:
     domain = read('app/analytics/storage/domain.py')
-    capacity = read(
-        'app/templates/analytics/storage/partials/_capacity_utilization_panel.html'
-    )
-    pv_panel = read(
-        'app/templates/analytics/storage/partials/_persistent_volumes_panel.html'
-    )
+    capacity = read('app/templates/analytics/storage/partials/_capacity_utilization_panel.html')
+    pv_panel = read('app/templates/analytics/storage/partials/_persistent_volumes_panel.html')
 
     for term in (
         'observed_claim_usage',
@@ -57,9 +53,7 @@ def test_storage_pv_summary_uses_factual_provisioning_semantics() -> None:
 
 def test_storage_recommendations_use_owning_tab_destinations() -> None:
     engine = read('app/intelligence/recommendation_engine.py')
-    recommendations = read(
-        'app/templates/analytics/storage/partials/_recommendations.html'
-    )
+    recommendations = read('app/templates/analytics/storage/partials/_recommendations.html')
 
     assert "href='/analytics/storage?tab=filesystem'" in engine
     assert "href='/analytics/storage?tab=pvc'" in engine
@@ -70,9 +64,9 @@ def test_storage_recommendations_use_owning_tab_destinations() -> None:
 
 def test_storage_empty_payload_defines_partial_pvc_coverage_contract() -> None:
     payloads = read('app/analytics/common/payloads.py')
-    storage_payload = payloads.split('def get_empty_storage_payload', 1)[1].split(
-        'def get_empty_workload_payload', 1
-    )[0]
+    storage_payload = payloads.split('def get_empty_storage_payload', 1)[1].split('def get_empty_workload_payload', 1)[
+        0
+    ]
 
     for field in (
         'capacity_evidence_complete',

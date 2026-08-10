@@ -86,9 +86,7 @@ def condition_presentation(condition: dict[str, Any]) -> dict[str, Any]:
         tone = 'normal' if normalized_status == 'true' else ('warning' if normalized_status == 'false' else 'unknown')
     elif normalized_type == 'podscheduled':
         label = (
-            'Scheduled'
-            if normalized_status == 'true'
-            else ('Pending' if normalized_status == 'false' else 'Unknown')
+            'Scheduled' if normalized_status == 'true' else ('Pending' if normalized_status == 'false' else 'Unknown')
         )
         tone = 'normal' if normalized_status == 'true' else ('pending' if normalized_status == 'false' else 'unknown')
     elif normalized_type == 'podreadytostartcontainers':

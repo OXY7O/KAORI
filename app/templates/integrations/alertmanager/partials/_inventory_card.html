@@ -1,13 +1,13 @@
 {% import "integrations/components/_provider_registry.html" as provider_registry %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
-<section id="alertmanager-inventory-card" class="{{ integration_ui.section_shell_classes() }}">
-    {{ provider_registry.registry_header(
-        'Alertmanager Connection Registry',
+<section id="alertmanager-inventory-card"
+         class="{{ integration_ui.section_shell_classes() }}">
+    {{ provider_registry.registry_header('Alertmanager Connection Registry',
         'Manage reusable alert connections and the operational scopes that can use them.',
         'database-zap',
-        'alertmanager-inventory-loading'
-    ) }}
-    <div class="{{ integration_ui.filter_region_classes() }}" data-kaori-one-line-filters>
+        'alertmanager-inventory-loading') }}
+    <div class="{{ integration_ui.filter_region_classes() }}"
+         data-kaori-one-line-filters>
         <form id="alertmanager-inventory-filter-form"
               method="get"
               action="{{ url_for('integrations.alertmanager') }}"
@@ -22,10 +22,16 @@
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
             <input type="hidden" name="coverage_page" value="1">
-            <input type="hidden" name="coverage_per_page" value="{{ coverage_pagination.per_page }}">
+            <input type="hidden"
+                   name="coverage_per_page"
+                   value="{{ coverage_pagination.per_page }}">
             <input type="hidden" name="coverage_q" value="{{ selected_coverage_query }}">
-            <input type="hidden" name="coverage_environment" value="{{ selected_coverage_environment }}">
-            <input type="hidden" name="coverage_status" value="{{ selected_coverage_status }}">
+            <input type="hidden"
+                   name="coverage_environment"
+                   value="{{ selected_coverage_environment }}">
+            <input type="hidden"
+                   name="coverage_status"
+                   value="{{ selected_coverage_status }}">
             <div>
                 {{ provider_registry.search_field('alertmanager-search', 'q', selected_query, 'Name, endpoint, deployment, version, or profile') }}
             </div>
@@ -40,5 +46,7 @@
             </div>
         </form>
     </div>
-    <div id="alertmanager-inventory-content">{% include 'integrations/alertmanager/partials/_inventory_content.html' %}</div>
+    <div id="alertmanager-inventory-content">
+        {% include 'integrations/alertmanager/partials/_inventory_content.html' %}
+    </div>
 </section>

@@ -68,8 +68,8 @@ def main() -> int:
         require(inventory_service, token, 'inventory freshness service', errors)
 
     for token in (
-        "coverage_tone=payload.snapshot.coverage_tone",
-        "exceptions_tone=payload.snapshot.exceptions_tone",
+        'coverage_tone=payload.snapshot.coverage_tone',
+        'exceptions_tone=payload.snapshot.exceptions_tone',
         "title='TLS Collection Snapshot'",
     ):
         require(tls_partial, token, 'TLS snapshot partial', errors)

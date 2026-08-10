@@ -38,7 +38,7 @@ def test_all_analytics_templates_use_shared_publication_primitives() -> None:
         source = (TEMPLATE_DIR / filename).read_text(encoding='utf-8')
         environment.parse(source)
 
-        assert "components/analytics_publication.html" in source, filename
+        assert 'components/analytics_publication.html' in source, filename
         assert 'ui.cover_brand(' in source, filename
         assert 'ui.cover_title(' in source, filename
         assert 'ui.cover_contents(' in source, filename

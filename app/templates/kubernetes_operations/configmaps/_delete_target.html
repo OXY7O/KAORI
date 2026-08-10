@@ -27,7 +27,10 @@
             <div class="rounded-xl border border-outline-default bg-status-warning-soft p-4 text-status-warning-text">
                 <div class="flex items-start gap-3">
                     <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card/60"><i data-lucide="database-zap" class="h-4 w-4"></i></span>
-                    <div><h3 class="text-sm font-semibold">Workload Impact Not Reported</h3><p class="mt-1 text-xs leading-5">Pod collection state: {{ impact.collection_state if impact else 'Not Reported' }}. Refresh Inventory before relying on the dependency review.</p></div>
+                    <div>
+                        <h3 class="text-sm font-semibold">Workload Impact Not Reported</h3>
+                        <p class="mt-1 text-xs leading-5">Pod collection state: {{ impact.collection_state if impact else 'Not Reported' }}. Refresh Inventory before relying on the dependency review.</p>
+                    </div>
                 </div>
             </div>
         {% endif %}

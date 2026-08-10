@@ -182,8 +182,7 @@ def test_scheduled_analytics_work_items_include_dashboard_and_page_alert_snapsho
     )
 
     alert_items = [
-        item for item in work_items
-        if item['dataset_key'] in {'dashboard.kubernetes.alerts', 'analytics.alerts'}
+        item for item in work_items if item['dataset_key'] in {'dashboard.kubernetes.alerts', 'analytics.alerts'}
     ]
     assert [item['dataset_key'] for item in alert_items] == [
         'dashboard.kubernetes.alerts',
@@ -271,9 +270,7 @@ def test_analytics_policy_precomputes_only_selected_utilization_trends(monkeypat
     )
 
     trend_parameters = [
-        item['parameters']
-        for item in work_items
-        if item['dataset_key'] == 'analytics.utilization.trend'
+        item['parameters'] for item in work_items if item['dataset_key'] == 'analytics.utilization.trend'
     ]
     assert trend_parameters == [
         {'cluster_id': 'cluster-1', 'trend_hours': '24'},

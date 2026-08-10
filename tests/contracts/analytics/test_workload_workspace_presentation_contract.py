@@ -16,7 +16,7 @@ def test_workload_workspace_uses_local_loading_ownership_and_lazy_mapping() -> N
     assert 'analytics/partials/_load_tracker.html' not in index
     assert 'kaori:analytics-tab-activated once' in index
     assert 'workload-mapping-lazy-indicator' in index
-    assert "hx-swap=\"outerHTML\"" in index
+    assert 'hx-swap="outerHTML"' in index
     assert 'Workload Resource Mapping' in index
 
 
@@ -60,7 +60,9 @@ def test_workload_sections_use_inventory_aligned_overview_and_record_cards() -> 
     ):
         source = read(relative)
         assert 'analytics/components/_analysis_surfaces.html' in source
-        assert 'analysis_surface.snapshot_shell_classes' in source or 'analysis_surface.evidence_shell_classes' in source
+        assert (
+            'analysis_surface.snapshot_shell_classes' in source or 'analysis_surface.evidence_shell_classes' in source
+        )
         assert 'text-[' not in source
         assert 'tracking-[' not in source
 
@@ -84,8 +86,16 @@ def test_workload_sections_use_inventory_aligned_overview_and_record_cards() -> 
     assert 'Request Fit Interpretation' in mapping
     assert 'Demand basis in View More' in tenant
     assert 'Interpretation in View More' in mapping
-    assert '{{ row.recommendation }}</p>' not in tenant.split("evidence_list.mobile_label('Risk')", 1)[1].split("evidence_list.cell(2, 'right')", 1)[0]
-    assert '{{ row.metrics_coverage.description }}</p>' not in mapping.split("evidence_list.mobile_label('Evidence & QoS')", 1)[1].split("evidence_list.cell(2, 'right')", 1)[0]
+    assert (
+        '{{ row.recommendation }}</p>'
+        not in tenant.split("evidence_list.mobile_label('Risk')", 1)[1].split("evidence_list.cell(2, 'right')", 1)[0]
+    )
+    assert (
+        '{{ row.metrics_coverage.description }}</p>'
+        not in mapping.split("evidence_list.mobile_label('Evidence & QoS')", 1)[1].split(
+            "evidence_list.cell(2, 'right')", 1
+        )[0]
+    )
     assert 'card=true' in tenant
     assert 'card=true' in mapping
     assert 'record_detail_modal.render' in tenant
@@ -122,8 +132,8 @@ def test_workload_summary_is_top_level_scope_owned() -> None:
     assert 'tenant_summary = {' in service
     assert '**build_tenant_scope_summary(tenant_scope_rows)' in service
     assert 'workload_scope_summary = build_workload_scope_summary(workload_scope_rows)' in service
-    assert "tenant_filtered = filter_tenant_quota_rows(" in service
-    assert "workload_filtered = filter_workload_rows(" in service
+    assert 'tenant_filtered = filter_tenant_quota_rows(' in service
+    assert 'workload_filtered = filter_workload_rows(' in service
     assert 'Showing' in pagination
     assert 'Rows Per Page' in pagination
     assert "'Mapped Workloads'" in mapping

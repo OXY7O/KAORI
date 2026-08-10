@@ -135,9 +135,7 @@ def get_capacity_page_context(query_args: Mapping[str, Any]) -> dict[str, Any]:
                     missing_capabilities=labels,
                 )
             else:
-                capacity_payload = capacity_service.get_capacity_analysis(
-                    time_range=selected_time_range
-                )
+                capacity_payload = capacity_service.get_capacity_analysis(time_range=selected_time_range)
     except PrometheusError as exc:
         message = str(exc) or 'Prometheus is not configured for the selected cluster.'
         prometheus_status = present_prometheus_status(
@@ -216,9 +214,7 @@ class CapacityService(AnalyticsBaseService):
             'governance_findings': governance_findings,
             'selected_time_range': time_range,
         }
-        actionable_recommendations = build_capacity_actionable_recommendations(
-            actionable_payload
-        )
+        actionable_recommendations = build_capacity_actionable_recommendations(actionable_payload)
         recommendation_cards = format_recommendation_cards(
             actionable_recommendations,
             default_title='Continue Capacity Monitoring',
@@ -250,9 +246,7 @@ class CapacityService(AnalyticsBaseService):
             'review_paths': get_capacity_review_paths(),
             'actionable_recommendations': actionable_recommendations,
             'recommendation_cards': recommendation_cards,
-            'recommendation_count': count_actionable_recommendations(
-                actionable_recommendations
-            ),
+            'recommendation_count': count_actionable_recommendations(actionable_recommendations),
             'kpi_cards': kpi_cards,
             'selected_time_range': time_range,
             'allowed_time_ranges': get_allowed_time_ranges(),

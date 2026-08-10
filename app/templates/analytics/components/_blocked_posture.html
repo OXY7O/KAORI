@@ -1,30 +1,29 @@
 {% import "components/page_hero.html" as page_hero %}
 {% set blocker_tone = 'warning' if dependency_blocker.kind in ['cluster_required', 'prometheus_setup', 'prometheus_capability', 'alert_source_setup'] else 'critical' %}
 {% if dependency_blocker.kind == 'prometheus_capability' %}
-    {% set blocker_status = 'Capability Incomplete' %}
+    {% set blocker_status = "Capability Incomplete" %}
 {% elif blocker_tone == 'warning' %}
-    {% set blocker_status = 'Setup Required' %}
+    {% set blocker_status = "Setup Required" %}
 {% else %}
-    {% set blocker_status = 'Unavailable' %}
+    {% set blocker_status = "Unavailable" %}
 {% endif %}
 {% set blocked_step = dependency_blocker.stage|int %}
 {% set completed_step = blocked_step - 1 %}
 {% set step_labels = {1: 'Kubernetes', 2: 'Prometheus', 3: 'Alertmanager'} %}
-{{ page_hero.context_card_body(
-    analytics_posture_label|default('Analytics Readiness'),
-    'Analytics Readiness',
-    blocker_status,
-    blocker_tone,
-    [
-        ('list-ordered', 'Current Step', 'Step ' ~ blocked_step, dependency_blocker.title),
-        (
-            'circle-check-big' if completed_step > 0 else 'circle-dashed',
-            'Progress',
-            completed_step ~ ' of 3' if completed_step > 0 else '0 of 3',
-            ('Completed through ' ~ step_labels.get(completed_step)) if completed_step > 0 else 'Readiness has not started'
-        )
-    ],
-    'Manage Clusters',
-    url_for('integrations.kubernetes'),
-    'server-cog'
+{{ page_hero.context_card_body(analytics_posture_label|default('Analytics Readiness') ,
+'Analytics Readiness',
+blocker_status,
+blocker_tone,
+[
+('list-ordered', 'Current Step', 'Step ' ~ blocked_step, dependency_blocker.title),
+(
+'circle-check-big' if completed_step > 0 else 'circle-dashed',
+'Progress',
+completed_step ~ ' of 3' if completed_step > 0 else '0 of 3',
+('Completed through ' ~ step_labels.get(completed_step)) if completed_step > 0 else 'Readiness has not started'
+)
+],
+'Manage Clusters',
+url_for('integrations.kubernetes'),
+'server-cog'
 ) }}

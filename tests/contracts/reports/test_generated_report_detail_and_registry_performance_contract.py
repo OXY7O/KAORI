@@ -58,7 +58,9 @@ def test_generated_detail_regeneration_state_keeps_artifact_and_attempt_separate
     assert 'Latest Regeneration Failed' in template
     assert 'Verified Artifact Available' in template
     assert 'The verified artifact remains available while the latest regeneration attempt is running.' in template
-    assert 'The latest attempt failed, but the previously verified artifact is still available for download.' in template
+    assert (
+        'The latest attempt failed, but the previously verified artifact is still available for download.' in template
+    )
     assert 'Artifact availability is evaluated independently from the latest generation attempt.' in template
     assert 'data-generated-detail-actions-embedded="true"' in template
 
@@ -169,7 +171,6 @@ def test_storage_reference_uses_shared_native_modal_and_attempt_layout_has_no_de
     assert 'Artifact availability is evaluated independently from the latest generation attempt.' in template
     assert 'xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]' not in template
     assert 'sm:grid-cols-2 xl:grid-cols-4' in template
-
 
 
 def test_registry_report_identity_has_domain_icon_and_service_mapping() -> None:

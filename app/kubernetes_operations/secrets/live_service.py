@@ -1,11 +1,17 @@
 from __future__ import annotations
 
-import re
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, cast
+import re
+from typing import cast
 
-from kubernetes.client import AuthorizationV1Api, CoreV1Api, V1NamespaceList, V1Secret, V1SecretList
+from kubernetes.client import (
+    AuthorizationV1Api,
+    CoreV1Api,
+    V1NamespaceList,
+    V1Secret,
+    V1SecretList,
+)
 from kubernetes.client.exceptions import ApiException
 from kubernetes.config.config_exception import ConfigException
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
@@ -199,7 +205,9 @@ def list_verified_namespaces(
                     if status == 401:
                         raise ValueError('Kubernetes authentication failed for the selected cluster.') from exc
                     if status == 429:
-                        raise ValueError('Kubernetes temporarily rate-limited Namespace verification. Retry later.') from exc
+                        raise ValueError(
+                            'Kubernetes temporarily rate-limited Namespace verification. Retry later.'
+                        ) from exc
                     raise ValueError('Kubernetes API could not verify the configured Reveal namespace.') from exc
                 verified.append(namespace)
     except ConfigException as exc:
@@ -328,13 +336,17 @@ def read_live_secret(
 
 
 def best_effort_inventory_id(target: LiveSecretSnapshot) -> int | None:
-    record = filter_current_generation(
-        ConfigurationInventory.query,
-        ConfigurationInventory,
-    ).filter_by(
-        cluster_id=target.cluster.id,
-        namespace=target.namespace,
-        name=target.name,
-        object_type='Secret',
-    ).first()
+    record = (
+        filter_current_generation(
+            ConfigurationInventory.query,
+            ConfigurationInventory,
+        )
+        .filter_by(
+            cluster_id=target.cluster.id,
+            namespace=target.namespace,
+            name=target.name,
+            object_type='Secret',
+        )
+        .first()
+    )
     return record.id if record is not None else None

@@ -125,7 +125,7 @@ def test_top_consumers_overview_records_and_summary_follow_inventory_density() -
     assert 'truncate text-xs text-content-secondary' in summary
     assert 'Top Consumer Snapshot' in summary
     for category in ('cpu', 'memory', 'pods', 'storage'):
-        assert f'data-consumer-category="{{{{ cfg.key }}}}"' in summary
+        assert 'data-consumer-category="{{ cfg.key }}"' in summary
         assert f"'key': '{category}'" in summary
     assert 'accent_classes' not in summary
     assert 'bg-amber-500' not in summary

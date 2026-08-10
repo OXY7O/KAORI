@@ -16,7 +16,9 @@ depends_on = None
 
 def upgrade() -> None:
     with op.batch_alter_table('tls_certificate_inventory') as batch:
-        batch.add_column(sa.Column('coverage_state', sa.String(length=50), nullable=False, server_default='not_reported'))
+        batch.add_column(
+            sa.Column('coverage_state', sa.String(length=50), nullable=False, server_default='not_reported')
+        )
         batch.add_column(sa.Column('declared_host_count', sa.Integer(), nullable=False, server_default='0'))
         batch.add_column(sa.Column('covered_host_count', sa.Integer(), nullable=False, server_default='0'))
         batch.add_column(sa.Column('uncovered_hosts', sa.JSON(), nullable=False, server_default=sa.text("'[]'::json")))
@@ -62,8 +64,12 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_index('ix_tls_certificate_collection_states_collected_at', table_name='tls_certificate_collection_states')
-    op.drop_index('ix_tls_certificate_collection_states_ingress_mapping_status', table_name='tls_certificate_collection_states')
-    op.drop_index('ix_tls_certificate_collection_states_secret_collection_status', table_name='tls_certificate_collection_states')
+    op.drop_index(
+        'ix_tls_certificate_collection_states_ingress_mapping_status', table_name='tls_certificate_collection_states'
+    )
+    op.drop_index(
+        'ix_tls_certificate_collection_states_secret_collection_status', table_name='tls_certificate_collection_states'
+    )
     op.drop_table('tls_certificate_collection_states')
 
     with op.batch_alter_table('tls_certificate_inventory') as batch:

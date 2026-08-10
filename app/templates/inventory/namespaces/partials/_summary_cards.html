@@ -2,46 +2,46 @@
 {% import "components/resource_posture_grid.html" as posture_grid %}
 {% set posture_metrics = [
     (
-        'sliders-horizontal',
-        'ResourceQuota Configured',
-        inventory.quota_configured_namespaces ~ '/' ~ inventory.total_namespaces,
-        inventory.quota_reported_namespaces ~ '/' ~ inventory.total_namespaces ~ ' Namespace evidence records reported.',
-        'unknown' if inventory.total_namespaces == 0 or inventory.quota_reported_namespaces < inventory.total_namespaces else 'brand'
+    'sliders-horizontal',
+    'ResourceQuota Configured',
+    inventory.quota_configured_namespaces ~ '/' ~ inventory.total_namespaces,
+    inventory.quota_reported_namespaces ~ '/' ~ inventory.total_namespaces ~ ' Namespace evidence records reported.',
+    'unknown' if inventory.total_namespaces == 0 or inventory.quota_reported_namespaces < inventory.total_namespaces else 'brand'
     ),
     (
-        'list-checks',
-        'LimitRange Configured',
-        inventory.limit_range_configured_namespaces ~ '/' ~ inventory.total_namespaces,
-        inventory.limit_range_reported_namespaces ~ '/' ~ inventory.total_namespaces ~ ' Namespace evidence records reported.',
-        'unknown' if inventory.total_namespaces == 0 or inventory.limit_range_reported_namespaces < inventory.total_namespaces else 'brand'
+    'list-checks',
+    'LimitRange Configured',
+    inventory.limit_range_configured_namespaces ~ '/' ~ inventory.total_namespaces,
+    inventory.limit_range_reported_namespaces ~ '/' ~ inventory.total_namespaces ~ ' Namespace evidence records reported.',
+    'unknown' if inventory.total_namespaces == 0 or inventory.limit_range_reported_namespaces < inventory.total_namespaces else 'brand'
     ),
     (
-        'shield',
-        'NetworkPolicy Configured',
-        inventory.network_policy_configured_namespaces ~ '/' ~ inventory.total_namespaces,
-        inventory.network_policy_reported_namespaces ~ '/' ~ inventory.total_namespaces ~ ' Namespace evidence records reported.',
-        'unknown' if inventory.total_namespaces == 0 or inventory.network_policy_reported_namespaces < inventory.total_namespaces else 'brand'
+    'shield',
+    'NetworkPolicy Configured',
+    inventory.network_policy_configured_namespaces ~ '/' ~ inventory.total_namespaces,
+    inventory.network_policy_reported_namespaces ~ '/' ~ inventory.total_namespaces ~ ' Namespace evidence records reported.',
+    'unknown' if inventory.total_namespaces == 0 or inventory.network_policy_reported_namespaces < inventory.total_namespaces else 'brand'
     ),
     (
-        'shield-check',
-        'PSA Enforce Explicitly Set',
-        inventory.psa_enforce_configured_namespaces ~ '/' ~ inventory.total_namespaces,
-        'Namespaces with an explicit Pod Security Admission enforce label.',
-        'unknown' if inventory.total_namespaces == 0 else 'brand'
+    'shield-check',
+    'PSA Enforce Explicitly Set',
+    inventory.psa_enforce_configured_namespaces ~ '/' ~ inventory.total_namespaces,
+    'Namespaces with an explicit Pod Security Admission enforce label.',
+    'unknown' if inventory.total_namespaces == 0 else 'brand'
     ),
     (
-        'user-round-x',
-        'Missing Default ServiceAccount',
-        inventory.missing_default_service_accounts,
-        inventory.default_service_account_not_reported ~ ' Namespace evidence records are not reported.',
-        'warning' if inventory.missing_default_service_accounts > 0 else ('unknown' if inventory.total_namespaces == 0 or inventory.default_service_account_not_reported > 0 else 'normal')
+    'user-round-x',
+    'Missing Default ServiceAccount',
+    inventory.missing_default_service_accounts,
+    inventory.default_service_account_not_reported ~ ' Namespace evidence records are not reported.',
+    'warning' if inventory.missing_default_service_accounts > 0 else ('unknown' if inventory.total_namespaces == 0 or inventory.default_service_account_not_reported > 0 else 'normal')
     ),
     (
-        'hourglass',
-        'Lifecycle Exceptions',
-        inventory.lifecycle_exceptions,
-        'Terminating or unknown Namespace lifecycle states.',
-        'unknown' if inventory.total_namespaces == 0 else ('warning' if inventory.unknown_namespaces > 0 else ('info' if inventory.terminating_namespaces > 0 else 'normal'))
+    'hourglass',
+    'Lifecycle Exceptions',
+    inventory.lifecycle_exceptions,
+    'Terminating or unknown Namespace lifecycle states.',
+    'unknown' if inventory.total_namespaces == 0 else ('warning' if inventory.unknown_namespaces > 0 else ('info' if inventory.terminating_namespaces > 0 else 'normal'))
     )
 ] %}
 {% call operational_section_card.render(
@@ -49,6 +49,6 @@
     'Lifecycle, resource-control, and security evidence for the active Namespace Inventory filters.',
     'shield-check',
     body_classes='p-0'
-) %}
+    ) %}
     {{ posture_grid.render(posture_metrics, columns=3) }}
 {% endcall %}

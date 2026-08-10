@@ -1,8 +1,19 @@
 from __future__ import annotations
 
-from typing import Any, Literal, cast, overload
+from typing import (
+    Any,
+    Literal,
+    cast,
+    overload,
+)
 
-from kubernetes.client import CoreV1Api, DiscoveryV1Api, V1EndpointSliceList, V1EndpointsList, V1ServiceList
+from kubernetes.client import (
+    CoreV1Api,
+    DiscoveryV1Api,
+    V1EndpointSliceList,
+    V1EndpointsList,
+    V1ServiceList,
+)
 from kubernetes.client.exceptions import ApiException
 
 from app.inventory.collectors.common import _metadata_details, _string_value
@@ -183,9 +194,7 @@ def _service_endpoint_map(
     if available:
         return endpoint_map, 'Endpoints', True, COLLECTED
     final_state = (
-        PERMISSION_UNAVAILABLE
-        if PERMISSION_UNAVAILABLE in {endpoint_slice_state, endpoints_state}
-        else API_UNAVAILABLE
+        PERMISSION_UNAVAILABLE if PERMISSION_UNAVAILABLE in {endpoint_slice_state, endpoints_state} else API_UNAVAILABLE
     )
     return endpoint_map, 'Endpoints', False, final_state
 

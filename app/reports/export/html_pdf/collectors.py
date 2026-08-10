@@ -33,9 +33,7 @@ def collect_report_payload(report: Report) -> dict[str, Any]:
 
     validate_report_instance(report)
     if report.report_type not in ANALYTICS_REPORT_TYPES:
-        raise ValueError(
-            f'HTML/PDF analytics collector does not support report type {report.report_type!r}.'
-        )
+        raise ValueError(f'HTML/PDF analytics collector does not support report type {report.report_type!r}.')
 
     collector = _PAYLOAD_COLLECTORS.get(report.report_type)
     if collector is None:

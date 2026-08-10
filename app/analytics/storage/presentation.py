@@ -108,14 +108,8 @@ def present_storage_materialized_context(
     """Apply local scope, filters, and pagination to one committed snapshot."""
     presented = deepcopy(context)
     view = StorageViewState.from_query(query_args)
-    namespace_options = [
-        str(value)
-        for value in presented.get('namespace_options', [])
-        if str(value)
-    ]
-    selected_namespace = (
-        view.namespace if not view.namespace or view.namespace in namespace_options else ''
-    )
+    namespace_options = [str(value) for value in presented.get('namespace_options', []) if str(value)]
+    selected_namespace = view.namespace if not view.namespace or view.namespace in namespace_options else ''
 
     storage_summary = deepcopy(presented.get('storage_summary') or {})
     node_filesystem = deepcopy(storage_summary.get('node_filesystem') or {})
@@ -139,9 +133,7 @@ def present_storage_materialized_context(
         persistent.get('pvc') or {},
         persistent.get('pv') or {},
     )
-    recommendations = build_storage_actionable_recommendations(
-        {'storage_summary': storage_summary}
-    )
+    recommendations = build_storage_actionable_recommendations({'storage_summary': storage_summary})
 
     presented.update(
         {
@@ -165,9 +157,7 @@ def present_storage_materialized_context(
                 recommendations,
                 include_presentation_classes=False,
             ),
-            'recommendation_count': count_actionable_recommendations(
-                recommendations
-            ),
+            'recommendation_count': count_actionable_recommendations(recommendations),
         }
     )
     return presented
@@ -179,28 +169,14 @@ def _present_filesystem(
     selected_node: str,
     pagination: dict[str, int],
 ) -> tuple[dict[str, Any], str]:
-    all_rows = list(
-        node_filesystem.get('all_rows') or node_filesystem.get('rows') or []
-    )
+    all_rows = list(node_filesystem.get('all_rows') or node_filesystem.get('rows') or [])
     available_nodes = sorted(
-        {
-            str(row.get('node') or '')
-            for row in all_rows
-            if str(row.get('node') or '')
-        }
-        | {
-            str(value)
-            for value in node_filesystem.get('available_nodes', [])
-            if str(value)
-        }
+        {str(row.get('node') or '') for row in all_rows if str(row.get('node') or '')}
+        | {str(value) for value in node_filesystem.get('available_nodes', []) if str(value)}
     )
     if selected_node and selected_node not in available_nodes:
         selected_node = ''
-    scoped_rows = [
-        row
-        for row in all_rows
-        if not selected_node or str(row.get('node') or '') == selected_node
-    ]
+    scoped_rows = [row for row in all_rows if not selected_node or str(row.get('node') or '') == selected_node]
     page = _paginate(scoped_rows, pagination)
     node_filesystem.update(
         {
@@ -225,17 +201,12 @@ def _present_persistent_storage(
     selected_namespace: str,
     view: StorageViewState,
 ) -> dict[str, Any]:
-    cluster_pvc_rows = list(
-        persistent.get('pvc_all_rows') or persistent.get('pvc_rows') or []
-    )
-    pv_all_rows = list(
-        persistent.get('pv_all_rows') or persistent.get('pv_rows') or []
-    )
+    cluster_pvc_rows = list(persistent.get('pvc_all_rows') or persistent.get('pvc_rows') or [])
+    pv_all_rows = list(persistent.get('pv_all_rows') or persistent.get('pv_rows') or [])
     scoped_pvc_rows = [
         row
         for row in cluster_pvc_rows
-        if not selected_namespace
-        or str(row.get('namespace') or '') == selected_namespace
+        if not selected_namespace or str(row.get('namespace') or '') == selected_namespace
     ]
     pvc_filtered = filter_storage_rows(
         scoped_pvc_rows,
@@ -262,11 +233,7 @@ def _present_persistent_storage(
                 scoped_pvc_rows,
                 inventory_observed=pvc_inventory_observed,
                 status_observed=pvc_status_observed,
-                scope_label=(
-                    f'Namespace · {selected_namespace}'
-                    if selected_namespace
-                    else 'All Namespaces'
-                ),
+                scope_label=(f'Namespace · {selected_namespace}' if selected_namespace else 'All Namespaces'),
             ),
             'pv': summarize_pv(
                 pv_all_rows,
@@ -335,13 +302,7 @@ def filter_storage_rows(
 
 
 def unique_options(rows: list[dict[str, Any]], key: str) -> list[str]:
-    return sorted(
-        {
-            str(row.get(key) or '')
-            for row in rows
-            if str(row.get(key) or '')
-        }
-    )
+    return sorted({str(row.get(key) or '') for row in rows if str(row.get(key) or '')})
 
 
 def _paginate(
@@ -364,27 +325,24 @@ def _pressure_lanes(storage_summary: dict[str, Any]) -> list[dict[str, Any]]:
     pvc_scope = str(pvc.get('scope_label') or 'All Namespaces')
     pvc_coverage = str(pvc.get('pressure_coverage_display') or 'N/A')
     pvc_complete = bool(pvc.get('pressure_evidence_complete'))
-    pvc_reason = (
-        'Observed claim usage is measured against paired observed volume capacity. '
-        + (
-            'Coverage is complete for the active scope.'
-            if pvc_complete
-            else 'The aggregate excludes claims without paired kubelet volume statistics.'
-        )
+    pvc_reason = 'Observed claim usage is measured against paired observed volume capacity. ' + (
+        'Coverage is complete for the active scope.'
+        if pvc_complete
+        else 'The aggregate excludes claims without paired kubelet volume statistics.'
     )
     return [
         {
             'label': 'Node Filesystem',
             'icon': 'server',
             'value': filesystem.get('usage_percent'),
-            'used_capacity': f"{filesystem.get('used', 'N/A')} / {filesystem.get('capacity', 'N/A')}",
+            'used_capacity': f'{filesystem.get("used", "N/A")} / {filesystem.get("capacity", "N/A")}',
             'description': 'Scope: '
             + str((storage_summary.get('node_filesystem') or {}).get('scope_label') or 'All Nodes'),
             'tone': (filesystem.get('risk') or {}).get('tone', 'unknown'),
             'status_label': (filesystem.get('risk') or {}).get('label', 'Unknown'),
             'reason': (
-                f"Highest pressure is {float(filesystem['highest_usage']):.1f}% "
-                f"on {filesystem.get('highest_node') or '-'}"
+                f'Highest pressure is {float(filesystem["highest_usage"]):.1f}% '
+                f'on {filesystem.get("highest_node") or "-"}'
                 if filesystem.get('highest_usage') is not None
                 else ''
             ),
@@ -395,14 +353,8 @@ def _pressure_lanes(storage_summary: dict[str, Any]) -> list[dict[str, Any]]:
             'label': 'PVC Volume Usage',
             'icon': 'box',
             'value': pvc.get('used_percent'),
-            'used_capacity': (
-                f"{pvc.get('pressure_used', 'N/A')} / "
-                f"{pvc.get('pressure_capacity', 'N/A')}"
-            ),
-            'description': (
-                f'Scope: {pvc_scope}'
-                + (f' · Coverage: {pvc_coverage}' if pvc_coverage != 'N/A' else '')
-            ),
+            'used_capacity': (f'{pvc.get("pressure_used", "N/A")} / {pvc.get("pressure_capacity", "N/A")}'),
+            'description': (f'Scope: {pvc_scope}' + (f' · Coverage: {pvc_coverage}' if pvc_coverage != 'N/A' else '')),
             'tone': (pvc.get('risk') or {}).get('tone', 'unknown'),
             'status_label': (pvc.get('risk') or {}).get('label', 'Unknown'),
             'reason': pvc_reason,

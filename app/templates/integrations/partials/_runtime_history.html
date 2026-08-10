@@ -52,9 +52,9 @@
         </div>
         {{ loading_bar.render(runtime_history_loading_id, label='Refreshing ' ~ provider_label ~ ' runtime history') }}
     </header>
-
     {% if runtime_history_filters_enabled|default(false) %}
-        <div class="{{ table_ui.inventory_filter_bar_classes() }}" data-kaori-runtime-history-filters>
+        <div class="{{ table_ui.inventory_filter_bar_classes() }}"
+             data-kaori-runtime-history-filters>
             <form method="get"
                   action="{{ runtime_history_detail_url_value }}"
                   hx-get="{{ runtime_history_url }}"
@@ -66,40 +66,59 @@
                   class="grid gap-4 lg:grid-cols-3 lg:items-end">
                 <input type="hidden" name="tab" value="{{ runtime_history_tab_name }}">
                 <input type="hidden" name="page" value="1">
-                <input type="hidden" name="per_page" value="{{ runtime_history.pagination.per_page }}">
+                <input type="hidden"
+                       name="per_page"
+                       value="{{ runtime_history.pagination.per_page }}">
                 <div>
-                    <label for="{{ runtime_history_id }}-trigger" class="{{ table_ui.filter_label_classes() }}">Observation Type</label>
-                    <select id="{{ runtime_history_id }}-trigger" name="history_trigger" class="{{ table_ui.filter_select_classes() }}">
+                    <label for="{{ runtime_history_id }}-trigger"
+                           class="{{ table_ui.filter_label_classes() }}">Observation Type</label>
+                    <select id="{{ runtime_history_id }}-trigger"
+                            name="history_trigger"
+                            class="{{ table_ui.filter_select_classes() }}">
                         <option value="" {% if not selected_history_trigger %}selected{% endif %}>All Observation Types</option>
-                        <option value="manual" {% if selected_history_trigger == 'manual' %}selected{% endif %}>Manual</option>
-                        <option value="scheduled" {% if selected_history_trigger == 'scheduled' %}selected{% endif %}>Scheduled</option>
-                        <option value="recovery" {% if selected_history_trigger == 'recovery' %}selected{% endif %}>Recovery</option>
+                        <option value="manual"
+                                {% if selected_history_trigger == 'manual' %}selected{% endif %}>Manual</option>
+                        <option value="scheduled"
+                                {% if selected_history_trigger == 'scheduled' %}selected{% endif %}>Scheduled</option>
+                        <option value="recovery"
+                                {% if selected_history_trigger == 'recovery' %}selected{% endif %}>Recovery</option>
                     </select>
                 </div>
                 <div>
-                    <label for="{{ runtime_history_id }}-health" class="{{ table_ui.filter_label_classes() }}">Runtime Health</label>
-                    <select id="{{ runtime_history_id }}-health" name="history_health" class="{{ table_ui.filter_select_classes() }}">
+                    <label for="{{ runtime_history_id }}-health"
+                           class="{{ table_ui.filter_label_classes() }}">Runtime Health</label>
+                    <select id="{{ runtime_history_id }}-health"
+                            name="history_health"
+                            class="{{ table_ui.filter_select_classes() }}">
                         <option value="" {% if not selected_history_health %}selected{% endif %}>All Health States</option>
-                        <option value="healthy" {% if selected_history_health == 'healthy' %}selected{% endif %}>Healthy</option>
-                        <option value="degraded" {% if selected_history_health == 'degraded' %}selected{% endif %}>Degraded</option>
-                        <option value="unhealthy" {% if selected_history_health == 'unhealthy' %}selected{% endif %}>Unhealthy</option>
+                        <option value="healthy"
+                                {% if selected_history_health == 'healthy' %}selected{% endif %}>Healthy</option>
+                        <option value="degraded"
+                                {% if selected_history_health == 'degraded' %}selected{% endif %}>Degraded</option>
+                        <option value="unhealthy"
+                                {% if selected_history_health == 'unhealthy' %}selected{% endif %}>Unhealthy</option>
                     </select>
                 </div>
                 <div>
-                    <label for="{{ runtime_history_id }}-readiness" class="{{ table_ui.filter_label_classes() }}">Validation Readiness</label>
-                    <select id="{{ runtime_history_id }}-readiness" name="history_readiness" class="{{ table_ui.filter_select_classes() }}">
+                    <label for="{{ runtime_history_id }}-readiness"
+                           class="{{ table_ui.filter_label_classes() }}">Validation Readiness</label>
+                    <select id="{{ runtime_history_id }}-readiness"
+                            name="history_readiness"
+                            class="{{ table_ui.filter_select_classes() }}">
                         <option value="" {% if not selected_history_readiness %}selected{% endif %}>All Readiness States</option>
-                        <option value="ready" {% if selected_history_readiness == 'ready' %}selected{% endif %}>Ready</option>
-                        <option value="degraded" {% if selected_history_readiness == 'degraded' %}selected{% endif %}>Degraded</option>
-                        <option value="validation_required" {% if selected_history_readiness == 'validation_required' %}selected{% endif %}>Validation Required</option>
-                        <option value="blocked" {% if selected_history_readiness == 'blocked' %}selected{% endif %}>Blocked</option>
+                        <option value="ready"
+                                {% if selected_history_readiness == 'ready' %}selected{% endif %}>Ready</option>
+                        <option value="degraded"
+                                {% if selected_history_readiness == 'degraded' %}selected{% endif %}>Degraded</option>
+                        <option value="validation_required"
+                                {% if selected_history_readiness == 'validation_required' %}selected{% endif %}>Validation Required</option>
+                        <option value="blocked"
+                                {% if selected_history_readiness == 'blocked' %}selected{% endif %}>Blocked</option>
                     </select>
                 </div>
             </form>
         </div>
     {% endif %}
-
-
     {% if runtime_history.rows %}
         <div class="border-b border-outline-subtle bg-surface-subtle px-5 py-4 sm:px-6"
              data-kaori-runtime-history-summary
@@ -113,11 +132,11 @@
             </div>
             <div class="grid overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
                 {% set posture_summary = [
-                    ('ready', 'Ready', runtime_history.posture_counts.ready),
-                    ('degraded', 'Attention', runtime_history.posture_counts.attention),
-                    ('blocked', 'Blocked', runtime_history.posture_counts.blocked),
-                    ('not_observed', 'Not Observed', runtime_history.posture_counts.not_observed)
-                ] %}
+                                    ('ready', 'Ready', runtime_history.posture_counts.ready),
+                                    ('degraded', 'Attention', runtime_history.posture_counts.attention),
+                                    ('blocked', 'Blocked', runtime_history.posture_counts.blocked),
+                                    ('not_observed', 'Not Observed', runtime_history.posture_counts.not_observed)
+                                ] %}
                 {% for tone, label, count in posture_summary %}
                     <div class="flex items-center justify-between gap-3 bg-surface-card px-3.5 py-3">
                         {{ integration_status(tone, label, display='indicator') }}
@@ -126,17 +145,23 @@
                 {% endfor %}
             </div>
         </div>
-
-        <div class="overflow-x-auto overscroll-x-contain" data-kaori-runtime-history-records>
-            <table class="{{ table_ui.table_classes('min-w-[78rem]') }}" data-kaori-runtime-history-table>
+        <div class="overflow-x-auto overscroll-x-contain"
+             data-kaori-runtime-history-records>
+            <table class="{{ table_ui.table_classes('min-w-[78rem]') }}"
+                   data-kaori-runtime-history-table>
                 <caption class="sr-only">Recent persisted runtime observations for {{ provider_label }}.</caption>
-                <thead class="{{ table_ui.head_classes() }}" data-kaori-runtime-history-columns>
+                <thead class="{{ table_ui.head_classes() }}"
+                       data-kaori-runtime-history-columns>
                     <tr>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Observation</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[11rem]">Runtime Posture</th>
+                        <th scope="col"
+                            class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Observation</th>
+                        <th scope="col"
+                            class="{{ table_ui.header_cell_classes() }} min-w-[11rem]">Runtime Posture</th>
                         <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[8rem]">Health</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Capability Context</th>
-                        <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[11rem]">State Change</th>
+                        <th scope="col"
+                            class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Capability Context</th>
+                        <th scope="col"
+                            class="{{ table_ui.header_cell_classes() }} min-w-[11rem]">State Change</th>
                         <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
                     </tr>
                 </thead>
@@ -147,11 +172,13 @@
                         <tr class="{{ table_ui.row_classes() }}">
                             <td class="{{ table_ui.cell_classes() }}">
                                 <div class="flex min-w-0 items-center gap-2.5">
-                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary dark:text-kaori-accent" aria-hidden="true">
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary dark:text-kaori-accent"
+                                          aria-hidden="true">
                                         <i data-lucide="activity" class="h-4 w-4"></i>
                                     </span>
                                     <div class="min-w-0">
-                                        <p class="truncate text-sm font-semibold text-content-primary" title="{{ row.observed_at_display }}">{{ row.observed_at_display }}</p>
+                                        <p class="truncate text-sm font-semibold text-content-primary"
+                                           title="{{ row.observed_at_display }}">{{ row.observed_at_display }}</p>
                                         <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">{{ row.trigger_type_label }} observation</p>
                                     </div>
                                 </div>
@@ -165,7 +192,8 @@
                                 <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ row.latency_display }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
-                                <p class="truncate text-sm font-semibold text-content-primary" title="{{ row.capability_profile or row.compatibility_profile or 'Not Detected' }}">{{ row.capability_profile or row.compatibility_profile or 'Not Detected' }}</p>
+                                <p class="truncate text-sm font-semibold text-content-primary"
+                                   title="{{ row.capability_profile or row.compatibility_profile or 'Not Detected' }}">{{ row.capability_profile or row.compatibility_profile or 'Not Detected' }}</p>
                                 <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">{{ row.capability_count_display }}</p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
@@ -177,10 +205,8 @@
                                 {% endif %}
                             </td>
                             <td class="{{ table_ui.cell_classes(action=true) }}">
-                                {{ record_actions.view_more(
-                                    row.detail_id ~ '-dialog',
-                                    role='runtime-observation'
-                                ) }}
+                                {{ record_actions.view_more(row.detail_id ~ '-dialog',
+                                                                role='runtime-observation') }}
                             </td>
                         </tr>
                     </tbody>
@@ -194,14 +220,13 @@
         </div>
     {% else %}
         <div class="p-0">
-            {% set empty_state_icon = 'history' %}
-            {% set empty_state_title = 'No Runtime Observations Recorded' %}
-            {% set empty_state_description = 'Run Refresh Runtime or wait for scheduled monitoring. The first persisted observation becomes the baseline for health and capability change detection.' %}
-            {% set empty_state_min_height = 'min-h-[190px]' %}
+            {% set empty_state_icon = "history" %}
+            {% set empty_state_title = "No Runtime Observations Recorded" %}
+            {% set empty_state_description = "Run Refresh Runtime or wait for scheduled monitoring. The first persisted observation becomes the baseline for health and capability change detection." %}
+            {% set empty_state_min_height = "min-h-[190px]" %}
             {% include 'components/states/_empty_state.html' %}
         </div>
     {% endif %}
-
     <footer class="{{ pagination_ui.footer_classes() }}">
         <div class="{{ pagination_ui.summary_group_classes() }}">
             <p>Showing <span class="font-semibold text-content-primary">{{ runtime_history.pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ runtime_history.pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ runtime_history.pagination.total_items }}</span> Runtime Observations</p>
@@ -214,17 +239,25 @@
                   class="{{ pagination_ui.rows_group_classes() }}">
                 <input type="hidden" name="tab" value="{{ runtime_history_tab_name }}">
                 <input type="hidden" name="page" value="1">
-                <input type="hidden" name="history_trigger" value="{{ selected_history_trigger }}">
-                <input type="hidden" name="history_health" value="{{ selected_history_health }}">
-                <input type="hidden" name="history_readiness" value="{{ selected_history_readiness }}">
-                <label for="{{ runtime_history_id }}-per-page" class="font-semibold text-content-secondary">Rows</label>
+                <input type="hidden"
+                       name="history_trigger"
+                       value="{{ selected_history_trigger }}">
+                <input type="hidden"
+                       name="history_health"
+                       value="{{ selected_history_health }}">
+                <input type="hidden"
+                       name="history_readiness"
+                       value="{{ selected_history_readiness }}">
+                <label for="{{ runtime_history_id }}-per-page"
+                       class="font-semibold text-content-secondary">Rows</label>
                 <select id="{{ runtime_history_id }}-per-page"
                         name="per_page"
                         aria-label="Runtime observations per page"
                         data-kaori-auto-submit
                         class="{{ pagination_ui.page_size_classes() }}">
                     {% for option in runtime_history.pagination.allowed_per_page %}
-                        <option value="{{ option }}" {% if option == runtime_history.pagination.per_page %}selected{% endif %}>{{ option }}</option>
+                        <option value="{{ option }}"
+                                {% if option == runtime_history.pagination.per_page %}selected{% endif %}>{{ option }}</option>
                     {% endfor %}
                 </select>
             </form>
@@ -234,13 +267,13 @@
             {% if runtime_history.pagination.has_prev %}
                 {% set previous_detail_args = runtime_history_route_args_value.copy() %}
                 {% set _ = previous_detail_args.update({
-                    'tab': runtime_history_tab_name,
-                    'page': runtime_history.pagination.prev_page,
-                    'per_page': runtime_history.pagination.per_page,
-                    'history_trigger': selected_history_trigger,
-                    'history_health': selected_history_health,
-                    'history_readiness': selected_history_readiness
-                }) %}
+                                    'tab': runtime_history_tab_name,
+                                    'page': runtime_history.pagination.prev_page,
+                                    'per_page': runtime_history.pagination.per_page,
+                                    'history_trigger': selected_history_trigger,
+                                    'history_health': selected_history_health,
+                                    'history_readiness': selected_history_readiness
+                                }) %}
                 <a href="{{ url_for(runtime_history_detail_endpoint_name, **previous_detail_args) }}"
                    hx-get="{{ runtime_history_url }}?page={{ runtime_history.pagination.prev_page }}&per_page={{ runtime_history.pagination.per_page }}&history_trigger={{ selected_history_trigger }}&history_health={{ selected_history_health }}&history_readiness={{ selected_history_readiness }}"
                    hx-target="#{{ runtime_history_id }}"
@@ -253,33 +286,31 @@
             {% endif %}
             {% set runtime_pagination_args = runtime_history_route_args_value.copy() %}
             {% set _ = runtime_pagination_args.update({
-                'tab': runtime_history_tab_name,
-                'per_page': runtime_history.pagination.per_page,
-                'history_trigger': selected_history_trigger,
-                'history_health': selected_history_health,
-                'history_readiness': selected_history_readiness
-            }) %}
-            {{ pagination_ui.numeric_pages(
-                runtime_history.pagination.page,
-                runtime_history.pagination.total_pages,
-                'page',
-                hx_target='#' ~ runtime_history_id,
-                hx_indicator='#' ~ runtime_history_loading_id,
-                endpoint=runtime_history_endpoint_name,
-                query_params=runtime_pagination_args,
-                hx_swap='outerHTML',
-                href_endpoint=runtime_history_detail_endpoint_name
-            ) }}
+                            'tab': runtime_history_tab_name,
+                            'per_page': runtime_history.pagination.per_page,
+                            'history_trigger': selected_history_trigger,
+                            'history_health': selected_history_health,
+                            'history_readiness': selected_history_readiness
+                        }) %}
+            {{ pagination_ui.numeric_pages(runtime_history.pagination.page,
+                        runtime_history.pagination.total_pages,
+                        'page',
+                        hx_target='#' ~ runtime_history_id,
+                        hx_indicator='#' ~ runtime_history_loading_id,
+                        endpoint=runtime_history_endpoint_name,
+                        query_params=runtime_pagination_args,
+                        hx_swap='outerHTML',
+                        href_endpoint=runtime_history_detail_endpoint_name) }}
             {% if runtime_history.pagination.has_next %}
                 {% set next_detail_args = runtime_history_route_args_value.copy() %}
                 {% set _ = next_detail_args.update({
-                    'tab': runtime_history_tab_name,
-                    'page': runtime_history.pagination.next_page,
-                    'per_page': runtime_history.pagination.per_page,
-                    'history_trigger': selected_history_trigger,
-                    'history_health': selected_history_health,
-                    'history_readiness': selected_history_readiness
-                }) %}
+                                    'tab': runtime_history_tab_name,
+                                    'page': runtime_history.pagination.next_page,
+                                    'per_page': runtime_history.pagination.per_page,
+                                    'history_trigger': selected_history_trigger,
+                                    'history_health': selected_history_health,
+                                    'history_readiness': selected_history_readiness
+                                }) %}
                 <a href="{{ url_for(runtime_history_detail_endpoint_name, **next_detail_args) }}"
                    hx-get="{{ runtime_history_url }}?page={{ runtime_history.pagination.next_page }}&per_page={{ runtime_history.pagination.per_page }}&history_trigger={{ selected_history_trigger }}&history_health={{ selected_history_health }}&history_readiness={{ selected_history_readiness }}"
                    hx-target="#{{ runtime_history_id }}"

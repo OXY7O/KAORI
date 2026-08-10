@@ -5,13 +5,11 @@
     <section id="integration-coverage"
              class="{{ integration_ui.section_shell_classes() }}"
              aria-labelledby="integration-coverage-title">
-        {{ provider_registry.registry_header(
-            provider.label ~ ' Integration Coverage',
-            'Bind operational scopes to existing ' ~ provider.label ~ ' sources.',
-            'route',
-            provider.key ~ '-coverage-loading',
-            title_id='integration-coverage-title'
-        ) }}
+        {{ provider_registry.registry_header(provider.label ~ ' Integration Coverage',
+                'Bind operational scopes to existing ' ~ provider.label ~ ' sources.',
+                'route',
+                provider.key ~ '-coverage-loading',
+                title_id='integration-coverage-title') }}
         <div class="{{ integration_ui.filter_region_classes() }}">
             <form id="{{ provider.key }}-coverage-filter-form"
                   method="get"

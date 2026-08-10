@@ -154,9 +154,7 @@ def _rendered_html(*, include_storage: bool = False) -> tuple[object, str, Path]
         _payload(include_storage=include_storage),
     )
     project_root = Path(__file__).resolve().parents[2]
-    rendered_html = _environment(project_root).get_template(document.template_name).render(
-        document=document
-    )
+    rendered_html = _environment(project_root).get_template(document.template_name).render(document=document)
     return document, rendered_html, project_root
 
 
@@ -214,11 +212,10 @@ def test_forecast_analysis_methodology_uses_side_by_side_boundary_columns() -> N
     assert 'grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)' in shared
     assert 'column-gap: 12mm' in shared
 
+
 def test_forecast_analysis_uses_committed_materialized_collector() -> None:
     project_root = Path(__file__).resolve().parents[2]
-    source = (project_root / 'app' / 'reports' / 'export' / 'payloads' / 'forecast.py').read_text(
-        encoding='utf-8'
-    )
+    source = (project_root / 'app' / 'reports' / 'export' / 'payloads' / 'forecast.py').read_text(encoding='utf-8')
 
     assert "dataset_key='analytics.forecast'" in source
     assert 'present_forecast_materialized_context' in source
@@ -231,12 +228,11 @@ def test_forecast_analysis_stylesheet_is_isolated() -> None:
     registry = (
         project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'analytics_publication_standard.py'
     ).read_text(encoding='utf-8')
-    engine = (project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'engine.py').read_text(
-        encoding='utf-8'
-    )
+    engine = (project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'engine.py').read_text(encoding='utf-8')
 
     assert "'reports/pdf/forecast_analysis.html': 'forecast_analysis.css'" in registry
     assert 'ANALYTICS_TEMPLATE_STYLESHEETS' in engine
+
 
 def test_forecast_analysis_weasyprint_layout_is_exactly_nine_a4_pages(tmp_path: Path) -> None:
     document, rendered_html, project_root = _rendered_html()

@@ -83,9 +83,7 @@ def update_lifecycle_policy(*, domain_name: str, values: Mapping[str, Any], user
         )
 
 
-def queue_lifecycle_execution(
-    *, domain_name: str, mode: str, user_id: int
-) -> dict[str, Any]:
+def queue_lifecycle_execution(*, domain_name: str, mode: str, user_id: int) -> dict[str, Any]:
     cleanup = mode == 'archive_and_cleanup'
     try:
         domain = get_archive_domain(domain_name)

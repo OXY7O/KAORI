@@ -4,11 +4,21 @@ from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from flask import abort, current_app
-from sqlalchemy import Select, func, or_, select
+from flask import abort
+from sqlalchemy import (
+    Select,
+    func,
+    or_,
+    select,
+)
 
 from app.common.job_execution_presentation import present_job_execution
-from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window, normalize_per_page, positive_int
+from app.common.pagination import (
+    PER_PAGE_OPTIONS,
+    build_pagination_window,
+    normalize_per_page,
+    positive_int,
+)
 from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.job import JobExecution
@@ -96,9 +106,7 @@ def get_generated_reports_payload(
     summary_cards = get_summary_cards()
     has_pending_reports = _count_reports_by_status(PENDING_STATUSES) > 0
     unavailable_artifacts = sum(
-        1
-        for item in reports
-        if item.get('file_path') and not bool(item.get('storage_reachable', True))
+        1 for item in reports if item.get('file_path') and not bool(item.get('storage_reachable', True))
     )
     if not bool(backend_status.get('reachable', False)):
         storage_notice = str(backend_status.get('description') or '').strip() or (
@@ -116,9 +124,7 @@ def get_generated_reports_payload(
 
     return {
         'page_title': 'Generated Reports',
-        'page_subtitle': (
-            'Review generated report records, artifact availability, and lifecycle actions.'
-        ),
+        'page_subtitle': ('Review generated report records, artifact availability, and lifecycle actions.'),
         'summary_cards': summary_cards,
         'filter_options': get_filter_options(),
         'selected_filters': selected_filters,
@@ -507,10 +513,7 @@ def get_pagination(
     return {
         **pagination.as_dict(),
         'per_page_options': list(PER_PAGE_OPTIONS),
-        'label': (
-            f'Showing {pagination.start_item}–{pagination.end_item} '
-            f'of {pagination.total_items} Reports'
-        ),
+        'label': (f'Showing {pagination.start_item}–{pagination.end_item} of {pagination.total_items} Reports'),
     }
 
 
@@ -569,11 +572,7 @@ def get_storage_context(
             'archived',
         ]
     )
-    missing_artifacts = (
-        _count_missing_artifacts()
-        if artifact_access is None
-        else 0
-    )
+    missing_artifacts = _count_missing_artifacts() if artifact_access is None else 0
 
     storage_tone = 'green'
     storage_status = 'Active'
@@ -586,7 +585,7 @@ def get_storage_context(
         storage_tone = 'amber'
         storage_status = 'Unavailable'
         storage_description = (
-            f"KAORI could not reach {artifact_access.get('backend_label', 'Report Storage')} "
+            f'KAORI could not reach {artifact_access.get("backend_label", "Report Storage")} '
             'to verify this report artifact. The report record remains available for review.'
         )
     elif artifact_access is None and not bool(backend_status.get('reachable', False)):
@@ -859,18 +858,11 @@ def _serialize_report(
         report.file_path,
     )
     artifact_format = get_report_artifact_format(report.output_format)
-    active_backend_status = dict(
-        active_backend_status or get_report_storage_backend_status()
+    active_backend_status = dict(active_backend_status or get_report_storage_backend_status())
+    can_generate_artifact = report.status in ['requested', 'failed', 'ready'] and bool(
+        active_backend_status.get('write_available', False)
     )
-    can_generate_artifact = (
-        report.status in ['requested', 'failed', 'ready']
-        and bool(active_backend_status.get('write_available', False))
-    )
-    can_download_artifact = (
-        report.status in ['ready', 'archived']
-        and bool(report.file_path)
-        and file_exists
-    )
+    can_download_artifact = report.status in ['ready', 'archived'] and bool(report.file_path) and file_exists
 
     return {
         'id': report.id,
@@ -939,9 +931,7 @@ def _serialize_report(
         'storage_uri_display': storage_location['display'],
         'can_generate_artifact': can_generate_artifact,
         'generate_artifact_label': (
-            f'Regenerate {artifact_format.label}'
-            if report.status == 'ready'
-            else f'Generate {artifact_format.label}'
+            f'Regenerate {artifact_format.label}' if report.status == 'ready' else f'Generate {artifact_format.label}'
         ),
         'can_archive_report': report.status
         in [
@@ -989,10 +979,7 @@ def _summarize_report_file_reference(
             'verified': False,
         }
 
-    if (
-        active_backend_status is not None
-        and backend_name == _get_active_storage_backend_name()
-    ):
+    if active_backend_status is not None and backend_name == _get_active_storage_backend_name():
         backend_status = dict(active_backend_status)
     else:
         backend_status = get_report_storage_backend_status(backend_name)
@@ -1004,13 +991,11 @@ def _summarize_report_file_reference(
         'exists': bool(file_path and reachable),
         'reachable': reachable,
         'backend': backend_name,
-        'backend_label': (
-            storage_location.get('backend_label')
-            or _format_storage_backend_label(backend_name)
-        ),
+        'backend_label': (storage_location.get('backend_label') or _format_storage_backend_label(backend_name)),
         'state': 'referenced' if reachable else 'unavailable',
         'verified': False,
     }
+
 
 def _get_status_meta(
     status: str,
@@ -1256,12 +1241,7 @@ def get_report_detail_export_readiness(
         download_status = 'Ready'
         download_tone = 'green'
 
-    if (
-        report.status in ['ready', 'archived']
-        and report.file_path
-        and storage_reachable
-        and not file_exists
-    ):
+    if report.status in ['ready', 'archived'] and report.file_path and storage_reachable and not file_exists:
         download_status = 'Blocked'
         download_tone = 'red'
 
@@ -1717,8 +1697,6 @@ def _get_known_section_options() -> list[dict[str, str]]:
     ]
 
 
-
-
 def _get_report_visual_icon(value: str) -> str:
     """Return a stable Lucide icon for Generated Reports presentation."""
 
@@ -1904,10 +1882,7 @@ def get_report_artifact_access_notice(
     if not report.file_path or bool(artifact_access.get('reachable', True)):
         return None
 
-    backend_label = str(
-        artifact_access.get('backend_label')
-        or 'Report Storage'
-    )
+    backend_label = str(artifact_access.get('backend_label') or 'Report Storage')
 
     return {
         'title': 'Artifact Storage Is Temporarily Unavailable',

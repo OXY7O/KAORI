@@ -11,7 +11,6 @@
 
   Consumers own only endpoint, filter fields, table content, and optional polling.
 #}
-
 {% macro filter_form(endpoint, registry_id, loading_id, per_page, classes='', marker_name='', marker_value='true', page_param='page', per_page_param='per_page') -%}
     <form method="GET"
           action="{{ url_for(endpoint) }}"
@@ -31,7 +30,6 @@
         {{ caller() }}
     </form>
 {%- endmacro %}
-
 {% macro clear_filters_link(endpoint, registry_id, loading_id, per_page, classes, label='Clear Filters', query_params=none, page_param='page', per_page_param='per_page') -%}
     {% set clear_query = query_params.copy() if query_params else {} %}
     {% set _ = clear_query.update({page_param: 1, per_page_param: per_page}) %}
@@ -50,7 +48,6 @@
         {{ label }}
     </a>
 {%- endmacro %}
-
 {% macro footer(endpoint, registry_id, loading_id, pagination, query_params, per_page_options, resource_label='Records', rows_aria_label='Records per page', control_name='registry', page_param='page', per_page_param='per_page') -%}
     {% set canonical_query = query_params.copy() if query_params else {} %}
     {% set _ = canonical_query.update({per_page_param: pagination.per_page}) %}
@@ -83,12 +80,12 @@
                         class="{{ pagination_ui.page_size_classes() }}"
                         aria-label="{{ rows_aria_label }}">
                     {% for option in per_page_options %}
-                        <option value="{{ option }}" {% if pagination.per_page == option|int %}selected{% endif %}>{{ option }}</option>
+                        <option value="{{ option }}"
+                                {% if pagination.per_page == option|int %}selected{% endif %}>{{ option }}</option>
                     {% endfor %}
                 </select>
             </form>
         </div>
-
         <nav class="{{ pagination_ui.navigation_group_classes() }}"
              aria-label="{{ resource_label }} Pagination"
              hx-select="#{{ registry_id }}"
@@ -108,24 +105,21 @@
                     Previous
                 </a>
             {% else %}
-                <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">
+                <span class="{{ pagination_ui.navigation_classes(true) }}"
+                      aria-disabled="true">
                     <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
                     Previous
                 </span>
             {% endif %}
-
-            {{ pagination_ui.numeric_pages(
-                pagination.page,
-                pagination.total_pages,
-                page_param=page_param,
-                hx_target='#' ~ registry_id,
-                hx_indicator='#' ~ loading_id,
-                endpoint=endpoint,
-                query_params=canonical_query,
-                hx_swap='outerHTML',
-                href_endpoint=endpoint
-            ) }}
-
+            {{ pagination_ui.numeric_pages(pagination.page,
+                        pagination.total_pages,
+                        page_param=page_param,
+                        hx_target='#' ~ registry_id,
+                        hx_indicator='#' ~ loading_id,
+                        endpoint=endpoint,
+                        query_params=canonical_query,
+                        hx_swap='outerHTML',
+                        href_endpoint=endpoint) }}
             {% set next_query = canonical_query.copy() %}
             {% set _ = next_query.update({page_param: pagination.next_page}) %}
             {% if pagination.has_next %}
@@ -139,7 +133,8 @@
                     <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
                 </a>
             {% else %}
-                <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">
+                <span class="{{ pagination_ui.navigation_classes(true) }}"
+                      aria-disabled="true">
                     Next
                     <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
                 </span>

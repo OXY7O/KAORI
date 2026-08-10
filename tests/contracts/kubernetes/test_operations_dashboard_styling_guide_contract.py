@@ -40,8 +40,8 @@ def test_dashboard_uses_integrated_tabs_and_equal_height_peer_content() -> None:
     assert 'components/related_page_card.html' not in source
     assert 'xl:grid-cols-12' in grid
     assert 'xl:col-span-6' in grid
-    assert "xl:col-span-7" in grid
-    assert "xl:col-span-5" in grid
+    assert 'xl:col-span-7' in grid
+    assert 'xl:col-span-5' in grid
     assert 'h-full min-w-0' in grid
     assert 'rounded-xl' not in tabs
     assert 'bg-surface-card' not in tabs
@@ -84,15 +84,9 @@ def test_dashboard_sections_use_the_canonical_operational_section_card() -> None
 def test_primary_and_peer_operational_flows_are_static() -> None:
     info_flow = read('app/templates/components/info_flow.html')
     flow_steps = read('app/templates/components/operational_flow_steps.html')
-    alert_guidance = read(
-        'app/templates/dashboards/kubernetes/partials/_alert_response_guidance.html'
-    )
-    reporting_guidance = read(
-        'app/templates/dashboards/kubernetes/partials/_reporting_guidance.html'
-    )
-    capacity = read(
-        'app/templates/dashboards/kubernetes/partials/_capacity_snapshot.html'
-    )
+    alert_guidance = read('app/templates/dashboards/kubernetes/partials/_alert_response_guidance.html')
+    reporting_guidance = read('app/templates/dashboards/kubernetes/partials/_reporting_guidance.html')
+    capacity = read('app/templates/dashboards/kubernetes/partials/_capacity_snapshot.html')
     contract = read('docs/design/components/OPERATIONAL_FLOW_STEPS.md')
 
     assert '<section' in info_flow
@@ -153,10 +147,7 @@ def test_dashboard_page_templates_have_no_local_typography_or_shell_drift() -> N
 
     arbitrary_text = re.compile(r'\btext-\[[^\]]+\]')
     arbitrary_tracking = re.compile(r'\btracking-\[[^\]]+\]')
-    copied_shell = (
-        'overflow-hidden rounded-xl border border-outline-default '
-        'bg-surface-card shadow-sm'
-    )
+    copied_shell = 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm'
 
     for path, source in sources:
         assert arbitrary_text.search(source) is None, path
@@ -166,10 +157,7 @@ def test_dashboard_page_templates_have_no_local_typography_or_shell_drift() -> N
 
 
 def test_dashboard_copy_uses_canonical_casing() -> None:
-    all_source = '\n'.join(
-        path.read_text(encoding='utf-8')
-        for path in sorted(DASHBOARD_TEMPLATES.rglob('*.html'))
-    )
+    all_source = '\n'.join(path.read_text(encoding='utf-8') for path in sorted(DASHBOARD_TEMPLATES.rglob('*.html')))
 
     assert 'Live Signals Enabled' not in all_source
     assert 'Select a Cluster for Live Signals' not in all_source
@@ -246,8 +234,7 @@ def test_dashboard_metric_card_has_no_unused_tone_api() -> None:
 
     assert (
         "macro render(label, value, description, icon, source_label='Operational', "
-        "scope_label='Active Scope')"
-        in metric_card
+        "scope_label='Active Scope')" in metric_card
     )
     assert "tone='violet'" not in metric_card
     assert 'scope_tone' not in metric_card

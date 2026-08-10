@@ -11,11 +11,7 @@ def validation_trigger(
 ) -> str | None:
     validation = payload.get('validation')
     targets = payload.get('targets') or []
-    is_valid = bool(
-        validation is not None
-        and validation.is_valid
-        and validation.parsed_certificate is not None
-    )
+    is_valid = bool(validation is not None and validation.is_valid and validation.parsed_certificate is not None)
     if not is_valid or (require_targets and not targets):
         return None
     return f'{{"kaori:operation-validated":{{"formId":"{form_id}"}}}}'

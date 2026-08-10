@@ -184,10 +184,7 @@ def build_report_object_key(
         extension = OUTPUT_FORMAT_SPECS[output_format].extension
     except KeyError as exc:
         raise ValueError(f'Unsupported report output format: {output_format!r}.') from exc
-    filename = (
-        f'{report_reference}-{cluster_slug}-{namespace_slug}-'
-        f'{period_slug}-{timestamp}-{short_uuid}{extension}'
-    )
+    filename = f'{report_reference}-{cluster_slug}-{namespace_slug}-{period_slug}-{timestamp}-{short_uuid}{extension}'
 
     return '/'.join(
         [

@@ -135,9 +135,7 @@ def test_engine_loads_analytics_standard_after_report_specialization() -> None:
     assert 'ANALYTICS_SHARED_STYLESHEET' in source
     assert 'analytics_stylesheet = ANALYTICS_TEMPLATE_STYLESHEETS.get(document.template_name)' in source
     assert 'analytics_css_path = css_path.with_name(ANALYTICS_SHARED_STYLESHEET)' in source
-    assert source.index('CSS(filename=str(report_css_path)') < source.index(
-        'CSS(filename=str(analytics_css_path)'
-    )
+    assert source.index('CSS(filename=str(report_css_path)') < source.index('CSS(filename=str(analytics_css_path)')
 
 
 def test_all_analytics_presentations_declare_the_canonical_reference() -> None:

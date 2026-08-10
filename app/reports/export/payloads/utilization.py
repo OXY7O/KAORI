@@ -5,8 +5,8 @@ from typing import Any
 from app.analytics.utilization.service import UtilizationService
 from app.cluster.constants import get_environment_label
 from app.models.report import Report
-from app.reports.export.payloads.common import get_report_selected_cluster, report_payload_error
 from app.prometheus.service import PrometheusService
+from app.reports.export.payloads.common import get_report_selected_cluster, report_payload_error
 
 
 def get_report_resource_utilization_payload(
@@ -36,9 +36,7 @@ def get_report_resource_utilization_payload(
             summary,
         )
         top_cpu_consumers = service.get_top_cpu_consumers()
-        top_memory_consumers = _normalize_memory_consumers(
-            service.get_top_memory_consumers()
-        )
+        top_memory_consumers = _normalize_memory_consumers(service.get_top_memory_consumers())
 
         trend_hours, trend_step = _resolve_trend_window(report.period or '24h')
         trends = _collect_trends(

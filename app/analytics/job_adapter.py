@@ -62,8 +62,7 @@ def _prometheus_eligible_clusters(clusters: list[Cluster] | None = None) -> list
     return [
         cluster
         for cluster in candidates
-        if (instance := resolve_instance_for_cluster(cluster.id)) is not None
-        and instance.endpoint.strip()
+        if (instance := resolve_instance_for_cluster(cluster.id)) is not None and instance.endpoint.strip()
     ]
 
 
@@ -247,26 +246,14 @@ def _effective_task_limits(
     *,
     forecasting: bool,
 ) -> tuple[int, int, int]:
-    soft_key = (
-        'FORECASTING_TASK_SOFT_TIME_LIMIT_SECONDS'
-        if forecasting
-        else 'ANALYTICS_TASK_SOFT_TIME_LIMIT_SECONDS'
-    )
-    hard_key = (
-        'FORECASTING_TASK_HARD_TIME_LIMIT_SECONDS'
-        if forecasting
-        else 'ANALYTICS_TASK_HARD_TIME_LIMIT_SECONDS'
-    )
+    soft_key = 'FORECASTING_TASK_SOFT_TIME_LIMIT_SECONDS' if forecasting else 'ANALYTICS_TASK_SOFT_TIME_LIMIT_SECONDS'
+    hard_key = 'FORECASTING_TASK_HARD_TIME_LIMIT_SECONDS' if forecasting else 'ANALYTICS_TASK_HARD_TIME_LIMIT_SECONDS'
     max_key = (
-        'FORECASTING_TASK_MAX_SOFT_TIME_LIMIT_SECONDS'
-        if forecasting
-        else 'ANALYTICS_TASK_MAX_SOFT_TIME_LIMIT_SECONDS'
+        'FORECASTING_TASK_MAX_SOFT_TIME_LIMIT_SECONDS' if forecasting else 'ANALYTICS_TASK_MAX_SOFT_TIME_LIMIT_SECONDS'
     )
     base_soft = int(current_app.config[soft_key])
     base_hard = int(current_app.config[hard_key])
-    maximum_soft = int(
-        current_app.config.get(max_key, 14400 if forecasting else 7200)
-    )
+    maximum_soft = int(current_app.config.get(max_key, 14400 if forecasting else 7200))
     estimated_seconds = 120 + sum(_work_item_budget_seconds(item) for item in work_items)
     soft_limit = min(max(base_soft, estimated_seconds), maximum_soft)
     hard_limit = max(base_hard, soft_limit + 60)
@@ -382,13 +369,9 @@ def _analytics_work_items(
                 ):
                     continue
                 time_range = default_parameters.get('time_range')
-                trend_range = trend_range_by_hours.get(
-            str(default_parameters.get('trend_hours') or '')
-        )
+                trend_range = trend_range_by_hours.get(str(default_parameters.get('trend_hours') or ''))
                 selected_range = time_range or trend_range
-                dashboard_required_range = (
-                    dataset.key in _DASHBOARD_REQUIRED_24H_DATASETS and selected_range == '24h'
-                )
+                dashboard_required_range = dataset.key in _DASHBOARD_REQUIRED_24H_DATASETS and selected_range == '24h'
                 if selected_range and selected_range not in ranges and not dashboard_required_range:
                     continue
                 snapshot_parameters = canonical_parameters(
@@ -473,11 +456,7 @@ def _forecast_work_items(
         if value in {'7d', '30d', '90d'}
     }
     configured_history.add('30d')
-    history_windows = [
-        value
-        for value in ('7d', '30d', '90d')
-        if value in configured_history
-    ]
+    history_windows = [value for value in ('7d', '30d', '90d') if value in configured_history]
     work_items: list[dict[str, Any]] = []
     for cluster in clusters:
         if not _prometheus_dataset_eligible(
@@ -577,10 +556,7 @@ def _dispatch(
     if not clusters:
         return RegisteredJobDispatchResult(
             status='blocked',
-            message=(
-                'No cluster has an eligible Prometheus or Alertmanager integration '
-                'for this job.'
-            ),
+            message=('No cluster has an eligible Prometheus or Alertmanager integration for this job.'),
         )
     only_due = trigger_type == 'scheduled'
     eligibility_diagnostics: list[str] = []
@@ -608,10 +584,7 @@ def _dispatch(
             status = 'current'
         elif eligibility_diagnostics:
             detail = ' | '.join(eligibility_diagnostics[:3])
-            message = (
-                'No analytics snapshot could be queued because source eligibility failed. '
-                f'{detail}'
-            )
+            message = f'No analytics snapshot could be queued because source eligibility failed. {detail}'
             status = 'blocked'
         else:
             message = 'No configured dataset has an eligible source and capability contract.'
@@ -623,17 +596,11 @@ def _dispatch(
         forecasting=forecasting,
     )
     task = materialize_forecast_snapshots if forecasting else materialize_analytics_snapshots
-    queue_key = (
-        'FORECASTING_CELERY_QUEUE' if forecasting else 'ANALYTICS_CELERY_QUEUE'
-    )
+    queue_key = 'FORECASTING_CELERY_QUEUE' if forecasting else 'ANALYTICS_CELERY_QUEUE'
     queue_name = current_app.config[queue_key]
     workload_class = 'forecasting' if forecasting else 'analytics'
     scope_type = 'forecast_fleet' if forecasting else 'analytics_fleet'
-    scope_key = (
-        str(parameters.get('cluster_id'))
-        if parameters and parameters.get('cluster_id')
-        else 'all'
-    )
+    scope_key = str(parameters.get('cluster_id')) if parameters and parameters.get('cluster_id') else 'all'
     resource_group = f'{operation}:{scope_key}'
     admission_parameters: dict[str, Any] = {'scope': scope_key}
     if parameters:
@@ -741,10 +708,7 @@ def _snapshot_health(
         if expires_at.tzinfo is None:
             expires_at = expires_at.replace(tzinfo=UTC)
         dataset = dataset_by_key.get(snapshot.dataset_key)
-        grace_minutes = (
-            snapshot.stale_grace_minutes
-            or (dataset.stale_grace_minutes if dataset is not None else 0)
-        )
+        grace_minutes = snapshot.stale_grace_minutes or (dataset.stale_grace_minutes if dataset is not None else 0)
         stale_deadline = expires_at + timedelta(minutes=grace_minutes)
         if now <= expires_at:
             counts['current'] += 1
@@ -774,11 +738,7 @@ def _context(policy: JobPolicy, *, forecasting: bool) -> dict[str, Any]:
     operation = 'materialize_forecast' if forecasting else 'materialize_analytics'
     jobs = JobExecution.query.filter_by(job_type=job_type, operation=operation)
     active_job = _active_job(job_type)
-    recent_jobs = (
-        jobs.order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
-        .limit(5)
-        .all()
-    )
+    recent_jobs = jobs.order_by(JobExecution.created_at.desc(), JobExecution.id.desc()).limit(5).all()
     latest = recent_jobs[0] if recent_jobs else None
     snapshot_count = AnalyticsSnapshot.query.filter(
         AnalyticsSnapshot.cluster_id.in_([cluster.id for cluster in clusters] or ['']),
@@ -850,11 +810,7 @@ def _context(policy: JobPolicy, *, forecasting: bool) -> dict[str, Any]:
         'active_job': present_job_execution(active_job) if active_job is not None else None,
         'latest_job': present_job_execution(latest) if latest is not None else None,
         'recent_jobs': [present_job_execution(job) for job in recent_jobs],
-        'queue_name': current_app.config[
-            'FORECASTING_CELERY_QUEUE'
-            if forecasting
-            else 'ANALYTICS_CELERY_QUEUE'
-        ],
+        'queue_name': current_app.config['FORECASTING_CELERY_QUEUE' if forecasting else 'ANALYTICS_CELERY_QUEUE'],
         'policy_configuration': policy.configuration_json or {},
         'generated_at': datetime.now(UTC),
     }

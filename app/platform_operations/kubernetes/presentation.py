@@ -18,7 +18,5 @@ def build_kubernetes_administration_summary() -> dict[str, object]:
         'cluster_count': len(clusters),
         'ready_cluster_count': ready_clusters,
         'enabled_namespace_count': enabled_namespaces,
-        'global_reveal_enabled': bool(
-            current_app.config.get('KUBERNETES_SECRET_REVEAL_ENABLED', False)
-        ),
+        'global_reveal_enabled': bool(current_app.config.get('KUBERNETES_SECRET_REVEAL_ENABLED', False)),
     }

@@ -50,8 +50,10 @@ def load_service(monkeypatch: pytest.MonkeyPatch):
     evidence.POD_EVIDENCE_KEY = 'inventory.pods'
     evidence.collection_state = lambda payload, key: payload.get(key, 'Not Reported')
     modules['app.common.inventory_generation'].filter_current_generation = lambda query, model: query
-    modules['app.inventory.resources.pod_semantics'].pod_operational_state = (
-        lambda phase, ready: ('Ready', 'normal', 'Running · 1/1 Ready')
+    modules['app.inventory.resources.pod_semantics'].pod_operational_state = lambda phase, ready: (
+        'Ready',
+        'normal',
+        'Running · 1/1 Ready',
     )
 
     contracts_spec = importlib.util.spec_from_file_location(
@@ -152,8 +154,7 @@ def test_delete_validation_uses_non_destructive_authorization_preflight(monkeypa
 
     authorization_api = SimpleNamespace(
         create_self_subject_access_review=lambda **kwargs: (
-            reviews.append(kwargs['body'])
-            or SimpleNamespace(status=SimpleNamespace(allowed=True))
+            reviews.append(kwargs['body']) or SimpleNamespace(status=SimpleNamespace(allowed=True))
         )
     )
     monkeypatch.setattr(
@@ -182,9 +183,7 @@ def test_delete_validation_rejects_missing_delete_authorization(monkeypatch: pyt
     monkeypatch.setattr(service, 'get_impact_context', lambda selected: impact())
 
     authorization_api = SimpleNamespace(
-        create_self_subject_access_review=lambda **kwargs: SimpleNamespace(
-            status=SimpleNamespace(allowed=False)
-        )
+        create_self_subject_access_review=lambda **kwargs: SimpleNamespace(status=SimpleNamespace(allowed=False))
     )
     monkeypatch.setattr(
         service,
@@ -240,7 +239,6 @@ def test_final_delete_rejects_target_changed_after_validation(monkeypatch: pytes
         )
 
 
-
 def entries(*, data=None, binary_data=None):
     data = data or {}
     binary_data = binary_data or {}
@@ -266,8 +264,7 @@ def test_create_validation_executes_one_server_side_dry_run(monkeypatch: pytest.
         lambda cluster, operation, callback: callback(
             SimpleNamespace(
                 create_namespaced_config_map=lambda **kwargs: (
-                    calls.append(kwargs)
-                    or SimpleNamespace(metadata=SimpleNamespace(resource_version='201'))
+                    calls.append(kwargs) or SimpleNamespace(metadata=SimpleNamespace(resource_version='201'))
                 )
             )
         ),
@@ -303,8 +300,7 @@ def test_final_create_executes_one_dry_run_then_one_mutation(monkeypatch: pytest
         lambda cluster, operation, callback: callback(
             SimpleNamespace(
                 create_namespaced_config_map=lambda **kwargs: (
-                    calls.append(kwargs)
-                    or SimpleNamespace(metadata=SimpleNamespace(resource_version='202'))
+                    calls.append(kwargs) or SimpleNamespace(metadata=SimpleNamespace(resource_version='202'))
                 )
             )
         ),
@@ -361,8 +357,7 @@ def test_final_update_executes_one_dry_run_then_one_resource_version_bound_patch
         lambda cluster, operation, callback: callback(
             SimpleNamespace(
                 patch_namespaced_config_map=lambda **kwargs: (
-                    calls.append(kwargs)
-                    or SimpleNamespace(metadata=SimpleNamespace(resource_version='302'))
+                    calls.append(kwargs) or SimpleNamespace(metadata=SimpleNamespace(resource_version='302'))
                 )
             )
         ),

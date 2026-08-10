@@ -12,19 +12,18 @@
                 </div>
             {% endcall %}
         </div>
-        {{ page_hero.context_card(
-            'Pod Runtime Posture',
-            'Pod Posture',
-            'Runtime Posture',
-            inventory.overall_posture,
-            inventory.overall_posture_tone,
-            [
-                ('circle-check', 'Ready', inventory.ready_count, 'All containers ready'),
-                ('triangle-alert', 'Exceptions', inventory.exception_count, 'Starting or unhealthy')
-            ],
-            'Manage Clusters',
-            url_for('integrations.kubernetes'),
-            'server-cog'
+        {{ page_hero.context_card('Pod Runtime Posture',
+                'Pod Posture',
+                'Runtime Posture',
+                inventory.overall_posture,
+                inventory.overall_posture_tone,
+                [
+                ('circle-check', 'Ready', inventory.ready_count, 'All containers ready') ,
+        ('triangle-alert', 'Exceptions', inventory.exception_count, 'Starting or unhealthy')
+        ],
+        'Manage Clusters',
+        url_for('integrations.kubernetes'),
+        'server-cog'
         ) }}
     </div>
 </section>

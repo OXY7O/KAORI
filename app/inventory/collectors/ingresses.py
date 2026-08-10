@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from typing import Any, Literal, cast, overload
+from typing import (
+    Any,
+    Literal,
+    cast,
+    overload,
+)
 
 from kubernetes.client import NetworkingV1Api, V1IngressList
 from kubernetes.client.exceptions import ApiException

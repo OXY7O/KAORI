@@ -104,7 +104,12 @@ def _payload(*, include_forecast: bool = True, storage_available: bool = False) 
                 'status': {'label': 'Healthy', 'tone': 'normal'},
                 'items': [
                     {'label': 'Allocatable', 'display': '96.0 cores (100%)', 'percent': 100, 'tone': 'normal'},
-                    {'label': 'Configured Requests', 'display': '42.0 cores (43.8%)', 'percent': 43.8, 'tone': 'normal'},
+                    {
+                        'label': 'Configured Requests',
+                        'display': '42.0 cores (43.8%)',
+                        'percent': 43.8,
+                        'tone': 'normal',
+                    },
                     {'label': 'Configured Limits', 'display': '78.0 cores (81.2%)', 'percent': 81.2, 'tone': 'warning'},
                     {'label': 'Actual Avg Usage', 'display': '1.25 cores (1.3%)', 'percent': 1.3, 'tone': 'normal'},
                     {'label': 'Peak Usage', 'display': '4.8 cores (5.0%)', 'percent': 5.0, 'tone': 'normal'},
@@ -136,14 +141,31 @@ def _payload(*, include_forecast: bool = True, storage_available: bool = False) 
             },
         },
         'risk_summary': [
-            {'resource': 'cpu', 'headroom': 98.7, 'evidence_available': True, 'status': {'label': 'Healthy', 'tone': 'normal'}},
-            {'resource': 'memory', 'headroom': 46.5, 'evidence_available': True, 'status': {'label': 'Healthy', 'tone': 'normal'}},
-            {'resource': 'pods', 'headroom': 55.5, 'evidence_available': True, 'status': {'label': 'Healthy', 'tone': 'normal'}},
+            {
+                'resource': 'cpu',
+                'headroom': 98.7,
+                'evidence_available': True,
+                'status': {'label': 'Healthy', 'tone': 'normal'},
+            },
+            {
+                'resource': 'memory',
+                'headroom': 46.5,
+                'evidence_available': True,
+                'status': {'label': 'Healthy', 'tone': 'normal'},
+            },
+            {
+                'resource': 'pods',
+                'headroom': 55.5,
+                'evidence_available': True,
+                'status': {'label': 'Healthy', 'tone': 'normal'},
+            },
             {
                 'resource': 'storage',
                 'headroom': storage.get('headroom'),
                 'evidence_available': storage_available,
-                'status': {'label': 'Healthy', 'tone': 'normal'} if storage_available else {'label': 'Unknown', 'tone': 'unknown'},
+                'status': {'label': 'Healthy', 'tone': 'normal'}
+                if storage_available
+                else {'label': 'Unknown', 'tone': 'unknown'},
             },
         ],
         'governance_findings': [
@@ -231,9 +253,7 @@ def _rendered_html(
         _payload(include_forecast=include_forecast, storage_available=storage_available),
     )
     project_root = Path(__file__).resolve().parents[2]
-    rendered_html = _environment(project_root).get_template(document.template_name).render(
-        document=document
-    )
+    rendered_html = _environment(project_root).get_template(document.template_name).render(document=document)
     return document, rendered_html, project_root
 
 
@@ -282,9 +302,7 @@ def test_capacity_analysis_renders_available_storage_without_false_gap() -> None
 
 def test_capacity_analysis_methodology_tables_are_separate_and_single_line() -> None:
     _, rendered_html, project_root = _rendered_html()
-    shared = (
-        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css'
-    ).read_text()
+    shared = (project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css').read_text()
     compact = shared.replace(' ', '')
 
     assert 'class="methodology-grid"' in rendered_html
@@ -296,11 +314,10 @@ def test_capacity_analysis_methodology_tables_are_separate_and_single_line() -> 
     assert 'white-space:nowrap' in compact
     assert 'vertical-align:middle' in compact
 
+
 def test_capacity_analysis_node_participation_uses_svg_for_weasyprint() -> None:
     document, rendered_html, project_root = _rendered_html()
-    stylesheet = (
-        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'capacity_analysis.css'
-    ).read_text()
+    stylesheet = (project_root / 'app' / 'static' / 'reports' / 'pdf' / 'capacity_analysis.css').read_text()
 
     assert 'aria-label="Node participation 100 percent"' in rendered_html
     assert '>4 / 4</text>' in document.presentation['scheduling']['nodes']['donut_svg']
@@ -315,7 +332,9 @@ def test_capacity_analysis_forecast_has_no_svg_font_collision() -> None:
 
     assert 'class="value"' not in forecast_section
     assert 'font:11px Inter,sans-serif;font-weight:700' in forecast_section
-    source = (Path(__file__).resolve().parents[2] / 'app' / 'reports' / 'export' / 'html_pdf' / 'capacity_analysis.py').read_text()
+    source = (
+        Path(__file__).resolve().parents[2] / 'app' / 'reports' / 'export' / 'html_pdf' / 'capacity_analysis.py'
+    ).read_text()
     assert 'resolve_vertical_labels' in source
     assert '65.4%' in forecast_section
 
@@ -326,15 +345,11 @@ def test_capacity_analysis_weasyprint_layout_is_exactly_nine_a4_pages() -> None:
     rendered_document = HTML(string=rendered_html, base_url=str(project_root)).render(
         stylesheets=[
             CSS(
-                filename=str(
-                    project_root / 'app' / 'static' / 'reports' / 'pdf' / 'capacity_analysis.css'
-                ),
+                filename=str(project_root / 'app' / 'static' / 'reports' / 'pdf' / 'capacity_analysis.css'),
                 font_config=font_config,
             ),
             CSS(
-                filename=str(
-                    project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css'
-                ),
+                filename=str(project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css'),
                 font_config=font_config,
             ),
         ],
@@ -362,19 +377,16 @@ def test_capacity_analysis_engine_uses_isolated_stylesheet() -> None:
     registry = (
         project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'analytics_publication_standard.py'
     ).read_text()
-    engine = (
-        project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'engine.py'
-    ).read_text()
+    engine = (project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'engine.py').read_text()
 
     assert "'reports/pdf/capacity_analysis.html': 'capacity_analysis.css'" in registry
     assert 'ANALYTICS_TEMPLATE_STYLESHEETS' in engine
     assert 'ANALYTICS_SHARED_STYLESHEET' in engine
 
+
 def test_capacity_analysis_payload_uses_committed_forecast_snapshot() -> None:
     project_root = Path(__file__).resolve().parents[2]
-    source = (
-        project_root / 'app' / 'reports' / 'export' / 'payloads' / 'capacity.py'
-    ).read_text()
+    source = (project_root / 'app' / 'reports' / 'export' / 'payloads' / 'capacity.py').read_text()
 
     assert "dataset_key='analytics.forecast'" in source
     assert 'read_snapshot' in source

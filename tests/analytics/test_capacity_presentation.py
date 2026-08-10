@@ -135,10 +135,7 @@ def test_capacity_presenter_marks_healthy_only_when_all_scheduling_evidence_is_c
                 resource: {'capacity': 100, 'used': 20, 'available': 80, 'headroom': 80}
                 for resource in ('cpu', 'memory', 'pods')
             },
-            'allocation_summary': {
-                resource: {'complete': True}
-                for resource in ('cpu', 'memory', 'pods')
-            },
+            'allocation_summary': {resource: {'complete': True} for resource in ('cpu', 'memory', 'pods')},
         }
     )
 

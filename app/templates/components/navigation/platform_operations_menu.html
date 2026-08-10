@@ -7,7 +7,8 @@
 {% set can_data_lifecycle = current_user.is_authenticated and current_user.has_permission('platform_operations.view_data_lifecycle') %}
 {% set can_kubernetes_admin = current_user.is_authenticated and current_user.has_permission('kubernetes_secrets.manage_reveal') %}
 {% set can_overview = can_jobs or can_data_lifecycle or can_kubernetes_admin %}
-<details class="sidebar-menu space-y-1" {% if platform_operations_active %}open{% endif %}>
+<details class="sidebar-menu space-y-1"
+         {% if platform_operations_active %}open{% endif %}>
     <summary class="{{ 'sidebar-parent-active' if platform_operations_active else 'sidebar-item-idle' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2"
              title="Platform Operations"
              aria-label="Platform Operations"

@@ -129,9 +129,7 @@ def _load_nodes(
     if namespace:
         referenced_nodes = sorted({pod.node_name for pod in pods if pod.node_name})
         query = (
-            query.filter(NodeInventory.node_name.in_(referenced_nodes))
-            if referenced_nodes
-            else query.filter(false())
+            query.filter(NodeInventory.node_name.in_(referenced_nodes)) if referenced_nodes else query.filter(false())
         )
     return query.order_by(NodeInventory.cluster_id.asc(), NodeInventory.node_name.asc()).all()
 
@@ -233,9 +231,7 @@ def _load_storage(
 
 
 def _storage_for_namespace(items: list[StorageInventory], namespace: str) -> list[StorageInventory]:
-    claims = [
-        item for item in items if item.storage_type == 'PersistentVolumeClaim' and item.namespace == namespace
-    ]
+    claims = [item for item in items if item.storage_type == 'PersistentVolumeClaim' and item.namespace == namespace]
     volume_names = {
         str((item.details or {}).get('volume_name') or '').strip()
         for item in claims

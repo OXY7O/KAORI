@@ -78,7 +78,7 @@ def test_storage_workspace_is_server_owned_and_action_results_return_to_the_righ
     assert "get_report_storage_payload(workspace='integrity')" in routes
     assert "get_report_storage_payload(workspace='retention')" in routes
     assert "workspace = normalize_storage_workspace(request.args.get('workspace'))" in routes
-    assert "get_report_storage_payload(workspace=workspace)" in routes
+    assert 'get_report_storage_payload(workspace=workspace)' in routes
     assert "redirect(url_for('reports.storage', workspace=workspace))" in routes
     assert 'build_storage_integrity_presentation' in routes
 
@@ -168,25 +168,27 @@ def test_storage_posture_keeps_only_read_write_and_state_aware_tip() -> None:
 def test_integrity_samples_are_presented_as_registry_rows_not_freeform_cards() -> None:
     symbols = load_service_symbols('build_storage_integrity_presentation')
     present = symbols['build_storage_integrity_presentation']
-    result = present({
-        'missing_samples': [
-            {
-                'report_id': 41,
-                'name': 'Capacity Analysis Report',
-                'backend': 's3',
-                'file_path': 's3:reports/41.pdf',
-            }
-        ],
-        'error_samples': [
-            {
-                'report_id': 42,
-                'name': 'Storage Analysis Report',
-                'backend': 's3',
-                'file_path': 's3:reports/42.pdf',
-                'error': 'Endpoint unavailable',
-            }
-        ],
-    })
+    result = present(
+        {
+            'missing_samples': [
+                {
+                    'report_id': 41,
+                    'name': 'Capacity Analysis Report',
+                    'backend': 's3',
+                    'file_path': 's3:reports/41.pdf',
+                }
+            ],
+            'error_samples': [
+                {
+                    'report_id': 42,
+                    'name': 'Storage Analysis Report',
+                    'backend': 's3',
+                    'file_path': 's3:reports/42.pdf',
+                    'error': 'Endpoint unavailable',
+                }
+            ],
+        }
+    )
 
     assert [item['status'] for item in result['review_samples']] == ['Missing', 'Error']
     assert result['review_samples'][0]['tone'] == 'critical'
@@ -231,7 +233,9 @@ def test_storage_overview_uses_active_backend_connection_contract_not_field_card
     assert 'Configuration Source' in template
     assert 'Object Key Contract' in template
 
-    overview = template.split("{% if payload.workspace == 'overview' %}", 1)[1].split("{% elif payload.workspace == 'integrity' %}", 1)[0]
-    assert "{% set active_items = [" not in overview
+    overview = template.split("{% if payload.workspace == 'overview' %}", 1)[1].split(
+        "{% elif payload.workspace == 'integrity' %}", 1
+    )[0]
+    assert '{% set active_items = [' not in overview
     assert 'Backend Contract' not in overview
     assert 'rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3' not in overview

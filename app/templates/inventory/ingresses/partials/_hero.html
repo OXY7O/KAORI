@@ -12,19 +12,18 @@
                 </div>
             {% endcall %}
         </div>
-        {{ page_hero.context_card(
-            'Ingress Publication and Routing',
-            'Ingress Posture',
-            'Routing Posture',
-            inventory.overall_posture_label,
-            inventory.overall_posture_tone,
-            [
-                ('globe-2', 'Declared Hosts', inventory.total_hosts, 'Explicit host declarations'),
-                ('triangle-alert', 'Exceptions', inventory.publication_exceptions + inventory.routing_exceptions, 'Publication or routing')
-            ],
-            'Manage Clusters',
-            url_for('integrations.kubernetes'),
-            'server-cog'
+        {{ page_hero.context_card('Ingress Publication and Routing',
+                'Ingress Posture',
+                'Routing Posture',
+                inventory.overall_posture_label,
+                inventory.overall_posture_tone,
+                [
+                ('globe-2', 'Declared Hosts', inventory.total_hosts, 'Explicit host declarations') ,
+        ('triangle-alert', 'Exceptions', inventory.publication_exceptions + inventory.routing_exceptions, 'Publication or routing')
+        ],
+        'Manage Clusters',
+        url_for('integrations.kubernetes'),
+        'server-cog'
         ) }}
     </div>
 </section>

@@ -19,24 +19,14 @@ from app.notifications.feedback import (
 )
 from app.notifications.normalization import standardize_activity_text, standardize_activity_title
 from app.notifications.queries import (
-    get_activity_center_context as _get_activity_center_context,
-)
-from app.notifications.queries import (
-    get_navigation_notification_context as _get_navigation_notification_context,
-)
-from app.notifications.queries import (
     get_notification_activity_context as _get_notification_activity_context,
     get_notification_activity_detail as _get_notification_activity_detail,
 )
-from app.notifications.queries import (
-    get_notification_center_page_context as _get_notification_center_page_context,
-)
-from app.notifications.queries import (
-    mark_all_notifications_read as _mark_all_notifications_read,
-)
-from app.notifications.queries import (
-    mark_notification_read as _mark_notification_read,
-)
+from app.notifications.queries import get_activity_center_context as _get_activity_center_context
+from app.notifications.queries import get_navigation_notification_context as _get_navigation_notification_context
+from app.notifications.queries import get_notification_center_page_context as _get_notification_center_page_context
+from app.notifications.queries import mark_all_notifications_read as _mark_all_notifications_read
+from app.notifications.queries import mark_notification_read as _mark_notification_read
 from app.notifications.writer import persist_notification
 
 logger = logging.getLogger(__name__)
@@ -65,9 +55,7 @@ def _feedback_delivery(
 
     normalized_event = event_type.strip().lower()
     event_metadata = metadata or {}
-    explicit_delivery = str(
-        event_metadata.get('feedback_delivery') or ''
-    ).strip().lower()
+    explicit_delivery = str(event_metadata.get('feedback_delivery') or '').strip().lower()
     if explicit_delivery in {'toast', 'activity_center'}:
         return explicit_delivery
 
@@ -80,9 +68,7 @@ def _feedback_delivery(
             'celery_task_id',
         )
     )
-    is_background_event = has_job_reference or any(
-        hint in normalized_event for hint in _BACKGROUND_EVENT_HINTS
-    )
+    is_background_event = has_job_reference or any(hint in normalized_event for hint in _BACKGROUND_EVENT_HINTS)
     if is_background_event:
         return 'activity_center'
 
@@ -254,7 +240,6 @@ def record_operational_activity(
     return feedback
 
 
-
 def create_transient_feedback(
     *,
     status: str,
@@ -293,6 +278,7 @@ def create_transient_feedback(
     if queue_feedback:
         queue_operational_feedback(feedback)
     return feedback
+
 
 def queue_transient_feedback(
     *,

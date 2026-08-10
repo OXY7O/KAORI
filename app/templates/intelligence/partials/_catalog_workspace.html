@@ -1,14 +1,12 @@
 <div id="catalog-workspace-content">
-    {% set endpoint_name = 'intelligence.catalog' %}
-    {% set filter_scope = 'catalog' %}
-    {% set filter_title = 'Rule Catalog Filters' %}
-    {% set filter_description = 'Definitions refresh automatically when search, ownership, source, or availability filters change.' %}
-    {% set search_placeholder = 'Search rule title, key, source, or operator response' %}
-    {% set filter_results_target = '#catalog-results-content' %}
-    {% set filter_workspace_target = '#catalog-workspace-content' %}
-    {% set filter_indicator = '#catalog-loading-bar' %}
+    {% set endpoint_name = "intelligence.catalog" %}
+    {% set filter_scope = "catalog" %}
+    {% set filter_title = "Rule Catalog Filters" %}
+    {% set filter_description = "Definitions refresh automatically when search, ownership, source, or availability filters change." %}
+    {% set search_placeholder = "Search rule title, key, source, or operator response" %}
+    {% set filter_results_target = "#catalog-results-content" %}
+    {% set filter_workspace_target = "#catalog-workspace-content" %}
+    {% set filter_indicator = "#catalog-loading-bar" %}
     {% include 'intelligence/partials/_filters.html' %}
-    <div id="catalog-results-content" aria-live="polite">
-        {% include 'intelligence/partials/_catalog_results.html' %}
-    </div>
+    <div id="catalog-results-content" aria-live="polite">{% include 'intelligence/partials/_catalog_results.html' %}</div>
 </div>

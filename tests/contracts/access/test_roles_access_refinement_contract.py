@@ -18,7 +18,7 @@ def test_roles_access_registry_uses_kaori_workspace_table_loading_and_modal_stan
         'components/operational_section_card.html',
         'components/operational_point_flow.html',
         'components/resource_detail_modal.html',
-        "access.roles.modal_details",
+        'access.roles.modal_details',
         'access/roles/partials/_registry.html',
     ):
         assert required in index
@@ -39,7 +39,7 @@ def test_roles_access_registry_uses_kaori_workspace_table_loading_and_modal_stan
         'Previous',
         'Next',
         'View Details',
-        "resource_detail_modal.detail_button",
+        'resource_detail_modal.detail_button',
     ):
         assert required in registry
 
@@ -94,8 +94,8 @@ def test_role_mutations_are_serialized_and_version_checked() -> None:
     assert 'def role_version_token' in service
     assert 'def role_version_matches' in service
     assert 'lock_role_for_mutation(role_id)' in routes
-    assert "This role changed after the page was opened" in routes
-    assert "The role changed after the registry was loaded" in routes
+    assert 'This role changed after the page was opened' in routes
+    assert 'The role changed after the registry was loaded' in routes
     assert 'role_version = HiddenField' in forms
 
 
@@ -134,8 +134,11 @@ def test_resource_detail_modal_supports_access_context_without_breaking_inventor
     component = read('app/templates/components/resource_detail_modal.html')
     assert "context_label='Inventory'" in component
     assert "dialog_max_width='max-w-[100rem]'" in component
-    assert "content_driven=false" in component
-    assert "{{ _host(resource_type, detail_url_template, footer_text, context_label, dialog_max_width, 'modal', content_driven) }}" in component
+    assert 'content_driven=false' in component
+    assert (
+        "{{ _host(resource_type, detail_url_template, footer_text, context_label, dialog_max_width, 'modal', content_driven) }}"
+        in component
+    )
 
 
 def test_role_registry_overview_matches_kaori_registry_overview_visual_grammar() -> None:

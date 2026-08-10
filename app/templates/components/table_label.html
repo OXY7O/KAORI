@@ -1,7 +1,6 @@
 {% macro count_text(count, singular, plural=None) -%}
     {{- count }} {{ singular if count|int == 1 else (plural or singular ~ 's') -}}
 {%- endmacro %}
-
 {% macro semantic_tone(tone='info') -%}
     {% set normalized_tone = tone|default('info', true)|lower|replace(' ', '_') %}
     {%- if normalized_tone in ['ready', 'healthy', 'normal', 'success', 'succeeded', 'operational', 'available', 'connected', 'complete', 'green', 'compatible', 'validated', 'current', 'enabled'] -%}
@@ -20,7 +19,6 @@
         unknown
     {%- endif -%}
 {%- endmacro %}
-
 {% macro tone_surface_classes(tone) -%}
     {%- if tone == 'normal' -%}bg-status-normal-soft text-status-normal-text
     {%- elif tone == 'warning' -%}bg-status-warning-soft text-status-warning-text
@@ -30,7 +28,6 @@
     {%- else -%}bg-status-info-soft text-status-info-text
     {%- endif -%}
 {%- endmacro %}
-
 {% macro tone_icon_classes(tone) -%}
     {%- if tone == 'normal' -%}text-status-normal
     {%- elif tone == 'warning' -%}text-status-warning
@@ -40,7 +37,6 @@
     {%- else -%}text-status-info
     {%- endif -%}
 {%- endmacro %}
-
 {% macro tone_dot_classes(tone) -%}
     {%- if tone == 'normal' -%}bg-status-normal
     {%- elif tone == 'warning' -%}bg-status-warning
@@ -50,7 +46,6 @@
     {%- else -%}bg-status-info
     {%- endif -%}
 {%- endmacro %}
-
 {% macro tone_border_classes(tone) -%}
     {%- if tone == 'normal' -%}border-status-normal-border
     {%- elif tone == 'warning' -%}border-status-warning-border
@@ -60,7 +55,6 @@
     {%- else -%}border-status-info-border
     {%- endif -%}
 {%- endmacro %}
-
 {% macro status_label(text, tone='info', icon=None, size='compact') -%}
     {% set resolved_tone = semantic_tone(tone)|trim %}
     <span class="kaori-semantic-label inline-flex min-h-6 max-w-full items-center gap-1 rounded-md px-2 py-0.5 font-semibold whitespace-nowrap {{ 'text-xs leading-5' if size == 'detail' else 'text-xs leading-4' }} {{ tone_surface_classes(resolved_tone) }}">
@@ -72,15 +66,14 @@
         <span>{{ text }}</span>
     </span>
 {%- endmacro %}
-
 {% macro status_indicator_label(text, tone='info', legacy_icon=None, size='compact') -%}
     {% set resolved_tone = semantic_tone(tone)|trim %}
     <span class="kaori-semantic-label inline-flex min-h-6 max-w-full items-center gap-1.5 rounded-md px-2 py-0.5 font-semibold whitespace-nowrap {{ 'text-xs leading-5' if size == 'detail' else 'text-xs leading-4' }} {{ tone_surface_classes(resolved_tone) }}">
-        <span class="h-1.5 w-1.5 shrink-0 rounded-full {{ tone_dot_classes(resolved_tone) }}" aria-hidden="true"></span>
+        <span class="h-1.5 w-1.5 shrink-0 rounded-full {{ tone_dot_classes(resolved_tone) }}"
+              aria-hidden="true"></span>
         <span>{{ text }}</span>
     </span>
 {%- endmacro %}
-
 {% macro special_label(text, tone='info', icon='badge-info', size='compact') -%}
     {% set resolved_tone = semantic_tone(tone)|trim %}
     <span class="kaori-special-label inline-flex min-h-6 max-w-full items-center gap-1 rounded-md border px-2 py-0.5 font-semibold whitespace-nowrap {{ 'text-xs leading-5' if size == 'detail' else 'text-xs leading-4' }} {{ tone_border_classes(resolved_tone) }} {{ tone_surface_classes(resolved_tone) }}">
@@ -90,7 +83,6 @@
         <span>{{ text }}</span>
     </span>
 {%- endmacro %}
-
 {% macro metadata_label(text, icon=None, wrap=false, size='compact') -%}
     <span class="kaori-semantic-label inline-flex min-h-6 max-w-full items-center gap-1 rounded-md bg-kaori-soft px-2 py-0.5 font-semibold {{ 'text-xs leading-5' if size == 'detail' else 'text-xs leading-4' }} text-kaori-primary-dark dark:text-kaori-accent">
         {% if icon %}

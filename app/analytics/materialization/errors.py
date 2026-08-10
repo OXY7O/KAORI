@@ -33,10 +33,7 @@ class AnalyticsFailure:
     retryable: bool
 
     def log_message(self) -> str:
-        return (
-            f'[{self.code}] {self.title}: {self.detail} '
-            f'Recommended action: {self.remediation}'
-        )
+        return f'[{self.code}] {self.title}: {self.detail} Recommended action: {self.remediation}'
 
 
 def _is_timeout_message(message: str) -> bool:

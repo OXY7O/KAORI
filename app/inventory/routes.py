@@ -1,11 +1,18 @@
 import logging
 from typing import Any
 
-from flask import Blueprint, abort, jsonify, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    abort,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask_login import current_user
 
 from app.cluster.onboarding import has_registered_clusters
-from app.cluster.service import build_cluster_context
 from app.cluster.sync_jobs import enqueue_cluster_inventory_sync
 from app.common.pagination import paginate_sequence
 from app.inventory.overview import (
@@ -668,10 +675,7 @@ def ingresses():
         page=page,
         per_page=per_page,
     )
-    inventory['classes'] = [
-        {'value': value, 'label': ingress_class_filter_label(value)}
-        for value in ingress_classes
-    ]
+    inventory['classes'] = [{'value': value, 'label': ingress_class_filter_label(value)} for value in ingress_classes]
     inventory['namespaces'] = namespaces
     inventory['scope_label'] = _inventory_scope_label(clusters, cluster_id)
 
@@ -739,8 +743,7 @@ def storage():
     inventory['namespaces'] = namespaces
     inventory['storage_filter_types'] = storage_types
     inventory['storage_filter_statuses'] = [
-        {'value': value, 'label': storage_status_filter_label(value)}
-        for value in storage_statuses
+        {'value': value, 'label': storage_status_filter_label(value)} for value in storage_statuses
     ]
 
     return render_template(

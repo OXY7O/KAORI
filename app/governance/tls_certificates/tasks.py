@@ -142,8 +142,7 @@ def _notify_requesters(
                 message=(
                     'TLS Secret synchronization was canceled before completion.'
                     if terminal_status == 'canceled'
-                    else f'{collected_count} TLS Secrets were collected across '
-                    f'{successful_count} clusters.'
+                    else f'{collected_count} TLS Secrets were collected across {successful_count} clusters.'
                 ),
                 detail=(
                     'Review Jobs & Executions for the final cancellation state.'

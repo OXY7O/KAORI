@@ -35,10 +35,9 @@
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Integration Posture</p>
                                 <p class="{{ page_hero.context_panel_title_classes() }}">API Readiness and Operational Coverage</p>
                             </div>
-                            {{ integration_status(
-                                'healthy' if posture_status == 'Healthy' else ('degraded' if posture_status == 'Attention' else 'not_configured'),
-                                posture_status,
-                                display='text'
+                            {{ integration_status('healthy' if posture_status == 'Healthy' else ('degraded' if posture_status == 'Attention' else 'not_configured') ,
+                            posture_status,
+                            display='text'
                             ) }}
                         </div>
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">

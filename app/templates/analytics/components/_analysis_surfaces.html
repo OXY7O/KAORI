@@ -16,31 +16,28 @@
 {% macro snapshot_shell_classes() -%}
     {{ table_ui.block_classes() }}
 {%- endmacro %}
-
 {% macro snapshot_header_classes() -%}
     {{ table_ui.block_header_classes() }}
 {%- endmacro %}
-
 {% macro role_icon_classes(role='brand', tone='info', size='default') -%}
     {% set resolved_role = role|default('brand', true)|lower|replace(' ', '_') %}
     {% set resolved_tone = table_label.semantic_tone(tone)|trim %}
     {% set geometry = 'h-7 w-7 rounded-md' if size == 'compact' else ('h-10 w-10 rounded-lg' if size == 'large' else 'h-8 w-8 rounded-lg') %}
     {% if resolved_role == 'status' %}
-        flex {{ geometry }} shrink-0 items-center justify-center border {{ table_label.tone_border_classes(resolved_tone)|trim }} {{ table_label.tone_surface_classes(resolved_tone)|trim }}
+        flex {{ geometry }} shrink-0 items-center justify-center border {{ table_label.tone_border_classes(resolved_tone) |trim }} {{ table_label.tone_surface_classes(resolved_tone) |trim }}
     {% elif resolved_role in ['insight', 'read', 'methodology'] %}
-        flex {{ geometry }} shrink-0 items-center justify-center border {{ table_label.tone_border_classes('info')|trim }} {{ table_label.tone_surface_classes('info')|trim }} {{ table_label.tone_icon_classes('info')|trim }}
+        flex {{ geometry }} shrink-0 items-center justify-center border {{ table_label.tone_border_classes("info") |trim }} {{ table_label.tone_surface_classes("info") |trim }} {{ table_label.tone_icon_classes("info") |trim }}
     {% elif resolved_role in ['evidence', 'neutral', 'context'] %}
         flex {{ geometry }} shrink-0 items-center justify-center border border-outline-subtle bg-surface-muted text-content-secondary
     {% else %}
         flex {{ geometry }} shrink-0 items-center justify-center border border-kaori-border bg-kaori-soft text-kaori-primary-dark dark:text-kaori-accent
     {% endif %}
 {%- endmacro %}
-
 {% macro role_label_classes(role='brand', tone='info') -%}
     {% set resolved_role = role|default('brand', true)|lower|replace(' ', '_') %}
     {% set resolved_tone = table_label.semantic_tone(tone)|trim %}
     {% if resolved_role == 'status' %}
-        text-xs font-semibold uppercase tracking-wide {{ table_label.tone_icon_classes(resolved_tone)|trim }}
+        text-xs font-semibold uppercase tracking-wide {{ table_label.tone_icon_classes(resolved_tone) |trim }}
     {% elif resolved_role in ['insight', 'read', 'methodology'] %}
         text-xs font-semibold uppercase tracking-wide text-status-info-text
     {% elif resolved_role in ['evidence', 'neutral', 'context'] %}
@@ -49,15 +46,12 @@
         text-xs font-semibold uppercase tracking-wide text-kaori-primary-dark dark:text-kaori-accent
     {% endif %}
 {%- endmacro %}
-
 {% macro snapshot_header_icon_classes() -%}
     {{ table_ui.block_icon_classes() }}
 {%- endmacro %}
-
 {% macro metric_icon_classes(size='default', role='brand', tone='info') -%}
     {{ role_icon_classes(role, tone, size) }}
 {%- endmacro %}
-
 {% macro resource_role(resource='') -%}
     {% set normalized = resource|default('', true)|lower|replace(' ', '_') %}
     {%- if normalized in ['memory', 'storage', 'filesystem', 'node_filesystem', 'pvc', 'pv', 'persistent_volume', 'persistent_volume_claim', 'methodology'] -%}
@@ -68,118 +62,91 @@
         brand
     {%- endif -%}
 {%- endmacro %}
-
 {% macro resource_icon_classes(resource='', size='default') -%}
-    {{ role_icon_classes(resource_role(resource)|trim, size=size) }}
+    {{ role_icon_classes(resource_role(resource) |trim, size=size) }}
 {%- endmacro %}
-
 {% macro semantic_icon_classes(tone='unknown', size='default') -%}
     {{ role_icon_classes('status', tone, size) }}
 {%- endmacro %}
-
 {% macro guidance_icon_classes(role='brand', tone='info', size='default') -%}
     {{ role_icon_classes(role, tone, size) }}
 {%- endmacro %}
-
 {% macro metric_grid_classes(columns=4) -%}
     {% set desktop_columns = 'xl:grid-cols-5' if columns == 5 else ('xl:grid-cols-3' if columns == 3 else 'xl:grid-cols-4') %}
     grid grid-cols-1 divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-y-0 {{ desktop_columns }}
 {%- endmacro %}
-
 {% macro metric_cell_classes(extra='') -%}
     min-w-0 px-4 py-4 sm:border-r sm:border-outline-subtle xl:px-5 {{ extra }}
 {%- endmacro %}
-
 {% macro metric_label_classes() -%}
     text-xs font-semibold uppercase tracking-wide text-content-muted
 {%- endmacro %}
-
 {% macro section_title_classes() -%}
     text-sm font-semibold text-content-primary
 {%- endmacro %}
-
 {% macro section_description_classes() -%}
     mt-1 text-xs leading-5 text-content-secondary
 {%- endmacro %}
-
 {% macro readiness_shell_classes() -%}
     overflow-hidden rounded-lg border border-outline-subtle bg-surface-card
 {%- endmacro %}
-
 {% macro evidence_shell_classes(extra='') -%}
     overflow-hidden rounded-xl border border-outline-default bg-surface-card {{ extra }}
 {%- endmacro %}
-
 {% macro attention_strip_classes(tone=none) -%}
     border-t border-outline-subtle bg-surface-card p-4 sm:p-5
 {%- endmacro %}
-
 {% macro interpretation_grid_classes(extra='', cards=false) -%}
     grid gap-px border-t border-outline-subtle bg-outline-subtle lg:grid-cols-2 {{ extra }}
 {%- endmacro %}
-
 {% macro interpretation_panel_classes(extra='') -%}
     bg-surface-card {{ extra }}
 {%- endmacro %}
-
 {% macro context_panel_classes(extra='') -%}
     bg-surface-card {{ extra }}
 {%- endmacro %}
-
 {% macro ranked_item_classes(extra='') -%}
     rounded-lg border border-outline-subtle bg-surface-card {{ extra }}
 {%- endmacro %}
-
 {% macro empty_evidence_classes(extra='') -%}
     rounded-lg border border-dashed border-outline-strong bg-surface-muted {{ extra }}
 {%- endmacro %}
-
 {% macro guidance_card_classes(extra='') -%}
     overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ extra }}
 {%- endmacro %}
-
 {% macro guidance_fact_grid_classes(columns=3, extra='') -%}
     grid gap-px border-t border-outline-subtle bg-outline-subtle {{ 'sm:grid-cols-4' if columns == 4 else ('sm:grid-cols-2' if columns == 2 else 'sm:grid-cols-3') }} {{ extra }}
 {%- endmacro %}
-
 {% macro guidance_fact_classes(extra='') -%}
     min-w-0 bg-surface-card px-4 py-3 sm:px-5 {{ extra }}
 {%- endmacro %}
-
 {% macro boundary_zone_classes(extra='') -%}
     border-t border-outline-subtle bg-surface-card p-4 sm:p-5 {{ extra }}
 {%- endmacro %}
-
 {% macro nested_evidence_card_classes(extra='') -%}
     rounded-lg border border-outline-subtle bg-surface-card {{ extra }}
 {%- endmacro %}
-
 {% macro unavailable_value_classes() -%}
     text-content-disabled
 {%- endmacro %}
-
 {% macro review_path_grid_classes(extra='') -%}
     divide-y divide-outline-subtle border-t border-outline-subtle {{ extra }}
 {%- endmacro %}
-
 {% macro compact_scope_grid_classes(columns=3) -%}
     grid divide-y divide-outline-subtle {{ 'sm:grid-cols-4' if columns == 4 else 'sm:grid-cols-3' }} sm:divide-x sm:divide-y-0
 {%- endmacro %}
-
 {% macro scope_strip_classes(extra='') -%}
     flex flex-col gap-3 rounded-xl border border-outline-default bg-surface-hover px-4 py-4 sm:flex-row sm:items-end sm:justify-between {{ extra }}
 {%- endmacro %}
-
 {% macro record_guidance_classes(extra='') -%}
     overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ extra }}
 {%- endmacro %}
-
-
 {% macro review_path_link(href, label, description, icon='arrow-right') -%}
     <a href="{{ href }}"
        class="flex items-start justify-between gap-4 bg-surface-card px-4 py-4 transition-colors hover:bg-kaori-mist sm:px-5">
         <span class="flex min-w-0 items-start gap-3">
-            <span class="{{ role_icon_classes('brand', size='compact') }}" aria-hidden="true">
+            <span class="{{ role_icon_classes('brand', size='compact') }}"
+                  aria-hidden="true">
                 <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
             </span>
             <span class="min-w-0">
@@ -187,14 +154,16 @@
                 <span class="mt-1 block text-xs leading-5 text-content-muted">{{ description }}</span>
             </span>
         </span>
-        <i data-lucide="chevron-right" class="mt-1 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+        <i data-lucide="chevron-right"
+           class="mt-1 h-4 w-4 shrink-0 text-kaori-primary"
+           aria-hidden="true"></i>
     </a>
 {%- endmacro %}
-
 {% macro interpretation_content(label, headline, body, icon='info', role='brand', tone='info', compact=false) -%}
     <div class="flex min-w-0 items-start gap-3">
         <span class="{{ guidance_icon_classes(role, tone, 'compact' if compact else 'default') }}">
-            <i data-lucide="{{ icon }}" class="{{ 'h-3.5 w-3.5' if compact else 'h-4 w-4' }}"></i>
+            <i data-lucide="{{ icon }}"
+               class="{{ 'h-3.5 w-3.5' if compact else 'h-4 w-4' }}"></i>
         </span>
         <div class="min-w-0">
             <p class="{{ role_label_classes(role, tone) }}">{{ label }}</p>
@@ -203,11 +172,11 @@
         </div>
     </div>
 {%- endmacro %}
-
 {% macro interpretation_callout(label, headline, body, icon='info', role='brand', tone='info', extra='', compact=false, card=false) -%}
     {% set geometry = 'px-3 py-3' if compact else 'px-4 py-4 sm:px-5' %}
     {% if card %}
-        <article class="{{ guidance_card_classes(geometry ~ ' ' ~ extra) }}" data-kaori-guidance-card>
+        <article class="{{ guidance_card_classes(geometry ~ ' ' ~ extra) }}"
+                 data-kaori-guidance-card>
             {{ interpretation_content(label, headline, body, icon, role, tone, compact) }}
         </article>
     {% else %}
@@ -216,7 +185,6 @@
         </article>
     {% endif %}
 {%- endmacro %}
-
 {% macro boundary_card(title, description, icon='shield-check', label='Evidence Boundary', extra='') -%}
     <div class="{{ boundary_zone_classes(extra) }}">
         <section class="{{ guidance_card_classes() }}" data-kaori-boundary-card>
@@ -232,38 +200,37 @@
                     </div>
                 </div>
                 {% if caller is defined %}
-                    <div class="min-w-0 border-t border-outline-subtle pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
-                        {{ caller() }}
-                    </div>
+                    <div class="min-w-0 border-t border-outline-subtle pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">{{ caller() }}</div>
                 {% endif %}
             </div>
         </section>
     </div>
 {%- endmacro %}
-
 {% macro snapshot_unavailable(panel, title, description, icon='database-zap') -%}
-<section data-analytics-overview-panel="{{ panel }}" class="{{ snapshot_shell_classes() }}">
-    <header class="{{ snapshot_header_classes() }}">
-        <div class="flex min-w-0 items-start gap-3">
-            <span class="{{ snapshot_header_icon_classes() }}">
-                <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-            </span>
-            <div class="min-w-0">
-                <h2 class="text-base font-semibold text-content-primary">{{ title }}</h2>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Committed worker evidence for this domain.</p>
+    <section data-analytics-overview-panel="{{ panel }}"
+             class="{{ snapshot_shell_classes() }}">
+        <header class="{{ snapshot_header_classes() }}">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ snapshot_header_icon_classes() }}">
+                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-base font-semibold text-content-primary">{{ title }}</h2>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Committed worker evidence for this domain.</p>
+                </div>
+            </div>
+        </header>
+        <div class="p-4 sm:p-5">
+            <div class="flex min-h-[180px] flex-col items-center justify-center rounded-lg border border-dashed border-outline-strong bg-surface-muted px-6 py-10 text-center"
+                 data-kaori-empty-state>
+                <span class="flex h-12 w-12 items-center justify-center rounded-xl border border-outline-subtle bg-surface-card text-content-secondary"
+                      aria-hidden="true">
+                    <i data-lucide="{{ icon }}" class="h-6 w-6"></i>
+                </span>
+                <div class="mt-4">{{ table_label.status_label('Snapshot Unavailable', 'unknown') }}</div>
+                <h3 class="mt-3 text-base font-semibold text-content-primary">No Current Committed Snapshot</h3>
+                <p class="mt-2 max-w-2xl text-sm leading-6 text-content-secondary">{{ description }}</p>
             </div>
         </div>
-    </header>
-    <div class="p-4 sm:p-5">
-        <div class="flex min-h-[180px] flex-col items-center justify-center rounded-lg border border-dashed border-outline-strong bg-surface-muted px-6 py-10 text-center"
-             data-kaori-empty-state>
-            <span class="flex h-12 w-12 items-center justify-center rounded-xl border border-outline-subtle bg-surface-card text-content-secondary" aria-hidden="true">
-                <i data-lucide="{{ icon }}" class="h-6 w-6"></i>
-            </span>
-            <div class="mt-4">{{ table_label.status_label('Snapshot Unavailable', 'unknown') }}</div>
-            <h3 class="mt-3 text-base font-semibold text-content-primary">No Current Committed Snapshot</h3>
-            <p class="mt-2 max-w-2xl text-sm leading-6 text-content-secondary">{{ description }}</p>
-        </div>
-    </div>
-</section>
+    </section>
 {%- endmacro %}

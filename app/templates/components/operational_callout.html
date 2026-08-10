@@ -6,11 +6,9 @@
     {%- else -%}border-status-info-border
     {%- endif -%}
 {%- endmacro %}
-
 {% macro semantic_surface_classes(tone='info') -%}
     {{ semantic_border_classes(tone) }} {{ 'bg-status-normal-soft' if tone == 'normal' else ('bg-status-warning-soft' if tone == 'warning' else ('bg-status-critical-soft' if tone == 'critical' else ('bg-status-unknown-soft' if tone == 'unknown' else 'bg-status-info-soft'))) }}
 {%- endmacro %}
-
 {#
   Reusable operational callout.
 
@@ -29,7 +27,7 @@
     action_label=None,
     action_icon='arrow-right',
     title_id=None
-) -%}
+    ) -%}
     {% set border_class = 'border-status-normal-border' if tone == 'normal' else ('border-status-warning-border' if tone == 'warning' else ('border-status-critical-border' if tone == 'critical' else ('border-status-unknown-border' if tone == 'unknown' else 'border-status-info-border'))) %}
     {% set surface_class = 'bg-status-normal-soft' if tone == 'normal' else ('bg-status-warning-soft' if tone == 'warning' else ('bg-status-critical-soft' if tone == 'critical' else ('bg-status-unknown-soft' if tone == 'unknown' else 'bg-status-info-soft'))) %}
     {% set text_class = 'text-status-normal-text' if tone == 'normal' else ('text-status-warning-text' if tone == 'warning' else ('text-status-critical-text' if tone == 'critical' else ('text-status-unknown-text' if tone == 'unknown' else 'text-status-info-text'))) %}
@@ -42,7 +40,8 @@
                     <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                 </span>
                 <div class="min-w-0">
-                    <p{% if title_id %} id="{{ title_id }}"{% endif %} class="{{ 'text-xs' if variant == 'semantic' else 'text-sm' }} font-semibold {{ text_class if variant == 'semantic' else 'text-content-primary' }}">{{ title }}</p>
+                    <p {% if title_id %} id="{{ title_id }}"{% endif %}
+                       class="{{ 'text-xs' if variant == 'semantic' else 'text-sm' }} font-semibold {{ text_class if variant == 'semantic' else 'text-content-primary' }}">{{ title }}</p>
                     <p class="mt-1 text-xs leading-5 {{ text_class if variant == 'semantic' else 'text-content-muted' }}">{{ description }}</p>
                     {% if caller is defined %}
                         <div class="mt-2 text-xs leading-5 {{ text_class if variant == 'semantic' else 'text-content-muted' }}">

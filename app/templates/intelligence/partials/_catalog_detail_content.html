@@ -1,11 +1,11 @@
 {% import "components/table_label.html" as table_label %}
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
-
 <div class="bg-kaori-mist/40 px-4 py-4 sm:px-5" data-kaori-rule-detail>
     <div class="overflow-hidden rounded-xl border border-brand-outline bg-surface-card shadow-sm">
         <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
                     <i data-lucide="book-open-check" class="h-4 w-4"></i>
                 </span>
                 <div class="min-w-0">
@@ -19,26 +19,30 @@
                 {{ table_label.status_label(item.status_label, item.status_tone, size='compact') }}
             </div>
         </header>
-
         <div class="grid divide-y divide-outline-subtle lg:grid-cols-2 lg:divide-x lg:divide-y-0">
             <section class="p-4 sm:p-5">
                 {{ intelligence_ui.subsection('Evaluation Logic', 'What the rule evaluates and why it matters.', 'scan-search') }}
                 <dl class="mt-4 space-y-4">
                     <div>
                         <dt class="text-xs font-medium leading-5 text-content-muted">Condition</dt>
-                        <dd class="mt-1 text-sm leading-6 text-content-secondary">{{ item.condition_summary }}</dd>
+                        <dd class="mt-1 text-sm leading-6 text-content-secondary">
+                            {{ item.condition_summary }}
+                        </dd>
                     </div>
                     <div>
                         <dt class="text-xs font-medium leading-5 text-content-muted">Operational Impact</dt>
-                        <dd class="mt-1 text-sm leading-6 text-content-secondary">{{ item.impact }}</dd>
+                        <dd class="mt-1 text-sm leading-6 text-content-secondary">
+                            {{ item.impact }}
+                        </dd>
                     </div>
                     <div>
                         <dt class="text-xs font-medium leading-5 text-content-muted">Signal Boundary</dt>
-                        <dd class="mt-1 text-sm leading-6 text-content-secondary">{{ item.prometheus_relationship }}</dd>
+                        <dd class="mt-1 text-sm leading-6 text-content-secondary">
+                            {{ item.prometheus_relationship }}
+                        </dd>
                     </div>
                 </dl>
             </section>
-
             <section class="p-4 sm:p-5">
                 {{ intelligence_ui.subsection('Operator Response', 'The intended review and remediation outcome.', 'route') }}
                 <div class="mt-4 rounded-lg border border-brand-outline bg-kaori-soft px-4 py-3.5">
@@ -53,20 +57,27 @@
                 </dl>
             </section>
         </div>
-
         <section class="border-t border-outline-subtle p-4 sm:p-5">
             {{ intelligence_ui.subsection('Coverage Contract', 'Evidence dependencies and KAORI surfaces where this definition is visible.', 'network') }}
             <div class="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(16rem,0.8fr)]">
                 <div>
                     <p class="text-xs font-medium leading-5 text-content-muted">Supported Sources</p>
                     <div class="mt-2 flex flex-wrap gap-2">
-                        {% for source in item.supported_sources|default([], true) %}{{ table_label.metadata_label(source, 'database') }}{% else %}<span class="text-xs text-content-muted">No source list recorded.</span>{% endfor %}
+                        {% for source in item.supported_sources|default([], true) %}
+                            {{ table_label.metadata_label(source, 'database') }}
+                        {% else %}
+                            <span class="text-xs text-content-muted">No source list recorded.</span>
+                        {% endfor %}
                     </div>
                 </div>
                 <div>
                     <p class="text-xs font-medium leading-5 text-content-muted">Visible In</p>
                     <div class="mt-2 flex flex-wrap gap-2">
-                        {% for surface in item.visible_in|default([], true) %}{{ table_label.metadata_label(surface, 'panel-top') }}{% else %}<span class="text-xs text-content-muted">No surface list recorded.</span>{% endfor %}
+                        {% for surface in item.visible_in|default([], true) %}
+                            {{ table_label.metadata_label(surface, 'panel-top') }}
+                        {% else %}
+                            <span class="text-xs text-content-muted">No surface list recorded.</span>
+                        {% endfor %}
                     </div>
                 </div>
                 <div>

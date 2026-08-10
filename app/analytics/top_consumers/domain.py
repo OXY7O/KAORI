@@ -1,19 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import fields
-from typing import Any
+from typing import Any, TypeGuard
 
 from app.analytics.common.coercion import safe_float, safe_int
-from app.analytics.top_consumers.contracts import (
-    RESOURCE_LABELS,
-    RISK_RANK,
-    TOP_CONSUMERS_PAYLOAD_SCHEMA_VERSION,
-)
-from app.analytics.top_consumers.evidence import (
-    ScalarEvidence,
-    TopConsumersEvidence,
-    VectorEvidence,
-)
+from app.analytics.top_consumers.contracts import RESOURCE_LABELS, RISK_RANK, TOP_CONSUMERS_PAYLOAD_SCHEMA_VERSION
+from app.analytics.top_consumers.evidence import ScalarEvidence, TopConsumersEvidence, VectorEvidence
 from app.analytics.top_consumers.rows import (
     build_compute_rows,
     build_owner_map,
@@ -79,11 +71,7 @@ def build_top_consumers_payload(
             has_rows=bool(all_rows),
         ),
         'scope': {
-            'label': (
-                f'Namespace · {selected_namespace}'
-                if selected_namespace
-                else 'Cluster'
-            ),
+            'label': (f'Namespace · {selected_namespace}' if selected_namespace else 'Cluster'),
             'namespace': selected_namespace,
             'snapshot_dimension': 'namespace' if selected_namespace else 'cluster',
         },
@@ -171,9 +159,7 @@ def build_multi_resource_coverage(
     for key, state in items.items():
         state['resource_label'] = RESOURCE_LABELS[key]
     complete_count = sum(1 for item in items.values() if item['key'] == 'complete')
-    unavailable_count = sum(
-        1 for item in items.values() if item['key'] == 'unavailable'
-    )
+    unavailable_count = sum(1 for item in items.values() if item['key'] == 'unavailable')
     return {
         'items': items,
         'complete_count': complete_count,
@@ -226,11 +212,7 @@ def pvc_coverage(
         return evidence_state('unavailable')
     complete = capacity.observed
     if rows:
-        complete = (
-            complete
-            and total.available
-            and all(row.get('denominator_evidence_available') for row in rows)
-        )
+        complete = complete and total.available and all(row.get('denominator_evidence_available') for row in rows)
     return evidence_state('complete' if complete else 'partial')
 
 
@@ -280,16 +262,10 @@ def build_summary_card(
     top_row = max(eligible, key=lambda row: safe_float(row.get(key, 0)))
     if selector == 'pressure':
         value = str(top_row.get('pressure_display') or 'N/A')
-        subtitle = (
-            f"{top_row.get('current_display', 'N/A')} of "
-            f"{top_row.get('limit_display', 'N/A')}"
-        )
+        subtitle = f'{top_row.get("current_display", "N/A")} of {top_row.get("limit_display", "N/A")}'
     else:
         value = str(top_row.get('current_display') or 'N/A')
-        subtitle = (
-            f"{top_row.get('contribution_display', 'N/A')} of "
-            'selected-scope consumption'
-        )
+        subtitle = f'{top_row.get("contribution_display", "N/A")} of selected-scope consumption'
     return {
         'title': title,
         'value': value,
@@ -368,15 +344,10 @@ def build_overview_payload(
                     available=bool(metric['capacity_available']),
                 ),
                 'capacity_label': (
-                    'Ready Worker Capacity'
-                    if key in {'cpu', 'memory', 'pods'}
-                    else 'Observed Volume Capacity'
+                    'Ready Worker Capacity' if key in {'cpu', 'memory', 'pods'} else 'Observed Volume Capacity'
                 ),
                 'coverage': coverage['items'][key],
-                'rows': [
-                    dict(row, rank=index)
-                    for index, row in enumerate(rows, start=1)
-                ],
+                'rows': [dict(row, rank=index) for index, row in enumerate(rows, start=1)],
             }
         )
     return {'rankings': rankings}
@@ -384,23 +355,12 @@ def build_overview_payload(
 
 def build_page_posture(payload: dict[str, Any]) -> dict[str, str]:
     rows = list(payload.get('all_rows') or [])
-    coverage = (
-        payload.get('coverage')
-        if isinstance(payload.get('coverage'), dict)
-        else {}
-    )
-    incomplete = safe_int(coverage.get('partial_count', 0)) + safe_int(
-        coverage.get('unavailable_count', 0)
-    )
-    critical = [
-        row for row in rows if (row.get('risk') or {}).get('key') == 'critical'
-    ]
-    warning = [
-        row for row in rows if (row.get('risk') or {}).get('key') == 'warning'
-    ]
-    pressure_rows = [
-        row for row in rows if row.get('pressure_percent') is not None
-    ]
+    raw_coverage = payload.get('coverage')
+    coverage = raw_coverage if isinstance(raw_coverage, dict) else {}
+    incomplete = safe_int(coverage.get('partial_count', 0)) + safe_int(coverage.get('unavailable_count', 0))
+    critical = [row for row in rows if (row.get('risk') or {}).get('key') == 'critical']
+    warning = [row for row in rows if (row.get('risk') or {}).get('key') == 'warning']
+    pressure_rows = [row for row in rows if row.get('pressure_percent') is not None]
     highest = max(
         pressure_rows,
         key=lambda row: safe_float(row.get('pressure_percent', 0)),
@@ -418,19 +378,14 @@ def build_page_posture(payload: dict[str, Any]) -> dict[str, str]:
             'label': 'Critical',
             'tone': 'critical',
             'icon': 'shield-alert',
-            'description': (
-                'Critical consumer pressure or a confirmed request gap requires '
-                'immediate review.'
-            ),
+            'description': ('Critical consumer pressure or a confirmed request gap requires immediate review.'),
         }
     elif incomplete:
         state = {
             'label': 'Limited Evidence',
             'tone': 'warning',
             'icon': 'database-zap',
-            'description': (
-                'One or more resource evidence sets are partial or unavailable.'
-            ),
+            'description': ('One or more resource evidence sets are partial or unavailable.'),
         }
     elif warning:
         state = {
@@ -444,15 +399,10 @@ def build_page_posture(payload: dict[str, Any]) -> dict[str, str]:
             'label': 'Healthy',
             'tone': 'normal',
             'icon': 'circle-check',
-            'description': (
-                'Complete consumer evidence is within the normal range.'
-            ),
+            'description': ('Complete consumer evidence is within the normal range.'),
         }
     state['highest_pressure'] = (
-        f"{highest.get('resource_label', 'Resource')} · "
-        f"{highest.get('pressure_display', 'N/A')}"
-        if highest
-        else 'N/A'
+        f'{highest.get("resource_label", "Resource")} · {highest.get("pressure_display", "N/A")}' if highest else 'N/A'
     )
     return state
 
@@ -587,7 +537,7 @@ def empty_payload(
     }
 
 
-def is_current_payload(payload: Any) -> bool:
+def is_current_payload(payload: Any) -> TypeGuard[dict[str, Any]]:
     if not isinstance(payload, dict):
         return False
     if payload.get('schema_version') != TOP_CONSUMERS_PAYLOAD_SCHEMA_VERSION:
@@ -616,11 +566,7 @@ def dominant_namespace_names(rows: list[dict[str, Any]]) -> list[str]:
         risk = str((row.get('risk') or {}).get('key') or 'unknown')
         if contribution < 20 and risk not in {'warning', 'critical'}:
             continue
-        scores[namespace] = (
-            scores.get(namespace, 0.0)
-            + contribution
-            + RISK_RANK.get(risk, 0) * 5
-        )
+        scores[namespace] = scores.get(namespace, 0.0) + contribution + RISK_RANK.get(risk, 0) * 5
     ranked = sorted(
         scores.items(),
         key=lambda item: (item[1], item[0]),

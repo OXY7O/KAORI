@@ -52,8 +52,8 @@ def test_heavy_utilization_tabs_load_only_after_activation() -> None:
     assert 'clearLegacyAnalyticsHash' not in controls
     assert 'window.location.hash' not in controls
     assert "searchParams.get('tab')" in controls
-    assert "partials/_trend_pending.html" in routes
-    assert "partials/_node_pending.html" in routes
+    assert 'partials/_trend_pending.html' in routes
+    assert 'partials/_node_pending.html' in routes
 
 
 def test_summary_and_node_detail_use_shared_resource_pressure_lanes() -> None:
@@ -95,10 +95,7 @@ def test_utilization_trend_is_bright_has_visible_legend_and_external_js() -> Non
 def test_utilization_uses_canonical_analysis_surfaces_without_compatibility_file() -> None:
     canonical = ROOT / 'app/templates/analytics/components/_analysis_surfaces.html'
     retired = ROOT / ('app/templates/analytics/components/' + '_overview' + '_surfaces.html')
-    imports = '\n'.join(
-        path.read_text(encoding='utf-8')
-        for path in (ROOT / 'app/templates/analytics').rglob('*.html')
-    )
+    imports = '\n'.join(path.read_text(encoding='utf-8') for path in (ROOT / 'app/templates/analytics').rglob('*.html'))
 
     assert canonical.exists()
     assert not retired.exists()

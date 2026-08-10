@@ -48,7 +48,7 @@ def test_activity_register_uses_kaori_filters_loading_table_and_pagination() -> 
         'Status',
         'Actor',
         'Time Range',
-        "class=\"grid w-full gap-3 sm:grid-cols-2 xl:grid-cols-5\"",
+        'class="grid w-full gap-3 sm:grid-cols-2 xl:grid-cols-5"',
         "loading_bar.render('operational-activity-loading'",
         'Refreshing Activity Register',
     ):
@@ -68,7 +68,7 @@ def test_activity_register_uses_kaori_filters_loading_table_and_pagination() -> 
         'Previous',
         'Next',
         "pagination_ui.resource_name('Activities'",
-        "resource_detail_modal.detail_button(",
+        'resource_detail_modal.detail_button(',
     ):
         assert token in content
 
@@ -76,11 +76,14 @@ def test_activity_register_uses_kaori_filters_loading_table_and_pagination() -> 
     assert "time_range=request.args.get('time_range', '7d')" in route
     assert 'include_summary=not is_htmx' in route
     assert "event_type=request.args.get('event_type'" not in route
-    activity_route = route.split("def activity_log()", 1)[1].split("def activity_detail(", 1)[0]
+    activity_route = route.split('def activity_log()', 1)[1].split('def activity_detail(', 1)[0]
     assert "read_state=request.args.get('read_state'" not in activity_route
     assert "normalized_time_range = time_range if time_range in _ACTIVITY_TIME_RANGES else '7d'" in queries
-    assert "_activity_category_condition(normalized_category)" in queries
-    assert "Notification.read_at" not in queries.split('def get_notification_activity_context(', 1)[1].split('def mark_notification_read(', 1)[0]
+    assert '_activity_category_condition(normalized_category)' in queries
+    assert (
+        'Notification.read_at'
+        not in queries.split('def get_notification_activity_context(', 1)[1].split('def mark_notification_read(', 1)[0]
+    )
 
 
 def test_activity_detail_uses_content_driven_modal_and_curated_evidence() -> None:
@@ -155,7 +158,7 @@ def test_activity_detail_is_capability_driven_across_event_shapes() -> None:
         assert conditional in detail
 
     assert 'item.event_type ==' not in detail
-    assert "item.event_type.startswith" not in detail
+    assert 'item.event_type.startswith' not in detail
     assert 'lg:grid-cols-2' in detail
     assert 'Trace References' in detail
     assert '<dl class="grid gap-px bg-outline-subtle sm:grid-cols-2">' in detail

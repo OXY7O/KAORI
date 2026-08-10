@@ -1,19 +1,20 @@
 from __future__ import annotations
 
-from flask import Response, make_response, redirect, render_template, request, url_for
+from typing import Any
+
+from flask import (
+    Response,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask.typing import ResponseReturnValue
 
 from app.analytics.alerts.application import present_alerts_materialized_context
-from app.analytics.alerts.contracts import (
-    SOURCE_OPTIONS,
-    AlertsSelection,
-    normalize_option,
-)
-from app.analytics.materialization.presentation import (
-    blocked_page_context,
-    pending_page_context,
-    snapshot_meta,
-)
+from app.analytics.alerts.contracts import AlertsSelection, SOURCE_OPTIONS, normalize_option
+from app.analytics.materialization.presentation import blocked_page_context, pending_page_context, snapshot_meta
 from app.analytics.materialization.requests import resolve_materialized_request
 from app.common.dependencies import render_dependency_blocker
 from app.rbac.decorators import permission_required
@@ -104,7 +105,7 @@ def _is_htmx_request() -> bool:
 
 
 def _full_page_url(tab: str) -> str:
-    query_args = request.args.to_dict(flat=True)
+    query_args: dict[str, Any] = request.args.to_dict(flat=True)
     query_args['tab'] = tab
     return url_for('analytics.alerts', **query_args)
 

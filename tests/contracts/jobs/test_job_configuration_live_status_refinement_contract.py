@@ -29,13 +29,9 @@ def test_active_progress_is_determinate_without_restarting_animation() -> None:
     progress = _read('app/templates/components/progress_bar.html')
     assert 'macro determinate' in progress
     assert '<progress' in progress
-    assert 'transition-all' not in _read(
-        'app/templates/components/navigation/_quick_sync_status.html'
-    )
+    assert 'transition-all' not in _read('app/templates/components/navigation/_quick_sync_status.html')
 
-    assert 'progress_bar.determinate' in _read(
-        'app/templates/jobs/configuration/_execution_activity.html'
-    )
+    assert 'progress_bar.determinate' in _read('app/templates/jobs/configuration/_execution_activity.html')
     quick_sync = _read('app/templates/components/navigation/_quick_sync_status.html')
     shared_progress = _read('app/templates/components/operational_progress_toast.html')
     assert 'components/operational_progress_toast.html' in quick_sync

@@ -1,17 +1,12 @@
 from __future__ import annotations
 
-import logging
 from datetime import UTC, datetime
+import logging
 from time import perf_counter
-from typing import Any
 
 from app.alertmanager.service import get_alertmanager_alerts, get_alertmanager_status
 from app.analytics.alerts.contracts import AlertLoadResult, AlertSourceStatus
-from app.analytics.alerts.records import (
-    deduplicate_alerts,
-    normalize_alertmanager_item,
-    normalize_prometheus_alert,
-)
+from app.analytics.alerts.records import deduplicate_alerts, normalize_alertmanager_item, normalize_prometheus_alert
 from app.analytics.alerts.source_messages import (
     friendly_alert_fallback_reason,
     friendly_alert_source_error,
@@ -63,9 +58,7 @@ def load_alertmanager_alerts(
         elapsed_ms = int((perf_counter() - started_at) * 1000)
 
         alerts = deduplicate_alerts(
-            normalize_alertmanager_item(item)
-            for item in result.get('alerts', [])
-            if isinstance(item, dict)
+            normalize_alertmanager_item(item) for item in result.get('alerts', []) if isinstance(item, dict)
         )
 
         status = get_alertmanager_status(
@@ -157,11 +150,7 @@ def load_prometheus_alerts(
         if not isinstance(raw_items, list):
             raw_items = []
 
-        alerts = deduplicate_alerts(
-            normalize_prometheus_alert(item)
-            for item in raw_items
-            if isinstance(item, dict)
-        )
+        alerts = deduplicate_alerts(normalize_prometheus_alert(item) for item in raw_items if isinstance(item, dict))
 
         return alerts, {
             'source': 'prometheus',

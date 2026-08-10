@@ -43,12 +43,7 @@
             </article>
         </div>
         <div class="grid gap-4 border-t border-outline-default bg-surface-hover p-5 sm:p-6 md:grid-cols-2 xl:grid-cols-4">
-            {% set recommendations = [
-                ('shield-half', 'RBAC Posture Review', 'Inspect ServiceAccount, RoleBinding, and cluster-level privilege exposure before granting administrative access.'),
-                ('traffic-cone', 'Maintenance Controls', 'Provide validated cordon, drain, disruption, and maintenance-window workflows with explicit impact review.'),
-                ('badge-check', 'Admission & Policy', 'Surface Pod Security, admission policy, protected namespace, and exception-management boundaries.'),
-                ('lock-keyhole', 'Protected Resource Actions', 'Require approval and validation for high-impact changes to critical namespaces and protected resources.')
-            ] %}
+            {% set recommendations = [('shield-half', 'RBAC Posture Review', 'Inspect ServiceAccount, RoleBinding, and cluster-level privilege exposure before granting administrative access.'), ('traffic-cone', 'Maintenance Controls', 'Provide validated cordon, drain, disruption, and maintenance-window workflows with explicit impact review.'), ('badge-check', 'Admission & Policy', 'Surface Pod Security, admission policy, protected namespace, and exception-management boundaries.'), ('lock-keyhole', 'Protected Resource Actions', 'Require approval and validation for high-impact changes to critical namespaces and protected resources.')] %}
             {% for icon, title, description in recommendations %}
                 <article class="rounded-xl border border-outline-default bg-surface-card p-4">
                     <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">

@@ -58,8 +58,7 @@ SERVER_REPORT_TYPE_COVERAGE = [
     {
         'name': 'Server Inventory Report',
         'description': (
-            'Physical and virtual server inventory, ownership, operating system, lifecycle, '
-            'and placement summary.'
+            'Physical and virtual server inventory, ownership, operating system, lifecycle, and placement summary.'
         ),
         'icon': 'server',
     },
@@ -71,8 +70,7 @@ SERVER_REPORT_TYPE_COVERAGE = [
     {
         'name': 'Server Capacity Report',
         'description': (
-            'Allocated versus consumed compute, memory, and storage with capacity risk '
-            'and growth indicators.'
+            'Allocated versus consumed compute, memory, and storage with capacity risk and growth indicators.'
         ),
         'icon': 'gauge',
     },
@@ -87,8 +85,7 @@ SERVER_REPORT_TYPE_COVERAGE = [
     {
         'name': 'VM Placement & Risk Report',
         'description': (
-            'Placement quality, affinity context, availability readiness, and concentration '
-            'risk across host groups.'
+            'Placement quality, affinity context, availability readiness, and concentration risk across host groups.'
         ),
         'icon': 'git-fork',
     },
@@ -98,24 +95,21 @@ HCI_REPORT_TYPE_COVERAGE = [
     {
         'name': 'HCI Cluster Health Report',
         'description': (
-            'Cluster posture, host availability, storage pool status, replication signals, '
-            'and operational risk.'
+            'Cluster posture, host availability, storage pool status, replication signals, and operational risk.'
         ),
         'icon': 'network',
     },
     {
         'name': 'HCI Host Utilization Report',
         'description': (
-            'Hypervisor host usage, contention indicators, consolidation opportunity, '
-            'and noisy-neighbor signals.'
+            'Hypervisor host usage, contention indicators, consolidation opportunity, and noisy-neighbor signals.'
         ),
         'icon': 'server-cog',
     },
     {
         'name': 'Datastore & Volume Report',
         'description': (
-            'Datastore utilization, free capacity, thin provisioning exposure, '
-            'and storage pressure overview.'
+            'Datastore utilization, free capacity, thin provisioning exposure, and storage pressure overview.'
         ),
         'icon': 'database',
     },
@@ -134,9 +128,7 @@ def get_reports_overview_payload() -> dict[str, Any]:
     telegram_delivery = get_telegram_delivery_context()
     worker_context = get_queue_readiness(get_reports_queue_name())
     pipeline_status = get_pipeline_status(storage_context, telegram_delivery, worker_context)
-    current_status = get_current_status(
-        report_counts, storage_context, report_type_coverage, worker_context
-    )
+    current_status = get_current_status(report_counts, storage_context, report_type_coverage, worker_context)
 
     return {
         'page_title': 'Reports',
@@ -145,9 +137,7 @@ def get_reports_overview_payload() -> dict[str, Any]:
         'report_engine_status': worker_context['label'],
         'storage_status': storage_context['display_status'],
         'summary_cards': get_summary_cards(report_counts),
-        'reporting_operations': get_reporting_operations(
-            report_counts, storage_context, worker_context
-        ),
+        'reporting_operations': get_reporting_operations(report_counts, storage_context, worker_context),
         'artifact_statistics': get_artifact_statistics(report_counts),
         'artifact_portfolio': get_artifact_portfolio(),
         'automation_summary': get_automation_summary(report_counts, report_type_coverage),
@@ -283,7 +273,7 @@ def get_reporting_operations(
             'tone': str(worker_context.get('tone', 'unknown')),
             'icon': 'workflow',
             'caption': (
-                f"{int(worker_context.get('worker_count', 0))} worker(s) listening on the Reports queue."
+                f'{int(worker_context.get("worker_count", 0))} worker(s) listening on the Reports queue.'
                 if worker_context.get('ready')
                 else str(worker_context.get('description', 'Reports queue readiness could not be verified.'))
             ),
@@ -296,7 +286,7 @@ def get_reporting_operations(
             'status': 'Enabled' if active_schedules else 'No Active Schedules',
             'tone': 'normal' if active_schedules else 'unknown',
             'icon': 'calendar-clock',
-            'caption': f"{int(report_counts.get('schedules', 0))} total schedule definition(s).",
+            'caption': f'{int(report_counts.get("schedules", 0))} total schedule definition(s).',
             'action_label': 'Open Schedules',
             'href': url_for('reports.schedules'),
         },
@@ -306,7 +296,7 @@ def get_reporting_operations(
             'status': storage_status_label,
             'tone': 'normal' if storage_ready else 'warning',
             'icon': 'hard-drive' if storage_ready else 'cloud-off',
-            'caption': f"{storage_context.get('checked_label', 'Readiness checked')} · shared readiness state.",
+            'caption': f'{storage_context.get("checked_label", "Readiness checked")} · shared readiness state.',
             'action_label': 'Open Storage',
             'href': url_for('reports.storage'),
         },
@@ -354,12 +344,11 @@ def get_reporting_coverage_summary() -> list[dict[str, Any]]:
     return [groups[REPORT_FAMILY_ANALYTICS], groups[REPORT_FAMILY_INVENTORY]]
 
 
-
 def get_artifact_statistics(report_counts: dict[str, int]) -> list[dict[str, str]]:
     completed = int(report_counts.get('ready', 0)) + int(report_counts.get('archived', 0))
     failed = int(report_counts.get('failed', 0))
     resolved = completed + failed
-    completion_rate = f"{round((completed / resolved) * 100)}%" if resolved else '—'
+    completion_rate = f'{round((completed / resolved) * 100)}%' if resolved else '—'
     footprint_bytes = int(
         db.session.scalar(
             select(func.coalesce(func.sum(Report.file_size_bytes), 0)).where(
@@ -421,7 +410,11 @@ def get_artifact_portfolio() -> dict[str, list[dict[str, str]]]:
 
     return {
         'families': [
-            {'label': 'Analytics', 'value': str(family_counts[REPORT_FAMILY_ANALYTICS]), 'icon': 'chart-no-axes-combined'},
+            {
+                'label': 'Analytics',
+                'value': str(family_counts[REPORT_FAMILY_ANALYTICS]),
+                'icon': 'chart-no-axes-combined',
+            },
             {'label': 'Inventory', 'value': str(family_counts[REPORT_FAMILY_INVENTORY]), 'icon': 'boxes'},
         ],
         'formats': [
@@ -461,14 +454,8 @@ def get_report_type_coverage() -> dict[str, Any]:
             }
         )
 
-    server_items = [
-        {**item, 'status': 'Planned', 'tone': 'info'}
-        for item in SERVER_REPORT_TYPE_COVERAGE
-    ]
-    hci_items = [
-        {**item, 'status': 'Reserved', 'tone': 'unknown'}
-        for item in HCI_REPORT_TYPE_COVERAGE
-    ]
+    server_items = [{**item, 'status': 'Planned', 'tone': 'info'} for item in SERVER_REPORT_TYPE_COVERAGE]
+    hci_items = [{**item, 'status': 'Reserved', 'tone': 'unknown'} for item in HCI_REPORT_TYPE_COVERAGE]
 
     domains = [
         {
@@ -489,8 +476,7 @@ def get_report_type_coverage() -> dict[str, Any]:
             'key': 'server',
             'label': 'Server & VM Reports',
             'description': (
-                'Planned report contracts for physical servers, virtual machines, '
-                'and Node Exporter signals.'
+                'Planned report contracts for physical servers, virtual machines, and Node Exporter signals.'
             ),
             'icon': 'server-cog',
             'status': 'Planned',
@@ -503,8 +489,7 @@ def get_report_type_coverage() -> dict[str, Any]:
             'key': 'hci',
             'label': 'HCI Reports',
             'description': (
-                'Reserved report contracts for HCI clusters, hosts, datastores, '
-                'and VM placement from provider APIs.'
+                'Reserved report contracts for HCI clusters, hosts, datastores, and VM placement from provider APIs.'
             ),
             'icon': 'network',
             'status': 'Reserved',
@@ -552,7 +537,9 @@ def get_storage_context() -> dict[str, Any]:
 
     return {
         'backend': backend_name,
-        'label': str(backend_status.get('label') or ('S3-compatible storage' if backend_name == 's3' else 'Local filesystem')),
+        'label': str(
+            backend_status.get('label') or ('S3-compatible storage' if backend_name == 's3' else 'Local filesystem')
+        ),
         'status': 'selected' if is_ready else 'unavailable',
         'state': state,
         'display_status': display_status,
@@ -844,8 +831,7 @@ def get_reporting_operating_model(
                 'label': 'Compose from Integrations',
                 'value': type_summary['available'],
                 'description': (
-                    'Available report types are populated from connected and validated '
-                    'infrastructure sources.'
+                    'Available report types are populated from connected and validated infrastructure sources.'
                 ),
                 'icon': 'plug-zap',
                 'tone': 'normal',
@@ -854,8 +840,7 @@ def get_reporting_operating_model(
                 'label': 'Govern with Templates',
                 'value': str(report_counts['custom_templates']),
                 'description': (
-                    'Protected base templates and custom templates define sections, audience, '
-                    'and document structure.'
+                    'Protected base templates and custom templates define sections, audience, and document structure.'
                 ),
                 'icon': 'layout-template',
                 'tone': 'info',
@@ -907,8 +892,7 @@ def get_data_collection_status(
             'tone': 'normal',
             'icon': 'boxes',
             'description': (
-                'Cluster, node, namespace, workload, pod, service, ingress, storage, '
-                'and configuration inventory.'
+                'Cluster, node, namespace, workload, pod, service, ingress, storage, and configuration inventory.'
             ),
         },
         {
@@ -920,8 +904,7 @@ def get_data_collection_status(
             'tone': 'normal',
             'icon': 'activity',
             'description': (
-                'Utilization, capacity, storage, workload, forecast, and top-consumer evidence '
-                'for report sections.'
+                'Utilization, capacity, storage, workload, forecast, and top-consumer evidence for report sections.'
             ),
         },
         {
@@ -943,8 +926,7 @@ def get_data_collection_status(
             'tone': 'normal' if storage_context.get('backend') == 'local' else 'info',
             'icon': 'folder-archive',
             'description': (
-                'Local report artifact storage using the shared naming, archive, download, '
-                'and retention model.'
+                'Local report artifact storage using the shared naming, archive, download, and retention model.'
             ),
         },
         {
@@ -956,8 +938,7 @@ def get_data_collection_status(
             'tone': s3_tone,
             'icon': 'database',
             'description': (
-                'AWS S3, MinIO, or another S3-compatible backend for generated reports '
-                'and operational evidence.'
+                'AWS S3, MinIO, or another S3-compatible backend for generated reports and operational evidence.'
             ),
         },
         {
@@ -969,8 +950,7 @@ def get_data_collection_status(
             'tone': 'info',
             'icon': 'server-cog',
             'description': (
-                'Physical server and VM inventory combined with Node Exporter metrics '
-                'for server report families.'
+                'Physical server and VM inventory combined with Node Exporter metrics for server report families.'
             ),
         },
         {
@@ -992,8 +972,7 @@ def get_data_collection_status(
             'tone': 'unknown',
             'icon': 'key-round',
             'description': (
-                'External secret, credential, and access-policy evidence for future '
-                'security-focused reports.'
+                'External secret, credential, and access-policy evidence for future security-focused reports.'
             ),
         },
         {
@@ -1017,9 +996,7 @@ def get_data_collection_status(
             'status': 'Not Connected',
             'tone': 'info',
             'icon': 'send-horizontal',
-            'description': (
-                'Additional delivery adapters can extend the same post-generation delivery contract.'
-            ),
+            'description': ('Additional delivery adapters can extend the same post-generation delivery contract.'),
         },
     ]
 

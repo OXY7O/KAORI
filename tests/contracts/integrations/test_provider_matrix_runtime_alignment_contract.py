@@ -14,8 +14,8 @@ def test_provider_validation_workspaces_share_capability_readiness_component():
 
     assert 'data-kaori-provider-capability-readiness' in shared
     assert 'Validated capability coverage' not in shared  # label is provider supplied
-    assert "capability_readiness.render(" in prometheus
-    assert "capability_readiness.render(" in alertmanager
+    assert 'capability_readiness.render(' in prometheus
+    assert 'capability_readiness.render(' in alertmanager
     assert 'Validation Decision' not in prometheus
     assert 'Validation Decision' not in alertmanager
 

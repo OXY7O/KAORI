@@ -10,4 +10,5 @@
     progress_text='Running for ' ~ sync.elapsed_seconds ~ 's · Celery continues after navigation',
     view_url=url_for('jobs.executions', queue='inventory', search=sync.task_id),
     action_label='View Job'
-) %}{% endcall %}
+    ) %}
+{% endcall %}

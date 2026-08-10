@@ -111,16 +111,13 @@ def build_prometheus_status(
         }
 
     anomaly_status = anomaly_source_status or {}
-    resolved_alert_source = (
-        source_status.get('resolved_source') == 'prometheus'
-        and bool(source_status.get('connected'))
+    resolved_alert_source = source_status.get('resolved_source') == 'prometheus' and bool(
+        source_status.get('connected')
     )
     anomaly_connected = bool(anomaly_status.get('connected'))
     connected = resolved_alert_source or anomaly_connected
     response_time_ms = (
-        source_status.get('response_time_ms')
-        if resolved_alert_source
-        else anomaly_status.get('response_time_ms')
+        source_status.get('response_time_ms') if resolved_alert_source else anomaly_status.get('response_time_ms')
     )
 
     return {

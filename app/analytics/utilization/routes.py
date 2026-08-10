@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from flask import make_response, redirect, render_template, request, url_for
+from flask import (
+    make_response,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
+from flask.typing import ResponseReturnValue
 
-from app.analytics.materialization.presentation import (
-    blocked_page_context,
-    pending_page_context,
-    snapshot_meta,
-)
+from app.analytics.materialization.presentation import blocked_page_context, pending_page_context, snapshot_meta
 from app.analytics.materialization.requests import resolve_materialized_request
-from app.analytics.utilization.materialization import (
-    ALLOWED_TREND_HOURS,
-    build_utilization_trend_summary,
-)
+from app.analytics.utilization.materialization import ALLOWED_TREND_HOURS, build_utilization_trend_summary
 from app.analytics.utilization.presentation import (
     build_node_presentation,
     build_summary_presentation,
@@ -43,14 +43,14 @@ def _is_htmx_request() -> bool:
     return request.headers.get('HX-Request') == 'true'
 
 
-def _fragment_response(template: str, **context):
+def _fragment_response(template: str, **context) -> ResponseReturnValue:
     response = make_response(render_template(template, **context))
     response.headers['Cache-Control'] = 'no-store, max-age=0'
     response.headers['Vary'] = 'HX-Request'
     return response
 
 
-def _redirect_to_workspace(*, tab: str):
+def _redirect_to_workspace(*, tab: str) -> ResponseReturnValue:
     return redirect(
         url_for(
             'analytics.utilization',
@@ -136,7 +136,7 @@ def _base_context_or_state():
 
 
 @permission_required('analytics.view')
-def utilization() -> str:
+def utilization() -> ResponseReturnValue:
     context, state = _base_context_or_state()
     if state:
         template = (
@@ -149,7 +149,7 @@ def utilization() -> str:
 
 
 @permission_required('analytics.view')
-def utilization_trend() -> str:
+def utilization_trend() -> ResponseReturnValue:
     if not _is_htmx_request():
         return _redirect_to_workspace(tab='trend')
 
@@ -189,7 +189,7 @@ def utilization_trend() -> str:
 
 
 @permission_required('analytics.view')
-def utilization_node_detail() -> str:
+def utilization_node_detail() -> ResponseReturnValue:
     if not _is_htmx_request():
         return _redirect_to_workspace(tab='nodes')
 

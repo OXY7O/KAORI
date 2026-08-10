@@ -1,14 +1,20 @@
 from __future__ import annotations
 
-from flask import Response, make_response, redirect, render_template, request, url_for
+from typing import Any
 
-from app.analytics.materialization.presentation import (
-    blocked_page_context,
-    pending_page_context,
-    snapshot_meta,
+from flask import (
+    Response,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    url_for,
 )
-from app.analytics.materialization.requests import resolve_materialized_request
+from flask.typing import ResponseReturnValue
+
 from app.analytics.common.params import get_selected_time_range
+from app.analytics.materialization.presentation import blocked_page_context, pending_page_context, snapshot_meta
+from app.analytics.materialization.requests import resolve_materialized_request
 from app.analytics.workload.presentation import present_workload_materialized_context
 from app.common.dependencies import render_dependency_blocker
 from app.rbac.decorators import permission_required
@@ -80,7 +86,7 @@ def _is_htmx_request() -> bool:
 
 
 def _full_workload_url(tab: str) -> str:
-    query_args = request.args.to_dict(flat=True)
+    query_args: dict[str, Any] = request.args.to_dict(flat=True)
     query_args['tab'] = tab
     return url_for('analytics.workload', **query_args)
 
@@ -98,9 +104,7 @@ def _partial_state_response(state: dict, *, tab: str) -> Response:
     if blocker:
         response = make_response(render_dependency_blocker(blocker))
     else:
-        response = make_response(
-            render_template('analytics/materialization/_pending.html', **state)
-        )
+        response = make_response(render_template('analytics/materialization/_pending.html', **state))
     response.headers['HX-Push-Url'] = _full_workload_url(tab)
     response.headers['Cache-Control'] = 'no-store, max-age=0'
     response.headers['Vary'] = 'HX-Request'
@@ -108,7 +112,7 @@ def _partial_state_response(state: dict, *, tab: str) -> Response:
 
 
 @permission_required('analytics.view')
-def workload() -> str:
+def workload() -> ResponseReturnValue:
     context, state = _context_or_state()
     if state:
         template = (
@@ -121,7 +125,7 @@ def workload() -> str:
 
 
 @permission_required('analytics.view')
-def workload_tenant_quota() -> str | Response:
+def workload_tenant_quota() -> ResponseReturnValue:
     if not _is_htmx_request():
         return redirect(_full_workload_url('quotas'))
     context, state = _context_or_state()
@@ -141,7 +145,7 @@ def workload_tenant_quota() -> str | Response:
 
 
 @permission_required('analytics.view')
-def workload_resource_mapping() -> str | Response:
+def workload_resource_mapping() -> ResponseReturnValue:
     if not _is_htmx_request():
         return redirect(_full_workload_url('mapping'))
     context, state = _context_or_state()

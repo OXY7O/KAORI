@@ -30,7 +30,7 @@ def test_recommendations_use_factual_forecast_terms() -> None:
 
 
 def test_recommendations_link_to_resource_or_trend_tabs() -> None:
-    assert "def _forecast_review_href" in ENGINE
+    assert 'def _forecast_review_href' in ENGINE
     assert "'tab': tab" in ENGINE
     assert "resource_key if resource_key in {'cpu', 'memory', 'storage', 'pods'} else 'trend'" in ENGINE
     assert "trend_href = _forecast_review_href(payload, 'trend')" in ENGINE

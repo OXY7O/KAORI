@@ -1,6 +1,11 @@
 import logging
 
-from flask import redirect, render_template, request, url_for
+from flask import (
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from werkzeug.exceptions import HTTPException
@@ -9,11 +14,7 @@ from app.extensions.db import db
 from app.notifications.feedback import OperationalDeliveryPolicy
 from app.notifications.service import queue_transient_feedback, record_operational_activity
 from app.rbac.decorators import permission_required
-from app.reports.generate.service import (
-    create_report_request,
-    get_form_state_from_form,
-    get_generate_report_payload,
-)
+from app.reports.generate.service import create_report_request, get_form_state_from_form, get_generate_report_payload
 from app.reports.jobs.service import ReportJobEnqueueError, enqueue_report_generation
 from app.reports.reference import build_report_reference
 from app.reports.web import render_reports_unavailable

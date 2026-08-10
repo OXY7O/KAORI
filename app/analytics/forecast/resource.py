@@ -169,9 +169,7 @@ def _metric_payload(
         'peak_projected_value': peak,
         'peak_projected_display': _display_value(peak, definition.unit),
         'weekly_trend': evidence['slope'] * 7,
-        'weekly_trend_display': (
-            _format_weekly_trend(evidence['slope'], definition.unit) if has_data else 'N/A'
-        ),
+        'weekly_trend_display': (_format_weekly_trend(evidence['slope'], definition.unit) if has_data else 'N/A'),
         'latest_daily_average_percent': _rounded(evidence['latest_percent']),
         'projected_percent': _rounded(evidence['projected_percent']),
         'peak_projected_percent': _rounded(evidence['peak_percent']),

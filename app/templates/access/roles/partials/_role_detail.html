@@ -2,11 +2,15 @@
 {% import "components/details/_detail_content.html" as detail_ui %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/table.html" as table_ui %}
-<div data-kaori-detail-variant="full-workspace-modal" data-kaori-detail-density="adaptive-stacks" class="{{ detail_ui.expanded_workspace_outer_classes() }}">
+<div data-kaori-detail-variant="full-workspace-modal"
+     data-kaori-detail-density="adaptive-stacks"
+     class="{{ detail_ui.expanded_workspace_outer_classes() }}">
     <div class="{{ detail_ui.expanded_workspace_shell_classes() }}">
-        <header data-resource-detail-header class="{{ detail_ui.expanded_workspace_header_classes() }}">
+        <header data-resource-detail-header
+                class="{{ detail_ui.expanded_workspace_header_classes() }}">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ detail_ui.expanded_workspace_icon_classes() }}" aria-hidden="true"><i data-lucide="{{ detail.type_icon }}" class="h-5 w-5"></i></span>
+                <span class="{{ detail_ui.expanded_workspace_icon_classes() }}"
+                      aria-hidden="true"><i data-lucide="{{ detail.type_icon }}" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ role.display_name }}</h3>
@@ -18,14 +22,12 @@
                 </div>
             </div>
         </header>
-
         {{ detail_ui.summary_strip([
-            ('Assigned Users', detail.assigned_users, 'Managed accounts using this role'),
-            ('Provider Defaults', detail.provider_mappings, 'Identity Provider default mappings'),
-            ('Permissions', detail.permission_count, 'Effective permission contracts'),
-            ('Modules', detail.module_count, 'Permission modules represented')
+                ('Assigned Users', detail.assigned_users, 'Managed accounts using this role') ,
+        ('Provider Defaults', detail.provider_mappings, 'Identity Provider default mappings'),
+        ('Permissions', detail.permission_count, 'Effective permission contracts'),
+        ('Modules', detail.module_count, 'Permission modules represented')
         ], compact=true) }}
-
         <div class="grid items-start gap-4 p-5 xl:grid-cols-2">
             {% call detail_ui.detail_card('Role Identity', 'badge-info', detail.type_short, badge_size='detail', stretch=false, density='compact') %}
                 {{ detail_ui.detail_row('Role Name', role.display_name) }}
@@ -34,7 +36,6 @@
                 {{ detail_ui.status_row('Role State', detail.state_label, detail.state_tone, detail.state_icon, 'detail') }}
                 {{ detail_ui.stacked_detail_row('Operational Purpose', role.description or 'No role description is defined.') }}
             {% endcall %}
-
             {% call detail_ui.detail_card('Assignment Impact', 'users-round', detail.assigned_users ~ ' Users', badge_size='detail', stretch=false, density='compact') %}
                 {{ detail_ui.detail_row('Assigned Users', detail.assigned_users) }}
                 {{ detail_ui.detail_row('Provider Defaults', detail.provider_mappings) }}
@@ -46,17 +47,17 @@
                     </div>
                 {% endif %}
             {% endcall %}
-
             <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card xl:col-span-2">
                 <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="key-round" class="h-4 w-4"></i></span>
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true"><i data-lucide="key-round" class="h-4 w-4"></i></span>
                         <div class="min-w-0">
                             <h4 class="text-sm font-semibold text-content-primary">Permission Coverage</h4>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Role-specific effective permission coverage. Cross-role comparison remains owned by Permission Catalog.</p>
                         </div>
                     </div>
-                    {{ table_label.metadata_label(detail.permission_count ~ ' ' ~ ('Permission' if detail.permission_count == 1 else 'Permissions'), 'key-round') }}
+                    {{ table_label.metadata_label(detail.permission_count ~ ' ' ~ ('Permission' if detail.permission_count == 1 else 'Permissions') , 'key-round') }}
                 </header>
                 {% if detail.permission_modules %}
                     <div class="overflow-x-auto">
@@ -92,7 +93,6 @@
                     <div class="p-4">{{ detail_ui.empty_evidence('No Permissions Assigned', 'This role currently grants no effective permission contracts.', 'key-round') }}</div>
                 {% endif %}
             </section>
-
             {% call detail_ui.detail_card('Administrative Boundary', 'shield-check', 'Protected' if role.is_system else 'Custom', badge_size='detail', stretch=false, density='compact', class_name='xl:col-span-2') %}
                 {% if role.is_system %}
                     {{ detail_ui.stacked_detail_row('Ownership', 'Protected defaults are code-owned and cannot be edited or deleted directly.') }}
@@ -102,11 +102,14 @@
                     {{ detail_ui.stacked_detail_row('Deletion State', 'Eligible' if detail.delete_eligible else 'Blocked by active references') }}
                 {% endif %}
                 <div class="mt-3 flex flex-wrap gap-2">
-                    <a href="{{ url_for('access.roles.detail', role_id=role.id) }}" class="{{ action_button.classes('secondary', false) }}"><i data-lucide="external-link" class="h-4 w-4"></i>Open Role</a>
+                    <a href="{{ url_for('access.roles.detail', role_id=role.id) }}"
+                       class="{{ action_button.classes('secondary', false) }}"><i data-lucide="external-link" class="h-4 w-4"></i>Open Role</a>
                     {% if can_manage_roles and role.is_system %}
-                        <a href="{{ url_for('access.roles.clone', role_id=role.id) }}" class="{{ action_button.classes('primary', false) }}"><i data-lucide="copy-plus" class="h-4 w-4"></i>Clone Role</a>
+                        <a href="{{ url_for('access.roles.clone', role_id=role.id) }}"
+                           class="{{ action_button.classes('primary', false) }}"><i data-lucide="copy-plus" class="h-4 w-4"></i>Clone Role</a>
                     {% elif can_manage_roles and not role.is_system %}
-                        <a href="{{ url_for('access.roles.edit', role_id=role.id) }}" class="{{ action_button.classes('primary', false) }}"><i data-lucide="pencil" class="h-4 w-4"></i>Edit Role</a>
+                        <a href="{{ url_for('access.roles.edit', role_id=role.id) }}"
+                           class="{{ action_button.classes('primary', false) }}"><i data-lucide="pencil" class="h-4 w-4"></i>Edit Role</a>
                         {% if detail.delete_eligible %}
                             <button type="button"
                                     data-destructive-modal-open
@@ -117,7 +120,9 @@
                                     class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-status-critical-border bg-status-critical-soft px-4 text-sm font-semibold text-status-critical-text transition-colors hover:bg-status-critical hover:text-white">
                                 <i data-lucide="trash-2" class="h-4 w-4"></i>Delete Role
                             </button>
-                            <form method="post" action="{{ url_for('access.roles.delete', role_id=role.id) }}" class="hidden">
+                            <form method="post"
+                                  action="{{ url_for('access.roles.delete', role_id=role.id) }}"
+                                  class="hidden">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="role_id" value="{{ role.id }}">
                                 <input type="hidden" name="role_version" value="{{ detail.version_token }}">

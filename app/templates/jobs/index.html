@@ -24,49 +24,36 @@
                 <aside class="{{ page_hero.aside_classes() }}"
                        aria-label="Platform job posture">
                     <div class="{{ page_hero.context_panel_classes() }}">
-                        {{ page_hero.context_header(
-                            'Job Control Plane',
-                            'Configuration & Execution',
-                            'workflow'
-                        ) }}
+                        {{ page_hero.context_header('Job Control Plane',
+                                                'Configuration & Execution',
+                                                'workflow') }}
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                            {{ page_hero.context_metric(
-                                'loader-circle',
-                                'Active',
-                                job_stats.active,
-                                'Queued, running, and retrying jobs'
-                            ) }}
-                            {{ page_hero.context_metric(
-                                'triangle-alert',
-                                'Operational Attention',
-                                operational_attention,
-                                'Execution signals and configuration review'
-                            ) }}
+                            {{ page_hero.context_metric('loader-circle',
+                                                        'Active',
+                                                        job_stats.active,
+                                                        'Queued, running, and retrying jobs') }}
+                            {{ page_hero.context_metric('triangle-alert',
+                                                        'Operational Attention',
+                                                        operational_attention,
+                                                        'Execution signals and configuration review') }}
                         </div>
-                        {{ page_hero.context_info(
-                            'shield-check',
-                            'Every run follows the JobExecution lifecycle.'
-                        ) }}
+                        {{ page_hero.context_info('shield-check',
+                                                'Every run follows the JobExecution lifecycle.') }}
                     </div>
                 </aside>
             </div>
         </section>
-
         <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-            {{ framed_workspace_tabs.render([('executions', 'Executions', 'list-checks'), ('configuration', 'Job Configuration', 'sliders-horizontal')], prefix='jobs-platform', aria_label='Jobs and Executions Workspaces') }}
+            {{ framed_workspace_tabs.render([('executions', 'Executions', 'list-checks') , ('configuration', 'Job Configuration', 'sliders-horizontal')], prefix='jobs-platform', aria_label='Jobs and Executions Workspaces') }}
             <div class="p-5 lg:p-6">
                 <div id="jobs-platform-panel-executions"
                      role="tabpanel"
                      x-show="activeTab === 'executions'"
-                     x-cloak>
-                    {% include "jobs/executions/_workspace.html" %}
-                </div>
+                     x-cloak>{% include "jobs/executions/_workspace.html" %}</div>
                 <div id="jobs-platform-panel-configuration"
                      role="tabpanel"
                      x-show="activeTab === 'configuration'"
-                     x-cloak>
-                    {% include "jobs/configuration/_workspace.html" %}
-                </div>
+                     x-cloak>{% include "jobs/configuration/_workspace.html" %}</div>
             </div>
         </section>
     </div>

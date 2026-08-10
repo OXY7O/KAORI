@@ -9,9 +9,7 @@ def read(relative: str) -> str:
 
 def test_snapshot_dimensions_exclude_local_record_controls() -> None:
     routes = read('app/analytics/alerts/routes.py')
-    snapshot_parameters = routes.split('def _snapshot_parameters', 1)[1].split(
-        'def _present', 1
-    )[0]
+    snapshot_parameters = routes.split('def _snapshot_parameters', 1)[1].split('def _present', 1)[0]
 
     assert "'source': normalize_option(" in snapshot_parameters
     assert 'allowed=SOURCE_OPTIONS' in snapshot_parameters
@@ -57,9 +55,7 @@ def test_alert_and_anomaly_pagination_state_is_independent() -> None:
 
 def test_alert_queries_deduplicate_and_scope_anomalies_to_active_pods() -> None:
     profile = read('app/integrations/prometheus/query_profiles/kubernetes_v1.py')
-    alert_queries = read(
-        'app/integrations/prometheus/query_profiles/alerts_v1.py'
-    )
+    alert_queries = read('app/integrations/prometheus/query_profiles/alerts_v1.py')
 
     assert 'expression=alerts_v1.PROMETHEUS_ALERTS_QUERY' in profile
     assert 'expression=alerts_v1.POD_RESTART_ANOMALY_QUERY' in profile
@@ -82,7 +78,7 @@ def test_source_normalization_and_deduplication_have_canonical_ownership() -> No
     assert 'def deduplicate_alerts(' in records
     assert "'prometheus_replica'" in records
     assert "'alertstate'" in records
-    assert "strip().lower() == namespace_query" in records
+    assert 'strip().lower() == namespace_query' in records
     assert len(sources.splitlines()) <= 800
     assert 'app/analytics/alerts/sources.py::normalize_alertmanager_item' not in baseline
 
@@ -147,7 +143,7 @@ def test_signal_overview_cannot_report_normal_when_evidence_is_incomplete() -> N
     signals = read('app/analytics/alerts/signals.py')
     application = read('app/analytics/alerts/application.py')
 
-    assert "if not evidence_complete:" in signals
+    assert 'if not evidence_complete:' in signals
     assert "'label': 'Limited Evidence'" in signals
     assert "'level': 'unknown'" in signals
     assert 'is_alert_evidence_complete(' in application

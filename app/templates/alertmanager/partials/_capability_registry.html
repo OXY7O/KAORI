@@ -7,48 +7,192 @@
 {% import "integrations/components/_record_actions.html" as record_actions %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-
 {% set registry = capability_registry %}
 {% set filters = registry.filters %}
 {% set pagination = registry.pagination %}
-{% set registry_endpoint = 'alertmanager.instance_capability_registry' %}
-{% set detail_endpoint = 'alertmanager.instance_detail' %}
-{% set target_id = 'alertmanager-capability-registry' %}
-{% set loading_id = 'alertmanager-capability-loading' %}
-<section id="{{ target_id }}" class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card" aria-labelledby="alertmanager-capability-registry-title" data-kaori-alertmanager-capability-table data-kaori-server-filtered-registry>
+{% set registry_endpoint = "alertmanager.instance_capability_registry" %}
+{% set detail_endpoint = "alertmanager.instance_detail" %}
+{% set target_id = "alertmanager-capability-registry" %}
+{% set loading_id = "alertmanager-capability-loading" %}
+<section id="{{ target_id }}"
+         class="min-w-0 overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+         aria-labelledby="alertmanager-capability-registry-title"
+         data-kaori-alertmanager-capability-table
+         data-kaori-server-filtered-registry>
     <header class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
         <div class="flex items-start justify-between gap-3">
-            <div class="flex items-start gap-3">{{ integration_ui.palette_icon('list-checks', 'brand', size='md') }}<div><h3 id="alertmanager-capability-registry-title" class="text-sm font-semibold text-content-primary">Alert Management Capability Registry</h3><p class="mt-1 text-xs leading-5 text-content-secondary">Compare API v2 contracts and open detailed request evidence only when needed.</p></div></div>
+            <div class="flex items-start gap-3">
+                {{ integration_ui.palette_icon('list-checks', 'brand', size='md') }}
+                <div>
+                    <h3 id="alertmanager-capability-registry-title"
+                        class="text-sm font-semibold text-content-primary">Alert Management Capability Registry</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Compare API v2 contracts and open detailed request evidence only when needed.</p>
+                </div>
+            </div>
             {{ table_label.metadata_label(capability_summary.total ~ ' Capabilities') }}
         </div>
         {{ loading_bar.render(loading_id, active=validation_job and validation_job.is_active, label='Refreshing Alert Management Capability Registry') }}
     </header>
-
-    <div class="{{ table_ui.inventory_filter_bar_classes() }}" data-kaori-alertmanager-capability-filters>
-        <form method="get" action="{{ url_for(detail_endpoint, instance_id=instance.id, tab='validation') }}" hx-get="{{ url_for(registry_endpoint, instance_id=instance.id) }}" hx-target="#{{ target_id }}" hx-swap="outerHTML" hx-trigger="keyup changed delay:300ms from:input[name='query'], change delay:100ms from:select" hx-indicator="#{{ loading_id }}" aria-label="Alertmanager capability filters" class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_13rem_13rem]">
-            <input type="hidden" name="page" value="1"><input type="hidden" name="per_page" value="{{ pagination.per_page }}">
-            <div><label for="alertmanager-capability-query" class="{{ table_ui.filter_label_classes() }}">Search Capability</label><div class="relative"><i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted" aria-hidden="true"></i><input id="alertmanager-capability-query" type="search" name="query" value="{{ filters.query }}" placeholder="Search capability or category..." class="{{ table_ui.filter_input_classes() }} pl-9"></div></div>
-            <div><label for="alertmanager-capability-requirement" class="{{ table_ui.filter_label_classes() }}">Requirement</label><select id="alertmanager-capability-requirement" name="requirement" class="{{ table_ui.filter_select_classes() }}"><option value="all" {% if filters.requirement == 'all' %}selected{% endif %}>All Requirements</option><option value="required" {% if filters.requirement == 'required' %}selected{% endif %}>Required</option><option value="optional" {% if filters.requirement == 'optional' %}selected{% endif %}>Optional</option></select></div>
-            <div><label for="alertmanager-capability-status" class="{{ table_ui.filter_label_classes() }}">Validation Status</label><select id="alertmanager-capability-status" name="status" class="{{ table_ui.filter_select_classes() }}"><option value="all" {% if filters.status == 'all' %}selected{% endif %}>All Statuses</option><option value="ready" {% if filters.status == 'ready' %}selected{% endif %}>Ready</option><option value="blocked" {% if filters.status == 'blocked' %}selected{% endif %}>Blocked</option><option value="optional_gap" {% if filters.status == 'optional_gap' %}selected{% endif %}>Optional Gap</option></select></div>
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}"
+         data-kaori-alertmanager-capability-filters>
+        <form method="get"
+              action="{{ url_for(detail_endpoint, instance_id=instance.id, tab='validation') }}"
+              hx-get="{{ url_for(registry_endpoint, instance_id=instance.id) }}"
+              hx-target="#{{ target_id }}"
+              hx-swap="outerHTML"
+              hx-trigger="keyup changed delay:300ms from:input[name='query'], change delay:100ms from:select"
+              hx-indicator="#{{ loading_id }}"
+              aria-label="Alertmanager capability filters"
+              class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_13rem_13rem]">
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
+            <div>
+                <label for="alertmanager-capability-query"
+                       class="{{ table_ui.filter_label_classes() }}">Search Capability</label>
+                <div class="relative">
+                    <i data-lucide="search"
+                       class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
+                       aria-hidden="true"></i>
+                    <input id="alertmanager-capability-query"
+                           type="search"
+                           name="query"
+                           value="{{ filters.query }}"
+                           placeholder="Search capability or category..."
+                           class="{{ table_ui.filter_input_classes() }} pl-9">
+                </div>
+            </div>
+            <div>
+                <label for="alertmanager-capability-requirement"
+                       class="{{ table_ui.filter_label_classes() }}">Requirement</label>
+                <select id="alertmanager-capability-requirement"
+                        name="requirement"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="all" {% if filters.requirement == 'all' %}selected{% endif %}>All Requirements</option>
+                    <option value="required"
+                            {% if filters.requirement == 'required' %}selected{% endif %}>Required</option>
+                    <option value="optional"
+                            {% if filters.requirement == 'optional' %}selected{% endif %}>Optional</option>
+                </select>
+            </div>
+            <div>
+                <label for="alertmanager-capability-status"
+                       class="{{ table_ui.filter_label_classes() }}">Validation Status</label>
+                <select id="alertmanager-capability-status"
+                        name="status"
+                        class="{{ table_ui.filter_select_classes() }}">
+                    <option value="all" {% if filters.status == 'all' %}selected{% endif %}>All Statuses</option>
+                    <option value="ready" {% if filters.status == 'ready' %}selected{% endif %}>Ready</option>
+                    <option value="blocked"
+                            {% if filters.status == 'blocked' %}selected{% endif %}>Blocked</option>
+                    <option value="optional_gap"
+                            {% if filters.status == 'optional_gap' %}selected{% endif %}>Optional Gap</option>
+                </select>
+            </div>
         </form>
     </div>
-
     {% if registry.rows %}
-        <div class="overflow-hidden"><table class="{{ table_ui.table_classes() }} table-fixed"><colgroup><col class="w-[38%]"><col class="w-[20%]"><col class="w-[15%]"><col class="w-[13%]"><col class="w-[14%]"></colgroup><thead class="{{ table_ui.head_classes() }}"><tr><th class="px-4 py-3 text-left">Capability</th><th class="px-3 py-3 text-left">Category</th><th class="px-3 py-3 text-left">Requirement</th><th class="px-3 py-3 text-left">Status</th><th class="px-3 py-3 text-right">Details</th></tr></thead><tbody class="{{ table_ui.body_classes() }}">
-        {% for row in registry.rows %}<tr class="{{ table_ui.row_classes() }}"><td class="px-4 py-3 align-middle"><div class="flex min-w-0 items-start gap-3">{{ integration_ui.palette_icon('siren', 'brand', size='sm') }}<div class="min-w-0"><p class="truncate text-sm font-semibold text-content-primary" title="{{ row.label }}">{{ row.label }}</p><p class="mt-0.5 truncate text-xs leading-5 text-content-muted" title="{{ row.description }}">{{ row.description }}</p></div></div></td><td class="px-3 py-3 align-middle whitespace-nowrap">{{ table_label.metadata_label(row.category|title) }}</td><td class="px-3 py-3 align-middle whitespace-nowrap">{{ table_label.metadata_label('Required' if row.required else 'Optional') }}</td><td class="px-3 py-3 align-middle whitespace-nowrap">{{ integration_status('ready' if row.available else ('blocked' if row.required else 'degraded'), row.status_label, display='indicator') }}</td><td class="px-3 py-3 align-middle text-right whitespace-nowrap">{{ record_actions.view_more('alertmanager-capability-detail-' ~ loop.index) }}</td></tr>{% endfor %}
-        </tbody></table></div>
-    {% else %}<div class="px-5 py-10 text-center"><p class="text-sm font-semibold text-content-primary">No Matching Capabilities</p><p class="mt-1 text-xs leading-5 text-content-secondary">Adjust the search or validation filters.</p></div>{% endif %}
-
+        <div class="overflow-hidden">
+            <table class="{{ table_ui.table_classes() }} table-fixed">
+                <colgroup>
+                    <col class="w-[38%]">
+                    <col class="w-[20%]">
+                    <col class="w-[15%]">
+                    <col class="w-[13%]">
+                    <col class="w-[14%]">
+                </colgroup>
+                <thead class="{{ table_ui.head_classes() }}">
+                    <tr>
+                        <th class="px-4 py-3 text-left">Capability</th>
+                        <th class="px-3 py-3 text-left">Category</th>
+                        <th class="px-3 py-3 text-left">Requirement</th>
+                        <th class="px-3 py-3 text-left">Status</th>
+                        <th class="px-3 py-3 text-right">Details</th>
+                    </tr>
+                </thead>
+                <tbody class="{{ table_ui.body_classes() }}">
+                    {% for row in registry.rows %}
+                        <tr class="{{ table_ui.row_classes() }}">
+                            <td class="px-4 py-3 align-middle">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    {{ integration_ui.palette_icon('siren', 'brand', size='sm') }}
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-semibold text-content-primary"
+                                           title="{{ row.label }}">{{ row.label }}</p>
+                                        <p class="mt-0.5 truncate text-xs leading-5 text-content-muted"
+                                           title="{{ row.description }}">{{ row.description }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-3 py-3 align-middle whitespace-nowrap">{{ table_label.metadata_label(row.category|title) }}</td>
+                            <td class="px-3 py-3 align-middle whitespace-nowrap">{{ table_label.metadata_label('Required' if row.required else 'Optional') }}</td>
+                            <td class="px-3 py-3 align-middle whitespace-nowrap">{{ integration_status('ready' if row.available else ('blocked' if row.required else 'degraded') , row.status_label, display='indicator') }}</td>
+                            <td class="px-3 py-3 align-middle text-right whitespace-nowrap">{{ record_actions.view_more('alertmanager-capability-detail-' ~ loop.index) }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="px-5 py-10 text-center">
+            <p class="text-sm font-semibold text-content-primary">No Matching Capabilities</p>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">Adjust the search or validation filters.</p>
+        </div>
+    {% endif %}
     <footer class="{{ pagination_ui.footer_classes() }}">
-        <div class="{{ pagination_ui.summary_group_classes() }}"><p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> Capabilities</p><form method="get" action="{{ url_for(detail_endpoint, instance_id=instance.id, tab='validation') }}" hx-get="{{ url_for(registry_endpoint, instance_id=instance.id) }}" hx-target="#{{ target_id }}" hx-swap="outerHTML" hx-indicator="#{{ loading_id }}" class="{{ pagination_ui.rows_group_classes() }}"><input type="hidden" name="page" value="1"><input type="hidden" name="query" value="{{ filters.query }}"><input type="hidden" name="requirement" value="{{ filters.requirement }}"><input type="hidden" name="status" value="{{ filters.status }}"><label for="alertmanager-capability-page-size" class="font-semibold text-content-secondary">Rows</label><select id="alertmanager-capability-page-size" name="per_page" data-kaori-auto-submit class="{{ pagination_ui.page_size_classes() }}">{% for option in pagination.allowed_per_page %}<option value="{{ option }}" {% if option == pagination.per_page %}selected{% endif %}>{{ option }}</option>{% endfor %}</select></form></div>
-        <nav class="{{ pagination_ui.navigation_group_classes() }}" aria-label="Alert Management Capability Registry pagination">
+        <div class="{{ pagination_ui.summary_group_classes() }}">
+            <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> Capabilities</p>
+            <form method="get"
+                  action="{{ url_for(detail_endpoint, instance_id=instance.id, tab='validation') }}"
+                  hx-get="{{ url_for(registry_endpoint, instance_id=instance.id) }}"
+                  hx-target="#{{ target_id }}"
+                  hx-swap="outerHTML"
+                  hx-indicator="#{{ loading_id }}"
+                  class="{{ pagination_ui.rows_group_classes() }}">
+                <input type="hidden" name="page" value="1">
+                <input type="hidden" name="query" value="{{ filters.query }}">
+                <input type="hidden" name="requirement" value="{{ filters.requirement }}">
+                <input type="hidden" name="status" value="{{ filters.status }}">
+                <label for="alertmanager-capability-page-size"
+                       class="font-semibold text-content-secondary">Rows</label>
+                <select id="alertmanager-capability-page-size"
+                        name="per_page"
+                        data-kaori-auto-submit
+                        class="{{ pagination_ui.page_size_classes() }}">
+                    {% for option in pagination.allowed_per_page %}
+                        <option value="{{ option }}"
+                                {% if option == pagination.per_page %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+        <nav class="{{ pagination_ui.navigation_group_classes() }}"
+             aria-label="Alert Management Capability Registry pagination">
             {% set query_params = {'query': filters.query, 'requirement': filters.requirement, 'status': filters.status, 'per_page': pagination.per_page} %}
-            {% if pagination.has_prev %}<a href="{{ url_for(detail_endpoint, instance_id=instance.id, tab='validation') }}" hx-get="{{ url_for(registry_endpoint, instance_id=instance.id, page=pagination.prev_page, per_page=pagination.per_page, query=filters.query, requirement=filters.requirement, status=filters.status) }}" hx-target="#{{ target_id }}" hx-swap="outerHTML" hx-indicator="#{{ loading_id }}" class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>{% else %}<span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>{% endif %}
+            {% if pagination.has_prev %}
+                <a href="{{ url_for(detail_endpoint, instance_id=instance.id, tab='validation') }}"
+                   hx-get="{{ url_for(registry_endpoint, instance_id=instance.id, page=pagination.prev_page, per_page=pagination.per_page, query=filters.query, requirement=filters.requirement, status=filters.status) }}"
+                   hx-target="#{{ target_id }}"
+                   hx-swap="outerHTML"
+                   hx-indicator="#{{ loading_id }}"
+                   class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(true) }}"
+                      aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+            {% endif %}
             {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, 'page', hx_target='#' ~ target_id, hx_indicator='#' ~ loading_id, endpoint=registry_endpoint, query_params=query_params, hx_swap='outerHTML', href_endpoint=detail_endpoint) }}
-            {% if pagination.has_next %}<a href="{{ url_for(detail_endpoint, instance_id=instance.id, tab='validation') }}" hx-get="{{ url_for(registry_endpoint, instance_id=instance.id, page=pagination.next_page, per_page=pagination.per_page, query=filters.query, requirement=filters.requirement, status=filters.status) }}" hx-target="#{{ target_id }}" hx-swap="outerHTML" hx-indicator="#{{ loading_id }}" class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>{% else %}<span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>{% endif %}
+            {% if pagination.has_next %}
+                <a href="{{ url_for(detail_endpoint, instance_id=instance.id, tab='validation') }}"
+                   hx-get="{{ url_for(registry_endpoint, instance_id=instance.id, page=pagination.next_page, per_page=pagination.per_page, query=filters.query, requirement=filters.requirement, status=filters.status) }}"
+                   hx-target="#{{ target_id }}"
+                   hx-swap="outerHTML"
+                   hx-indicator="#{{ loading_id }}"
+                   class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(true) }}"
+                      aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+            {% endif %}
         </nav>
     </footer>
-
     {% for row in capability_registry.rows %}
         {% call record_detail_modal.render(
             'alertmanager-capability-detail-' ~ loop.index,
@@ -59,14 +203,12 @@
             icon='scan-search',
             footer_text='Capability details use the latest completed Alertmanager Full Validation evidence.',
             size='standard'
-        ) %}
-            {{ provider_capability_detail.content(
-                row,
-                'Alertmanager',
-                'Alertmanager API v2',
-                'Runnable API Request',
-                'Full Validation owns API v2 contract, routing, silence, and authorization evidence. Runtime Refresh owns current endpoint reachability and provider health; effective alert-consumer resolution remains a separate binding decision.'
-            ) }}
+            ) %}
+            {{ provider_capability_detail.content(row,
+                        'Alertmanager',
+                        'Alertmanager API v2',
+                        'Runnable API Request',
+                        'Full Validation owns API v2 contract, routing, silence, and authorization evidence. Runtime Refresh owns current endpoint reachability and provider health; effective alert-consumer resolution remains a separate binding decision.') }}
         {% endcall %}
     {% endfor %}
 </section>

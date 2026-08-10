@@ -3,11 +3,13 @@
          data-reports-overview-block="estate-capability">
     <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
         <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true">
                 <i data-lucide="database" class="h-5 w-5"></i>
             </span>
             <div class="min-w-0">
-                <h2 id="reporting-estate-capability-title" class="text-base font-bold text-content-primary">Reporting Estate &amp; Capability</h2>
+                <h2 id="reporting-estate-capability-title"
+                    class="text-base font-bold text-content-primary">Reporting Estate &amp; Capability</h2>
                 <p class="mt-1 text-xs leading-5 text-content-muted">Artifact mix, reusable assets, automation, and governed report contracts.</p>
             </div>
         </div>
@@ -24,18 +26,19 @@
             </a>
         </div>
     </header>
-
     <div class="grid lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle">
         <article class="border-b border-outline-subtle px-5 py-5 sm:px-6 lg:border-b-0"
                  aria-labelledby="artifact-estate-title">
             <div class="mb-4 flex items-center justify-between gap-3">
                 <div>
-                    <h3 id="artifact-estate-title" class="text-sm font-bold text-content-primary">Artifact Estate</h3>
+                    <h3 id="artifact-estate-title"
+                        class="text-sm font-bold text-content-primary">Artifact Estate</h3>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Stored footprint and the distribution of available reporting artifacts.</p>
                 </div>
-                <i data-lucide="archive" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                <i data-lucide="archive"
+                   class="h-4 w-4 shrink-0 text-kaori-primary"
+                   aria-hidden="true"></i>
             </div>
-
             <div class="border-y border-outline-subtle py-4">
                 {% set footprint = payload.artifact_statistics[2] %}
                 <div class="flex items-end justify-between gap-4">
@@ -46,7 +49,6 @@
                     <p class="max-w-64 text-right text-xs leading-5 text-content-secondary">{{ footprint.caption }}</p>
                 </div>
             </div>
-
             <div class="mt-5 grid gap-5 sm:grid-cols-2">
                 <div>
                     <p class="text-xs font-bold uppercase tracking-wide text-content-muted">Artifact Families</p>
@@ -54,7 +56,9 @@
                         {% for item in payload.artifact_portfolio.families %}
                             <div class="flex items-center justify-between gap-4 py-2.5">
                                 <span class="inline-flex items-center gap-2 text-sm font-medium text-content-secondary">
-                                    <i data-lucide="{{ item.icon }}" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>
+                                    <i data-lucide="{{ item.icon }}"
+                                       class="h-3.5 w-3.5 text-kaori-primary"
+                                       aria-hidden="true"></i>
                                     {{ item.label }}
                                 </span>
                                 <strong class="text-sm text-content-primary">{{ item.value }}</strong>
@@ -62,7 +66,6 @@
                         {% endfor %}
                     </div>
                 </div>
-
                 <div>
                     <p class="text-xs font-bold uppercase tracking-wide text-content-muted">Output Formats</p>
                     <div class="mt-3 grid grid-cols-3 gap-2">
@@ -73,7 +76,6 @@
                             </div>
                         {% endfor %}
                     </div>
-
                     <div class="mt-4 rounded-xl border border-kaori-primary/20 bg-kaori-soft/55 px-4 py-3"
                          data-output-format-tip="true">
                         <div class="flex items-start gap-3">
@@ -92,17 +94,17 @@
                 </div>
             </div>
         </article>
-
-        <article class="px-5 py-5 sm:px-6"
-                 aria-labelledby="reuse-capability-title">
+        <article class="px-5 py-5 sm:px-6" aria-labelledby="reuse-capability-title">
             <div class="mb-4 flex items-center justify-between gap-3">
                 <div>
-                    <h3 id="reuse-capability-title" class="text-sm font-bold text-content-primary">Reuse &amp; Capability</h3>
+                    <h3 id="reuse-capability-title"
+                        class="text-sm font-bold text-content-primary">Reuse &amp; Capability</h3>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Reusable configuration, automation, and the report contracts exposed to operators.</p>
                 </div>
-                <i data-lucide="blocks" class="h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                <i data-lucide="blocks"
+                   class="h-4 w-4 shrink-0 text-kaori-primary"
+                   aria-hidden="true"></i>
             </div>
-
             <div class="divide-y divide-outline-subtle border-y border-outline-subtle">
                 <div class="flex items-center justify-between gap-4 py-3">
                     <div>
@@ -126,12 +128,12 @@
                     <strong class="text-sm text-content-primary">{{ payload.automation_summary.available_contracts }}</strong>
                 </div>
             </div>
-
             <div class="mt-5 grid gap-3 sm:grid-cols-2">
                 {% for group in payload.reporting_coverage %}
                     <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-4">
                         <div class="flex items-start justify-between gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
                                 <i data-lucide="{{ group.icon }}" class="h-4 w-4"></i>
                             </span>
                             <strong class="text-xl font-bold tracking-tight text-content-primary">{{ group.contract_count }}</strong>

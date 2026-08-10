@@ -197,9 +197,7 @@ def _rendered_html(*, include_forecast: bool = True) -> tuple[object, str, Path]
         _payload(include_forecast=include_forecast),
     )
     project_root = Path(__file__).resolve().parents[2]
-    rendered_html = _environment(project_root).get_template(document.template_name).render(
-        document=document
-    )
+    rendered_html = _environment(project_root).get_template(document.template_name).render(document=document)
     return document, rendered_html, project_root
 
 
@@ -234,9 +232,7 @@ def test_resource_utilization_template_has_no_duplicate_section_copy() -> None:
 
 def test_resource_utilization_methodology_tables_are_separate_and_single_line() -> None:
     _, rendered_html, project_root = _rendered_html()
-    shared = (
-        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css'
-    ).read_text()
+    shared = (project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css').read_text()
     compact = shared.replace(' ', '')
 
     assert 'class="methodology-grid"' in rendered_html
@@ -248,11 +244,10 @@ def test_resource_utilization_methodology_tables_are_separate_and_single_line() 
     assert 'white-space:nowrap' in compact
     assert 'vertical-align:middle' in compact
 
+
 def test_resource_utilization_node_participation_uses_svg_for_weasyprint() -> None:
     _, rendered_html, project_root = _rendered_html()
-    stylesheet = (
-        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'resource_utilization.css'
-    ).read_text()
+    stylesheet = (project_root / 'app' / 'static' / 'reports' / 'pdf' / 'resource_utilization.css').read_text()
 
     assert 'aria-label="Node participation 100 percent"' in rendered_html
     assert '<text x="78" y="76"' in rendered_html
@@ -265,25 +260,11 @@ def test_resource_utilization_weasyprint_layout_is_exactly_nine_a4_pages() -> No
     rendered_document = HTML(string=rendered_html, base_url=str(project_root)).render(
         stylesheets=[
             CSS(
-                filename=str(
-                    project_root
-                    / 'app'
-                    / 'static'
-                    / 'reports'
-                    / 'pdf'
-                    / 'resource_utilization.css'
-                ),
+                filename=str(project_root / 'app' / 'static' / 'reports' / 'pdf' / 'resource_utilization.css'),
                 font_config=font_config,
             ),
             CSS(
-                filename=str(
-                    project_root
-                    / 'app'
-                    / 'static'
-                    / 'reports'
-                    / 'pdf'
-                    / 'analytics_publication.css'
-                ),
+                filename=str(project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css'),
                 font_config=font_config,
             ),
         ],
@@ -311,19 +292,16 @@ def test_resource_utilization_engine_uses_isolated_stylesheet() -> None:
     registry = (
         project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'analytics_publication_standard.py'
     ).read_text()
-    engine = (
-        project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'engine.py'
-    ).read_text()
+    engine = (project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'engine.py').read_text()
 
     assert "'reports/pdf/resource_utilization.html': 'resource_utilization.css'" in registry
     assert 'ANALYTICS_TEMPLATE_STYLESHEETS' in engine
     assert 'ANALYTICS_SHARED_STYLESHEET' in engine
 
+
 def test_resource_utilization_payload_uses_committed_forecast_snapshot() -> None:
     project_root = Path(__file__).resolve().parents[2]
-    source = (
-        project_root / 'app' / 'reports' / 'export' / 'payloads' / 'utilization.py'
-    ).read_text()
+    source = (project_root / 'app' / 'reports' / 'export' / 'payloads' / 'utilization.py').read_text()
 
     assert "dataset_key='analytics.forecast'" in source
     assert 'read_snapshot' in source

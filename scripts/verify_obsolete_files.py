@@ -76,22 +76,24 @@ OBSOLETE_PATHS = (
 
 GENERATED_ROOT_FILES = ('OX.zip',)
 
+
 def main() -> int:
     violations = [path for path in OBSOLETE_PATHS if (ROOT / path).exists()]
     violations.extend(path for path in GENERATED_ROOT_FILES if (ROOT / path).exists())
-    cache_dirs = [path for path in ROOT.rglob("__pycache__") if path.is_dir()]
-    compiled = [*ROOT.rglob("*.pyc"), *ROOT.rglob("*.pyo")]
+    cache_dirs = [path for path in ROOT.rglob('__pycache__') if path.is_dir()]
+    compiled = [*ROOT.rglob('*.pyc'), *ROOT.rglob('*.pyo')]
     if violations or cache_dirs or compiled:
-        print("Obsolete/generated files detected:")
+        print('Obsolete/generated files detected:')
         for path in violations:
-            print(f"- {path}")
+            print(f'- {path}')
         for path in cache_dirs:
-            print(f"- {path.relative_to(ROOT)}")
+            print(f'- {path.relative_to(ROOT)}')
         for path in compiled:
-            print(f"- {path.relative_to(ROOT)}")
+            print(f'- {path.relative_to(ROOT)}')
         return 1
-    print("Obsolete-file audit passed.")
+    print('Obsolete-file audit passed.')
     return 0
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     raise SystemExit(main())

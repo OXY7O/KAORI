@@ -10,8 +10,8 @@ def read(path: str) -> str:
 def test_alertmanager_detail_uses_provider_v2_tabs_without_malformed_alpine_markup():
     content = read('app/templates/alertmanager/instance_detail.html')
     assert 'Bindings & Consumers' in content
-    assert "x-data=\"integrationWorkspaceTabs(" in content
-    assert "x-on:popstate.window=\"syncTab()\"" in content
+    assert 'x-data="integrationWorkspaceTabs(' in content
+    assert 'x-on:popstate.window="syncTab()"' in content
     assert 'integration_workspace_tabs.js' in read('app/templates/layouts/app.html')
     assert "scrollIntoView({ behavior: 'smooth', block: 'start' })); } } }" not in content
 
@@ -35,7 +35,7 @@ def test_alertmanager_validation_uses_kubernetes_style_capability_readiness_and_
     content = read('app/templates/alertmanager/partials/_detail_validation_content.html')
     registry = read('app/templates/alertmanager/partials/_capability_registry.html')
     assert 'Alertmanager Capability Readiness' in content
-    assert "integrations/components/_capability_readiness.html" in content
+    assert 'integrations/components/_capability_readiness.html' in content
     assert 'data-kaori-provider-capability-matrix' in content
     assert 'Validation Decision' not in content
     assert 'Alert Management Capability Registry' in registry
@@ -46,7 +46,7 @@ def test_alertmanager_validation_uses_kubernetes_style_capability_readiness_and_
 def test_alertmanager_runtime_uses_kubernetes_layout_and_history_filters():
     panel = read('app/templates/alertmanager/partials/_runtime_panel.html')
     history = read('app/templates/alertmanager/partials/_runtime_history.html')
-    assert "integrations/components/_runtime_decision.html" in panel
+    assert 'integrations/components/_runtime_decision.html' in panel
     assert 'runtime_decision.render(' in panel
     assert 'Runtime Evidence' in panel
     assert 'data-kaori-alertmanager-runtime-evidence' in panel
@@ -72,6 +72,6 @@ def test_alertmanager_runtime_history_accepts_server_side_filters():
     assert "history_trigger = request.args.get('history_trigger'" in routes
     assert "history_health = request.args.get('history_health'" in routes
     assert "history_readiness = request.args.get('history_readiness'" in routes
-    assert 'trigger_type: str = \'\'' in presentation
-    assert 'health_status: str = \'\'' in presentation
-    assert 'readiness: str = \'\'' in presentation
+    assert "trigger_type: str = ''" in presentation
+    assert "health_status: str = ''" in presentation
+    assert "readiness: str = ''" in presentation

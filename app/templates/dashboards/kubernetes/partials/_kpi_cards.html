@@ -4,20 +4,18 @@
      aria-live="polite">
     {% for kpi in dashboard.global_kpis %}
         {% if kpi.label in ['CPU Usage', 'Memory Usage'] %}
-            {% set source_label = 'Prometheus' %}
+            {% set source_label = "Prometheus" %}
         {% elif kpi.label == 'Active Alerts' %}
-            {% set source_label = 'Alert Signals' %}
+            {% set source_label = "Alert Signals" %}
         {% else %}
-            {% set source_label = 'Inventory' %}
+            {% set source_label = "Inventory" %}
         {% endif %}
         {% set scope_label = 'Fleet' if kpi.label == 'Clusters' else 'Active Scope' %}
-        {{ operational_metric_card.render(
-            label=kpi.label,
-            value=kpi.value,
-            description=kpi.description,
-            icon=kpi.icon,
-            source_label=source_label,
-            scope_label=scope_label
-        ) }}
+        {{ operational_metric_card.render(label=kpi.label,
+                value=kpi.value,
+                description=kpi.description,
+                icon=kpi.icon,
+                source_label=source_label,
+                scope_label=scope_label) }}
     {% endfor %}
 </div>

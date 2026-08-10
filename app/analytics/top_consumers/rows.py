@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any
 
 from app.analytics.common.base_service import raw_percent, safe_round
 from app.analytics.top_consumers.contracts import RESOURCE_ICONS, RESOURCE_LABELS
@@ -88,11 +89,7 @@ def build_compute_rows(
         limit = limit_map.get(key, 0.0)
         request_utilization = raw_percent(current, request) if request > 0 else None
         limit_utilization = raw_percent(current, limit) if limit > 0 else None
-        pressure_values = [
-            value
-            for value in (request_utilization, limit_utilization)
-            if value is not None
-        ]
+        pressure_values = [value for value in (request_utilization, limit_utilization) if value is not None]
         pressure = max(pressure_values) if pressure_values else None
         risk = compute_risk(
             resource_type=resource_type,
@@ -118,11 +115,7 @@ def build_compute_rows(
                     namespace=namespace,
                     resource_type=resource_type,
                     current_usage=current,
-                    current_display=(
-                        format_cpu(current)
-                        if resource_type == 'cpu'
-                        else format_bytes(current)
-                    ),
+                    current_display=(format_cpu(current) if resource_type == 'cpu' else format_bytes(current)),
                     total_usage=scope_total,
                     request=request,
                     request_display=format_resource_value(
@@ -155,9 +148,7 @@ def build_compute_rows(
                     workload_owner_kind=str(owner.get('kind') or ''),
                     request_evidence_available=requests.observed,
                     limit_evidence_available=limits.observed,
-                    denominator_evidence_available=(
-                        requests.observed or limits.observed
-                    ),
+                    denominator_evidence_available=(requests.observed or limits.observed),
                 )
             )
         )
@@ -177,11 +168,7 @@ def build_pod_rows(
         current = sample_value(item)
         if not namespace or current is None:
             continue
-        pressure = (
-            raw_percent(current, capacity.value)
-            if capacity.available and capacity.value > 0
-            else None
-        )
+        pressure = raw_percent(current, capacity.value) if capacity.available and capacity.value > 0 else None
         rows.append(
             build_consumer_row(
                 ConsumerRowSpec(
@@ -202,9 +189,7 @@ def build_pod_rows(
                     request_display='N/A',
                     limit=capacity.value,
                     limit_display=(
-                        f'{int(capacity.value)} Pods'
-                        if capacity.available and capacity.value > 0
-                        else 'N/A'
+                        f'{int(capacity.value)} Pods' if capacity.available and capacity.value > 0 else 'N/A'
                     ),
                     request_utilization=None,
                     limit_utilization=None,
@@ -244,11 +229,7 @@ def build_pvc_rows(
             continue
         denominator = capacity_map.get(pvc_key(metric))
         denominator_available = denominator is not None and denominator > 0
-        pressure = (
-            raw_percent(current, denominator)
-            if denominator_available and denominator is not None
-            else None
-        )
+        pressure = raw_percent(current, denominator) if denominator_available and denominator is not None else None
         rows.append(
             build_consumer_row(
                 ConsumerRowSpec(
@@ -269,9 +250,7 @@ def build_pvc_rows(
                     request_display='N/A',
                     limit=denominator or 0.0,
                     limit_display=(
-                        format_bytes(denominator)
-                        if denominator_available and denominator is not None
-                        else 'N/A'
+                        format_bytes(denominator) if denominator_available and denominator is not None else 'N/A'
                     ),
                     request_utilization=None,
                     limit_utilization=None,
@@ -330,9 +309,7 @@ def build_consumer_row(spec: ConsumerRowSpec) -> dict[str, Any]:
         'limit': spec.limit,
         'limit_display': spec.limit_display,
         'request_utilization': rounded_percent(spec.request_utilization),
-        'request_utilization_display': percent_display(
-            spec.request_utilization
-        ),
+        'request_utilization_display': percent_display(spec.request_utilization),
         'limit_utilization': rounded_percent(spec.limit_utilization),
         'limit_utilization_display': percent_display(spec.limit_utilization),
         'pressure_percent': rounded_percent(spec.pressure_percent),
@@ -340,9 +317,7 @@ def build_consumer_row(spec: ConsumerRowSpec) -> dict[str, Any]:
         'pressure_bar_percent': bar_percent(spec.pressure_percent),
         'pressure_basis': spec.pressure_basis,
         'pressure_available': spec.pressure_percent is not None,
-        'denominator_evidence_available': (
-            spec.denominator_evidence_available
-        ),
+        'denominator_evidence_available': (spec.denominator_evidence_available),
         'request_evidence_available': spec.request_evidence_available,
         'limit_evidence_available': spec.limit_evidence_available,
         'risk': spec.risk,
@@ -399,11 +374,7 @@ def compute_risk(
     if request_observed and request <= 0:
         return semantic_state('critical', 'Request Missing')
     highest = max(
-        [
-            value
-            for value in (request_utilization, limit_utilization)
-            if value is not None
-        ],
+        [value for value in (request_utilization, limit_utilization) if value is not None],
         default=None,
     )
     if highest is not None and highest >= 90:
@@ -429,11 +400,7 @@ def request_state(
         return semantic_state('unknown', 'Not Applicable')
     if not evidence_available:
         return semantic_state('unknown', 'Evidence Unavailable')
-    return (
-        semantic_state('normal', 'Configured')
-        if request > 0
-        else semantic_state('critical', 'Missing')
-    )
+    return semantic_state('normal', 'Configured') if request > 0 else semantic_state('critical', 'Missing')
 
 
 def limit_state(
@@ -452,11 +419,7 @@ def limit_state(
             if limit > 0
             else semantic_state('info', 'Intentionally Unset / Review Policy')
         )
-    return (
-        semantic_state('normal', 'Configured')
-        if limit > 0
-        else semantic_state('warning', 'Missing')
-    )
+    return semantic_state('normal', 'Configured') if limit > 0 else semantic_state('warning', 'Missing')
 
 
 def resource_recommendation(
@@ -585,11 +548,7 @@ def format_bytes(value: float) -> str:
     while size >= 1024 and unit_index < len(units) - 1:
         size /= 1024
         unit_index += 1
-    return (
-        f'{size:.0f} {units[unit_index]}'
-        if unit_index == 0
-        else f'{size:.2f} {units[unit_index]}'
-    )
+    return f'{size:.0f} {units[unit_index]}' if unit_index == 0 else f'{size:.2f} {units[unit_index]}'
 
 
 def format_resource_value(

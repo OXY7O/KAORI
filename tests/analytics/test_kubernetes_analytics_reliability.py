@@ -140,11 +140,9 @@ def test_non_live_context_still_returns_utilization_service(monkeypatch) -> None
         lambda _prometheus: utilization_marker,
     )
 
-    _clusters, selected_cluster, utilization, payload = (
-        analytics_context.build_analysis_utilization_context(
-            {'cluster_id': 'cluster-b', 'time_range': '24h'},
-            check_prometheus_connection=False,
-        )
+    _clusters, selected_cluster, utilization, payload = analytics_context.build_analysis_utilization_context(
+        {'cluster_id': 'cluster-b', 'time_range': '24h'},
+        check_prometheus_connection=False,
     )
 
     assert selected_cluster is cluster

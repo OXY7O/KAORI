@@ -41,7 +41,10 @@ def test_configuration_inventory_uses_canonical_workspace_pattern() -> None:
     assert 'hx-target="#configuration-table-content"' in table
     assert 'name="partial_mode" value="table_content"' in table
     assert 'Age ' not in table
-    assert "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')" in routes
+    assert (
+        "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')"
+        in routes
+    )
     assert not (ROOT / 'app/templates/inventory/configuration/partials/_inventory_scope.html').exists()
 
 

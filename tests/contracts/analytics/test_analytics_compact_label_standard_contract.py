@@ -24,8 +24,8 @@ def test_capacity_pressure_status_is_text_first_and_keeps_semantic_icon_outside_
     pressure_lane = read('app/templates/analytics/components/_resource_pressure_lane.html')
 
     assert "table_label.status_label(resolved_status, resolved_tone, size='compact')" in pressure_lane
-    assert "status_label(resolved_status, resolved_tone, resolved_icon" not in pressure_lane
-    assert "icon=resolved_icon" in pressure_lane
+    assert 'status_label(resolved_status, resolved_tone, resolved_icon' not in pressure_lane
+    assert 'icon=resolved_icon' in pressure_lane
     assert "role='status'" in pressure_lane
 
 
@@ -36,7 +36,7 @@ def test_dense_analytics_record_states_use_semantic_dots() -> None:
     pvc = read('app/templates/analytics/storage/partials/_persistent_volume_claims_panel.html')
     pv = read('app/templates/analytics/storage/partials/_persistent_volumes_panel.html')
 
-    assert "status_indicator_label(alert.status|title" in alerts
+    assert 'status_indicator_label(alert.status|title' in alerts
     assert 'status_indicator_label(row.configuration_status.label' in workloads
     assert 'status_indicator_label(row.metrics_coverage.label' in workloads
     assert 'status_indicator_label(row.quota_status.label' in quotas

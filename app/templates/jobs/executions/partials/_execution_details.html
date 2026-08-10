@@ -1,10 +1,12 @@
 {% import "components/details/_detail_content.html" as detail %}
 {% import "components/table_label.html" as table_label %}
-<div class="{{ detail.expanded_workspace_outer_classes() }}" data-kaori-job-execution-detail>
+<div class="{{ detail.expanded_workspace_outer_classes() }}"
+     data-kaori-job-execution-detail>
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         <header class="{{ detail.expanded_workspace_header_classes() }}">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ detail.expanded_workspace_icon_classes() }}" aria-hidden="true">
+                <span class="{{ detail.expanded_workspace_icon_classes() }}"
+                      aria-hidden="true">
                     <i data-lucide="{{ execution.icon }}" class="h-5 w-5"></i>
                 </span>
                 <div class="min-w-0">
@@ -19,7 +21,6 @@
                 {{ table_label.metadata_label(execution.queue_name, 'workflow') }}
             </div>
         </header>
-
         <div class="grid items-start gap-4 p-4 sm:p-5 lg:grid-cols-2">
             {% call detail.detail_card('Execution Identity', 'fingerprint', badge=execution.workload_label, density='compact') %}
                 {{ detail.technical_row('Execution ID', execution.public_id) }}
@@ -29,7 +30,6 @@
                 {{ detail.detail_row('Priority', execution.priority) }}
                 {{ detail.detail_row('Parent Execution', execution.parent_public_id, break_all=true) }}
             {% endcall %}
-
             {% call detail.detail_card('Scope & Ownership', 'users-round', badge=execution.provider_label, density='compact') %}
                 {{ detail.detail_row('Requested By', execution.requester) }}
                 {{ detail.detail_row('Trigger', execution.trigger_label) }}
@@ -39,7 +39,6 @@
                 {{ detail.detail_row('Scope', execution.scope) }}
                 {{ detail.detail_row('Resource Group', execution.resource_group) }}
             {% endcall %}
-
             {% call detail.detail_card('Lifecycle', 'clock-3', badge=execution.duration, density='compact') %}
                 {{ detail.status_row('Status', execution.status_label, execution.status_tone, execution.status_icon) }}
                 {{ detail.detail_row('Queued', execution.queued_at) }}
@@ -51,7 +50,6 @@
                 {{ detail.detail_row('Last Updated', execution.updated_at) }}
                 {{ detail.detail_row('Attempt', execution.attempt_count ~ ' / ' ~ execution.max_attempts) }}
             {% endcall %}
-
             {% call detail.detail_card('Result & Failure Evidence', 'clipboard-check', badge=execution.result_type, density='compact') %}
                 {{ detail.detail_row('Progress', execution.progress_label) }}
                 {{ detail.stacked_detail_row('Progress Message', execution.progress_message) }}
@@ -60,7 +58,6 @@
                 {{ detail.stacked_detail_row('Error Message', execution.error_message) }}
             {% endcall %}
         </div>
-
         <section class="border-t border-outline-subtle px-4 py-4 sm:px-5">
             <div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>

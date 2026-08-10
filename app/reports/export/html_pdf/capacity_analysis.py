@@ -85,8 +85,7 @@ def build_capacity_analysis_presentation(
     participation = _ratio_percent(ready_nodes, total_nodes)
 
     allocations = {
-        key: _allocation_resource(_mapping(allocation_summary.get(key)), key)
-        for key in ('cpu', 'memory', 'pods')
+        key: _allocation_resource(_mapping(allocation_summary.get(key)), key) for key in ('cpu', 'memory', 'pods')
     }
 
     forecast_items = {
@@ -94,10 +93,7 @@ def build_capacity_analysis_presentation(
         for item in _sequence(forecast_payload.get('items'))
         if isinstance(item, Mapping)
     }
-    projections = {
-        key: _forecast_percent(_mapping(forecast_items.get(key)))
-        for key in ('cpu', 'memory', 'pods')
-    }
+    projections = {key: _forecast_percent(_mapping(forecast_items.get(key))) for key in ('cpu', 'memory', 'pods')}
     forecast_rows = tuple(
         _forecast_row(
             f'T{index}',
@@ -210,7 +206,7 @@ def build_capacity_analysis_presentation(
                 },
             ),
             'interpretation_title': (
-                f"{leading['label']} is the leading committed capacity signal."
+                f'{leading["label"]} is the leading committed capacity signal.'
                 if leading
                 else 'Capacity posture requires committed evidence.'
             ),
@@ -354,9 +350,24 @@ def build_capacity_analysis_presentation(
         },
         'forecast': {
             'metrics': (
-                _metric('CPU Projection', _optional_percent(projections['cpu']), _projection_status(projections['cpu']), _projection_tone(projections['cpu'])),
-                _metric('Memory Projection', _optional_percent(projections['memory']), _projection_status(projections['memory']), _projection_tone(projections['memory'])),
-                _metric('Pod Projection', _optional_percent(projections['pods']), _projection_status(projections['pods']), _projection_tone(projections['pods'])),
+                _metric(
+                    'CPU Projection',
+                    _optional_percent(projections['cpu']),
+                    _projection_status(projections['cpu']),
+                    _projection_tone(projections['cpu']),
+                ),
+                _metric(
+                    'Memory Projection',
+                    _optional_percent(projections['memory']),
+                    _projection_status(projections['memory']),
+                    _projection_tone(projections['memory']),
+                ),
+                _metric(
+                    'Pod Projection',
+                    _optional_percent(projections['pods']),
+                    _projection_status(projections['pods']),
+                    _projection_tone(projections['pods']),
+                ),
                 _metric('Warning Threshold', '70%', 'Operating Band', 'warning'),
             ),
             'chart_svg': forecast_chart,
@@ -390,9 +401,15 @@ def build_capacity_analysis_presentation(
         },
         'recommendations': {
             'metrics': (
-                _metric('P1 Actions', str(p1_count), 'Open' if p1_count else 'None', 'critical' if p1_count else 'normal'),
-                _metric('P2 Actions', str(p2_count), 'Open' if p2_count else 'None', 'warning' if p2_count else 'normal'),
-                _metric('P3 Actions', str(p3_count), 'Planned' if p3_count else 'None', 'info' if p3_count else 'normal'),
+                _metric(
+                    'P1 Actions', str(p1_count), 'Open' if p1_count else 'None', 'critical' if p1_count else 'normal'
+                ),
+                _metric(
+                    'P2 Actions', str(p2_count), 'Open' if p2_count else 'None', 'warning' if p2_count else 'normal'
+                ),
+                _metric(
+                    'P3 Actions', str(p3_count), 'Planned' if p3_count else 'None', 'info' if p3_count else 'normal'
+                ),
                 _metric('Validation Gates', str(len(recommendations)), 'Required', 'info'),
             ),
             'rows': recommendations,
@@ -417,9 +434,24 @@ def build_capacity_analysis_presentation(
         },
         'methodology': {
             'metrics': (
-                _metric('Data Sources', str(len(source_rows)), 'Active' if source_rows else 'Not Available', 'normal' if source_rows else 'muted'),
-                _metric('Coverage', f'{total_nodes} Nodes' if total_nodes else 'Not Available', namespace_scope, 'normal' if total_nodes else 'muted'),
-                _metric('Forecast Method', forecast_method, 'Committed' if forecast_available else 'Optional Evidence', 'info' if forecast_available else 'muted'),
+                _metric(
+                    'Data Sources',
+                    str(len(source_rows)),
+                    'Active' if source_rows else 'Not Available',
+                    'normal' if source_rows else 'muted',
+                ),
+                _metric(
+                    'Coverage',
+                    f'{total_nodes} Nodes' if total_nodes else 'Not Available',
+                    namespace_scope,
+                    'normal' if total_nodes else 'muted',
+                ),
+                _metric(
+                    'Forecast Method',
+                    forecast_method,
+                    'Committed' if forecast_available else 'Optional Evidence',
+                    'info' if forecast_available else 'muted',
+                ),
                 _metric('Observation Boundary', 'Snapshot', 'Committed', 'normal'),
             ),
             'sources': source_rows,
@@ -450,7 +482,8 @@ def build_capacity_analysis_presentation(
                     'title': 'Missing Evidence',
                     'description': 'Unavailable capacity evidence remains explicit and is never converted to zero.',
                 },
-            ),            'included': (
+            ),
+            'included': (
                 'Committed CPU, memory, pod, node, and available storage capacity evidence.',
                 'Committed allocation and headroom evidence.',
                 'Committed forecast endpoints when available.',
@@ -466,10 +499,26 @@ def build_capacity_analysis_presentation(
                 'Validate recommendations against live cluster state before remediation.',
             ),
             'status_language': (
-                {'ref': 'S1', 'title': 'Not Available', 'description': 'No evidence exists for the requested dimension.'},
-                {'ref': 'S2', 'title': 'Not Collected', 'description': 'Collection was prevented by configuration or failure.'},
-                {'ref': 'S3', 'title': 'Partial Coverage', 'description': 'Evidence exists but does not cover the full requested scope.'},
-                {'ref': 'S4', 'title': 'Source Unavailable', 'description': 'The source was unreachable or not providing data at the cut-off.'},
+                {
+                    'ref': 'S1',
+                    'title': 'Not Available',
+                    'description': 'No evidence exists for the requested dimension.',
+                },
+                {
+                    'ref': 'S2',
+                    'title': 'Not Collected',
+                    'description': 'Collection was prevented by configuration or failure.',
+                },
+                {
+                    'ref': 'S3',
+                    'title': 'Partial Coverage',
+                    'description': 'Evidence exists but does not cover the full requested scope.',
+                },
+                {
+                    'ref': 'S4',
+                    'title': 'Source Unavailable',
+                    'description': 'The source was unreachable or not providing data at the cut-off.',
+                },
             ),
         },
     }
@@ -530,7 +579,7 @@ def _capacity_resource(item: Mapping[str, Any], key: str) -> dict[str, Any]:
     used = max(0.0, _float(item.get('used')))
     available = max(0.0, _float(item.get('available')))
     headroom = _float(item.get('headroom')) if evidence_available else None
-    if evidence_available and headroom <= 0 and capacity > 0:
+    if evidence_available and headroom is not None and headroom <= 0 and capacity > 0:
         headroom = max(0.0, min(100.0, available / capacity * 100))
     used_percent = max(0.0, min(100.0, 100.0 - headroom)) if headroom is not None else 0.0
     status, tone = _headroom_status(headroom)
@@ -697,8 +746,12 @@ def _capacity_forecast_chart_svg(
         svg.append(f'<text x="{left - 10}" y="{y + 4:.1f}" text-anchor="end" class="axis">{tick}%</text>')
     for threshold, color in ((70, '#D97706'), (85, '#DC2626')):
         y = point(threshold, left)[1]
-        svg.append(f'<line x1="{left}" y1="{y:.1f}" x2="{left + inner_w}" y2="{y:.1f}" stroke="{color}" stroke-dasharray="5 5"/>')
-    svg.append(f'<line x1="{split_x:.1f}" y1="{top}" x2="{split_x:.1f}" y2="{top + inner_h}" stroke="#A78BFA" stroke-dasharray="4 4"/>')
+        svg.append(
+            f'<line x1="{left}" y1="{y:.1f}" x2="{left + inner_w}" y2="{y:.1f}" stroke="{color}" stroke-dasharray="5 5"/>'
+        )
+    svg.append(
+        f'<line x1="{split_x:.1f}" y1="{top}" x2="{split_x:.1f}" y2="{top + inner_h}" stroke="#A78BFA" stroke-dasharray="4 4"/>'
+    )
 
     endpoint_labels: list[tuple[str, float]] = []
     endpoint_meta: dict[str, tuple[float, str, float]] = {}
@@ -721,7 +774,10 @@ def _capacity_forecast_chart_svg(
         if projected is not None:
             future_values = projection_points or [projected]
             future_values = future_values[-8:]
-            future_xs = [split_x + (left + inner_w - split_x) * (index + 1) / len(future_values) for index in range(len(future_values))]
+            future_xs = [
+                split_x + (left + inner_w - split_x) * (index + 1) / len(future_values)
+                for index in range(len(future_values))
+            ]
             future_points = [point(value, x) for x, value in zip(future_xs, future_values)]
             start_point = point(current, split_x)
             svg.append(
@@ -744,8 +800,12 @@ def _capacity_forecast_chart_svg(
     label_x = width - 76
     for key, label_y in resolved_labels.items():
         end_x, color, projected = endpoint_meta[key]
-        svg.append(f'<path d="M {end_x+3:.1f} {point_y[key]:.1f} L {label_x-7:.1f} {label_y:.1f}" fill="none" stroke="{color}" stroke-width="1" opacity=".75"/>')
-        svg.append(f'<text x="{label_x:.1f}" y="{label_y+4:.1f}" style="font:11px Inter,sans-serif;font-weight:700;fill:{color}">{key.title()} {projected:.1f}%</text>')
+        svg.append(
+            f'<path d="M {end_x + 3:.1f} {point_y[key]:.1f} L {label_x - 7:.1f} {label_y:.1f}" fill="none" stroke="{color}" stroke-width="1" opacity=".75"/>'
+        )
+        svg.append(
+            f'<text x="{label_x:.1f}" y="{label_y + 4:.1f}" style="font:11px Inter,sans-serif;font-weight:700;fill:{color}">{key.title()} {projected:.1f}%</text>'
+        )
 
     svg.extend(
         [
@@ -781,10 +841,10 @@ def _participation_donut_svg(percent: float, ready_nodes: int, total_nodes: int)
             'transform="rotate(-90 78 78)"/>'
         )
     label = f'{ready_nodes} / {total_nodes}' if total_nodes else 'N/A'
-    return f'''<svg viewBox="0 0 156 156" role="img" aria-label="Node participation {value:.0f} percent">
+    return f"""<svg viewBox="0 0 156 156" role="img" aria-label="Node participation {value:.0f} percent">
 <circle cx="78" cy="78" r="52" fill="none" stroke="#E2E8F0" stroke-width="18"/>{progress}
 <text x="78" y="75" text-anchor="middle" font-family="Inter, sans-serif" font-size="22" font-weight="700" fill="#1E293B">{escape(label)}</text>
-<text x="78" y="94" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#475569">Ready Nodes</text></svg>'''
+<text x="78" y="94" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" fill="#475569">Ready Nodes</text></svg>"""
 
 
 def _compute_register_row(
@@ -817,8 +877,8 @@ def _executive_interpretation(
     if leading is None:
         return 'Committed capacity evidence was not available for the selected reporting boundary.'
     text = (
-        f"{leading['label']} is the highest available utilization signal at "
-        f"{leading['used_display']} with {leading['headroom_display']} remaining headroom."
+        f'{leading["label"]} is the highest available utilization signal at '
+        f'{leading["used_display"]} with {leading["headroom_display"]} remaining headroom.'
     )
     if evidence_gap_count:
         text += f' {evidence_gap_count} resource domain(s) remain unavailable and must not be interpreted as healthy.'
@@ -992,7 +1052,11 @@ def _recommendation_rows(
         title = sanitize_text(card.get('title'), fallback='Review Capacity Evidence')
         description = sanitize_text(card.get('description'), fallback='Validate the committed capacity evidence.')
         priority = _priority_code(card.get('priority'))
-        owner = 'Observability Owner' if 'coverage' in title.lower() or 'prometheus' in title.lower() else 'Platform Operations'
+        owner = (
+            'Observability Owner'
+            if 'coverage' in title.lower() or 'prometheus' in title.lower()
+            else 'Platform Operations'
+        )
         rows.append(
             {
                 'ref': f'A{len(rows) + 1}',

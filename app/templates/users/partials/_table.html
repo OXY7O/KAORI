@@ -24,16 +24,20 @@
                 <tr class="{{ table_ui.row_classes() }}">
                     <td class="{{ table_ui.cell_classes() }}">
                         <div class="flex min-w-[15rem] items-start gap-2.5">
-                            <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary" aria-hidden="true">
-                                <i data-lucide="{{ 'shield-check' if user.is_super_admin else 'shield' if user.role_name == 'admin' else 'user' }}" class="h-4 w-4"></i>
+                            <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="{{ 'shield-check' if user.is_super_admin else 'shield' if user.role_name == 'admin' else 'user' }}"
+                                   class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-1.5">
-                                    <p class="truncate text-sm font-semibold text-content-primary" title="{{ user.display_label }}">{{ user.display_label }}</p>
+                                    <p class="truncate text-sm font-semibold text-content-primary"
+                                       title="{{ user.display_label }}">{{ user.display_label }}</p>
                                     {% if user.is_super_admin %}{{ table_label.special_label('Emergency Access', 'maintenance', 'shield-check') }}{% endif %}
                                     {% if not user.has_display_name %}{{ table_label.metadata_label('Username Label', icon='user-round') }}{% endif %}
                                 </div>
-                                <p class="mt-1 max-w-[24rem] truncate text-xs text-content-muted" title="{{ user.username }} · {{ user.email }}">{{ user.username }} · {{ user.email }}</p>
+                                <p class="mt-1 max-w-[24rem] truncate text-xs text-content-muted"
+                                   title="{{ user.username }} · {{ user.email }}">{{ user.username }} · {{ user.email }}</p>
                             </div>
                         </div>
                     </td>
@@ -45,11 +49,12 @@
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(user_view.source.label, icon=user_view.source.icon) }}</td>
                     <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(user_view.lifecycle.label, user_view.lifecycle.tone, user_view.lifecycle.icon) }}</td>
-                    <td class="{{ table_ui.cell_classes() }}"><span class="text-sm text-content-secondary">{{ user.last_login_at|user_datetime('Never') }}</span></td>
+                    <td class="{{ table_ui.cell_classes() }}"><span class="text-sm text-content-secondary">{{ user.last_login_at|user_datetime("Never") }}</span></td>
                     <td class="{{ table_ui.cell_classes(action=true) }}">
                         <div class="flex justify-end gap-2">
                             {% if actions.get('can_edit') %}
-                                <a href="{{ url_for('users.edit', user_id=user.id) }}" class="{{ table_ui.action_classes() }}">
+                                <a href="{{ url_for('users.edit', user_id=user.id) }}"
+                                   class="{{ table_ui.action_classes() }}">
                                     <i data-lucide="pencil" class="h-3.5 w-3.5" aria-hidden="true"></i>Edit
                                 </a>
                             {% endif %}
@@ -75,7 +80,6 @@
         </tbody>
     </table>
 </div>
-
 <div class="{{ pagination_ui.footer_classes() }}">
     <div class="{{ pagination_ui.summary_group_classes() }}">
         <span class="font-medium text-content-secondary">
@@ -97,9 +101,12 @@
             <input type="hidden" name="auth_source" value="{{ filters.auth_source }}">
             <input type="hidden" name="role_id" value="{{ filters.role_id or 'all' }}">
             <span class="text-xs font-semibold text-content-secondary">Rows</span>
-            <select name="per_page" aria-label="Rows Per Page" class="{{ pagination_ui.page_size_classes() }}">
+            <select name="per_page"
+                    aria-label="Rows Per Page"
+                    class="{{ pagination_ui.page_size_classes() }}">
                 {% for option in per_page_options %}
-                    <option value="{{ option }}" {% if filters.per_page == option %}selected{% endif %}>{{ option }}</option>
+                    <option value="{{ option }}"
+                            {% if filters.per_page == option %}selected{% endif %}>{{ option }}</option>
                 {% endfor %}
             </select>
         </form>
@@ -108,29 +115,33 @@
         {% if pagination.has_prev %}
             <a href="{{ url_for('users.index', page=pagination.prev_page, **pagination_query) }}"
                hx-get="{{ url_for('users.index', page=pagination.prev_page, **pagination_query) }}"
-               hx-target="#users-page-content" hx-swap="outerHTML settle:150ms" hx-push-url="true" hx-indicator="#users-refresh-indicator"
+               hx-target="#users-page-content"
+               hx-swap="outerHTML settle:150ms"
+               hx-push-url="true"
+               hx-indicator="#users-refresh-indicator"
                class="{{ pagination_ui.navigation_classes() }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
         {% else %}
-            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"
+                  aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
         {% endif %}
-
-        {{ pagination_ui.numeric_pages(
-            pagination.page,
-            pagination.total_pages,
-            hx_target='#users-page-content',
-            hx_indicator='#users-refresh-indicator',
-            endpoint='users.index',
-            query_params=pagination_query,
-            hx_swap='outerHTML settle:150ms'
-        ) }}
-
+        {{ pagination_ui.numeric_pages(pagination.page,
+                pagination.total_pages,
+                hx_target='#users-page-content',
+                hx_indicator='#users-refresh-indicator',
+                endpoint='users.index',
+                query_params=pagination_query,
+                hx_swap='outerHTML settle:150ms') }}
         {% if pagination.has_next %}
             <a href="{{ url_for('users.index', page=pagination.next_page, **pagination_query) }}"
                hx-get="{{ url_for('users.index', page=pagination.next_page, **pagination_query) }}"
-               hx-target="#users-page-content" hx-swap="outerHTML settle:150ms" hx-push-url="true" hx-indicator="#users-refresh-indicator"
+               hx-target="#users-page-content"
+               hx-swap="outerHTML settle:150ms"
+               hx-push-url="true"
+               hx-indicator="#users-refresh-indicator"
                class="{{ pagination_ui.navigation_classes() }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
         {% else %}
-            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"
+                  aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
         {% endif %}
     </div>
 </div>

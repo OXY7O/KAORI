@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 from app.analytics.common.base_service import raw_percent, safe_round
 from app.analytics.storage.evidence import (
@@ -150,9 +151,7 @@ def build_storage_payload(evidence: StorageEvidence) -> dict[str, Any]:
                 'query_observed': filesystem_observed,
                 'selected_node': '',
                 'available_nodes': sorted(
-                    str(row.get('node') or '')
-                    for row in filesystem_rows
-                    if str(row.get('node') or '')
+                    str(row.get('node') or '') for row in filesystem_rows if str(row.get('node') or '')
                 ),
                 'scope_label': 'All Nodes',
                 'summary': filesystem_summary,
@@ -196,8 +195,12 @@ def build_filesystem_rows(evidence: StorageEvidence) -> list[dict[str, Any]]:
         capacity_available = size is not None and size > 0
         free_available = available is not None and available >= 0
         complete = capacity_available and free_available
-        used = max(size - available, 0.0) if complete else None
-        usage_percent = raw_percent(used, size) if complete and used is not None else None
+        if size is not None and available is not None and capacity_available and free_available:
+            used = max(size - available, 0.0)
+            usage_percent = raw_percent(used, size)
+        else:
+            used = None
+            usage_percent = None
         rows.append(
             {
                 'node': node,
@@ -205,11 +208,7 @@ def build_filesystem_rows(evidence: StorageEvidence) -> list[dict[str, Any]]:
                 'capacity': format_storage_bytes(size, available=capacity_available),
                 'used': format_storage_bytes(used, available=complete),
                 'free': format_storage_bytes(available, available=complete),
-                'usage_percent': (
-                    safe_round(usage_percent, 1)
-                    if usage_percent is not None
-                    else None
-                ),
+                'usage_percent': (safe_round(usage_percent, 1) if usage_percent is not None else None),
                 'risk': pressure_risk(usage_percent),
                 'evidence_available': complete,
                 'capacity_evidence_available': capacity_available,
@@ -248,14 +247,7 @@ def build_pvc_rows(evidence: StorageEvidence) -> list[dict[str, Any]]:
     available = claim_numeric_map(evidence.pvc_available)
     status = claim_phase_map(evidence.pvc_status)
     info = pvc_info_map(evidence.pvc_info)
-    keys = (
-        set(requested)
-        | set(capacity)
-        | set(used)
-        | set(available)
-        | set(status)
-        | set(info)
-    )
+    keys = set(requested) | set(capacity) | set(used) | set(available) | set(status) | set(info)
     rows: list[dict[str, Any]] = []
 
     for key in sorted(keys):
@@ -290,8 +282,7 @@ def build_pvc_rows(evidence: StorageEvidence) -> list[dict[str, Any]]:
                 'status': lifecycle,
                 'status_tone': pvc_status_tone(lifecycle),
                 'storage_class': str(
-                    metadata.get('storage_class')
-                    or ('No StorageClass' if evidence.pvc_info.observed else 'Unknown')
+                    metadata.get('storage_class') or ('No StorageClass' if evidence.pvc_info.observed else 'Unknown')
                 ),
                 'volume_name': str(metadata.get('volume_name') or '-'),
                 'requested': format_storage_bytes(
@@ -312,11 +303,7 @@ def build_pvc_rows(evidence: StorageEvidence) -> list[dict[str, Any]]:
                 'capacity_bytes': capacity_value if capacity_known else None,
                 'used_bytes': used_value if used_known else None,
                 'free_bytes': free_value,
-                'usage_percent': (
-                    safe_round(usage_percent, 1)
-                    if usage_percent is not None
-                    else None
-                ),
+                'usage_percent': (safe_round(usage_percent, 1) if usage_percent is not None else None),
                 'evidence_available': pressure_available,
                 'risk': pvc_risk(
                     lifecycle,
@@ -353,8 +340,7 @@ def build_pv_rows(evidence: StorageEvidence) -> list[dict[str, Any]]:
                 'capacity_bytes': capacity if capacity_known else None,
                 'evidence_available': capacity_known,
                 'storage_class': str(
-                    metadata.get('storage_class')
-                    or ('No StorageClass' if evidence.pv_info.observed else 'Unknown')
+                    metadata.get('storage_class') or ('No StorageClass' if evidence.pv_info.observed else 'Unknown')
                 ),
                 'claim': claim_map.get(volume, '-'),
                 'reclaim_policy': str(metadata.get('reclaim_policy') or '-'),
@@ -369,14 +355,10 @@ def build_namespace_options(
     pvc_rows: list[dict[str, Any]],
 ) -> list[str]:
     values = {
-        str(sample_metric(row).get('namespace') or '').strip()
-        for row in namespaces.rows
-        if sample_value(row) == 1
+        str(sample_metric(row).get('namespace') or '').strip() for row in namespaces.rows if sample_value(row) == 1
     }
     values.update(
-        str(row.get('namespace') or '').strip()
-        for row in pvc_rows
-        if str(row.get('namespace') or '').strip()
+        str(row.get('namespace') or '').strip() for row in pvc_rows if str(row.get('namespace') or '').strip()
     )
     return sorted(value for value in values if value)
 
@@ -396,16 +378,10 @@ def summarize_filesystem(
         default=None,
     )
     evidence_available = bool(complete_rows) and total_capacity > 0
-    usage_percent = (
-        raw_percent(total_used, total_capacity) if evidence_available else None
-    )
-    free_percent = (
-        raw_percent(total_free, total_capacity) if evidence_available else None
-    )
+    usage_percent = raw_percent(total_used, total_capacity) if evidence_available else None
+    free_percent = raw_percent(total_free, total_capacity) if evidence_available else None
     incomplete_count = len(rows) - len(complete_rows)
-    risk = pressure_risk(
-        float(highest['usage_percent']) if highest is not None else None
-    )
+    risk = pressure_risk(float(highest['usage_percent']) if highest is not None else None)
     return {
         'query_observed': query_observed,
         'evidence_available': evidence_available,
@@ -419,15 +395,9 @@ def summarize_filesystem(
         ),
         'used': format_storage_bytes(total_used, available=evidence_available),
         'free': format_storage_bytes(total_free, available=evidence_available),
-        'usage_percent': (
-            safe_round(usage_percent, 1) if usage_percent is not None else None
-        ),
-        'free_percent': (
-            safe_round(free_percent, 1) if free_percent is not None else None
-        ),
-        'highest_usage': (
-            float(highest['usage_percent']) if highest is not None else None
-        ),
+        'usage_percent': (safe_round(usage_percent, 1) if usage_percent is not None else None),
+        'free_percent': (safe_round(free_percent, 1) if free_percent is not None else None),
+        'highest_usage': (float(highest['usage_percent']) if highest is not None else None),
         'highest_node': str(highest.get('node') or '-') if highest else '-',
         'highest_mountpoint': str(highest.get('mountpoint') or '-') if highest else '-',
         'risk': risk,
@@ -444,20 +414,11 @@ def summarize_pvc(
     inventory_available = inventory_observed or bool(rows)
     count = len(rows)
 
-    requested_rows = [
-        row for row in rows if row.get('requested_bytes') is not None
-    ]
-    capacity_rows = [
-        row for row in rows if row.get('capacity_bytes') is not None
-    ]
+    requested_rows = [row for row in rows if row.get('requested_bytes') is not None]
+    capacity_rows = [row for row in rows if row.get('capacity_bytes') is not None]
     used_rows = [row for row in rows if row.get('used_bytes') is not None]
     free_rows = [row for row in rows if row.get('free_bytes') is not None]
-    pressure_rows = [
-        row
-        for row in rows
-        if row.get('capacity_bytes') is not None
-        and row.get('used_bytes') is not None
-    ]
+    pressure_rows = [row for row in rows if row.get('capacity_bytes') is not None and row.get('used_bytes') is not None]
 
     requested_observed_count = len(requested_rows)
     capacity_observed_count = len(capacity_rows)
@@ -470,16 +431,14 @@ def summarize_pvc(
     used_complete = inventory_available and used_observed_count == count
     free_complete = inventory_available and free_observed_count == count
     pressure_complete = inventory_available and pressure_observed_count == count
-    lifecycle_complete = inventory_available and status_observed and all(
-        str(row.get('status') or 'Unknown') != 'Unknown' for row in rows
+    lifecycle_complete = (
+        inventory_available
+        and status_observed
+        and all(str(row.get('status') or 'Unknown') != 'Unknown' for row in rows)
     )
 
-    requested_available = inventory_available and (
-        count == 0 or requested_observed_count > 0
-    )
-    capacity_available = inventory_available and (
-        count == 0 or capacity_observed_count > 0
-    )
+    requested_available = inventory_available and (count == 0 or requested_observed_count > 0)
+    capacity_available = inventory_available and (count == 0 or capacity_observed_count > 0)
     used_available = inventory_available and (count == 0 or used_observed_count > 0)
     free_available = inventory_available and (count == 0 or free_observed_count > 0)
 
@@ -491,32 +450,16 @@ def summarize_pvc(
     pressure_capacity_total = _sum_known(pressure_rows, 'capacity_bytes')
     pressure_used_total = _sum_known(pressure_rows, 'used_bytes')
     pressure_free_total = sum(
-        max(float(row['capacity_bytes']) - float(row['used_bytes']), 0.0)
-        for row in pressure_rows
+        max(float(row['capacity_bytes']) - float(row['used_bytes']), 0.0) for row in pressure_rows
     )
-    pressure_available = (
-        pressure_observed_count > 0 and pressure_capacity_total > 0
-    )
-    used_percent = (
-        raw_percent(pressure_used_total, pressure_capacity_total)
-        if pressure_available
-        else None
-    )
-    free_percent = (
-        raw_percent(pressure_free_total, pressure_capacity_total)
-        if pressure_available
-        else None
-    )
+    pressure_available = pressure_observed_count > 0 and pressure_capacity_total > 0
+    used_percent = raw_percent(pressure_used_total, pressure_capacity_total) if pressure_available else None
+    free_percent = raw_percent(pressure_free_total, pressure_capacity_total) if pressure_available else None
 
     risk = _highest_row_risk(rows)
     if count == 0 and inventory_available:
         risk = {'label': 'No Claims', 'tone': 'info'}
-    elif (
-        inventory_available
-        and count > 0
-        and risk['tone'] not in {'critical', 'warning'}
-        and not pressure_complete
-    ):
+    elif inventory_available and count > 0 and risk['tone'] not in {'critical', 'warning'} and not pressure_complete:
         risk = {'label': 'Limited Evidence', 'tone': 'unknown'}
 
     evidence_gap_count = max(count - pressure_observed_count, 0)
@@ -534,11 +477,7 @@ def summarize_pvc(
         'free_evidence_complete': free_complete,
         'pressure_evidence_complete': pressure_complete,
         'evidence_available': pressure_available,
-        'evidence_complete': (
-            inventory_available
-            and lifecycle_complete
-            and (count == 0 or pressure_complete)
-        ),
+        'evidence_complete': (inventory_available and lifecycle_complete and (count == 0 or pressure_complete)),
         'has_resources': count > 0,
         'count': count,
         'count_display': str(count) if inventory_available else 'N/A',
@@ -549,36 +488,16 @@ def summarize_pvc(
         'free_observed_count': free_observed_count,
         'pressure_observed_count': pressure_observed_count,
         'evidence_gap_count': evidence_gap_count,
-        'requested_coverage_percent': _coverage_percent(
-            requested_observed_count, count, inventory_available
-        ),
-        'capacity_coverage_percent': _coverage_percent(
-            capacity_observed_count, count, inventory_available
-        ),
-        'used_coverage_percent': _coverage_percent(
-            used_observed_count, count, inventory_available
-        ),
-        'free_coverage_percent': _coverage_percent(
-            free_observed_count, count, inventory_available
-        ),
-        'pressure_coverage_percent': _coverage_percent(
-            pressure_observed_count, count, inventory_available
-        ),
-        'requested_coverage_display': _coverage_display(
-            requested_observed_count, count, inventory_available
-        ),
-        'capacity_coverage_display': _coverage_display(
-            capacity_observed_count, count, inventory_available
-        ),
-        'used_coverage_display': _coverage_display(
-            used_observed_count, count, inventory_available
-        ),
-        'free_coverage_display': _coverage_display(
-            free_observed_count, count, inventory_available
-        ),
-        'pressure_coverage_display': _coverage_display(
-            pressure_observed_count, count, inventory_available
-        ),
+        'requested_coverage_percent': _coverage_percent(requested_observed_count, count, inventory_available),
+        'capacity_coverage_percent': _coverage_percent(capacity_observed_count, count, inventory_available),
+        'used_coverage_percent': _coverage_percent(used_observed_count, count, inventory_available),
+        'free_coverage_percent': _coverage_percent(free_observed_count, count, inventory_available),
+        'pressure_coverage_percent': _coverage_percent(pressure_observed_count, count, inventory_available),
+        'requested_coverage_display': _coverage_display(requested_observed_count, count, inventory_available),
+        'capacity_coverage_display': _coverage_display(capacity_observed_count, count, inventory_available),
+        'used_coverage_display': _coverage_display(used_observed_count, count, inventory_available),
+        'free_coverage_display': _coverage_display(free_observed_count, count, inventory_available),
+        'pressure_coverage_display': _coverage_display(pressure_observed_count, count, inventory_available),
         'requested': format_storage_bytes(
             requested_total,
             available=requested_available,
@@ -601,12 +520,8 @@ def summarize_pvc(
             pressure_free_total,
             available=pressure_available,
         ),
-        'used_percent': (
-            safe_round(used_percent, 1) if used_percent is not None else None
-        ),
-        'free_percent': (
-            safe_round(free_percent, 1) if free_percent is not None else None
-        ),
+        'used_percent': (safe_round(used_percent, 1) if used_percent is not None else None),
+        'free_percent': (safe_round(free_percent, 1) if free_percent is not None else None),
         'scope_label': scope_label,
         'risk': risk,
         'critical_count': _count_risk(rows, 'critical'),
@@ -647,59 +562,39 @@ def summarize_pv(
 ) -> dict[str, Any]:
     inventory_available = inventory_observed or bool(rows)
     count = len(rows)
-    capacity_rows = [
-        row for row in rows if row.get('capacity_bytes') is not None
-    ]
+    capacity_rows = [row for row in rows if row.get('capacity_bytes') is not None]
     capacity_observed_count = len(capacity_rows)
-    capacity_available = inventory_available and (
-        count == 0 or capacity_observed_count > 0
-    )
-    capacity_complete = (
-        inventory_available and capacity_observed_count == count
-    )
-    lifecycle_complete = inventory_available and status_observed and all(
-        str(row.get('status') or 'Unknown') != 'Unknown' for row in rows
+    capacity_available = inventory_available and (count == 0 or capacity_observed_count > 0)
+    capacity_complete = inventory_available and capacity_observed_count == count
+    lifecycle_complete = (
+        inventory_available
+        and status_observed
+        and all(str(row.get('status') or 'Unknown') != 'Unknown' for row in rows)
     )
     capacity_total = _sum_known(capacity_rows, 'capacity_bytes')
 
     claims = claim_rows or []
     claims_observed = claim_inventory_observed or bool(claims)
     claim_count = len(claims)
-    requested_rows = [
-        row for row in claims if row.get('requested_bytes') is not None
-    ]
-    used_rows = [
-        row for row in claims if row.get('used_bytes') is not None
-    ]
+    requested_rows = [row for row in claims if row.get('requested_bytes') is not None]
+    used_rows = [row for row in claims if row.get('used_bytes') is not None]
     requested_observed_count = len(requested_rows)
     used_observed_count = len(used_rows)
-    requested_available = claims_observed and (
-        claim_count == 0 or requested_observed_count > 0
-    )
-    used_available = claims_observed and (
-        claim_count == 0 or used_observed_count > 0
-    )
-    requested_complete = (
-        claims_observed and requested_observed_count == claim_count
-    )
+    requested_available = claims_observed and (claim_count == 0 or requested_observed_count > 0)
+    used_available = claims_observed and (claim_count == 0 or used_observed_count > 0)
+    requested_complete = claims_observed and requested_observed_count == claim_count
     used_complete = claims_observed and used_observed_count == claim_count
     requested_total = _sum_known(requested_rows, 'requested_bytes')
     used_total = _sum_known(used_rows, 'used_bytes')
 
-    unallocated = (
-        max(capacity_total - requested_total, 0.0)
-        if capacity_complete and requested_complete
-        else None
-    )
+    unallocated = max(capacity_total - requested_total, 0.0) if capacity_complete and requested_complete else None
     requested_percent = (
         raw_percent(requested_total, capacity_total)
         if capacity_complete and requested_complete and capacity_total > 0
         else None
     )
     usage_percent = (
-        raw_percent(used_total, capacity_total)
-        if capacity_complete and used_complete and capacity_total > 0
-        else None
+        raw_percent(used_total, capacity_total) if capacity_complete and used_complete and capacity_total > 0 else None
     )
     risk = _highest_row_risk(rows)
     if count == 0 and inventory_available:
@@ -716,13 +611,9 @@ def summarize_pv(
         'requested_claim_evidence_complete': requested_complete,
         'observed_claim_usage_evidence_available': used_available,
         'observed_claim_usage_evidence_complete': used_complete,
-        'unallocated_evidence_available': (
-            capacity_complete and requested_complete
-        ),
+        'unallocated_evidence_available': (capacity_complete and requested_complete),
         'evidence_available': capacity_available,
-        'evidence_complete': (
-            inventory_available and lifecycle_complete and capacity_complete
-        ),
+        'evidence_complete': (inventory_available and lifecycle_complete and capacity_complete),
         'has_resources': count > 0,
         'count': count,
         'count_display': str(count) if inventory_available else 'N/A',
@@ -768,13 +659,9 @@ def summarize_pv(
             unallocated,
             available=unallocated is not None,
         ),
-        'claim_usage_vs_provisioned_percent': (
-            safe_round(usage_percent, 1) if usage_percent is not None else None
-        ),
+        'claim_usage_vs_provisioned_percent': (safe_round(usage_percent, 1) if usage_percent is not None else None),
         'requested_vs_provisioned_percent': (
-            safe_round(requested_percent, 1)
-            if requested_percent is not None
-            else None
+            safe_round(requested_percent, 1) if requested_percent is not None else None
         ),
         'scope_label': 'Cluster',
         'risk': risk,
@@ -789,21 +676,15 @@ def build_storage_posture(
     pvc: dict[str, Any],
     pv: dict[str, Any],
 ) -> dict[str, Any]:
-    critical_count = sum(
-        int(item.get('critical_count') or 0) for item in (pvc, pv)
-    ) + (1 if filesystem.get('risk', {}).get('tone') == 'critical' else 0)
-    warning_count = sum(
-        int(item.get('warning_count') or 0) for item in (pvc, pv)
-    ) + (1 if filesystem.get('risk', {}).get('tone') == 'warning' else 0)
-    complete_domains = sum(
-        bool(item.get('evidence_complete')) for item in (filesystem, pvc, pv)
+    critical_count = sum(int(item.get('critical_count') or 0) for item in (pvc, pv)) + (
+        1 if filesystem.get('risk', {}).get('tone') == 'critical' else 0
     )
+    warning_count = sum(int(item.get('warning_count') or 0) for item in (pvc, pv)) + (
+        1 if filesystem.get('risk', {}).get('tone') == 'warning' else 0
+    )
+    complete_domains = sum(bool(item.get('evidence_complete')) for item in (filesystem, pvc, pv))
     observed_domains = sum(
-        bool(
-            item.get('query_observed')
-            or item.get('inventory_evidence_available')
-            or item.get('evidence_available')
-        )
+        bool(item.get('query_observed') or item.get('inventory_evidence_available') or item.get('evidence_available'))
         for item in (filesystem, pvc, pv)
     )
 
@@ -890,15 +771,11 @@ def _sum_known(rows: Iterable[dict[str, Any]], key: str) -> float:
 
 
 def _count_risk(rows: Iterable[dict[str, Any]], tone: str) -> int:
-    return sum(
-        1
-        for row in rows
-        if isinstance(row.get('risk'), dict) and row['risk'].get('tone') == tone
-    )
+    return sum(1 for row in rows if isinstance(row.get('risk'), dict) and row['risk'].get('tone') == tone)
 
 
 def _highest_row_risk(rows: list[dict[str, Any]]) -> dict[str, str]:
-    risks = [row.get('risk') for row in rows if isinstance(row.get('risk'), dict)]
+    risks = [risk for row in rows if isinstance((risk := row.get('risk')), dict)]
     for tone, label in (
         ('critical', 'Critical'),
         ('warning', 'Watch'),

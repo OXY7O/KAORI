@@ -13,44 +13,24 @@ STORAGE_QUERY_CAPABILITIES = (
     'kubernetes_identity',
 )
 
-NAMESPACE_ACTIVE_QUERY = get_query_expression(
-    'analytics.storage.queries.NAMESPACE_ACTIVE_QUERY'
-)
+NAMESPACE_ACTIVE_QUERY = get_query_expression('analytics.storage.queries.NAMESPACE_ACTIVE_QUERY')
 NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY = get_query_expression(
     'analytics.storage.queries.NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY'
 )
-NODE_ROOT_FILESYSTEM_SIZE_QUERY = get_query_expression(
-    'analytics.storage.queries.NODE_ROOT_FILESYSTEM_SIZE_QUERY'
-)
+NODE_ROOT_FILESYSTEM_SIZE_QUERY = get_query_expression('analytics.storage.queries.NODE_ROOT_FILESYSTEM_SIZE_QUERY')
 NODE_VAR_FILESYSTEM_AVAILABLE_QUERY = get_query_expression(
     'analytics.storage.queries.NODE_VAR_FILESYSTEM_AVAILABLE_QUERY'
 )
-NODE_VAR_FILESYSTEM_SIZE_QUERY = get_query_expression(
-    'analytics.storage.queries.NODE_VAR_FILESYSTEM_SIZE_QUERY'
-)
-PVC_AVAILABLE_BY_CLAIM_QUERY = get_query_expression(
-    'analytics.storage.queries.PVC_AVAILABLE_BY_CLAIM_QUERY'
-)
-PVC_CAPACITY_BY_CLAIM_QUERY = get_query_expression(
-    'analytics.storage.queries.PVC_CAPACITY_BY_CLAIM_QUERY'
-)
+NODE_VAR_FILESYSTEM_SIZE_QUERY = get_query_expression('analytics.storage.queries.NODE_VAR_FILESYSTEM_SIZE_QUERY')
+PVC_AVAILABLE_BY_CLAIM_QUERY = get_query_expression('analytics.storage.queries.PVC_AVAILABLE_BY_CLAIM_QUERY')
+PVC_CAPACITY_BY_CLAIM_QUERY = get_query_expression('analytics.storage.queries.PVC_CAPACITY_BY_CLAIM_QUERY')
 PVC_INFO_QUERY = get_query_expression('analytics.storage.queries.PVC_INFO_QUERY')
-PVC_REQUESTED_BY_CLAIM_QUERY = get_query_expression(
-    'analytics.storage.queries.PVC_REQUESTED_BY_CLAIM_QUERY'
-)
-PVC_STATUS_BY_CLAIM_QUERY = get_query_expression(
-    'analytics.storage.queries.PVC_STATUS_BY_CLAIM_QUERY'
-)
-PVC_USED_BY_CLAIM_QUERY = get_query_expression(
-    'analytics.storage.queries.PVC_USED_BY_CLAIM_QUERY'
-)
-PV_CAPACITY_BY_VOLUME_QUERY = get_query_expression(
-    'analytics.storage.queries.PV_CAPACITY_BY_VOLUME_QUERY'
-)
+PVC_REQUESTED_BY_CLAIM_QUERY = get_query_expression('analytics.storage.queries.PVC_REQUESTED_BY_CLAIM_QUERY')
+PVC_STATUS_BY_CLAIM_QUERY = get_query_expression('analytics.storage.queries.PVC_STATUS_BY_CLAIM_QUERY')
+PVC_USED_BY_CLAIM_QUERY = get_query_expression('analytics.storage.queries.PVC_USED_BY_CLAIM_QUERY')
+PV_CAPACITY_BY_VOLUME_QUERY = get_query_expression('analytics.storage.queries.PV_CAPACITY_BY_VOLUME_QUERY')
 PV_INFO_QUERY = get_query_expression('analytics.storage.queries.PV_INFO_QUERY')
-PV_STATUS_BY_VOLUME_QUERY = get_query_expression(
-    'analytics.storage.queries.PV_STATUS_BY_VOLUME_QUERY'
-)
+PV_STATUS_BY_VOLUME_QUERY = get_query_expression('analytics.storage.queries.PV_STATUS_BY_VOLUME_QUERY')
 
 
 @dataclass(frozen=True, slots=True)
@@ -95,10 +75,7 @@ class StorageEvidenceCollector:
 
         if not isinstance(response, dict):
             return VectorEvidence(
-                error=(
-                    f'Prometheus returned {type(response).__name__}; '
-                    'expected a response mapping.'
-                )
+                error=(f'Prometheus returned {type(response).__name__}; expected a response mapping.')
             )
         data = response.get('data', {})
         result = data.get('result', []) if isinstance(data, dict) else []
@@ -111,13 +88,9 @@ class StorageEvidenceCollector:
         return StorageEvidence(
             namespaces=self.query(NAMESPACE_ACTIVE_QUERY),
             filesystem_var_size=self.query(NODE_VAR_FILESYSTEM_SIZE_QUERY),
-            filesystem_var_available=self.query(
-                NODE_VAR_FILESYSTEM_AVAILABLE_QUERY
-            ),
+            filesystem_var_available=self.query(NODE_VAR_FILESYSTEM_AVAILABLE_QUERY),
             filesystem_root_size=self.query(NODE_ROOT_FILESYSTEM_SIZE_QUERY),
-            filesystem_root_available=self.query(
-                NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY
-            ),
+            filesystem_root_available=self.query(NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY),
             pvc_requested=self.query(PVC_REQUESTED_BY_CLAIM_QUERY),
             pvc_capacity=self.query(PVC_CAPACITY_BY_CLAIM_QUERY),
             pvc_used=self.query(PVC_USED_BY_CLAIM_QUERY),

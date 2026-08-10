@@ -43,10 +43,7 @@ def get_service_filter_types(cluster_id: str | None = None, namespace: str | Non
         query = query.filter(ServiceInventory.cluster_id == cluster_id)
     if namespace:
         query = query.filter(ServiceInventory.namespace == namespace)
-    values = {
-        effective_service_type(raw_type, cluster_ip)
-        for raw_type, cluster_ip in query.distinct().all()
-    }
+    values = {effective_service_type(raw_type, cluster_ip) for raw_type, cluster_ip in query.distinct().all()}
     return sorted(values)
 
 
@@ -182,9 +179,7 @@ def get_service_inventory(
         page=page,
         per_page=per_page,
     )
-    summary = _service_summary(
-        _service_summary_rows(cluster_id, namespace, service_type, search)
-    )
+    summary = _service_summary(_service_summary_rows(cluster_id, namespace, service_type, search))
     type_counts = summary['type_counts']
     registration_counts = summary['registration_counts']
     rows = [
@@ -271,8 +266,8 @@ def _endpoint_resource(item: dict[str, Any], registration: dict[str, Any], state
     condition_context = ' · '.join(condition_parts) or registration['source']
     return {
         'name': item.get('ip') or item.get('hostname') or 'Endpoint Address',
-        'supporting_primary': f"{item.get('target_kind') or 'Target'} · {item.get('target_name') or 'Not Reported'}",
-        'supporting_secondary': f"Node {item.get('node_name') or 'Not Reported'} · {condition_context}",
+        'supporting_primary': f'{item.get("target_kind") or "Target"} · {item.get("target_name") or "Not Reported"}',
+        'supporting_secondary': f'Node {item.get("node_name") or "Not Reported"} · {condition_context}',
         'status': state,
         'status_tone': 'normal' if state == 'Ready' and not terminating else 'warning',
     }
@@ -286,7 +281,6 @@ def _present_endpoint_resources(endpoint_evidence: dict[str, Any], registration:
         *[_endpoint_resource(item, registration, 'Not Ready') for item in not_ready[:12]],
     ]
     return ready, not_ready, resources
-
 
 
 def _service_detail_configuration(
@@ -368,6 +362,7 @@ def _service_detail_relationships(
         'endpoints_truncated': len(ready_endpoints) > 12 or len(not_ready_endpoints) > 12,
         'operational_context': operational_context(registration),
     }
+
 
 def get_service_detail(service_id: int) -> dict[str, Any] | None:
     query = db.session.query(ServiceInventory, Cluster.name.label('cluster_name')).join(

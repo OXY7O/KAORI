@@ -66,7 +66,9 @@ def test_reports_pages_use_standard_heroes_and_compact_summary_strips() -> None:
     assert "'recommended_actions': _get_recommended_actions()" not in generate_service
     assert "'readiness': _get_generation_readiness(" not in generate_service
     assert "'namespace_options_by_cluster': namespace_options_by_cluster" in generate_service
-    assert "'preview_report_name': form_state['name'].strip() or build_default_report_name(form_state)" in generate_service
+    assert (
+        "'preview_report_name': form_state['name'].strip() or build_default_report_name(form_state)" in generate_service
+    )
     assert 'def _get_namespace_options_by_cluster()' in generate_service
     assert 'NamespaceInventory.namespace == namespace' in generate_service
     assert 'MVP2' not in generate
@@ -81,7 +83,10 @@ def test_reporting_capability_explains_types_and_readiness() -> None:
     assert '\n                    Types\n' in workspace
     assert '\n                    Pipeline\n' in workspace
     assert 'Browse report contracts currently supported by connected and validated data sources.' in workspace
-    assert 'Follow request creation, format-specific execution, artifact storage, and optional Telegram delivery.' in workspace
+    assert (
+        'Follow request creation, format-specific execution, artifact storage, and optional Telegram delivery.'
+        in workspace
+    )
     assert 'output supported by the currently connected and validated data sources' in coverage
     assert 'Canonical flow:' in pipeline
     assert 'scheduled delivery sends Telegram' in pipeline
@@ -222,10 +227,10 @@ def test_generate_report_uses_the_canonical_family_format_and_scope_contract() -
     for report_type in inventory_report_types:
         assert f"value='{report_type}'" in catalog
 
-    assert "_ANALYTICS_FORMATS = (FORMAT_PDF, FORMAT_CSV)" in catalog
-    assert "_INVENTORY_FORMATS = (FORMAT_XLSX, FORMAT_CSV)" in catalog
-    assert "requires_cluster: bool = True" in catalog
-    assert "Cross-cluster report generation is disabled." in catalog
+    assert '_ANALYTICS_FORMATS = (FORMAT_PDF, FORMAT_CSV)' in catalog
+    assert '_INVENTORY_FORMATS = (FORMAT_XLSX, FORMAT_CSV)' in catalog
+    assert 'requires_cluster: bool = True' in catalog
+    assert 'Cross-cluster report generation is disabled.' in catalog
 
     assert 'FORMAT_PDF: render_weasyprint_pdf' in artifact_registry
     assert 'FORMAT_XLSX: render_inventory_xlsx' in artifact_registry
@@ -246,7 +251,7 @@ def test_generate_report_uses_the_canonical_family_format_and_scope_contract() -
     assert 'allowed_formats' in generate_template
     assert 'Artifact Storage Needs Review' in generate_template
     assert 'Output Format' in generate_template
-    assert "get_report_type_spec(report_type).family == REPORT_FAMILY_INVENTORY" in template_service
+    assert 'get_report_type_spec(report_type).family == REPORT_FAMILY_INVENTORY' in template_service
 
 
 def test_report_export_packages_keep_renderer_imports_lazy() -> None:
@@ -265,21 +270,11 @@ def test_report_export_packages_keep_renderer_imports_lazy() -> None:
 
     for path, renderer_module, public_function in package_contracts:
         module = ast.parse(path.read_text())
-        eager_imports = {
-            node.module
-            for node in module.body
-            if isinstance(node, ast.ImportFrom)
-        }
+        eager_imports = {node.module for node in module.body if isinstance(node, ast.ImportFrom)}
         assert renderer_module not in eager_imports
 
         wrapper = next(
-            node
-            for node in module.body
-            if isinstance(node, ast.FunctionDef) and node.name == public_function
+            node for node in module.body if isinstance(node, ast.FunctionDef) and node.name == public_function
         )
-        lazy_imports = {
-            node.module
-            for node in ast.walk(wrapper)
-            if isinstance(node, ast.ImportFrom)
-        }
+        lazy_imports = {node.module for node in ast.walk(wrapper) if isinstance(node, ast.ImportFrom)}
         assert renderer_module in lazy_imports

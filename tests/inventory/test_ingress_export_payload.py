@@ -17,19 +17,50 @@ SERVICE_SEMANTICS_PATH = ROOT / 'app/inventory/resources/service_semantics.py'
 
 def _load_payload(monkeypatch: pytest.MonkeyPatch):
     module_names = (
-        'app', 'app.common', 'app.common.inventory_generation', 'app.extensions',
-        'app.extensions.db', 'app.inventory', 'app.inventory.formatting',
-        'app.inventory.resources', 'app.models', 'app.models.report', 'app.reports',
-        'app.reports.catalog', 'app.reports.export', 'app.reports.export.payloads',
+        'app',
+        'app.common',
+        'app.common.inventory_generation',
+        'app.extensions',
+        'app.extensions.db',
+        'app.inventory',
+        'app.inventory.formatting',
+        'app.inventory.resources',
+        'app.models',
+        'app.models.report',
+        'app.reports',
+        'app.reports.catalog',
+        'app.reports.export',
+        'app.reports.export.payloads',
         'app.reports.export.payloads.common',
     )
     modules = {name: ModuleType(name) for name in module_names}
-    for name in ('app', 'app.common', 'app.extensions', 'app.inventory', 'app.inventory.resources', 'app.models', 'app.reports', 'app.reports.export', 'app.reports.export.payloads'):
+    for name in (
+        'app',
+        'app.common',
+        'app.extensions',
+        'app.inventory',
+        'app.inventory.resources',
+        'app.models',
+        'app.reports',
+        'app.reports.export',
+        'app.reports.export.payloads',
+    ):
         modules[name].__path__ = []
     modules['app.common.inventory_generation'].filter_current_generation = lambda query, _model: query
     modules['app.extensions.db'].db = SimpleNamespace()
     modules['app.inventory.formatting'].format_kubernetes_size = lambda value: '-' if value is None else str(value)
-    for name in ('Cluster', 'ClusterInventory', 'ConfigurationInventory', 'IngressInventory', 'NamespaceInventory', 'NodeInventory', 'PodInventory', 'ServiceInventory', 'StorageInventory', 'WorkloadInventory'):
+    for name in (
+        'Cluster',
+        'ClusterInventory',
+        'ConfigurationInventory',
+        'IngressInventory',
+        'NamespaceInventory',
+        'NodeInventory',
+        'PodInventory',
+        'ServiceInventory',
+        'StorageInventory',
+        'WorkloadInventory',
+    ):
         setattr(modules['app.models'], name, type(name, (), {}))
     modules['app.models.report'].Report = type('Report', (), {})
     modules['app.reports.catalog'].require_selected_cluster = lambda _report: 'cluster-id'

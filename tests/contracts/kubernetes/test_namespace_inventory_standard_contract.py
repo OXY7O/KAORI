@@ -13,12 +13,15 @@ def test_namespace_filters_refresh_complete_scope_and_include_unknown() -> None:
     table = read('app/templates/inventory/namespaces/partials/_table_card.html')
     workspace = read('app/templates/inventory/namespaces/partials/_page_workspace.html')
 
-    assert "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')" in routes
+    assert (
+        "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')"
+        in routes
+    )
     assert 'hx-target="#namespaces-page-workspace"' in table
     assert 'name="partial_mode" value="page_workspace"' in table
     assert 'id="namespaces-page-workspace"' in workspace
     assert 'inventory/components/_data_freshness.html' in workspace
-    assert "_normalise_namespace_status(row[0])[0]" in backend
+    assert '_normalise_namespace_status(row[0])[0]' in backend
     assert "if status == 'Unknown'" in backend
     assert 'NamespaceInventory.status.is_(None)' in backend
 
@@ -29,7 +32,7 @@ def test_namespace_scope_label_does_not_depend_on_filtered_rows() -> None:
 
     assert "inventory['scope_label'] = _inventory_scope_label(clusters, cluster_id)" in routes
     assert 'def _inventory_scope_label(' in routes
-    assert "db.session.query(Cluster.name).filter(Cluster.id == cluster_id).scalar()" in backend
+    assert 'db.session.query(Cluster.name).filter(Cluster.id == cluster_id).scalar()' in backend
 
 
 def test_namespace_control_evidence_distinguishes_zero_from_not_reported() -> None:
@@ -39,7 +42,7 @@ def test_namespace_control_evidence_distinguishes_zero_from_not_reported() -> No
     persistence = read('app/inventory/persistence.py')
 
     assert "RESOURCE_QUOTA_EVIDENCE_KEY = 'inventory.resourcequotas'" in backend
-    assert "quota_count = quota_counts.get(key, 0) if quota_state == COLLECTED else None" in backend
+    assert 'quota_count = quota_counts.get(key, 0) if quota_state == COLLECTED else None' in backend
     assert "committed_evidence['inventory.resourcequotas'] = collection_evidence" in persistence
     assert 'inventory.quota_reported_namespaces < inventory.total_namespaces' in summary
     assert 'inventory.default_service_account_not_reported' in summary
@@ -53,7 +56,7 @@ def test_namespace_psa_copy_does_not_infer_cluster_defaults() -> None:
     detail = read('app/templates/inventory/namespaces/partials/_namespace_detail_content.html')
 
     assert "return normalized.title() if normalized else 'Not Explicitly Set'" in backend
-    assert "'Inherited'" not in backend[backend.index('def _psa_label'):]
+    assert "'Inherited'" not in backend[backend.index('def _psa_label') :]
     assert 'does not infer a cluster-level Pod Security Admission default' in detail
 
 
@@ -71,7 +74,7 @@ def test_namespace_resourcequota_collector_uses_configured_spec_and_evidence() -
     collector = read('app/inventory/collectors/configuration.py')
 
     assert 'with_evidence: bool = False' in collector
-    assert "evidence = COLLECTED" in collector
+    assert 'evidence = COLLECTED' in collector
     assert "getattr(exc, 'status', None) in {403, 404}" in collector
     assert 'configured_hard = (spec.hard or {}) if spec else {}' in collector
     assert 'for key, value in (configured_hard or observed_hard).items()' in collector

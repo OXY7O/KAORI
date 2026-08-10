@@ -27,8 +27,8 @@ def test_recommendations_use_drawer_details_not_inline_expandables():
     assert 'resource_detail_modal.detail_button' in records
     assert '<details' not in records
     assert 'resource_detail_modal.drawer_host(' in page
-    assert "def recommendation_details(" in routes
-    assert "_recommendation_detail_content.html" in routes
+    assert 'def recommendation_details(' in routes
+    assert '_recommendation_detail_content.html' in routes
 
 
 def test_recommendations_pagination_matches_kaori_contract():
@@ -65,6 +65,6 @@ def test_recommendations_route_owns_results_only_htmx_response():
     workspace = read('app/templates/intelligence/partials/_recommendations_workspace.html')
     assert "request.headers.get('HX-Target')" in routes
     assert "target == 'recommendations-results-content'" in routes
-    assert "_recommendations_results.html" in routes
+    assert '_recommendations_results.html' in routes
     assert 'id="recommendations-results-content"' in workspace
     assert '_recommendation_records.html' in results

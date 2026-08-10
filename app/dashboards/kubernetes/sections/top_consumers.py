@@ -17,9 +17,7 @@ def top_consumers_snapshot_with_message(
     return snapshot
 
 
-def build_top_consumers_snapshot(
-    *, context: dict[str, Any] | None, unavailable_reason: str
-) -> TopConsumersSnapshot:
+def build_top_consumers_snapshot(*, context: dict[str, Any] | None, unavailable_reason: str) -> TopConsumersSnapshot:
     if not context:
         return top_consumers_snapshot_with_message(unavailable_reason)
 

@@ -2,21 +2,25 @@ from __future__ import annotations
 
 from typing import Any
 
-from flask import current_app, make_response, redirect, render_template, request, url_for
+from flask import (
+    current_app,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask_login import current_user
 
 from app.kubernetes_operations.operation_flow import validate_then_apply
-from app.kubernetes_operations.secrets.create_service import (
-    execute_secret_operation,
-    get_secret_create_context,
-)
-from app.kubernetes_operations.secrets.live_service import list_live_namespaces
+from app.kubernetes_operations.secrets.create_service import execute_secret_operation, get_secret_create_context
 from app.kubernetes_operations.secrets.delete_service import (
     execute_secret_deletion,
     get_delete_target_context,
     get_delete_workspace,
     get_secret_delete_context,
 )
+from app.kubernetes_operations.secrets.live_service import list_live_namespaces
 from app.kubernetes_operations.secrets.receipts import issue_delete_receipt, verify_delete_receipt
 from app.kubernetes_operations.secrets.replace_service import (
     execute_secret_replacement,
@@ -194,10 +198,12 @@ def create_secret():
 
         if is_htmx:
             operation_feedback = _notification_response_context(feedback)
-            response = make_response(render_template(
-                'kubernetes_operations/secrets/_create_operation_result.html',
-                operation_feedback=operation_feedback,
-            ))
+            response = make_response(
+                render_template(
+                    'kubernetes_operations/secrets/_create_operation_result.html',
+                    operation_feedback=operation_feedback,
+                )
+            )
             if dry_run and feedback.get('status') == 'success':
                 response.headers['HX-Trigger'] = '{"kaori:operation-validated":{"formId":"secret-create-form"}}'
             return response
@@ -359,10 +365,12 @@ def replace_secret():
 
         if is_htmx:
             operation_feedback = _notification_response_context(feedback)
-            response = make_response(render_template(
-                'kubernetes_operations/secrets/_replace_operation_result.html',
-                operation_feedback=operation_feedback,
-            ))
+            response = make_response(
+                render_template(
+                    'kubernetes_operations/secrets/_replace_operation_result.html',
+                    operation_feedback=operation_feedback,
+                )
+            )
             if dry_run and feedback.get('status') == 'success':
                 response.headers['HX-Trigger'] = '{"kaori:operation-validated":{"formId":"replace-secret-form"}}'
             return response
@@ -447,11 +455,7 @@ def delete_secret():
                 delete_completed = True
 
             feedback = _record_secret_activity(
-                event_type=(
-                    'kubernetes_secret_deletion_validation'
-                    if validate_only
-                    else 'kubernetes_secret_deleted'
-                ),
+                event_type=('kubernetes_secret_deletion_validation' if validate_only else 'kubernetes_secret_deleted'),
                 status=result.status,
                 title=result.title,
                 message=result.message,
@@ -477,11 +481,7 @@ def delete_secret():
                     return response
                 return redirect(redirect_url)
         except ValueError as exc:
-            title = (
-                'Secret deletion validation failed'
-                if validate_only
-                else 'Secret deletion failed'
-            )
+            title = 'Secret deletion validation failed' if validate_only else 'Secret deletion failed'
             feedback = _record_secret_activity(
                 event_type='kubernetes_secret_deletion_failed',
                 status='error',
@@ -500,18 +500,9 @@ def delete_secret():
                 queue_feedback=not is_htmx,
             )
         except Exception:
-            current_app.logger.exception(
-                'Unexpected Kubernetes Secret deletion failure.'
-            )
-            title = (
-                'Secret deletion validation failed'
-                if validate_only
-                else 'Secret deletion failed'
-            )
-            message = (
-                'KAORI could not complete the Secret deletion because of an '
-                'unexpected internal error.'
-            )
+            current_app.logger.exception('Unexpected Kubernetes Secret deletion failure.')
+            title = 'Secret deletion validation failed' if validate_only else 'Secret deletion failed'
+            message = 'KAORI could not complete the Secret deletion because of an unexpected internal error.'
             feedback = _record_secret_activity(
                 event_type='kubernetes_secret_deletion_failed',
                 status='error',
@@ -541,11 +532,8 @@ def delete_secret():
                 )
             )
             if validate_only and feedback.get('status') == 'success':
-                response.headers['HX-Trigger'] = (
-                    '{"kaori:operation-validated":{"formId":"delete-secret-form"}}'
-                )
+                response.headers['HX-Trigger'] = '{"kaori:operation-validated":{"formId":"delete-secret-form"}}'
             return response
-
 
     return render_template(
         'kubernetes_operations/secrets/delete.html',

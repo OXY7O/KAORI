@@ -1,5 +1,5 @@
-from pathlib import Path
 import importlib.util
+from pathlib import Path
 import sys
 import types
 
@@ -52,7 +52,7 @@ def read(relative: str) -> str:
 
 
 def definition(source: str, key: str) -> str:
-    start = source.index(f"    {key!r}: QueryDefinition(")
+    start = source.index(f'    {key!r}: QueryDefinition(')
     next_definition = source.find("\n    '", start + 8)
     return source[start:] if next_definition == -1 else source[start:next_definition]
 
@@ -88,7 +88,6 @@ def test_initial_utilization_request_does_not_resolve_hidden_datasets() -> None:
     assert 'Trend and node datasets are intentionally not resolved here' in base
 
 
-
 def test_summary_materialization_does_not_query_hidden_tab_payloads() -> None:
     source = read('app/analytics/utilization/materialization.py')
     start = source.index('def get_utilization_summary_context')
@@ -118,6 +117,7 @@ def test_trend_window_labels_are_owned_by_python_presentation() -> None:
     assert [option['value'] for option in options if option['selected']] == [168]
     assert 'trend_options' in template
     assert "{1: 'Last 1 Hour'" not in template
+
 
 def test_fragment_routes_require_htmx_and_disable_cache() -> None:
     routes = read('app/analytics/utilization/routes.py')
@@ -157,17 +157,17 @@ def test_worker_utilization_queries_use_allocatable_capacity_and_role_boundary()
         assert 'unit=' in query
 
 
-
 def test_overview_snapshot_adapter_preserves_missing_denominator_as_none() -> None:
     service = read('app/analytics/utilization/service.py')
     start = service.index('def get_utilization_snapshot(')
     snapshot_adapter = service[start:]
 
-    assert "if capacity_key not in summary or safe_float(summary.get(capacity_key)) <= 0" in snapshot_adapter
+    assert 'if capacity_key not in summary or safe_float(summary.get(capacity_key)) <= 0' in snapshot_adapter
     assert "'cpu_percent': percent('cpu_utilization', 'cpu_capacity')" in snapshot_adapter
     assert "'memory_percent': percent('memory_utilization', 'memory_capacity')" in snapshot_adapter
     assert "'storage_percent': percent('storage_utilization', 'storage_capacity')" in snapshot_adapter
     assert "'pod_percent': percent('pod_utilization', 'pod_capacity')" in snapshot_adapter
+
 
 def test_missing_capacity_is_unknown_not_healthy_zero() -> None:
     presentation = build_summary_presentation(
@@ -247,7 +247,7 @@ def test_utilization_presentation_owns_template_derived_status() -> None:
     assert 'utilization_presentation' in overview
     assert 'utilization_presentation' in current
     assert 'node_presentation' in node
-    assert "{% set highest_util" not in hero
+    assert '{% set highest_util' not in hero
     assert "'Critical' if value" not in overview
     assert 'def get_selected_cluster(' not in service
     assert 'def _build_utilization_service(' not in service

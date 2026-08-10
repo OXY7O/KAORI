@@ -3,10 +3,21 @@ from __future__ import annotations
 from typing import Any
 
 from app.jobs.presentation import build_job_execution_status_context
-from app.platform_operations.data_lifecycle.presentation import (
-    build_data_lifecycle_overview_summary,
-)
+from app.platform_operations.data_lifecycle.presentation import build_data_lifecycle_overview_summary
 from app.platform_operations.kubernetes.presentation import build_kubernetes_administration_summary
+
+
+def _count_value(value: object) -> int:
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return 0
+    return 0
 
 
 def build_platform_operations_overview_context(
@@ -27,8 +38,8 @@ def build_platform_operations_overview_context(
     if can_jobs:
         job_context = build_job_execution_status_context()
         job_stats = job_context['job_stats']
-        attention = int(job_stats['attention'] or 0)
-        active = int(job_stats['active'] or 0)
+        attention = _count_value(job_stats.get('attention', 0))
+        active = _count_value(job_stats.get('active', 0))
         if attention:
             status_label, status_tone = 'Needs Attention', 'warning'
         elif active:
@@ -46,7 +57,7 @@ def build_platform_operations_overview_context(
                 'metrics': (
                     ('activity', 'Active', active),
                     ('triangle-alert', 'Attention', attention),
-                    ('circle-check', 'Completed · 24H', int(job_stats['completed_24h'] or 0)),
+                    ('circle-check', 'Completed · 24H', _count_value(job_stats.get('completed_24h', 0))),
                 ),
                 'action_endpoint': 'jobs.executions',
                 'action_label': 'Open Jobs & Executions',
@@ -76,7 +87,7 @@ def build_platform_operations_overview_context(
                     (
                         'shield-check',
                         'Policies Enabled',
-                        f"{lifecycle['enabled_domain_count']} / {lifecycle['managed_domain_count']}",
+                        f'{lifecycle["enabled_domain_count"]} / {lifecycle["managed_domain_count"]}',
                     ),
                     ('archive', 'Active Archives', lifecycle['active_archive_total']),
                     ('circle-x', 'Failed · 24H', lifecycle['failed_archive_24h']),
@@ -89,9 +100,9 @@ def build_platform_operations_overview_context(
 
     if can_kubernetes_admin:
         kubernetes = build_kubernetes_administration_summary()
-        cluster_count = int(kubernetes['cluster_count'] or 0)
-        ready_count = int(kubernetes['ready_cluster_count'] or 0)
-        protected_namespaces = int(kubernetes['enabled_namespace_count'] or 0)
+        cluster_count = _count_value(kubernetes.get('cluster_count', 0))
+        ready_count = _count_value(kubernetes.get('ready_cluster_count', 0))
+        protected_namespaces = _count_value(kubernetes.get('enabled_namespace_count', 0))
         global_enabled = bool(kubernetes['global_reveal_enabled'])
         if cluster_count == 0:
             status_label, status_tone = 'No Clusters', 'unknown'
@@ -131,14 +142,10 @@ def build_platform_operations_overview_context(
         'attention_workspace_count': attention_workspace_count,
         'active_workspace_count': active_workspace_count,
         'overall_status_label': (
-            'Review Required'
-            if attention_workspace_count
-            else ('Active' if active_workspace_count else 'Ready')
+            'Review Required' if attention_workspace_count else ('Active' if active_workspace_count else 'Ready')
         ),
         'overall_status_tone': (
-            'warning'
-            if attention_workspace_count
-            else ('info' if active_workspace_count else 'normal')
+            'warning' if attention_workspace_count else ('info' if active_workspace_count else 'normal')
         ),
         'can_jobs': can_jobs,
         'can_data_lifecycle': can_data_lifecycle,

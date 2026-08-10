@@ -28,15 +28,9 @@ def test_tls_manual_route_dispatches_worker_job_instead_of_collecting_inline() -
 
 
 def test_tls_worker_progress_is_owned_by_inventory_operations_loading_bar() -> None:
-    scope = (
-        ROOT / 'app/templates/governance/tls_certificates/partials/_page_workspace.html'
-    ).read_text()
-    sync_panel = (
-        ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel.html'
-    ).read_text()
-    sync_response = (
-        ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel_response.html'
-    ).read_text()
+    scope = (ROOT / 'app/templates/governance/tls_certificates/partials/_page_workspace.html').read_text()
+    sync_panel = (ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel.html').read_text()
+    sync_response = (ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel_response.html').read_text()
     layout = (ROOT / 'app/templates/layouts/app.html').read_text()
     routes = (ROOT / 'app/governance/tls_certificates/routes.py').read_text()
 
@@ -44,9 +38,7 @@ def test_tls_worker_progress_is_owned_by_inventory_operations_loading_bar() -> N
     assert 'hx-trigger="tlsInventorySyncFinished from:body"' in scope
     assert 'id="tls-certificates-background-refresh-trigger"' in scope
     assert 'class="htmx-indicator hidden"' in scope
-    live_state = (
-        ROOT / 'app/templates/governance/tls_certificates/partials/_sync_live_state.html'
-    ).read_text()
+    live_state = (ROOT / 'app/templates/governance/tls_certificates/partials/_sync_live_state.html').read_text()
     assert '{% import "components/progress_bar.html" as progress_bar %}' not in sync_panel
     assert '<progress class=' in live_state
     assert 'value="{{ payload.sync_state.progress_percent }}"' in live_state
@@ -69,19 +61,12 @@ def test_tls_worker_progress_is_owned_by_inventory_operations_loading_bar() -> N
     assert "response.headers['Cache-Control'] = 'no-store, max-age=0'" in routes
     assert 'feedback=feedback' in routes
 
+
 def test_tls_filter_state_keeps_one_canonical_workspace_boundary() -> None:
-    scope = (
-        ROOT / 'app/templates/governance/tls_certificates/partials/_page_workspace.html'
-    ).read_text()
-    filters = (
-        ROOT / 'app/templates/governance/tls_certificates/partials/_filters.html'
-    ).read_text()
-    sync_panel = (
-        ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel.html'
-    ).read_text()
-    table = (
-        ROOT / 'app/templates/governance/tls_certificates/partials/_table.html'
-    ).read_text()
+    scope = (ROOT / 'app/templates/governance/tls_certificates/partials/_page_workspace.html').read_text()
+    filters = (ROOT / 'app/templates/governance/tls_certificates/partials/_filters.html').read_text()
+    sync_panel = (ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel.html').read_text()
+    table = (ROOT / 'app/templates/governance/tls_certificates/partials/_table.html').read_text()
 
     assert 'id="tls-certificates-page-workspace"' in scope
     assert "partial_mode='page_workspace'" in scope
@@ -94,9 +79,7 @@ def test_tls_filter_state_keeps_one_canonical_workspace_boundary() -> None:
 
 
 def test_tls_operation_buttons_share_the_same_kaori_component() -> None:
-    sync_panel = (
-        ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel.html'
-    ).read_text()
+    sync_panel = (ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel.html').read_text()
     action_button = (ROOT / 'app/templates/components/action_button.html').read_text()
 
     assert '{% import "components/action_button.html" as action_button %}' in sync_panel
@@ -137,17 +120,13 @@ def test_tls_terminal_outcomes_are_written_to_activity_audit() -> None:
 
 
 def test_tls_page_exposes_automatic_freshness_with_scoped_worker_progress() -> None:
-    sync_panel = (
-        ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel.html'
-    ).read_text()
-    live_state = (
-        ROOT / 'app/templates/governance/tls_certificates/partials/_sync_live_state.html'
-    ).read_text()
+    sync_panel = (ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel.html').read_text()
+    live_state = (ROOT / 'app/templates/governance/tls_certificates/partials/_sync_live_state.html').read_text()
 
     assert 'Automatic Sync' in live_state
     assert 'Last Successful' in live_state
     assert 'Next Scheduled' in live_state
-    assert "payload.sync_state.is_active" in live_state
+    assert 'payload.sync_state.is_active' in live_state
     assert "job_key='governance.tls_certificates.sync'" in sync_panel
     assert 'TLS Secret synchronization progress' in live_state
     assert 'hx-indicator="#tls-sync-panel-poll-indicator"' in live_state
@@ -172,15 +151,9 @@ def test_tls_worker_reports_granular_progress_for_single_cluster_jobs() -> None:
 
 
 def test_tls_live_progress_polling_does_not_replace_the_whole_operations_panel() -> None:
-    panel = (
-        ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel.html'
-    ).read_text()
-    live_state = (
-        ROOT / 'app/templates/governance/tls_certificates/partials/_sync_live_state.html'
-    ).read_text()
-    response = (
-        ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel_response.html'
-    ).read_text()
+    panel = (ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel.html').read_text()
+    live_state = (ROOT / 'app/templates/governance/tls_certificates/partials/_sync_live_state.html').read_text()
+    response = (ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel_response.html').read_text()
 
     assert 'hx-trigger="every 1s"' not in panel
     assert 'hx-trigger="every 1s"' in live_state
@@ -189,6 +162,7 @@ def test_tls_live_progress_polling_does_not_replace_the_whole_operations_panel()
     assert '{% include "governance/tls_certificates/partials/_sync_panel.html" %}' not in response
     assert 'notification-progress-indeterminate' not in live_state
 
+
 def test_tls_sync_visibility_query_avoids_distinct_across_json_columns() -> None:
     presentation = (ROOT / 'app/governance/tls_certificates/job_presentation.py').read_text()
 
@@ -196,4 +170,3 @@ def test_tls_sync_visibility_query_avoids_distinct_across_json_columns() -> None
     assert 'JobExecutionSubscriber.user_id == user_id' in presentation
     assert '.outerjoin(' not in presentation
     assert '.distinct()' not in presentation
-

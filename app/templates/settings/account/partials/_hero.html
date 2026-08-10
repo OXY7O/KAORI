@@ -3,22 +3,21 @@
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
             {% if active_tab == 'activity' %}
-                {% set eyebrow_label = 'Authentication Evidence' %}
-                {% set eyebrow_icon = 'activity' %}
-                {% set leading_icon = 'scroll-text' %}
-                {% set summary = 'Review recent authentication events for this account.' %}
+                {% set eyebrow_label = "Authentication Evidence" %}
+                {% set eyebrow_icon = "activity" %}
+                {% set leading_icon = "scroll-text" %}
+                {% set summary = "Review recent authentication events for this account." %}
             {% elif active_tab == 'credentials' %}
-                {% set eyebrow_label = 'Credential Security' %}
-                {% set eyebrow_icon = 'key-round' %}
-                {% set leading_icon = 'shield-check' %}
-                {% set summary = 'Manage credentials, session impact, and audit controls.' %}
+                {% set eyebrow_label = "Credential Security" %}
+                {% set eyebrow_icon = "key-round" %}
+                {% set leading_icon = "shield-check" %}
+                {% set summary = "Manage credentials, session impact, and audit controls." %}
             {% else %}
-                {% set eyebrow_label = 'Identity & Access' %}
-                {% set eyebrow_icon = 'id-card' %}
-                {% set leading_icon = 'user-round-cog' %}
-                {% set summary = 'Review account identity, access posture, and recent sign-in state.' %}
+                {% set eyebrow_label = "Identity & Access" %}
+                {% set eyebrow_icon = "id-card" %}
+                {% set leading_icon = "user-round-cog" %}
+                {% set summary = "Review account identity, access posture, and recent sign-in state." %}
             {% endif %}
-
             {% call page_hero.intro(eyebrow_icon, eyebrow_label, leading_icon) %}
                 <h1 class="{{ page_hero.title_classes() }}">Account & Authentication</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">{{ summary }}</p>
@@ -29,7 +28,6 @@
                 </div>
             {% endcall %}
         </div>
-
         <aside class="{{ page_hero.aside_classes() }}">
             <div class="{{ page_hero.context_panel_classes() }}">
                 {% if active_tab == 'activity' %}
@@ -46,9 +44,9 @@
                         {{ page_hero.context_metric('shield-off' if can_change_password else 'external-link', 'Session Effect', 'Revoke Others' if can_change_password else 'External Recovery', 'Current browser stays active' if can_change_password else 'Provider-managed recovery', 'text-sm font-semibold leading-6') }}
                     </div>
                     {% if can_change_password %}
-                    {{ page_hero.context_info('lock-keyhole', 'Other sessions are revoked; secrets stay out of audit.') }}
+                        {{ page_hero.context_info('lock-keyhole', 'Other sessions are revoked; secrets stay out of audit.') }}
                     {% else %}
-                    {{ page_hero.context_info('lock-keyhole', 'Recovery stays with the provider; KAORI retains access controls.') }}
+                        {{ page_hero.context_info('lock-keyhole', 'Recovery stays with the provider; KAORI retains access controls.') }}
                     {% endif %}
                 {% else %}
                     {{ page_hero.context_header('Account Posture', current_user.display_label, 'badge-check') }}

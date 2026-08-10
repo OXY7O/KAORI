@@ -1,6 +1,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
-<section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card" data-authentication-activity-layout="full-width">
+<section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card"
+         data-authentication-activity-layout="full-width">
     <header class="flex flex-col gap-4 border-b border-outline-default px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
         <div class="flex items-start gap-3">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
@@ -19,7 +20,6 @@
             </a>
         {% endif %}
     </header>
-
     <div class="border-b border-outline-default bg-surface-subtle p-5">
         <div class="grid gap-3 md:grid-cols-3">
             <article class="rounded-xl border border-outline-default bg-surface-card p-4">
@@ -48,10 +48,10 @@
             </article>
         </div>
     </div>
-
     {% if recent_login_events %}
         <div class="overflow-x-auto">
-            <table class="{{ table_ui.table_classes('min-w-[48rem]') }}" data-authentication-activity-table="compact-events">
+            <table class="{{ table_ui.table_classes('min-w-[48rem]') }}"
+                   data-authentication-activity-table="compact-events">
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
                         <th class="{{ table_ui.header_cell_classes() }}">Event</th>
@@ -71,7 +71,8 @@
                             <td class="{{ table_ui.cell_classes() }}">
                                 <div class="flex min-w-0 items-start gap-3">
                                     <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                        <i data-lucide="{{ 'log-out' if is_logout else 'log-in' }}" class="h-4 w-4"></i>
+                                        <i data-lucide="{{ 'log-out' if is_logout else 'log-in' }}"
+                                           class="h-4 w-4"></i>
                                     </span>
                                     <div class="min-w-0">
                                         <p class="text-sm font-bold text-content-primary">{{ 'Sign Out' if is_logout else 'Sign In' }}</p>
@@ -81,11 +82,11 @@
                             </td>
                             <td class="{{ table_ui.cell_classes() }}">
                                 <p class="whitespace-nowrap text-sm font-semibold text-content-secondary">
-                                    {{ provider_value|replace('_', ' ')|title if '_' in provider_value else provider_value }}
+                                    {{ provider_value|replace('_', ' ') |title if '_' in provider_value else provider_value }}
                                 </p>
                                 <p class="mt-1 inline-flex items-center gap-1.5 whitespace-nowrap text-xs text-content-muted">
                                     <i data-lucide="network" class="h-3.5 w-3.5 text-content-disabled"></i>
-                                    {{ metadata.get('ip_address') or 'IP unavailable' }}
+                                    {{ metadata.get("ip_address") or 'IP unavailable' }}
                                 </p>
                             </td>
                             <td class="{{ table_ui.cell_classes() }} whitespace-nowrap">
@@ -121,8 +122,8 @@
             <p class="mx-auto mt-1 max-w-lg text-xs leading-5 text-content-muted">Authentication events will appear here after they are recorded.</p>
         </div>
     {% endif %}
-
-    <footer class="border-t border-outline-default bg-kaori-soft/40 px-5 py-4" data-authentication-evidence-boundary="inline">
+    <footer class="border-t border-outline-default bg-kaori-soft/40 px-5 py-4"
+            data-authentication-evidence-boundary="inline">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex min-w-0 items-center gap-3">
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
@@ -133,7 +134,8 @@
                     <p class="mt-0.5 text-xs text-content-muted">Identity, source, result, and connection context only. Secrets are excluded.</p>
                 </div>
             </div>
-            <div class="flex shrink-0 flex-wrap gap-2" aria-label="Authentication evidence categories">
+            <div class="flex shrink-0 flex-wrap gap-2"
+                 aria-label="Authentication evidence categories">
                 {{ table_label.metadata_label('Identity & Source', 'badge-check') }}
                 {{ table_label.metadata_label('Connection', 'network') }}
                 {{ table_label.metadata_label('Result & Time', 'clock-3') }}

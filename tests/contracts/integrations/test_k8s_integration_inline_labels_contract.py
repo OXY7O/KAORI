@@ -1,5 +1,6 @@
 from pathlib import Path
 
+
 def test_table_label_uses_nowrap_for_semantic_labels():
     content = Path('app/templates/components/table_label.html').read_text()
     assert 'whitespace-nowrap' in content

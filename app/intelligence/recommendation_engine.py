@@ -786,9 +786,7 @@ def build_storage_actionable_recommendations(
     node_filesystem = storage_summary.get('node_filesystem', {})
     persistent_storage = storage_summary.get('persistent_storage', {})
     node_filesystem = node_filesystem if isinstance(node_filesystem, dict) else {}
-    persistent_storage = (
-        persistent_storage if isinstance(persistent_storage, dict) else {}
-    )
+    persistent_storage = persistent_storage if isinstance(persistent_storage, dict) else {}
 
     recommendations = [
         *_storage_filesystem_recommendations(node_filesystem),
@@ -808,28 +806,26 @@ def _storage_filesystem_recommendations(
 ) -> list[dict[str, Any]]:
     summary = node_filesystem.get('summary', {})
     summary = summary if isinstance(summary, dict) else {}
-    rows = _as_list(
-        node_filesystem.get('all_rows') or node_filesystem.get('rows', [])
-    )
+    rows = _as_list(node_filesystem.get('all_rows') or node_filesystem.get('rows', []))
     recommendations: list[dict[str, Any]] = []
     if summary.get('evidence_available'):
-        usage = get_numeric_value(
-            summary.get('highest_usage', summary.get('usage_percent', 0))
-        )
+        usage = get_numeric_value(summary.get('highest_usage', summary.get('usage_percent', 0)))
         priority = 'Critical' if usage >= 90 else ('Warning' if usage >= 75 else '')
         if priority:
             recommendations.append(
                 build_recommendation(
                     title='Review Node Filesystem Pressure',
                     description=(
-                        f"Highest {summary.get('highest_mountpoint') or '-'} "
-                        f"filesystem usage is {usage:.2f}% on "
-                        f"{summary.get('highest_node') or '-'}. Review image growth, "
+                        f'Highest {summary.get("highest_mountpoint") or "-"} '
+                        f'filesystem usage is {usage:.2f}% on '
+                        f'{summary.get("highest_node") or "-"}. Review image growth, '
                         'logs, ephemeral storage consumption, and node cleanup before '
                         'scheduling more workloads.'
                     ),
-                    priority=priority, source='storage_filesystem',
-                    source_label='Filesystem Storage', resource='storage',
+                    priority=priority,
+                    source='storage_filesystem',
+                    source_label='Filesystem Storage',
+                    resource='storage',
                     action_type='storage_review',
                     href='/analytics/storage?tab=filesystem',
                 )
@@ -845,8 +841,10 @@ def _storage_filesystem_recommendations(
                     'pulls, log growth, or workload placement increases disk pressure.'
                 ),
                 priority='Critical' if risk_count >= 5 else 'Warning',
-                source='storage_filesystem', source_label='Filesystem Storage',
-                resource='storage', action_type='storage_review',
+                source='storage_filesystem',
+                source_label='Filesystem Storage',
+                resource='storage',
+                action_type='storage_review',
                 href='/analytics/storage?tab=filesystem',
             )
         )
@@ -858,19 +856,12 @@ def _storage_pvc_recommendations(
 ) -> list[dict[str, Any]]:
     summary = persistent_storage.get('pvc', {})
     summary = summary if isinstance(summary, dict) else {}
-    rows = _as_list(
-        persistent_storage.get('pvc_all_rows')
-        or persistent_storage.get('pvc_rows', [])
-    )
+    rows = _as_list(persistent_storage.get('pvc_all_rows') or persistent_storage.get('pvc_rows', []))
     recommendations: list[dict[str, Any]] = []
     if summary.get('pressure_evidence_available'):
         used = get_numeric_value(summary.get('used_percent', 0))
         free = get_numeric_value(summary.get('free_percent', 0))
-        priority = (
-            'Critical' if used >= 90 or free <= 10
-            else 'Warning' if used >= 75 or free <= 25
-            else ''
-        )
+        priority = 'Critical' if used >= 90 or free <= 10 else 'Warning' if used >= 75 or free <= 25 else ''
         if priority:
             recommendations.append(
                 build_recommendation(
@@ -880,15 +871,15 @@ def _storage_pvc_recommendations(
                         'free. Check namespace ownership, storage class expansion '
                         'policy, and application growth before volume exhaustion.'
                     ),
-                    priority=priority, source='storage_pvc',
-                    source_label='Persistent Volume Claim', resource='storage',
+                    priority=priority,
+                    source='storage_pvc',
+                    source_label='Persistent Volume Claim',
+                    resource='storage',
                     action_type='storage_review',
                     href='/analytics/storage?tab=pvc',
                 )
             )
-    risk_count = _count_rows_by_risk_label(
-        rows, {'warning', 'watch', 'high', 'critical'}
-    )
+    risk_count = _count_rows_by_risk_label(rows, {'warning', 'watch', 'high', 'critical'})
     if risk_count:
         recommendations.append(
             build_recommendation(
@@ -899,8 +890,10 @@ def _storage_pvc_recommendations(
                     'storage expansion policy before increasing workload demand.'
                 ),
                 priority='Critical' if risk_count >= 5 else 'Warning',
-                source='storage_pvc', source_label='Persistent Volume Claim',
-                resource='storage', action_type='storage_review',
+                source='storage_pvc',
+                source_label='Persistent Volume Claim',
+                resource='storage',
+                action_type='storage_review',
                 href='/analytics/storage?tab=pvc',
             )
         )
@@ -910,13 +903,8 @@ def _storage_pvc_recommendations(
 def _storage_pv_recommendations(
     persistent_storage: dict[str, Any],
 ) -> list[dict[str, Any]]:
-    rows = _as_list(
-        persistent_storage.get('pv_all_rows')
-        or persistent_storage.get('pv_rows', [])
-    )
-    risk_count = _count_rows_by_risk_label(
-        rows, {'watch', 'critical', 'unknown'}
-    )
+    rows = _as_list(persistent_storage.get('pv_all_rows') or persistent_storage.get('pv_rows', []))
+    risk_count = _count_rows_by_risk_label(rows, {'watch', 'critical', 'unknown'})
     if not risk_count:
         return []
     return [
@@ -927,13 +915,11 @@ def _storage_pv_recommendations(
                 'Released, Failed, or Unknown states, reclaim policy, and claim '
                 'binding before cleanup or reuse.'
             ),
-            priority=(
-                'Critical'
-                if _has_row_with_risk_label(rows, {'critical'})
-                else 'Warning'
-            ),
-            source='storage_pv', source_label='Persistent Volume',
-            resource='storage', action_type='storage_review',
+            priority=('Critical' if _has_row_with_risk_label(rows, {'critical'}) else 'Warning'),
+            source='storage_pv',
+            source_label='Persistent Volume',
+            resource='storage',
+            action_type='storage_review',
             href='/analytics/storage?tab=pv',
         )
     ]
@@ -946,10 +932,7 @@ def _storage_evidence_complete(
     filesystem = node_filesystem.get('summary', {})
     pvc = persistent_storage.get('pvc', {})
     pv = persistent_storage.get('pv', {})
-    return all(
-        isinstance(item, dict) and bool(item.get('evidence_complete'))
-        for item in (filesystem, pvc, pv)
-    )
+    return all(isinstance(item, dict) and bool(item.get('evidence_complete')) for item in (filesystem, pvc, pv))
 
 
 def _storage_evidence_recommendation() -> dict[str, Any]:
@@ -960,9 +943,12 @@ def _storage_evidence_recommendation() -> dict[str, Any]:
             'Restore the missing Prometheus metrics before treating storage posture '
             'as healthy or making capacity decisions.'
         ),
-        priority='Warning', source='storage_evidence',
-        source_label='Storage Evidence', resource='storage',
-        action_type='storage_review', href='/analytics/storage?tab=capacity',
+        priority='Warning',
+        source='storage_evidence',
+        source_label='Storage Evidence',
+        resource='storage',
+        action_type='storage_review',
+        href='/analytics/storage?tab=capacity',
     )
 
 
@@ -975,9 +961,12 @@ def _storage_baseline_recommendations() -> list[dict[str, Any]]:
                 'PV, and PVC evidence. Continue tracking pressure, lifecycle state, '
                 'and namespace storage demand.'
             ),
-            priority='Normal', source='storage_baseline',
-            source_label='Storage Baseline', resource='storage',
-            action_type='storage_review', href='/analytics/storage?tab=capacity',
+            priority='Normal',
+            source='storage_baseline',
+            source_label='Storage Baseline',
+            resource='storage',
+            action_type='storage_review',
+            href='/analytics/storage?tab=capacity',
             is_actionable=False,
         ),
         build_recommendation(
@@ -986,9 +975,12 @@ def _storage_baseline_recommendations() -> list[dict[str, Any]]:
                 'Review storage class expansion capability and PV reclaim policies '
                 'for critical workloads before capacity incidents occur.'
             ),
-            priority='Info', source='storage_practice',
-            source_label='Storage Operating Practice', resource='storage',
-            action_type='storage_review', href='/analytics/storage?tab=capacity',
+            priority='Info',
+            source='storage_practice',
+            source_label='Storage Operating Practice',
+            resource='storage',
+            action_type='storage_review',
+            href='/analytics/storage?tab=capacity',
             is_actionable=False,
         ),
     ]
@@ -998,11 +990,19 @@ def build_workload_actionable_recommendations(payload: dict[str, Any]) -> list[d
     recommendations: list[dict[str, Any]] = []
     tenant_quota_rows = _as_list(
         payload.get('tenant_quota_rows')
-        or ((payload.get('tenant_quota_summary') or {}).get('rows', []) if isinstance(payload.get('tenant_quota_summary'), dict) else [])
+        or (
+            (payload.get('tenant_quota_summary') or {}).get('rows', [])
+            if isinstance(payload.get('tenant_quota_summary'), dict)
+            else []
+        )
     )
     workload_mapping_rows = _as_list(
         payload.get('workload_mapping_rows')
-        or ((payload.get('workload_mapping_payload') or {}).get('rows', []) if isinstance(payload.get('workload_mapping_payload'), dict) else [])
+        or (
+            (payload.get('workload_mapping_payload') or {}).get('rows', [])
+            if isinstance(payload.get('workload_mapping_payload'), dict)
+            else []
+        )
     )
     governance_findings = _as_list(payload.get('governance_findings', []))
 
@@ -1032,45 +1032,75 @@ def build_workload_actionable_recommendations(payload: dict[str, Any]) -> list[d
             quota_efficiency_risk_count += 1
 
     if missing_quota_count:
-        recommendations.append(build_recommendation(
-            title='Create Missing Namespace ResourceQuota',
-            description=f'{missing_quota_count} Namespace(s) have no ResourceQuota. Define CPU, memory, and pod quota boundaries before allowing additional workload growth.',
-            priority='Critical', source='workload_quota', source_label='Tenant Quota',
-            resource='namespace', action_type='quota_review',
-            href='/analytics/workload?tab=quotas&tenant_quota_status=Missing', icon='shield-alert',
-        ))
+        recommendations.append(
+            build_recommendation(
+                title='Create Missing Namespace ResourceQuota',
+                description=f'{missing_quota_count} Namespace(s) have no ResourceQuota. Define CPU, memory, and pod quota boundaries before allowing additional workload growth.',
+                priority='Critical',
+                source='workload_quota',
+                source_label='Tenant Quota',
+                resource='namespace',
+                action_type='quota_review',
+                href='/analytics/workload?tab=quotas&tenant_quota_status=Missing',
+                icon='shield-alert',
+            )
+        )
     if partial_quota_count:
-        recommendations.append(build_recommendation(
-            title='Complete Partial ResourceQuota Definitions',
-            description=f'{partial_quota_count} Namespace(s) have partial ResourceQuota coverage. Add the missing CPU, memory, or pod quota keys.',
-            priority='Warning', source='workload_quota', source_label='Tenant Quota',
-            resource='namespace', action_type='quota_review',
-            href='/analytics/workload?tab=quotas&tenant_quota_status=Partial', icon='shield-check',
-        ))
+        recommendations.append(
+            build_recommendation(
+                title='Complete Partial ResourceQuota Definitions',
+                description=f'{partial_quota_count} Namespace(s) have partial ResourceQuota coverage. Add the missing CPU, memory, or pod quota keys.',
+                priority='Warning',
+                source='workload_quota',
+                source_label='Tenant Quota',
+                resource='namespace',
+                action_type='quota_review',
+                href='/analytics/workload?tab=quotas&tenant_quota_status=Partial',
+                icon='shield-check',
+            )
+        )
     if quota_critical_count:
-        recommendations.append(build_recommendation(
-            title='Review Namespaces at Critical Quota Usage',
-            description=f'{quota_critical_count} Namespace(s) are at critical quota pressure. Review the pressure resource, runtime demand, and ownership before increasing quota.',
-            priority='Critical', source='workload_quota', source_label='Tenant Quota',
-            resource='namespace', action_type='quota_review',
-            href='/analytics/workload?tab=quotas&tenant_risk=Critical', icon='triangle-alert',
-        ))
+        recommendations.append(
+            build_recommendation(
+                title='Review Namespaces at Critical Quota Usage',
+                description=f'{quota_critical_count} Namespace(s) are at critical quota pressure. Review the pressure resource, runtime demand, and ownership before increasing quota.',
+                priority='Critical',
+                source='workload_quota',
+                source_label='Tenant Quota',
+                resource='namespace',
+                action_type='quota_review',
+                href='/analytics/workload?tab=quotas&tenant_risk=Critical',
+                icon='triangle-alert',
+            )
+        )
     elif quota_near_limit_count:
-        recommendations.append(build_recommendation(
-            title='Review Namespaces Near Quota Limit',
-            description=f'{quota_near_limit_count} Namespace(s) are approaching quota limits. Validate whether the allocation is expected and coordinate changes with application owners.',
-            priority='Warning', source='workload_quota', source_label='Tenant Quota',
-            resource='namespace', action_type='quota_review',
-            href='/analytics/workload?tab=quotas&tenant_risk=High', icon='gauge',
-        ))
+        recommendations.append(
+            build_recommendation(
+                title='Review Namespaces Near Quota Limit',
+                description=f'{quota_near_limit_count} Namespace(s) are approaching quota limits. Validate whether the allocation is expected and coordinate changes with application owners.',
+                priority='Warning',
+                source='workload_quota',
+                source_label='Tenant Quota',
+                resource='namespace',
+                action_type='quota_review',
+                href='/analytics/workload?tab=quotas&tenant_risk=High',
+                icon='gauge',
+            )
+        )
     if quota_efficiency_risk_count:
-        recommendations.append(build_recommendation(
-            title='Right-Size Quota Allocation Before Expansion',
-            description=f'{quota_efficiency_risk_count} Namespace(s) show high quota allocation with low observed runtime demand. Right-size workload requests before increasing quota.',
-            priority='Warning', source='workload_rightsizing', source_label='Workload Right-Sizing',
-            resource='namespace', action_type='right_size_requests',
-            href='/analytics/workload?tab=quotas&tenant_risk=Medium', icon='scale',
-        ))
+        recommendations.append(
+            build_recommendation(
+                title='Right-Size Quota Allocation Before Expansion',
+                description=f'{quota_efficiency_risk_count} Namespace(s) show high quota allocation with low observed runtime demand. Right-size workload requests before increasing quota.',
+                priority='Warning',
+                source='workload_rightsizing',
+                source_label='Workload Right-Sizing',
+                resource='namespace',
+                action_type='right_size_requests',
+                href='/analytics/workload?tab=quotas&tenant_risk=Medium',
+                icon='scale',
+            )
+        )
 
     best_effort_count = 0
     missing_request_count = 0
@@ -1103,78 +1133,131 @@ def build_workload_actionable_recommendations(payload: dict[str, Any]) -> list[d
         under_requested_count += int('increase' in recommendation)
 
     if best_effort_count:
-        recommendations.append(build_recommendation(
-            title='Review BestEffort Workload Configuration',
-            description=f'{best_effort_count} BestEffort Workload(s) were detected. Set CPU and memory requests to improve scheduling reliability and capacity evidence.',
-            priority='Critical', source='workload_governance', source_label='Workload Governance',
-            resource='workload', action_type='workload_governance',
-            href='/analytics/workload?tab=mapping&workload_qos=BestEffort', icon='shield-alert',
-        ))
+        recommendations.append(
+            build_recommendation(
+                title='Review BestEffort Workload Configuration',
+                description=f'{best_effort_count} BestEffort Workload(s) were detected. Set CPU and memory requests to improve scheduling reliability and capacity evidence.',
+                priority='Critical',
+                source='workload_governance',
+                source_label='Workload Governance',
+                resource='workload',
+                action_type='workload_governance',
+                href='/analytics/workload?tab=mapping&workload_qos=BestEffort',
+                icon='shield-alert',
+            )
+        )
     if missing_request_count:
-        recommendations.append(build_recommendation(
-            title='Set Missing Workload Resource Requests',
-            description=f'{missing_request_count} Workload(s) have no complete CPU and memory requests. Define requests before relying on scheduling and right-sizing analysis.',
-            priority='Critical', source='workload_resource_mapping', source_label='Workload Resource Mapping',
-            resource='workload', action_type='workload_governance',
-            href='/analytics/workload?tab=mapping&workload_configuration=Requests+Missing', icon='settings-2',
-        ))
+        recommendations.append(
+            build_recommendation(
+                title='Set Missing Workload Resource Requests',
+                description=f'{missing_request_count} Workload(s) have no complete CPU and memory requests. Define requests before relying on scheduling and right-sizing analysis.',
+                priority='Critical',
+                source='workload_resource_mapping',
+                source_label='Workload Resource Mapping',
+                resource='workload',
+                action_type='workload_governance',
+                href='/analytics/workload?tab=mapping&workload_configuration=Requests+Missing',
+                icon='settings-2',
+            )
+        )
     if partial_request_count:
-        recommendations.append(build_recommendation(
-            title='Complete Partial Workload Requests',
-            description=f'{partial_request_count} Workload(s) have partial CPU or memory request coverage. Complete the request baseline before right-sizing.',
-            priority='Warning', source='workload_resource_mapping', source_label='Workload Resource Mapping',
-            resource='workload', action_type='workload_governance',
-            href='/analytics/workload?tab=mapping&workload_configuration=Requests+Partial', icon='settings-2',
-        ))
+        recommendations.append(
+            build_recommendation(
+                title='Complete Partial Workload Requests',
+                description=f'{partial_request_count} Workload(s) have partial CPU or memory request coverage. Complete the request baseline before right-sizing.',
+                priority='Warning',
+                source='workload_resource_mapping',
+                source_label='Workload Resource Mapping',
+                resource='workload',
+                action_type='workload_governance',
+                href='/analytics/workload?tab=mapping&workload_configuration=Requests+Partial',
+                icon='settings-2',
+            )
+        )
     if memory_limit_review_count:
-        recommendations.append(build_recommendation(
-            title='Review Missing Memory Limit Coverage',
-            description=f'{memory_limit_review_count} Workload(s) need memory limit review. Apply memory limits according to workload criticality while preserving intentional CPU limit policy.',
-            priority='Warning', source='workload_resource_mapping', source_label='Workload Resource Mapping',
-            resource='workload', action_type='workload_governance',
-            href='/analytics/workload?tab=mapping&workload_configuration=Memory+Limit+Missing', icon='sliders-horizontal',
-        ))
+        recommendations.append(
+            build_recommendation(
+                title='Review Missing Memory Limit Coverage',
+                description=f'{memory_limit_review_count} Workload(s) need memory limit review. Apply memory limits according to workload criticality while preserving intentional CPU limit policy.',
+                priority='Warning',
+                source='workload_resource_mapping',
+                source_label='Workload Resource Mapping',
+                resource='workload',
+                action_type='workload_governance',
+                href='/analytics/workload?tab=mapping&workload_configuration=Memory+Limit+Missing',
+                icon='sliders-horizontal',
+            )
+        )
     if incomplete_metrics_count:
-        recommendations.append(build_recommendation(
-            title='Restore Workload Metrics Coverage',
-            description=f'{incomplete_metrics_count} Workload(s) do not have complete current and selected-window CPU and memory evidence. Defer automatic right-sizing until coverage is complete.',
-            priority='Warning', source='workload_resource_mapping', source_label='Workload Resource Mapping',
-            resource='workload', action_type='workload_governance',
-            href='/analytics/workload?tab=mapping', icon='database-zap',
-        ))
+        recommendations.append(
+            build_recommendation(
+                title='Restore Workload Metrics Coverage',
+                description=f'{incomplete_metrics_count} Workload(s) do not have complete current and selected-window CPU and memory evidence. Defer automatic right-sizing until coverage is complete.',
+                priority='Warning',
+                source='workload_resource_mapping',
+                source_label='Workload Resource Mapping',
+                resource='workload',
+                action_type='workload_governance',
+                href='/analytics/workload?tab=mapping',
+                icon='database-zap',
+            )
+        )
     if under_requested_count:
-        recommendations.append(build_recommendation(
-            title='Increase Resources for Under-Provisioned Workloads',
-            description=f'{under_requested_count} Workload(s) may need higher CPU or memory requests. Validate current demand, selected-window pod peak sums, throttling, OOM events, and SLO impact.',
-            priority='Critical' if high_risk_count else 'Warning',
-            source='workload_rightsizing', source_label='Workload Right-Sizing',
-            resource='workload', action_type='right_size_requests',
-            href='/analytics/workload?tab=mapping&workload_risk=High', icon='trending-up',
-        ))
+        recommendations.append(
+            build_recommendation(
+                title='Increase Resources for Under-Provisioned Workloads',
+                description=f'{under_requested_count} Workload(s) may need higher CPU or memory requests. Validate current demand, selected-window pod peak sums, throttling, OOM events, and SLO impact.',
+                priority='Critical' if high_risk_count else 'Warning',
+                source='workload_rightsizing',
+                source_label='Workload Right-Sizing',
+                resource='workload',
+                action_type='right_size_requests',
+                href='/analytics/workload?tab=mapping&workload_risk=High',
+                icon='trending-up',
+            )
+        )
     if over_requested_count:
-        recommendations.append(build_recommendation(
-            title='Right-Size Over-Requested Workloads',
-            description=f'{over_requested_count} Workload(s) show low current and selected-window demand against requests. Validate with owners before reducing values.',
-            priority='Warning', source='workload_rightsizing', source_label='Workload Right-Sizing',
-            resource='workload', action_type='right_size_requests',
-            href='/analytics/workload?tab=mapping&workload_risk=Medium', icon='scale',
-        ))
+        recommendations.append(
+            build_recommendation(
+                title='Right-Size Over-Requested Workloads',
+                description=f'{over_requested_count} Workload(s) show low current and selected-window demand against requests. Validate with owners before reducing values.',
+                priority='Warning',
+                source='workload_rightsizing',
+                source_label='Workload Right-Sizing',
+                resource='workload',
+                action_type='right_size_requests',
+                href='/analytics/workload?tab=mapping&workload_risk=Medium',
+                icon='scale',
+            )
+        )
     if high_risk_count and not under_requested_count and not best_effort_count:
-        recommendations.append(build_recommendation(
-            title='Review High-Risk Workload Mappings',
-            description=f'{high_risk_count} Workload mapping row(s) are high risk. Review request coverage, memory limit policy, evidence coverage, and ownership.',
-            priority='Critical', source='workload_resource_mapping', source_label='Workload Resource Mapping',
-            resource='workload', action_type='workload_governance',
-            href='/analytics/workload?tab=mapping&workload_risk=High', icon='circle-alert',
-        ))
+        recommendations.append(
+            build_recommendation(
+                title='Review High-Risk Workload Mappings',
+                description=f'{high_risk_count} Workload mapping row(s) are high risk. Review request coverage, memory limit policy, evidence coverage, and ownership.',
+                priority='Critical',
+                source='workload_resource_mapping',
+                source_label='Workload Resource Mapping',
+                resource='workload',
+                action_type='workload_governance',
+                href='/analytics/workload?tab=mapping&workload_risk=High',
+                icon='circle-alert',
+            )
+        )
     elif medium_risk_count:
-        recommendations.append(build_recommendation(
-            title='Review Medium-Risk Workload Mappings',
-            description=f'{medium_risk_count} Workload mapping row(s) have medium risk. Prioritize repeated configuration or evidence patterns across owners.',
-            priority='Warning', source='workload_resource_mapping', source_label='Workload Resource Mapping',
-            resource='workload', action_type='workload_governance',
-            href='/analytics/workload?tab=mapping&workload_risk=Medium', icon='activity',
-        ))
+        recommendations.append(
+            build_recommendation(
+                title='Review Medium-Risk Workload Mappings',
+                description=f'{medium_risk_count} Workload mapping row(s) have medium risk. Prioritize repeated configuration or evidence patterns across owners.',
+                priority='Warning',
+                source='workload_resource_mapping',
+                source_label='Workload Resource Mapping',
+                resource='workload',
+                action_type='workload_governance',
+                href='/analytics/workload?tab=mapping&workload_risk=Medium',
+                icon='activity',
+            )
+        )
 
     for finding in governance_findings:
         if not isinstance(finding, dict):
@@ -1184,13 +1267,19 @@ def build_workload_actionable_recommendations(payload: dict[str, Any]) -> list[d
             continue
         filter_key = str(finding.get('filter') or '')
         href = '/analytics/workload?tab=quotas' if filter_key == 'missing-quota' else '/analytics/workload?tab=mapping'
-        recommendations.append(build_recommendation(
-            title=str(finding.get('label') or 'Review Workload Governance Finding'),
-            description='Review the related Namespace, Workload, quota, request, limit, metrics coverage, or ownership policy.',
-            priority=severity, source='workload_governance', source_label='Workload Governance',
-            resource='workload', action_type='workload_governance', href=href,
-            icon=str(finding.get('icon') or 'shield-alert'),
-        ))
+        recommendations.append(
+            build_recommendation(
+                title=str(finding.get('label') or 'Review Workload Governance Finding'),
+                description='Review the related Namespace, Workload, quota, request, limit, metrics coverage, or ownership policy.',
+                priority=severity,
+                source='workload_governance',
+                source_label='Workload Governance',
+                resource='workload',
+                action_type='workload_governance',
+                href=href,
+                icon=str(finding.get('icon') or 'shield-alert'),
+            )
+        )
 
     recommendations = deduplicate_recommendations(recommendations)
     if recommendations:
@@ -1199,19 +1288,28 @@ def build_workload_actionable_recommendations(payload: dict[str, Any]) -> list[d
         build_recommendation(
             title='Continue Workload Governance Monitoring',
             description='No actionable workload governance or right-sizing risk was detected. Continue tracking quota, requests, memory limits, QoS metadata, and evidence coverage.',
-            priority='Normal', source='workload_baseline', source_label='Workload Baseline',
-            resource='workload', action_type='workload_governance',
-            href='/analytics/workload?tab=recommendations', icon='check-circle-2', is_actionable=False,
+            priority='Normal',
+            source='workload_baseline',
+            source_label='Workload Baseline',
+            resource='workload',
+            action_type='workload_governance',
+            href='/analytics/workload?tab=recommendations',
+            icon='check-circle-2',
+            is_actionable=False,
         ),
         build_recommendation(
             title='Review Workload Requests and Limits Periodically',
             description='Review requests and memory limit policy after major deployments, scaling events, or tenant quota changes. CPU limits may remain intentionally unset.',
-            priority='Info', source='workload_practice', source_label='Workload Operating Practice',
-            resource='workload', action_type='workload_governance',
-            href='/analytics/workload?tab=recommendations', icon='list-checks', is_actionable=False,
+            priority='Info',
+            source='workload_practice',
+            source_label='Workload Operating Practice',
+            resource='workload',
+            action_type='workload_governance',
+            href='/analytics/workload?tab=recommendations',
+            icon='list-checks',
+            is_actionable=False,
         ),
     ]
-
 
 
 FORECAST_WARNING_THRESHOLD = 75.0
@@ -1249,7 +1347,9 @@ def build_forecast_actionable_recommendations(
 
         resource_key = str(item.get('key') or '').strip().lower()
         resource_label = str(item.get('label') or resource_key.upper() or 'Resource')
-        href = _forecast_review_href(payload, resource_key if resource_key in {'cpu', 'memory', 'storage', 'pods'} else 'trend')
+        href = _forecast_review_href(
+            payload, resource_key if resource_key in {'cpu', 'memory', 'storage', 'pods'} else 'trend'
+        )
         has_data = bool(item.get('has_data'))
         projected_percent = get_numeric_value(item.get('peak_projected_percent', item.get('projected_percent', 0)))
         latest_daily_average_percent = get_numeric_value(item.get('latest_daily_average_percent', 0))
@@ -1375,18 +1475,28 @@ def build_forecast_actionable_recommendations(
             description=(
                 'No actionable risk was detected from valid resource projections. Continue tracking the forecast after major deployments, scaling events, and capacity changes.'
             ),
-            priority='Normal', source='forecast_baseline', source_label='Forecast Baseline',
-            resource='forecast', action_type='forecast_review', href=trend_href,
-            icon='check-circle-2', is_actionable=False,
+            priority='Normal',
+            source='forecast_baseline',
+            source_label='Forecast Baseline',
+            resource='forecast',
+            action_type='forecast_review',
+            href=trend_href,
+            icon='check-circle-2',
+            is_actionable=False,
         ),
         build_recommendation(
             title='Validate Forecast Assumptions Periodically',
             description=(
                 'Use forecasts as early planning signals. Re-check the Historical Signal Quality and scope boundary when history is noisy, incomplete, or mixed across namespace and cluster capacity.'
             ),
-            priority='Info', source='forecast_practice', source_label='Forecast Practice',
-            resource='forecast', action_type='forecast_review', href=trend_href,
-            icon='sigma', is_actionable=False,
+            priority='Info',
+            source='forecast_practice',
+            source_label='Forecast Practice',
+            resource='forecast',
+            action_type='forecast_review',
+            href=trend_href,
+            icon='sigma',
+            is_actionable=False,
         ),
     ]
 
@@ -1409,8 +1519,13 @@ def _build_forecast_eta_recommendation(
                 f'{nearest_critical.get("resource", "A resource")} is projected to reach the critical threshold in '
                 f'{nearest_critical.get("label", f"{int(critical_days)} days")}. Create a capacity action plan before the projected date.'
             ),
-            priority='Critical', source='forecast_eta', source_label='Forecast Threshold ETA',
-            resource='forecast', action_type='forecast_review', href=href, icon='calendar-clock',
+            priority='Critical',
+            source='forecast_eta',
+            source_label='Forecast Threshold ETA',
+            resource='forecast',
+            action_type='forecast_review',
+            href=href,
+            icon='calendar-clock',
         )
     if isinstance(warning_days, int | float) and warning_days <= 30:
         return build_recommendation(
@@ -1419,8 +1534,13 @@ def _build_forecast_eta_recommendation(
                 f'{nearest_warning.get("resource", "A resource")} is projected to reach the warning threshold in '
                 f'{nearest_warning.get("label", f"{int(warning_days)} days")}. Review whether the trend is expected and prepare capacity adjustments.'
             ),
-            priority='Warning', source='forecast_eta', source_label='Forecast Threshold ETA',
-            resource='forecast', action_type='forecast_review', href=href, icon='calendar-clock',
+            priority='Warning',
+            source='forecast_eta',
+            source_label='Forecast Threshold ETA',
+            resource='forecast',
+            action_type='forecast_review',
+            href=href,
+            icon='calendar-clock',
         )
     return None
 

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any, Callable
+from typing import Any
 
 from kubernetes.client import V1Ingress, V1Secret
 
@@ -186,11 +187,7 @@ def _coverage_evidence(
     if not declared_hosts:
         return TLS_COVERAGE_NONE, 0, 0, []
 
-    uncovered = [
-        host
-        for host in declared_hosts
-        if matching_certificate_pattern(host, dns_names, common_name) is None
-    ]
+    uncovered = [host for host in declared_hosts if matching_certificate_pattern(host, dns_names, common_name) is None]
     covered_count = len(declared_hosts) - len(uncovered)
     if not uncovered:
         state = TLS_COVERAGE_FULL

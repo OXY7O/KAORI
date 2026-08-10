@@ -14,7 +14,7 @@ def test_prometheus_runtime_matches_kubernetes_layout_and_filtered_history() -> 
     assert 'runtime_history_filters_enabled=true' in detail
     assert "runtime_history_endpoint='prometheus.instance_runtime_history'" in detail
     assert 'data-kaori-provider-runtime-kubernetes-pattern' in runtime
-    assert "integrations/components/_runtime_decision.html" in runtime
+    assert 'integrations/components/_runtime_decision.html' in runtime
     assert 'runtime_decision.render(' in runtime
     assert 'Runtime Evidence' in runtime
     assert 'data-kaori-prometheus-runtime-evidence' in runtime
@@ -25,6 +25,7 @@ def test_prometheus_runtime_matches_kubernetes_layout_and_filtered_history() -> 
     assert 'xl:sticky' not in runtime
     assert 'workspace_summary_card' not in detail
 
+
 def test_prometheus_bindings_use_kaori_table_and_native_create_dialog() -> None:
     template = read('app/templates/prometheus/partials/_detail_scope.html')
 
@@ -33,7 +34,7 @@ def test_prometheus_bindings_use_kaori_table_and_native_create_dialog() -> None:
     assert 'Effective Consumer Resolution' in template
     assert 'Binding Decision' in template
     assert 'table_ui.table_classes' in template
-    assert 'integration_status(row.validation_status, display=\'indicator\')' in template
+    assert "integration_status(row.validation_status, display='indicator')" in template
     assert '<dialog id="prometheus-create-binding-dialog"' in template
     assert 'data-kaori-dialog-open' in template
     assert 'data-dialog-target="prometheus-create-binding-dialog"' in template

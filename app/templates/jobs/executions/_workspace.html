@@ -24,24 +24,22 @@
                         <p class="mt-1 text-sm leading-6 text-content-secondary">Current execution demand, completion posture, and worker queue activity recorded by KAORI.</p>
                     </div>
                 </div>
-                <p id="execution-overview-updated" class="text-xs font-medium text-content-muted">Updated {{ job_last_refreshed_at }}</p>
+                <p id="execution-overview-updated"
+                   class="text-xs font-medium text-content-muted">Updated {{ job_last_refreshed_at }}</p>
             </div>
         </header>
-
         <div class="grid sm:grid-cols-2 xl:grid-cols-4">
             {% set overview_metrics = [
-                ('activity', 'Active Jobs', job_stats.active, 'Queued, running, or retrying', 'info'),
-                ('cpu', 'Running Now', job_stats.running, 'Currently owned by workers', 'violet'),
-                ('triangle-alert', 'Needs Attention', job_stats.attention, 'Active intervention + terminal issues · 24H', 'warning'),
-                ('circle-check-big', 'Completed · 24H', job_stats.completed_24h, 'Terminal executions recorded', 'normal')
-            ] %}
+                            ('activity', 'Active Jobs', job_stats.active, 'Queued, running, or retrying', 'info'),
+                            ('cpu', 'Running Now', job_stats.running, 'Currently owned by workers', 'violet'),
+                            ('triangle-alert', 'Needs Attention', job_stats.attention, 'Active intervention + terminal issues · 24H', 'warning'),
+                            ('circle-check-big', 'Completed · 24H', job_stats.completed_24h, 'Terminal executions recorded', 'normal')
+                        ] %}
             {% for icon, label, value, description, tone in overview_metrics %}
-                {% set icon_classes =
-                    'bg-status-warning-soft text-status-warning-text' if tone == 'warning'
-                    else ('bg-status-normal-soft text-status-normal-text' if tone == 'normal'
-                    else ('bg-status-info-soft text-status-info-text' if tone == 'info'
-                    else 'bg-kaori-soft text-kaori-primary'))
-                %}
+                {% set icon_classes = 'bg-status-warning-soft text-status-warning-text' if tone == 'warning'
+                                    else ('bg-status-normal-soft text-status-normal-text' if tone == 'normal'
+                                    else ('bg-status-info-soft text-status-info-text' if tone == 'info'
+                                    else 'bg-kaori-soft text-kaori-primary')) %}
                 <div class="flex min-w-0 items-center gap-3 border-outline-subtle px-5 py-4 sm:px-6 {% if loop.index < 4 %}border-b{% endif %} {% if loop.index is odd %}sm:border-r{% endif %} {% if loop.index > 2 %}sm:border-b-0{% endif %} {% if loop.index < 4 %}xl:border-b-0 xl:border-r{% else %}xl:border-r-0{% endif %}">
                     <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ icon_classes }}"
                           aria-hidden="true">
@@ -49,7 +47,8 @@
                     </span>
                     <div class="min-w-0">
                         <div class="flex items-baseline gap-2">
-                            <p id="execution-overview-metric-{{ 'active' if label == 'Active Jobs' else ('running' if label == 'Running Now' else ('attention' if label == 'Needs Attention' else 'completed')) }}" class="text-xl font-bold text-content-primary">{{ value }}</p>
+                            <p id="execution-overview-metric-{{ 'active' if label == 'Active Jobs' else ('running' if label == 'Running Now' else ('attention' if label == 'Needs Attention' else 'completed')) }}"
+                               class="text-xl font-bold text-content-primary">{{ value }}</p>
                             <p class="text-xs font-semibold text-content-secondary">{{ label }}</p>
                         </div>
                         <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>
@@ -57,16 +56,12 @@
                 </div>
             {% endfor %}
         </div>
-
         <div class="grid border-t border-outline-subtle bg-surface-hover md:grid-cols-3 md:divide-x md:divide-outline-subtle">
-            {% set boundaries = [
-                ('users-round', 'Shared Execution', 'Identical requests attach to one canonical execution.'),
-                ('split', 'Queue Isolation', 'Runtime, analytics, forecasting, and maintenance remain isolated.'),
-                ('archive-restore', 'Lifecycle Managed', 'Terminal records follow the Job Executions retention policy.')
-            ] %}
+            {% set boundaries = [('users-round', 'Shared Execution', 'Identical requests attach to one canonical execution.'), ('split', 'Queue Isolation', 'Runtime, analytics, forecasting, and maintenance remain isolated.'), ('archive-restore', 'Lifecycle Managed', 'Terminal records follow the Job Executions retention policy.')] %}
             {% for icon, title, description in boundaries %}
                 <div class="flex items-start gap-3 border-b border-outline-subtle px-5 py-3.5 last:border-b-0 md:border-b-0 sm:px-6">
-                    <i data-lucide="{{ icon }}" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                    <i data-lucide="{{ icon }}"
+                       class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
                     <div>
                         <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
@@ -75,7 +70,6 @@
             {% endfor %}
         </div>
     </section>
-
     <section class="{{ operational_section.shell_classes() }}"
              aria-labelledby="execution-workspace-title">
         <header class="border-b border-outline-subtle px-5 pt-4 sm:px-6">
@@ -86,23 +80,32 @@
                         <i data-lucide="workflow" class="h-4 w-4"></i>
                     </span>
                     <div>
-                        <h2 id="execution-workspace-title" class="text-base font-semibold text-content-primary">Execution Workspace</h2>
+                        <h2 id="execution-workspace-title"
+                            class="text-base font-semibold text-content-primary">Execution Workspace</h2>
                         <p class="mt-1 text-sm leading-6 text-content-secondary">Monitor active work, inspect execution evidence, and compare queue demand with worker readiness.</p>
                     </div>
                 </div>
-                {{ workspace_tabs.render([('active', 'Active Work', 'activity', job_stats.active), ('registry', 'Registry', 'list-checks', job_stats.total), ('queues', 'Queues', 'network', job_stats.queues)], prefix='execution', aria_label='Execution Workspace Sections') }}
+                {{ workspace_tabs.render([('active', 'Active Work', 'activity', job_stats.active) , ('registry', 'Registry', 'list-checks', job_stats.total), ('queues', 'Queues', 'network', job_stats.queues)], prefix='execution', aria_label='Execution Workspace Sections') }}
             </div>
         </header>
-
-        <div id="execution-panel-active" x-show="activeTab === 'active'" role="tabpanel" x-cloak>
+        <div id="execution-panel-active"
+             x-show="activeTab === 'active'"
+             role="tabpanel"
+             x-cloak>
             {% set embedded = true %}
             {% include 'jobs/executions/partials/_active_jobs.html' %}
         </div>
-        <div id="execution-panel-registry" x-show="activeTab === 'registry'" role="tabpanel" x-cloak>
+        <div id="execution-panel-registry"
+             x-show="activeTab === 'registry'"
+             role="tabpanel"
+             x-cloak>
             {% set embedded = true %}
             {% include 'jobs/executions/partials/_registry.html' %}
         </div>
-        <div id="execution-panel-queues" x-show="activeTab === 'queues'" role="tabpanel" x-cloak>
+        <div id="execution-panel-queues"
+             x-show="activeTab === 'queues'"
+             role="tabpanel"
+             x-cloak>
             {% set embedded = true %}
             {% include 'jobs/executions/partials/_queue_activity.html' %}
         </div>

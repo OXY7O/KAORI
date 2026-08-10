@@ -58,7 +58,7 @@ def test_self_service_password_change_rejects_current_password_reuse_and_audits_
     routes = read('app/settings/routes.py')
 
     assert 'def _record_password_change_rejection(' in routes
-    assert "delivery_policy=OperationalDeliveryPolicy.AUDIT_ONLY" in routes
+    assert 'delivery_policy=OperationalDeliveryPolicy.AUDIT_ONLY' in routes
     assert "reason_code='current_password_mismatch'" in routes
     assert 'elif user.check_password(new_password):' in routes
     assert 'New password must be different from the current password.' in routes
@@ -82,6 +82,7 @@ def test_credential_workspace_explains_session_effect_without_reopening_external
     assert 'Remembered Sign-Ins' not in credential_information
     assert 'Provider-managed recovery' in hero
     assert 'Other sessions are revoked; secrets stay out of audit.' in hero
+
 
 def test_administrative_reset_now_revokes_target_sessions_and_no_longer_claims_they_remain_active() -> None:
     routes = read('app/users/routes.py')

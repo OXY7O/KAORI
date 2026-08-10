@@ -60,7 +60,9 @@ def test_generate_report_uses_two_primary_configuration_zones_and_compact_review
     assert 'Review & Queue' in source
     assert 'Review the request summary before it is queued for artifact generation.' in source
     assert 'aria-label="Request readiness"' in source
-    review_header = source.split('data-generate-section-header="review-queue"', 1)[1].split('<div class="mt-3 grid', 1)[0]
+    review_header = source.split('data-generate-section-header="review-queue"', 1)[1].split('<div class="mt-3 grid', 1)[
+        0
+    ]
     assert 'preview-eligibility-status' not in review_header
     assert 'Create & Queue Report' in source
     assert 'xl:grid-cols-2 xl:divide-x xl:divide-outline-default' in source
@@ -103,9 +105,9 @@ def test_inventory_sections_are_contract_locked_and_compact() -> None:
     assert '<input type="hidden" name="sections" value="{{ section.value }}">' in source
     assert "input.type = 'hidden';" in source
     assert 'sm:grid-cols-3' in source
-    assert "marker.innerHTML = '<i data-lucide=\"file-spreadsheet\"" in source
-    assert "input.disabled = inventoryContractLocked" not in source
-    assert "setElementVisibility(selectionActions, !inventoryContractLocked);" in source
+    assert 'marker.innerHTML = \'<i data-lucide="file-spreadsheet"' in source
+    assert 'input.disabled = inventoryContractLocked' not in source
+    assert 'setElementVisibility(selectionActions, !inventoryContractLocked);' in source
 
 
 def test_output_format_uses_compact_native_select_and_contract_filtering() -> None:
@@ -122,7 +124,9 @@ def test_output_format_uses_compact_native_select_and_contract_filtering() -> No
     assert "option.value === 'snapshot'" in source
     assert 'Supported Formats' in source
     assert 'id="output-format-contract"' in source
-    assert "allowedFormats\n                            .map(function (format) { return format.toUpperCase(); })" in source
+    assert (
+        'allowedFormats\n                            .map(function (format) { return format.toUpperCase(); })' in source
+    )
 
 
 def test_generate_report_uses_semantic_status_tokens_and_preserves_storage_guard() -> None:

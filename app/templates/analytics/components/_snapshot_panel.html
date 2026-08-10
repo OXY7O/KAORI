@@ -1,5 +1,4 @@
 {% import "components/table_label.html" as table_label %}
-
 {% macro tone_icon_classes(tone='info') -%}
     {%- if tone == 'normal' -%}bg-status-normal-soft text-status-normal
     {%- elif tone == 'warning' -%}bg-status-warning-soft text-status-warning
@@ -10,7 +9,6 @@
     {%- else -%}bg-status-info-soft text-status-info
     {%- endif -%}
 {%- endmacro %}
-
 {% macro tone_text_classes(tone='') -%}
     {%- if tone == 'normal' -%}text-status-normal
     {%- elif tone == 'warning' -%}text-status-warning
@@ -20,7 +18,6 @@
     {%- else -%}text-content-primary
     {%- endif -%}
 {%- endmacro %}
-
 {% macro render(
     title,
     description,
@@ -33,7 +30,7 @@
     body_classes='',
     footer_classes='lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle',
     icon_tone='maintenance'
-) -%}
+    ) -%}
     <section data-analytics-snapshot-panel
              class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
         <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
@@ -55,17 +52,15 @@
                 <div class="flex shrink-0 flex-wrap items-center gap-2">{{ header_action }}</div>
             {% endif %}
         </header>
-
         {% set metrics_content = caller('metrics')|trim %}
         {% if metrics_content %}
             <div data-analytics-snapshot-metrics class="grid {{ metrics_classes }}">{{ metrics_content|safe }}</div>
         {% endif %}
-
         {% set body_content = caller('body')|trim %}
         {% if body_content %}
-            <div data-analytics-snapshot-body class="{{ body_classes }}{% if metrics_content %} border-t border-outline-subtle{% endif %}">{{ body_content|safe }}</div>
+            <div data-analytics-snapshot-body
+                 class="{{ body_classes }}{% if metrics_content %} border-t border-outline-subtle{% endif %}">{{ body_content|safe }}</div>
         {% endif %}
-
         {% set footer_content = caller('footer')|trim %}
         {% if footer_content %}
             <div data-analytics-snapshot-footer
@@ -73,7 +68,6 @@
         {% endif %}
     </section>
 {%- endmacro %}
-
 {% macro metric(
     label,
     value,
@@ -86,19 +80,14 @@
     index=1,
     total=4,
     value_classes='text-xl'
-) -%}
+    ) -%}
     {% set mobile_bottom = index < total %}
     {% set sm_last_row_size = 1 if total % 2 else 2 %}
     {% set sm_bottom = index <= total - sm_last_row_size %}
     {% set sm_right = index % 2 == 1 and index < total %}
     {% set xl_right = index < total %}
     <article data-analytics-snapshot-metric
-             class="min-w-0 px-4 py-4 xl:px-5
-                    {{ 'border-b border-outline-subtle' if mobile_bottom else '' }}
-                    sm:border-b-0
-                    {{ 'sm:border-b sm:border-outline-subtle' if sm_bottom else '' }}
-                    {{ 'sm:border-r sm:border-outline-subtle' if sm_right else '' }}
-                    {{ 'xl:border-r xl:border-outline-subtle' if xl_right else 'xl:border-r-0' }}">
+             class="min-w-0 px-4 py-4 xl:px-5 {{ 'border-b border-outline-subtle' if mobile_bottom else '' }} sm:border-b-0 {{ 'sm:border-b sm:border-outline-subtle' if sm_bottom else '' }} {{ 'sm:border-r sm:border-outline-subtle' if sm_right else '' }} {{ 'xl:border-r xl:border-outline-subtle' if xl_right else 'xl:border-r-0' }}">
         <div class="flex items-center justify-between gap-3">
             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ tone_icon_classes(tone) }}">
                 <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
@@ -115,7 +104,6 @@
         {% if description %}<p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>{% endif %}
     </article>
 {%- endmacro %}
-
 {% macro insight(eyebrow, title='', description='', icon='', tone='info', title_tone='', extra_classes='') -%}
     <article class="px-4 py-3 sm:px-5 {{ extra_classes }}">
         <div class="flex items-start gap-3">
@@ -127,7 +115,9 @@
             <div class="min-w-0">
                 <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ eyebrow }}</p>
                 {% if title %}<p class="mt-1 text-sm font-semibold {{ tone_text_classes(title_tone) }}">{{ title }}</p>{% endif %}
-                {% if description %}<p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>{% endif %}
+                {% if description %}
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+                {% endif %}
             </div>
         </div>
     </article>

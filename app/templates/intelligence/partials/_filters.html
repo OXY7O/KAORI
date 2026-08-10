@@ -19,8 +19,9 @@
       hx-trigger="input changed delay:350ms from:input[name='q'], change from:select"
       class="border-b border-outline-subtle bg-surface-hover px-4 py-4 sm:px-5">
     <input type="hidden" name="page" value="1">
-    <input type="hidden" name="per_page" value="{{ payload.pagination.per_page }}">
-
+    <input type="hidden"
+           name="per_page"
+           value="{{ payload.pagination.per_page }}">
     <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
             <p class="text-sm font-semibold leading-5 text-content-primary">{{ resolved_title }}</p>
@@ -38,7 +39,6 @@
             Reset
         </a>
     </div>
-
     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <label class="block xl:col-span-2">
             <span class="{{ table_ui.filter_label_classes() }}">Search</span>
@@ -47,37 +47,55 @@
         <label class="block">
             <span class="{{ table_ui.filter_label_classes() }}">Domain</span>
             <select name="domain" class="{{ table_ui.filter_select_classes() }}">
-                {% for option in payload.filter_options.domains %}<option value="{{ option.value }}" {% if payload.filters.domain == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
+                {% for option in payload.filter_options.domains %}
+                    <option value="{{ option.value }}"
+                            {% if payload.filters.domain == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
             </select>
         </label>
         <label class="block">
             <span class="{{ table_ui.filter_label_classes() }}">Severity</span>
             <select name="severity" class="{{ table_ui.filter_select_classes() }}">
-                {% for option in payload.filter_options.severities %}<option value="{{ option.value }}" {% if payload.filters.severity == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
+                {% for option in payload.filter_options.severities %}
+                    <option value="{{ option.value }}"
+                            {% if payload.filters.severity == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
             </select>
         </label>
         <label class="block">
             <span class="{{ table_ui.filter_label_classes() }}">Category</span>
             <select name="category" class="{{ table_ui.filter_select_classes() }}">
-                {% for option in payload.filter_options.categories %}<option value="{{ option.value }}" {% if payload.filters.category == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
+                {% for option in payload.filter_options.categories %}
+                    <option value="{{ option.value }}"
+                            {% if payload.filters.category == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
             </select>
         </label>
         <label class="block">
             <span class="{{ table_ui.filter_label_classes() }}">Resource Type</span>
             <select name="source_kind" class="{{ table_ui.filter_select_classes() }}">
-                {% for option in payload.filter_options.source_kinds %}<option value="{{ option.value }}" {% if payload.filters.source_kind == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
+                {% for option in payload.filter_options.source_kinds %}
+                    <option value="{{ option.value }}"
+                            {% if payload.filters.source_kind == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
             </select>
         </label>
         <label class="block">
             <span class="{{ table_ui.filter_label_classes() }}">Logic Type</span>
             <select name="logic_type" class="{{ table_ui.filter_select_classes() }}">
-                {% for option in payload.filter_options.logic_types %}<option value="{{ option.value }}" {% if payload.filters.logic_type == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
+                {% for option in payload.filter_options.logic_types %}
+                    <option value="{{ option.value }}"
+                            {% if payload.filters.logic_type == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
             </select>
         </label>
         <label class="block">
             <span class="{{ table_ui.filter_label_classes() }}">Signal Source</span>
             <select name="signal_source" class="{{ table_ui.filter_select_classes() }}">
-                {% for option in payload.filter_options.signal_sources %}<option value="{{ option.value }}" {% if payload.filters.signal_source == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
+                {% for option in payload.filter_options.signal_sources %}
+                    <option value="{{ option.value }}"
+                            {% if payload.filters.signal_source == option.value %}selected{% endif %}>{{ option.label }}</option>
+                {% endfor %}
             </select>
         </label>
     </div>

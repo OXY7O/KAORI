@@ -6,16 +6,15 @@
 {% set posture_status = posture.status|default('unknown')|lower %}
 {% set posture_tone = table_label.semantic_tone(posture.tone or posture_status)|trim %}
 {% set posture_label = 'Healthy' if posture_tone == 'normal' else ('Watch' if posture_tone == 'warning' else ('Critical' if posture_tone == 'critical' else 'Unknown')) %}
-{{ page_hero.context_card_body(
-    'Operational Posture',
-    'Analytics Status',
-    posture_label,
-    posture_tone,
-    [
-        ('list-checks', 'Actionable', actionable.total_count|default(0), 'Prioritized recommendations'),
-        ('bell-ring', 'Active Alerts', active_alerts, 'Firing alerts in scope')
-    ],
-    'Manage Clusters',
-    url_for('integrations.kubernetes'),
-    'server-cog'
+{{ page_hero.context_card_body('Operational Posture',
+'Analytics Status',
+posture_label,
+posture_tone,
+[
+('list-checks', 'Actionable', actionable.total_count|default(0) , 'Prioritized recommendations'),
+('bell-ring', 'Active Alerts', active_alerts, 'Firing alerts in scope')
+],
+'Manage Clusters',
+url_for('integrations.kubernetes'),
+'server-cog'
 ) }}

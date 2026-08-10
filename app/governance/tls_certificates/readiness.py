@@ -67,10 +67,7 @@ def check_tls_governance_schema_readiness() -> TLSGovernanceSchemaReadiness:
     missing_columns: tuple[str, ...] = ()
     if 'tls_certificate_inventory' in available_tables:
         try:
-            available_columns = {
-                str(column['name'])
-                for column in inspector.get_columns('tls_certificate_inventory')
-            }
+            available_columns = {str(column['name']) for column in inspector.get_columns('tls_certificate_inventory')}
         except SQLAlchemyError as exc:
             current_app.logger.warning('TLS inventory column readiness check failed: %s', exc)
             return TLSGovernanceSchemaReadiness(

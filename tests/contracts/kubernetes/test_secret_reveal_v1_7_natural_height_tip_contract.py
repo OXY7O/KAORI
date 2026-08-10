@@ -11,7 +11,10 @@ def test_global_gate_guidance_uses_compact_activation_tip() -> None:
     page = read('app/templates/kubernetes_operations/secrets/reveal.html')
 
     assert 'Activation Tip' in page
-    assert 'Policy-enabled Namespace configuration is ready, but target selection is locked by the global kill switch.' in page
+    assert (
+        'Policy-enabled Namespace configuration is ready, but target selection is locked by the global kill switch.'
+        in page
+    )
     assert 'KUBERNETES_SECRET_REVEAL_ENABLED=true' in page
     assert 'restart KAORI' in page
     assert '<span class="mt-1.5 block text-xs leading-5 text-status-warning-text">' not in page

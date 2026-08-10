@@ -8,7 +8,8 @@
                 <i data-lucide="activity" class="h-5 w-5"></i>
             </span>
             <div class="min-w-0">
-                <h2 id="reporting-operations-title" class="text-base font-semibold text-content-primary">Reporting Operations</h2>
+                <h2 id="reporting-operations-title"
+                    class="text-base font-semibold text-content-primary">Reporting Operations</h2>
                 <p class="mt-0.5 text-xs leading-5 text-content-muted">Worker readiness, recurring automation, and artifact storage at a glance.</p>
             </div>
         </div>
@@ -26,7 +27,6 @@
             </a>
         {% endif %}
     </header>
-
     <div class="grid divide-y divide-outline-subtle lg:grid-cols-3 lg:divide-x lg:divide-y-0">
         {% for item in payload.reporting_operations %}
             <article class="px-5 py-4 sm:px-6">
@@ -52,7 +52,6 @@
             </article>
         {% endfor %}
     </div>
-
     {% if payload.storage_context.backend == 's3' and payload.storage_context.degraded %}
         <div class="border-t border-status-warning-border/60 bg-status-warning-soft/45 px-5 py-4 sm:px-6"
              data-report-storage-incident="overview">
@@ -86,12 +85,17 @@
                         </p>
                         <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-medium text-content-muted">
                             <span class="inline-flex items-center gap-1.5">
-                                <i data-lucide="clock-3" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>
+                                <i data-lucide="clock-3"
+                                   class="h-3.5 w-3.5 text-kaori-primary"
+                                   aria-hidden="true"></i>
                                 {{ payload.storage_context.checked_label }} · {{ payload.storage_context.source_label }}
                             </span>
                             <span class="inline-flex items-center gap-1.5">
-                                <i data-lucide="refresh-cw" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>
-                                Automatic check every {{ payload.storage_context.monitor_interval_minutes }} minute{% if payload.storage_context.monitor_interval_minutes != 1 %}s{% endif %}
+                                <i data-lucide="refresh-cw"
+                                   class="h-3.5 w-3.5 text-kaori-primary"
+                                   aria-hidden="true"></i>
+                                Automatic check every {{ payload.storage_context.monitor_interval_minutes }} minute
+                                {% if payload.storage_context.monitor_interval_minutes != 1 %}s{% endif %}
                             </span>
                         </div>
                     </div>

@@ -178,7 +178,5 @@ class JobPolicy(db.Model):
         onupdate=lambda: datetime.now(UTC),
     )
 
-    last_job_execution: Mapped[JobExecution | None] = relationship(
-        'JobExecution', foreign_keys=[last_job_execution_id]
-    )
+    last_job_execution: Mapped[JobExecution | None] = relationship('JobExecution', foreign_keys=[last_job_execution_id])
     updated_by: Mapped[User | None] = relationship('User', foreign_keys=[updated_by_user_id])

@@ -1,11 +1,11 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-TEMPLATE = ROOT / "app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html"
+TEMPLATE = ROOT / 'app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html'
 
 
 def source() -> str:
-    return TEMPLATE.read_text(encoding="utf-8")
+    return TEMPLATE.read_text(encoding='utf-8')
 
 
 def test_inventory_lifecycle_uses_horizontal_decision_surface_not_side_rail():

@@ -103,7 +103,12 @@ def test_platform_operations_overview_is_first_navigation_target() -> None:
     welcome = read('app/welcome/shortcuts.py')
 
     assert "url_for('platform_operations.overview.index')" in menu
-    assert menu.index('Overview') < menu.index('Jobs &amp; Executions') < menu.index('Data Lifecycle') < menu.index('K8s Administration')
+    assert (
+        menu.index('Overview')
+        < menu.index('Jobs &amp; Executions')
+        < menu.index('Data Lifecycle')
+        < menu.index('K8s Administration')
+    )
     assert "endpoint.startswith('platform_operations.overview.')" in breadcrumb
     assert "('jobs.view', 'platform_operations.overview.index')" in welcome
     assert "('platform_operations.view_data_lifecycle', 'platform_operations.overview.index')" in welcome

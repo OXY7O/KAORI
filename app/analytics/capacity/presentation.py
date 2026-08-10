@@ -36,9 +36,7 @@ def present_capacity_context(context: dict[str, Any]) -> dict[str, Any]:
         headroom = item.get('headroom')
         available = bool(item.get('evidence_available'))
         result[f'{resource}_headroom'] = headroom
-        result[f'{resource}_headroom_display'] = (
-            percent_display(headroom) if available else 'N/A'
-        )
+        result[f'{resource}_headroom_display'] = percent_display(headroom) if available else 'N/A'
 
     complete_scheduling_evidence = _complete_scheduling_evidence(
         normalized,
@@ -49,14 +47,10 @@ def present_capacity_context(context: dict[str, Any]) -> dict[str, Any]:
         scheduling_headroom,
         complete_scheduling_evidence,
     )
-    complete_scheduling_evidence = bool(
-        posture.get('evidence_complete', complete_scheduling_evidence)
-    )
+    complete_scheduling_evidence = bool(posture.get('evidence_complete', complete_scheduling_evidence))
     result['capacity_posture'] = posture
     result['capacity_scheduling_evidence_complete'] = complete_scheduling_evidence
-    result['capacity_scheduling_evidence_partial'] = (
-        bool(scheduling_headroom) and not complete_scheduling_evidence
-    )
+    result['capacity_scheduling_evidence_partial'] = bool(scheduling_headroom) and not complete_scheduling_evidence
     result.update(_bottleneck_presentation(scheduling_headroom))
     _present_risk_summary(result.get('risk_summary'))
     return result
@@ -85,32 +79,25 @@ def _normalize_resource(resource: str, item: dict[str, Any]) -> dict[str, Any]:
     remaining = _optional_float(item.get('available'))
     headroom = _optional_float(item.get('headroom'))
 
-    capacity_available = bool(
-        item.get('capacity_evidence_available', capacity is not None and capacity > 0)
-    ) and capacity is not None and capacity > 0
-    usage_available = bool(
-        item.get('usage_evidence_available', used is not None)
-    ) and used is not None
+    capacity_available = (
+        bool(item.get('capacity_evidence_available', capacity is not None and capacity > 0))
+        and capacity is not None
+        and capacity > 0
+    )
+    usage_available = bool(item.get('usage_evidence_available', used is not None)) and used is not None
     evidence_available = bool(
         item.get(
             'evidence_available',
-            capacity_available
-            and usage_available
-            and remaining is not None
-            and headroom is not None,
+            capacity_available and usage_available and remaining is not None and headroom is not None,
         )
     )
     scheduling_resource = bool(item.get('scheduling_resource', resource != 'storage'))
 
     normalized_headroom = (
-        round(max(min(headroom, 100.0), 0.0), 1)
-        if evidence_available and headroom is not None
-        else None
+        round(max(min(headroom, 100.0), 0.0), 1) if evidence_available and headroom is not None else None
     )
     utilization = (
-        round(max(min(100.0 - normalized_headroom, 100.0), 0.0), 1)
-        if normalized_headroom is not None
-        else None
+        round(max(min(100.0 - normalized_headroom, 100.0), 0.0), 1) if normalized_headroom is not None else None
     )
     status_label, tone = _capacity_status(normalized_headroom, evidence_available)
 
@@ -120,21 +107,10 @@ def _normalize_resource(resource: str, item: dict[str, Any]) -> dict[str, Any]:
             'usage_evidence_available': usage_available,
             'evidence_available': evidence_available,
             'scheduling_resource': scheduling_resource,
-            'scope_label': str(
-                item.get('scope_label')
-                or _default_scope_label(resource)
-            ),
-            'capacity': (
-                round(capacity, 2)
-                if capacity_available and capacity is not None
-                else None
-            ),
+            'scope_label': str(item.get('scope_label') or _default_scope_label(resource)),
+            'capacity': (round(capacity, 2) if capacity_available and capacity is not None else None),
             'used': round(used, 2) if usage_available and used is not None else None,
-            'available': (
-                round(remaining, 2)
-                if evidence_available and remaining is not None
-                else None
-            ),
+            'available': (round(remaining, 2) if evidence_available and remaining is not None else None),
             'headroom': normalized_headroom,
             'utilization_percent': utilization,
             'status_label': status_label,
@@ -154,9 +130,7 @@ def _complete_scheduling_evidence(
     normalized: dict[str, dict[str, Any]],
     raw_allocation_summary: Any,
 ) -> bool:
-    allocation_summary = (
-        raw_allocation_summary if isinstance(raw_allocation_summary, dict) else {}
-    )
+    allocation_summary = raw_allocation_summary if isinstance(raw_allocation_summary, dict) else {}
     return all(
         bool(normalized[resource].get('evidence_available'))
         and bool(
@@ -231,9 +205,7 @@ def _present_risk_summary(raw_risk_summary: Any) -> None:
         available = bool(item.get('evidence_available', False))
         headroom = item.get('headroom') if available else None
         item['headroom_display'] = percent_display(headroom) if available else 'N/A'
-        item['headroom_integer_display'] = (
-            percent_display(headroom, digits=0) if available else 'N/A'
-        )
+        item['headroom_integer_display'] = percent_display(headroom, digits=0) if available else 'N/A'
 
 
 def _optional_float(value: Any) -> float | None:

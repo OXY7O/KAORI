@@ -48,18 +48,36 @@ def main() -> int:
         'V1Preconditions(resource_version=resource_version)',
     ):
         require(token in service, f'ConfigMap service missing canonical token: {token}', errors)
-    require('validate_then_apply' not in service and 'validate_then_apply' not in routes,
-            'ConfigMap operations must not use the generic validation wrapper.', errors)
-    require('session' not in routes and 'session' not in receipts,
-            'ConfigMap delete validation must not store target receipts in session.', errors)
-    require("salt='kaori-configmap-delete-validation-v2'" in receipts,
-            'Delete receipt must use the v2 signed contract.', errors)
-    require('max_age=_DELETE_RECEIPT_MAX_AGE_SECONDS' in receipts,
-            'Delete receipt must enforce the ten-minute expiry.', errors)
-    require('expected_resource_version' in routes and 'verify_delete_receipt(' in routes,
-            'Final delete must verify the signed resource-version receipt.', errors)
-    require('connection_for_cluster(cluster)' in runtime and '_request_timeout=10' in service,
-            'Live ConfigMap operations must use registered cluster runtime and bounded calls.', errors)
+    require(
+        'validate_then_apply' not in service and 'validate_then_apply' not in routes,
+        'ConfigMap operations must not use the generic validation wrapper.',
+        errors,
+    )
+    require(
+        'session' not in routes and 'session' not in receipts,
+        'ConfigMap delete validation must not store target receipts in session.',
+        errors,
+    )
+    require(
+        "salt='kaori-configmap-delete-validation-v2'" in receipts,
+        'Delete receipt must use the v2 signed contract.',
+        errors,
+    )
+    require(
+        'max_age=_DELETE_RECEIPT_MAX_AGE_SECONDS' in receipts,
+        'Delete receipt must enforce the ten-minute expiry.',
+        errors,
+    )
+    require(
+        'expected_resource_version' in routes and 'verify_delete_receipt(' in routes,
+        'Final delete must verify the signed resource-version receipt.',
+        errors,
+    )
+    require(
+        'connection_for_cluster(cluster)' in runtime and '_request_timeout=10' in service,
+        'Live ConfigMap operations must use registered cluster runtime and bounded calls.',
+        errors,
+    )
 
     for token in (
         "_ALLOWED_ENTRY_KINDS = {'text', 'binary'}",
@@ -73,22 +91,39 @@ def main() -> int:
 
     for page in ('create.html', 'update.html', 'delete.html'):
         source = read(f'app/templates/kubernetes_operations/configmaps/{page}')
-        require('_validation_preview.html' in source,
-                f'{page} must include persistent validation evidence.', errors)
-        require('hx-sync="this:drop"' in source and 'hx-disabled-elt="find button"' in source,
-                f'{page} must block duplicate concurrent mutation submissions.', errors)
+        require('_validation_preview.html' in source, f'{page} must include persistent validation evidence.', errors)
+        require(
+            'hx-sync="this:drop"' in source and 'hx-disabled-elt="find button"' in source,
+            f'{page} must block duplicate concurrent mutation submissions.',
+            errors,
+        )
     for token in ('Validation Required', 'Validated', 'Failed', 'data-validation-status'):
         require(token in preview, f'Validation preview missing state token: {token}', errors)
-    require('components/operation_feedback_oob.html' in operation_response,
-            'ConfigMap HTMX responses must use canonical OOB operational feedback.', errors)
-    require('kaori:operation-validation-invalidated' in editor_js,
-            'ConfigMap editor must reset validation evidence after changed input.', errors)
-    require("new Event('input', { bubbles: true })" in editor_js,
-            'Programmatic ConfigMap row changes must invalidate the validation gate.', errors)
-    require(editor_js.count('invalidateForm(form)') >= 2,
-            'Both ConfigMap add and remove row paths must invalidate validation evidence.', errors)
-    require('resetValidationPreview(form)' in delete_js,
-            'Delete workflow must reset validation evidence after target/confirmation changes.', errors)
+    require(
+        'components/operation_feedback_oob.html' in operation_response,
+        'ConfigMap HTMX responses must use canonical OOB operational feedback.',
+        errors,
+    )
+    require(
+        'kaori:operation-validation-invalidated' in editor_js,
+        'ConfigMap editor must reset validation evidence after changed input.',
+        errors,
+    )
+    require(
+        "new Event('input', { bubbles: true })" in editor_js,
+        'Programmatic ConfigMap row changes must invalidate the validation gate.',
+        errors,
+    )
+    require(
+        editor_js.count('invalidateForm(form)') >= 2,
+        'Both ConfigMap add and remove row paths must invalidate validation evidence.',
+        errors,
+    )
+    require(
+        'resetValidationPreview(form)' in delete_js,
+        'Delete workflow must reset validation evidence after target/confirmation changes.',
+        errors,
+    )
 
     for token in (
         'feedback_id',
@@ -98,23 +133,46 @@ def main() -> int:
         "'error': 0",
         'OPERATIONAL_FEEDBACK_SESSION_KEY',
     ):
-        require(token in feedback or token in read('app/notifications/constants.py'),
-                f'Operational feedback contract missing token: {token}', errors)
-    require('OperationalFeedbackSpec' in feedback and 'OperationalFeedbackSpec(' in notification_service,
-            'Operational feedback must use the canonical typed specification.', errors)
-    require('def queue_operational_feedback' not in notification_service and 'def pop_operational_feedback' not in notification_service,
-            'Notification service must not retain feedback pass-through wrappers.', errors)
-    require("'load_operational_feedback': _operational_feedback" in presentation,
-            'Bootstrap must expose only canonical operational feedback context.', errors)
+        require(
+            token in feedback or token in read('app/notifications/constants.py'),
+            f'Operational feedback contract missing token: {token}',
+            errors,
+        )
+    require(
+        'OperationalFeedbackSpec' in feedback and 'OperationalFeedbackSpec(' in notification_service,
+        'Operational feedback must use the canonical typed specification.',
+        errors,
+    )
+    require(
+        'def queue_operational_feedback' not in notification_service
+        and 'def pop_operational_feedback' not in notification_service,
+        'Notification service must not retain feedback pass-through wrappers.',
+        errors,
+    )
+    require(
+        "'load_operational_feedback': _operational_feedback" in presentation,
+        'Bootstrap must expose only canonical operational feedback context.',
+        errors,
+    )
     for layout_name, layout in (('app', app_layout), ('auth', auth_layout)):
-        require('id="operational-toast-stack"' in layout,
-                f'{layout_name} layout must own the operational toast stack.', errors)
-        require("js/operational_toasts.js" in layout,
-                f'{layout_name} layout must load the global toast controller.', errors)
-        require('dismissQuickActionToast' not in layout and 'data-quick-action-toast' not in layout,
-                f'{layout_name} layout still contains legacy toast behavior.', errors)
-    require('<script' not in toast and 'style=' not in toast,
-            'Operational toast must not contain inline script or style debt.', errors)
+        require(
+            'id="operational-toast-stack"' in layout,
+            f'{layout_name} layout must own the operational toast stack.',
+            errors,
+        )
+        require(
+            'js/operational_toasts.js' in layout, f'{layout_name} layout must load the global toast controller.', errors
+        )
+        require(
+            'dismissQuickActionToast' not in layout and 'data-quick-action-toast' not in layout,
+            f'{layout_name} layout still contains legacy toast behavior.',
+            errors,
+        )
+    require(
+        '<script' not in toast and 'style=' not in toast,
+        'Operational toast must not contain inline script or style debt.',
+        errors,
+    )
     for token in (
         'data-operational-toast',
         'data-auto-dismiss-ms',
@@ -125,15 +183,21 @@ def main() -> int:
         'aria-live',
     ):
         require(token in toast, f'Operational toast missing token: {token}', errors)
-    require('components/progress_bar.html' in progress_toast and 'style=' not in progress_toast,
-            'Operational progress toast must reuse the shared progress component.', errors)
+    require(
+        'components/progress_bar.html' in progress_toast and 'style=' not in progress_toast,
+        'Operational progress toast must reuse the shared progress component.',
+        errors,
+    )
     for progress_usage in (
         'app/templates/components/navigation/_quick_sync_status.html',
         'app/templates/components/navigation/_individual_sync_status.html',
         'app/templates/governance/tls_certificates/partials/_sync_progress_toast.html',
     ):
-        require('components/operational_progress_toast.html' in read(progress_usage),
-                f'Active progress surface must use canonical operational progress toast: {progress_usage}', errors)
+        require(
+            'components/operational_progress_toast.html' in read(progress_usage),
+            f'Active progress surface must use canonical operational progress toast: {progress_usage}',
+            errors,
+        )
     for token in (
         'maximumVisibleToasts = 4',
         "toast.addEventListener('mouseenter'",
@@ -169,15 +233,27 @@ def main() -> int:
                 continue
             source = path.read_text(encoding='utf-8')
             for token in forbidden:
-                require(token not in source,
-                        f'Legacy ConfigMap/toast token {token!r} remains in {path.relative_to(ROOT)}.', errors)
+                require(
+                    token not in source,
+                    f'Legacy ConfigMap/toast token {token!r} remains in {path.relative_to(ROOT)}.',
+                    errors,
+                )
 
-    require('ConfigMap validation evidence' in standard and 'Operational toast' in standard,
-            'ConfigMap operations standard must document validation and toast contracts.', errors)
-    require('Legacy removals' in audit and 'signed receipt' in audit,
-            'ConfigMap audit must document legacy removal and signed delete validation.', errors)
-    require('verify_configmap_management_standard.py' in quality_gate,
-            'ConfigMap Management verifier must run in quality gate.', errors)
+    require(
+        'ConfigMap validation evidence' in standard and 'Operational toast' in standard,
+        'ConfigMap operations standard must document validation and toast contracts.',
+        errors,
+    )
+    require(
+        'Legacy removals' in audit and 'signed receipt' in audit,
+        'ConfigMap audit must document legacy removal and signed delete validation.',
+        errors,
+    )
+    require(
+        'verify_configmap_management_standard.py' in quality_gate,
+        'ConfigMap Management verifier must run in quality gate.',
+        errors,
+    )
 
     if errors:
         for error in errors:

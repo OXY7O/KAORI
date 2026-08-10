@@ -15,7 +15,7 @@ def test_alertmanager_validation_matches_kubernetes_capability_matrix_and_regist
     routes = ALERT_ROUTES.read_text()
     assert 'Alertmanager Capability Readiness' in content
     assert 'data-kaori-provider-capability-matrix' in content
-    assert "capability_readiness.render(" in content
+    assert 'capability_readiness.render(' in content
     assert "include 'alertmanager/partials/_capability_registry.html'" in content
     assert 'Validation Decision' not in content
     assert 'alertmanager-capability-loading' in registry
@@ -27,12 +27,13 @@ def test_alertmanager_validation_matches_kubernetes_capability_matrix_and_regist
     assert "@alertmanager_bp.get('/instances/<int:instance_id>/validation/capabilities')" in routes
     assert 'def instance_capability_registry' in routes
 
+
 def test_alertmanager_validation_modal_matches_kubernetes_capability_evidence_concept():
     registry = ALERT_REGISTRY.read_text()
     shared = read('app/templates/integrations/components/_provider_capability_detail.html')
     actions = read('app/templates/integrations/components/_record_actions.html')
-    assert "provider_capability_detail.content(" in registry
-    assert "record_actions.view_more(" in registry
+    assert 'provider_capability_detail.content(' in registry
+    assert 'record_actions.view_more(' in registry
     assert "'Alertmanager Capability Evidence'" in registry
     assert "'Runnable API Request'" in registry
     assert "size='standard'" in registry
@@ -55,7 +56,7 @@ def test_alertmanager_validation_modal_matches_kubernetes_capability_evidence_co
 def test_alertmanager_runtime_matches_kubernetes_full_width_runtime_pattern():
     content = read('app/templates/alertmanager/partials/_runtime_panel.html')
     assert 'data-kaori-provider-runtime-kubernetes-pattern' in content
-    assert "integrations/components/_runtime_decision.html" in content
+    assert 'integrations/components/_runtime_decision.html' in content
     assert 'runtime_decision.render(' in content
     assert 'data-kaori-alertmanager-runtime-evidence' in content
     assert 'Runtime Evidence' in content
@@ -65,6 +66,7 @@ def test_alertmanager_runtime_matches_kubernetes_full_width_runtime_pattern():
     assert 'lg:sticky' not in content
     assert 'xl:sticky' not in content
     assert 'grid-cols-[minmax(0,1fr)_25rem]' not in content
+
 
 def test_alertmanager_binding_workspace_is_full_width_and_lifecycle_action_is_secondary():
     content = read('app/templates/alertmanager/partials/_detail_scope.html')

@@ -1,7 +1,6 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "integrations/components/_capability_readiness.html" as capability_readiness %}
-
 {% set readiness = instance.readiness_status or 'validation_required' %}
 {% set retention = instance.retention_validation_summary or {} %}
 {% set retention_summary = namespace(ready=0) %}
@@ -23,13 +22,12 @@
     capability_summary.optional_missing ~ ' optional gap' ~ ('' if capability_summary.optional_missing == 1 else 's')
 ] %}
 {% if capability_summary.required_missing %}
-    {% set next_action = 'Resolve required PromQL, metric, label, or retention gaps, then rerun Full Validation before relying on downstream Analytics.' %}
+    {% set next_action = "Resolve required PromQL, metric, label, or retention gaps, then rerun Full Validation before relying on downstream Analytics." %}
 {% elif capability_summary.optional_missing %}
-    {% set next_action = 'Core Analytics is eligible. Review optional gaps only where deeper workload, storage, forecast, or long-history analysis is required.' %}
+    {% set next_action = "Core Analytics is eligible. Review optional gaps only where deeper workload, storage, forecast, or long-history analysis is required." %}
 {% else %}
-    {% set next_action = 'Capability evidence is complete. Refresh runtime health and confirm effective source resolution for governed Analytics scopes.' %}
+    {% set next_action = "Capability evidence is complete. Refresh runtime health and confirm effective source resolution for governed Analytics scopes." %}
 {% endif %}
-
 <section id="prometheus-validation-workspace"
          class="relative overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm font-sans"
          data-kaori-prometheus-validation-v3
@@ -42,7 +40,7 @@
         loading_id='prometheus-validation-loading',
         loading_active=validation_job and validation_job.is_active,
         loading_label='Running Prometheus full validation'
-    ) %}
+        ) %}
         <form method="post"
               action="{{ url_for('prometheus.instance_validate', instance_id=instance.id) }}"
               hx-post="{{ url_for('prometheus.instance_validate', instance_id=instance.id) }}"
@@ -61,32 +59,30 @@
             </button>
         </form>
     {% endcall %}
-
     {% if validation_job and validation_job.is_active %}
         <div class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-subtle px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between">
-            <span class="inline-flex items-center gap-2 font-semibold text-content-primary"><i data-lucide="loader-circle" class="h-3.5 w-3.5 animate-spin text-kaori-primary dark:text-kaori-accent" aria-hidden="true"></i>{{ validation_job.title or 'Prometheus validation running in worker' }}</span>
+            <span class="inline-flex items-center gap-2 font-semibold text-content-primary"><i data-lucide="loader-circle"
+   class="h-3.5 w-3.5 animate-spin text-kaori-primary dark:text-kaori-accent"
+   aria-hidden="true"></i>{{ validation_job.title or 'Prometheus validation running in worker' }}</span>
             <span>Task {{ validation_job.task_id[:8] }} · {{ validation_job.state_label|title }} · {{ validation_job.elapsed_seconds }}s</span>
         </div>
     {% endif %}
-
     <div class="space-y-4 p-4 sm:p-5">
-        {{ capability_readiness.render(
-            'Prometheus Capability Readiness',
-            'Required PromQL, metric, label, retention, and provider evidence used by Kubernetes Analytics and related consumers.',
-            readiness,
-            readiness|replace('_', ' ')|title,
-            'Validated capability coverage',
-            capability_summary.observed ~ ' / ' ~ capability_summary.total,
-            readiness_percent,
-            capability_metadata,
-            capability_metrics,
-            'Core Analytics Eligible' if required_ready else 'Remediation Required',
-            'Required capability contracts are usable; binding resolution remains an independent gate.' if required_ready else 'Restore required capability evidence before treating this source as Analytics-ready.',
-            'normal' if required_ready else 'critical',
-            'Full Validation owns PromQL, compatibility, retention, and capability eligibility. Runtime Refresh owns current endpoint reachability, latency, and provider health.',
-            next_action
+        {{ capability_readiness.render('Prometheus Capability Readiness',
+                'Required PromQL, metric, label, retention, and provider evidence used by Kubernetes Analytics and related consumers.',
+                readiness,
+                readiness|replace('_', ' ') |title,
+        'Validated capability coverage',
+        capability_summary.observed ~ ' / ' ~ capability_summary.total,
+        readiness_percent,
+        capability_metadata,
+        capability_metrics,
+        'Core Analytics Eligible' if required_ready else 'Remediation Required',
+        'Required capability contracts are usable; binding resolution remains an independent gate.' if required_ready else 'Restore required capability evidence before treating this source as Analytics-ready.',
+        'normal' if required_ready else 'critical',
+        'Full Validation owns PromQL, compatibility, retention, and capability eligibility. Runtime Refresh owns current endpoint reachability, latency, and provider health.',
+        next_action
         ) }}
-
         {% include 'prometheus/partials/_capability_registry.html' %}
     </div>
 </section>

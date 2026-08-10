@@ -9,7 +9,8 @@
                     <i data-lucide="file-text" class="h-5 w-5"></i>
                 </span>
                 <div class="min-w-0">
-                    <h2 id="recent-reports-title" class="{{ table_ui.block_title_classes() }}">Recent Generated Reports</h2>
+                    <h2 id="recent-reports-title"
+                        class="{{ table_ui.block_title_classes() }}">Recent Generated Reports</h2>
                     <p class="{{ table_ui.block_description_classes() }}">Latest artifact records across governed cluster scopes.</p>
                 </div>
             </div>
@@ -20,7 +21,6 @@
             </a>
         </div>
     </header>
-
     {% if payload.recent_reports %}
         <div class="overflow-x-auto">
             <table class="{{ table_ui.table_classes('min-w-[68rem]') }}">
@@ -73,8 +73,7 @@
                                 <span class="whitespace-nowrap text-sm text-content-secondary">{{ report.file_size }}</span>
                             </td>
                             <td class="{{ table_ui.cell_classes(true) }}">
-                                <a href="{{ report.href }}"
-                                   class="{{ table_ui.action_classes() }}">View</a>
+                                <a href="{{ report.href }}" class="{{ table_ui.action_classes() }}">View</a>
                             </td>
                         </tr>
                     {% endfor %}

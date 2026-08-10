@@ -69,10 +69,7 @@ def _scope_evidence(cluster_id: str | None) -> tuple[dict[str, dict[str, Any]], 
     if cluster_id:
         query = query.filter(ClusterInventory.cluster_id == cluster_id)
     rows = query.with_entities(ClusterInventory.cluster_id, ClusterInventory.collection_evidence).all()
-    evidence_by_cluster = {
-        str(row_cluster_id): dict(evidence or {})
-        for row_cluster_id, evidence in rows
-    }
+    evidence_by_cluster = {str(row_cluster_id): dict(evidence or {}) for row_cluster_id, evidence in rows}
     return evidence_by_cluster, list(evidence_by_cluster.values())
 
 
@@ -97,11 +94,7 @@ def _reference_counts(
         if cluster_id in eligible_cluster_ids
     }
     namespaces = sorted(
-        {
-            namespace
-            for _, cluster_id, namespace, _, _ in configuration_rows
-            if cluster_id in eligible_cluster_ids
-        }
+        {namespace for _, cluster_id, namespace, _, _ in configuration_rows if cluster_id in eligible_cluster_ids}
     )
     pod_query = filter_current_generation(PodInventory.query, PodInventory).filter(
         PodInventory.cluster_id.in_(sorted(eligible_cluster_ids)),
@@ -138,9 +131,7 @@ def get_configuration_filter_namespaces(cluster_id: str | None = None) -> list[s
     if cluster_id:
         query = query.filter(ConfigurationInventory.cluster_id == cluster_id)
     return [
-        namespace
-        for (namespace,) in query.distinct().order_by(ConfigurationInventory.namespace).all()
-        if namespace
+        namespace for (namespace,) in query.distinct().order_by(ConfigurationInventory.namespace).all() if namespace
     ]
 
 
@@ -218,11 +209,7 @@ def get_configuration_inventory_view(
             evidence_by_cluster.get(str(item.cluster_id)),
             POD_EVIDENCE_KEY,
         )
-        reference_count = (
-            int(reference_counts.get(item.id, 0))
-            if pod_collection_state == COLLECTED
-            else None
-        )
+        reference_count = int(reference_counts.get(item.id, 0)) if pod_collection_state == COLLECTED else None
         reference = pod_reference_presentation(reference_count, pod_collection_state)
         mutation_label, mutation_tone = mutation_presentation(bool(item.immutable))
         items.append(
@@ -295,8 +282,7 @@ def _related_pods(item: ConfigurationInventory, pod_collection_state: str) -> tu
     for pod in pod_query.order_by(PodInventory.pod_name).yield_per(100):
         references = pod.configuration_references or []
         if not any(
-            reference.get('type') == item.object_type and reference.get('name') == item.name
-            for reference in references
+            reference.get('type') == item.object_type and reference.get('name') == item.name for reference in references
         ):
             continue
         total += 1

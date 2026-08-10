@@ -80,11 +80,7 @@ def build_kpis(context: DashboardKpiContext) -> list[DashboardKpi]:
             description=context.active_alerts_description,
             icon='bell-ring',
             tone=(
-                'red'
-                if context.alerts_snapshot.critical
-                else 'amber'
-                if context.alerts_snapshot.warning
-                else 'emerald'
+                'red' if context.alerts_snapshot.critical else 'amber' if context.alerts_snapshot.warning else 'emerald'
             ),
         ),
     ]

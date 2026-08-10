@@ -11,7 +11,9 @@
             <span class="truncate">{{ label }}</span>
         </dt>
         <dd class="mt-1.5 truncate text-sm font-semibold text-content-primary"
-            title="{{ value }}">{{ value }}</dd>
+            title="{{ value }}">
+            {{ value }}
+        </dd>
         {% if supporting %}
             <p class="mt-0.5 truncate text-xs text-content-muted"
                title="{{ supporting }}">{{ supporting }}</p>
@@ -36,7 +38,7 @@
     coverage_tone='normal',
     exceptions_tone='normal',
     metric_icon_palette='brand'
-) -%}
+    ) -%}
     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
              aria-label="{{ title }}">
         <div class="grid gap-4 p-4 xl:grid-cols-12 xl:items-center">
@@ -53,7 +55,9 @@
                     </div>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">{{ description }}</p>
                     <p class="mt-2 flex min-w-0 items-center gap-1.5 text-xs text-content-muted">
-                        <i data-lucide="database" class="h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                        <i data-lucide="database"
+                           class="h-3.5 w-3.5 shrink-0 text-kaori-primary"
+                           aria-hidden="true"></i>
                         <span class="shrink-0 font-semibold text-content-secondary">Source:</span>
                         <span class="truncate" title="{{ source_label }}">{{ source_label }}</span>
                     </p>

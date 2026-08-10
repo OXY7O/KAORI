@@ -13,7 +13,8 @@
             <span class="inline-flex shrink-0 items-center gap-2 rounded-lg border border-outline-default bg-surface-subtle px-3 py-2 text-xs font-semibold text-kaori-primary">
                 <span class="group-open:hidden">Details</span>
                 <span class="hidden group-open:inline">Collapse</span>
-                <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
+                <i data-lucide="chevron-down"
+                   class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
             </span>
         </summary>
         <div class="border-t border-outline-default px-5 pb-5 pt-4">
@@ -26,13 +27,14 @@
                     ] %}
                     <div class="py-3.5">
                         <dt class="text-xs font-semibold text-content-primary">{{ title }}</dt>
-                        <dd class="mt-1 text-xs leading-5 text-content-muted">{{ text }}</dd>
+                        <dd class="mt-1 text-xs leading-5 text-content-muted">
+                            {{ text }}
+                        </dd>
                     </div>
                 {% endfor %}
             </dl>
         </div>
     </details>
-
     <details class="group overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
         <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 transition hover:bg-kaori-soft/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
             <div class="flex min-w-0 items-start gap-3">
@@ -47,34 +49,42 @@
             <span class="inline-flex shrink-0 items-center gap-2 rounded-lg border border-outline-default bg-surface-subtle px-3 py-2 text-xs font-semibold text-kaori-primary">
                 <span class="group-open:hidden">Details</span>
                 <span class="hidden group-open:inline">Collapse</span>
-                <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
+                <i data-lucide="chevron-down"
+                   class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
             </span>
         </summary>
         <div class="border-t border-outline-default px-5 pb-5 pt-4">
             <dl class="divide-y divide-outline-subtle rounded-xl border border-outline-default bg-surface-subtle px-4">
                 <div class="py-3.5">
                     <dt class="text-xs font-semibold text-content-primary">Success</dt>
-                    <dd class="mt-1 text-xs leading-5 text-content-muted">Identity verification and KAORI session admission succeeded.</dd>
+                    <dd class="mt-1 text-xs leading-5 text-content-muted">
+                        Identity verification and KAORI session admission succeeded.
+                    </dd>
                 </div>
                 <div class="py-3.5">
                     <dt class="text-xs font-semibold text-content-primary">Failed</dt>
-                    <dd class="mt-1 text-xs leading-5 text-content-muted">Authentication or session admission was rejected; the normalized reason remains visible without exposing secrets.</dd>
+                    <dd class="mt-1 text-xs leading-5 text-content-muted">
+                        Authentication or session admission was rejected; the normalized reason remains visible without exposing secrets.
+                    </dd>
                 </div>
                 <div class="py-3.5">
                     <dt class="text-xs font-semibold text-content-primary">Sign Out</dt>
-                    <dd class="mt-1 text-xs leading-5 text-content-muted">The authenticated session was explicitly terminated through KAORI.</dd>
+                    <dd class="mt-1 text-xs leading-5 text-content-muted">
+                        The authenticated session was explicitly terminated through KAORI.
+                    </dd>
                 </div>
             </dl>
         </div>
     </details>
-
-    <section class="rounded-2xl border border-kaori-primary/20 bg-kaori-soft/60 p-5 shadow-sm" aria-labelledby="audit-privacy-boundary-title">
+    <section class="rounded-2xl border border-kaori-primary/20 bg-kaori-soft/60 p-5 shadow-sm"
+             aria-labelledby="audit-privacy-boundary-title">
         <div class="flex items-start gap-3">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-card text-kaori-primary shadow-sm">
                 <i data-lucide="shield-check" class="h-5 w-5"></i>
             </span>
             <div class="min-w-0 flex-1">
-                <h2 id="audit-privacy-boundary-title" class="text-sm font-bold text-content-primary">Audit Privacy Boundary</h2>
+                <h2 id="audit-privacy-boundary-title"
+                    class="text-sm font-bold text-content-primary">Audit Privacy Boundary</h2>
                 <p class="mt-1 text-xs leading-5 text-content-muted">Passwords, LDAP bind secrets, OAuth client secrets, authorization codes, and provider tokens are never stored in authentication audit metadata.</p>
                 {% if current_user.has_permission('settings.view_operational_activity') %}
                     <a href="{{ url_for('notifications.activity_log', category='access', search=current_user.username) }}"

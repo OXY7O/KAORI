@@ -7,7 +7,13 @@
      hx-indicator="#utilization-trend-pending-indicator"
      hx-sync="this:replace">
     <section class="{{ analysis_surface.empty_evidence_classes('p-5') }}">
-        <div class="flex items-start gap-3"><span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="database-zap" class="h-4 w-4"></i></span><div><h3 class="text-base font-semibold text-content-primary">Preparing Utilization Trend</h3><p class="mt-1 text-sm leading-6 text-content-muted">The analytics worker is generating the committed range series. Polling began only after the Trend tab was opened.</p></div></div>
+        <div class="flex items-start gap-3">
+            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="database-zap" class="h-4 w-4"></i></span>
+            <div>
+                <h3 class="text-base font-semibold text-content-primary">Preparing Utilization Trend</h3>
+                <p class="mt-1 text-sm leading-6 text-content-muted">The analytics worker is generating the committed range series. Polling began only after the Trend tab was opened.</p>
+            </div>
+        </div>
         {{ loading_bar.render('utilization-trend-pending-indicator', active=true, label='Preparing Utilization Trend') }}
     </section>
 </div>

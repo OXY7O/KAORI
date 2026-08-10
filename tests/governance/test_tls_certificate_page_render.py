@@ -12,7 +12,21 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def _payload() -> SimpleNamespace:
     return SimpleNamespace(
-        summary=SimpleNamespace(total=4, healthy=3, warning=1, critical=0, expired=0, invalid=0, unknown=0, coverage_full=3, coverage_partial=1, coverage_uncovered=0, coverage_none=0, coverage_not_reported=0, issuer_count=2),
+        summary=SimpleNamespace(
+            total=4,
+            healthy=3,
+            warning=1,
+            critical=0,
+            expired=0,
+            invalid=0,
+            unknown=0,
+            coverage_full=3,
+            coverage_partial=1,
+            coverage_uncovered=0,
+            coverage_none=0,
+            coverage_not_reported=0,
+            issuer_count=2,
+        ),
         sync_state=SimpleNamespace(
             label='Current',
             tone='normal',
@@ -55,9 +69,9 @@ def test_tls_summary_renders_with_canonical_inventory_component() -> None:
     )
     environment.globals['url_for'] = lambda endpoint, **values: f'/{endpoint}'
 
-    rendered = environment.get_template(
-        'governance/tls_certificates/partials/_summary_cards.html'
-    ).render(payload=_payload())
+    rendered = environment.get_template('governance/tls_certificates/partials/_summary_cards.html').render(
+        payload=_payload()
+    )
 
     assert 'Certificate Validity Posture' in rendered
     assert 'Renewal Window' in rendered
@@ -65,12 +79,11 @@ def test_tls_summary_renders_with_canonical_inventory_component() -> None:
 
 
 def test_tls_page_does_not_load_retired_request_progress_toast_script() -> None:
-    index = (
-        ROOT / 'app/templates/governance/tls_certificates/index.html'
-    ).read_text()
+    index = (ROOT / 'app/templates/governance/tls_certificates/index.html').read_text()
 
     assert 'tls_certificate_management.js' not in index
     assert not (ROOT / 'app/static/js/tls_certificate_management.js').exists()
+
 
 def test_tls_pagination_uses_inventory_navigation_contract() -> None:
     environment = Environment(
@@ -87,9 +100,7 @@ def test_tls_pagination_uses_inventory_navigation_contract() -> None:
     environment.globals['url_for'] = url_for
     environment.globals['request'] = SimpleNamespace(view_args={})
 
-    rendered = environment.get_template(
-        'governance/tls_certificates/partials/_table.html'
-    ).render(payload=_payload())
+    rendered = environment.get_template('governance/tls_certificates/partials/_table.html').render(payload=_payload())
 
     assert 'aria-label="Rows Per Page"' in rendered
     assert 'data-kaori-numeric-pagination' in rendered
@@ -100,15 +111,12 @@ def test_tls_pagination_uses_inventory_navigation_contract() -> None:
     assert 'partial_mode=table' in rendered
 
 
-
 def test_bulk_tls_target_table_uses_inventory_pagination_contract() -> None:
     environment = Environment(
         loader=FileSystemLoader(ROOT / 'app' / 'templates'),
         autoescape=select_autoescape(['html', 'xml']),
     )
-    environment.filters['environment_name'] = (
-        lambda value, empty='Environment not specified': value or empty
-    )
+    environment.filters['environment_name'] = lambda value, empty='Environment not specified': value or empty
 
     def url_for(endpoint: str, **values: object) -> str:
         query = urlencode(values)
@@ -117,9 +125,9 @@ def test_bulk_tls_target_table_uses_inventory_pagination_contract() -> None:
     environment.globals['url_for'] = url_for
     environment.globals['request'] = SimpleNamespace(view_args={})
 
-    rendered = environment.get_template(
-        'kubernetes_operations/secrets/_bulk_target_table.html'
-    ).render(payload=_payload(), selected_ids=[])
+    rendered = environment.get_template('kubernetes_operations/secrets/_bulk_target_table.html').render(
+        payload=_payload(), selected_ids=[]
+    )
 
     assert 'id="tls-secret-update-target-table"' in rendered
     assert 'data-kaori-numeric-pagination' in rendered

@@ -54,9 +54,7 @@ def enqueue_all_cluster_inventory_sync(
     targets = build_fleet_inventory_targets()
     total_count = len(targets)
     if not targets:
-        raise NoEligibleInventoryTargets(
-            'No registered cluster has an enabled canonical Kubernetes binding.'
-        )
+        raise NoEligibleInventoryTargets('No registered cluster has an enabled canonical Kubernetes binding.')
     job, created = enqueue_canonical_job(
         task=sync_all_clusters_task,
         task_kwargs={'requested_by_user_id': requested_by_user_id, 'targets': targets},

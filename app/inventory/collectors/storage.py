@@ -129,9 +129,7 @@ def _metadata_evidence(metadata: Any) -> dict[str, Any]:
     return {
         **_metadata_details(metadata),
         'finalizers': list(_model_value(metadata, 'finalizers', default=[]) or []),
-        'deletion_timestamp': _isoformat_datetime(
-            _model_value(metadata, 'deletion_timestamp', 'deletionTimestamp')
-        ),
+        'deletion_timestamp': _isoformat_datetime(_model_value(metadata, 'deletion_timestamp', 'deletionTimestamp')),
     }
 
 
@@ -194,7 +192,9 @@ def _persistent_volume_row(pv: Any) -> dict[str, Any] | None:
         **_metadata_evidence(metadata),
         'specification_evidence_reported': spec is not None,
         'status_evidence_reported': status is not None,
-        'kubernetes_phase': str(_model_value(status, 'phase')) if _model_value(status, 'phase') not in (None, '') else None,
+        'kubernetes_phase': str(_model_value(status, 'phase'))
+        if _model_value(status, 'phase') not in (None, '')
+        else None,
         'claim_namespace': _model_value(claim_ref, 'namespace'),
         'claim_name': _model_value(claim_ref, 'name'),
         'reclaim_policy': _model_value(spec, 'persistent_volume_reclaim_policy', 'persistentVolumeReclaimPolicy'),
@@ -207,9 +207,7 @@ def _persistent_volume_row(pv: Any) -> dict[str, Any] | None:
     storage_class = _model_value(spec, 'storage_class_name', 'storageClassName')
     phase = _model_value(status, 'phase')
     lifecycle = (
-        'Terminating'
-        if details.get('deletion_timestamp')
-        else (None if status is None else str(phase or 'Unknown'))
+        'Terminating' if details.get('deletion_timestamp') else (None if status is None else str(phase or 'Unknown'))
     )
     return {
         'namespace': None,
@@ -244,7 +242,9 @@ def _persistent_volume_claim_row(pvc: Any) -> dict[str, Any] | None:
         **_metadata_evidence(metadata),
         'specification_evidence_reported': spec is not None,
         'status_evidence_reported': status is not None,
-        'kubernetes_phase': str(_model_value(status, 'phase')) if _model_value(status, 'phase') not in (None, '') else None,
+        'kubernetes_phase': str(_model_value(status, 'phase'))
+        if _model_value(status, 'phase') not in (None, '')
+        else None,
         'capacity_evidence_reported': bool(status is not None and _model_value(status, 'capacity') is not None),
         'volume_name': _model_value(spec, 'volume_name', 'volumeName'),
         'requested_access_modes': list(_model_value(spec, 'access_modes', 'accessModes', default=[]) or []),
@@ -252,9 +252,7 @@ def _persistent_volume_claim_row(pvc: Any) -> dict[str, Any] | None:
         'volume_mode': _model_value(spec, 'volume_mode', 'volumeMode'),
         'requested_storage': str(requests.get('storage')) if requests.get('storage') not in (None, '') else None,
         'allocated_storage': (
-            str(allocated_resources.get('storage'))
-            if allocated_resources.get('storage') not in (None, '')
-            else None
+            str(allocated_resources.get('storage')) if allocated_resources.get('storage') not in (None, '') else None
         ),
         'selector': dict(_model_value(selector, 'match_labels', 'matchLabels', default={}) or {}),
         'data_source': (
@@ -271,9 +269,7 @@ def _persistent_volume_claim_row(pvc: Any) -> dict[str, Any] | None:
     storage_class = _model_value(spec, 'storage_class_name', 'storageClassName')
     phase = _model_value(status, 'phase')
     lifecycle = (
-        'Terminating'
-        if details.get('deletion_timestamp')
-        else (None if status is None else str(phase or 'Unknown'))
+        'Terminating' if details.get('deletion_timestamp') else (None if status is None else str(phase or 'Unknown'))
     )
     return {
         'namespace': str(namespace),

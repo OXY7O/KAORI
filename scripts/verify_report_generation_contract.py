@@ -74,11 +74,7 @@ def _dictionary_string_keys(path: Path, variable_name: str) -> set[str]:
         value = node.value
         if _name(target) != variable_name or not isinstance(value, ast.Dict):
             continue
-        return {
-            key.value
-            for key in value.keys
-            if isinstance(key, ast.Constant) and isinstance(key.value, str)
-        }
+        return {key.value for key in value.keys if isinstance(key, ast.Constant) and isinstance(key.value, str)}
     return set()
 
 
@@ -88,12 +84,8 @@ def _check_catalog(errors: list[str]) -> tuple[set[str], set[str]]:
         errors.append('Central report catalog contains no ReportTypeSpec entries.')
         return set(), set()
 
-    analytics = {
-        key for key, value in specs.items() if value['family'] == 'REPORT_FAMILY_ANALYTICS'
-    }
-    inventory = {
-        key for key, value in specs.items() if value['family'] == 'REPORT_FAMILY_INVENTORY'
-    }
+    analytics = {key for key, value in specs.items() if value['family'] == 'REPORT_FAMILY_ANALYTICS'}
+    inventory = {key for key, value in specs.items() if value['family'] == 'REPORT_FAMILY_INVENTORY'}
     for report_type, spec in specs.items():
         if spec['requires_cluster'] is not True:
             errors.append(f'{report_type} does not require a selected cluster.')
@@ -139,9 +131,9 @@ def _check_renderer_coverage(
 
     artifact_source = _read(ARTIFACT_PATH)
     expected_mappings = (
-        "FORMAT_PDF: render_weasyprint_pdf",
-        "FORMAT_XLSX: render_inventory_xlsx",
-        "FORMAT_CSV: render_report_csv",
+        'FORMAT_PDF: render_weasyprint_pdf',
+        'FORMAT_XLSX: render_inventory_xlsx',
+        'FORMAT_CSV: render_report_csv',
     )
     for mapping in expected_mappings:
         if mapping not in artifact_source:

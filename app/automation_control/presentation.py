@@ -212,10 +212,7 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
         for row in rows:
             grouped.setdefault(str(row['layer']), []).append(row)
         payload['domain_rows'] = rows
-        payload['domain_groups'] = [
-            {'layer': layer, 'items': items}
-            for layer, items in grouped.items()
-        ]
+        payload['domain_groups'] = [{'layer': layer, 'items': items} for layer, items in grouped.items()]
         payload['pagination'] = None
         payload['resource_label'] = 'domains'
     elif workspace == 'runbooks':
@@ -360,7 +357,6 @@ def upsert_deployment_policy(
     return record
 
 
-
 def _workspace_tabs() -> list[dict[str, str]]:
     definitions = (
         ('overview', 'Foundation', 'layers-3'),
@@ -370,10 +366,12 @@ def _workspace_tabs() -> list[dict[str, str]]:
         ('readiness', 'Production Readiness', 'shield-check'),
     )
     from flask import url_for
+
     return [
         {'key': key, 'label': label, 'icon': icon, 'href': url_for('automation_control.index', workspace=key)}
         for key, label, icon in definitions
     ]
+
 
 def _workspace_rows(active: str) -> list[dict[str, str | bool]]:
     definitions = (

@@ -14,15 +14,9 @@ NAMESPACED_RESOURCE_TABLES = (
 
 
 def _table(resource: str) -> str:
-    return (
-        ROOT
-        / 'app'
-        / 'templates'
-        / 'inventory'
-        / resource
-        / 'partials'
-        / '_table_content.html'
-    ).read_text(encoding='utf-8')
+    return (ROOT / 'app' / 'templates' / 'inventory' / resource / 'partials' / '_table_content.html').read_text(
+        encoding='utf-8'
+    )
 
 
 def test_namespaced_inventory_tables_use_shared_namespace_identity() -> None:
@@ -59,9 +53,12 @@ def test_workload_resource_cell_uses_namespaced_scope_and_operational_state() ->
 
     assert 'table_ui.namespaced_scope_identity(' in content
     assert "table_ui.title_cell(workload.name, workload.identity_supporting, 'boxes')" in content
-    assert 'table_label.status_indicator_label(workload.operational_state_label, workload.operational_state_tone)' in content
+    assert (
+        'table_label.status_indicator_label(workload.operational_state_label, workload.operational_state_tone)'
+        in content
+    )
     assert '{{ workload.state_display }}' in content
-    assert "status_label(workload.update_strategy" not in content
+    assert 'status_label(workload.update_strategy' not in content
     assert '{{ workload.delivery_model }}' in content
     assert '{{ workload.runtime_primary }}' in content
 

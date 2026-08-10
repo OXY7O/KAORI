@@ -108,9 +108,7 @@ def test_previous_payload_is_normalized_to_redesigned_contract() -> None:
     assert payload['report_type_coverage']['domains'][0]['tone'] == 'normal'
     assert payload['pipeline_summary'] == {'ready': 1, 'review': 0, 'planned': 0, 'total': 1}
     assert payload['current_status_summary']['posture'] == 'Ready'
-    assert payload['reporting_context'][0]['detail'] == (
-        'Templates define sections. Artifacts retain metadata.'
-    )
+    assert payload['reporting_context'][0]['detail'] == ('Templates define sections. Artifacts retain metadata.')
     assert payload['data_collection_status'][0]['stage'] == 'ready'
     assert payload['related_information'][0]['href'] == '/reports/generate'
 

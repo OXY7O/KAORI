@@ -94,7 +94,6 @@ def test_identity_columns_are_leading_and_reusable_across_csv_xlsx() -> None:
         assert keys[: len(profile.identity_columns)] == profile.identity_columns, report_type
 
 
-
 def test_status_semantics_are_owned_by_columns() -> None:
     node_profile = INVENTORY_WORKBOOK_PROFILES['node_inventory']
     semantics = {column.key: column.semantic_type for column in node_profile.columns}

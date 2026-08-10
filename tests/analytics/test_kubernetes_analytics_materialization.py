@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-import pytest
 from flask import Flask
+import pytest
 
 from app.analytics import tasks
 from app.analytics.common import context as common_context
 from app.analytics.forecast import presentation as forecast_presentation
-from app.analytics.forecast import service as forecast_service
 from app.analytics.materialization import requests as materialization_requests
 from app.analytics.materialization.catalog import canonical_parameters, get_dataset
 from app.analytics.materialization.presentation import pending_page_context
@@ -16,11 +15,7 @@ from app.analytics.materialization.requests import MaterializedRequest
 from app.analytics.materialization.service import SnapshotResult, store_snapshot
 from app.integrations.prometheus.query_profiles.audit import PromQLProfileAuditor
 from app.jobs.definitions.forecast_refresh import FORECAST_REFRESH_DEFINITION
-from app.prometheus.presentation import (
-    _MODULE_REQUIREMENTS,
-    _RESOLUTION_CONSUMERS,
-    _module_readiness_rows,
-)
+from app.prometheus.presentation import _MODULE_REQUIREMENTS, _RESOLUTION_CONSUMERS, _module_readiness_rows
 
 
 def test_snapshot_parameters_exclude_view_only_filters() -> None:
@@ -392,9 +387,7 @@ def test_dependency_blocker_is_failed_instead_of_committed(monkeypatch) -> None:
     assert result['succeeded'] == 0
     assert result['failed'] == 1
     assert stored == []
-    assert failed == [
-        ('analytics.storage', 'Storage capability incomplete: PVC evidence is unavailable.')
-    ]
+    assert failed == [('analytics.storage', 'Storage capability incomplete: PVC evidence is unavailable.')]
 
 
 def test_pending_page_context_preserves_forecast_htmx_replacement_id() -> None:
@@ -411,9 +404,7 @@ def test_pending_page_context_preserves_forecast_htmx_replacement_id() -> None:
         dispatched=True,
     )
 
-    with app.test_request_context(
-        '/analytics/forecast?cluster_id=cluster-1&history_window=7d&forecast_horizon=180d'
-    ):
+    with app.test_request_context('/analytics/forecast?cluster_id=cluster-1&history_window=7d&forecast_horizon=180d'):
         context = pending_page_context(
             materialized=materialized,
             dataset_key='analytics.forecast',

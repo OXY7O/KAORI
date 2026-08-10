@@ -6,51 +6,20 @@
   State is URL-backed through ?tab= and supports keyboard navigation.
 #}
 {% macro render(provider_key, active_tab='coverage', coverage_count=0, registry_count=0) -%}
-    <section x-data="{
-                 tabs: ['coverage', 'registry'],
-                 activeTab: (() => {
-                     const url = new URL(window.location.href);
-                     const candidate = url.searchParams.get('tab');
-                     return ['coverage', 'registry'].includes(candidate) ? candidate : '{{ active_tab }}';
-                 })(),
-                 setTab(tab) {
-                     if (!this.tabs.includes(tab)) return;
-                     this.activeTab = tab;
-                     const nextUrl = new URL(window.location.href);
-                     nextUrl.searchParams.set('tab', tab);
-                     window.history.replaceState({}, '', nextUrl);
-                     this.$nextTick(() => {
-                         if (window.renderKaoriIcons) window.renderKaoriIcons();
-                         else if (window.lucide) window.lucide.createIcons();
-                     });
-                 },
-                 moveTab(currentTab, direction) {
-                     const currentIndex = this.tabs.indexOf(currentTab);
-                     if (currentIndex < 0) return;
-                     let nextIndex = currentIndex;
-                     if (direction === 'home') nextIndex = 0;
-                     else if (direction === 'end') nextIndex = this.tabs.length - 1;
-                     else nextIndex = (currentIndex + direction + this.tabs.length) % this.tabs.length;
-                     const nextTab = this.tabs[nextIndex];
-                     this.setTab(nextTab);
-                     this.$nextTick(() => document.getElementById(`${provider_key}-overview-tab-${nextTab}`)?.focus());
-                 },
-                 syncTab() {
-                     const candidate = new URL(window.location.href).searchParams.get('tab');
-                     this.activeTab = this.tabs.includes(candidate) ? candidate : '{{ active_tab }}';
-                 }
-             }"
+    <section x-data="{ tabs: ['coverage', 'registry'], activeTab: (() => { const url = new URL(window.location.href); const candidate = url.searchParams.get('tab'); return ['coverage', 'registry'].includes(candidate) ? candidate : '{{ active_tab }}'; })(), setTab(tab) { if (!this.tabs.includes(tab)) return; this.activeTab = tab; const nextUrl = new URL(window.location.href); nextUrl.searchParams.set('tab', tab); window.history.replaceState({}, '', nextUrl); this.$nextTick(() => { if (window.renderKaoriIcons) window.renderKaoriIcons(); else if (window.lucide) window.lucide.createIcons(); }); }, moveTab(currentTab, direction) { const currentIndex = this.tabs.indexOf(currentTab); if (currentIndex < 0) return; let nextIndex = currentIndex; if (direction === 'home') nextIndex = 0; else if (direction === 'end') nextIndex = this.tabs.length - 1; else nextIndex = (currentIndex + direction + this.tabs.length) % this.tabs.length; const nextTab = this.tabs[nextIndex]; this.setTab(nextTab); this.$nextTick(() => document.getElementById(`${provider_key}-overview-tab-${nextTab}`)?.focus()); }, syncTab() { const candidate = new URL(window.location.href).searchParams.get('tab'); this.activeTab = this.tabs.includes(candidate) ? candidate : '{{ active_tab }}'; } }"
              x-on:popstate.window="syncTab()"
              class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
              aria-label="{{ provider_key|title }} integration workspace"
              data-kaori-tab-variant="framed-workspace-v2">
         <nav class="border-b border-outline-default bg-surface-hover px-4 pt-4 sm:px-5"
              aria-label="{{ provider_key|title }} integration views">
-            <div class="flex min-w-max gap-2 overflow-x-auto" role="tablist" aria-label="{{ provider_key|title }} integration views">
+            <div class="flex min-w-max gap-2 overflow-x-auto"
+                 role="tablist"
+                 aria-label="{{ provider_key|title }} integration views">
                 {% for tab_key, tab_label, tab_icon, tab_count in [
                     ('coverage', 'Integration Coverage', 'route', coverage_count),
                     ('registry', 'Connection Registry', 'database-zap', registry_count)
-                ] %}
+                    ] %}
                     <button type="button"
                             role="tab"
                             id="{{ provider_key }}-overview-tab-{{ tab_key }}"
@@ -63,15 +32,11 @@
                             @keydown.home.prevent="moveTab('{{ tab_key }}', 'home')"
                             @keydown.end.prevent="moveTab('{{ tab_key }}', 'end')"
                             class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-inset"
-                            :class="activeTab === '{{ tab_key }}'
-                                ? 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary dark:text-kaori-accent -mb-px'
-                                : 'border-transparent text-content-muted hover:bg-surface-card hover:text-content-primary dark:hover:text-kaori-accent'">
+                            :class="activeTab === '{{ tab_key }}' ? 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary dark:text-kaori-accent -mb-px' : 'border-transparent text-content-muted hover:bg-surface-card hover:text-content-primary dark:hover:text-kaori-accent'">
                         <i data-lucide="{{ tab_icon }}" class="h-4 w-4" aria-hidden="true"></i>
                         <span>{{ tab_label }}</span>
                         <span class="kaori-semantic-label inline-flex min-h-6 items-center rounded-md border px-2 text-xs font-semibold whitespace-nowrap"
-                              :class="activeTab === '{{ tab_key }}'
-                                  ? 'border-brand-outline bg-kaori-soft text-kaori-primary dark:text-kaori-accent'
-                                  : 'border-outline-subtle bg-surface-card text-content-muted'">{{ tab_count }}</span>
+                              :class="activeTab === '{{ tab_key }}' ? 'border-brand-outline bg-kaori-soft text-kaori-primary dark:text-kaori-accent' : 'border-outline-subtle bg-surface-card text-content-muted'">{{ tab_count }}</span>
                     </button>
                 {% endfor %}
             </div>
@@ -80,12 +45,12 @@
             <div id="{{ provider_key }}-overview-panel-coverage"
                  x-show="activeTab === 'coverage'"
                  role="tabpanel"
-                 aria-labelledby="{{ provider_key }}-overview-tab-coverage">{{ caller('coverage') }}</div>
+                 aria-labelledby="{{ provider_key }}-overview-tab-coverage">{{ caller("coverage") }}</div>
             <div id="{{ provider_key }}-overview-panel-registry"
                  x-show="activeTab === 'registry'"
                  x-cloak
                  role="tabpanel"
-                 aria-labelledby="{{ provider_key }}-overview-tab-registry">{{ caller('registry') }}</div>
+                 aria-labelledby="{{ provider_key }}-overview-tab-registry">{{ caller("registry") }}</div>
         </div>
     </section>
 {%- endmacro %}

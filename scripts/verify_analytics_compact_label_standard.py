@@ -23,7 +23,6 @@ _COUNT_EXPRESSION_HINT = re.compile(
 _QUOTED_LITERAL = re.compile(r"(['\"])(?P<value>.*?)(?<!\\)\1")
 
 
-
 def _extract_calls(source: str, function_name: str) -> list[tuple[int, str]]:
     marker = function_name + '('
     calls: list[tuple[int, str]] = []
@@ -131,8 +130,7 @@ def _validate_metadata_counts(relative: str, source: str, errors: list[str]) -> 
             continue
         first_arg = args[0]
         literal_count = any(
-            _COUNT_LITERAL_HINT.search(match.group('value'))
-            for match in _QUOTED_LITERAL.finditer(first_arg)
+            _COUNT_LITERAL_HINT.search(match.group('value')) for match in _QUOTED_LITERAL.finditer(first_arg)
         )
         expression_count = _COUNT_EXPRESSION_HINT.search(first_arg) is not None
         if not literal_count and not expression_count:
@@ -150,7 +148,7 @@ def _validate_metadata_counts(relative: str, source: str, errors: list[str]) -> 
 def _require_dense_status_dots(errors: list[str]) -> None:
     checks = {
         'app/templates/analytics/alerts/partials/_alerts_table_row.html': (
-            "status_indicator_label(alert.status|title",
+            'status_indicator_label(alert.status|title',
         ),
         'app/templates/analytics/workload/partials/_workload_mapping_section.html': (
             'status_indicator_label(row.configuration_status.label',
@@ -189,16 +187,12 @@ def main() -> int:
         for match in _MANUAL_COMPACT_LABEL.finditer(source):
             line = source.count('\n', 0, match.start()) + 1
             errors.append(
-                f'{relative}:{line}: page-local compact label markup is forbidden; '
-                'use components/table_label.html.'
+                f'{relative}:{line}: page-local compact label markup is forbidden; use components/table_label.html.'
             )
 
         for match in _ARBITRARY_COMPACT_TEXT.finditer(source):
             line = source.count('\n', 0, match.start()) + 1
-            errors.append(
-                f'{relative}:{line}: arbitrary compact label text size is forbidden in '
-                'Analytics templates.'
-            )
+            errors.append(f'{relative}:{line}: arbitrary compact label text size is forbidden in Analytics templates.')
 
     _require_dense_status_dots(errors)
 

@@ -23,10 +23,7 @@ from app.reports.catalog import (
 )
 from app.reports.export.constants import DEFAULT_REPORT_DOMAIN, DEFAULT_REPORT_SOURCE_KIND
 from app.reports.jobs.queue import get_reports_queue_name
-from app.reports.storage.service import (
-    get_configured_storage_backend_name,
-    get_report_storage_backend_status,
-)
+from app.reports.storage.service import get_configured_storage_backend_name, get_report_storage_backend_status
 
 PERIOD_OPTIONS: list[dict[str, str]] = [
     {
@@ -449,9 +446,7 @@ def get_generate_report_payload(
 
     return {
         'page_title': 'Generate Report',
-        'page_subtitle': (
-            'Build a governed report from connected data, selected scope, and reusable sections.'
-        ),
+        'page_subtitle': ('Build a governed report from connected data, selected scope, and reusable sections.'),
         'clusters': cluster_options,
         'has_clusters': bool(cluster_options),
         'namespace_options_by_cluster': namespace_options_by_cluster,
@@ -730,7 +725,9 @@ def get_form_state_from_form(
         'output_format': str(
             form.get('output_format', get_report_primary_output_format(report_type))
             or get_report_primary_output_format(report_type)
-        ).strip().lower(),
+        )
+        .strip()
+        .lower(),
         'sections': sections,
     }
 
@@ -786,7 +783,10 @@ def validate_form_state(
         )
 
     allowed_formats_for_report = get_report_allowed_output_formats(form_state['report_type'])
-    if form_state['output_format'] in allowed_output_formats and form_state['output_format'] not in allowed_formats_for_report:
+    if (
+        form_state['output_format'] in allowed_output_formats
+        and form_state['output_format'] not in allowed_formats_for_report
+    ):
         allowed_label = ' or '.join(value.upper() for value in allowed_formats_for_report)
         errors.append(
             f'This report type supports only {allowed_label} output.',
@@ -911,13 +911,10 @@ def _get_namespace_options_by_cluster() -> dict[str, list[str]]:
         query,
         NamespaceInventory,
     )
-    rows = (
-        query.order_by(
-            NamespaceInventory.cluster_id.asc(),
-            NamespaceInventory.namespace.asc(),
-        )
-        .all()
-    )
+    rows = query.order_by(
+        NamespaceInventory.cluster_id.asc(),
+        NamespaceInventory.namespace.asc(),
+    ).all()
 
     options: dict[str, list[str]] = {}
     for cluster_id, namespace in rows:

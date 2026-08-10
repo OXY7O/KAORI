@@ -1,8 +1,15 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
-from sqlalchemy import func, literal, or_, tuple_, union_all
+from sqlalchemy import (
+    Select,
+    func,
+    literal,
+    or_,
+    tuple_,
+    union_all,
+)
 
 from app.common.inventory_generation import filter_current_generation
 from app.common.pagination import paginate_query
@@ -79,9 +86,7 @@ def _apply_namespace_filters(query, *, cluster_id: str | None, status: str | Non
             )
         )
     elif status:
-        query = query.filter(
-            func.lower(func.trim(NamespaceInventory.status)) == status.lower()
-        )
+        query = query.filter(func.lower(func.trim(NamespaceInventory.status)) == status.lower())
     if search:
         query = query.filter(NamespaceInventory.namespace.ilike(f'%{search}%'))
     return query
@@ -99,8 +104,7 @@ def _load_quota_collection_states(cluster_ids: set[str]) -> dict[str, str]:
         .all()
     )
     return {
-        cluster_id: _resource_quota_collection_state(collection_evidence)
-        for cluster_id, collection_evidence in rows
+        cluster_id: _resource_quota_collection_state(collection_evidence) for cluster_id, collection_evidence in rows
     }
 
 
@@ -131,35 +135,22 @@ def _summarize_namespace_rows(rows, quota_states: dict[str, str]) -> dict[str, A
             summary['unknown_namespaces'] += 1
 
         summary['limit_range_configured_namespaces'] += int((row.limit_range_count or 0) > 0)
-        summary['network_policy_configured_namespaces'] += int(
-            (row.network_policy_count or 0) > 0
-        )
+        summary['network_policy_configured_namespaces'] += int((row.network_policy_count or 0) > 0)
         summary['limit_range_reported_namespaces'] += int(row.limit_range_count is not None)
-        summary['network_policy_reported_namespaces'] += int(
-            row.network_policy_count is not None
-        )
+        summary['network_policy_reported_namespaces'] += int(row.network_policy_count is not None)
         summary['psa_enforce_configured_namespaces'] += int(
             bool((row.labels or {}).get('pod-security.kubernetes.io/enforce'))
         )
-        summary['quota_reported_namespaces'] += int(
-            quota_states.get(row.cluster_id) == COLLECTED
-        )
-        summary['missing_default_service_accounts'] += int(
-            row.default_service_account_present is False
-        )
-        summary['default_service_account_not_reported'] += int(
-            row.default_service_account_present is None
-        )
+        summary['quota_reported_namespaces'] += int(quota_states.get(row.cluster_id) == COLLECTED)
+        summary['missing_default_service_accounts'] += int(row.default_service_account_present is False)
+        summary['default_service_account_not_reported'] += int(row.default_service_account_present is None)
     return summary
 
 
 def _namespace_scope_label(cluster_id: str | None) -> str:
     if not cluster_id:
         return 'All Clusters'
-    return (
-        db.session.query(Cluster.name).filter(Cluster.id == cluster_id).scalar()
-        or 'Selected Cluster'
-    )
+    return db.session.query(Cluster.name).filter(Cluster.id == cluster_id).scalar() or 'Selected Cluster'
 
 
 def _quota_configured_count(summary_query) -> int:
@@ -224,9 +215,7 @@ def _present_namespace_rows(records, quota_states: dict[str, str]) -> list[dict[
                 'network_policy_count': namespace.network_policy_count,
                 'network_policy_display': _configured_label(namespace.network_policy_count),
                 'pod_security_enforce': labels.get('pod-security.kubernetes.io/enforce'),
-                'pod_security_enforce_display': _psa_label(
-                    labels.get('pod-security.kubernetes.io/enforce')
-                ),
+                'pod_security_enforce_display': _psa_label(labels.get('pod-security.kubernetes.io/enforce')),
             }
         )
     return result
@@ -294,9 +283,7 @@ def get_namespace_inventory(
             'total_namespaces': total_namespaces,
             'total_clusters': len(summary_query.with_entities(Cluster.name).distinct().all()),
             'scope_label': _namespace_scope_label(cluster_id),
-            'lifecycle_exceptions': (
-                summary['terminating_namespaces'] + summary['unknown_namespaces']
-            ),
+            'lifecycle_exceptions': (summary['terminating_namespaces'] + summary['unknown_namespaces']),
             'lifecycle_label': lifecycle_label,
             'lifecycle_tone': lifecycle_tone,
             'quota_configured_namespaces': _quota_configured_count(summary_query),
@@ -323,11 +310,12 @@ def _namespace_workload_counts(namespace: NamespaceInventory) -> dict[str, int]:
 def _count_select(model, namespace: NamespaceInventory, key: str, *filters: Any):
     query = db.session.query(literal(key).label('key'), func.count(model.id).label('count'))
     query = filter_current_generation(query, model)
-    return query.filter(
+    statement = query.filter(
         model.cluster_id == namespace.cluster_id,
         model.namespace == namespace.namespace,
         *filters,
     ).statement
+    return cast(Select[Any], statement)
 
 
 def _namespace_object_counts(
@@ -359,8 +347,7 @@ def _namespace_object_counts(
         ),
     ).subquery()
     result = {
-        row._mapping['key']: row._mapping['count']
-        for row in db.session.query(aggregate.c.key, aggregate.c.count).all()
+        row._mapping['key']: row._mapping['count'] for row in db.session.query(aggregate.c.key, aggregate.c.count).all()
     }
     result['workloads'] = total_workloads
     evidence_by_key = {
@@ -372,7 +359,7 @@ def _namespace_object_counts(
             result[key] = None
     result['reported_types'] = 5 + sum(state == COLLECTED for state in evidence_by_key.values())
     result['total_types'] = 7
-    result['evidence_display'] = f"{result['reported_types']}/7 Reported"
+    result['evidence_display'] = f'{result["reported_types"]}/7 Reported'
     result['missing_evidence'] = [
         label
         for key, label in (('config_maps', 'ConfigMap'), ('secrets', 'Secret'))
@@ -399,13 +386,9 @@ def _namespace_quotas(namespace: NamespaceInventory) -> tuple[list[dict[str, Any
         .order_by(ResourceQuotaInventory.name)
         .all()
     )
-    cluster_inventory = ClusterInventory.query.filter_by(
-        cluster_id=namespace.cluster_id
-    ).first()
+    cluster_inventory = ClusterInventory.query.filter_by(cluster_id=namespace.cluster_id).first()
     collection_state = (
-        _resource_quota_collection_state(cluster_inventory.collection_evidence)
-        if cluster_inventory
-        else 'Not Reported'
+        _resource_quota_collection_state(cluster_inventory.collection_evidence) if cluster_inventory else 'Not Reported'
     )
     quotas = []
     for quota in rows:
@@ -444,8 +427,7 @@ def _control_evidence(
     reported += int(namespace.network_policy_count is not None)
     reported += 1  # Namespace labels were collected with the Namespace object.
     reported += int(
-        namespace.service_account_count is not None
-        and namespace.default_service_account_present is not None
+        namespace.service_account_count is not None and namespace.default_service_account_present is not None
     )
 
     missing = []
@@ -480,8 +462,7 @@ def _namespace_operational_context(
         return {
             'title': 'Validate Namespace Lifecycle',
             'description': (
-                'Refresh inventory and confirm the namespace state before making '
-                'placement or policy decisions.'
+                'Refresh inventory and confirm the namespace state before making placement or policy decisions.'
             ),
             'tone': 'warning',
             'icon': 'circle-help',
@@ -491,7 +472,7 @@ def _namespace_operational_context(
             'title': 'Validate Namespace Control Evidence',
             'description': (
                 'Refresh inventory permissions and collection for '
-                f"{', '.join(missing_evidence)} before making governance or access decisions."
+                f'{", ".join(missing_evidence)} before making governance or access decisions.'
             ),
             'tone': 'warning',
             'icon': 'shield-question',
@@ -500,8 +481,7 @@ def _namespace_operational_context(
         return {
             'title': 'Restore Namespace Access Baseline',
             'description': (
-                'Confirm why the default ServiceAccount is absent and whether '
-                'workload identity behavior is affected.'
+                'Confirm why the default ServiceAccount is absent and whether workload identity behavior is affected.'
             ),
             'tone': 'warning',
             'icon': 'user-round-x',
@@ -509,8 +489,7 @@ def _namespace_operational_context(
     return {
         'title': 'Namespace Snapshot Ready for Review',
         'description': (
-            'No exceptional lifecycle or access signal is present in the current '
-            'committed inventory snapshot.'
+            'No exceptional lifecycle or access signal is present in the current committed inventory snapshot.'
         ),
         'tone': 'normal',
         'icon': 'circle-check',
@@ -572,9 +551,7 @@ def get_namespace_detail(namespace_id: int) -> dict[str, Any] | None:
         },
         'quotas': quotas,
         'quota_count': len(quotas) if quota_collection_state == COLLECTED else None,
-        'quota_display': _configured_label(
-            len(quotas) if quota_collection_state == COLLECTED else None
-        ),
+        'quota_display': _configured_label(len(quotas) if quota_collection_state == COLLECTED else None),
         'quota_collection_state': quota_collection_state,
         'limit_range_count': namespace.limit_range_count,
         'limit_range_display': _configured_label(namespace.limit_range_count),

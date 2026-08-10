@@ -17,39 +17,25 @@ TOP_CONSUMERS_ADVISORY_CAPABILITIES = (
     'pvc_usage',
 )
 
-NAMESPACE_ACTIVE_QUERY = get_query_expression(
-    'analytics.top_consumers.queries.NAMESPACE_ACTIVE_QUERY'
-)
-TOP_CPU_CONSUMERS_QUERY = get_query_expression(
-    'analytics.top_consumers.queries.TOP_CPU_CONSUMERS_QUERY'
-)
+NAMESPACE_ACTIVE_QUERY = get_query_expression('analytics.top_consumers.queries.NAMESPACE_ACTIVE_QUERY')
+TOP_CPU_CONSUMERS_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_CPU_CONSUMERS_QUERY')
 TOP_CPU_CONSUMERS_BY_NAMESPACE_QUERY = get_query_expression(
     'analytics.top_consumers.queries.TOP_CPU_CONSUMERS_BY_NAMESPACE_QUERY'
 )
-CPU_REQUEST_BY_CONTAINER_QUERY = get_query_expression(
-    'analytics.top_consumers.queries.CPU_REQUEST_BY_CONTAINER_QUERY'
-)
+CPU_REQUEST_BY_CONTAINER_QUERY = get_query_expression('analytics.top_consumers.queries.CPU_REQUEST_BY_CONTAINER_QUERY')
 CPU_REQUEST_BY_CONTAINER_NAMESPACE_QUERY = get_query_expression(
     'analytics.top_consumers.queries.CPU_REQUEST_BY_CONTAINER_NAMESPACE_QUERY'
 )
-CPU_LIMIT_BY_CONTAINER_QUERY = get_query_expression(
-    'analytics.top_consumers.queries.CPU_LIMIT_BY_CONTAINER_QUERY'
-)
+CPU_LIMIT_BY_CONTAINER_QUERY = get_query_expression('analytics.top_consumers.queries.CPU_LIMIT_BY_CONTAINER_QUERY')
 CPU_LIMIT_BY_CONTAINER_NAMESPACE_QUERY = get_query_expression(
     'analytics.top_consumers.queries.CPU_LIMIT_BY_CONTAINER_NAMESPACE_QUERY'
 )
-CPU_ALLOCATABLE_QUERY = get_query_expression(
-    'analytics.top_consumers.queries.CPU_ALLOCATABLE_QUERY'
-)
-TOTAL_CPU_USAGE_QUERY = get_query_expression(
-    'analytics.top_consumers.queries.TOTAL_CPU_USAGE_QUERY'
-)
+CPU_ALLOCATABLE_QUERY = get_query_expression('analytics.top_consumers.queries.CPU_ALLOCATABLE_QUERY')
+TOTAL_CPU_USAGE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_CPU_USAGE_QUERY')
 TOTAL_CPU_USAGE_BY_NAMESPACE_QUERY = get_query_expression(
     'analytics.top_consumers.queries.TOTAL_CPU_USAGE_BY_NAMESPACE_QUERY'
 )
-TOP_MEMORY_CONSUMERS_QUERY = get_query_expression(
-    'analytics.top_consumers.queries.TOP_MEMORY_CONSUMERS_QUERY'
-)
+TOP_MEMORY_CONSUMERS_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_MEMORY_CONSUMERS_QUERY')
 TOP_MEMORY_CONSUMERS_BY_NAMESPACE_QUERY = get_query_expression(
     'analytics.top_consumers.queries.TOP_MEMORY_CONSUMERS_BY_NAMESPACE_QUERY'
 )
@@ -65,51 +51,31 @@ MEMORY_LIMIT_BY_CONTAINER_QUERY = get_query_expression(
 MEMORY_LIMIT_BY_CONTAINER_NAMESPACE_QUERY = get_query_expression(
     'analytics.top_consumers.queries.MEMORY_LIMIT_BY_CONTAINER_NAMESPACE_QUERY'
 )
-MEMORY_ALLOCATABLE_QUERY = get_query_expression(
-    'analytics.top_consumers.queries.MEMORY_ALLOCATABLE_QUERY'
-)
-TOTAL_MEMORY_USAGE_QUERY = get_query_expression(
-    'analytics.top_consumers.queries.TOTAL_MEMORY_USAGE_QUERY'
-)
+MEMORY_ALLOCATABLE_QUERY = get_query_expression('analytics.top_consumers.queries.MEMORY_ALLOCATABLE_QUERY')
+TOTAL_MEMORY_USAGE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_MEMORY_USAGE_QUERY')
 TOTAL_MEMORY_USAGE_BY_NAMESPACE_QUERY = get_query_expression(
     'analytics.top_consumers.queries.TOTAL_MEMORY_USAGE_BY_NAMESPACE_QUERY'
 )
-POD_OWNER_QUERY = get_query_expression(
-    'analytics.top_consumers.queries.POD_OWNER_QUERY'
-)
-POD_OWNER_BY_NAMESPACE_QUERY = get_query_expression(
-    'analytics.top_consumers.queries.POD_OWNER_BY_NAMESPACE_QUERY'
-)
-TOP_POD_CONSUMERS_QUERY = get_query_expression(
-    'analytics.top_consumers.queries.TOP_POD_CONSUMERS_QUERY'
-)
+POD_OWNER_QUERY = get_query_expression('analytics.top_consumers.queries.POD_OWNER_QUERY')
+POD_OWNER_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.POD_OWNER_BY_NAMESPACE_QUERY')
+TOP_POD_CONSUMERS_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_POD_CONSUMERS_QUERY')
 TOP_POD_CONSUMERS_BY_NAMESPACE_QUERY = get_query_expression(
     'analytics.top_consumers.queries.TOP_POD_CONSUMERS_BY_NAMESPACE_QUERY'
 )
-POD_CAPACITY_QUERY = get_query_expression(
-    'analytics.top_consumers.queries.POD_CAPACITY_QUERY'
-)
-TOTAL_RUNNING_PODS_QUERY = get_query_expression(
-    'analytics.top_consumers.queries.TOTAL_RUNNING_PODS_QUERY'
-)
+POD_CAPACITY_QUERY = get_query_expression('analytics.top_consumers.queries.POD_CAPACITY_QUERY')
+TOTAL_RUNNING_PODS_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_RUNNING_PODS_QUERY')
 TOTAL_RUNNING_PODS_BY_NAMESPACE_QUERY = get_query_expression(
     'analytics.top_consumers.queries.TOTAL_RUNNING_PODS_BY_NAMESPACE_QUERY'
 )
-TOP_PVC_CONSUMERS_QUERY = get_query_expression(
-    'analytics.top_consumers.queries.TOP_PVC_CONSUMERS_QUERY'
-)
+TOP_PVC_CONSUMERS_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_PVC_CONSUMERS_QUERY')
 TOP_PVC_CONSUMERS_BY_NAMESPACE_QUERY = get_query_expression(
     'analytics.top_consumers.queries.TOP_PVC_CONSUMERS_BY_NAMESPACE_QUERY'
 )
-PVC_CAPACITY_BY_CLAIM_QUERY = get_query_expression(
-    'analytics.top_consumers.queries.PVC_CAPACITY_BY_CLAIM_QUERY'
-)
+PVC_CAPACITY_BY_CLAIM_QUERY = get_query_expression('analytics.top_consumers.queries.PVC_CAPACITY_BY_CLAIM_QUERY')
 PVC_CAPACITY_BY_CLAIM_NAMESPACE_QUERY = get_query_expression(
     'analytics.top_consumers.queries.PVC_CAPACITY_BY_CLAIM_NAMESPACE_QUERY'
 )
-TOTAL_PVC_USED_QUERY = get_query_expression(
-    'analytics.top_consumers.queries.TOTAL_PVC_USED_QUERY'
-)
+TOTAL_PVC_USED_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_PVC_USED_QUERY')
 TOTAL_PVC_USED_BY_NAMESPACE_QUERY = get_query_expression(
     'analytics.top_consumers.queries.TOTAL_PVC_USED_BY_NAMESPACE_QUERY'
 )
@@ -175,17 +141,12 @@ class TopConsumersEvidenceCollector:
 
         if not isinstance(response, dict):
             return VectorEvidence(
-                error=(
-                    f'Prometheus returned {type(response).__name__}; '
-                    'expected a response mapping.'
-                )
+                error=(f'Prometheus returned {type(response).__name__}; expected a response mapping.')
             )
         data = response.get('data', {})
         result = data.get('result', []) if isinstance(data, dict) else []
         if not isinstance(result, list):
-            return VectorEvidence(
-                error='Prometheus response data.result is not a list.'
-            )
+            return VectorEvidence(error='Prometheus response data.result is not a list.')
         rows = tuple(item for item in result if isinstance(item, dict))
         if not rows and advisory_capability in advisory_missing:
             return VectorEvidence(
@@ -226,9 +187,8 @@ class TopConsumersEvidenceCollector:
     ) -> TopConsumersEvidence:
         query = self.query
         scalar = self.scalar
-        namespaced = lambda all_query, namespace_query_value: namespace_query(
-            namespace, all_query, namespace_query_value
-        )
+        def namespaced(all_query: str, namespace_query_value: str) -> str:
+            return namespace_query(namespace, all_query, namespace_query_value)
         return TopConsumersEvidence(
             namespaces=query(
                 NAMESPACE_ACTIVE_QUERY,
@@ -360,7 +320,6 @@ class TopConsumersEvidenceCollector:
                 advisory_missing=advisory_missing,
             ),
         )
-
 
 
 def namespace_query(

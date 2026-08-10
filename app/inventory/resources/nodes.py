@@ -53,14 +53,9 @@ def _node_filter_values(column: Any, cluster_id: str | None = None) -> list[str]
 
 def get_node_filter_roles(cluster_id: str | None = None) -> list[dict[str, str]]:
     values = _node_filter_values(NodeInventory.role, cluster_id)
-    options = {
-        _canonical_role_filter(value): _role_display(value)
-        for value in values
-        if _canonical_role_filter(value)
-    }
+    options = {_canonical_role_filter(value): _role_display(value) for value in values if _canonical_role_filter(value)}
     return [
-        {'value': value, 'label': label}
-        for value, label in sorted(options.items(), key=lambda item: item[1].lower())
+        {'value': value, 'label': label} for value, label in sorted(options.items(), key=lambda item: item[1].lower())
     ]
 
 

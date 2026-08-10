@@ -55,7 +55,14 @@ def verify() -> None:
     if not sections or not sections <= allowed_sections:
         raise AssertionError('CHANGELOG.md contains missing or unsupported change-section headings')
 
-    for token in ('Semantic Versioning', 'APP_VERSION', 'APP_BUILD_SHA', 'APP_BUILD_DATE', 'vX.Y.Z', 'quality_gate.sh --all'):
+    for token in (
+        'Semantic Versioning',
+        'APP_VERSION',
+        'APP_BUILD_SHA',
+        'APP_BUILD_DATE',
+        'vX.Y.Z',
+        'quality_gate.sh --all',
+    ):
         if token not in governance:
             raise AssertionError(f'Release governance is missing contract token: {token}')
 
@@ -73,7 +80,9 @@ def verify() -> None:
     if 'python scripts/verify_release_governance.py' not in quality_gate:
         raise AssertionError('quality_gate.sh must execute verify_release_governance.py')
 
-    print(f'KAORI release governance passed for current baseline {version_example}; changelog and immutable build metadata contracts are aligned.')
+    print(
+        f'KAORI release governance passed for current baseline {version_example}; changelog and immutable build metadata contracts are aligned.'
+    )
 
 
 if __name__ == '__main__':

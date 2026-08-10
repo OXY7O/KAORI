@@ -107,11 +107,7 @@ def _count_page_local_compact_pill_labels(relative: str, source: str) -> int:
 def _count_custom_hero_titles(relative: str, source: str) -> int:
     if relative == 'app/templates/components/page_hero.html':
         return 0
-    return sum(
-        1
-        for match in _H1_TAG.finditer(source)
-        if 'page_hero.title_classes()' not in match.group(0)
-    )
+    return sum(1 for match in _H1_TAG.finditer(source) if 'page_hero.title_classes()' not in match.group(0))
 
 
 def _count_copied_standard_surface_shells(relative: str, source: str) -> int:
@@ -141,9 +137,7 @@ def _metrics(relative: str, source: str) -> dict[str, int]:
     )
     return {
         'arbitrary_text_sizes': (
-            0
-            if relative in _APPROVED_ARBITRARY_TEXT_COMPONENTS
-            else len(_ARBITRARY_TEXT.findall(source))
+            0 if relative in _APPROVED_ARBITRARY_TEXT_COMPONENTS else len(_ARBITRARY_TEXT.findall(source))
         ),
         'arbitrary_tracking': len(_ARBITRARY_TRACKING.findall(source)),
         'font_extrabold_utilities': len(_FONT_EXTRABOLD.findall(source)),
@@ -151,21 +145,13 @@ def _metrics(relative: str, source: str) -> dict[str, int]:
         'raw_hex_colors': len(_RAW_HEX.findall(source)),
         'raw_palette_utilities': len(_RAW_PALETTE.findall(source)),
         'semantic_border_utilities': (
-            0
-            if relative in _APPROVED_SEMANTIC_BORDER_COMPONENTS
-            else len(_SEMANTIC_BORDER.findall(source))
+            0 if relative in _APPROVED_SEMANTIC_BORDER_COMPONENTS else len(_SEMANTIC_BORDER.findall(source))
         ),
-        'page_local_compact_status_labels': _count_page_local_compact_status_labels(
-            relative, source
-        ),
-        'page_local_compact_pill_labels': _count_page_local_compact_pill_labels(
-            relative, source
-        ),
+        'page_local_compact_status_labels': _count_page_local_compact_status_labels(relative, source),
+        'page_local_compact_pill_labels': _count_page_local_compact_pill_labels(relative, source),
         'custom_hero_titles': _count_custom_hero_titles(relative, source),
         'custom_previous_next_pagination': custom_pagination,
-        'copied_standard_surface_shells': _count_copied_standard_surface_shells(
-            relative, source
-        ),
+        'copied_standard_surface_shells': _count_copied_standard_surface_shells(relative, source),
         'copied_right_context_grids': (
             0
             if relative == 'app/templates/components/context_rail.html'
@@ -173,8 +159,7 @@ def _metrics(relative: str, source: str) -> dict[str, int]:
         ),
         'page_local_workspace_tablists': (
             0
-            if relative.startswith('app/templates/components/')
-            or 'components/workspace_tabs.html' in source
+            if relative.startswith('app/templates/components/') or 'components/workspace_tabs.html' in source
             else len(_TABLIST.findall(source))
         ),
     }
@@ -185,11 +170,7 @@ def scan(root: Path) -> dict[str, dict[str, int]]:
     for path in sorted((root / 'app' / 'templates').rglob('*.html')):
         source = path.read_text(encoding='utf-8')
         relative = path.relative_to(root).as_posix()
-        metrics = {
-            metric: value
-            for metric, value in _metrics(relative, source).items()
-            if value
-        }
+        metrics = {metric: value for metric, value in _metrics(relative, source).items() if value}
         if metrics:
             result[relative] = metrics
     return result
@@ -227,23 +208,17 @@ def validate(root: Path, baseline_path: Path) -> list[str]:
                 errors.append(f'{path}: {metric} {value} exceeds style ceiling {allowed}')
             elif value < allowed:
                 errors.append(
-                    f'{path}: {metric} fell from {allowed} to {value}; '
-                    'update the style baseline in the same change'
+                    f'{path}: {metric} fell from {allowed} to {value}; update the style baseline in the same change'
                 )
     return errors
 
 
 def _totals(files: dict[str, dict[str, int]]) -> dict[str, int]:
-    return {
-        metric: sum(int(values.get(metric, 0)) for values in files.values())
-        for metric in _METRICS
-    }
+    return {metric: sum(int(values.get(metric, 0)) for values in files.values()) for metric in _METRICS}
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description='Prevent KAORI page-local styling drift from increasing.'
-    )
+    parser = argparse.ArgumentParser(description='Prevent KAORI page-local styling drift from increasing.')
     parser.add_argument('--root', type=Path, default=Path('.'))
     parser.add_argument(
         '--baseline',

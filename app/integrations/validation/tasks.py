@@ -1,22 +1,18 @@
 from __future__ import annotations
 
-import logging
 from datetime import UTC, datetime
+import logging
 from typing import Any, cast
 
 from celery import Task, shared_task
 from flask import current_app
 
-import app.integrations.runtime.refresh as runtime_refresh
 from app.extensions.db import db
 from app.integrations.lifecycle import ensure_canonical_instance, ensure_provider_operational
 from app.integrations.registry import execute_integration_operation, get_integration
+from app.integrations.runtime.recovery import enqueue_recovery_work, is_runtime_recovery, latest_runtime_health
+import app.integrations.runtime.refresh as runtime_refresh
 from app.integrations.runtime.repository import persist_runtime_state
-from app.integrations.runtime.recovery import (
-    enqueue_recovery_work,
-    is_runtime_recovery,
-    latest_runtime_health,
-)
 from app.integrations.validation.state import (
     claim_validation_job,
     get_active_validation_task_id,

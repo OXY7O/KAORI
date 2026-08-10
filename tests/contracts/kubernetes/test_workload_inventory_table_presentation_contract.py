@@ -26,7 +26,10 @@ def test_workload_table_uses_compact_operational_columns() -> None:
 def test_workload_table_separates_posture_from_factual_evidence() -> None:
     content = TEMPLATE.read_text(encoding='utf-8')
 
-    assert 'table_label.status_indicator_label(workload.operational_state_label, workload.operational_state_tone)' in content
+    assert (
+        'table_label.status_indicator_label(workload.operational_state_label, workload.operational_state_tone)'
+        in content
+    )
     assert '{{ workload.state_display }}' in content
     assert 'table_label.status_label(workload.update_strategy' not in content
     assert '{{ workload.update_strategy }}' in content

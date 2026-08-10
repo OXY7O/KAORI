@@ -31,9 +31,7 @@ def test_top_consumers_uses_structured_identity_and_correct_pvc_selector() -> No
 
 def test_top_consumers_snapshot_items_use_pressure_and_contribution_fields() -> None:
     source = read('app/analytics/top_consumers/service.py')
-    helper = source.split('def build_snapshot_items', 1)[1].split(
-        'def relative_percent', 1
-    )[0]
+    helper = source.split('def build_snapshot_items', 1)[1].split('def relative_percent', 1)[0]
 
     assert "row.get('pressure_percent')" in helper
     assert "row.get('contribution_percent')" in helper

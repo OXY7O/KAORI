@@ -14,7 +14,7 @@
     loading_bar_id='dashboard-cluster-health-loading',
     loading_bar_label='Cluster Health Loading',
     body_classes='p-0'
-) %}
+    ) %}
     <div class="overflow-x-auto">
         <table class="{{ table_ui.table_classes('min-w-[1040px]') }}">
             <thead class="{{ table_ui.head_classes() }}">
@@ -91,11 +91,11 @@
                 {% else %}
                     <tr>
                         <td colspan="7" class="px-5 py-4">
-                            {% set empty_state_icon = 'database' %}
-                            {% set empty_state_label = 'No Data' %}
-                            {% set empty_state_title = 'No Cluster Inventory Data' %}
-                            {% set empty_state_description = 'Add a cluster and run inventory sync to populate the health summary.' %}
-                            {% set empty_state_min_height = 'min-h-[160px]' %}
+                            {% set empty_state_icon = "database" %}
+                            {% set empty_state_label = "No Data" %}
+                            {% set empty_state_title = "No Cluster Inventory Data" %}
+                            {% set empty_state_description = "Add a cluster and run inventory sync to populate the health summary." %}
+                            {% set empty_state_min_height = "min-h-[160px]" %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
@@ -103,7 +103,6 @@
             </tbody>
         </table>
     </div>
-
     {% if pagination.total_items > 0 %}
         <footer class="flex flex-col gap-3 border-t border-outline-subtle px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -111,9 +110,16 @@
                     Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} Clusters
                 </p>
                 <div class="flex items-center gap-2">
-                    <input id="cluster-health-scope" type="hidden" name="cluster_id" value="{{ dashboard.selected_cluster_id or '' }}" />
-                    <input id="cluster-health-page-reset" type="hidden" name="cluster_health_page" value="1" />
-                    <label for="cluster-health-per-page" class="text-xs font-semibold text-content-secondary">Rows</label>
+                    <input id="cluster-health-scope"
+                           type="hidden"
+                           name="cluster_id"
+                           value="{{ dashboard.selected_cluster_id or '' }}" />
+                    <input id="cluster-health-page-reset"
+                           type="hidden"
+                           name="cluster_health_page"
+                           value="1" />
+                    <label for="cluster-health-per-page"
+                           class="text-xs font-semibold text-content-secondary">Rows</label>
                     <select id="cluster-health-per-page"
                             name="cluster_health_per_page"
                             class="{{ pagination_ui.page_size_classes() }}"
@@ -125,12 +131,12 @@
                             hx-disabled-elt="this"
                             hx-indicator="#dashboard-cluster-health-loading">
                         {% for size in [5, 10, 25, 50] %}
-                            <option value="{{ size }}" {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>
+                            <option value="{{ size }}"
+                                    {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>
                         {% endfor %}
                     </select>
                 </div>
             </div>
-
             <div class="flex items-center gap-2">
                 {% set prev_url = url_for('kubernetes_dashboard.section', section='cluster_health', cluster_id=dashboard.selected_cluster_id or '', cluster_health_page=pagination.prev_page, cluster_health_per_page=pagination.per_page) %}
                 {% set next_url = url_for('kubernetes_dashboard.section', section='cluster_health', cluster_id=dashboard.selected_cluster_id or '', cluster_health_page=pagination.next_page, cluster_health_per_page=pagination.per_page) %}
@@ -146,7 +152,8 @@
                         Previous
                     </button>
                 {% else %}
-                    <span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true">
+                    <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"
+                          aria-disabled="true">
                         <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
                         Previous
                     </span>
@@ -164,7 +171,8 @@
                         <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
                     </button>
                 {% else %}
-                    <span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true">
+                    <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"
+                          aria-disabled="true">
                         Next
                         <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
                     </span>

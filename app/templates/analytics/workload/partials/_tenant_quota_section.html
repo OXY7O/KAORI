@@ -8,7 +8,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table.html" as table_ui %}
 {% set quota_pagination = tenant_quota_summary.pagination %}
-{% set indicator_id = 'tenant-quota-loading-indicator' %}
+{% set indicator_id = "tenant-quota-loading-indicator" %}
 {% set full_page_url = url_for('analytics.workload', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, time_range=selected_time_range, tab='quotas') %}
 {% set partial_url = url_for('analytics.workload_tenant_quota') %}
 <section id="tenant-quota-analysis" class="space-y-5">
@@ -21,7 +21,6 @@
             </div>
         </div>
     </header>
-
     <section class="{{ analysis_surface.evidence_shell_classes() }}">
         <div class="{{ analysis_surface.metric_grid_classes(4) }}">
             {% for card in tenant_quota_summary.summary_cards %}
@@ -38,7 +37,6 @@
             {% endfor %}
         </div>
     </section>
-
     <section class="{{ analysis_surface.snapshot_shell_classes() }}">
         <header class="{{ analysis_surface.snapshot_header_classes() }}">
             <div class="flex min-w-0 items-start gap-3">
@@ -50,7 +48,6 @@
             </div>
             {{ loading_bar.render(indicator_id, label='Refreshing Tenant Quota Analysis') }}
         </header>
-
         {% call record_filter.form(
             'tenant-quota-filter-form',
             full_page_url,
@@ -58,18 +55,21 @@
             '#tenant-quota-analysis',
             '#' ~ indicator_id,
             "change[event.target.matches('select')] delay:120ms, keyup[event.target.name === 'tenant_search'] changed delay:450ms, search[event.target.name === 'tenant_search']"
-        ) %}
-            <input type="hidden" name="cluster_id" value="{{ cluster.id if cluster else '' }}">
+            ) %}
+            <input type="hidden"
+                   name="cluster_id"
+                   value="{{ cluster.id if cluster else '' }}">
             <input type="hidden" name="namespace" value="{{ selected_namespace }}">
             <input type="hidden" name="time_range" value="{{ selected_time_range }}">
             <input type="hidden" name="tab" value="quotas">
             <input type="hidden" name="quota_page" value="1">
-            <input type="hidden" name="quota_per_page" value="{{ quota_pagination.per_page }}">
+            <input type="hidden"
+                   name="quota_per_page"
+                   value="{{ quota_pagination.per_page }}">
             {{ record_filter.search('tenant_search', selected_tenant_search, 'Search Namespace...', 'Search Namespace') }}
             {{ record_filter.select('tenant_quota_status', selected_tenant_quota_status, quota_status_options, 'All Quota Statuses', 'Quota Status') }}
             {{ record_filter.select('tenant_risk', selected_tenant_risk, tenant_risk_options, 'All Risks', 'Tenant Risk') }}
         {% endcall %}
-
         {% call evidence_list.shell('Tenant Quota Records', embedded=true) %}
             {% call evidence_list.header() %}
                 {{ evidence_list.header_cell('Namespace', 3) }}
@@ -80,13 +80,14 @@
             {% endcall %}
             <div class="divide-y divide-outline-subtle">
                 {% for row in tenant_quota_summary.rows %}
-                    <article x-data="{ detailOpen: false }" @kaori:analytics-collapse-details.window="detailOpen = false">
+                    <article x-data="{ detailOpen: false }"
+                             @kaori:analytics-collapse-details.window="detailOpen = false">
                         {% call evidence_list.row() %}
                             {% call evidence_list.cell(3) %}
                                 {{ evidence_list.identity('folder-tree', row.namespace, row.workloads ~ ' Active Pods · ' ~ row.quota_object_count ~ ' Quota Objects') }}
                             {% endcall %}
                             {% call evidence_list.cell(3) %}
-                                {{ evidence_list.mobile_label('Quota Pressure') }}
+                                {{ evidence_list.mobile_label("Quota Pressure") }}
                                 <div class="flex flex-wrap items-center gap-2">
                                     {{ table_label.status_indicator_label(row.quota_status.label, row.quota_status.tone, size='compact') }}
                                     {% if row.quota_pressure_available %}
@@ -96,7 +97,9 @@
                                 </div>
                                 <div class="mt-2 flex items-center justify-between gap-3 text-xs">
                                     <span class="text-content-muted">Highest Allocation</span>
-                                    <span class="font-semibold tabular-nums {{ 'text-content-primary' if row.quota_pressure_available else analysis_surface.unavailable_value_classes() }}">{{ row.quota_usage_percent_display }}{% if row.quota_pressure_available %}%{% endif %}</span>
+                                    <span class="font-semibold tabular-nums {{ 'text-content-primary' if row.quota_pressure_available else analysis_surface.unavailable_value_classes() }}">{{ row.quota_usage_percent_display }}
+                                        {% if row.quota_pressure_available %}%{% endif %}
+                                    </span>
                                 </div>
                                 {% if row.quota_pressure_available %}
                                     {{ progress_bar.semantic_bar(row.quota_usage_percent, row.risk.tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.namespace ~ ' quota pressure status') }}
@@ -105,21 +108,23 @@
                                 {% endif %}
                             {% endcall %}
                             {% call evidence_list.cell(2) %}
-                                {{ evidence_list.mobile_label('Runtime Demand') }}
+                                {{ evidence_list.mobile_label("Runtime Demand") }}
                                 <div class="flex flex-wrap items-center gap-1.5">
                                     <p class="text-xs font-semibold text-content-primary">{{ row.runtime_demand_resource }}</p>
                                     {% if row.runtime_demand_object %}{{ table_label.metadata_label(row.runtime_demand_object, 'shield', size='compact') }}{% endif %}
                                 </div>
-                                <p class="mt-1 text-lg font-semibold tabular-nums {{ 'text-content-primary' if row.runtime_demand_available else analysis_surface.unavailable_value_classes() }}">{{ row.actual_usage_percent_display }}{% if row.runtime_demand_available %}%{% endif %}</p>
+                                <p class="mt-1 text-lg font-semibold tabular-nums {{ 'text-content-primary' if row.runtime_demand_available else analysis_surface.unavailable_value_classes() }}">{{ row.actual_usage_percent_display }}
+                                    {% if row.runtime_demand_available %}%{% endif %}
+                                </p>
                                 <p class="mt-1 text-xs font-medium text-content-muted">Demand basis in View More</p>
                             {% endcall %}
                             {% call evidence_list.cell(2) %}
-                                {{ evidence_list.mobile_label('Risk') }}
+                                {{ evidence_list.mobile_label("Risk") }}
                                 {{ table_label.status_label(row.risk.label, row.risk.tone, size='compact') }}
                                 <p class="mt-2 text-xs font-medium text-content-muted">Recommended action in View More</p>
                             {% endcall %}
                             {% call evidence_list.cell(2, 'right') %}
-                                {{ evidence_list.mobile_label('Action') }}
+                                {{ evidence_list.mobile_label("Action") }}
                                 <button type="button"
                                         class="{{ table_ui.action_classes() }} w-full whitespace-nowrap sm:w-auto"
                                         aria-haspopup="dialog"
@@ -139,7 +144,7 @@
                             icon='badge-gauge',
                             footer_text='Quota boundaries, observed allocation, and runtime demand come from the latest committed Workload Analysis snapshot.',
                             size='wide'
-                        ) %}
+                            ) %}
                             <div class="space-y-5">
                                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
                                     <div class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
@@ -157,13 +162,23 @@
                                     <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
                                         <div class="min-w-0 px-4 py-3 sm:px-5">
                                             <p class="{{ analysis_surface.metric_label_classes() }}">Highest Quota Pressure</p>
-                                            <p class="mt-1 text-lg font-semibold text-content-primary">{{ row.quota_usage_percent_display }}{% if row.quota_pressure_available %}%{% endif %}</p>
-                                            <p class="mt-1 truncate text-xs leading-5 text-content-muted" title="{{ row.quota_pressure_resource }}{% if row.quota_pressure_object %} · {{ row.quota_pressure_object }}{% endif %}">{{ row.quota_pressure_resource }}{% if row.quota_pressure_object %} · {{ row.quota_pressure_object }}{% endif %}</p>
+                                            <p class="mt-1 text-lg font-semibold text-content-primary">{{ row.quota_usage_percent_display }}
+                                                {% if row.quota_pressure_available %}%{% endif %}
+                                            </p>
+                                            <p class="mt-1 truncate text-xs leading-5 text-content-muted"
+                                               title="{{ row.quota_pressure_resource }}{% if row.quota_pressure_object %} · {{ row.quota_pressure_object }}{% endif %}">{{ row.quota_pressure_resource }}
+                                                {% if row.quota_pressure_object %}· {{ row.quota_pressure_object }}{% endif %}
+                                            </p>
                                         </div>
                                         <div class="min-w-0 px-4 py-3 sm:px-5">
                                             <p class="{{ analysis_surface.metric_label_classes() }}">Runtime Demand</p>
-                                            <p class="mt-1 text-lg font-semibold text-content-primary">{{ row.actual_usage_percent_display }}{% if row.runtime_demand_available %}%{% endif %}</p>
-                                            <p class="mt-1 truncate text-xs leading-5 text-content-muted" title="{{ row.runtime_demand_resource }}{% if row.runtime_demand_object %} · {{ row.runtime_demand_object }}{% endif %}">{{ row.runtime_demand_resource }}{% if row.runtime_demand_object %} · {{ row.runtime_demand_object }}{% endif %}</p>
+                                            <p class="mt-1 text-lg font-semibold text-content-primary">{{ row.actual_usage_percent_display }}
+                                                {% if row.runtime_demand_available %}%{% endif %}
+                                            </p>
+                                            <p class="mt-1 truncate text-xs leading-5 text-content-muted"
+                                               title="{{ row.runtime_demand_resource }}{% if row.runtime_demand_object %} · {{ row.runtime_demand_object }}{% endif %}">{{ row.runtime_demand_resource }}
+                                                {% if row.runtime_demand_object %} · {{ row.runtime_demand_object }}{% endif %}
+                                            </p>
                                         </div>
                                         <div class="min-w-0 px-4 py-3 sm:px-5">
                                             <p class="{{ analysis_surface.metric_label_classes() }}">Active Pods</p>
@@ -177,7 +192,6 @@
                                         </div>
                                     </div>
                                 </section>
-
                                 <div class="grid gap-4 lg:grid-cols-2">
                                     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
                                         <header class="flex items-start gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5">
@@ -196,11 +210,16 @@
                                             {% endfor %}
                                         </div>
                                         <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
-                                            <div class="flex items-center justify-between gap-3 text-xs"><span class="text-content-muted">Current Demand Against CPU Quota</span><span class="font-semibold tabular-nums text-content-primary">{{ row.cpu_actual_percent }}{% if row.cpu_actual_available and row.cpu_quota != 'N/A' %}%{% endif %}</span></div>
-                                            {% if row.cpu_actual_available and row.cpu_quota != 'N/A' %}{% set cpu_quota_tone = progress_bar.pressure_tone(row.cpu_actual_percent)|trim %}{{ progress_bar.semantic_bar(row.cpu_actual_percent, cpu_quota_tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.namespace ~ ' CPU runtime demand against quota') }}{% else %}<p class="mt-2 text-xs text-content-muted">CPU runtime demand or quota denominator is unavailable.</p>{% endif %}
+                                            <div class="flex items-center justify-between gap-3 text-xs"><span class="text-content-muted">Current Demand Against CPU Quota</span><span class="font-semibold tabular-nums text-content-primary">{{ row.cpu_actual_percent }}
+                                                {% if row.cpu_actual_available and row.cpu_quota != 'N/A' %}%{% endif %}
+                                            </span></div>
+                                            {% if row.cpu_actual_available and row.cpu_quota != 'N/A' %}
+                                                {% set cpu_quota_tone = progress_bar.pressure_tone(row.cpu_actual_percent)|trim %}{{ progress_bar.semantic_bar(row.cpu_actual_percent, cpu_quota_tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.namespace ~ ' CPU runtime demand against quota') }}
+                                            {% else %}
+                                                <p class="mt-2 text-xs text-content-muted">CPU runtime demand or quota denominator is unavailable.</p>
+                                            {% endif %}
                                         </div>
                                     </section>
-
                                     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
                                         <header class="flex items-start gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5">
                                             <span class="{{ analysis_surface.resource_icon_classes('memory') }}"><i data-lucide="memory-stick" class="h-4 w-4"></i></span>
@@ -218,12 +237,17 @@
                                             {% endfor %}
                                         </div>
                                         <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
-                                            <div class="flex items-center justify-between gap-3 text-xs"><span class="text-content-muted">Current Demand Against Memory Quota</span><span class="font-semibold tabular-nums text-content-primary">{{ row.memory_actual_percent }}{% if row.memory_actual_available and row.memory_quota != 'N/A' %}%{% endif %}</span></div>
-                                            {% if row.memory_actual_available and row.memory_quota != 'N/A' %}{% set memory_quota_tone = progress_bar.pressure_tone(row.memory_actual_percent)|trim %}{{ progress_bar.semantic_bar(row.memory_actual_percent, memory_quota_tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.namespace ~ ' memory runtime demand against quota') }}{% else %}<p class="mt-2 text-xs text-content-muted">Memory runtime demand or quota denominator is unavailable.</p>{% endif %}
+                                            <div class="flex items-center justify-between gap-3 text-xs"><span class="text-content-muted">Current Demand Against Memory Quota</span><span class="font-semibold tabular-nums text-content-primary">{{ row.memory_actual_percent }}
+                                                {% if row.memory_actual_available and row.memory_quota != 'N/A' %}%{% endif %}
+                                            </span></div>
+                                            {% if row.memory_actual_available and row.memory_quota != 'N/A' %}
+                                                {% set memory_quota_tone = progress_bar.pressure_tone(row.memory_actual_percent)|trim %}{{ progress_bar.semantic_bar(row.memory_actual_percent, memory_quota_tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.namespace ~ ' memory runtime demand against quota') }}
+                                            {% else %}
+                                                <p class="mt-2 text-xs text-content-muted">Memory runtime demand or quota denominator is unavailable.</p>
+                                            {% endif %}
                                         </div>
                                     </section>
                                 </div>
-
                                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
                                     <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
                                         <div class="flex min-w-0 items-start gap-3">
@@ -233,7 +257,11 @@
                                                 <p class="mt-1 text-xs leading-5 text-content-secondary">Each ResourceQuota object remains independent. Effective pressure uses the most constraining observed object and resource.</p>
                                             </div>
                                         </div>
-                                        {% if row.missing_key_labels %}{{ table_label.status_label(row.missing_key_labels|length ~ ' Missing Keys', tone='warning', size='compact') }}{% else %}{{ table_label.status_label('Required Keys Complete', tone='normal', size='compact') }}{% endif %}
+                                        {% if row.missing_key_labels %}
+                                            {{ table_label.status_label(row.missing_key_labels|length ~ ' Missing Keys', tone='warning', size='compact') }}
+                                        {% else %}
+                                            {{ table_label.status_label('Required Keys Complete', tone='normal', size='compact') }}
+                                        {% endif %}
                                     </header>
                                     <div class="grid gap-4 p-4 sm:p-5 lg:grid-cols-2">
                                         {% for quota in row.quota_objects %}
@@ -241,7 +269,8 @@
                                                 <div class="flex items-center justify-between gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3">
                                                     <div class="flex min-w-0 items-center gap-2">
                                                         <i data-lucide="shield" class="h-4 w-4 shrink-0 text-content-muted"></i>
-                                                        <h4 class="truncate text-sm font-semibold text-content-primary" title="{{ quota.name }}">{{ quota.name }}</h4>
+                                                        <h4 class="truncate text-sm font-semibold text-content-primary"
+                                                            title="{{ quota.name }}">{{ quota.name }}</h4>
                                                     </div>
                                                     {{ table_label.metadata_label((quota.hard_items|length) ~ ' Hard Keys', size='compact') }}
                                                 </div>
@@ -249,13 +278,31 @@
                                                     <div class="p-4">
                                                         <p class="{{ analysis_surface.metric_label_classes() }}">Hard Boundary</p>
                                                         <dl class="mt-3 space-y-2 text-xs">
-                                                            {% for item in quota.hard_items %}<div class="flex items-center justify-between gap-3"><dt class="text-content-muted">{{ item.label }}</dt><dd class="text-right font-semibold text-content-primary">{{ item.value }}</dd></div>{% else %}<p class="text-content-muted">No hard quota keys observed.</p>{% endfor %}
+                                                            {% for item in quota.hard_items %}
+                                                                <div class="flex items-center justify-between gap-3">
+                                                                    <dt class="text-content-muted">{{ item.label }}</dt>
+                                                                    <dd class="text-right font-semibold text-content-primary">
+                                                                        {{ item.value }}
+                                                                    </dd>
+                                                                </div>
+                                                            {% else %}
+                                                                <p class="text-content-muted">No hard quota keys observed.</p>
+                                                            {% endfor %}
                                                         </dl>
                                                     </div>
                                                     <div class="p-4">
                                                         <p class="{{ analysis_surface.metric_label_classes() }}">Observed Used</p>
                                                         <dl class="mt-3 space-y-2 text-xs">
-                                                            {% for item in quota.used_items %}<div class="flex items-center justify-between gap-3"><dt class="text-content-muted">{{ item.label }}</dt><dd class="text-right font-semibold text-content-primary">{{ item.value }}</dd></div>{% else %}<p class="text-content-muted">Used-value evidence is unavailable.</p>{% endfor %}
+                                                            {% for item in quota.used_items %}
+                                                                <div class="flex items-center justify-between gap-3">
+                                                                    <dt class="text-content-muted">{{ item.label }}</dt>
+                                                                    <dd class="text-right font-semibold text-content-primary">
+                                                                        {{ item.value }}
+                                                                    </dd>
+                                                                </div>
+                                                            {% else %}
+                                                                <p class="text-content-muted">Used-value evidence is unavailable.</p>
+                                                            {% endfor %}
                                                         </dl>
                                                     </div>
                                                 </div>
@@ -270,36 +317,38 @@
                                     <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
                                         {% if row.missing_key_labels %}
                                             <p class="{{ analysis_surface.metric_label_classes() }}">Missing Keys Across All Quota Objects</p>
-                                            <div class="mt-2 flex flex-wrap gap-1.5">{% for item in row.missing_key_labels %}{{ table_label.status_label(item, tone='warning', size='compact') }}{% endfor %}</div>
+                                            <div class="mt-2 flex flex-wrap gap-1.5">
+                                                {% for item in row.missing_key_labels %}{{ table_label.status_label(item, tone='warning', size='compact') }}{% endfor %}
+                                            </div>
                                         {% else %}
                                             <p class="text-xs leading-5 text-content-secondary">Combined ResourceQuota coverage includes every required CPU, memory, and pod key.</p>
                                         {% endif %}
                                     </div>
                                 </section>
-
                                 <section class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)]">
                                     <article class="rounded-xl border border-outline-default bg-surface-card p-4 sm:p-5">
                                         <div class="flex items-start gap-3">
                                             <span class="{{ analysis_surface.role_icon_classes('evidence') }}"><i data-lucide="activity" class="h-4 w-4"></i></span>
                                             <div class="min-w-0">
                                                 <p class="{{ analysis_surface.metric_label_classes() }}">Runtime Demand Interpretation</p>
-                                                <h3 class="mt-1 text-sm font-semibold text-content-primary">{{ row.runtime_demand_resource }}{% if row.runtime_demand_object %} Against {{ row.runtime_demand_object }}{% endif %}</h3>
-                                                <p class="mt-2 text-xs leading-5 text-content-secondary">The displayed {{ row.actual_usage_percent_display }}{% if row.runtime_demand_available %}%{% endif %} is the highest active-Pod demand against the most restrictive applicable hard quota for this namespace.</p>
+                                                <h3 class="mt-1 text-sm font-semibold text-content-primary">{{ row.runtime_demand_resource }}
+                                                    {% if row.runtime_demand_object %}Against {{ row.runtime_demand_object }}{% endif %}
+                                                </h3>
+                                                <p class="mt-2 text-xs leading-5 text-content-secondary">The displayed {{ row.actual_usage_percent_display }}
+                                                    {% if row.runtime_demand_available %}%{% endif %}
+                                                is the highest active-Pod demand against the most restrictive applicable hard quota for this namespace.</p>
                                                 <p class="mt-2 text-xs leading-5 text-content-muted">A configured zero remains a configured key. Multiple ResourceQuota objects are not merged into a synthetic denominator.</p>
                                             </div>
                                         </div>
                                     </article>
-
-                                    {{ analysis_surface.interpretation_callout(
-                                        'Recommended Action',
-                                        row.recommendation,
-                                        'Validate the pressure resource, owning team, and application growth expectation before changing quota boundaries.',
-                                        icon='lightbulb',
-                                        role='brand',
-                                        tone=row.risk.tone,
-                                        compact=true,
-                                        card=true
-                                    ) }}
+                                    {{ analysis_surface.interpretation_callout('Recommended Action',
+                                                                        row.recommendation,
+                                                                        'Validate the pressure resource, owning team, and application growth expectation before changing quota boundaries.',
+                                                                        icon='lightbulb',
+                                                                        role='brand',
+                                                                        tone=row.risk.tone,
+                                                                        compact=true,
+                                                                        card=true) }}
                                 </section>
                             </div>
                         {% endcall %}
@@ -309,29 +358,26 @@
                 {% endfor %}
             </div>
         {% endcall %}
-
         {% set quota_pagination_query = {
-            'cluster_id': cluster.id if cluster else '',
-            'namespace': selected_namespace,
-            'time_range': selected_time_range,
-            'tab': 'quotas',
-            'tenant_search': selected_tenant_search,
-            'tenant_quota_status': selected_tenant_quota_status,
-            'tenant_risk': selected_tenant_risk,
-            'quota_per_page': quota_pagination.per_page|default(5)
-        } %}
-        {{ record_pagination.render(
-            quota_pagination,
-            'quota_page',
-            'quota_per_page',
-            'tenant-quota-analysis',
-            'tenant-quota-filter-form',
-            'tenant-quota-loading-indicator',
-            'analytics.workload_tenant_quota',
-            'analytics.workload',
-            quota_pagination_query,
-            'Namespaces',
-            embedded=true
-        ) }}
+                    'cluster_id': cluster.id if cluster else '',
+                    'namespace': selected_namespace,
+                    'time_range': selected_time_range,
+                    'tab': 'quotas',
+                    'tenant_search': selected_tenant_search,
+                    'tenant_quota_status': selected_tenant_quota_status,
+                    'tenant_risk': selected_tenant_risk,
+                    'quota_per_page': quota_pagination.per_page|default(5)
+                } %}
+        {{ record_pagination.render(quota_pagination,
+                'quota_page',
+                'quota_per_page',
+                'tenant-quota-analysis',
+                'tenant-quota-filter-form',
+                'tenant-quota-loading-indicator',
+                'analytics.workload_tenant_quota',
+                'analytics.workload',
+                quota_pagination_query,
+                'Namespaces',
+                embedded=true) }}
     </section>
 </section>

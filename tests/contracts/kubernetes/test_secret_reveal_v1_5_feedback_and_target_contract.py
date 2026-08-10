@@ -41,7 +41,9 @@ def test_protected_reveal_discovers_only_configured_namespaces_without_namespace
     assert '.list_namespace()' not in verify_block
     assert 'if status == 404:' in verify_block
 
-    enabled_block = policy.split('def get_enabled_namespace_names(', 1)[1].split('def refresh_namespace_source_snapshot(', 1)[0]
+    enabled_block = policy.split('def get_enabled_namespace_names(', 1)[1].split(
+        'def refresh_namespace_source_snapshot(', 1
+    )[0]
     assert 'list_verified_namespaces(cluster_id, configured)' in enabled_block
     assert 'list_live_namespaces(' not in enabled_block
 

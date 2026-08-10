@@ -61,7 +61,7 @@ def test_alerts_readiness_and_overview_follow_bright_evidence_hierarchy() -> Non
     assert 'aria-label="Alert severity profile"' in overview
     assert 'Info Alerts' in overview
     assert 'Evidence Coverage' in overview
-    assert "xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]" in overview
+    assert 'xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]' in overview
     assert 'xl:grid-cols-6' not in overview
     assert 'Investigation Posture' not in overview
     assert 'progress_bar' not in overview

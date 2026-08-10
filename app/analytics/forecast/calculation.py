@@ -5,16 +5,13 @@ from math import ceil, isfinite, sqrt
 from statistics import mean
 from typing import Any
 
-from app.analytics.common.coercion import as_dict as _as_dict
-from app.analytics.common.coercion import as_list as _as_list
-from app.analytics.common.coercion import safe_float as _safe_float
-from app.analytics.common.coercion import safe_int as _safe_int
 from app.analytics.forecast.contracts import (
     CRITICAL_THRESHOLD,
     FORECAST_METHOD_OPTIONS,
-    WARNING_THRESHOLD,
     ForecastPoint,
+    WARNING_THRESHOLD,
 )
+
 
 def _calculate_forecast(
     *,
@@ -53,6 +50,7 @@ def _calculate_forecast(
     result['method_description'] = method_meta['description']
     return result
 
+
 def _calculate_linear_forecast(
     *,
     values: list[ForecastPoint],
@@ -81,6 +79,7 @@ def _calculate_linear_forecast(
         'signal_quality_reason': reason,
     }
 
+
 def _calculate_holt_winters_forecast(
     *,
     values: list[ForecastPoint],
@@ -95,7 +94,7 @@ def _calculate_holt_winters_forecast(
     if len(y_values) < season_length * 2:
         fallback = _calculate_linear_forecast(values=values, horizon_days=horizon_days)
         fallback['signal_quality_reason'] = (
-            f"{fallback['signal_quality_reason']} Holt-Winters used a linear fallback because fewer than "
+            f'{fallback["signal_quality_reason"]} Holt-Winters used a linear fallback because fewer than '
             f'{season_length * 2} daily samples were available.'
         )
         return fallback
@@ -134,6 +133,7 @@ def _calculate_holt_winters_forecast(
         'signal_quality_reason': f'{reason} Weekly additive seasonality was evaluated.',
     }
 
+
 def _calculate_conservative_forecast(
     *,
     values: list[ForecastPoint],
@@ -145,11 +145,7 @@ def _calculate_conservative_forecast(
     forecast_points = [
         ForecastPoint(
             timestamp=point.timestamp,
-            value=(
-                latest + ((point.value - latest) * 1.15)
-                if point.value > latest
-                else point.value
-            ),
+            value=(latest + ((point.value - latest) * 1.15) if point.value > latest else point.value),
         )
         for point in baseline_points
     ]
@@ -159,7 +155,7 @@ def _calculate_conservative_forecast(
     result['forecast_points'] = forecast_points
     result['projected_value'] = projected
     result['signal_quality_reason'] = (
-        f"{result['signal_quality_reason']} Conservative Trend applies a 15% uplift "
+        f'{result["signal_quality_reason"]} Conservative Trend applies a 15% uplift '
         'to positive Holt-Winters projection growth while preserving seasonal shape.'
     )
     return result
@@ -193,6 +189,7 @@ def _build_forecast_points(
 
     return forecast_points
 
+
 def _get_forecast_method_meta(
     method: str,
 ) -> dict[str, str]:
@@ -201,6 +198,7 @@ def _get_forecast_method_meta(
             return item
 
     return FORECAST_METHOD_OPTIONS[0]
+
 
 def _linear_regression(
     *,
@@ -228,6 +226,7 @@ def _linear_regression(
 
     return slope, intercept
 
+
 def _calculate_signal_quality(
     *,
     values: list[float],
@@ -251,6 +250,7 @@ def _calculate_signal_quality(
     if points_count >= 14 and completeness >= 0.75 and coefficient_of_variation <= 0.60:
         return 'Medium', f'{points_count} daily samples, {completeness:.0%} completeness, and moderate variation.'
     return 'Low', f'{points_count} daily samples with {completeness:.0%} completeness or high variation.'
+
 
 def _unavailable_eta(label: str = 'N/A') -> dict[str, Any]:
     return {'label': label, 'days': None, 'date': None}
@@ -313,17 +313,13 @@ def _build_summary(
     items: list[dict[str, Any]],
 ) -> dict[str, Any]:
     available_items = [
-        item
-        for item in items
-        if item.get('has_data') and item.get('peak_projected_percent') is not None
+        item for item in items if item.get('has_data') and item.get('peak_projected_percent') is not None
     ]
     unavailable_items = [item for item in items if not item.get('has_data')]
     warning_items = [item for item in available_items if item['status'] == 'warning']
     critical_items = [item for item in available_items if item['status'] == 'critical']
     highest_projected = (
-        max(available_items, key=lambda item: float(item['peak_projected_percent']))
-        if available_items
-        else None
+        max(available_items, key=lambda item: float(item['peak_projected_percent'])) if available_items else None
     )
     posture, posture_label, posture_tone = _resolve_summary_posture(
         available_items=available_items,
@@ -335,15 +331,11 @@ def _build_summary(
         'total_resources': len(items),
         'forecasted_resources': len(available_items),
         'unavailable_resources': len(unavailable_items),
-        'limited_resources': sum(
-            1 for item in available_items if not item.get('planning_ready')
-        ),
+        'limited_resources': sum(1 for item in available_items if not item.get('planning_ready')),
         'warning_count': len(warning_items),
         'critical_count': len(critical_items),
         'highest_projected_label': highest_projected['label'] if highest_projected else 'N/A',
-        'highest_projected_percent': (
-            highest_projected['peak_projected_percent'] if highest_projected else None
-        ),
+        'highest_projected_percent': (highest_projected['peak_projected_percent'] if highest_projected else None),
         'nearest_warning': _find_nearest_eta(items=available_items, eta_key='warning_eta'),
         'nearest_critical': _find_nearest_eta(items=available_items, eta_key='critical_eta'),
         'posture': posture,
@@ -388,6 +380,7 @@ def _find_nearest_eta(
         key=lambda candidate: candidate['days'],
     )
 
+
 def _build_no_forecast_data_message(
     items: list[dict[str, Any]],
 ) -> str:
@@ -417,6 +410,7 @@ def _build_no_forecast_data_message(
         'Check Prometheus retention, kube-state-metrics, kubelet/cAdvisor metrics, and namespace/resource filters.'
     )
 
+
 def _resolve_forecast_empty_reason(
     *,
     history_points_count: int,
@@ -432,6 +426,7 @@ def _resolve_forecast_empty_reason(
         return 'Capacity baseline is missing or zero.'
 
     return 'Forecast data is available.'
+
 
 def _build_chart_payload(
     items: list[dict[str, Any]],
@@ -450,14 +445,10 @@ def _build_chart_payload(
 
     for item in available_items:
         historical_map = {
-            str(point['date']): point.get('percent')
-            for point in item.get('historical_points', [])
-            if point.get('date')
+            str(point['date']): point.get('percent') for point in item.get('historical_points', []) if point.get('date')
         }
         forecast_map = {
-            str(point['date']): point.get('percent')
-            for point in item.get('forecast_points', [])
-            if point.get('date')
+            str(point['date']): point.get('percent') for point in item.get('forecast_points', []) if point.get('date')
         }
         historical_dates = sorted(historical_map)
         if historical_dates:
@@ -522,6 +513,7 @@ def _extract_range_points(
         for timestamp, value in sorted(aggregated.items())
     ]
 
+
 def _extract_instant_value(
     result: Any,
 ) -> float:
@@ -542,6 +534,7 @@ def _extract_instant_value(
             total += parsed
 
     return total
+
 
 def _get_prometheus_result_list(
     result: Any,
@@ -566,6 +559,7 @@ def _get_prometheus_result_list(
         return prometheus_result
 
     return []
+
 
 def _daily_average(
     points: list[ForecastPoint],
@@ -596,6 +590,7 @@ def _daily_average(
 
     return daily_points
 
+
 def _select_range_step(
     history_days: int,
 ) -> str:
@@ -606,6 +601,7 @@ def _select_range_step(
         return '6h'
 
     return '12h'
+
 
 def _parse_days(
     value: str | None,
@@ -620,6 +616,7 @@ def _parse_days(
     except ValueError:
         return default
 
+
 def _normalize_option(
     value: str | None,
     default: str,
@@ -629,6 +626,7 @@ def _normalize_option(
         return value
 
     return default
+
 
 def _percentage(
     value: float,
@@ -642,6 +640,7 @@ def _percentage(
         0.0,
     )
 
+
 def _resolve_status(
     projected_percent: float,
 ) -> str:
@@ -652,6 +651,7 @@ def _resolve_status(
         return 'warning'
 
     return 'normal'
+
 
 def _format_value(
     value: float,
@@ -667,6 +667,7 @@ def _format_value(
         return f'{value:.0f}'
 
     return f'{value:.2f}'
+
 
 def _format_weekly_trend(
     slope_per_day: float,
@@ -685,6 +686,7 @@ def _format_weekly_trend(
         return f'{sign}{magnitude:.0f} Pods / Week'
     return f'{sign}{magnitude:.2f} / Week'
 
+
 def _format_bytes(
     value: float,
 ) -> str:
@@ -698,10 +700,12 @@ def _format_bytes(
         unit_index += 1
     return f'{size:.0f} {units[unit_index]}' if unit_index == 0 else f'{size:.2f} {units[unit_index]}'
 
+
 def _to_prometheus_time(
     value: datetime,
 ) -> str:
     return str(value.timestamp())
+
 
 def _safe_message(
     *,

@@ -25,9 +25,7 @@ def main() -> int:
     summary = read('app/templates/inventory/namespaces/partials/_summary_cards.html')
     detail = read('app/templates/inventory/namespaces/partials/_namespace_detail_content.html')
     standard = read('docs/design/patterns/KUBERNETES_NAMESPACE_INVENTORY.md')
-    audit = read(
-        'docs/design/audits/KUBERNETES_NAMESPACE_INVENTORY_ALIGNMENT_AUDIT_2026_08.md'
-    )
+    audit = read('docs/design/audits/KUBERNETES_NAMESPACE_INVENTORY_ALIGNMENT_AUDIT_2026_08.md')
     quality_gate = read('scripts/quality_gate.sh')
 
     require(
@@ -56,8 +54,7 @@ def main() -> int:
         errors,
     )
     require(
-        'quota_count = quota_counts.get(key, 0) if quota_state == COLLECTED else None'
-        in backend,
+        'quota_count = quota_counts.get(key, 0) if quota_state == COLLECTED else None' in backend,
         'ResourceQuota zero must remain distinct from unavailable evidence.',
         errors,
     )
@@ -67,8 +64,7 @@ def main() -> int:
         errors,
     )
     require(
-        "db.session.query(Cluster.name).filter(Cluster.id == cluster_id).scalar()"
-        in backend,
+        'db.session.query(Cluster.name).filter(Cluster.id == cluster_id).scalar()' in backend,
         'Scope identity must not depend on filtered rows.',
         errors,
     )
@@ -84,14 +80,14 @@ def main() -> int:
         errors,
     )
     require(
-        "committed_evidence['inventory.resourcequotas'] = collection_evidence"
-        in persistence,
+        "committed_evidence['inventory.resourcequotas'] = collection_evidence" in persistence,
         'ResourceQuota collection state must be committed.',
         errors,
     )
 
     require(
-        "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')" in routes,
+        "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')"
+        in routes,
         'Namespace workspace partial must be registered.',
         errors,
     )

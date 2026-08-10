@@ -3,7 +3,16 @@ from __future__ import annotations
 import json
 import logging
 
-from flask import Blueprint, abort, flash, make_response, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    abort,
+    flash,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from redis.exceptions import RedisError
@@ -38,10 +47,7 @@ from app.cluster.sync_state import (
 from app.extensions.db import db
 from app.integrations.deletion import DeletionBlocked
 from app.models import Cluster
-from app.notifications.service import (
-    get_navigation_notification_context,
-    record_operational_activity,
-)
+from app.notifications.service import get_navigation_notification_context, record_operational_activity
 from app.rbac.decorators import permission_required
 
 logger = logging.getLogger(__name__)

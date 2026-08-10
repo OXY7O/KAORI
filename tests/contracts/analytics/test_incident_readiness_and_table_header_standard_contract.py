@@ -33,27 +33,30 @@ def test_incident_readiness_uses_compact_operational_workspace() -> None:
 
 def test_analytics_table_headers_follow_kaori_title_case_contract() -> None:
     expected_headers = {
-        'alerts/partials/_alerts_table.html': [
-            'Alert', 'Severity', 'State', 'Scope &amp; Source', 'Started', 'Action'
-        ],
-        'alerts/partials/_anomalies_table.html': [
-            'Anomaly', 'Severity', 'Namespace &amp; Pod', 'Signal', 'Action'
-        ],
-        'components/_ranked_evidence_panel.html': [
-            'Rank', 'Consumer Identity', 'Contribution to Scope', 'Consumption'
-        ],
+        'alerts/partials/_alerts_table.html': ['Alert', 'Severity', 'State', 'Scope &amp; Source', 'Started', 'Action'],
+        'alerts/partials/_anomalies_table.html': ['Anomaly', 'Severity', 'Namespace &amp; Pod', 'Signal', 'Action'],
+        'components/_ranked_evidence_panel.html': ['Rank', 'Consumer Identity', 'Contribution to Scope', 'Consumption'],
         'top_consumers/partials/_consumer_detail_results.html': [
-            'Rank', 'Consumer Identity', 'Resource Evidence', 'Operational Priority', 'Action'
+            'Rank',
+            'Consumer Identity',
+            'Resource Evidence',
+            'Operational Priority',
+            'Action',
         ],
-        'storage/partials/_filesystem_panel.html': [
-            'Node &amp; Mount Point', 'Capacity', 'Utilization', 'Risk'
-        ],
+        'storage/partials/_filesystem_panel.html': ['Node &amp; Mount Point', 'Capacity', 'Utilization', 'Risk'],
         'workload/partials/_tenant_quota_section.html': [
-            'Namespace', 'Quota Pressure', 'Runtime Demand', 'Risk', 'Action'
+            'Namespace',
+            'Quota Pressure',
+            'Runtime Demand',
+            'Risk',
+            'Action',
         ],
         'workload/partials/_workload_mapping_section.html': [
-            'Workload &amp; Namespace', 'Configuration &amp; Risk', 'Request Fit',
-            'Evidence &amp; QoS', 'Action'
+            'Workload &amp; Namespace',
+            'Configuration &amp; Risk',
+            'Request Fit',
+            'Evidence &amp; QoS',
+            'Action',
         ],
     }
 
@@ -85,7 +88,8 @@ def test_desktop_column_headers_use_consistent_kaori_presentation_classes() -> N
     for template_path in ANALYTICS_TEMPLATES.rglob('*.html'):
         content = template_path.read_text(encoding='utf-8')
         header_lines = [
-            line for line in content.splitlines()
+            line
+            for line in content.splitlines()
             if 'text-content-muted' in line and 'uppercase' in line and '<div' in line
         ]
         for line in header_lines:

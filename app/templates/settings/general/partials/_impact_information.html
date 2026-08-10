@@ -17,7 +17,8 @@
             <span class="inline-flex shrink-0 items-center gap-2 rounded-lg border border-outline-default bg-surface-subtle px-3 py-2 text-xs font-semibold text-kaori-primary">
                 <span class="group-open:hidden">Details</span>
                 <span class="hidden group-open:inline">Collapse</span>
-                <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
+                <i data-lucide="chevron-down"
+                   class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
             </span>
         </summary>
         <div class="border-t border-outline-default px-5 pb-5 pt-4">
@@ -41,7 +42,6 @@
             </div>
         </div>
     </details>
-
     <details class="group overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
         <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 transition hover:bg-kaori-soft/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
             <div class="flex min-w-0 items-start gap-3">
@@ -58,26 +58,34 @@
             <span class="inline-flex shrink-0 items-center gap-2 rounded-lg border border-outline-default bg-surface-subtle px-3 py-2 text-xs font-semibold text-kaori-primary">
                 <span class="group-open:hidden">Details</span>
                 <span class="hidden group-open:inline">Collapse</span>
-                <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
+                <i data-lucide="chevron-down"
+                   class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
             </span>
         </summary>
         <div class="border-t border-outline-default px-5 pb-5 pt-4">
             <dl class="divide-y divide-outline-subtle rounded-xl border border-outline-default bg-surface-subtle px-4 text-xs">
                 <div class="py-3.5">
                     <dt class="font-semibold text-content-primary">Canonical Storage</dt>
-                    <dd class="mt-1 leading-5 text-content-muted">Operational timestamps remain stored and exchanged in UTC.</dd>
+                    <dd class="mt-1 leading-5 text-content-muted">
+                        Operational timestamps remain stored and exchanged in UTC.
+                    </dd>
                 </div>
                 <div class="py-3.5">
                     <dt class="font-semibold text-content-primary">Execution Schedules</dt>
-                    <dd class="mt-1 leading-5 text-content-muted">Report schedules, jobs, and external automation keep their own explicit execution timezone.</dd>
+                    <dd class="mt-1 leading-5 text-content-muted">
+                        Report schedules, jobs, and external automation keep their own explicit execution timezone.
+                    </dd>
                 </div>
                 <div class="py-3.5">
                     <dt class="font-semibold text-content-primary">External Systems</dt>
-                    <dd class="mt-1 leading-5 text-content-muted">Prometheus, Kubernetes, Alertmanager, databases, and other integrations are never reconfigured by this page.</dd>
+                    <dd class="mt-1 leading-5 text-content-muted">
+                        Prometheus, Kubernetes, Alertmanager, databases, and other integrations are never reconfigured by this page.
+                    </dd>
                 </div>
             </dl>
             <div class="mt-4 flex items-start gap-2 rounded-xl border border-kaori-primary/20 bg-kaori-soft/60 p-3.5 text-xs leading-5 text-content-secondary">
-                <i data-lucide="shield-check" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                <i data-lucide="shield-check"
+                   class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
                 <p><strong class="text-content-primary">Presentation only.</strong> Saving these preferences changes what you see, not what KAORI stores or executes.</p>
             </div>
         </div>

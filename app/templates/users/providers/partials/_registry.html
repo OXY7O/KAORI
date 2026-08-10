@@ -3,7 +3,8 @@
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/details/_expandable_row.html" as expandable %}
 {% import "components/pagination.html" as pagination_ui %}
-<section id="identity-provider-registry" class="{{ table_ui.block_classes() }}">
+<section id="identity-provider-registry"
+         class="{{ table_ui.block_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex min-w-0 items-start gap-3">
@@ -16,29 +17,32 @@
                 </div>
             </div>
             <span class="inline-flex min-h-8 shrink-0 items-center gap-1.5 self-start rounded-md border border-outline-default bg-surface-subtle px-3 text-xs font-semibold text-content-secondary lg:self-auto">
-                <i data-lucide="scan-search" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>
+                <i data-lucide="scan-search"
+                   class="h-3.5 w-3.5 text-kaori-primary"
+                   aria-hidden="true"></i>
                 {{ summary.matching }} Matching {{ 'Provider' if summary.matching == 1 else 'Providers' }}
             </span>
         </div>
         {{ loading_bar.render('identity-provider-registry-loading', label='Refreshing Provider Registry') }}
     </header>
-
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form method="get"
-          action="{{ url_for('users.providers') }}"
-          class="grid gap-3 lg:grid-cols-3"
-          hx-get="{{ url_for('users.providers') }}"
-          hx-trigger="keyup changed delay:400ms from:input[name='search'], change from:select[name='provider_type'], change from:select[name='state']"
-          hx-target="#identity-provider-registry"
-          hx-swap="outerHTML settle:150ms"
-          hx-push-url="true"
-          hx-indicator="#identity-provider-registry-loading">
+              action="{{ url_for('users.providers') }}"
+              class="grid gap-3 lg:grid-cols-3"
+              hx-get="{{ url_for('users.providers') }}"
+              hx-trigger="keyup changed delay:400ms from:input[name='search'], change from:select[name='provider_type'], change from:select[name='state']"
+              hx-target="#identity-provider-registry"
+              hx-swap="outerHTML settle:150ms"
+              hx-push-url="true"
+              hx-indicator="#identity-provider-registry-loading">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
             <label class="min-w-0">
                 <span class="{{ table_ui.filter_label_classes() }}">Search Provider</span>
                 <div class="relative">
-                    <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted" aria-hidden="true"></i>
+                    <i data-lucide="search"
+                       class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
+                       aria-hidden="true"></i>
                     <input type="search"
                            name="search"
                            value="{{ filters.search }}"
@@ -49,23 +53,28 @@
             <label class="min-w-0">
                 <span class="{{ table_ui.filter_label_classes() }}">Provider Type</span>
                 <select name="provider_type" class="{{ table_ui.filter_select_classes() }}">
-                    <option value="all" {% if filters.provider_type == 'all' %}selected{% endif %}>All Types</option>
-                    <option value="ldap" {% if filters.provider_type == 'ldap' %}selected{% endif %}>LDAP / Active Directory</option>
-                    <option value="google_oidc" {% if filters.provider_type == 'google_oidc' %}selected{% endif %}>Google OIDC</option>
-                    <option value="github_oauth" {% if filters.provider_type == 'github_oauth' %}selected{% endif %}>GitHub OAuth</option>
+                    <option value="all"
+                            {% if filters.provider_type == 'all' %}selected{% endif %}>All Types</option>
+                    <option value="ldap"
+                            {% if filters.provider_type == 'ldap' %}selected{% endif %}>LDAP / Active Directory</option>
+                    <option value="google_oidc"
+                            {% if filters.provider_type == 'google_oidc' %}selected{% endif %}>Google OIDC</option>
+                    <option value="github_oauth"
+                            {% if filters.provider_type == 'github_oauth' %}selected{% endif %}>GitHub OAuth</option>
                 </select>
             </label>
             <label class="min-w-0">
                 <span class="{{ table_ui.filter_label_classes() }}">Provider State</span>
                 <select name="state" class="{{ table_ui.filter_select_classes() }}">
                     <option value="all" {% if filters.state == 'all' %}selected{% endif %}>All States</option>
-                    <option value="enabled" {% if filters.state == 'enabled' %}selected{% endif %}>Enabled</option>
-                    <option value="disabled" {% if filters.state == 'disabled' %}selected{% endif %}>Disabled</option>
+                    <option value="enabled"
+                            {% if filters.state == 'enabled' %}selected{% endif %}>Enabled</option>
+                    <option value="disabled"
+                            {% if filters.state == 'disabled' %}selected{% endif %}>Disabled</option>
                 </select>
             </label>
         </form>
     </div>
-
     <div class="overflow-x-auto">
         <table class="{{ table_ui.table_classes() }}">
             <thead class="{{ table_ui.head_classes() }}">
@@ -93,7 +102,8 @@
                         <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ row.identity_links }}</span></td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">
                             <div class="flex justify-end gap-2">
-                                <a href="{{ url_for('users.edit_provider', provider_id=provider.id) }}" class="{{ table_ui.action_classes() }}">
+                                <a href="{{ url_for('users.edit_provider', provider_id=provider.id) }}"
+                                   class="{{ table_ui.action_classes() }}">
                                     <i data-lucide="pencil" class="h-3.5 w-3.5" aria-hidden="true"></i>Edit
                                 </a>
                                 {{ expandable.toggle_button('identity-providers', provider.id, '', detail_target_id, detail_row_id) }}
@@ -134,12 +144,17 @@
                   hx-indicator="#identity-provider-registry-loading">
                 <input type="hidden" name="page" value="1">
                 <input type="hidden" name="search" value="{{ filters.search }}">
-                <input type="hidden" name="provider_type" value="{{ filters.provider_type }}">
+                <input type="hidden"
+                       name="provider_type"
+                       value="{{ filters.provider_type }}">
                 <input type="hidden" name="state" value="{{ filters.state }}">
                 <span class="text-xs font-semibold text-content-secondary">Rows</span>
-                <select name="per_page" aria-label="Rows Per Page" class="{{ pagination_ui.page_size_classes() }}">
+                <select name="per_page"
+                        aria-label="Rows Per Page"
+                        class="{{ pagination_ui.page_size_classes() }}">
                     {% for option in per_page_options %}
-                        <option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                        <option value="{{ option }}"
+                                {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
                     {% endfor %}
                 </select>
             </form>
@@ -154,19 +169,16 @@
                    hx-indicator="#identity-provider-registry-loading"
                    class="{{ pagination_ui.navigation_classes() }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
             {% else %}
-                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"
+                      aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
             {% endif %}
-
-            {{ pagination_ui.numeric_pages(
-                pagination.page,
-                pagination.total_pages,
-                hx_target='#identity-provider-registry',
-                hx_indicator='#identity-provider-registry-loading',
-                endpoint='users.providers',
-                query_params=pagination_query,
-                hx_swap='outerHTML settle:150ms'
-            ) }}
-
+            {{ pagination_ui.numeric_pages(pagination.page,
+                        pagination.total_pages,
+                        hx_target='#identity-provider-registry',
+                        hx_indicator='#identity-provider-registry-loading',
+                        endpoint='users.providers',
+                        query_params=pagination_query,
+                        hx_swap='outerHTML settle:150ms') }}
             {% if pagination.has_next %}
                 <a href="{{ url_for('users.providers', page=pagination.next_page, **pagination_query) }}"
                    hx-get="{{ url_for('users.providers', page=pagination.next_page, **pagination_query) }}"
@@ -176,7 +188,8 @@
                    hx-indicator="#identity-provider-registry-loading"
                    class="{{ pagination_ui.navigation_classes() }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
             {% else %}
-                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"
+                      aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
             {% endif %}
         </div>
     </footer>

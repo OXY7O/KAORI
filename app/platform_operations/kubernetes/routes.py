@@ -1,11 +1,16 @@
 from __future__ import annotations
 
-from flask import Blueprint, render_template, request, url_for
+from typing import Any
+
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    url_for,
+)
 
 from app.platform_operations.kubernetes.presentation import build_kubernetes_administration_summary
-from app.platform_operations.kubernetes.secret_reveal.service import (
-    build_secret_reveal_settings_context,
-)
+from app.platform_operations.kubernetes.secret_reveal.service import build_secret_reveal_settings_context
 from app.rbac.decorators import permission_required
 
 bp = Blueprint('kubernetes', __name__)
@@ -19,7 +24,7 @@ def _active_administration_tab(value: str | None) -> str:
 @bp.route('/')
 @permission_required('kubernetes_secrets.manage_reveal')
 def index():
-    workspace_args = {
+    workspace_args: dict[str, Any] = {
         key: value
         for key in ('cluster_id', 'namespace_q', 'namespace_policy', 'page', 'per_page')
         if (value := (request.args.get(key) or '').strip())

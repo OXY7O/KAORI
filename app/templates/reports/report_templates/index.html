@@ -5,14 +5,11 @@
 {% import "components/table_registry.html" as registry_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "reports/components/_record_detail_modal.html" as record_modal %}
-
 {% block title %}Report Templates{% endblock title %}
-
 {% block dashboard_content %}
     {% set template_form = payload.edit_template or payload.create_form %}
     {% set template_form_is_edit = payload.edit_template is not none %}
     {% set template_form_action = url_for('reports.update_report_template', template_id=template_form.id) if template_form_is_edit else url_for('reports.create_report_template') %}
-
     <div class="space-y-5" data-report-templates-page="registry-v2">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
@@ -27,8 +24,8 @@
                         </div>
                     {% endcall %}
                 </div>
-
-                <aside class="{{ page_hero.aside_classes() }}" aria-label="Template Governance">
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="Template Governance">
                     <div class="{{ page_hero.context_panel_classes() }}">
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
@@ -52,8 +49,8 @@
                 </aside>
             </div>
         </section>
-
-        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm" data-template-posture="governance-v2">
+        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+                 data-template-posture="governance-v2">
             <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
@@ -66,21 +63,22 @@
                     {{ table_label.status_indicator_label(payload.posture.status_label, payload.posture.status_tone) }}
                 </div>
             </header>
-
             <div class="grid lg:grid-cols-12">
-                <section class="border-b border-outline-subtle p-5 sm:p-6 lg:col-span-5 lg:border-b-0 lg:border-r lg:border-outline-subtle" aria-labelledby="template-governance-contract-title">
+                <section class="border-b border-outline-subtle p-5 sm:p-6 lg:col-span-5 lg:border-b-0 lg:border-r lg:border-outline-subtle"
+                         aria-labelledby="template-governance-contract-title">
                     <p class="text-xs font-semibold text-kaori-primary">Governance Contract</p>
-                    <h3 id="template-governance-contract-title" class="mt-1 text-lg font-bold text-content-primary">Protected Base. Governed Customization.</h3>
+                    <h3 id="template-governance-contract-title"
+                        class="mt-1 text-lg font-bold text-content-primary">Protected Base. Governed Customization.</h3>
                     <p class="mt-2 max-w-2xl text-sm leading-6 text-content-secondary">System templates remain read-only, while custom templates inherit canonical report types, supported formats, and section boundaries used by Generate Report and scheduling workflows.</p>
-
                     <div class="mt-5 space-y-4" data-template-governance-guardrails="true">
                         {% for icon, title, detail in [
                             ('lock-keyhole', 'System Templates Protected', 'Canonical templates cannot be edited or deleted.'),
                             ('git-branch', 'Custom Templates Inherit Contracts', 'Customization stays inside the selected report type contract.'),
                             ('refresh-cw', 'One Reporting Catalog', 'Generate, Templates, and Schedules consume the same report definitions.')
-                        ] %}
+                            ] %}
                             <div class="flex items-start gap-3">
-                                <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                                <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
                                 <div class="min-w-0">
                                     <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
                                     <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ detail }}</p>
@@ -89,15 +87,15 @@
                         {% endfor %}
                     </div>
                 </section>
-
-                <section class="min-w-0 lg:col-span-7" aria-label="Template Governance Metrics">
+                <section class="min-w-0 lg:col-span-7"
+                         aria-label="Template Governance Metrics">
                     <div class="grid grid-cols-2 gap-px bg-outline-subtle sm:grid-cols-4">
                         {% for icon, label, value, helper in [
                             ('layers-3', 'Catalog Contracts', payload.posture.catalog_count, 'Canonical report types'),
                             ('shield-check', 'Protected System', payload.posture.system_count, 'Read-only baseline'),
                             ('circle-check-big', 'Active Custom', payload.posture.active_custom_count, 'Reusable definitions'),
                             ('file-pen-line', 'Draft Custom', payload.posture.draft_count, 'Awaiting activation')
-                        ] %}
+                            ] %}
                             <article class="min-w-0 bg-surface-card px-4 py-5 sm:px-5">
                                 <div class="flex items-start justify-between gap-3">
                                     <div class="min-w-0">
@@ -105,24 +103,29 @@
                                         <p class="mt-2 text-xl font-bold text-content-primary">{{ value }}</p>
                                         <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
                                     </div>
-                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                          aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
                                 </div>
                             </article>
                         {% endfor %}
                     </div>
-
-                    <div class="grid border-t border-outline-subtle lg:grid-cols-2" data-template-governance-coverage="true">
-                        <section class="p-5 sm:p-6 lg:border-r lg:border-outline-subtle" aria-labelledby="template-catalog-coverage-title">
+                    <div class="grid border-t border-outline-subtle lg:grid-cols-2"
+                         data-template-governance-coverage="true">
+                        <section class="p-5 sm:p-6 lg:border-r lg:border-outline-subtle"
+                                 aria-labelledby="template-catalog-coverage-title">
                             <div class="flex items-start justify-between gap-3">
                                 <div>
                                     <p class="text-xs font-semibold text-kaori-primary">Catalog Coverage</p>
-                                    <h3 id="template-catalog-coverage-title" class="mt-1 text-sm font-bold text-content-primary">Protected Contract Coverage</h3>
+                                    <h3 id="template-catalog-coverage-title"
+                                        class="mt-1 text-sm font-bold text-content-primary">Protected Contract Coverage</h3>
                                 </div>
                                 {{ table_label.metadata_label(payload.posture.protected_coverage_percent ~ '%', 'shield-check') }}
                             </div>
                             <p class="mt-2 text-xs leading-5 text-content-muted">Every canonical report type should have a protected system template before operators create reusable custom definitions.</p>
-                            <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-surface-disabled" aria-hidden="true">
-                                <div class="h-full rounded-full bg-kaori-primary" style="width: {{ payload.posture.protected_coverage_percent }}%"></div>
+                            <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-surface-disabled"
+                                 aria-hidden="true">
+                                <div class="h-full rounded-full bg-kaori-primary"
+                                     style="width: {{ payload.posture.protected_coverage_percent }}%"></div>
                             </div>
                             <div class="mt-4 flex flex-wrap gap-2">
                                 {{ table_label.metadata_label(payload.posture.catalog_analytics_count ~ ' Analytics', 'chart-no-axes-combined') }}
@@ -131,12 +134,13 @@
                             </div>
                             <p class="mt-3 text-xs leading-5 text-content-muted">Supported Formats: <span class="font-semibold text-content-secondary">{{ payload.posture.supported_formats_label }}</span></p>
                         </section>
-
-                        <section class="border-t border-outline-subtle p-5 sm:p-6 lg:border-t-0" aria-labelledby="template-customization-state-title">
+                        <section class="border-t border-outline-subtle p-5 sm:p-6 lg:border-t-0"
+                                 aria-labelledby="template-customization-state-title">
                             <div class="flex items-start justify-between gap-3">
                                 <div>
                                     <p class="text-xs font-semibold text-kaori-primary">Customization State</p>
-                                    <h3 id="template-customization-state-title" class="mt-1 text-sm font-bold text-content-primary">Reusable Custom Definitions</h3>
+                                    <h3 id="template-customization-state-title"
+                                        class="mt-1 text-sm font-bold text-content-primary">Reusable Custom Definitions</h3>
                                 </div>
                                 {{ table_label.status_indicator_label(payload.posture.customization_label, payload.posture.customization_tone) }}
                             </div>
@@ -151,8 +155,9 @@
                 </section>
             </div>
         </section>
-
-        <section id="templates-registry" class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm" data-template-registry="true">
+        <section id="templates-registry"
+                 class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+                 data-template-registry="true">
             <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
@@ -165,12 +170,11 @@
                     <div class="flex flex-wrap items-center gap-2">
                         {{ table_label.metadata_label(payload.pagination.total_items ~ ' Templates', 'layout-template') }}
                         {% if payload.active_filter_count > 0 %}
-                            {{ registry_ui.clear_filters_link(
-                                'reports.report_templates',
-                                'templates-registry',
-                                'templates-registry-loading',
-                                payload.pagination.per_page,
-                                table_ui.action_classes()
+                            {{ registry_ui.clear_filters_link('reports.report_templates',
+                                                        'templates-registry',
+                                                        'templates-registry-loading',
+                                                        payload.pagination.per_page,
+                                                        table_ui.action_classes() 
                             ) }}
                         {% endif %}
                     </div>
@@ -179,7 +183,6 @@
                     {{ loading_bar.render('templates-registry-loading', active=false, label='Refreshing Template Registry') }}
                 </div>
             </header>
-
             {% call registry_ui.filter_form(
                 'reports.report_templates',
                 'templates-registry',
@@ -188,46 +191,71 @@
                 'grid grid-cols-1 gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:grid-cols-2 xl:grid-cols-6 sm:px-6',
                 marker_name='data-template-filters',
                 marker_value='true'
-            ) %}
+                ) %}
                 <label class="block min-w-0">
                     <span class="text-xs font-semibold text-content-muted">Search</span>
                     <div class="relative mt-1.5">
-                        <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted" aria-hidden="true"></i>
-                        <input type="search" name="search" value="{{ payload.selected_filters.search }}" placeholder="Search Templates..." class="min-h-9 w-full rounded-lg border border-outline-default bg-surface-card py-2 pl-9 pr-3 text-sm text-content-primary outline-none transition focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                        <i data-lucide="search"
+                           class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
+                           aria-hidden="true"></i>
+                        <input type="search"
+                               name="search"
+                               value="{{ payload.selected_filters.search }}"
+                               placeholder="Search Templates..."
+                               class="min-h-9 w-full rounded-lg border border-outline-default bg-surface-card py-2 pl-9 pr-3 text-sm text-content-primary outline-none transition focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
                     </div>
                 </label>
                 <label class="block min-w-0">
                     <span class="text-xs font-semibold text-content-muted">Family</span>
-                    <select name="family" class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
-                        {% for option in payload.filter_options.families %}<option value="{{ option.value }}" {% if payload.selected_filters.family == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
+                    <select name="family"
+                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                        {% for option in payload.filter_options.families %}
+                            <option value="{{ option.value }}"
+                                    {% if payload.selected_filters.family == option.value %}selected{% endif %}>{{ option.label }}</option>
+                        {% endfor %}
                     </select>
                 </label>
                 <label class="block min-w-0">
                     <span class="text-xs font-semibold text-content-muted">Report Type</span>
-                    <select name="report_type" class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
-                        {% for option in payload.filter_options.report_types %}<option value="{{ option.value }}" {% if payload.selected_filters.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
+                    <select name="report_type"
+                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                        {% for option in payload.filter_options.report_types %}
+                            <option value="{{ option.value }}"
+                                    {% if payload.selected_filters.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>
+                        {% endfor %}
                     </select>
                 </label>
                 <label class="block min-w-0">
                     <span class="text-xs font-semibold text-content-muted">Ownership</span>
-                    <select name="ownership" class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
-                        {% for option in payload.filter_options.ownership %}<option value="{{ option.value }}" {% if payload.selected_filters.ownership == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
+                    <select name="ownership"
+                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                        {% for option in payload.filter_options.ownership %}
+                            <option value="{{ option.value }}"
+                                    {% if payload.selected_filters.ownership == option.value %}selected{% endif %}>{{ option.label }}</option>
+                        {% endfor %}
                     </select>
                 </label>
                 <label class="block min-w-0">
                     <span class="text-xs font-semibold text-content-muted">Status</span>
-                    <select name="status" class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
-                        {% for option in payload.filter_options.statuses %}<option value="{{ option.value }}" {% if payload.selected_filters.status == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
+                    <select name="status"
+                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                        {% for option in payload.filter_options.statuses %}
+                            <option value="{{ option.value }}"
+                                    {% if payload.selected_filters.status == option.value %}selected{% endif %}>{{ option.label }}</option>
+                        {% endfor %}
                     </select>
                 </label>
                 <label class="block min-w-0">
                     <span class="text-xs font-semibold text-content-muted">Format</span>
-                    <select name="output_format" class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
-                        {% for option in payload.filter_options.formats %}<option value="{{ option.value }}" {% if payload.selected_filters.output_format == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
+                    <select name="output_format"
+                            class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                        {% for option in payload.filter_options.formats %}
+                            <option value="{{ option.value }}"
+                                    {% if payload.selected_filters.output_format == option.value %}selected{% endif %}>{{ option.label }}</option>
+                        {% endfor %}
                     </select>
                 </label>
             {% endcall %}
-
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[1120px] table-fixed text-left">
                     <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold uppercase tracking-wide text-content-muted">
@@ -243,34 +271,47 @@
                     </thead>
                     <tbody class="divide-y divide-outline-subtle">
                         {% for template in payload.templates %}
-                            <tr class="transition hover:bg-surface-hover" data-template-row="{{ template.template_key }}">
+                            <tr class="transition hover:bg-surface-hover"
+                                data-template-row="{{ template.template_key }}">
                                 <td class="px-5 py-4 align-top sm:px-6">
                                     <div class="flex min-w-0 items-start gap-3">
-                                        <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                        <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary"
+                                              aria-hidden="true">
                                             <i data-lucide="{{ template.icon }}" class="h-4 w-4"></i>
                                         </span>
                                         <div class="min-w-0">
-                                            <p class="truncate text-sm font-bold text-content-primary" title="{{ template.name }}">{{ template.name }}</p>
+                                            <p class="truncate text-sm font-bold text-content-primary"
+                                               title="{{ template.name }}">{{ template.name }}</p>
                                             <p class="mt-1 line-clamp-2 text-xs leading-5 text-content-muted">{{ template.description }}</p>
                                         </div>
                                     </div>
                                 </td>
                                 <td class="px-4 py-4 align-top">{{ table_label.metadata_label(template.family_label, 'layers-3') }}</td>
-                                <td class="px-4 py-4 align-top"><p class="text-sm font-semibold text-content-primary">{{ template.report_type_label }}</p></td>
-                                <td class="px-4 py-4 align-top"><p class="text-sm font-semibold text-content-primary">{{ template.output_format }}</p><p class="mt-1 text-xs text-content-muted">{{ template.allowed_formats|join(' / ') if template.allowed_formats else template.output_format }}</p></td>
-                                <td class="px-4 py-4 align-top"><p class="text-sm font-bold text-content-primary">{{ template.section_count }}</p><p class="mt-1 text-xs text-content-muted">Included Sections</p></td>
+                                <td class="px-4 py-4 align-top">
+                                    <p class="text-sm font-semibold text-content-primary">{{ template.report_type_label }}</p>
+                                </td>
+                                <td class="px-4 py-4 align-top">
+                                    <p class="text-sm font-semibold text-content-primary">{{ template.output_format }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ template.allowed_formats|join(" / ") if template.allowed_formats else template.output_format }}</p>
+                                </td>
+                                <td class="px-4 py-4 align-top">
+                                    <p class="text-sm font-bold text-content-primary">{{ template.section_count }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">Included Sections</p>
+                                </td>
                                 <td class="px-4 py-4 align-top">
                                     {{ table_label.status_indicator_label(template.status_label, template.status_tone) }}
                                     <p class="mt-1 text-xs text-content-muted">{{ template.ownership_label }}</p>
                                 </td>
                                 <td class="px-5 py-4 text-right align-top sm:px-6">
-                                    <button type="button" data-kaori-dialog-open data-dialog-target="template-detail-{{ loop.index }}" class="{{ table_ui.action_classes() }}">
+                                    <button type="button"
+                                            data-kaori-dialog-open
+                                            data-dialog-target="template-detail-{{ loop.index }}"
+                                            class="{{ table_ui.action_classes() }}">
                                         View
                                         <i data-lucide="arrow-up-right" class="h-4 w-4" aria-hidden="true"></i>
                                     </button>
                                 </td>
                             </tr>
-
                             {% call record_modal.render(
                                 'template-detail-' ~ loop.index,
                                 template.ownership_label,
@@ -279,65 +320,131 @@
                                 template.icon,
                                 'System templates are protected; custom templates preserve their source contract and owner snapshot.',
                                 'standard'
-                            ) %}
-                                <div class="space-y-5" data-template-detail-modal="{{ template.template_key }}">
+                                ) %}
+                                <div class="space-y-5"
+                                     data-template-detail-modal="{{ template.template_key }}">
                                     <section class="grid gap-4 sm:grid-cols-2">
                                         <div class="rounded-2xl border border-outline-subtle bg-surface-card p-4">
                                             <p class="text-xs font-semibold text-content-muted">Template Identity</p>
                                             <dl class="mt-3 divide-y divide-outline-subtle">
-                                                <div class="flex items-start justify-between gap-4 py-2.5"><dt class="text-xs text-content-muted">Family</dt><dd class="text-right text-sm font-bold text-content-primary">{{ template.family_label }}</dd></div>
-                                                <div class="flex items-start justify-between gap-4 py-2.5"><dt class="text-xs text-content-muted">Report Type</dt><dd class="max-w-[65%] text-right text-sm font-bold text-content-primary">{{ template.report_type_label }}</dd></div>
-                                                <div class="flex items-start justify-between gap-4 py-2.5"><dt class="text-xs text-content-muted">Ownership</dt><dd>{{ table_label.status_indicator_label(template.status_label, template.status_tone) }}</dd></div>
-                                                <div class="flex items-start justify-between gap-4 py-2.5"><dt class="text-xs text-content-muted">Owner</dt><dd class="max-w-[65%] text-right text-sm font-bold text-content-primary">{{ template.created_by_label }}</dd></div>
+                                                <div class="flex items-start justify-between gap-4 py-2.5">
+                                                    <dt class="text-xs text-content-muted">Family</dt>
+                                                    <dd class="text-right text-sm font-bold text-content-primary">
+                                                        {{ template.family_label }}
+                                                    </dd>
+                                                </div>
+                                                <div class="flex items-start justify-between gap-4 py-2.5">
+                                                    <dt class="text-xs text-content-muted">Report Type</dt>
+                                                    <dd class="max-w-[65%] text-right text-sm font-bold text-content-primary">
+                                                        {{ template.report_type_label }}
+                                                    </dd>
+                                                </div>
+                                                <div class="flex items-start justify-between gap-4 py-2.5">
+                                                    <dt class="text-xs text-content-muted">Ownership</dt>
+                                                    <dd>
+                                                        {{ table_label.status_indicator_label(template.status_label, template.status_tone) }}
+                                                    </dd>
+                                                </div>
+                                                <div class="flex items-start justify-between gap-4 py-2.5">
+                                                    <dt class="text-xs text-content-muted">Owner</dt>
+                                                    <dd class="max-w-[65%] text-right text-sm font-bold text-content-primary">
+                                                        {{ template.created_by_label }}
+                                                    </dd>
+                                                </div>
                                             </dl>
                                         </div>
                                         <div class="rounded-2xl border border-outline-subtle bg-surface-card p-4">
                                             <p class="text-xs font-semibold text-content-muted">Artifact Contract</p>
                                             <dl class="mt-3 divide-y divide-outline-subtle">
-                                                <div class="flex items-start justify-between gap-4 py-2.5"><dt class="text-xs text-content-muted">Output Format</dt><dd class="text-sm font-bold text-content-primary">{{ template.output_format }}</dd></div>
-                                                <div class="flex items-start justify-between gap-4 py-2.5"><dt class="text-xs text-content-muted">Allowed Formats</dt><dd class="max-w-[65%] text-right text-sm font-bold text-content-primary">{{ template.allowed_formats|join(', ') if template.allowed_formats else template.output_format }}</dd></div>
-                                                <div class="flex items-start justify-between gap-4 py-2.5"><dt class="text-xs text-content-muted">Sections</dt><dd class="text-sm font-bold text-content-primary">{{ template.section_count }}</dd></div>
-                                                <div class="flex items-start justify-between gap-4 py-2.5"><dt class="text-xs text-content-muted">Updated</dt><dd class="max-w-[65%] text-right text-sm font-bold text-content-primary">{% if template.updated_at %}{{ template.updated_at|user_datetime }}{% else %}{{ template.updated_label }}{% endif %}</dd></div>
+                                                <div class="flex items-start justify-between gap-4 py-2.5">
+                                                    <dt class="text-xs text-content-muted">Output Format</dt>
+                                                    <dd class="text-sm font-bold text-content-primary">
+                                                        {{ template.output_format }}
+                                                    </dd>
+                                                </div>
+                                                <div class="flex items-start justify-between gap-4 py-2.5">
+                                                    <dt class="text-xs text-content-muted">Allowed Formats</dt>
+                                                    <dd class="max-w-[65%] text-right text-sm font-bold text-content-primary">
+                                                        {{ template.allowed_formats|join(", ") if template.allowed_formats else template.output_format }}
+                                                    </dd>
+                                                </div>
+                                                <div class="flex items-start justify-between gap-4 py-2.5">
+                                                    <dt class="text-xs text-content-muted">Sections</dt>
+                                                    <dd class="text-sm font-bold text-content-primary">
+                                                        {{ template.section_count }}
+                                                    </dd>
+                                                </div>
+                                                <div class="flex items-start justify-between gap-4 py-2.5">
+                                                    <dt class="text-xs text-content-muted">Updated</dt>
+                                                    <dd class="max-w-[65%] text-right text-sm font-bold text-content-primary">
+                                                        {% if template.updated_at %}
+                                                            {{ template.updated_at|user_datetime }}
+                                                        {% else %}
+                                                            {{ template.updated_label }}
+                                                        {% endif %}
+                                                    </dd>
+                                                </div>
                                             </dl>
                                         </div>
                                     </section>
-
                                     <section class="rounded-2xl border border-outline-subtle bg-surface-card p-4">
                                         <div class="flex items-center justify-between gap-3">
-                                            <div><p class="text-sm font-bold text-content-primary">Included Sections</p><p class="mt-1 text-xs text-content-muted">Persisted content coverage supplied to the canonical renderer.</p></div>
+                                            <div>
+                                                <p class="text-sm font-bold text-content-primary">Included Sections</p>
+                                                <p class="mt-1 text-xs text-content-muted">Persisted content coverage supplied to the canonical renderer.</p>
+                                            </div>
                                             {{ table_label.metadata_label(template.section_count ~ ' Sections', 'list-checks') }}
                                         </div>
                                         <div class="mt-4 flex flex-wrap gap-2">
                                             {% for section in template.sections %}{{ table_label.metadata_label(section, 'check') }}{% endfor %}
                                         </div>
                                     </section>
-
                                     <section class="rounded-2xl border border-kaori-primary/15 bg-kaori-soft/30 p-4">
                                         <div class="flex items-start gap-3">
-                                            <i data-lucide="shield-check" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
-                                            <div><p class="text-sm font-bold text-content-primary">Contract Guardrail</p><p class="mt-1 text-xs leading-5 text-content-muted">{% if template.source == 'system' %}This system template is read-only. Create a custom template to change status, format, or editable Analytics section coverage.{% else %}This custom template remains constrained by the canonical report type, supported formats, and section contract.{% endif %}</p></div>
+                                            <i data-lucide="shield-check"
+                                               class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+                                               aria-hidden="true"></i>
+                                            <div>
+                                                <p class="text-sm font-bold text-content-primary">Contract Guardrail</p>
+                                                <p class="mt-1 text-xs leading-5 text-content-muted">
+                                                    {% if template.source == 'system' %}
+                                                        This system template is read-only. Create a custom template to change status, format, or editable Analytics section coverage.
+                                                    {% else %}
+                                                        This custom template remains constrained by the canonical report type, supported formats, and section contract.
+                                                    {% endif %}
+                                                </p>
+                                            </div>
                                         </div>
                                     </section>
-
                                     <div class="flex flex-wrap items-center justify-end gap-2 border-t border-outline-subtle pt-4">
-                                        <a href="{{ template.generate_href }}" class="{{ table_ui.action_classes() }}"><i data-lucide="file-plus-2" class="h-4 w-4" aria-hidden="true"></i>Generate Report</a>
+                                        <a href="{{ template.generate_href }}"
+                                           class="{{ table_ui.action_classes() }}"><i data-lucide="file-plus-2" class="h-4 w-4" aria-hidden="true"></i>Generate Report</a>
                                         {% if template.source == 'system' %}
                                             <form method="POST" action="{{ template.duplicate_href }}">
                                                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                                <button type="submit" data-operation-submit data-loading-label="Creating Custom Template..." class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark disabled:cursor-not-allowed disabled:opacity-70"><i data-lucide="copy-plus" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Create Custom Template</span></button>
+                                                <button type="submit"
+                                                        data-operation-submit
+                                                        data-loading-label="Creating Custom Template..."
+                                                        class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark disabled:cursor-not-allowed disabled:opacity-70"><i data-lucide="copy-plus" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Create Custom Template</span></button>
                                             </form>
                                         {% else %}
-                                            <a href="{{ template.edit_href }}" class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark"><i data-lucide="pencil" class="h-4 w-4" aria-hidden="true"></i>Edit Template</a>
+                                            <a href="{{ template.edit_href }}"
+                                               class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark"><i data-lucide="pencil" class="h-4 w-4" aria-hidden="true"></i>Edit Template</a>
                                             <form method="POST" action="{{ template.duplicate_href }}">
                                                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                                <button type="submit" data-operation-submit data-loading-label="Duplicating Template..." class="{{ table_ui.action_classes() }}"><i data-lucide="copy" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Duplicate</span></button>
+                                                <button type="submit"
+                                                        data-operation-submit
+                                                        data-loading-label="Duplicating Template..."
+                                                        class="{{ table_ui.action_classes() }}"><i data-lucide="copy" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Duplicate</span></button>
                                             </form>
-                                            <button type="button" data-kaori-dialog-open data-dialog-target="template-delete-{{ loop.index }}" class="{{ table_ui.action_classes() }}"><i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i>Delete</button>
+                                            <button type="button"
+                                                    data-kaori-dialog-open
+                                                    data-dialog-target="template-delete-{{ loop.index }}"
+                                                    class="{{ table_ui.action_classes() }}"><i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i>Delete</button>
                                         {% endif %}
                                     </div>
                                 </div>
                             {% endcall %}
-
                             {% if template.source == 'custom' %}
                                 {% call record_modal.render(
                                     'template-delete-' ~ loop.index,
@@ -347,39 +454,48 @@
                                     'trash-2',
                                     'Deletion does not remove reports that were already generated from this template.',
                                     'standard'
-                                ) %}
+                                    ) %}
                                     <div class="space-y-4">
                                         <div class="rounded-2xl border border-status-warning-border bg-status-warning-soft p-4">
                                             <p class="text-sm font-bold text-status-warning-text">Confirm Template Deletion</p>
                                             <p class="mt-1 text-xs leading-5 text-content-secondary">{{ template.name }} will be removed from reusable template options. Existing generated artifacts remain unchanged.</p>
                                         </div>
-                                        <form method="POST" action="{{ template.delete_href }}" class="flex justify-end">
+                                        <form method="POST"
+                                              action="{{ template.delete_href }}"
+                                              class="flex justify-end">
                                             {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                            <button type="submit" data-operation-submit data-loading-label="Deleting Template..." class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-status-critical-border bg-status-critical-soft px-4 text-xs font-semibold text-status-critical-text transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"><i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Delete Custom Template</span></button>
+                                            <button type="submit"
+                                                    data-operation-submit
+                                                    data-loading-label="Deleting Template..."
+                                                    class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-status-critical-border bg-status-critical-soft px-4 text-xs font-semibold text-status-critical-text transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"><i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>Delete Custom Template</span></button>
                                         </form>
                                     </div>
                                 {% endcall %}
                             {% endif %}
                         {% else %}
-                            <tr><td colspan="7" class="px-6 py-14 text-center"><div class="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="search-x" class="h-5 w-5" aria-hidden="true"></i></div><p class="mt-3 text-sm font-bold text-content-primary">No Templates Matched</p><p class="mt-1 text-xs text-content-muted">Clear the filters or use a different template search.</p></td></tr>
+                            <tr>
+                                <td colspan="7" class="px-6 py-14 text-center">
+                                    <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                                        <i data-lucide="search-x" class="h-5 w-5" aria-hidden="true"></i>
+                                    </div>
+                                    <p class="mt-3 text-sm font-bold text-content-primary">No Templates Matched</p>
+                                    <p class="mt-1 text-xs text-content-muted">Clear the filters or use a different template search.</p>
+                                </td>
+                            </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-
-            {{ registry_ui.footer(
-                'reports.report_templates',
-                'templates-registry',
-                'templates-registry-loading',
-                payload.pagination,
-                payload.selected_filters,
-                payload.pagination.per_page_options,
-                resource_label='Templates',
-                rows_aria_label='Templates per page',
-                control_name='report-templates'
-            ) }}
+            {{ registry_ui.footer('reports.report_templates',
+                        'templates-registry',
+                        'templates-registry-loading',
+                        payload.pagination,
+                        payload.selected_filters,
+                        payload.pagination.per_page_options,
+                        resource_label='Templates',
+                        rows_aria_label='Templates per page',
+                        control_name='report-templates') }}
         </section>
-
         {% call record_modal.render(
             'template-form-dialog',
             'Custom Template Workspace',
@@ -388,34 +504,115 @@
             'pencil-ruler',
             'Custom templates remain constrained by the selected canonical report type and its supported renderer contract.',
             'standard'
-        ) %}
-            <form method="POST" action="{{ template_form_action }}" data-template-form class="space-y-5">
+            ) %}
+            <form method="POST"
+                  action="{{ template_form_action }}"
+                  data-template-form
+                  class="space-y-5">
                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                 <section class="grid gap-4 sm:grid-cols-2">
-                    <label class="block sm:col-span-2"><span class="text-xs font-semibold text-content-muted">Template Name</span><input type="text" name="name" maxlength="255" required value="{{ template_form.name }}" placeholder="Example: Monthly Capacity Review" class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20"></label>
-                    <label class="block sm:col-span-2"><span class="text-xs font-semibold text-content-muted">Description</span><textarea name="description" maxlength="1000" rows="2" placeholder="Describe when operators should use this template." class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">{{ template_form.description }}</textarea></label>
-                    <label class="block"><span class="text-xs font-semibold text-content-muted">Base Report Contract</span><select name="report_type" data-template-report-type class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">{% for option in payload.filter_options.report_types %}{% if option.value %}<option value="{{ option.value }}" {% if template_form.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>{% endif %}{% endfor %}</select></label>
-                    <label class="block"><span class="text-xs font-semibold text-content-muted">Output Format</span><select name="output_format" data-template-output-format class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">{% for option in payload.output_format_options %}<option value="{{ option.value }}" {% if template_form.output_format == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label>
-                    <label class="block"><span class="text-xs font-semibold text-content-muted">Template Status</span><select name="status" class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20"><option value="draft" {% if template_form.status == 'draft' %}selected{% endif %}>Draft</option><option value="active" {% if template_form.status == 'active' %}selected{% endif %}>Active</option></select></label>
-                    <div class="rounded-xl border border-kaori-primary/15 bg-kaori-soft/30 px-4 py-3"><p class="text-xs font-bold text-content-primary">Canonical Base</p><p class="mt-1 text-xs leading-5 text-content-muted">New custom templates retain a system base reference and cannot introduce unsupported report types or formats.</p></div>
+                    <label class="block sm:col-span-2">
+                        <span class="text-xs font-semibold text-content-muted">Template Name</span>
+                        <input type="text"
+                               name="name"
+                               maxlength="255"
+                               required
+                               value="{{ template_form.name }}"
+                               placeholder="Example: Monthly Capacity Review"
+                               class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                    </label>
+                    <label class="block sm:col-span-2">
+                        <span class="text-xs font-semibold text-content-muted">Description</span><textarea name="description" maxlength="1000" rows="2" placeholder="Describe when operators should use this template." class="mt-1.5 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">{{ template_form.description }}</textarea>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-content-muted">Base Report Contract</span>
+                        <select name="report_type"
+                                data-template-report-type
+                                class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                            {% for option in payload.filter_options.report_types %}
+                                {% if option.value %}
+                                    <option value="{{ option.value }}"
+                                            {% if template_form.report_type == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-content-muted">Output Format</span>
+                        <select name="output_format"
+                                data-template-output-format
+                                class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                            {% for option in payload.output_format_options %}
+                                <option value="{{ option.value }}"
+                                        {% if template_form.output_format == option.value %}selected{% endif %}>{{ option.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold text-content-muted">Template Status</span>
+                        <select name="status"
+                                class="mt-1.5 min-h-9 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20">
+                            <option value="draft"
+                                    {% if template_form.status == 'draft' %}selected{% endif %}>Draft</option>
+                            <option value="active"
+                                    {% if template_form.status == 'active' %}selected{% endif %}>Active</option>
+                        </select>
+                    </label>
+                    <div class="rounded-xl border border-kaori-primary/15 bg-kaori-soft/30 px-4 py-3">
+                        <p class="text-xs font-bold text-content-primary">Canonical Base</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">New custom templates retain a system base reference and cannot introduce unsupported report types or formats.</p>
+                    </div>
                 </section>
-
                 <section class="border-t border-outline-subtle pt-5">
-                    <div class="flex items-start justify-between gap-3"><div><h3 class="text-sm font-bold text-content-primary">Included Sections</h3><p class="mt-1 text-xs leading-5 text-content-muted">Analytics templates may select supported sections. Inventory workbook sections remain fixed by contract.</p></div><button type="button" data-template-reset-sections class="text-xs font-semibold text-kaori-primary">Reset Default</button></div>
-                    <p class="mt-2 hidden text-xs font-semibold text-status-critical-text" data-template-section-error>Select at least one Analytics section.</p>
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <h3 class="text-sm font-bold text-content-primary">Included Sections</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Analytics templates may select supported sections. Inventory workbook sections remain fixed by contract.</p>
+                        </div>
+                        <button type="button"
+                                data-template-reset-sections
+                                class="text-xs font-semibold text-kaori-primary">Reset Default</button>
+                    </div>
+                    <p class="mt-2 hidden text-xs font-semibold text-status-critical-text"
+                       data-template-section-error>Select at least one Analytics section.</p>
                     <div class="mt-4 space-y-4" data-template-section-list>
                         {% for report_type, options in payload.section_options_by_report_type.items() %}
                             {% set family = payload.report_family_by_report_type.get(report_type, 'analytics') %}
-                            <div data-template-section-group="{{ report_type }}" data-template-family="{{ family }}" class="{% if template_form.report_type != report_type %}hidden{% endif %}">
+                            <div data-template-section-group="{{ report_type }}"
+                                 data-template-family="{{ family }}"
+                                 class="{% if template_form.report_type != report_type %}hidden{% endif %}">
                                 {% if family == 'inventory' %}
                                     <div class="rounded-2xl border border-outline-subtle bg-surface-subtle/60 p-4">
-                                        <div class="flex items-start gap-3"><i data-lucide="lock-keyhole" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i><div><p class="text-sm font-bold text-content-primary">Fixed Inventory Workbook Structure</p><p class="mt-1 text-xs leading-5 text-content-muted">Inventory Assets, Inventory Metadata, and Inventory Field Dictionary are always included.</p></div></div>
-                                        <div class="mt-3 flex flex-wrap gap-2">{% for option in options %}{{ table_label.metadata_label(option.label, 'check') }}<input type="hidden" name="sections" value="{{ option.value }}" data-template-inventory-section>{% endfor %}</div>
+                                        <div class="flex items-start gap-3">
+                                            <i data-lucide="lock-keyhole"
+                                               class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"
+                                               aria-hidden="true"></i>
+                                            <div>
+                                                <p class="text-sm font-bold text-content-primary">Fixed Inventory Workbook Structure</p>
+                                                <p class="mt-1 text-xs leading-5 text-content-muted">Inventory Assets, Inventory Metadata, and Inventory Field Dictionary are always included.</p>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3 flex flex-wrap gap-2">
+                                            {% for option in options %}
+                                                {{ table_label.metadata_label(option.label, 'check') }}
+                                                <input type="hidden"
+                                                       name="sections"
+                                                       value="{{ option.value }}"
+                                                       data-template-inventory-section>
+                                            {% endfor %}
+                                        </div>
                                     </div>
                                 {% else %}
                                     <div class="grid gap-2 sm:grid-cols-2">
                                         {% for option in options %}
-                                            <label class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card px-3 py-3 transition hover:border-kaori-primary/30 hover:bg-surface-hover"><input type="checkbox" name="sections" value="{{ option.value }}" {% if option.value in template_form.sections %}checked{% endif %} class="mt-0.5 h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary/20"><span class="min-w-0"><span class="block text-xs font-bold text-content-primary">{{ option.label }}</span><span class="mt-1 block text-xs leading-5 text-content-muted">{{ option.description }}</span></span></label>
+                                            <label class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card px-3 py-3 transition hover:border-kaori-primary/30 hover:bg-surface-hover">
+                                                <input type="checkbox"
+                                                       name="sections"
+                                                       value="{{ option.value }}"
+                                                       {% if option.value in template_form.sections %}checked{% endif %}
+                                                       class="mt-0.5 h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary/20">
+                                                <span class="min-w-0"><span class="block text-xs font-bold text-content-primary">{{ option.label }}</span><span class="mt-1 block text-xs leading-5 text-content-muted">{{ option.description }}</span></span>
+                                            </label>
                                         {% endfor %}
                                     </div>
                                 {% endif %}
@@ -423,15 +620,19 @@
                         {% endfor %}
                     </div>
                 </section>
-
                 <div class="flex flex-col-reverse gap-2 border-t border-outline-subtle pt-4 sm:flex-row sm:items-center sm:justify-end">
-                    <button type="button" data-kaori-dialog-close data-dialog-target="template-form-dialog" class="{{ table_ui.action_classes() }}">Cancel</button>
-                    <button type="submit" data-operation-submit data-loading-label="{{ 'Saving Template...' if template_form_is_edit else 'Creating Template...' }}" class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark disabled:cursor-not-allowed disabled:opacity-70"><i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>{{ 'Save Template' if template_form_is_edit else 'Create Template' }}</span></button>
+                    <button type="button"
+                            data-kaori-dialog-close
+                            data-dialog-target="template-form-dialog"
+                            class="{{ table_ui.action_classes() }}">Cancel</button>
+                    <button type="submit"
+                            data-operation-submit
+                            data-loading-label="{{ 'Saving Template...' if template_form_is_edit else 'Creating Template...' }}"
+                            class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark disabled:cursor-not-allowed disabled:opacity-70"><i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i><span data-operation-submit-label>{{ 'Save Template' if template_form_is_edit else 'Create Template' }}</span></button>
                 </div>
             </form>
         {% endcall %}
     </div>
-
     <script>
         (() => {
             const initTemplateWorkspace = () => {

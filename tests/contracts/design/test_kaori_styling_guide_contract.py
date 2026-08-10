@@ -281,16 +281,16 @@ def test_visualization_workspace_is_an_approved_shared_surface_owner() -> None:
 
 
 def test_namespace_inventory_and_technical_metadata_are_documented() -> None:
-    guide = _read("docs/design/KAORI_STYLING_GUIDE.md")
-    component = _read("docs/design/components/TECHNICAL_METADATA_COLLECTION.md")
-    pattern = _read("docs/design/patterns/KUBERNETES_NAMESPACE_INVENTORY.md")
+    guide = _read('docs/design/KAORI_STYLING_GUIDE.md')
+    component = _read('docs/design/components/TECHNICAL_METADATA_COLLECTION.md')
+    pattern = _read('docs/design/patterns/KUBERNETES_NAMESPACE_INVENTORY.md')
 
-    assert "Namespace Inventory and Technical Metadata" in guide
-    assert "Missing ResourceQuota" in guide
-    assert "technical_metadata_collection.html" in guide
-    assert "Technical Metadata Collection" in component
-    assert "No Implicit Compliance" not in pattern
-    assert "explicit governance policy" in pattern
+    assert 'Namespace Inventory and Technical Metadata' in guide
+    assert 'Missing ResourceQuota' in guide
+    assert 'technical_metadata_collection.html' in guide
+    assert 'Technical Metadata Collection' in component
+    assert 'No Implicit Compliance' not in pattern
+    assert 'explicit governance policy' in pattern
 
 
 def test_adaptive_detail_density_and_page_size_ownership_are_documented() -> None:
@@ -335,7 +335,6 @@ def test_network_inventory_pattern_is_registered() -> None:
     assert 'Kubernetes Network Inventory Pattern' in pattern
 
 
-
 def test_analytics_overview_surface_hierarchy_is_documented_and_shared() -> None:
     guide = _read('docs/design/KAORI_STYLING_GUIDE.md')
     contract = _read('docs/design/components/ANALYTICS_ANALYSIS_SURFACES.md')
@@ -357,7 +356,6 @@ def test_analytics_overview_surface_hierarchy_is_documented_and_shared() -> None
     assert "'amber'" in labels
     assert "'red'" in labels
     assert "'gray'" in labels
-
 
 
 def test_analytics_overview_snapshot_and_composite_loading_contract_are_documented() -> None:

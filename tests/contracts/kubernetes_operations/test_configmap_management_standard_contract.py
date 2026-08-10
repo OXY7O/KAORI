@@ -16,15 +16,15 @@ def test_configmap_operations_use_canonical_live_runtime_and_signed_delete_recei
 
     assert 'filter_current_generation(ConfigurationInventory.query' in service
     assert 'filter_current_generation(PodInventory.query' in service
-    assert "pod_collection_state != COLLECTED" in service
-    assert "perform(server_dry_run=True)" in service
-    assert "perform(server_dry_run=False)" in service
+    assert 'pod_collection_state != COLLECTED' in service
+    assert 'perform(server_dry_run=True)' in service
+    assert 'perform(server_dry_run=False)' in service
     assert "dry_run='All' if server_dry_run else None" in service
     assert 'expected_resource_version' in service
     assert 'V1Preconditions(resource_version=resource_version)' in service
     assert 'connection_for_cluster(cluster)' in runtime
     assert "salt='kaori-configmap-delete-validation-v2'" in receipts
-    assert "max_age=_DELETE_RECEIPT_MAX_AGE_SECONDS" in receipts
+    assert 'max_age=_DELETE_RECEIPT_MAX_AGE_SECONDS' in receipts
     assert 'session' not in receipts
     assert 'verify_delete_receipt(' in routes
 
@@ -62,7 +62,7 @@ def test_operational_toast_is_the_only_canonical_feedback_surface() -> None:
 
     for layout in (app_layout, auth_layout):
         assert 'id="operational-toast-stack"' in layout
-        assert "js/operational_toasts.js" in layout
+        assert 'js/operational_toasts.js' in layout
         assert 'dismissQuickActionToast' not in layout
         assert 'data-quick-action-toast' not in layout
 

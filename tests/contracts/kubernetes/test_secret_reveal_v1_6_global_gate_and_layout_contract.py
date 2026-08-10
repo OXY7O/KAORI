@@ -18,7 +18,10 @@ def test_protected_reveal_global_gate_is_explicit_without_bypassing_policy() -> 
     assert 'get_configured_enabled_namespace_names(cluster.id)' in clusters_block
 
     workspace_block = service.split('def get_reveal_workspace(', 1)[1].split('def _allowed_keys(', 1)[0]
-    assert 'cluster_available = bool(_global_enabled() and cluster is not None and _cluster_ready(cluster))' in workspace_block
+    assert (
+        'cluster_available = bool(_global_enabled() and cluster is not None and _cluster_ready(cluster))'
+        in workspace_block
+    )
     assert 'get_configured_enabled_namespace_names(normalized_cluster_id)' in workspace_block
     assert 'get_enabled_namespace_names(normalized_cluster_id)' in workspace_block
 

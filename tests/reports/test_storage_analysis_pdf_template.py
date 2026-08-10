@@ -287,9 +287,7 @@ def _rendered_html(
         ),
     )
     project_root = Path(__file__).resolve().parents[2]
-    rendered_html = _environment(project_root).get_template(document.template_name).render(
-        document=document
-    )
+    rendered_html = _environment(project_root).get_template(document.template_name).render(document=document)
     return document, rendered_html, project_root
 
 
@@ -370,6 +368,7 @@ def test_storage_analysis_methodology_tables_remain_separate_and_single_line() -
     assert 'grid-template-columns:minmax(0,1.08fr)minmax(0,.92fr)' in compact
     assert 'white-space:nowrap' in compact
 
+
 def test_storage_analysis_weasyprint_layout_is_exactly_nine_a4_pages(tmp_path: Path) -> None:
     document, rendered_html, project_root = _rendered_html()
     font_config = FontConfiguration()
@@ -398,9 +397,7 @@ def test_storage_analysis_stylesheet_is_isolated_from_generic_report_css() -> No
     registry = (
         project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'analytics_publication_standard.py'
     ).read_text()
-    engine = (
-        project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'engine.py'
-    ).read_text()
+    engine = (project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'engine.py').read_text()
 
     assert "'reports/pdf/storage_analysis.html': 'storage_analysis.css'" in registry
     assert 'ANALYTICS_TEMPLATE_STYLESHEETS' in engine

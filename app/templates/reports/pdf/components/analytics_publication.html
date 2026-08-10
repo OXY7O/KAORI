@@ -4,218 +4,286 @@
   Canonical publication reference: KAORI Analytics PDF Publication Standard v3.0.
   Inventory workbooks do not use this component contract.
 #}
-
 {% macro status_label(label, tone='muted') -%}
-<span class="status {{ 'normal' if tone in ['good', 'green', 'success'] else tone }}">{{ label }}</span>
+    <span class="status {{ 'normal' if tone in ['good', 'green', 'success'] else tone }}">{{ label }}</span>
 {%- endmacro %}
-
 {% macro report_header(report_title, report_subtitle='Kubernetes Operational Intelligence Report') -%}
-<div class="report-header">
-  <div class="brand">
-    <img src="app/static/images/kaori-logo.svg" alt="KAORI">
-    <div>
-      <strong>KAORI</strong>
-      <span>Knowledge, Automation, Operations, Resilience &amp; Intelligence</span>
+    <div class="report-header">
+        <div class="brand">
+            <img src="app/static/images/kaori-logo.svg" alt="KAORI">
+            <div>
+                <strong>KAORI</strong>
+                <span>Knowledge, Automation, Operations, Resilience &amp; Intelligence</span>
+            </div>
+        </div>
+        <div class="report-name">
+            <strong>{{ report_title }}</strong>
+            <span>{{ report_subtitle }}</span>
+        </div>
     </div>
-  </div>
-  <div class="report-name">
-    <strong>{{ report_title }}</strong>
-    <span>{{ report_subtitle }}</span>
-  </div>
-</div>
 {%- endmacro %}
-
 {% macro page_title(number, title, subtitle, data_cutoff) -%}
-<div class="page-title-row">
-  <div class="section-index">{{ number }}</div>
-  <div class="page-title-copy">
-    <h1>{{ title }}</h1>
-    <p>{{ subtitle }}</p>
-  </div>
-  <div class="cutoff">
-    <span>Data Cut-off</span>
-    <strong>{{ data_cutoff }}</strong>
-  </div>
-</div>
+    <div class="page-title-row">
+        <div class="section-index">{{ number }}</div>
+        <div class="page-title-copy">
+            <h1>{{ title }}</h1>
+            <p>{{ subtitle }}</p>
+        </div>
+        <div class="cutoff">
+            <span>Data Cut-off</span>
+            <strong>{{ data_cutoff }}</strong>
+        </div>
+    </div>
 {%- endmacro %}
-
 {% macro footer(report_id, classification, page_number, page_count) -%}
-<div class="page-footer">
-  <span>{{ report_id }} &nbsp; | &nbsp; {{ classification }}</span>
-  <span>Page {{ page_number }} of {{ page_count }}</span>
-</div>
+    <div class="page-footer">
+        <span>{{ report_id }} &nbsp; | &nbsp; {{ classification }}</span>
+        <span>Page {{ page_number }} of {{ page_count }}</span>
+    </div>
 {%- endmacro %}
-
 {% macro cover_brand(report_id, classification, report_class='ANALYTICS REPORT') -%}
-<div class="cover-masthead">
-  <div class="cover-brand">
-    <img src="app/static/images/kaori-logo.svg" alt="KAORI">
-    <div>
-      <strong>KAORI</strong>
-      <span>Knowledge, Automation, Operations, Resilience &amp; Intelligence</span>
+    <div class="cover-masthead">
+        <div class="cover-brand">
+            <img src="app/static/images/kaori-logo.svg" alt="KAORI">
+            <div>
+                <strong>KAORI</strong>
+                <span>Knowledge, Automation, Operations, Resilience &amp; Intelligence</span>
+            </div>
+        </div>
+        <div class="cover-class"><span>{{ report_class }}</span><b>{{ classification|upper }} - {{ report_id }}</b></div>
     </div>
-  </div>
-  <div class="cover-class"><span>{{ report_class }}</span><b>{{ classification|upper }} - {{ report_id }}</b></div>
-</div>
 {%- endmacro %}
-
 {% macro cover_title(title, purpose, eyebrow='Kubernetes Operational Intelligence') -%}
-<div class="cover-hero-copy">
-  <div class="cover-eyebrow">{{ eyebrow }}</div>
-  <h1>{{ title }}</h1>
-  <p>{{ purpose }}</p>
-</div>
-{%- endmacro %}
-
-{% macro cover_contents(items) -%}
-<div class="cover-contents">
-  {% for item in items %}<span>{{ item }}</span>{% endfor %}
-</div>
-{%- endmacro %}
-
-{% macro methodology_register(sources, rules, source_class='', rule_class='') -%}
-<div class="methodology-grid">
-  <div class="methodology-source-block">
-    <h3>Data Sources and Coverage</h3>
-    <table class="report-table source-register {{ source_class }}">
-      <thead><tr><th>Source</th><th>Freshness</th><th>Last Collected</th></tr></thead>
-      <tbody>{% for item in sources %}<tr><td>{{ item.source }}</td><td>{{ item.freshness }}</td><td>{{ item.last_collected }}</td></tr>{% endfor %}</tbody>
-    </table>
-  </div>
-  <div class="methodology-rule-block">
-    <h3>Methodology Register</h3>
-    <table class="report-table methodology-register {{ rule_class }}">
-      <thead><tr><th>Ref.</th><th>Rule</th><th>Setting</th></tr></thead>
-      <tbody>{% for item in rules %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.rule }}</td><td>{{ item.setting }}</td></tr>{% endfor %}</tbody>
-    </table>
-  </div>
-</div>
-{%- endmacro %}
-
-{% macro metric_strip(items, limit=4) -%}
-<div class="metric-strip" style="--metric-cols:{{ [items|length, limit]|min }}">
-  {% for item in items[:limit] %}
-  {% set metric_status = item.status|default(item.note|default('')) %}
-  <div class="metric">
-    <span>{{ item.label }}</span>
-    <strong class="{% if item.value|string|length > 18 %}metric-long{% elif item.value|string|length > 10 %}metric-medium{% endif %}">{{ item.value }}</strong>
-    {% if metric_status %}<em class="status {{ item.tone|default('muted') }}">{{ metric_status }}</em>{% endif %}
-  </div>
-  {% endfor %}
-</div>
-{%- endmacro %}
-
-{% macro section(title, subtitle='', extra_class='') -%}
-<section class="content-section {{ extra_class }}">
-  <h2>{{ title }}</h2>
-  {% if subtitle %}<p class="section-subtitle">{{ subtitle }}</p>{% endif %}
-  <div class="section-rule" aria-hidden="true"><span></span></div>
-  <div class="section-body">{{ caller() }}</div>
-</section>
-{%- endmacro %}
-
-{% macro technical_table(columns, rows, extra_class='', empty_message='No committed evidence is available.') -%}
-<table class="report-table {{ extra_class }}">
-  <thead><tr>{% for column in columns %}<th>{{ column }}</th>{% endfor %}</tr></thead>
-  <tbody>
-    {% for row in rows %}
-    <tr>{% for value in row %}<td{% if loop.first %} class="ref-or-primary"{% endif %}>{{ value }}</td>{% endfor %}</tr>
-    {% else %}
-    <tr><td colspan="{{ columns|length }}" class="empty-row">{{ empty_message }}</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
-{%- endmacro %}
-
-{% macro findings_table(rows, extra_class='') -%}
-<table class="report-table priority-register {{ extra_class }}">
-  <thead><tr><th>Ref.</th><th>Priority</th><th>Finding</th><th>Owner</th><th>Status</th></tr></thead>
-  <tbody>
-    {% for item in rows %}
-    <tr><td class="ref">{{ item.ref }}</td><td>{{ item.priority }}</td><td>{{ item.title }}</td><td>{{ item.owner }}</td><td>{{ status_label(item.status, item.tone|default('muted')) }}</td></tr>
-    {% else %}
-    <tr><td colspan="5" class="empty-row">No committed finding is available.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
-{%- endmacro %}
-
-{% macro recommendation_table(rows, extra_class='') -%}
-<table class="report-table recommendation-register {{ extra_class }}">
-  <thead><tr><th>Ref.</th><th>Priority</th><th>Recommendation</th><th>Owner</th><th>Target</th><th>Status</th></tr></thead>
-  <tbody>
-    {% for item in rows %}
-    <tr><td class="ref">{{ item.ref }}</td><td>{{ item.priority }}</td><td>{{ item.title }}</td><td>{{ item.owner }}</td><td>{{ item.target }}</td><td>{{ status_label(item.status, item.tone|default('muted')) }}</td></tr>
-    {% else %}
-    <tr><td colspan="6" class="empty-row">No committed recommendation is available.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
-{%- endmacro %}
-
-{% macro interpretation_card(title, body, note='', tone='normal') -%}
-<div class="interpretation-card{% if tone and tone != 'normal' %} {{ tone }}-card{% endif %}">
-  <strong>{{ title }}</strong>
-  <p>{{ body }}</p>
-  {% if note %}<small>{{ note }}</small>{% endif %}
-</div>
-{%- endmacro %}
-
-{% macro reference_item(code, title, description, label='Decision') -%}
-<div class="reference-item">
-  <span class="reference-code">{{ code }}</span>
-  <div class="reference-copy">
-    <strong>{{ title }}</strong>
-    <p><b>{{ label }}.</b> {{ description }}</p>
-  </div>
-</div>
-{%- endmacro %}
-
-{% macro reference_register(title, items, label='Decision', extra_class='') -%}
-<div class="reference-notes {{ extra_class }}">
-  <h3>{{ title }}</h3>
-  {% for item in items %}
-    {{ reference_item(item.ref, item.title, item.description, item.label|default(label)) }}
-  {% else %}
-    <p class="empty-state">No committed reference note is available.</p>
-  {% endfor %}
-</div>
-{%- endmacro %}
-
-{% macro evidence_boundary(included, excluded) -%}
-<div class="boundary-columns">
-  <div><h3>Included in This Report</h3><ul>{% for item in included %}<li>{{ item }}</li>{% endfor %}</ul></div>
-  <div><h3>Not Included in This Report</h3><ul>{% for item in excluded %}<li>{{ item }}</li>{% endfor %}</ul></div>
-</div>
-{%- endmacro %}
-
-{% macro status_language(items) -%}
-<div class="status-language-grid">
-  {% for item in items %}
-  <div class="status-language-item">
-    <span class="reference-code">{{ item.ref|default('S' ~ loop.index) }}</span>
-    <div><strong>{{ item.label|default(item.title|default(item.status|default('Not Available'))) }}</strong><p>{{ item.description|default(item.definition|default('No supporting definition is available.')) }}</p></div>
-  </div>
-  {% endfor %}
-</div>
-{%- endmacro %}
-
-
-{% macro identity_register(title, items, subtitle='', extra_class='') -%}
-<div class="identity-register {{ extra_class }}">
-  <h3>{{ title }}</h3>
-  {% if subtitle %}<p class="identity-register-subtitle">{{ subtitle }}</p>{% endif %}
-  <div class="identity-grid{% if items|length <= 3 %} single-column{% endif %}">
-    {% for item in items %}
-    <div class="identity-item">
-      <span class="reference-code">{{ item.ref }}</span>
-      <div class="identity-copy">
-        <strong class="identity-title technical-identity">{{ item.identity|default(item.title|default(item.name)) }}</strong>
-        {% set identity_meta = item.meta|default(item.metadata|default('')) %}
-        {% if identity_meta %}<p class="identity-meta">{{ identity_meta }}</p>{% endif %}
-      </div>
+    <div class="cover-hero-copy">
+        <div class="cover-eyebrow">{{ eyebrow }}</div>
+        <h1>{{ title }}</h1>
+        <p>{{ purpose }}</p>
     </div>
-    {% endfor %}
-  </div>
-</div>
+{%- endmacro %}
+{% macro cover_contents(items) -%}
+    <div class="cover-contents">
+        {% for item in items %}<span>{{ item }}</span>{% endfor %}
+    </div>
+{%- endmacro %}
+{% macro methodology_register(sources, rules, source_class='', rule_class='') -%}
+    <div class="methodology-grid">
+        <div class="methodology-source-block">
+            <h3>Data Sources and Coverage</h3>
+            <table class="report-table source-register {{ source_class }}">
+                <thead>
+                    <tr>
+                        <th>Source</th>
+                        <th>Freshness</th>
+                        <th>Last Collected</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in sources %}
+                        <tr>
+                            <td>{{ item.source }}</td>
+                            <td>{{ item.freshness }}</td>
+                            <td>{{ item.last_collected }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="methodology-rule-block">
+            <h3>Methodology Register</h3>
+            <table class="report-table methodology-register {{ rule_class }}">
+                <thead>
+                    <tr>
+                        <th>Ref.</th>
+                        <th>Rule</th>
+                        <th>Setting</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in rules %}
+                        <tr>
+                            <td class="ref">{{ item.ref }}</td>
+                            <td>{{ item.rule }}</td>
+                            <td>{{ item.setting }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{%- endmacro %}
+{% macro metric_strip(items, limit=4) -%}
+    <div class="metric-strip"
+         style="--metric-cols:{{ [items|length, limit]|min }}">
+        {% for item in items[:limit] %}
+            {% set metric_status = item.status|default(item.note|default('')) %}
+            <div class="metric">
+                <span>{{ item.label }}</span>
+                <strong class="{% if item.value|string|length > 18 %}metric-long{% elif item.value|string|length > 10 %}metric-medium{% endif %}">{{ item.value }}</strong>
+                {% if metric_status %}<em class="status {{ item.tone|default('muted') }}">{{ metric_status }}</em>{% endif %}
+            </div>
+        {% endfor %}
+    </div>
+{%- endmacro %}
+{% macro section(title, subtitle='', extra_class='') -%}
+    <section class="content-section {{ extra_class }}">
+        <h2>{{ title }}</h2>
+        {% if subtitle %}<p class="section-subtitle">{{ subtitle }}</p>{% endif %}
+        <div class="section-rule" aria-hidden="true">
+            <span></span>
+        </div>
+        <div class="section-body">{{ caller() }}</div>
+    </section>
+{%- endmacro %}
+{% macro technical_table(columns, rows, extra_class='', empty_message='No committed evidence is available.') -%}
+    <table class="report-table {{ extra_class }}">
+        <thead>
+            <tr>
+                {% for column in columns %}<th>{{ column }}</th>{% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+                <tr>
+                    {% for value in row %}
+                        <td {% if loop.first %} class="ref-or-primary"{% endif %}>{{ value }}</td>
+                    {% endfor %}
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="{{ columns|length }}" class="empty-row">{{ empty_message }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{%- endmacro %}
+{% macro findings_table(rows, extra_class='') -%}
+    <table class="report-table priority-register {{ extra_class }}">
+        <thead>
+            <tr>
+                <th>Ref.</th>
+                <th>Priority</th>
+                <th>Finding</th>
+                <th>Owner</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in rows %}
+                <tr>
+                    <td class="ref">{{ item.ref }}</td>
+                    <td>{{ item.priority }}</td>
+                    <td>{{ item.title }}</td>
+                    <td>{{ item.owner }}</td>
+                    <td>{{ status_label(item.status, item.tone|default('muted') ) }}</td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="5" class="empty-row">No committed finding is available.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{%- endmacro %}
+{% macro recommendation_table(rows, extra_class='') -%}
+    <table class="report-table recommendation-register {{ extra_class }}">
+        <thead>
+            <tr>
+                <th>Ref.</th>
+                <th>Priority</th>
+                <th>Recommendation</th>
+                <th>Owner</th>
+                <th>Target</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in rows %}
+                <tr>
+                    <td class="ref">{{ item.ref }}</td>
+                    <td>{{ item.priority }}</td>
+                    <td>{{ item.title }}</td>
+                    <td>{{ item.owner }}</td>
+                    <td>{{ item.target }}</td>
+                    <td>{{ status_label(item.status, item.tone|default('muted') ) }}</td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="6" class="empty-row">No committed recommendation is available.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{%- endmacro %}
+{% macro interpretation_card(title, body, note='', tone='normal') -%}
+    <div class="interpretation-card{% if tone and tone != 'normal' %} {{ tone }}-card{% endif %}">
+        <strong>{{ title }}</strong>
+        <p>{{ body }}</p>
+        {% if note %}<small>{{ note }}</small>{% endif %}
+    </div>
+{%- endmacro %}
+{% macro reference_item(code, title, description, label='Decision') -%}
+    <div class="reference-item">
+        <span class="reference-code">{{ code }}</span>
+        <div class="reference-copy">
+            <strong>{{ title }}</strong>
+            <p><b>{{ label }}.</b> {{ description }}</p>
+        </div>
+    </div>
+{%- endmacro %}
+{% macro reference_register(title, items, label='Decision', extra_class='') -%}
+    <div class="reference-notes {{ extra_class }}">
+        <h3>{{ title }}</h3>
+        {% for item in items %}
+            {{ reference_item(item.ref, item.title, item.description, item.label|default(label) ) }}
+        {% else %}
+            <p class="empty-state">No committed reference note is available.</p>
+        {% endfor %}
+    </div>
+{%- endmacro %}
+{% macro evidence_boundary(included, excluded) -%}
+    <div class="boundary-columns">
+        <div>
+            <h3>Included in This Report</h3>
+            <ul>
+                {% for item in included %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+        </div>
+        <div>
+            <h3>Not Included in This Report</h3>
+            <ul>
+                {% for item in excluded %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+        </div>
+    </div>
+{%- endmacro %}
+{% macro status_language(items) -%}
+    <div class="status-language-grid">
+        {% for item in items %}
+            <div class="status-language-item">
+                <span class="reference-code">{{ item.ref|default('S' ~ loop.index) }}</span>
+                <div>
+                    <strong>{{ item.label|default(item.title|default(item.status|default('Not Available') )) }}</strong>
+                    <p>{{ item.description|default(item.definition|default('No supporting definition is available.') ) }}</p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{%- endmacro %}
+{% macro identity_register(title, items, subtitle='', extra_class='') -%}
+    <div class="identity-register {{ extra_class }}">
+        <h3>{{ title }}</h3>
+        {% if subtitle %}<p class="identity-register-subtitle">{{ subtitle }}</p>{% endif %}
+        <div class="identity-grid{% if items|length <= 3 %} single-column{% endif %}">
+            {% for item in items %}
+                <div class="identity-item">
+                    <span class="reference-code">{{ item.ref }}</span>
+                    <div class="identity-copy">
+                        <strong class="identity-title technical-identity">{{ item.identity|default(item.title|default(item.name) ) }}</strong>
+                        {% set identity_meta = item.meta|default(item.metadata|default('')) %}
+                        {% if identity_meta %}<p class="identity-meta">{{ identity_meta }}</p>{% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
 {%- endmacro %}

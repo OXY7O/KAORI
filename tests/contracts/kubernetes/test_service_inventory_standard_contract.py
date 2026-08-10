@@ -30,7 +30,7 @@ def test_service_collector_preserves_full_canonical_evidence_without_duplicate_c
     assert "'external_addresses': external_addresses" in collector
     assert "'load_balancer_ingress': load_balancer_ingress" in collector
     assert "'ports': port_details" in collector
-    assert "if metadata is None or spec is None or not metadata.namespace or not metadata.name:" in collector
+    assert 'if metadata is None or spec is None or not metadata.namespace or not metadata.name:' in collector
     assert "('ip', 'hostname', 'node_name', 'target_kind', 'target_name')" in collector
     assert "('name', 'port', 'protocol', 'app_protocol')" in collector
 
@@ -38,9 +38,9 @@ def test_service_collector_preserves_full_canonical_evidence_without_duplicate_c
 def test_service_backend_semantics_do_not_hide_missing_or_empty_manual_evidence() -> None:
     semantics = read('app/inventory/resources/service_semantics.py')
 
-    assert "if not reported:" in semantics
+    assert 'if not reported:' in semantics
     assert "'label': 'Not Reported'" in semantics
-    assert "if not selector:" in semantics
+    assert 'if not selector:' in semantics
     assert "'label': 'Manually Managed'" in semantics
     assert "'exception': bool(not_ready or total == 0)" in semantics
     assert "'Headless': 'Direct Pod Discovery'" in semantics
@@ -52,7 +52,10 @@ def test_service_page_filters_refresh_complete_committed_scope() -> None:
     card = read('app/templates/inventory/services/partials/_table_card.html')
     table = read('app/templates/inventory/services/partials/_table_content.html')
 
-    assert "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')" in routes
+    assert (
+        "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')"
+        in routes
+    )
     assert 'id="services-page-workspace"' in workspace
     assert 'inventory/components/_data_freshness.html' in workspace
     assert 'hx-target="#services-page-workspace"' in card
@@ -94,7 +97,7 @@ def test_service_export_uses_canonical_backend_and_endpoint_fields() -> None:
     payload = read('app/reports/export/payloads/inventory.py')
     standard = read('app/reports/export/xlsx/standard.py')
 
-    assert "registration = service_backend_registration(" in payload
+    assert 'registration = service_backend_registration(' in payload
     assert "details.get('load_balancer_ingress')" in payload
     assert "'ready_endpoints': registration['ready'] if endpoint_reported else None" in payload
     assert "'not_ready_endpoints': registration['not_ready'] if endpoint_reported else None" in payload

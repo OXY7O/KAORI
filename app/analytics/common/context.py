@@ -7,9 +7,9 @@ from typing import Any
 
 from flask import current_app
 
-from app.analytics.common.presentation import present_prometheus_status
 from app.analytics.common.clusters import get_selected_cluster
 from app.analytics.common.params import get_query_value, get_selected_time_range
+from app.analytics.common.presentation import present_prometheus_status
 from app.analytics.utilization.service import UtilizationService
 from app.common.dependencies import (
     cluster_required_blocker,
@@ -26,13 +26,15 @@ from app.prometheus.service import PrometheusService
 
 
 def get_default_prometheus_status() -> dict[str, Any]:
-    return present_prometheus_status({
-        'configured': False,
-        'connected': False,
-        'response_time_ms': None,
-        'label': 'Prometheus Not Configured',
-        'error': None,
-    })
+    return present_prometheus_status(
+        {
+            'configured': False,
+            'connected': False,
+            'response_time_ms': None,
+            'label': 'Prometheus Not Configured',
+            'error': None,
+        }
+    )
 
 
 def build_analysis_utilization_context(
@@ -74,26 +76,30 @@ def build_analysis_utilization_context(
     }
 
     if cluster is None:
-        base_context['prometheus_status'] = present_prometheus_status({
-            'configured': False,
-            'connected': False,
-            'response_time_ms': None,
-            'label': 'Waiting for Cluster',
-            'error': None,
-        })
+        base_context['prometheus_status'] = present_prometheus_status(
+            {
+                'configured': False,
+                'connected': False,
+                'response_time_ms': None,
+                'label': 'Waiting for Cluster',
+                'error': None,
+            }
+        )
         base_context['dependency_blocker'] = cluster_required_blocker()
         return clusters, None, None, base_context
 
     prometheus_config = resolve_instance_for_cluster(cluster.id)
 
     if prometheus_config is None or not prometheus_config.endpoint.strip():
-        base_context['prometheus_status'] = present_prometheus_status({
-            'configured': False,
-            'connected': False,
-            'response_time_ms': None,
-            'label': 'Prometheus Not Configured',
-            'error': None,
-        })
+        base_context['prometheus_status'] = present_prometheus_status(
+            {
+                'configured': False,
+                'connected': False,
+                'response_time_ms': None,
+                'label': 'Prometheus Not Configured',
+                'error': None,
+            }
+        )
         base_context['dependency_blocker'] = prometheus_setup_blocker(cluster)
         return clusters, cluster, None, base_context
 
@@ -140,13 +146,15 @@ def build_analysis_utilization_context(
                 cluster,
                 detail=message,
             )
-            base_context['prometheus_status'] = present_prometheus_status({
-                'configured': True,
-                'connected': False,
-                'response_time_ms': None,
-                'label': 'Prometheus Error',
-                'error': message,
-            })
+            base_context['prometheus_status'] = present_prometheus_status(
+                {
+                    'configured': True,
+                    'connected': False,
+                    'response_time_ms': None,
+                    'label': 'Prometheus Error',
+                    'error': message,
+                }
+            )
             return clusters, cluster, None, base_context
 
         observation_degraded = selected.operational_state in {
@@ -155,23 +163,25 @@ def build_analysis_utilization_context(
             'degraded_not_connected',
         }
         base_context['prometheus_connected'] = True
-        base_context['prometheus_status'] = present_prometheus_status({
-            'configured': True,
-            'connected': True,
-            'response_time_ms': selected.instance.last_response_time_ms,
-            'last_checked_at': selected.instance.last_checked_at,
-            'label': 'Prometheus Query Ready',
-            'description': (
-                'The source is eligible for analytics queries; the previous runtime observation '
-                'was degraded and remains advisory until the dataset query runs.'
-                if observation_degraded
-                else 'The source is eligible for analytics queries.'
-            ),
-            'error': selected.instance.last_error if observation_degraded else None,
-            'tone': 'warning' if observation_degraded else 'normal',
-            'icon': 'triangle-alert' if observation_degraded else 'circle-check',
-            'observation_degraded': observation_degraded,
-        })
+        base_context['prometheus_status'] = present_prometheus_status(
+            {
+                'configured': True,
+                'connected': True,
+                'response_time_ms': selected.instance.last_response_time_ms,
+                'last_checked_at': selected.instance.last_checked_at,
+                'label': 'Prometheus Query Ready',
+                'description': (
+                    'The source is eligible for analytics queries; the previous runtime observation '
+                    'was degraded and remains advisory until the dataset query runs.'
+                    if observation_degraded
+                    else 'The source is eligible for analytics queries.'
+                ),
+                'error': selected.instance.last_error if observation_degraded else None,
+                'tone': 'warning' if observation_degraded else 'normal',
+                'icon': 'triangle-alert' if observation_degraded else 'circle-check',
+                'observation_degraded': observation_degraded,
+            }
+        )
         return clusters, cluster, utilization_service, base_context
 
     try:
@@ -184,13 +194,15 @@ def build_analysis_utilization_context(
             cluster,
             detail=message,
         )
-        base_context['prometheus_status'] = present_prometheus_status({
-            'configured': False,
-            'connected': False,
-            'response_time_ms': None,
-            'label': 'Prometheus Not Configured',
-            'error': message,
-        })
+        base_context['prometheus_status'] = present_prometheus_status(
+            {
+                'configured': False,
+                'connected': False,
+                'response_time_ms': None,
+                'label': 'Prometheus Not Configured',
+                'error': message,
+            }
+        )
         return clusters, cluster, None, base_context
     except Exception as exc:
         current_app.logger.exception(
@@ -202,13 +214,15 @@ def build_analysis_utilization_context(
             cluster,
             detail=message,
         )
-        base_context['prometheus_status'] = present_prometheus_status({
-            'configured': True,
-            'connected': False,
-            'response_time_ms': None,
-            'label': 'Prometheus Error',
-            'error': message,
-        })
+        base_context['prometheus_status'] = present_prometheus_status(
+            {
+                'configured': True,
+                'connected': False,
+                'response_time_ms': None,
+                'label': 'Prometheus Error',
+                'error': message,
+            }
+        )
         return clusters, cluster, None, base_context
 
     utilization_service = UtilizationService(
@@ -223,13 +237,15 @@ def build_analysis_utilization_context(
             cluster,
             detail=message,
         )
-        base_context['prometheus_status'] = present_prometheus_status({
-            'configured': True,
-            'connected': False,
-            'response_time_ms': None,
-            'label': 'Prometheus Unavailable',
-            'error': message,
-        })
+        base_context['prometheus_status'] = present_prometheus_status(
+            {
+                'configured': True,
+                'connected': False,
+                'response_time_ms': None,
+                'label': 'Prometheus Unavailable',
+                'error': message,
+            }
+        )
         return clusters, cluster, None, base_context
     except Exception as exc:
         current_app.logger.exception(
@@ -241,13 +257,15 @@ def build_analysis_utilization_context(
             cluster,
             detail=message,
         )
-        base_context['prometheus_status'] = present_prometheus_status({
-            'configured': True,
-            'connected': False,
-            'response_time_ms': None,
-            'label': 'Prometheus Unavailable',
-            'error': message,
-        })
+        base_context['prometheus_status'] = present_prometheus_status(
+            {
+                'configured': True,
+                'connected': False,
+                'response_time_ms': None,
+                'label': 'Prometheus Unavailable',
+                'error': message,
+            }
+        )
         return clusters, cluster, None, base_context
 
     base_context['prometheus_status'] = present_prometheus_status(prometheus_status)

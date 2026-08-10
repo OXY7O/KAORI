@@ -84,18 +84,24 @@ def event_category_key(event_type: str) -> str:
         return 'platform_operations'
     if normalized.startswith('kubernetes_secret_'):
         return 'secret_management'
-    if normalized.startswith(
-        (
-            'prometheus_',
-            'alertmanager_',
-            'cluster_',
-            'kubernetes_capability_',
-            'kubernetes_runtime_',
-            'integration_',
+    if (
+        normalized.startswith(
+            (
+                'prometheus_',
+                'alertmanager_',
+                'cluster_',
+                'kubernetes_capability_',
+                'kubernetes_runtime_',
+                'integration_',
+            )
         )
-    ) or normalized == 'kubernetes_inventory_sync':
+        or normalized == 'kubernetes_inventory_sync'
+    ):
         return 'integrations'
-    if normalized.startswith(('rbac_', 'identity_provider_', 'external_identity_', 'user_')) or normalized == 'authentication':
+    if (
+        normalized.startswith(('rbac_', 'identity_provider_', 'external_identity_', 'user_'))
+        or normalized == 'authentication'
+    ):
         if normalized == 'user_preference':
             return 'settings'
         return 'access'

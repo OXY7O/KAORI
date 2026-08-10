@@ -40,8 +40,8 @@ def test_analytics_snapshot_policy_is_scheduled_on_existing_maintenance_boundary
     assert 'ANALYTICS_SNAPSHOT_ARCHIVE_RETENTION_DAYS' in config
     assert 'ANALYTICS_SNAPSHOT_RETENTION_BATCH_SIZE' in config
     assert "if domain == 'analytics_snapshot':" in policy
-    assert "ANALYTICS_SNAPSHOT_RETENTION_SCHEDULE_HOUR" in policy
-    assert "ANALYTICS_SNAPSHOT_RETENTION_SCHEDULE_MINUTE" in policy
+    assert 'ANALYTICS_SNAPSHOT_RETENTION_SCHEDULE_HOUR' in policy
+    assert 'ANALYTICS_SNAPSHOT_RETENTION_SCHEDULE_MINUTE' in policy
 
 
 def test_analytics_snapshot_lifecycle_is_explained_in_data_lifecycle_ui() -> None:
@@ -58,4 +58,6 @@ def test_analytics_snapshot_lifecycle_is_explained_in_data_lifecycle_ui() -> Non
 
 def test_analytics_snapshot_lifecycle_v1_3_is_locked() -> None:
     assert (ROOT / 'docs/design/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_LOCK_V1_3.md').exists()
-    assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_3_AUDIT_2026_08_08.md').exists()
+    assert (
+        ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_3_AUDIT_2026_08_08.md'
+    ).exists()

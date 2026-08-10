@@ -14,7 +14,8 @@
         {% set check_summary.fail_count = check_summary.fail_count + 1 %}
     {% endif %}
 {% endfor %}
-<section class="{{ analysis_surface.snapshot_shell_classes() }}" data-kaori-incident-readiness>
+<section class="{{ analysis_surface.snapshot_shell_classes() }}"
+         data-kaori-incident-readiness>
     <header class="{{ analysis_surface.snapshot_header_classes() }}">
         <div class="flex min-w-0 items-start gap-3">
             <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="siren" class="h-4 w-4"></i></span>
@@ -27,18 +28,18 @@
             </div>
         </div>
     </header>
-
     <div class="grid lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
         <div class="min-w-0 border-b border-outline-subtle lg:border-b-0 lg:border-r">
-            <section class="border-b border-outline-subtle p-4 sm:p-5" aria-labelledby="readiness-posture-title">
+            <section class="border-b border-outline-subtle p-4 sm:p-5"
+                     aria-labelledby="readiness-posture-title">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                        <h3 id="readiness-posture-title" class="{{ analysis_surface.section_title_classes() }}">Readiness Posture</h3>
+                        <h3 id="readiness-posture-title"
+                            class="{{ analysis_surface.section_title_classes() }}">Readiness Posture</h3>
                         <p class="{{ analysis_surface.section_description_classes() }}">Incident readiness combines signal pressure with source, routing, ownership, silence, and inhibition evidence.</p>
                     </div>
                     {{ table_label.metadata_label(incident_readiness.checks|length ~ ' Checks', size='compact') }}
                 </div>
-
                 <div class="mt-4 grid gap-3 md:grid-cols-[minmax(180px,0.72fr)_minmax(0,1.28fr)]">
                     <article class="{{ analysis_surface.nested_evidence_card_classes('p-4') }}">
                         <div class="flex items-start justify-between gap-3">
@@ -46,46 +47,56 @@
                                 <p class="{{ analysis_surface.metric_label_classes() }}">Readiness Score</p>
                                 <p class="mt-2 text-3xl font-semibold tabular-nums text-content-primary">{{ incident_readiness.score }}<span class="text-base font-medium text-content-muted">/100</span></p>
                             </div>
-                            <span class="{{ analysis_surface.role_icon_classes('status', readiness_tone) }}" aria-hidden="true"><i data-lucide="{{ incident_readiness.icon|default('shield-check') }}" class="h-4 w-4"></i></span>
+                            <span class="{{ analysis_surface.role_icon_classes('status', readiness_tone) }}"
+                                  aria-hidden="true"><i data-lucide="{{ incident_readiness.icon|default('shield-check') }}"
+   class="h-4 w-4"></i></span>
                         </div>
                         {{ progress_bar.semantic_bar(incident_readiness.score, readiness_tone, track_classes='mt-4 h-2 overflow-hidden rounded-full bg-surface-hover', label='Incident readiness status') }}
                         <p class="mt-3 text-xs leading-5 text-content-muted">Status score is a decision aid, not a substitute for the individual readiness checks below.</p>
                     </article>
-
-                    <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-card" aria-labelledby="readiness-control-domains-title">
+                    <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-card"
+                             aria-labelledby="readiness-control-domains-title">
                         <header class="border-b border-outline-subtle px-4 py-3">
-                            <h4 id="readiness-control-domains-title" class="text-sm font-semibold text-content-primary">Response Control Readiness</h4>
+                            <h4 id="readiness-control-domains-title"
+                                class="text-sm font-semibold text-content-primary">Response Control Readiness</h4>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Core controls required to route and own an incident response.</p>
                         </header>
                         <dl class="divide-y divide-outline-subtle">
                             <div class="flex items-center justify-between gap-4 px-4 py-3">
                                 <div class="min-w-0">
                                     <dt class="text-sm font-semibold text-content-primary">Alert Source Health</dt>
-                                    <dd class="mt-1 text-xs text-content-muted">Evidence collection and source availability</dd>
+                                    <dd class="mt-1 text-xs text-content-muted">
+                                        Evidence collection and source availability
+                                    </dd>
                                 </div>
                                 {{ table_label.status_label(incident_readiness.source_score ~ '/100', source_tone, size='compact') }}
                             </div>
                             <div class="flex items-center justify-between gap-4 px-4 py-3">
                                 <div class="min-w-0">
                                     <dt class="text-sm font-semibold text-content-primary">Ownership Readiness</dt>
-                                    <dd class="mt-1 text-xs text-content-muted">Owner, runbook, and contact coverage</dd>
+                                    <dd class="mt-1 text-xs text-content-muted">
+                                        Owner, runbook, and contact coverage
+                                    </dd>
                                 </div>
                                 {{ table_label.status_label(incident_readiness.ownership_score ~ '/100', ownership_tone, size='compact') }}
                             </div>
                             <div class="flex items-center justify-between gap-4 px-4 py-3">
                                 <div class="min-w-0">
                                     <dt class="text-sm font-semibold text-content-primary">Routing Context</dt>
-                                    <dd class="mt-1 text-xs text-content-muted">Alert delivery and receiver context</dd>
+                                    <dd class="mt-1 text-xs text-content-muted">
+                                        Alert delivery and receiver context
+                                    </dd>
                                 </div>
                                 {{ table_label.status_label('Ready' if incident_readiness.routing_ready else 'Limited', 'normal' if incident_readiness.routing_ready else 'warning', size='compact') }}
                             </div>
                         </dl>
                     </section>
                 </div>
-
-                <section class="mt-4 overflow-hidden rounded-lg border border-outline-subtle bg-surface-card" aria-labelledby="signal-pressure-title">
+                <section class="mt-4 overflow-hidden rounded-lg border border-outline-subtle bg-surface-card"
+                         aria-labelledby="signal-pressure-title">
                     <header class="border-b border-outline-subtle px-4 py-3">
-                        <h4 id="signal-pressure-title" class="text-sm font-semibold text-content-primary">Signal Pressure</h4>
+                        <h4 id="signal-pressure-title"
+                            class="text-sm font-semibold text-content-primary">Signal Pressure</h4>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Current signal load that can increase incident urgency.</p>
                     </header>
                     <div class="grid gap-px bg-outline-subtle sm:grid-cols-3">
@@ -93,24 +104,24 @@
                             ('Critical Signals', incident_readiness.critical_signals, 'Immediate attention', 'critical'),
                             ('Warning Signals', incident_readiness.warning_signals, 'Operational review', 'warning'),
                             ('Anomaly Signals', incident_readiness.anomaly_signals, 'Restart or readiness', 'info')
-                        ] %}
+                            ] %}
                             <div class="flex min-w-0 items-center justify-between gap-3 bg-surface-card px-4 py-3">
                                 <div>
                                     <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
                                     <p class="mt-1 text-xl font-semibold tabular-nums text-content-primary">{{ value }}</p>
                                     <p class="mt-1 text-xs text-content-muted">{{ helper }}</p>
                                 </div>
-                                {{ table_label.status_label(label|replace(' Signals', ''), tone, size='compact') }}
+                                {{ table_label.status_label(label|replace(' Signals', '') , tone, size='compact') }}
                             </div>
                         {% endfor %}
                     </div>
                 </section>
             </section>
-
             <section class="p-4 sm:p-5" aria-labelledby="readiness-checks-title">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                        <h3 id="readiness-checks-title" class="{{ analysis_surface.section_title_classes() }}">Readiness Checks</h3>
+                        <h3 id="readiness-checks-title"
+                            class="{{ analysis_surface.section_title_classes() }}">Readiness Checks</h3>
                         <p class="{{ analysis_surface.section_description_classes() }}">Validate each control before escalating, acknowledging, silencing, or suppressing active signals.</p>
                     </div>
                     <div class="flex flex-wrap gap-2">
@@ -119,7 +130,6 @@
                         {% if check_summary.fail_count %}{{ table_label.status_label(check_summary.fail_count ~ ' Fail', 'critical', size='compact') }}{% endif %}
                     </div>
                 </div>
-
                 <div class="mt-4 grid overflow-hidden rounded-lg border border-outline-subtle bg-surface-card sm:grid-cols-2">
                     {% for check in incident_readiness.checks %}
                         {% set check_tone = 'normal' if check.status == 'pass' else ('warning' if check.status == 'warning' else 'critical') %}
@@ -136,20 +146,18 @@
                 </div>
             </section>
         </div>
-
-        <aside class="bg-surface-hover p-4 sm:p-5" aria-labelledby="incident-decision-title">
+        <aside class="bg-surface-hover p-4 sm:p-5"
+               aria-labelledby="incident-decision-title">
             <div class="{{ analysis_surface.guidance_card_classes('overflow-hidden') }}">
                 <div class="p-4">
                     <div id="incident-decision-title">
-                        {{ analysis_surface.interpretation_content(
-                            'Incident Decision',
-                            incident_readiness.recommended_action,
-                            'Use the readiness score together with active signal pressure and response-control evidence before deciding whether to escalate or suppress.',
-                            icon='compass',
-                            role='status',
-                            tone=readiness_tone,
-                            compact=true
-                        ) }}
+                        {{ analysis_surface.interpretation_content('Incident Decision',
+                                                incident_readiness.recommended_action,
+                                                'Use the readiness score together with active signal pressure and response-control evidence before deciding whether to escalate or suppress.',
+                                                icon='compass',
+                                                role='status',
+                                                tone=readiness_tone,
+                                                compact=true) }}
                     </div>
                 </div>
                 <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
@@ -165,13 +173,15 @@
                     </div>
                 </div>
             </div>
-
-            <section class="mt-4 {{ analysis_surface.nested_evidence_card_classes('overflow-hidden') }}" aria-labelledby="incident-escalation-gate-title">
+            <section class="mt-4 {{ analysis_surface.nested_evidence_card_classes('overflow-hidden') }}"
+                     aria-labelledby="incident-escalation-gate-title">
                 <header class="border-b border-outline-subtle px-4 py-3">
                     <div class="flex items-start gap-3">
-                        <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}" aria-hidden="true"><i data-lucide="list-checks" class="h-3.5 w-3.5"></i></span>
+                        <span class="{{ analysis_surface.role_icon_classes('evidence', size='compact') }}"
+                              aria-hidden="true"><i data-lucide="list-checks" class="h-3.5 w-3.5"></i></span>
                         <div class="min-w-0">
-                            <h3 id="incident-escalation-gate-title" class="text-sm font-semibold text-content-primary">Escalation Gate</h3>
+                            <h3 id="incident-escalation-gate-title"
+                                class="text-sm font-semibold text-content-primary">Escalation Gate</h3>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Quick summary of control checks that need attention before incident handoff.</p>
                         </div>
                     </div>
@@ -179,15 +189,21 @@
                 <dl class="divide-y divide-outline-subtle">
                     <div class="flex items-center justify-between gap-3 px-4 py-3">
                         <dt class="text-sm font-medium text-content-secondary">Passed Controls</dt>
-                        <dd class="text-sm font-semibold tabular-nums text-content-primary">{{ check_summary.pass_count }}</dd>
+                        <dd class="text-sm font-semibold tabular-nums text-content-primary">
+                            {{ check_summary.pass_count }}
+                        </dd>
                     </div>
                     <div class="flex items-center justify-between gap-3 px-4 py-3">
                         <dt class="text-sm font-medium text-content-secondary">Watch Controls</dt>
-                        <dd class="text-sm font-semibold tabular-nums text-content-primary">{{ check_summary.warning_count }}</dd>
+                        <dd class="text-sm font-semibold tabular-nums text-content-primary">
+                            {{ check_summary.warning_count }}
+                        </dd>
                     </div>
                     <div class="flex items-center justify-between gap-3 px-4 py-3">
                         <dt class="text-sm font-medium text-content-secondary">Failed Controls</dt>
-                        <dd class="text-sm font-semibold tabular-nums text-content-primary">{{ check_summary.fail_count }}</dd>
+                        <dd class="text-sm font-semibold tabular-nums text-content-primary">
+                            {{ check_summary.fail_count }}
+                        </dd>
                     </div>
                 </dl>
             </section>

@@ -36,15 +36,15 @@ def test_topology_side_panes_are_always_on_demand_drawers() -> None:
     script = _read('app/static/js/inventory/topology.js')
     pattern = _read('docs/design/patterns/KUBERNETES_TOPOLOGY.md')
 
-    assert "fixed inset-y-0" in component
-    assert "z-50 hidden w-full" in component
-    assert "2xl:static" not in component
-    assert "isPersistentExplorer" not in script
-    assert "if (!panel) return" in script
-    assert "openPane(detailsPanel)" in script
-    assert "data-topology-close-pane" in workspace
-    assert "overlay drawers at every breakpoint" in pattern.lower()
-    assert "never become persistent" in pattern.lower()
+    assert 'fixed inset-y-0' in component
+    assert 'z-50 hidden w-full' in component
+    assert '2xl:static' not in component
+    assert 'isPersistentExplorer' not in script
+    assert 'if (!panel) return' in script
+    assert 'openPane(detailsPanel)' in script
+    assert 'data-topology-close-pane' in workspace
+    assert 'overlay drawers at every breakpoint' in pattern.lower()
+    assert 'never become persistent' in pattern.lower()
 
 
 def test_topology_registers_compact_segmented_tab_style() -> None:
@@ -124,7 +124,7 @@ def test_topology_palette_is_tokenized_and_contains_no_raw_js_colors() -> None:
     assert "'text-max-width': 220" in script
     assert 'nodeBadgeSvg' in script
     assert 'data.display_label = data.base_label' in script
-    assert "selector: 'edge[relationship = \"contains\"]'" in script
+    assert 'selector: \'edge[relationship = "contains"]\'' in script
     assert "'target-arrow-shape': 'none'" in script
     assert 'External Label Node' in contract
 
@@ -168,7 +168,10 @@ def test_topology_reference_pattern_is_documented() -> None:
 
     assert 'Visualization Workspace Style 1 — Adaptive Explorer' in pattern
     assert 'Tab Style 2: Graph / Resource List' in pattern
-    assert 'Renderer failure must not remove access' in pattern or 'Renderer errors preserve Resource List access' in pattern
+    assert (
+        'Renderer failure must not remove access' in pattern
+        or 'Renderer errors preserve Resource List access' in pattern
+    )
     assert 'Approved package' in audit
     assert 'Kubernetes Topology Reference Pattern' in inventory_readme
 

@@ -166,11 +166,7 @@ def _activity_detail_evidence(
     )
     items_by_key = {item['key']: item for item in all_metadata_items}
 
-    execution_evidence = [
-        items_by_key[key]
-        for key in _ACTIVITY_EXECUTION_EVIDENCE_KEYS
-        if key in items_by_key
-    ]
+    execution_evidence = [items_by_key[key] for key in _ACTIVITY_EXECUTION_EVIDENCE_KEYS if key in items_by_key]
 
     trace_references: list[dict[str, Any]] = [
         {
@@ -188,11 +184,7 @@ def _activity_detail_evidence(
             'tone': 'slate',
         },
     ]
-    trace_references.extend(
-        items_by_key[key]
-        for key in _ACTIVITY_TRACE_REFERENCE_KEYS
-        if key in items_by_key
-    )
+    trace_references.extend(items_by_key[key] for key in _ACTIVITY_TRACE_REFERENCE_KEYS if key in items_by_key)
 
     technical_evidence = [
         {
@@ -223,20 +215,19 @@ def _activity_detail_evidence(
     failure_type = None
     failure_context: list[dict[str, Any]] = []
     if notification.status in {'warning', 'error'}:
-        failure_summary = standardize_activity_text(
-            failure_raw,
-            event_type=notification.event_type,
-            status=notification.status,
-        ) or 'The operation requires review.'
+        failure_summary = (
+            standardize_activity_text(
+                failure_raw,
+                event_type=notification.event_type,
+                status=notification.status,
+            )
+            or 'The operation requires review.'
+        )
         failure_type = _activity_failure_type(
             failure_raw,
             str(metadata.get('failure_code') or metadata.get('reason_code') or '').strip() or None,
         )
-        failure_context = [
-            items_by_key[key]
-            for key in _ACTIVITY_FAILURE_CONTEXT_KEYS
-            if key in items_by_key
-        ]
+        failure_context = [items_by_key[key] for key in _ACTIVITY_FAILURE_CONTEXT_KEYS if key in items_by_key]
 
     consumed_keys = {
         'event_key',
@@ -246,9 +237,7 @@ def _activity_detail_evidence(
         *_ACTIVITY_FAILURE_CONTEXT_KEYS,
         *_ACTIVITY_TECHNICAL_EVIDENCE_KEYS,
     }
-    additional_evidence = [
-        item for item in all_metadata_items if item['key'] not in consumed_keys
-    ]
+    additional_evidence = [item for item in all_metadata_items if item['key'] not in consumed_keys]
 
     return {
         'execution_evidence': execution_evidence,
@@ -274,8 +263,7 @@ def _serialize_notification(
     actor_email = str(metadata.get('actor_email') or '').strip() or None
     actor_role = str(metadata.get('actor_role') or '').strip() or None
     unauthenticated_attempt = (
-        notification.event_type == 'authentication'
-        and str(metadata.get('result') or '').strip().lower() == 'failed'
+        notification.event_type == 'authentication' and str(metadata.get('result') or '').strip().lower() == 'failed'
     )
     if unauthenticated_attempt:
         user_label = 'Unauthenticated Request'
@@ -306,7 +294,9 @@ def _serialize_notification(
         'user_email': (
             None
             if unauthenticated_attempt
-            else actor_email if actor_email is not None else (user.email if user is not None else None)
+            else actor_email
+            if actor_email is not None
+            else (user.email if user is not None else None)
         ),
         'user_initials': _actor_initials(user_label),
         'user_role': (

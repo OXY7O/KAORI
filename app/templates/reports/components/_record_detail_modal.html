@@ -1,47 +1,51 @@
 {% macro render(modal_id, context_label, title, subtitle, icon='layout-template', footer_text='Template details use the latest persisted reporting contract.', size='standard') -%}
-<dialog id="{{ modal_id }}"
-        data-kaori-native-dialog
-        aria-labelledby="{{ modal_id }}-title"
-        aria-describedby="{{ modal_id }}-description"
-        data-kaori-dialog-size="{{ size }}"
-        class="kaori-native-dialog m-auto w-[calc(100vw-1rem)] overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 shadow-2xl sm:w-[calc(100vw-2rem)] lg:w-[calc(100vw-3rem)] {% if size == 'standard' %}max-h-[calc(100dvh-1rem)] max-w-5xl sm:max-h-[calc(100dvh-2rem)] lg:max-h-[calc(100dvh-3rem)]{% else %}h-[calc(100dvh-1rem)] max-w-6xl sm:h-[calc(100dvh-2rem)] lg:h-[calc(100dvh-3rem)]{% endif %}">
-    <section class="flex min-h-0 w-full flex-col overflow-hidden {% if size == 'standard' %}max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] lg:max-h-[calc(100dvh-3rem)]{% else %}h-full{% endif %}" role="document">
-        <header class="shrink-0 border-b border-outline-subtle bg-surface-card px-4 py-4 sm:px-6">
-            <div class="flex min-w-0 items-start justify-between gap-4">
-                <div class="flex min-w-0 items-start gap-3">
-                    <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-kaori-primary/15 bg-kaori-soft text-kaori-primary" aria-hidden="true">
-                        <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
-                    </span>
-                    <div class="min-w-0">
-                        <p class="text-xs font-semibold text-kaori-primary">{{ context_label }}</p>
-                        <h2 id="{{ modal_id }}-title" class="mt-1 break-words text-lg font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ title }}</h2>
-                        <p id="{{ modal_id }}-description" class="mt-1 text-xs leading-5 text-content-muted">{{ subtitle }}</p>
+    <dialog id="{{ modal_id }}"
+            data-kaori-native-dialog
+            aria-labelledby="{{ modal_id }}-title"
+            aria-describedby="{{ modal_id }}-description"
+            data-kaori-dialog-size="{{ size }}"
+            class="kaori-native-dialog m-auto w-[calc(100vw-1rem)] overflow-hidden rounded-2xl border border-outline-default bg-surface-card p-0 shadow-2xl sm:w-[calc(100vw-2rem)] lg:w-[calc(100vw-3rem)] {% if size == 'standard' %}max-h-[calc(100dvh-1rem)] max-w-5xl sm:max-h-[calc(100dvh-2rem)] lg:max-h-[calc(100dvh-3rem)]{% else %}h-[calc(100dvh-1rem)] max-w-6xl sm:h-[calc(100dvh-2rem)] lg:h-[calc(100dvh-3rem)]{% endif %}">
+        <section class="flex min-h-0 w-full flex-col overflow-hidden {% if size == 'standard' %}max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2rem)] lg:max-h-[calc(100dvh-3rem)]{% else %}h-full{% endif %}"
+                 role="document">
+            <header class="shrink-0 border-b border-outline-subtle bg-surface-card px-4 py-4 sm:px-6">
+                <div class="flex min-w-0 items-start justify-between gap-4">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-kaori-primary/15 bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-kaori-primary">{{ context_label }}</p>
+                            <h2 id="{{ modal_id }}-title"
+                                class="mt-1 break-words text-lg font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ title }}</h2>
+                            <p id="{{ modal_id }}-description"
+                               class="mt-1 text-xs leading-5 text-content-muted">{{ subtitle }}</p>
+                        </div>
                     </div>
+                    <form method="dialog" class="shrink-0">
+                        <button type="submit"
+                                class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition hover:border-outline-focus hover:bg-surface-subtle hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+                                aria-label="Close {{ title }}"
+                                data-kaori-dialog-close>
+                            <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
+                        </button>
+                    </form>
                 </div>
-                <form method="dialog" class="shrink-0">
+            </header>
+            <div class="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-surface-page px-4 py-5 sm:px-6">
+                {{ caller() }}
+            </div>
+            <footer class="flex shrink-0 items-center justify-between gap-3 border-t border-outline-subtle bg-surface-card px-4 py-3 sm:px-6">
+                <p class="hidden text-xs leading-5 text-content-muted sm:block">{{ footer_text }}</p>
+                <form method="dialog" class="ml-auto">
                     <button type="submit"
-                            class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition hover:border-outline-focus hover:bg-surface-subtle hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
-                            aria-label="Close {{ title }}"
+                            class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-surface-subtle hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
                             data-kaori-dialog-close>
                         <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
+                        Close
                     </button>
                 </form>
-            </div>
-        </header>
-
-        <div class="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain bg-surface-page px-4 py-5 sm:px-6">
-            {{ caller() }}
-        </div>
-
-        <footer class="flex shrink-0 items-center justify-between gap-3 border-t border-outline-subtle bg-surface-card px-4 py-3 sm:px-6">
-            <p class="hidden text-xs leading-5 text-content-muted sm:block">{{ footer_text }}</p>
-            <form method="dialog" class="ml-auto">
-                <button type="submit" class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-surface-subtle hover:text-content-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus" data-kaori-dialog-close>
-                    <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
-                    Close
-                </button>
-            </form>
-        </footer>
-    </section>
-</dialog>
+            </footer>
+        </section>
+    </dialog>
 {%- endmacro %}

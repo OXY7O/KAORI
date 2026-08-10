@@ -3,7 +3,15 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-from flask import current_app, make_response, redirect, render_template, request, session, url_for
+from flask import (
+    current_app,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 from flask_login import current_user
 
 from app.extensions.db import db
@@ -26,6 +34,7 @@ from app.kubernetes_operations.secrets.route_support import (
 from app.models.user import User
 from app.notifications.service import create_notification, get_navigation_notification_context
 from app.rbac.decorators import any_permission_required, permission_required
+
 _SECRET_REVEAL_STEP_UP_SESSION_KEY = 'kubernetes_secret_reveal_step_up'
 
 

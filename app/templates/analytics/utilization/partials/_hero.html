@@ -20,24 +20,24 @@
             {% endcall %}
         </div>
         {% if dependency_blocker %}
-            <aside class="{{ page_hero.aside_classes() }}" aria-label="Resource Utilization Readiness">
-                {% set analytics_posture_label = 'Utilization Posture' %}
+            <aside class="{{ page_hero.aside_classes() }}"
+                   aria-label="Resource Utilization Readiness">
+                {% set analytics_posture_label = "Utilization Posture" %}
                 {% include "analytics/components/_blocked_posture.html" %}
             </aside>
         {% else %}
-            {{ page_hero.context_card(
-                'Resource Utilization Posture',
-                'Utilization Posture',
-                'Resource Pressure',
-                presentation.posture_label|default('Unknown'),
-                presentation.posture_tone|default('unknown'),
-                [
-                    ('gauge', 'Highest Pressure', presentation.highest_value_display|default('N/A'), presentation.highest_label|default('No evidence')),
-                    ('list-checks', 'Actionable', recommendation_count|default(0), 'Prioritized recommendations')
-                ],
-                'Manage Clusters',
-                url_for('integrations.kubernetes'),
-                'server-cog'
+            {{ page_hero.context_card('Resource Utilization Posture',
+                        'Utilization Posture',
+                        'Resource Pressure',
+                        presentation.posture_label|default('Unknown') ,
+            presentation.posture_tone|default('unknown'),
+            [
+            ('gauge', 'Highest Pressure', presentation.highest_value_display|default('N/A'), presentation.highest_label|default('No evidence')),
+            ('list-checks', 'Actionable', recommendation_count|default(0), 'Prioritized recommendations')
+            ],
+            'Manage Clusters',
+            url_for('integrations.kubernetes'),
+            'server-cog'
             ) }}
         {% endif %}
     </div>

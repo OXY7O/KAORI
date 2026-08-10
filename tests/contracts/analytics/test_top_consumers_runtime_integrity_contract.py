@@ -9,9 +9,7 @@ def read(relative: str) -> str:
 
 def test_snapshot_dimensions_exclude_local_record_controls() -> None:
     routes = read('app/analytics/top_consumers/routes.py')
-    snapshot_parameters = routes.split('def _snapshot_parameters', 1)[1].split(
-        'def _context_or_state', 1
-    )[0]
+    snapshot_parameters = routes.split('def _snapshot_parameters', 1)[1].split('def _context_or_state', 1)[0]
 
     assert "request.args.get('cluster_id'" in snapshot_parameters
     assert "request.args.get('namespace'" in snapshot_parameters
@@ -23,7 +21,7 @@ def test_fragment_transport_is_htmx_only_and_no_store() -> None:
     routes = read('app/analytics/top_consumers/routes.py')
 
     assert "request.headers.get('HX-Request', '').lower() == 'true'" in routes
-    assert "return redirect(_full_page_url())" in routes
+    assert 'return redirect(_full_page_url())' in routes
     assert "response.headers['Cache-Control'] = 'no-store, max-age=0'" in routes
     assert "response.headers['Vary'] = 'HX-Request'" in routes
     assert "response.headers['HX-Push-Url'] = _full_page_url()" in routes
@@ -50,9 +48,9 @@ def test_promql_normalizes_series_and_uses_ready_worker_capacity() -> None:
     assert 'kube_node_role{role=~"control-plane|master"}' in profile
     assert 'max by (namespace, persistentvolumeclaim)' in profile
     assert 'kubelet_volume_stats_capacity_bytes' in profile
-    top_consumers = profile.split(
-        "'analytics.top_consumers.queries.NAMESPACE_ACTIVE_QUERY'", 1
-    )[1].split("'analytics.utilization.queries.CPU_CAPACITY'", 1)[0]
+    top_consumers = profile.split("'analytics.top_consumers.queries.NAMESPACE_ACTIVE_QUERY'", 1)[1].split(
+        "'analytics.utilization.queries.CPU_CAPACITY'", 1
+    )[0]
     assert 'kube_persistentvolumeclaim_resource_requests_storage_bytes' not in top_consumers
 
 
@@ -85,7 +83,7 @@ def test_report_uses_canonical_selection_contract() -> None:
     assert "sort='priority'" in report
     assert "'selected_time_range': 'current'" in report
     assert 'selection: TopConsumersSelection' in service
-    assert 'selected_sort=\'usage_percent\'' not in report
+    assert "selected_sort='usage_percent'" not in report
 
 
 def test_top_consumers_runtime_modules_remain_bounded() -> None:

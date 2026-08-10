@@ -1,43 +1,29 @@
 from hashlib import sha256
 
-from flask import Blueprint, make_response, redirect, render_template, request, session, url_for
+from flask import (
+    Blueprint,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 from flask_login import current_user
 
-from app.analytics.alerts.routes import (
-    alerts,
-    alerts_table,
-    anomalies_table,
-)
+from app.analytics.alerts.routes import alerts, alerts_table, anomalies_table
 from app.analytics.capacity.routes import capacity
 from app.analytics.forecast.routes import forecast
+from app.analytics.materialization.presentation import materialization_progress_context
 from app.analytics.overview.sections import get_overview_section
 from app.analytics.overview.service import get_analytics_overview, get_analytics_overview_section
-from app.analytics.materialization.presentation import materialization_progress_context
-from app.analytics.storage.routes import (
-    storage,
-    storage_filesystem_summary,
-    storage_persistent_summary,
-)
-from app.analytics.top_consumers.routes import (
-    top_consumers,
-    top_consumers_table,
-)
-from app.analytics.utilization.routes import (
-    utilization,
-    utilization_node_detail,
-    utilization_trend,
-)
-from app.analytics.workload.routes import (
-    workload,
-    workload_resource_mapping,
-    workload_tenant_quota,
-)
+from app.analytics.storage.routes import storage, storage_filesystem_summary, storage_persistent_summary
+from app.analytics.top_consumers.routes import top_consumers, top_consumers_table
+from app.analytics.utilization.routes import utilization, utilization_node_detail, utilization_trend
+from app.analytics.workload.routes import workload, workload_resource_mapping, workload_tenant_quota
 from app.common.dependencies import cluster_required_blocker
 from app.common.integration_errors import describe_integration_failure
-from app.notifications.service import (
-    get_navigation_notification_context,
-    record_operational_activity,
-)
+from app.notifications.service import get_navigation_notification_context, record_operational_activity
 from app.rbac.decorators import permission_required
 
 analytics_bp = Blueprint(
@@ -166,8 +152,6 @@ def _build_prometheus_failure_feedback(payload: dict) -> str:
     return _render_operational_toast(feedback)
 
 
-
-
 @analytics_bp.get('/materialization/status')
 @permission_required('analytics.view')
 def materialization_status():
@@ -206,16 +190,12 @@ def materialization_status():
         render_template(
             'analytics/materialization/_pending.html',
             materialization_status_url=request.full_path,
-            materialization_return_url=(
-                request.args.get('return_url', '').strip()
-                or url_for('analytics.overview')
-            ),
+            materialization_return_url=(request.args.get('return_url', '').strip() or url_for('analytics.overview')),
             **progress,
         )
     )
     response.headers['Cache-Control'] = 'no-store, max-age=0'
     return response
-
 
 
 @analytics_bp.route(
@@ -243,11 +223,7 @@ def overview():
     return render_template(
         'analytics/overview/index.html',
         payload=payload,
-        dependency_blocker=(
-            cluster_required_blocker()
-            if payload.get('selected_cluster') is None
-            else None
-        ),
+        dependency_blocker=(cluster_required_blocker() if payload.get('selected_cluster') is None else None),
     )
 
 

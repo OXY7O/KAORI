@@ -14,7 +14,11 @@ def test_data_lifecycle_tab_order_and_copy_are_compact_and_operational() -> None
     tabs = "[('policies', 'Retention Policies', 'sliders-horizontal'), ('history', 'Archive History', 'history'), ('storage', 'Archive Storage', 'hard-drive')]"
     assert tabs in index
     assert "tabs: ['policies', 'history', 'storage']" in index
-    assert index.index('data-lifecycle-panel-policies') < index.index('data-lifecycle-panel-history') < index.index('data-lifecycle-panel-storage')
+    assert (
+        index.index('data-lifecycle-panel-policies')
+        < index.index('data-lifecycle-panel-history')
+        < index.index('data-lifecycle-panel-storage')
+    )
     assert 'Only approved lifecycle domains are manageable.' in index
     assert 'Canonical queue, progress, results, and worker metadata.' in presentation
 

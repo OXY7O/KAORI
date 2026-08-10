@@ -1,23 +1,32 @@
 from __future__ import annotations
 
-import json
 from collections.abc import Callable, Collection
+import json
 from typing import Any
 
-from flask import Blueprint, current_app, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    current_app,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
-from app.automation_control.presentation import (
-    build_automation_control_context,
-    upsert_deployment_policy,
-)
+from app.automation_control.presentation import build_automation_control_context, upsert_deployment_policy
 from app.extensions.db import db
 from app.integrations.resolver_bootstrap import get_resolver_registry
 from app.intelligence.workflow import approve_decision, reject_decision
 from app.knowledge.candidate_review import dismiss_candidate, promote_candidate
 from app.knowledge.matching import create_alert_binding
-from app.knowledge.service import create_revision, create_runbook, publish_revision, withdraw_revision
+from app.knowledge.service import (
+    create_revision,
+    create_runbook,
+    publish_revision,
+    withdraw_revision,
+)
 from app.models.cluster import Cluster
 from app.models.intelligence import IntelligenceDecision, IntelligenceDecisionCandidate, IntelligenceExecutionJournal
 from app.models.knowledge import KnowledgeRunbook, KnowledgeRunbookRevision
@@ -405,7 +414,7 @@ def _handle_mutation(
         return redirect(url_for('automation_control.index', workspace=workspace))
     try:
         operation()
-    except Exception as exc:
+    except Exception:
         db.session.rollback()
         current_app.logger.exception('Automation Control mutation failed in workspace %s.', workspace)
         queue_transient_feedback(

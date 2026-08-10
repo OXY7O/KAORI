@@ -5,125 +5,132 @@
 {% if not payload.workload_snapshot.available|default(false) %}
     {{ overview_surface.snapshot_unavailable('workload', 'Workload Governance Snapshot', 'The Analytics worker has not committed workload evidence for the selected cluster and time range.', icon='boxes') }}
 {% else %}
-{% set workload = payload.workload_snapshot %}
-{% set workload_tone = table_label.semantic_tone(workload.tone or workload.status)|trim %}
-{% set missing_requests = workload.missing_cpu_requests + workload.missing_memory_requests %}
-{% set memory_limit_gaps = workload.memory_limits_missing %}
-{% set right_sizing_signals = workload.over_provisioned + workload.under_provisioned %}
-{% set actionable_findings = missing_requests + memory_limit_gaps + right_sizing_signals %}
-{% set governance_signals = actionable_findings + workload.cpu_limits_unset %}
-<section data-analytics-overview-panel="workloads" class="{{ overview_surface.snapshot_shell_classes() }}">
-    <header class="{{ overview_surface.snapshot_header_classes() }}">
-        <div class="flex min-w-0 items-start gap-3">
-            <span class="{{ overview_surface.snapshot_header_icon_classes() }}">
-                <i data-lucide="boxes" class="h-4 w-4"></i>
-            </span>
-            <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
-                    <h2 class="text-base font-semibold text-content-primary">Workload Governance Snapshot</h2>
-                    {{ table_label.status_label(workload.status|replace('_', ' ')|title, workload_tone) }}
+    {% set workload = payload.workload_snapshot %}
+    {% set workload_tone = table_label.semantic_tone(workload.tone or workload.status)|trim %}
+    {% set missing_requests = workload.missing_cpu_requests + workload.missing_memory_requests %}
+    {% set memory_limit_gaps = workload.memory_limits_missing %}
+    {% set right_sizing_signals = workload.over_provisioned + workload.under_provisioned %}
+    {% set actionable_findings = missing_requests + memory_limit_gaps + right_sizing_signals %}
+    {% set governance_signals = actionable_findings + workload.cpu_limits_unset %}
+    <section data-analytics-overview-panel="workloads"
+             class="{{ overview_surface.snapshot_shell_classes() }}">
+        <header class="{{ overview_surface.snapshot_header_classes() }}">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ overview_surface.snapshot_header_icon_classes() }}">
+                    <i data-lucide="boxes" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Workload Governance Snapshot</h2>
+                        {{ table_label.status_label(workload.status|replace('_', ' ') |title, workload_tone) }}
+                    </div>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Request coverage, memory limit policy, factual CPU limit configuration, and evidence-gated right-sizing signals.</p>
                 </div>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Request coverage, memory limit policy, factual CPU limit configuration, and evidence-gated right-sizing signals.</p>
             </div>
-        </div>
-        {{ section_link_button.render(
-            scoped_link.href(workload.href, payload.selected_cluster_id, payload.selected_time_range),
+            {{ section_link_button.render(scoped_link.href(workload.href, payload.selected_cluster_id, payload.selected_time_range) ,
             'View Workload Analysis'
-        ) }}
-    </header>
-
-    {% set metrics = [
-        {'label': 'Missing Requests', 'value': missing_requests, 'icon': 'badge-alert', 'tone': 'critical', 'description': 'CPU or memory requests are not completely defined.'},
-        {'label': 'Memory Limit Gaps', 'value': memory_limit_gaps, 'icon': 'memory-stick', 'tone': 'warning', 'description': 'Memory limits require governance review.'},
-        {'label': 'CPU Limits Unset', 'value': workload.cpu_limits_unset, 'icon': 'cpu', 'tone': 'info', 'description': 'Factual configuration; confirm whether the policy is intentional.'},
-        {'label': 'Right-Sizing Signals', 'value': right_sizing_signals, 'icon': 'scale', 'tone': 'maintenance', 'description': 'Evidence-complete workloads requiring increase or reduction review.'}
-    ] %}
-    <div class="{{ overview_surface.metric_grid_classes(4) }}">
-        {% for metric in metrics %}
-            <article class="{{ overview_surface.metric_cell_classes() }}">
+            ) }}
+        </header>
+        {% set metrics = [
+                    {'label': 'Missing Requests', 'value': missing_requests, 'icon': 'badge-alert', 'tone': 'critical', 'description': 'CPU or memory requests are not completely defined.'},
+                    {'label': 'Memory Limit Gaps', 'value': memory_limit_gaps, 'icon': 'memory-stick', 'tone': 'warning', 'description': 'Memory limits require governance review.'},
+                    {'label': 'CPU Limits Unset', 'value': workload.cpu_limits_unset, 'icon': 'cpu', 'tone': 'info', 'description': 'Factual configuration; confirm whether the policy is intentional.'},
+                    {'label': 'Right-Sizing Signals', 'value': right_sizing_signals, 'icon': 'scale', 'tone': 'maintenance', 'description': 'Evidence-complete workloads requiring increase or reduction review.'}
+                ] %}
+        <div class="{{ overview_surface.metric_grid_classes(4) }}">
+            {% for metric in metrics %}
+                <article class="{{ overview_surface.metric_cell_classes() }}">
+                    <div class="flex items-center justify-between gap-3">
+                        <span class="{{ overview_surface.resource_icon_classes(metric.label) }}">
+                            <i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i>
+                        </span>
+                        <span class="text-xl font-semibold text-content-primary">{{ metric.value }}</span>
+                    </div>
+                    <p class="mt-3 {{ overview_surface.metric_label_classes() }}">{{ metric.label }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ metric.description }}</p>
+                </article>
+            {% endfor %}
+        </div>
+        <div class="grid divide-y divide-outline-subtle border-t border-outline-subtle bg-surface-card xl:grid-cols-3 xl:divide-x xl:divide-y-0">
+            <article class="bg-surface-card px-4 py-4 sm:px-5 xl:col-span-2">
                 <div class="flex items-center justify-between gap-3">
-                    <span class="{{ overview_surface.resource_icon_classes(metric.label) }}">
-                        <i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i>
-                    </span>
-                    <span class="text-xl font-semibold text-content-primary">{{ metric.value }}</span>
+                    <div>
+                        <h3 class="text-sm font-semibold text-content-primary">Resource Governance Signals</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Request gaps and memory limit gaps are actionable; unset CPU limits remain factual policy evidence.</p>
+                    </div>
+                    {{ table_label.metadata_label(governance_signals ~ ' Signals', size='compact') }}
                 </div>
-                <p class="mt-3 {{ overview_surface.metric_label_classes() }}">{{ metric.label }}</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">{{ metric.description }}</p>
+                <div class="mt-4 grid grid-cols-1 divide-y divide-outline-subtle border-y border-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 sm:divide-outline-subtle">
+                    <div class="py-3 sm:pr-4">
+                        <p class="{{ overview_surface.metric_label_classes() }}">Request Coverage</p>
+                        <dl class="mt-2 space-y-2">
+                            <div class="flex items-center justify-between gap-4 text-xs">
+                                <dt class="text-content-muted">Missing CPU Requests</dt>
+                                <dd class="font-semibold text-content-primary">
+                                    {{ workload.missing_cpu_requests }}
+                                </dd>
+                            </div>
+                            <div class="flex items-center justify-between gap-4 text-xs">
+                                <dt class="text-content-muted">Missing Memory Requests</dt>
+                                <dd class="font-semibold text-content-primary">
+                                    {{ workload.missing_memory_requests }}
+                                </dd>
+                            </div>
+                        </dl>
+                    </div>
+                    <div class="py-3 sm:pl-4">
+                        <p class="{{ overview_surface.metric_label_classes() }}">Limit Policy</p>
+                        <dl class="mt-2 space-y-2">
+                            <div class="flex items-center justify-between gap-4 text-xs">
+                                <dt class="text-content-muted">Memory Limits Missing</dt>
+                                <dd class="font-semibold text-content-primary">
+                                    {{ workload.memory_limits_missing }}
+                                </dd>
+                            </div>
+                            <div class="flex items-center justify-between gap-4 text-xs">
+                                <dt class="text-content-muted">CPU Limits Unset</dt>
+                                <dd class="font-semibold text-content-primary">
+                                    {{ workload.cpu_limits_unset }}
+                                </dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
             </article>
-        {% endfor %}
-    </div>
-
-    <div class="grid divide-y divide-outline-subtle border-t border-outline-subtle bg-surface-card xl:grid-cols-3 xl:divide-x xl:divide-y-0">
-        <article class="bg-surface-card px-4 py-4 sm:px-5 xl:col-span-2">
-            <div class="flex items-center justify-between gap-3">
-                <div>
-                    <h3 class="text-sm font-semibold text-content-primary">Resource Governance Signals</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Request gaps and memory limit gaps are actionable; unset CPU limits remain factual policy evidence.</p>
-                </div>
-                {{ table_label.metadata_label(governance_signals ~ ' Signals', size='compact') }}
-            </div>
-            <div class="mt-4 grid grid-cols-1 divide-y divide-outline-subtle border-y border-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 sm:divide-outline-subtle">
-                <div class="py-3 sm:pr-4">
-                    <p class="{{ overview_surface.metric_label_classes() }}">Request Coverage</p>
-                    <dl class="mt-2 space-y-2">
-                        <div class="flex items-center justify-between gap-4 text-xs"><dt class="text-content-muted">Missing CPU Requests</dt><dd class="font-semibold text-content-primary">{{ workload.missing_cpu_requests }}</dd></div>
-                        <div class="flex items-center justify-between gap-4 text-xs"><dt class="text-content-muted">Missing Memory Requests</dt><dd class="font-semibold text-content-primary">{{ workload.missing_memory_requests }}</dd></div>
-                    </dl>
-                </div>
-                <div class="py-3 sm:pl-4">
-                    <p class="{{ overview_surface.metric_label_classes() }}">Limit Policy</p>
-                    <dl class="mt-2 space-y-2">
-                        <div class="flex items-center justify-between gap-4 text-xs"><dt class="text-content-muted">Memory Limits Missing</dt><dd class="font-semibold text-content-primary">{{ workload.memory_limits_missing }}</dd></div>
-                        <div class="flex items-center justify-between gap-4 text-xs"><dt class="text-content-muted">CPU Limits Unset</dt><dd class="font-semibold text-content-primary">{{ workload.cpu_limits_unset }}</dd></div>
-                    </dl>
-                </div>
-            </div>
-        </article>
-
-        {% if missing_requests > 0 %}
-            {{ overview_surface.interpretation_callout(
-                'Recommended Action',
-                'Define Missing Requests First',
-                'Complete CPU and memory requests before interpreting scheduling, quota, or right-sizing evidence.',
-                icon='badge-alert',
-                role='brand',
-                tone='critical'
-            ) }}
-        {% elif memory_limit_gaps > 0 %}
-            {{ overview_surface.interpretation_callout(
-                'Recommended Action',
-                'Review Memory Limit Coverage',
-                'Apply memory limits according to workload criticality while preserving intentional CPU limit policy.',
-                icon='triangle-alert',
-                role='brand',
-                tone='warning'
-            ) }}
-        {% elif workload.under_provisioned > 0 or workload.over_provisioned > 0 %}
-            {{ overview_surface.interpretation_callout(
-                'Recommended Action',
-                'Validate Evidence-Gated Right-Sizing',
-                'Prioritize under-provisioned workloads, then reduce excess requests only where current and selected-window evidence is complete.',
-                icon='scale',
-                role='brand'
-            ) }}
-        {% elif workload.cpu_limits_unset > 0 %}
-            {{ overview_surface.interpretation_callout(
-                'Recommended Action',
-                'Confirm CPU Limit Policy',
-                'Unset CPU limits are informational by default. Confirm that the configuration matches the workload governance policy.',
-                icon='info',
-                role='brand'
-            ) }}
-        {% else %}
-            {{ overview_surface.interpretation_callout(
-                'Recommended Action',
-                'Continue Workload Governance Monitoring',
-                'No immediate request, memory-limit, or evidence-complete right-sizing finding is present.',
-                icon='circle-check',
-                role='brand',
-                tone='normal'
-            ) }}
-        {% endif %}
-    </div>
-</section>
+            {% if missing_requests > 0 %}
+                {{ overview_surface.interpretation_callout('Recommended Action',
+                                'Define Missing Requests First',
+                                'Complete CPU and memory requests before interpreting scheduling, quota, or right-sizing evidence.',
+                                icon='badge-alert',
+                                role='brand',
+                                tone='critical') }}
+            {% elif memory_limit_gaps > 0 %}
+                {{ overview_surface.interpretation_callout('Recommended Action',
+                                'Review Memory Limit Coverage',
+                                'Apply memory limits according to workload criticality while preserving intentional CPU limit policy.',
+                                icon='triangle-alert',
+                                role='brand',
+                                tone='warning') }}
+            {% elif workload.under_provisioned > 0 or workload.over_provisioned > 0 %}
+                {{ overview_surface.interpretation_callout('Recommended Action',
+                                'Validate Evidence-Gated Right-Sizing',
+                                'Prioritize under-provisioned workloads, then reduce excess requests only where current and selected-window evidence is complete.',
+                                icon='scale',
+                                role='brand') }}
+            {% elif workload.cpu_limits_unset > 0 %}
+                {{ overview_surface.interpretation_callout('Recommended Action',
+                                'Confirm CPU Limit Policy',
+                                'Unset CPU limits are informational by default. Confirm that the configuration matches the workload governance policy.',
+                                icon='info',
+                                role='brand') }}
+            {% else %}
+                {{ overview_surface.interpretation_callout('Recommended Action',
+                                'Continue Workload Governance Monitoring',
+                                'No immediate request, memory-limit, or evidence-complete right-sizing finding is present.',
+                                icon='circle-check',
+                                role='brand',
+                                tone='normal') }}
+            {% endif %}
+        </div>
+    </section>
 {% endif %}

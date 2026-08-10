@@ -7,6 +7,7 @@ from app.analytics.common.clusters import get_selected_cluster as resolve_select
 from app.analytics.common.coercion import safe_float
 from app.analytics.common.presentation import present_prometheus_status
 from app.integrations.consumer.contracts import ConsumerResult
+from app.integrations.prometheus.exceptions import PrometheusError
 from app.integrations.prometheus.query_profiles import get_query_expression
 from app.models import Cluster
 from app.prometheus.consumer import PrometheusConsumer
@@ -118,21 +119,25 @@ class UtilizationService:
                 if status.diagnostics and status.diagnostics[0].detail
                 else (status.diagnostics[0].message if status.diagnostics else 'Prometheus is unavailable.')
             )
-            return present_prometheus_status({
-                'configured': bool(payload.get('configured', True)),
-                'connected': False,
+            return present_prometheus_status(
+                {
+                    'configured': bool(payload.get('configured', True)),
+                    'connected': False,
+                    'response_time_ms': response_time_ms,
+                    'last_checked_at': payload.get('last_checked_at'),
+                    'error': detail,
+                }
+            )
+        return present_prometheus_status(
+            {
+                'configured': True,
+                'connected': True,
                 'response_time_ms': response_time_ms,
                 'last_checked_at': payload.get('last_checked_at'),
-                'error': detail,
-            })
-        return present_prometheus_status({
-            'configured': True,
-            'connected': True,
-            'response_time_ms': response_time_ms,
-            'last_checked_at': payload.get('last_checked_at'),
-            'observation_degraded': observation_degraded,
-            'last_error': payload.get('last_error'),
-        })
+                'observation_degraded': observation_degraded,
+                'last_error': payload.get('last_error'),
+            }
+        )
 
     @staticmethod
     def _extract_consumers(

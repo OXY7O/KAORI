@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from app.common.job_execution_contract import job_operation_label
 from app.jobs.definitions import (
     ANALYTICS_REFRESH_DEFINITION,
     FORECAST_REFRESH_DEFINITION,
     INVENTORY_SYNC_DEFINITION,
+    JobDefinition,
     REPORT_SCHEDULE_DEFINITION,
     TLS_CERTIFICATE_SYNC_DEFINITION,
-    JobDefinition,
 )
 
 _JOB_DEFINITIONS: tuple[JobDefinition, ...] = (
@@ -37,4 +36,3 @@ def get_job_definition_by_operation(operation: str) -> JobDefinition:
         return _JOB_DEFINITION_BY_OPERATION[operation]
     except KeyError as exc:
         raise LookupError(f'Unknown registered job operation: {operation}') from exc
-

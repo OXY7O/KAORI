@@ -31,10 +31,22 @@ def main() -> int:
     tabular_doc = read('docs/reports/kaori-tabular-export-standard-v2.md')
     quality_gate = read('scripts/quality_gate.sh')
 
-    require("TABULAR_EXPORT_STANDARD: Final = 'kaori-tabular-export-v2.0'" in tabular, 'tabular v2 standard is missing', errors)
+    require(
+        "TABULAR_EXPORT_STANDARD: Final = 'kaori-tabular-export-v2.0'" in tabular,
+        'tabular v2 standard is missing',
+        errors,
+    )
     require("CSV_STANDARD: Final = 'kaori-reporting-csv-v2.0'" in csv_standard, 'CSV v2 standard is missing', errors)
-    require("INVENTORY_WORKBOOK_STANDARD: Final = 'kaori-inventory-xlsx-v2.0'" in xlsx_standard, 'XLSX v2 standard is missing', errors)
-    require("'format_standard'" in tabular and "'tabular_standard'" in tabular, 'shared metadata contract is incomplete', errors)
+    require(
+        "INVENTORY_WORKBOOK_STANDARD: Final = 'kaori-inventory-xlsx-v2.0'" in xlsx_standard,
+        'XLSX v2 standard is missing',
+        errors,
+    )
+    require(
+        "'format_standard'" in tabular and "'tabular_standard'" in tabular,
+        'shared metadata contract is incomplete',
+        errors,
+    )
     require('json.dumps' in tabular, 'nested CSV values must use deterministic JSON', errors)
     require('protect_spreadsheet_formula' in tabular, 'formula-injection control must be shared', errors)
 
@@ -43,14 +55,26 @@ def main() -> int:
     require('build_inventory_export_dataset' in csv_renderer, 'Inventory CSV must use shared dataset builder', errors)
     require('build_inventory_export_dataset' in xlsx_builder, 'Inventory XLSX must use shared dataset builder', errors)
     require('get_inventory_rows(' not in csv_renderer, 'Inventory CSV must not normalize rows independently', errors)
-    require('get_inventory_workbook_profile(' not in csv_renderer, 'Inventory CSV must not resolve profiles independently', errors)
+    require(
+        'get_inventory_workbook_profile(' not in csv_renderer,
+        'Inventory CSV must not resolve profiles independently',
+        errors,
+    )
 
-    require("INVENTORY_DATA_SHEET" in xlsx_builder, 'Inventory sheet contract is missing', errors)
-    require("INVENTORY_METADATA_SHEET" in xlsx_builder, 'Metadata sheet contract is missing', errors)
-    require("INVENTORY_DICTIONARY_SHEET" in xlsx_builder, 'Field Dictionary sheet contract is missing', errors)
-    require('HEADER_ROW = 5' in xlsx_builder and 'DATA_START_ROW = 6' in xlsx_builder, 'canonical workbook row contract is missing', errors)
+    require('INVENTORY_DATA_SHEET' in xlsx_builder, 'Inventory sheet contract is missing', errors)
+    require('INVENTORY_METADATA_SHEET' in xlsx_builder, 'Metadata sheet contract is missing', errors)
+    require('INVENTORY_DICTIONARY_SHEET' in xlsx_builder, 'Field Dictionary sheet contract is missing', errors)
+    require(
+        'HEADER_ROW = 5' in xlsx_builder and 'DATA_START_ROW = 6' in xlsx_builder,
+        'canonical workbook row contract is missing',
+        errors,
+    )
     require('_inventory_context_line' in xlsx_builder, 'workbook context strip is missing', errors)
-    require('print_title_rows' in xlsx_builder and 'fitToWidth' in xlsx_style, 'print-ready workbook settings are missing', errors)
+    require(
+        'print_title_rows' in xlsx_builder and 'fitToWidth' in xlsx_style,
+        'print-ready workbook settings are missing',
+        errors,
+    )
     require('freeze_panes:' not in xlsx_standard, 'legacy hard-coded freeze panes remain in profiles', errors)
     require('status_columns' not in xlsx_standard, 'legacy profile-level status columns remain', errors)
     require('semantic_type' in xlsx_standard, 'column-level semantic roles are missing', errors)
@@ -59,10 +83,20 @@ def main() -> int:
         'negative Kubernetes conditions do not have dedicated semantic formatting',
         errors,
     )
-    require('len(profile.identity_columns)' in xlsx_builder, 'frozen columns must be derived from identity columns', errors)
-    require('style_title' in xlsx_builder and 'style_header' in xlsx_builder, 'workbook must use shared style primitives', errors)
+    require(
+        'len(profile.identity_columns)' in xlsx_builder, 'frozen columns must be derived from identity columns', errors
+    )
+    require(
+        'style_title' in xlsx_builder and 'style_header' in xlsx_builder,
+        'workbook must use shared style primitives',
+        errors,
+    )
 
-    require("'record_reference'" in csv_standard and "'field_order'" in csv_standard, 'CSV stable record fields are missing', errors)
+    require(
+        "'record_reference'" in csv_standard and "'field_order'" in csv_standard,
+        'CSV stable record fields are missing',
+        errors,
+    )
     require('build_analytics_csv_records' in csv_renderer, 'Analytics CSV record builder is missing', errors)
     require('_table_record_reference' in csv_renderer, 'Analytics table records need stable references', errors)
     require("'no_data'" in csv_renderer, 'Inventory CSV must preserve metadata for empty datasets', errors)
@@ -70,8 +104,16 @@ def main() -> int:
     require('KAORI Tabular Export Standard v2' in tabular_doc, 'tabular v2 documentation title is missing', errors)
     require('kaori-reporting-csv-v2.0' in tabular_doc, 'CSV v2 documentation is missing', errors)
     require('kaori-inventory-xlsx-v2.0' in tabular_doc, 'XLSX v2 documentation is missing', errors)
-    require('kaori-tabular-export-standard-v2.md' in reporting_doc, 'reporting standard does not reference tabular v2', errors)
-    require('verify_tabular_export_standard.py' in quality_gate, 'tabular verifier is not registered in quality gate', errors)
+    require(
+        'kaori-tabular-export-standard-v2.md' in reporting_doc,
+        'reporting standard does not reference tabular v2',
+        errors,
+    )
+    require(
+        'verify_tabular_export_standard.py' in quality_gate,
+        'tabular verifier is not registered in quality gate',
+        errors,
+    )
 
     for path in (
         'app/reports/export/tabular.py',

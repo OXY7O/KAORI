@@ -133,9 +133,7 @@ def _environment(project_root: Path) -> Environment:
 def _rendered_html() -> tuple[object, str, Path]:
     document = build_report_document(AnalyticsOverviewReportStub(), _payload())
     project_root = Path(__file__).resolve().parents[2]
-    rendered_html = _environment(project_root).get_template(document.template_name).render(
-        document=document
-    )
+    rendered_html = _environment(project_root).get_template(document.template_name).render(document=document)
     return document, rendered_html, project_root
 
 
@@ -244,12 +242,8 @@ def test_analytics_overview_degraded_metric_is_not_zero_percent() -> None:
 
 def test_analytics_overview_css_locks_page_footer_and_table_overflow() -> None:
     _, _, project_root = _rendered_html()
-    shared_stylesheet = (
-        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css'
-    ).read_text()
-    specialization = (
-        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'
-    ).read_text()
+    shared_stylesheet = (project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css').read_text()
+    specialization = (project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css').read_text()
     compact = shared_stylesheet.replace(' ', '')
 
     assert '@page' in shared_stylesheet
@@ -287,12 +281,8 @@ def test_v27_layout_uses_distinct_cover_and_reference_components() -> None:
 
 def test_v27_css_has_locked_canvas_and_reference_rhythm() -> None:
     _, _, project_root = _rendered_html()
-    shared_stylesheet = (
-        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css'
-    ).read_text()
-    specialization = (
-        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'
-    ).read_text()
+    shared_stylesheet = (project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css').read_text()
+    specialization = (project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css').read_text()
     compact = shared_stylesheet.replace(' ', '')
 
     assert '.cover-band' in shared_stylesheet
@@ -312,24 +302,18 @@ def test_analytics_engine_isolates_approved_stylesheet() -> None:
     registry = (
         project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'analytics_publication_standard.py'
     ).read_text(encoding='utf-8')
-    engine = (
-        project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'engine.py'
-    ).read_text(encoding='utf-8')
+    engine = (project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'engine.py').read_text(encoding='utf-8')
 
     assert "'reports/pdf/analytics_overview.html': 'analytics_overview.css'" in registry
-    assert "analytics_css_path = css_path.with_name(ANALYTICS_SHARED_STYLESHEET)" in engine
-    assert "CSS(filename=str(report_css_path)" in engine
-    assert "CSS(filename=str(analytics_css_path)" in engine
-    assert engine.index("CSS(filename=str(report_css_path)") < engine.index(
-        "CSS(filename=str(analytics_css_path)"
-    )
+    assert 'analytics_css_path = css_path.with_name(ANALYTICS_SHARED_STYLESHEET)' in engine
+    assert 'CSS(filename=str(report_css_path)' in engine
+    assert 'CSS(filename=str(analytics_css_path)' in engine
+    assert engine.index('CSS(filename=str(report_css_path)') < engine.index('CSS(filename=str(analytics_css_path)')
 
 
 def test_v27_template_uses_approved_content_budgets() -> None:
     _, rendered_html, project_root = _rendered_html()
-    template_source = (
-        project_root / 'app' / 'templates' / 'reports' / 'pdf' / 'analytics_overview.html'
-    ).read_text()
+    template_source = (project_root / 'app' / 'templates' / 'reports' / 'pdf' / 'analytics_overview.html').read_text()
 
     assert rendered_html.count('<article class="page') == 12
     assert 'p.alerts.alerts[:3]' in template_source
@@ -339,13 +323,9 @@ def test_v27_template_uses_approved_content_budgets() -> None:
     assert 'Limitations and Status Language' in rendered_html
 
 
-
-
 def test_v27_table_reference_contract_keeps_description_out_of_registers() -> None:
     document, rendered_html, project_root = _rendered_html()
-    template_source = (
-        project_root / 'app' / 'templates' / 'reports' / 'pdf' / 'analytics_overview.html'
-    ).read_text()
+    template_source = (project_root / 'app' / 'templates' / 'reports' / 'pdf' / 'analytics_overview.html').read_text()
 
     primary = document.presentation['recommendations']['primary']
     assert primary['description']
@@ -373,9 +353,7 @@ def test_v27_register_titles_are_compact_but_reference_titles_remain_complete() 
 
 def test_v27_alert_profile_uses_donut_and_methodology_values_do_not_break_mid_phrase() -> None:
     document, rendered_html, project_root = _rendered_html()
-    stylesheet = (
-        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'
-    ).read_text()
+    stylesheet = (project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css').read_text()
 
     assert 'ao-alert-donut' in document.presentation['alerts']['severity_svg']
     assert 'donut-total' in document.presentation['alerts']['severity_svg']
@@ -388,12 +366,12 @@ def test_v27_alert_profile_uses_donut_and_methodology_values_do_not_break_mid_ph
 
 def test_analytics_overview_v29_precision_layout_contract() -> None:
     document, rendered_html, project_root = _rendered_html()
-    shared_stylesheet = (
-        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css'
-    ).read_text(encoding='utf-8')
-    specialization = (
-        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'
-    ).read_text(encoding='utf-8')
+    shared_stylesheet = (project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css').read_text(
+        encoding='utf-8'
+    )
+    specialization = (project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css').read_text(
+        encoding='utf-8'
+    )
     shared_compact = shared_stylesheet.replace(' ', '').replace('\n', '')
 
     assert document.presentation['presentation_version'] == 'v3.0-analytics-overview-publication'
@@ -425,4 +403,3 @@ def test_analytics_overview_v29_precision_layout_contract() -> None:
     assert 'class="method-rule"' in rendered_html
     assert 'class="method-setting"' in rendered_html
     assert 'donut-caption-below' in document.presentation['alerts']['severity_svg']
-

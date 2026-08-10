@@ -46,9 +46,7 @@ def overview() -> ResponseReturnValue:
         per_page=request.args.get('per_page', 5, type=int) or 5,
     )
     is_runtime_partial = (
-        is_htmx_request()
-        and htmx_target() == 'integration-runtime-overview'
-        and context['active_tab'] == 'runtime'
+        is_htmx_request() and htmx_target() == 'integration-runtime-overview' and context['active_tab'] == 'runtime'
     )
     if is_runtime_partial:
         return render_template('integrations/partials/_runtime_overview.html', **context)
@@ -122,15 +120,9 @@ def _kubernetes_detail_context(
         per_page=request.args.get('capability_per_page', 5, type=int) or 5,
     )
     if include_history:
-        resolved_page = (
-            history_page
-            if history_page is not None
-            else (request.args.get('page', 1, type=int) or 1)
-        )
+        resolved_page = history_page if history_page is not None else (request.args.get('page', 1, type=int) or 1)
         resolved_per_page = (
-            history_per_page
-            if history_per_page is not None
-            else (request.args.get('per_page', 5, type=int) or 5)
+            history_per_page if history_per_page is not None else (request.args.get('per_page', 5, type=int) or 5)
         )
         rows, pagination = paginate_runtime_history(
             'kubernetes',

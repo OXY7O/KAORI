@@ -20,24 +20,24 @@
             {% endcall %}
         </div>
         {% if dependency_blocker %}
-            <aside class="{{ page_hero.aside_classes() }}" aria-label="Workload Readiness">
-                {% set analytics_posture_label = 'Workload Posture' %}
+            <aside class="{{ page_hero.aside_classes() }}"
+                   aria-label="Workload Readiness">
+                {% set analytics_posture_label = "Workload Posture" %}
                 {% include "analytics/components/_blocked_posture.html" %}
             </aside>
         {% else %}
-            {{ page_hero.context_card(
-                'Workload Posture',
-                'Workload Posture',
-                'Workload Governance',
-                workload_status,
-                workload_tone,
-                [
-                    ('shield-alert', 'Findings', finding_count_display, 'Governance findings'),
-                    ('calendar-range', 'Time Range', selected_time_range, 'Observation window')
-                ],
-                'Manage Clusters',
-                url_for('integrations.kubernetes'),
-                'server-cog'
+            {{ page_hero.context_card('Workload Posture',
+                        'Workload Posture',
+                        'Workload Governance',
+                        workload_status,
+                        workload_tone,
+                        [
+                        ('shield-alert', 'Findings', finding_count_display, 'Governance findings') ,
+            ('calendar-range', 'Time Range', selected_time_range, 'Observation window')
+            ],
+            'Manage Clusters',
+            url_for('integrations.kubernetes'),
+            'server-cog'
             ) }}
         {% endif %}
     </div>

@@ -50,7 +50,9 @@ def dispatch_report_schedule_job(
     )
     return RegisteredJobDispatchResult(
         status='queued' if created else 'reused',
-        message='Report schedule generation was queued.' if created else 'The request joined an active report schedule job.',
+        message='Report schedule generation was queued.'
+        if created
+        else 'The request joined an active report schedule job.',
         job=job,
         created=created,
     )
@@ -120,7 +122,25 @@ def build_report_schedule_context(policy: JobPolicy) -> dict[str, Any]:
         'recent_jobs': [present_job_execution(job) for job in recent],
         'execution_state': execution_state,
         'worker_state': worker_state,
-        'scheduler_state': {'label': 'Enabled' if policy.enabled else 'Disabled', 'tone': 'normal' if policy.enabled else 'disabled', 'icon': 'circle-check' if policy.enabled else 'circle-pause', 'description': 'Due report schedules are checked automatically.' if policy.enabled else 'Automatic report schedule dispatch is disabled.'},
-        'readiness_state': {'label': 'Ready' if active_schedules else 'Waiting For Schedule', 'tone': 'normal' if active_schedules else 'warning', 'icon': 'calendar-check' if active_schedules else 'calendar-x', 'description': f'{active_schedules} enabled report schedule(s) are available.' if active_schedules else 'Create and enable a report schedule before automatic dispatch.'},
-        'configuration_state': {'label': 'Configured' if policy.enabled else 'Disabled', 'tone': 'normal' if policy.enabled else 'disabled', 'icon': 'settings-2'},
+        'scheduler_state': {
+            'label': 'Enabled' if policy.enabled else 'Disabled',
+            'tone': 'normal' if policy.enabled else 'disabled',
+            'icon': 'circle-check' if policy.enabled else 'circle-pause',
+            'description': 'Due report schedules are checked automatically.'
+            if policy.enabled
+            else 'Automatic report schedule dispatch is disabled.',
+        },
+        'readiness_state': {
+            'label': 'Ready' if active_schedules else 'Waiting For Schedule',
+            'tone': 'normal' if active_schedules else 'warning',
+            'icon': 'calendar-check' if active_schedules else 'calendar-x',
+            'description': f'{active_schedules} enabled report schedule(s) are available.'
+            if active_schedules
+            else 'Create and enable a report schedule before automatic dispatch.',
+        },
+        'configuration_state': {
+            'label': 'Configured' if policy.enabled else 'Disabled',
+            'tone': 'normal' if policy.enabled else 'disabled',
+            'icon': 'settings-2',
+        },
     }

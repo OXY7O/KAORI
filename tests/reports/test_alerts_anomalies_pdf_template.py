@@ -17,19 +17,31 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 def _payload() -> dict[str, object]:
     alerts = [
         {
-            'name': 'KubePodNotReady', 'severity': 'warning', 'status': 'firing',
-            'namespace': 'url-shortener-staging', 'starts_at_display': '25 Jul 2026 10:11 UTC',
-            'labels': {'category': 'Resource'}, 'summary': 'Pod has been in a non-ready state.',
+            'name': 'KubePodNotReady',
+            'severity': 'warning',
+            'status': 'firing',
+            'namespace': 'url-shortener-staging',
+            'starts_at_display': '25 Jul 2026 10:11 UTC',
+            'labels': {'category': 'Resource'},
+            'summary': 'Pod has been in a non-ready state.',
         },
         {
-            'name': 'KubeHpaMaxedOut', 'severity': 'warning', 'status': 'firing',
-            'namespace': 'pgnmobile-staging', 'starts_at_display': '25 Jul 2026 10:25 UTC',
-            'labels': {'category': 'Capacity'}, 'summary': 'HPA remains at its configured maximum.',
+            'name': 'KubeHpaMaxedOut',
+            'severity': 'warning',
+            'status': 'firing',
+            'namespace': 'pgnmobile-staging',
+            'starts_at_display': '25 Jul 2026 10:25 UTC',
+            'labels': {'category': 'Capacity'},
+            'summary': 'HPA remains at its configured maximum.',
         },
         {
-            'name': 'KubeDeploymentReplicasMismatch', 'severity': 'warning', 'status': 'firing',
-            'namespace': 'url-shortener-staging', 'starts_at_display': '25 Jul 2026 10:25 UTC',
-            'labels': {'category': 'Availability'}, 'summary': 'Deployment replicas do not match desired state.',
+            'name': 'KubeDeploymentReplicasMismatch',
+            'severity': 'warning',
+            'status': 'firing',
+            'namespace': 'url-shortener-staging',
+            'starts_at_display': '25 Jul 2026 10:25 UTC',
+            'labels': {'category': 'Availability'},
+            'summary': 'Deployment replicas do not match desired state.',
         },
     ]
     anomalies = [
@@ -103,7 +115,9 @@ def test_alerts_anomalies_derives_category_coverage_without_forced_labels() -> N
 
 def test_alerts_anomalies_methodology_uses_side_by_side_boundary_columns() -> None:
     rendered_html = _rendered_html()
-    shared = (PROJECT_ROOT / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css').read_text(encoding='utf-8')
+    shared = (PROJECT_ROOT / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css').read_text(
+        encoding='utf-8'
+    )
 
     assert 'class="boundary-columns"' in rendered_html
     assert 'Included in This Report' in rendered_html
@@ -111,14 +125,18 @@ def test_alerts_anomalies_methodology_uses_side_by_side_boundary_columns() -> No
     assert 'grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)' in shared
     assert 'column-gap: 12mm' in shared
 
+
 def test_alerts_anomalies_renderer_registration_is_present() -> None:
     builder = (PROJECT_ROOT / 'app' / 'reports' / 'export' / 'html_pdf' / 'builder.py').read_text(encoding='utf-8')
-    registry = (PROJECT_ROOT / 'app' / 'reports' / 'export' / 'html_pdf' / 'analytics_publication_standard.py').read_text(encoding='utf-8')
+    registry = (
+        PROJECT_ROOT / 'app' / 'reports' / 'export' / 'html_pdf' / 'analytics_publication_standard.py'
+    ).read_text(encoding='utf-8')
     engine = (PROJECT_ROOT / 'app' / 'reports' / 'export' / 'html_pdf' / 'engine.py').read_text(encoding='utf-8')
 
     assert "report.report_type == 'alerts_anomalies'" in builder
     assert "'reports/pdf/alerts_anomalies.html': 'alerts_anomalies.css'" in registry
     assert 'ANALYTICS_TEMPLATE_STYLESHEETS' in engine
+
 
 def test_alerts_anomalies_weasyprint_layout_is_exactly_nine_a4_pages(tmp_path: Path) -> None:
     output_path = tmp_path / 'alerts-anomalies-validation.pdf'

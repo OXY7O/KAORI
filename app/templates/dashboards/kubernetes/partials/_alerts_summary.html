@@ -9,13 +9,13 @@
     action_label='Open Alerts Workspace',
     body_classes='p-5',
     extra_classes='h-full'
-) %}
+    ) %}
     {% if not dashboard.selected_cluster_id %}
-        {% set blocked_state_icon = 'server-off' %}
-        {% set blocked_state_label = 'Cluster Required' %}
-        {% set blocked_state_title = 'Select Cluster' %}
-        {% set blocked_state_description = 'Select a cluster to view Alertmanager and Prometheus alert signals.' %}
-        {% set blocked_state_tone = 'warning' %}
+        {% set blocked_state_icon = "server-off" %}
+        {% set blocked_state_label = "Cluster Required" %}
+        {% set blocked_state_title = "Select Cluster" %}
+        {% set blocked_state_description = "Select a cluster to view Alertmanager and Prometheus alert signals." %}
+        {% set blocked_state_tone = "warning" %}
         {% include 'components/states/_blocked_state.html' %}
     {% else %}
         {% set total_alerts = dashboard.alerts_snapshot.critical + dashboard.alerts_snapshot.warning + dashboard.alerts_snapshot.info %}
@@ -33,12 +33,12 @@
                 <p class="mt-1 text-2xl font-semibold text-status-info-text">{{ dashboard.alerts_snapshot.info }}</p>
             </article>
         </div>
-
         <div class="mt-4 space-y-2.5">
             {% if dashboard.alerts_snapshot.items %}
                 {% for alert in dashboard.alerts_snapshot.items[:3] %}
                     <article class="flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                        <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full {% if alert.severity|lower == 'critical' %}bg-status-critical{% elif alert.severity|lower == 'warning' %}bg-status-warning{% else %}bg-status-info{% endif %}" aria-hidden="true"></span>
+                        <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full {% if alert.severity|lower == 'critical' %}bg-status-critical{% elif alert.severity|lower == 'warning' %}bg-status-warning{% else %}bg-status-info{% endif %}"
+                              aria-hidden="true"></span>
                         <div class="min-w-0 flex-1">
                             <p class="truncate text-sm font-semibold text-content-primary">{{ alert.title }}</p>
                             <p class="mt-1 line-clamp-2 text-xs leading-5 text-content-muted">{{ alert.description }}</p>
@@ -47,18 +47,19 @@
                     </article>
                 {% endfor %}
             {% elif dashboard.alerts_snapshot.source_status == 'Available' %}
-                {% set empty_state_icon = 'circle-check' %}
-                {% set empty_state_label = 'Healthy' %}
-                {% set empty_state_tone = 'normal' %}
-                {% set empty_state_title = 'No Active Alerts' %}
-                {% set empty_state_description = 'The selected source is reachable and returned no active alert signals.' %}
-                {% set empty_state_variant = 'panel' %}
-                {% set empty_state_min_height = 'min-h-[170px]' %}
+                {% set empty_state_icon = "circle-check" %}
+                {% set empty_state_label = "Healthy" %}
+                {% set empty_state_tone = "normal" %}
+                {% set empty_state_title = "No Active Alerts" %}
+                {% set empty_state_description = "The selected source is reachable and returned no active alert signals." %}
+                {% set empty_state_variant = "panel" %}
+                {% set empty_state_min_height = "min-h-[170px]" %}
                 {% include 'components/states/_empty_state.html' %}
             {% else %}
                 <div class="rounded-lg border border-status-warning-border bg-status-warning-soft p-4">
                     <div class="flex items-start gap-3">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning-text" aria-hidden="true">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning-text"
+                              aria-hidden="true">
                             <i data-lucide="wifi-off" class="h-4 w-4"></i>
                         </span>
                         <div class="min-w-0">
@@ -73,11 +74,11 @@
                 </div>
             {% endif %}
         </div>
-
         <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-elevated p-4">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div class="flex items-start gap-3">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {% if dashboard.alerts_snapshot.critical > 0 %}bg-status-critical-soft text-status-critical{% elif dashboard.alerts_snapshot.warning > 0 %}bg-status-warning-soft text-status-warning{% elif total_alerts > 0 %}bg-status-info-soft text-status-info{% else %}bg-status-normal-soft text-status-normal{% endif %}" aria-hidden="true">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {% if dashboard.alerts_snapshot.critical > 0 %}bg-status-critical-soft text-status-critical{% elif dashboard.alerts_snapshot.warning > 0 %}bg-status-warning-soft text-status-warning{% elif total_alerts > 0 %}bg-status-info-soft text-status-info{% else %}bg-status-normal-soft text-status-normal{% endif %}"
+                          aria-hidden="true">
                         <i data-lucide="radio-tower" class="h-4 w-4"></i>
                     </span>
                     <div class="min-w-0">
@@ -98,9 +99,32 @@
                     </div>
                 </div>
                 <dl class="grid grid-cols-3 gap-3 text-xs lg:min-w-[300px]">
-                    <div><dt class="text-content-muted">Total</dt><dd class="mt-1 text-base font-semibold text-content-primary">{{ total_alerts }}</dd></div>
-                    <div><dt class="text-content-muted">Highest</dt><dd class="mt-1 text-base font-semibold {% if dashboard.alerts_snapshot.critical > 0 %}text-status-critical-text{% elif dashboard.alerts_snapshot.warning > 0 %}text-status-warning-text{% elif total_alerts > 0 %}text-status-info-text{% else %}text-status-normal-text{% endif %}">{% if dashboard.alerts_snapshot.critical > 0 %}Critical{% elif dashboard.alerts_snapshot.warning > 0 %}Warning{% elif total_alerts > 0 %}Info{% else %}None{% endif %}</dd></div>
-                    <div><dt class="text-content-muted">Source</dt><dd class="mt-1 truncate text-base font-semibold text-content-primary">{{ dashboard.alerts_snapshot.source_status }}</dd></div>
+                    <div>
+                        <dt class="text-content-muted">Total</dt>
+                        <dd class="mt-1 text-base font-semibold text-content-primary">
+                            {{ total_alerts }}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-content-muted">Highest</dt>
+                        <dd class="mt-1 text-base font-semibold {% if dashboard.alerts_snapshot.critical > 0 %}text-status-critical-text{% elif dashboard.alerts_snapshot.warning > 0 %}text-status-warning-text{% elif total_alerts > 0 %}text-status-info-text{% else %}text-status-normal-text{% endif %}">
+                            {% if dashboard.alerts_snapshot.critical > 0 %}
+                                Critical
+                            {% elif dashboard.alerts_snapshot.warning > 0 %}
+                                Warning
+                            {% elif total_alerts > 0 %}
+                                Info
+                            {% else %}
+                                None
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-content-muted">Source</dt>
+                        <dd class="mt-1 truncate text-base font-semibold text-content-primary">
+                            {{ dashboard.alerts_snapshot.source_status }}
+                        </dd>
+                    </div>
                 </dl>
             </div>
             <div class="mt-3 flex flex-wrap gap-2">

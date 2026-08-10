@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
 from app.extensions.db import db
 from app.jobs.definitions.base import RegisteredJobDispatchResult
 from app.jobs.dispatcher import enqueue_canonical_job
@@ -16,7 +14,6 @@ OPERATION = 'generate_report_artifact'
 
 class ReportJobEnqueueError(RuntimeError):
     """Raised when KAORI cannot register or dispatch a report job."""
-
 
 
 def enqueue_report_generation(

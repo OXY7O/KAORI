@@ -39,9 +39,7 @@ def _load_collector(monkeypatch: pytest.MonkeyPatch):
     common_module._model_value = model_value
     common_module._string_value = string_value
     common_module._isoformat_datetime = lambda value: (
-        value.isoformat()
-        if hasattr(value, 'isoformat')
-        else (None if value in (None, '') else str(value))
+        value.isoformat() if hasattr(value, 'isoformat') else (None if value in (None, '') else str(value))
     )
     common_module._toleration_display = lambda value: str(value)
 
@@ -366,9 +364,7 @@ def test_condition_and_container_presentations_preserve_kubernetes_semantics() -
     sandbox = semantics.condition_presentation(
         {'type': 'PodReadyToStartContainers', 'status': 'False', 'reason': 'PodSandboxChanged'}
     )
-    disruption = semantics.condition_presentation(
-        {'type': 'DisruptionTarget', 'status': 'Unknown'}
-    )
+    disruption = semantics.condition_presentation({'type': 'DisruptionTarget', 'status': 'Unknown'})
     image_pull = semantics.container_presentation(
         {
             'name': 'api',

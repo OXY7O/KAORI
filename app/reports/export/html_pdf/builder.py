@@ -7,24 +7,24 @@ from typing import Any
 from app.reports.catalog import get_report_type_spec
 from app.reports.export.constants import (
     ANALYTICS_OVERVIEW_SECTION_KEYS,
+    ANALYTICS_REPORT_RECOMMENDATIONS,
     DEFAULT_RECOMMENDATIONS,
     REPORT_DOMAIN_LABELS,
-    ANALYTICS_REPORT_RECOMMENDATIONS,
     SECTION_LABELS,
     SOURCE_KIND_LABELS,
 )
 from app.reports.export.formatting import format_period
-from app.reports.export.html_pdf.analytics_overview import build_analytics_overview_presentation
 from app.reports.export.html_pdf.alerts_anomalies import build_alerts_anomalies_presentation
+from app.reports.export.html_pdf.analytics_overview import build_analytics_overview_presentation
 from app.reports.export.html_pdf.capacity_analysis import build_capacity_analysis_presentation
 from app.reports.export.html_pdf.charts import build_alert_severity_chart, build_forecast_chart
-from app.reports.export.html_pdf.forecast_analysis import build_forecast_analysis_presentation
 from app.reports.export.html_pdf.document import (
     ReportDocument,
     ReportFinding,
     ReportMetric,
     ReportSection,
 )
+from app.reports.export.html_pdf.forecast_analysis import build_forecast_analysis_presentation
 from app.reports.export.html_pdf.normalization import (
     find_first_path,
     findings_from_value,
@@ -35,9 +35,7 @@ from app.reports.export.html_pdf.normalization import (
     tables_from_value,
     tone_from_value,
 )
-from app.reports.export.html_pdf.resource_utilization import (
-    build_resource_utilization_presentation,
-)
+from app.reports.export.html_pdf.resource_utilization import build_resource_utilization_presentation
 from app.reports.export.html_pdf.storage_analysis import build_storage_analysis_presentation
 from app.reports.export.html_pdf.top_consumers_analysis import build_top_consumers_analysis_presentation
 from app.reports.export.html_pdf.workload_analysis import build_workload_analysis_presentation
@@ -281,7 +279,6 @@ def build_report_document(
             classification=classification,
         )
 
-
     return ReportDocument(
         report_id=report_id,
         report_name=report_name,
@@ -349,14 +346,17 @@ def _build_section(report: Any, payload: Mapping[str, Any], section_key: str, nu
     resource_key = forecast_resource_keys.get(section_key)
     if resource_key and isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
         value = [
-            item
-            for item in value
-            if isinstance(item, Mapping) and str(item.get('key', '')).lower() == resource_key
+            item for item in value if isinstance(item, Mapping) and str(item.get('key', '')).lower() == resource_key
         ]
 
     metrics = metrics_from_mapping(value) if isinstance(value, Mapping) else ()
     tables = tables_from_value(title, value)
-    findings = findings_from_value(value) if not tables or section_key in {'risk_overview', 'capacity_pressure_risk', 'governance_findings', 'resource_hotspots'} else ()
+    findings = (
+        findings_from_value(value)
+        if not tables
+        or section_key in {'risk_overview', 'capacity_pressure_risk', 'governance_findings', 'resource_hotspots'}
+        else ()
+    )
 
     chart_svg = ''
     if report.report_type == 'resource_forecast' and section_key in {
@@ -424,7 +424,11 @@ def _build_executive_summary(report: Any, payload: Mapping[str, Any], number: in
                 break
 
     summary_value = payload.get('summary') or payload.get('health_summary') or payload.get('forecast_payload')
-    summary_metrics = metrics_from_mapping(summary_value, limit=max(0, 8 - len(metrics))) if isinstance(summary_value, Mapping) else ()
+    summary_metrics = (
+        metrics_from_mapping(summary_value, limit=max(0, 8 - len(metrics)))
+        if isinstance(summary_value, Mapping)
+        else ()
+    )
     metrics.extend(summary_metrics)
 
     findings: list[ReportFinding] = []
@@ -516,7 +520,6 @@ def _derive_data_cutoff(payload: Mapping[str, Any], generated_at: datetime) -> s
     return generated_at.strftime('%d %b %Y %H:%M UTC')
 
 
-
 def _build_unavailable_presentation(
     report: Any,
     payload: Mapping[str, Any],
@@ -583,6 +586,7 @@ def _build_unavailable_presentation(
             ),
         },
     }
+
 
 def _build_source_metrics(report: Any, payload: Mapping[str, Any]) -> tuple[ReportMetric, ...]:
     metrics = [

@@ -157,7 +157,8 @@ def provisioning_presentation(
         else (NOT_CONFIGURED if specification_reported else NOT_REPORTED)
     )
     if storage_type == 'PersistentVolume':
-        source = details.get('source') if isinstance(details.get('source'), dict) else {}
+        raw_source = details.get('source')
+        source = raw_source if isinstance(raw_source, dict) else {}
         return class_label, str(source.get('type') or NOT_REPORTED)
     return class_label, 'PersistentVolumeClaim'
 

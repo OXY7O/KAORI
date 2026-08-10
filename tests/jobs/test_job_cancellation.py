@@ -63,9 +63,7 @@ def test_stale_recovery_force_cancels_after_grace_period(monkeypatch) -> None:
         status='cancel_requested',
         cancel_requested_at=datetime.now(UTC) - timedelta(minutes=3),
     )
-    query = SimpleNamespace(
-        filter=lambda *_args, **_kwargs: SimpleNamespace(all=lambda: [job])
-    )
+    query = SimpleNamespace(filter=lambda *_args, **_kwargs: SimpleNamespace(all=lambda: [job]))
     monkeypatch.setattr(service.JobExecution, 'query', query)
     monkeypatch.setattr(service.db, 'session', SimpleNamespace(commit=lambda: commits.append(True)))
     monkeypatch.setattr(service, '_append_automatic_terminal_audit', lambda _job: None)

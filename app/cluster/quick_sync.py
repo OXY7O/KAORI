@@ -4,13 +4,19 @@ import logging
 from time import perf_counter
 
 from celery.exceptions import CeleryError
-from flask import flash, make_response, redirect, render_template, request, url_for
+from flask import (
+    flash,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from kombu.exceptions import OperationalError as KombuOperationalError
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.cluster.sync_state import build_cluster_sync_snapshot
 from app.jobs.dispatcher import dispatch_registered_job
 from app.jobs.service import JobQuotaExceeded
 from app.models.cluster import Cluster

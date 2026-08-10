@@ -55,7 +55,9 @@ def index() -> ResponseReturnValue:
         if target == 'data-lifecycle-history':
             return render_template('platform_operations/data_lifecycle/partials/_history.html', lifecycle=context)
         if target == 'data-lifecycle-domain-workspace':
-            return render_template('platform_operations/data_lifecycle/partials/_domain_workspace.html', lifecycle=context)
+            return render_template(
+                'platform_operations/data_lifecycle/partials/_domain_workspace.html', lifecycle=context
+            )
     return render_template('platform_operations/data_lifecycle/index.html', lifecycle=context)
 
 

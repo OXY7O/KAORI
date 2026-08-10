@@ -2,27 +2,27 @@ from __future__ import annotations
 
 import json
 import logging
+from typing import Any
 
 from celery.exceptions import CeleryError
-from flask import abort, make_response, redirect, render_template, request, url_for
+from flask import (
+    abort,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask_login import current_user
 from kombu.exceptions import OperationalError as KombuOperationalError
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.cluster.onboarding import has_registered_clusters
 from app.extensions.db import db
-from app.governance.tls_certificates.readiness import (
-    check_tls_governance_schema_readiness,
-)
-from app.governance.tls_certificates.service import (
-    get_tls_certificate_detail,
-    get_tls_certificate_page,
-)
+from app.governance.tls_certificates.job_presentation import get_visible_tls_sync_job, present_tls_sync_job
+from app.governance.tls_certificates.readiness import check_tls_governance_schema_readiness
+from app.governance.tls_certificates.service import get_tls_certificate_detail, get_tls_certificate_page
 from app.governance.tls_certificates.sync_state import build_tls_sync_state
-from app.governance.tls_certificates.job_presentation import (
-    get_visible_tls_sync_job,
-    present_tls_sync_job,
-)
 from app.jobs.dispatcher import dispatch_registered_job
 from app.jobs.service import JobQuotaExceeded
 from app.models.audit import AuditEvent
@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 _SYNC_FILTER_KEYS = ('cluster_id', 'namespace', 'status', 'search', 'page', 'per_page')
 
 
-def _sync_filter_args(source) -> dict[str, str]:
+def _sync_filter_args(source) -> dict[str, Any]:
     return {key: (source.get(key) or '').strip() for key in _SYNC_FILTER_KEYS}
 
 
@@ -74,7 +74,7 @@ def _record_dispatch_audit(
 
 def _render_sync_response(
     *,
-    filter_args: dict[str, str],
+    filter_args: dict[str, Any],
     feedback: dict[str, object] | None = None,
     sync_progress: dict[str, object] | None = None,
     status_code: int = 202,
@@ -161,7 +161,7 @@ def tls_certificates_sync_status(public_id: str):
             response = make_response(
                 render_template(
                     'components/operational_toast.html',
-                    feedback_id=f"tls-sync-{sync['public_id']}",
+                    feedback_id=f'tls-sync-{sync["public_id"]}',
                     status=sync['status'],
                     title=sync['title'],
                     message=sync['message'],

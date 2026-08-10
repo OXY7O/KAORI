@@ -7,9 +7,21 @@
     {% set blocked_state_description = dependency_blocker.description %}
     {% set blocked_step = dependency_blocker.stage|int %}
     {% set analytics_steps = [
-        {'label': 'Kubernetes', 'icon': 'server-cog', 'description': 'Cluster access and canonical binding'},
-        {'label': 'Prometheus', 'icon': 'activity', 'description': 'Metrics source and analytics capability'},
-        {'label': 'Alertmanager', 'icon': 'bell-ring', 'description': 'Alert source and scoped signal access'}
+        {
+            "label": "Kubernetes",
+            "icon": "server-cog",
+            "description": "Cluster access and canonical binding"
+        },
+        {
+            "label": "Prometheus",
+            "icon": "activity",
+            "description": "Metrics source and analytics capability"
+        },
+        {
+            "label": "Alertmanager",
+            "icon": "bell-ring",
+            "description": "Alert source and scoped signal access"
+        }
     ] %}
     <section class="overflow-hidden rounded-xl border border-brand-outline bg-kaori-soft shadow-sm"
              data-kaori-blocked-state>

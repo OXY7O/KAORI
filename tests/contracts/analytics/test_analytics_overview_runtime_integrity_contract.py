@@ -47,7 +47,9 @@ def test_workload_overview_propagates_selected_time_range() -> None:
     service = read('app/analytics/overview/service.py')
 
     assert 'def _get_workload_snapshot(*, cluster_id: str, time_range: str)' in service
-    workload_call = service[service.index('def _get_workload_snapshot'):service.index('def _get_top_consumers_snapshot')]
+    workload_call = service[
+        service.index('def _get_workload_snapshot') : service.index('def _get_top_consumers_snapshot')
+    ]
     assert 'time_range=time_range' in workload_call
 
 
@@ -85,7 +87,7 @@ def test_overview_unknown_semantics_prevent_false_healthy_zero_states() -> None:
     assert "value='N/A'" in schema
     assert "_signal('Limited', 'warning', 'amber'" in health_service
     assert "_signal('N/A', 'unknown', 'gray'" in health_service
-    assert "if not evidence.evidence_available:" in health_service
+    assert 'if not evidence.evidence_available:' in health_service
     assert 'Operational Posture Cannot Be Confirmed Yet' in health_template
 
 

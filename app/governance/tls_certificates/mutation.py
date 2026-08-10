@@ -45,9 +45,7 @@ def patch_tls_secret(record: Any, cert_bytes: bytes, key_bytes: bytes) -> str:
     if secret_type != TLS_SECRET_TYPE:
         raise ValueError('The live Kubernetes Secret is no longer a TLS Secret.')
     if not resource_version:
-        raise ValueError(
-            'Kubernetes did not return a Secret resource version. Refresh TLS inventory and retry.'
-        )
+        raise ValueError('Kubernetes did not return a Secret resource version. Refresh TLS inventory and retry.')
 
     encoded_data = {
         TLS_CRT_KEY: base64.b64encode(cert_bytes).decode('ascii'),

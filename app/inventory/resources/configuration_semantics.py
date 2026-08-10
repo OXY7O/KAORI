@@ -27,7 +27,7 @@ def aggregate_collection_states(states: Iterable[str]) -> str:
         return NOT_REPORTED
     if len(normalized) == 1:
         return normalized[0]
-    return f"Mixed: {', '.join(normalized)}"
+    return f'Mixed: {", ".join(normalized)}'
 
 
 def secret_type_presentation(object_type: str | None, secret_type: str | None) -> str:

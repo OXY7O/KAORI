@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from typing import Any
 
@@ -39,13 +40,13 @@ def overview_snapshot_parameters(*, cluster_id: str, time_range: str) -> dict[st
 
 
 def present_snapshot_summary(
-    snapshots: list[Any],
+    snapshots: Sequence[Any],
     *,
     time_range: str,
     now: datetime | None = None,
     expected_parameters: dict[str, dict[str, str]] | None = None,
 ) -> dict[str, Any]:
-    current_time = _normalize_datetime(now or datetime.now(UTC))
+    current_time = _normalize_datetime(now or datetime.now(UTC)) or datetime.now(UTC)
     latest_by_dataset = _latest_matching_snapshots(
         snapshots,
         expected_parameters=expected_parameters,
@@ -188,19 +189,14 @@ def _latest_snapshot(latest_by_dataset: dict[str, Any], attribute: str) -> Any |
         return None
     return max(
         candidates,
-        key=lambda item: _normalize_datetime(getattr(item, attribute, None))
-        or datetime.min.replace(tzinfo=UTC),
+        key=lambda item: _normalize_datetime(getattr(item, attribute, None)) or datetime.min.replace(tzinfo=UTC),
     )
 
 
 def _normalize_snapshot_parameters(value: Any) -> dict[str, str]:
     if not isinstance(value, dict):
         return {}
-    return {
-        str(key): str(item)
-        for key, item in sorted(value.items())
-        if item is not None and str(item).strip() != ''
-    }
+    return {str(key): str(item) for key, item in sorted(value.items()) if item is not None and str(item).strip() != ''}
 
 
 def _snapshot_sort_value(snapshot: Any) -> datetime:

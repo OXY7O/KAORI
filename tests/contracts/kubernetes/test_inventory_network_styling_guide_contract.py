@@ -56,7 +56,7 @@ def test_node_scheduling_and_namespace_security_use_available_space() -> None:
     node = read('app/templates/inventory/nodes/partials/_node_detail_content.html')
     namespace = read('app/templates/inventory/namespaces/partials/_namespace_detail_content.html')
 
-    assert "columns=5" in node
+    assert 'columns=5' in node
     assert 'Scheduling Taints' in node
     assert 'Control Interpretation' in namespace
     assert 'Default ServiceAccount presence is shown separately' in namespace

@@ -217,12 +217,8 @@ def test_full_notifications_page_keeps_15_second_auto_refresh() -> None:
 
 
 def test_legacy_self_replacing_deck_fragments_are_removed() -> None:
-    assert not (
-        ROOT / 'app/templates/notifications/partials/_notification_deck_content.html'
-    ).exists()
-    assert not (
-        ROOT / 'app/templates/notifications/partials/_notification_deck_refresh.html'
-    ).exists()
+    assert not (ROOT / 'app/templates/notifications/partials/_notification_deck_content.html').exists()
+    assert not (ROOT / 'app/templates/notifications/partials/_notification_deck_refresh.html').exists()
 
 
 def test_refresh_standard_is_documented() -> None:
@@ -244,9 +240,12 @@ def test_inventory_quick_action_relies_on_canonical_auto_refresh() -> None:
     assert 'data-operational-progress-title="Inventory Sync"' not in navbar
     assert 'data-operational-progress-message="Registering the fleet inventory job' not in navbar
     assert '@click="quickOpen = false"' in navbar
-    assert "notificationDeckOpen = true" not in navbar[
-        navbar.index('id="quick-sync-form"'):navbar.index('</form>', navbar.index('id="quick-sync-form"'))
-    ]
+    assert (
+        'notificationDeckOpen = true'
+        not in navbar[
+            navbar.index('id="quick-sync-form"') : navbar.index('</form>', navbar.index('id="quick-sync-form"'))
+        ]
+    )
 
     assert 'def _htmx_dispatch_response(' in quick_sync
     assert "response.headers['HX-Trigger']" not in quick_sync
@@ -257,8 +256,9 @@ def test_inventory_quick_action_relies_on_canonical_auto_refresh() -> None:
 
     # Success is represented only by the canonical JobExecution row.
     success_block = quick_sync[
-        quick_sync.index("outcome = dispatch_registered_job("):
-        quick_sync.index('    except (', quick_sync.index("outcome = dispatch_registered_job("))
+        quick_sync.index('outcome = dispatch_registered_job(') : quick_sync.index(
+            '    except (', quick_sync.index('outcome = dispatch_registered_job(')
+        )
     ]
     assert "title='Inventory Sync Queued'" not in success_block
     assert "'job_execution_id': job.id" not in success_block

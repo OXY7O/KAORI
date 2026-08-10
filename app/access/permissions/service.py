@@ -162,8 +162,5 @@ def build_permission_registry_snapshot() -> dict[str, Any]:
             'posture_label': 'Synchronized' if not drift_contracts else 'Review Required',
             'posture_tone': 'normal' if not drift_contracts else 'warning',
         },
-        'module_options': [
-            {'key': module, 'label': module_label(module)}
-            for module in modules
-        ],
+        'module_options': [{'key': module, 'label': module_label(module)} for module in modules],
     }

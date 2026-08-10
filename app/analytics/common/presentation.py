@@ -16,19 +16,11 @@ def present_prometheus_status(status: dict[str, Any] | None = None) -> dict[str,
     same status, response latency, and observation timestamp semantics.
     """
     source = dict(status or {})
-    raw_label = str(
-        source.get('status_label')
-        or source.get('label')
-        or source.get('status')
-        or ''
-    ).strip()
+    raw_label = str(source.get('status_label') or source.get('label') or source.get('status') or '').strip()
     raw_label_lower = raw_label.lower().replace('_', ' ')
     connected = bool(source.get('connected', source.get('success', False)))
     observation_degraded = bool(source.get('observation_degraded'))
-    waiting_for_cluster = (
-        'waiting' in raw_label_lower
-        or ('cluster' in raw_label_lower and 'select' in raw_label_lower)
-    )
+    waiting_for_cluster = 'waiting' in raw_label_lower or ('cluster' in raw_label_lower and 'select' in raw_label_lower)
 
     configured_value = source.get('configured')
     if configured_value is None:

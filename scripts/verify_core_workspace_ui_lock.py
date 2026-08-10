@@ -38,7 +38,10 @@ INLINE_STYLE = re.compile(r'\bstyle\s*=', re.I)
 INLINE_HANDLER = re.compile(r'\bon(?:click|change|input|submit|load|error|keyup|keydown)\s*=', re.I)
 TABLIST = re.compile(r'role=["\']tablist["\']', re.I)
 HEADING_UPPERCASE = re.compile(r'<(?:h[1-6]|th|label)\b[^>]*class="[^"]*\buppercase\b', re.I)
-COMPACT_PILL = re.compile(r'class="(?=[^"]*\brounded-full\b)(?=[^"]*\bpx-(?:1|1\.5|2|2\.5|3)\b)[^"]*\btext-(?:xs|\[(?:9|10|11)px\])\b[^"]*"', re.I)
+COMPACT_PILL = re.compile(
+    r'class="(?=[^"]*\brounded-full\b)(?=[^"]*\bpx-(?:1|1\.5|2|2\.5|3)\b)[^"]*\btext-(?:xs|\[(?:9|10|11)px\])\b[^"]*"',
+    re.I,
+)
 
 
 def locked_templates() -> list[Path]:
@@ -98,10 +101,14 @@ def main() -> int:
     # Security boundary: baseline Kubernetes validation RBAC must never grant
     # cluster-wide Secrets read. A separate namespace-scoped optional Role is
     # intentionally allowed for explicitly approved governance workflows.
-    rbac = (ROOT / 'app/templates/integrations/kubernetes/partials/_minimum_validation_rbac.html').read_text(encoding='utf-8')
+    rbac = (ROOT / 'app/templates/integrations/kubernetes/partials/_minimum_validation_rbac.html').read_text(
+        encoding='utf-8'
+    )
     baseline_start = rbac.find('id="minimum-rbac-panel-baseline"')
     optional_start = rbac.find('id="minimum-rbac-panel-secret"')
-    baseline_rbac = rbac[baseline_start:optional_start] if baseline_start >= 0 and optional_start > baseline_start else rbac
+    baseline_rbac = (
+        rbac[baseline_start:optional_start] if baseline_start >= 0 and optional_start > baseline_start else rbac
+    )
     if re.search(r'resources:\s*\[[^\]]*"secrets"', baseline_rbac):
         errors.append('Kubernetes baseline validation RBAC must not include cluster-wide Secrets access')
     if optional_start >= 0:

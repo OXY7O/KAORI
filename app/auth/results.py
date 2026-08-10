@@ -32,7 +32,9 @@ class AuthResult:
 
 
 INVALID_LOGIN_MESSAGE = 'Invalid username or password.'
-DATABASE_UNAVAILABLE_MESSAGE = 'Sign-in service is temporarily unavailable. Try again later or contact an administrator.'
+DATABASE_UNAVAILABLE_MESSAGE = (
+    'Sign-in service is temporarily unavailable. Try again later or contact an administrator.'
+)
 PROVIDER_UNAVAILABLE_MESSAGE = 'External authentication provider is temporarily unavailable. Contact an administrator.'
 USER_INACTIVE_MESSAGE = 'This account is currently inactive. Contact an administrator to restore access.'
 ACCESS_NOT_PERMITTED_MESSAGE = 'This account does not currently have an active KAORI access assignment.'

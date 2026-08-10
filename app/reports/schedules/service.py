@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from calendar import monthrange
 from collections.abc import Mapping
-from datetime import UTC, datetime, time, timedelta
+from datetime import (
+    UTC,
+    datetime,
+    time,
+    timedelta,
+)
 from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -31,10 +36,7 @@ from app.reports.generate.service import (
 from app.reports.jobs.queue import get_reports_queue_name
 from app.reports.jobs.service import ReportJobEnqueueError, enqueue_report_generation
 from app.reports.schedules.failures import mark_schedule_dispatch_failed
-from app.reports.storage.service import (
-    get_configured_storage_backend_name,
-    get_report_storage_backend_status,
-)
+from app.reports.storage.service import get_configured_storage_backend_name, get_report_storage_backend_status
 
 CADENCE_OPTIONS: list[dict[str, str]] = [
     {
@@ -121,20 +123,16 @@ def get_report_schedules_payload(
         edit_schedule = {**edit_schedule, 'edit_state': edit_form_state}
 
     report_family_by_report_type = {
-        item['value']: str(item.get('family') or 'analytics')
-        for item in REPORT_TYPE_OPTIONS
+        item['value']: str(item.get('family') or 'analytics') for item in REPORT_TYPE_OPTIONS
     }
     allowed_formats_by_report_type = {
-        item['value']: list(item.get('allowed_formats') or [])
-        for item in REPORT_TYPE_OPTIONS
+        item['value']: list(item.get('allowed_formats') or []) for item in REPORT_TYPE_OPTIONS
     }
 
     return {
         'page_title': 'Report Schedules',
-        'page_subtitle': (
-            'Automate governed report generation and delivery through recurring report contracts.'
-        ),
-        'status_label': f"Reports Worker {worker_context['label']}",
+        'page_subtitle': ('Automate governed report generation and delivery through recurring report contracts.'),
+        'status_label': f'Reports Worker {worker_context["label"]}',
         'status_description': worker_context['description'],
         'summary_cards': get_summary_cards(
             schedules=all_schedules,
@@ -149,11 +147,7 @@ def get_report_schedules_payload(
         'run_filter_options': _get_run_filter_options(all_schedules),
         'run_registry_query_params': {
             'workspace': 'runs',
-            **{
-                key: value
-                for key, value in run_selected_filters.items()
-                if value
-            },
+            **{key: value for key, value in run_selected_filters.items() if value},
         },
         'active_workspace': (
             'runs' if str(query_args.get('workspace', '') or '').strip().lower() == 'runs' else 'registry'
@@ -476,9 +470,9 @@ def execute_schedule(
     if run is not None:
         run.job_execution_id = dispatch.job.id
         run.status = 'queued'
-    schedule = db.session.get(ReportSchedule, schedule.id)
-    if schedule is not None:
-        schedule.last_status = 'queued'
+    refreshed_schedule = db.session.get(ReportSchedule, schedule.id)
+    if refreshed_schedule is not None:
+        refreshed_schedule.last_status = 'queued'
     db.session.commit()
     return True, dispatch.message, report.id
 
@@ -551,7 +545,6 @@ def calculate_next_run_at(
     return candidate.astimezone(UTC)
 
 
-
 def get_automation_posture(
     storage_context: dict[str, Any],
     worker_context: dict[str, Any],
@@ -597,6 +590,7 @@ def get_automation_posture(
         'execution_label': 'Ready',
         'execution_tone': 'normal',
     }
+
 
 def get_scheduler_context(
     storage_context: dict[str, Any],
@@ -645,6 +639,7 @@ def get_recommended_actions() -> list[str]:
         'Use Run Now to validate report generation, artifact storage, and Telegram delivery before unattended execution.',
         'Configure REPORT_TELEGRAM_BOT_TOKEN, REPORT_TELEGRAM_CHAT_ID, and REPORT_PUBLIC_BASE_URL for Telegram notifications.',
     ]
+
 
 def _apply_form_state_to_schedule(schedule: ReportSchedule, form_state: dict[str, Any]) -> None:
     schedule.name = form_state['name']
@@ -773,7 +768,7 @@ def _get_run_registry(
 
     search = selected_filters['run_search'].casefold()
     if search:
-        pattern = f"%{search}%"
+        pattern = f'%{search}%'
         statement = statement.where(
             or_(
                 func.lower(func.coalesce(ReportSchedule.name, 'deleted schedule')).like(pattern),
@@ -795,9 +790,7 @@ def _get_run_registry(
 
     period = selected_filters['run_period']
     if period in RUN_PERIOD_DELTAS:
-        statement = statement.where(
-            ReportScheduleRun.started_at >= datetime.now(UTC) - RUN_PERIOD_DELTAS[period]
-        )
+        statement = statement.where(ReportScheduleRun.started_at >= datetime.now(UTC) - RUN_PERIOD_DELTAS[period])
 
     runs, pagination = paginate_select(
         db.session,
@@ -890,17 +883,16 @@ def _get_schedule_filter_options(
             *[
                 {'value': item['value'], 'label': item['label']}
                 for item in delivery_catalog
-                if item.get('selectable') or item.get('value') in {channel for schedule in schedules for channel in schedule['notification_channels']}
+                if item.get('selectable')
+                or item.get('value')
+                in {channel for schedule in schedules for channel in schedule['notification_channels']}
             ],
         ],
     }
 
 
 def _title_case_period_options() -> list[dict[str, str]]:
-    return [
-        {**item, 'label': str(item['label']).title()}
-        for item in PERIOD_OPTIONS
-    ]
+    return [{**item, 'label': str(item['label']).title()} for item in PERIOD_OPTIONS]
 
 
 def _format_period_label(value: str | None) -> str:
@@ -928,10 +920,7 @@ def _get_schedule_rows() -> list[dict[str, Any]]:
         select(ReportSchedule).order_by(ReportSchedule.created_at.desc(), ReportSchedule.id.desc())
     ).all()
     cluster_map = _get_cluster_map([item.cluster_id for item in schedules if item.cluster_id])
-    delivery_label_map = {
-        item['value']: item['label']
-        for item in get_delivery_channel_catalog()
-    }
+    delivery_label_map = {item['value']: item['label'] for item in get_delivery_channel_catalog()}
 
     return [_serialize_schedule(item, cluster_map, delivery_label_map) for item in schedules]
 
@@ -1069,7 +1058,6 @@ def _get_run_result_summary(run: ReportScheduleRun) -> str:
     return 'Execution state recorded'
 
 
-
 def _format_run_duration(started_at: datetime | None, finished_at: datetime | None) -> str:
     if started_at is None:
         return 'Not Available'
@@ -1121,10 +1109,7 @@ def _get_schedule_context_map(schedule_ids: list[int]) -> dict[int, dict[str, st
     if not schedule_ids:
         return {}
     schedules = db.session.scalars(select(ReportSchedule).where(ReportSchedule.id.in_(schedule_ids))).all()
-    report_icons = {
-        str(item['value']): str(item.get('icon') or 'calendar-clock')
-        for item in REPORT_TYPE_OPTIONS
-    }
+    report_icons = {str(item['value']): str(item.get('icon') or 'calendar-clock') for item in REPORT_TYPE_OPTIONS}
     return {
         item.id: {
             'name': item.name,

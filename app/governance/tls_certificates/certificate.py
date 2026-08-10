@@ -66,12 +66,8 @@ class _CryptoModules(NamedTuple):
 def validity_policy_from_config(config: Mapping[str, Any] | None = None) -> TLSValidityPolicy:
     source = config or {}
     return TLSValidityPolicy(
-        renewal_window_days=int(
-            source.get('TLS_CERTIFICATE_RENEWAL_WINDOW_DAYS', TLS_DEFAULT_RENEWAL_WINDOW_DAYS)
-        ),
-        critical_window_days=int(
-            source.get('TLS_CERTIFICATE_CRITICAL_WINDOW_DAYS', TLS_DEFAULT_CRITICAL_WINDOW_DAYS)
-        ),
+        renewal_window_days=int(source.get('TLS_CERTIFICATE_RENEWAL_WINDOW_DAYS', TLS_DEFAULT_RENEWAL_WINDOW_DAYS)),
+        critical_window_days=int(source.get('TLS_CERTIFICATE_CRITICAL_WINDOW_DAYS', TLS_DEFAULT_CRITICAL_WINDOW_DAYS)),
     )
 
 

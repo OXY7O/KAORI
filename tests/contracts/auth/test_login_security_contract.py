@@ -16,7 +16,7 @@ def test_session_admission_is_shared_by_credentials_sso_and_existing_sessions() 
     assert 'def session_admission_reason(' in admission
     assert 'if not user.is_active:' in admission
     assert 'if user.is_super_admin:' in admission
-    assert "normalized_source != AuthProviderType.DATABASE.value" in admission
+    assert 'normalized_source != AuthProviderType.DATABASE.value' in admission
     assert 'if account_source != normalized_source:' in admission
     assert 'if role is None or not role.is_active:' in admission
 
@@ -78,7 +78,7 @@ def test_remember_me_window_is_bounded_for_infrastructure_access() -> None:
     env_example = read('.env.example')
     production_example = read('.env.production.example')
 
-    assert "AUTH_REMEMBER_ME_DAYS = _bounded_env_int(" in config
+    assert 'AUTH_REMEMBER_ME_DAYS = _bounded_env_int(' in config
     assert "'AUTH_REMEMBER_ME_DAYS'," in config
     assert 'REMEMBER_COOKIE_DURATION = timedelta(days=AUTH_REMEMBER_ME_DAYS)' in config
     assert 'AUTH_REMEMBER_ME_DAYS=7' in env_example

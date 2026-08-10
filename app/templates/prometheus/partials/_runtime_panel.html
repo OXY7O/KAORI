@@ -4,7 +4,6 @@
 {% import "integrations/components/_runtime_decision.html" as runtime_decision %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-
 {% set runtime_product = runtime_state.capability_metadata.endpoint_product|default(instance.endpoint_product or 'Prometheus', true) %}
 {% set runtime_version = runtime_state.capability_metadata.endpoint_version|default(instance.detected_version or 'Not Detected', true) %}
 {% set source_major = runtime_state.capability_metadata.source_prometheus_major|default(instance.source_prometheus_major or 'Not Observed', true) %}
@@ -19,25 +18,24 @@
 {% elif runtime_state.message %}
     {% set runtime_primary_finding = runtime_state.message %}
 {% else %}
-    {% set runtime_primary_finding = 'No current runtime finding requires operator attention.' %}
+    {% set runtime_primary_finding = "No current runtime finding requires operator attention." %}
 {% endif %}
 {% if not runtime_observed %}
-    {% set runtime_next_action = 'Run Runtime Refresh to establish persisted provider-health evidence.' %}
+    {% set runtime_next_action = "Run Runtime Refresh to establish persisted provider-health evidence." %}
 {% elif runtime_state.health_status in ['unhealthy', 'failed'] %}
-    {% set runtime_next_action = 'Restore Prometheus endpoint reachability, refresh runtime evidence, and rerun Full Validation only when the PromQL or compatibility contract changed.' %}
+    {% set runtime_next_action = "Restore Prometheus endpoint reachability, refresh runtime evidence, and rerun Full Validation only when the PromQL or compatibility contract changed." %}
 {% elif runtime_state.readiness != 'ready' %}
-    {% set runtime_next_action = 'Resolve Full Validation blockers before treating this source as Analytics-ready.' %}
+    {% set runtime_next_action = "Resolve Full Validation blockers before treating this source as Analytics-ready." %}
 {% elif runtime_attention %}
-    {% set runtime_next_action = 'Review the active runtime finding, remediate it, then refresh persisted runtime evidence.' %}
+    {% set runtime_next_action = "Review the active runtime finding, remediate it, then refresh persisted runtime evidence." %}
 {% else %}
-    {% set runtime_next_action = 'No immediate remediation is required. Continue scheduled Runtime Refresh after endpoint or infrastructure changes.' %}
+    {% set runtime_next_action = "No immediate remediation is required. Continue scheduled Runtime Refresh after endpoint or infrastructure changes." %}
 {% endif %}
 {% set observation_rows = [
     ('Observed', runtime_state.observed_at_display),
     ('Latency', runtime_state.latency_display),
     ('Diagnostics', (runtime_state.diagnostics|length) ~ ' checks')
 ] %}
-
 <article id="prometheus-runtime-panel"
          class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm font-sans"
          data-kaori-prometheus-runtime-v4
@@ -50,7 +48,7 @@
         loading_id='prometheus-runtime-loading',
         loading_active=runtime_refresh_job and runtime_refresh_job.is_active,
         loading_label='Refreshing Prometheus runtime health'
-    ) %}
+        ) %}
         <button type="button"
                 hx-post="{{ runtime_state.refresh_url }}"
                 hx-target="#prometheus-runtime-panel"
@@ -59,36 +57,36 @@
                 hx-indicator="#prometheus-runtime-loading"
                 {% if runtime_refresh_job and runtime_refresh_job.is_active %}disabled{% endif %}
                 class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-wait disabled:opacity-70">
-            <i data-lucide="{{ 'loader-circle' if runtime_refresh_job and runtime_refresh_job.is_active else 'refresh-cw' }}" class="h-4 w-4{% if runtime_refresh_job and runtime_refresh_job.is_active %} animate-spin{% endif %}" aria-hidden="true"></i>
+            <i data-lucide="{{ 'loader-circle' if runtime_refresh_job and runtime_refresh_job.is_active else 'refresh-cw' }}"
+               class="h-4 w-4{% if runtime_refresh_job and runtime_refresh_job.is_active %} animate-spin{% endif %}"
+               aria-hidden="true"></i>
             {{ 'Refresh Running' if runtime_refresh_job and runtime_refresh_job.is_active else 'Refresh Runtime' }}
         </button>
     {% endcall %}
-
     {% if runtime_refresh_job and runtime_refresh_job.is_active %}
         <div class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-subtle px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between">
-            <span class="inline-flex items-center gap-2 font-semibold text-content-primary"><i data-lucide="loader-circle" class="h-3.5 w-3.5 animate-spin text-kaori-primary dark:text-kaori-accent" aria-hidden="true"></i>{{ runtime_refresh_job.title or 'Prometheus runtime refresh running' }}</span>
+            <span class="inline-flex items-center gap-2 font-semibold text-content-primary"><i data-lucide="loader-circle"
+   class="h-3.5 w-3.5 animate-spin text-kaori-primary dark:text-kaori-accent"
+   aria-hidden="true"></i>{{ runtime_refresh_job.title or 'Prometheus runtime refresh running' }}</span>
             <span>Task {{ runtime_refresh_job.task_id[:8] }} · {{ runtime_refresh_job.state_label|title }} · {{ runtime_refresh_job.elapsed_seconds }}s</span>
         </div>
     {% endif %}
-
     <div class="space-y-4 p-4 sm:p-5" data-kaori-prometheus-runtime-layout>
-        {{ runtime_decision.render(
-            health_tone,
-            runtime_state.health_status_label if runtime_observed else 'Not Observed',
-            runtime_state.health_score_display if runtime_observed else 'N/A',
-            'Persisted Runtime Refresh evidence',
-            runtime_gate_label,
-            'Health gate only; Full Validation readiness remains independent.',
-            runtime_state.readiness,
-            runtime_state.readiness_label,
-            (runtime_state.compatibility_profile or 'Compatibility not validated') ~ ' · ' ~ runtime_state.capability_count ~ ' observed capabilities',
-            observation_rows,
-            runtime_primary_finding,
-            runtime_attention|length,
-            runtime_next_action,
-            'Full technical diagnostic detail and remediation stay in Recent Runtime Observations. This workspace keeps only the current operational summary.'
+        {{ runtime_decision.render(health_tone,
+                runtime_state.health_status_label if runtime_observed else 'Not Observed',
+                runtime_state.health_score_display if runtime_observed else 'N/A',
+                'Persisted Runtime Refresh evidence',
+                runtime_gate_label,
+                'Health gate only; Full Validation readiness remains independent.',
+                runtime_state.readiness,
+                runtime_state.readiness_label,
+                (runtime_state.compatibility_profile or 'Compatibility not validated') ~ ' · ' ~ runtime_state.capability_count ~ ' observed capabilities',
+        observation_rows,
+        runtime_primary_finding,
+        runtime_attention|length,
+        runtime_next_action,
+        'Full technical diagnostic detail and remediation stay in Recent Runtime Observations. This workspace keeps only the current operational summary.'
         ) }}
-
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
                  aria-labelledby="prometheus-runtime-evidence-title"
                  data-kaori-prometheus-runtime-evidence>
@@ -96,20 +94,21 @@
                 <div class="flex min-w-0 items-start gap-3">
                     {{ integration_ui.palette_icon('stethoscope', 'brand', size='md') }}
                     <div class="min-w-0">
-                        <h3 id="prometheus-runtime-evidence-title" class="text-sm font-semibold text-content-primary">Runtime Evidence</h3>
+                        <h3 id="prometheus-runtime-evidence-title"
+                            class="text-sm font-semibold text-content-primary">Runtime Evidence</h3>
                         <p class="mt-1 text-xs leading-5 text-content-secondary">Endpoint contract context and concise persisted diagnostics share one full-width evidence surface.</p>
                     </div>
                 </div>
                 {{ table_label.metadata_label((runtime_state.diagnostics|length) ~ ' Checks') }}
             </header>
-
-            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4" data-kaori-prometheus-endpoint-contract>
+            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4"
+                 data-kaori-prometheus-endpoint-contract>
                 {% for label, value, helper in [
                     ('Endpoint Product', runtime_product|replace('_', ' ')|title, 'Validated provider product'),
                     ('Detected Runtime', runtime_version, 'Observed provider version'),
                     ('Compatibility Profile', runtime_state.compatibility_profile or 'Not Observed', 'Full Validation compatibility contract'),
                     ('Prometheus Source', source_major, 'Source-major compatibility context')
-                ] %}
+                    ] %}
                     <div class="bg-surface-card px-4 py-3.5 sm:px-5">
                         <p class="text-xs font-medium text-content-muted">{{ label }}</p>
                         <p class="mt-1 text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
@@ -117,8 +116,8 @@
                     </div>
                 {% endfor %}
             </div>
-
-            <div class="border-t border-outline-subtle" data-kaori-prometheus-diagnostic-list>
+            <div class="border-t border-outline-subtle"
+                 data-kaori-prometheus-diagnostic-list>
                 {% for step in runtime_state.diagnostics %}
                     {% set step_tone = 'ready' if step.status == 'success' else ('degraded' if step.status == 'warning' else ('blocked' if step.status == 'failed' else 'validation_required')) %}
                     <article class="grid gap-3 border-b border-outline-subtle px-4 py-4 last:border-b-0 sm:px-5 lg:grid-cols-12 lg:items-center">
@@ -137,7 +136,6 @@
                     </div>
                 {% endfor %}
             </div>
-
             <footer class="border-t border-outline-subtle bg-surface-hover px-4 py-3.5 sm:px-5">
                 <div class="flex items-start gap-3">
                     {{ integration_ui.palette_icon('shield-check', 'brand', size='sm') }}

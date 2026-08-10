@@ -9,9 +9,7 @@ from typing import Any, Final
 
 TABULAR_EXPORT_STANDARD: Final = 'kaori-tabular-export-v2.0'
 TABULAR_SCHEMA_VERSION: Final = '2.0'
-_SPREADSHEET_NUMERIC_LITERAL = re.compile(
-    r'[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?'
-)
+_SPREADSHEET_NUMERIC_LITERAL = re.compile(r'[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?')
 
 COMMON_EXPORT_METADATA_FIELDS: Final = (
     'format_standard',
@@ -130,10 +128,7 @@ def protect_spreadsheet_formula(value: object) -> str:
 
     text = '' if value is None else str(value)
     stripped = text.lstrip()
-    if (
-        stripped.startswith(('=', '+', '-', '@'))
-        and _SPREADSHEET_NUMERIC_LITERAL.fullmatch(stripped) is None
-    ):
+    if stripped.startswith(('=', '+', '-', '@')) and _SPREADSHEET_NUMERIC_LITERAL.fullmatch(stripped) is None:
         return f"'{text}"
     return text
 

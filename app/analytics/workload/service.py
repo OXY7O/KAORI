@@ -197,10 +197,7 @@ def get_workload_analysis_context(query_args: Mapping[str, Any]) -> dict[str, An
         if not context['prometheus_connected']:
             context['dependency_blocker'] = prometheus_connection_blocker(
                 cluster,
-                detail=str(
-                    prometheus_status.get('error')
-                    or 'Prometheus health check did not complete successfully.'
-                ),
+                detail=str(prometheus_status.get('error') or 'Prometheus health check did not complete successfully.'),
             )
             context.update(get_empty_workload_payload('', time_range))
             return context
@@ -240,12 +237,11 @@ def get_workload_snapshot(cluster_id: str, time_range: str = '24h') -> dict[str,
         recommendation = str(row.get('recommendation') or '').casefold()
         counters['over_provisioned'] += int('reduce' in recommendation)
         counters['under_provisioned'] += int('increase' in recommendation)
+    actionable_recommendations = context.get('actionable_recommendations')
     return {
         **counters,
         'recommendation_count': count_actionable_recommendations(
-            context.get('actionable_recommendations')
-            if isinstance(context.get('actionable_recommendations'), list)
-            else []
+            actionable_recommendations if isinstance(actionable_recommendations, list) else []
         ),
     }
 

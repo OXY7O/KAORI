@@ -12,7 +12,9 @@
          hx-swap="outerHTML swap:0ms settle:0ms"
          hx-indicator="#active-job-poll-indicator"
          hx-sync="this:replace">
-    <span id="active-job-poll-indicator" class="htmx-indicator hidden" aria-hidden="true"></span>
+    <span id="active-job-poll-indicator"
+          class="htmx-indicator hidden"
+          aria-hidden="true"></span>
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex min-w-0 items-start gap-3">
@@ -21,7 +23,8 @@
                 </span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                        <h3 id="active-job-workspace-title" class="text-base font-semibold text-content-primary">Active Work</h3>
+                        <h3 id="active-job-workspace-title"
+                            class="text-base font-semibold text-content-primary">Active Work</h3>
                         {{ table_label.status_indicator_label(job_stats.active ~ ' Active', tone='info' if job_stats.active else 'normal') }}
                     </div>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Live execution ownership, progress, retry posture, and operator actions.</p>
@@ -42,7 +45,6 @@
         </div>
         {{ loading_bar.render('active-job-loading', label='Refreshing active work') }}
     </header>
-
     <div class="grid grid-cols-2 border-b border-outline-subtle bg-surface-hover sm:grid-cols-4">
         {% for label, value in [('Active', job_stats.active), ('Running', job_stats.running), ('Queued', job_stats.queued), ('Active Attention', job_stats.active_attention)] %}
             <div class="px-5 py-3 {% if not loop.last %}border-r border-outline-subtle{% endif %}">
@@ -51,7 +53,6 @@
             </div>
         {% endfor %}
     </div>
-
     {% if active_job_rows %}
         <div class="divide-y divide-outline-subtle">
             {% for row in active_job_rows %}
@@ -70,7 +71,6 @@
                                 <p class="mt-1 text-xs font-medium text-content-muted">{{ row.workload_label }} · {{ row.public_id[:8] }}</p>
                             </div>
                         </div>
-
                         <div class="min-w-0 lg:col-span-4">
                             <div class="flex items-start justify-between gap-3">
                                 <p class="break-words text-xs font-medium leading-5 text-content-secondary">{{ row.progress_message }}</p>
@@ -86,23 +86,31 @@
                             {% endif %}
                             <p class="mt-2 text-xs text-content-muted">Attempt {{ row.attempt_count }}/{{ row.max_attempts }}</p>
                         </div>
-
                         <dl class="grid min-w-0 grid-cols-2 gap-x-4 gap-y-3 text-xs lg:col-span-3">
                             {% for label, value in [('Queue', row.queue_name), ('Requested By', row.requester), ('Started', row.started_at), ('Duration', row.duration)] %}
                                 <div class="min-w-0">
                                     <dt class="font-semibold text-content-muted">{{ label }}</dt>
-                                    <dd class="mt-1 break-words font-medium text-content-primary">{{ value }}</dd>
+                                    <dd class="mt-1 break-words font-medium text-content-primary">
+                                        {{ value }}
+                                    </dd>
                                 </div>
                             {% endfor %}
                         </dl>
-
                         <div class="flex lg:col-span-1 lg:justify-end">
                             {% if current_user.has_permission('jobs.cancel') and row.can_cancel %}
-                                <form method="post" action="{{ url_for('jobs.cancel_execution', public_id=row.public_id) }}" hx-post="{{ url_for('jobs.cancel_execution', public_id=row.public_id) }}" hx-target="#active-job-workspace" hx-swap="outerHTML" hx-indicator="#active-job-loading" class="inline-flex">
+                                <form method="post"
+                                      action="{{ url_for('jobs.cancel_execution', public_id=row.public_id) }}"
+                                      hx-post="{{ url_for('jobs.cancel_execution', public_id=row.public_id) }}"
+                                      hx-target="#active-job-workspace"
+                                      hx-swap="outerHTML"
+                                      hx-indicator="#active-job-loading"
+                                      class="inline-flex">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="fragment" value="active">
                                     <input type="hidden" name="execution_tab" value="active">
-                                    <button type="submit" class="{{ table_ui.action_classes(destructive=true) }}" title="{{ row.action_help }}">
+                                    <button type="submit"
+                                            class="{{ table_ui.action_classes(destructive=true) }}"
+                                            title="{{ row.action_help }}">
                                         <i data-lucide="{{ row.action_icon }}" class="h-4 w-4"></i>{{ row.action_label }}
                                     </button>
                                 </form>

@@ -12,23 +12,22 @@
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('building-2', record.cluster.name if record.cluster else record.cluster_id) }}
                             {{ page_hero.meta_label('folder-tree', record.namespace) }}
-                            {{ page_hero.meta_label('clock-3', 'Collected ' ~ (record.collected_at|user_datetime('Not Reported'))) }}
+                            {{ page_hero.meta_label('clock-3', 'Collected ' ~ (record.collected_at|user_datetime('Not Reported') )) }}
                         </div>
                     {% endcall %}
                 </div>
-                {{ page_hero.context_card(
-                    'TLS certificate context',
-                    'Certificate Posture',
-                    'Validity and Coverage',
-                    record.presentation.status_label or 'Unknown',
-                    record.presentation.status_tone or 'unknown',
-                    [
-                        ('calendar-clock', 'Days Remaining', record.days_remaining if record.days_remaining is not none else 'N/A', 'Exact timestamp status'),
-                        ('shield-check', 'Host Coverage', record.presentation.coverage_label or 'Not Reported', (record.covered_host_count or 0) ~ '/' ~ (record.declared_host_count or 0) ~ ' hosts')
-                    ],
-                    'Back to Registry',
-                    url_for('governance.tls_certificates'),
-                    'arrow-left'
+                {{ page_hero.context_card('TLS certificate context',
+                                'Certificate Posture',
+                                'Validity and Coverage',
+                                record.presentation.status_label or 'Unknown',
+                                record.presentation.status_tone or 'unknown',
+                                [
+                                ('calendar-clock', 'Days Remaining', record.days_remaining if record.days_remaining is not none else 'N/A', 'Exact timestamp status') ,
+                ('shield-check', 'Host Coverage', record.presentation.coverage_label or 'Not Reported', (record.covered_host_count or 0) ~ '/' ~ (record.declared_host_count or 0) ~ ' hosts')
+                ],
+                'Back to Registry',
+                url_for('governance.tls_certificates'),
+                'arrow-left'
                 ) }}
             </div>
         </section>

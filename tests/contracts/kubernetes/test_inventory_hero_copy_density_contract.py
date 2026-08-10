@@ -50,15 +50,7 @@ HERO_EXPECTATIONS = {
 
 
 def _read(resource: str) -> str:
-    return (
-        ROOT
-        / 'app'
-        / 'templates'
-        / 'inventory'
-        / resource
-        / 'partials'
-        / '_hero.html'
-    ).read_text(encoding='utf-8')
+    return (ROOT / 'app' / 'templates' / 'inventory' / resource / 'partials' / '_hero.html').read_text(encoding='utf-8')
 
 
 def _normalized(source: str) -> str:
@@ -74,9 +66,7 @@ def test_inventory_hero_descriptions_follow_the_compact_copy_budget() -> None:
 
 
 def test_inventory_hero_context_panels_use_short_titles_and_concise_helpers() -> None:
-    literal_helpers = re.compile(
-        r"\(\s*'[^']+'\s*,\s*'[^']+'\s*,[^\n]+,\s*'([^']+)'"
-    )
+    literal_helpers = re.compile(r"\(\s*'[^']+'\s*,\s*'[^']+'\s*,[^\n]+,\s*'([^']+)'")
     for resource, (_description, context_title) in HERO_EXPECTATIONS.items():
         source = _read(resource)
         assert context_title in source, resource
@@ -95,9 +85,7 @@ def test_inventory_hero_context_panels_use_short_titles_and_concise_helpers() ->
 
 def test_inventory_hero_copy_budget_is_documented() -> None:
     hero_contract = (ROOT / 'docs/design/components/HERO.md').read_text(encoding='utf-8')
-    styling_guide = (ROOT / 'docs/design/KAORI_STYLING_GUIDE.md').read_text(
-        encoding='utf-8'
-    )
+    styling_guide = (ROOT / 'docs/design/KAORI_STYLING_GUIDE.md').read_text(encoding='utf-8')
 
     for source in (hero_contract, styling_guide):
         assert 'description target: 7–12 words' in source

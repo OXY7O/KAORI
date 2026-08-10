@@ -4,15 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from app.analytics.materialization.keys import (
-    CAPACITY_DATASET_KEY,
-    DASHBOARD_ALERTS_DATASET_KEY,
-    FORECAST_DATASET_KEY,
-    TOP_CONSUMERS_DATASET_KEY,
-)
 from app.analytics.materialization.service import SnapshotResult, read_snapshot
-
-ALERTS_DATASET_KEY = DASHBOARD_ALERTS_DATASET_KEY
 
 
 def capacity_parameters(cluster_id: str) -> dict[str, str]:
@@ -48,9 +40,7 @@ class DashboardSnapshot:
         return self.context is not None
 
 
-def read_dashboard_snapshot(
-    *, cluster_id: str, dataset_key: str, parameters: dict[str, str]
-) -> DashboardSnapshot:
+def read_dashboard_snapshot(*, cluster_id: str, dataset_key: str, parameters: dict[str, str]) -> DashboardSnapshot:
     result: SnapshotResult = read_snapshot(
         cluster_id=cluster_id,
         dataset_key=dataset_key,

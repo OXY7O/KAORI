@@ -61,13 +61,17 @@ def test_kubernetes_registry_uses_one_line_htmx_filters_and_inventory_table() ->
 
 def test_kubernetes_activity_is_navigation_and_capability_modal_scope_isolated() -> None:
     registry = read('app/templates/integrations/kubernetes/partials/_registry.html')
-    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html') + read('app/templates/integrations/kubernetes/partials/_capability_registry.html') + read('app/templates/integrations/components/_capability_readiness.html')
+    capability = (
+        read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
+        + read('app/templates/integrations/kubernetes/partials/_capability_registry.html')
+        + read('app/templates/integrations/components/_capability_readiness.html')
+    )
     modal = read('app/templates/integrations/components/_record_detail_modal.html')
     controller = read('app/static/js/native_dialogs.js')
 
     assert "url_for('integrations.kubernetes_detail', cluster_id=row.cluster_id)" in registry
     assert '>Activity<' in registry or 'Activity\n' in registry
-    activity_link = registry[registry.index("url_for('integrations.kubernetes_detail', cluster_id=row.cluster_id)"):]
+    activity_link = registry[registry.index("url_for('integrations.kubernetes_detail', cluster_id=row.cluster_id)") :]
     assert '@click=' not in activity_link.split('</a>', 1)[0]
 
     assert 'data-kaori-capability-native-dialogs' in capability
@@ -81,12 +85,13 @@ def test_kubernetes_activity_is_navigation_and_capability_modal_scope_isolated()
     assert 'onclick=' not in modal
     assert 'dialog.showModal()' in controller
 
+
 def test_kubernetes_runtime_health_requires_persisted_observation() -> None:
     service = read('app/integrations/service.py')
     presentation = read('app/integrations/runtime/presentation.py')
     runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
 
-    assert "IntegrationRuntimeObservation.query.filter_by(" in service
+    assert 'IntegrationRuntimeObservation.query.filter_by(' in service
     assert "provider='kubernetes'" in service
     assert 'runtime_observation_state_view(' in service
     assert 'def runtime_observation_state_view(' in presentation
@@ -99,9 +104,14 @@ def test_kubernetes_runtime_health_requires_persisted_observation() -> None:
     assert 'Health gate only; validation remains independent.' in runtime
     assert 'Validation Readiness' in runtime
 
+
 def test_kubernetes_actions_are_permission_aware() -> None:
     detail = read('app/templates/integrations/kubernetes/detail.html')
-    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html') + read('app/templates/integrations/kubernetes/partials/_capability_registry.html') + read('app/templates/integrations/components/_capability_readiness.html')
+    capability = (
+        read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
+        + read('app/templates/integrations/kubernetes/partials/_capability_registry.html')
+        + read('app/templates/integrations/components/_capability_readiness.html')
+    )
     runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
     connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
 
@@ -111,7 +121,7 @@ def test_kubernetes_actions_are_permission_aware() -> None:
     assert "@integrations_bp.get('/kubernetes')" in routes
     assert 'def kubernetes() -> ResponseReturnValue:' in routes
     assert "url_for('integrations.kubernetes')" in detail
-    assert "cluster.list_clusters" not in detail
+    assert 'cluster.list_clusters' not in detail
     assert 'Back to Registry' in detail
     assert "current_user.has_permission('clusters.sync')" in capability
     assert "current_user.has_permission('clusters.sync')" in runtime
@@ -154,6 +164,7 @@ def test_inventory_freshness_and_capability_dimensions_are_explicit() -> None:
     assert 'Validated Features' in inventory
     assert 'Operational Domains' in inventory
     assert 'Validated Features' in detail
+
 
 def test_kubernetes_coverage_uses_compact_operational_path_cards() -> None:
     coverage = read('app/templates/integrations/kubernetes/partials/_integration_coverage.html')
@@ -199,11 +210,16 @@ def test_kubernetes_coverage_uses_compact_operational_path_cards() -> None:
     assert 'data-kaori-provider-coverage' not in coverage
     assert 'min-h-[260px]' not in coverage
 
+
 def test_secret_capability_is_optional_and_kept_out_of_baseline_readiness() -> None:
     compatibility = read('app/integrations/kubernetes/compatibility.py')
     validation = read('app/integrations/kubernetes/validation.py')
     service = read('app/integrations/service.py')
-    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html') + read('app/templates/integrations/kubernetes/partials/_capability_registry.html') + read('app/templates/integrations/components/_capability_readiness.html')
+    capability = (
+        read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
+        + read('app/templates/integrations/kubernetes/partials/_capability_registry.html')
+        + read('app/templates/integrations/components/_capability_readiness.html')
+    )
 
     assert "FeatureContract('inventory.secrets', (ApiCandidate('', 'v1', 'secrets'),), required=False)" in compatibility
     assert "'optional_blocked_features'" in compatibility
@@ -227,7 +243,11 @@ def test_minimum_validation_rbac_uses_copy_friendly_modal() -> None:
 
 
 def test_capability_workspace_uses_registry_modal_and_consistent_typography() -> None:
-    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html') + read('app/templates/integrations/kubernetes/partials/_capability_registry.html') + read('app/templates/integrations/components/_capability_readiness.html')
+    capability = (
+        read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
+        + read('app/templates/integrations/kubernetes/partials/_capability_registry.html')
+        + read('app/templates/integrations/components/_capability_readiness.html')
+    )
     modal = read('app/templates/integrations/components/_record_detail_modal.html')
 
     for marker in (
@@ -291,9 +311,14 @@ def test_capability_workspace_uses_registry_modal_and_consistent_typography() ->
     assert 'onclick=' not in modal
     assert 'x-teleport' not in modal
 
+
 def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
     connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
-    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html') + read('app/templates/integrations/kubernetes/partials/_capability_registry.html') + read('app/templates/integrations/components/_capability_readiness.html')
+    capability = (
+        read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
+        + read('app/templates/integrations/kubernetes/partials/_capability_registry.html')
+        + read('app/templates/integrations/components/_capability_readiness.html')
+    )
     inventory = read('app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html')
     runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
 
@@ -339,6 +364,7 @@ def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
     assert 'data-kaori-runtime-diagnostic-row' in runtime
     assert 'data-kaori-runtime-observation-boundary' in runtime
 
+
 def test_kubernetes_runtime_uses_neutral_surfaces_with_controlled_brand_identity() -> None:
     detail = read('app/templates/integrations/kubernetes/detail.html')
     runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
@@ -362,6 +388,7 @@ def test_kubernetes_runtime_uses_neutral_surfaces_with_controlled_brand_identity
     assert "palette_icon('database', 'brand'" in inventory
     assert 'data-kaori-runtime-history-standard-v2' in history
     assert 'dark:text-kaori-accent' in history
+
 
 def test_connection_contract_uses_controlled_kaori_icon_palette() -> None:
     connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
@@ -419,7 +446,11 @@ def test_kubernetes_integration_uses_canonical_compact_label_roles() -> None:
     coverage = read('app/templates/integrations/kubernetes/partials/_integration_coverage.html')
     registry = read('app/templates/integrations/kubernetes/partials/_registry.html')
     connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
-    capability = read('app/templates/integrations/kubernetes/partials/_capability_workspace.html') + read('app/templates/integrations/kubernetes/partials/_capability_registry.html') + read('app/templates/integrations/components/_capability_readiness.html')
+    capability = (
+        read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
+        + read('app/templates/integrations/kubernetes/partials/_capability_registry.html')
+        + read('app/templates/integrations/components/_capability_readiness.html')
+    )
     runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
     inventory = read('app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html')
     history = read('app/templates/integrations/partials/_runtime_history.html')
@@ -443,4 +474,3 @@ def test_kubernetes_integration_uses_canonical_compact_label_roles() -> None:
     assert 'Validation · {{ row.readiness_label }}' in history
     assert labels.count('whitespace-nowrap') >= 4
     assert 'Single-Line Compact Label Contract' in standard
-

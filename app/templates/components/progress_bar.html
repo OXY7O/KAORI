@@ -1,42 +1,58 @@
 {% import "components/table_label.html" as table_label %}
 {% macro bar(value, track_classes, fill_classes, label='Progress') -%}
     {% set safe_value = value | default(0, true) | int %}
-    {% if safe_value < 0 %}{% set safe_value = 0 %}{% elif safe_value > 100 %}{% set safe_value = 100 %}{% endif %}
+    {% if safe_value < 0 %}
+        {% set safe_value = 0 %}
+    {% elif safe_value > 100 %}
+        {% set safe_value = 100 %}
+    {% endif %}
     <div class="{{ track_classes }}"
          role="progressbar"
          aria-label="{{ label }}"
          aria-valuemin="0"
          aria-valuemax="100"
          aria-valuenow="{{ safe_value }}">
-        <div class="kaori-progress-fill {{ fill_classes }}" data-progress="{{ safe_value }}"></div>
+        <div class="kaori-progress-fill {{ fill_classes }}"
+             data-progress="{{ safe_value }}"></div>
     </div>
 {%- endmacro %}
 {% macro stacked_bar(primary_value, secondary_value, track_classes, primary_classes, secondary_classes, label='Progress') -%}
     {% set safe_primary_value = primary_value | default(0, true) | int %}
     {% set safe_secondary_value = secondary_value | default(0, true) | int %}
-    {% if safe_primary_value < 0 %}{% set safe_primary_value = 0 %}{% elif safe_primary_value > 100 %}{% set safe_primary_value = 100 %}{% endif %}
-    {% if safe_secondary_value < 0 %}{% set safe_secondary_value = 0 %}{% elif safe_secondary_value > 100 %}{% set safe_secondary_value = 100 %}{% endif %}
+    {% if safe_primary_value < 0 %}
+        {% set safe_primary_value = 0 %}
+    {% elif safe_primary_value > 100 %}
+        {% set safe_primary_value = 100 %}
+    {% endif %}
+    {% if safe_secondary_value < 0 %}
+        {% set safe_secondary_value = 0 %}
+    {% elif safe_secondary_value > 100 %}
+        {% set safe_secondary_value = 100 %}
+    {% endif %}
     <div class="{{ track_classes }}"
          role="progressbar"
          aria-label="{{ label }}"
          aria-valuemin="0"
          aria-valuemax="100"
          aria-valuenow="{{ safe_primary_value }}">
-        <div class="kaori-progress-fill {{ primary_classes }}" data-progress="{{ safe_primary_value }}"></div>
-        <div class="kaori-progress-fill {{ secondary_classes }}" data-progress="{{ safe_secondary_value }}"></div>
+        <div class="kaori-progress-fill {{ primary_classes }}"
+             data-progress="{{ safe_primary_value }}"></div>
+        <div class="kaori-progress-fill {{ secondary_classes }}"
+             data-progress="{{ safe_secondary_value }}"></div>
     </div>
 {%- endmacro %}
-
 {% macro determinate(value, label='Progress', classes='h-1.5 w-full overflow-hidden rounded-full accent-kaori-primary') -%}
     {% set safe_value = value | default(0, true) | int %}
-    {% if safe_value < 0 %}{% set safe_value = 0 %}{% elif safe_value > 100 %}{% set safe_value = 100 %}{% endif %}
+    {% if safe_value < 0 %}
+        {% set safe_value = 0 %}
+    {% elif safe_value > 100 %}
+        {% set safe_value = 100 %}
+    {% endif %}
     <progress class="{{ classes }}"
               value="{{ safe_value }}"
               max="100"
               aria-label="{{ label }}">{{ safe_value }}%</progress>
 {%- endmacro %}
-
-
 {% macro semantic_fill_classes(tone='info') -%}
     {% set resolved_tone = table_label.semantic_tone(tone)|trim %}
     {%- if resolved_tone == 'normal' -%}bg-status-normal
@@ -47,7 +63,6 @@
     {%- else -%}bg-status-info
     {%- endif -%}
 {%- endmacro %}
-
 {% macro pressure_tone(value, available=true, warning_threshold=75, critical_threshold=90) -%}
     {% set resolved_value = value|default(0, true)|float %}
     {%- if not available -%}unknown
@@ -56,7 +71,6 @@
     {%- else -%}normal
     {%- endif -%}
 {%- endmacro %}
-
 {% macro headroom_tone(value, available=true, warning_threshold=40, critical_threshold=15) -%}
     {% set resolved_value = value|default(0, true)|float %}
     {%- if not available -%}unknown
@@ -65,7 +79,6 @@
     {%- else -%}normal
     {%- endif -%}
 {%- endmacro %}
-
 {% macro score_tone(value, available=true, warning_threshold=75, critical_threshold=50) -%}
     {% set resolved_value = value|default(0, true)|float %}
     {%- if not available -%}unknown
@@ -74,12 +87,10 @@
     {%- else -%}normal
     {%- endif -%}
 {%- endmacro %}
-
 {% macro semantic_bar(value, tone='info', track_classes='h-2 overflow-hidden rounded-full bg-surface-hover', label='Status', extra_fill_classes='') -%}
-    {{ bar(
-        value,
+    {{ bar(value,
         track_classes=track_classes,
-        fill_classes='h-full rounded-full transition-all duration-500 ' ~ semantic_fill_classes(tone)|trim ~ ' ' ~ extra_fill_classes,
-        label=label
+        fill_classes='h-full rounded-full transition-all duration-500 ' ~ semantic_fill_classes(tone) |trim ~ ' ' ~ extra_fill_classes,
+    label=label
     ) }}
 {%- endmacro %}

@@ -1,51 +1,23 @@
 {% import "components/workspace_tabs.html" as workspace_tabs %}
 {% import "components/peer_content_grid.html" as peer_content_grid %}
 {% set dashboard_cluster_query = 'cluster_id=' ~ (dashboard.selected_cluster_id or '') ~ '&cluster_health_page=' ~ dashboard.cluster_health_pagination.page ~ '&cluster_health_per_page=' ~ dashboard.cluster_health_pagination.per_page %}
-{% set dashboard_tabs = [
-    ('overview', 'Operations Overview', 'activity'),
-    ('capacity', 'Capacity & Demand', 'gauge'),
-    ('signals', 'Signals & Actions', 'bell-ring'),
-    ('reporting', 'Reporting', 'file-text')
-] %}
+{% set dashboard_tabs = [('overview', 'Operations Overview', 'activity'), ('capacity', 'Capacity & Demand', 'gauge'), ('signals', 'Signals & Actions', 'bell-ring'), ('reporting', 'Reporting', 'file-text')] %}
 <div class="space-y-5">
     {% include "dashboards/kubernetes/partials/_hero.html" %}
     {% if cluster_onboarding.is_blocked %}
         {% include "components/cluster/_onboarding_banner.html" %}
     {% else %}
-        <div x-data="{
-                 activeTab: '{{ dashboard.active_tab }}',
-                 allowedTabs: ['overview', 'capacity', 'signals', 'reporting'],
-                 setTab(tab) {
-                     if (!this.allowedTabs.includes(tab)) return;
-                     this.activeTab = tab;
-                     const url = new URL(window.location.href);
-                     url.searchParams.set('tab', tab);
-                     window.history.replaceState({}, '', url);
-                 },
-                 moveTab(currentTab, direction, prefix) {
-                     const currentIndex = this.allowedTabs.indexOf(currentTab);
-                     if (currentIndex < 0) return;
-                     let nextIndex = currentIndex;
-                     if (direction === 'home') nextIndex = 0;
-                     else if (direction === 'end') nextIndex = this.allowedTabs.length - 1;
-                     else nextIndex = (currentIndex + direction + this.allowedTabs.length) % this.allowedTabs.length;
-                     const nextTab = this.allowedTabs[nextIndex];
-                     this.setTab(nextTab);
-                     this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus());
-                 }
-             }"
+        <div x-data="{ activeTab: '{{ dashboard.active_tab }}', allowedTabs: ['overview', 'capacity', 'signals', 'reporting'], setTab(tab) { if (!this.allowedTabs.includes(tab)) return; this.activeTab = tab; const url = new URL(window.location.href); url.searchParams.set('tab', tab); window.history.replaceState({}, '', url); }, moveTab(currentTab, direction, prefix) { const currentIndex = this.allowedTabs.indexOf(currentTab); if (currentIndex < 0) return; let nextIndex = currentIndex; if (direction === 'home') nextIndex = 0; else if (direction === 'end') nextIndex = this.allowedTabs.length - 1; else nextIndex = (currentIndex + direction + this.allowedTabs.length) % this.allowedTabs.length; const nextTab = this.allowedTabs[nextIndex]; this.setTab(nextTab); this.$nextTick(() => document.getElementById(`${prefix}-tab-${nextTab}`)?.focus()); } }"
              x-on:popstate.window="activeTab = allowedTabs.includes(new URL(window.location.href).searchParams.get('tab')) ? new URL(window.location.href).searchParams.get('tab') : 'overview'">
-            <input id="dashboard-active-tab" type="hidden" name="tab" x-model="activeTab" />
-
+            <input id="dashboard-active-tab"
+                   type="hidden"
+                   name="tab"
+                   x-model="activeTab" />
             {% include "dashboards/kubernetes/partials/_signal_overview.html" %}
-
             <div class="mt-5 space-y-5">
-                {{ workspace_tabs.render(
-                    dashboard_tabs,
-                    prefix='kubernetes-dashboard',
-                    aria_label='Kubernetes Dashboard Sections'
-                ) }}
-
+                {{ workspace_tabs.render(dashboard_tabs,
+                                prefix='kubernetes-dashboard',
+                                aria_label='Kubernetes Dashboard Sections') }}
                 <div id="kubernetes-dashboard-panel-overview"
                      role="tabpanel"
                      aria-labelledby="kubernetes-dashboard-tab-overview"
@@ -61,7 +33,6 @@
                             {% include "dashboards/kubernetes/partials/_section_loading.html" %}
                         {% endwith %}
                     </div>
-
                     <div class="{{ peer_content_grid.layout_classes() }}">
                         <div class="{{ peer_content_grid.column_classes('primary') }}">
                             {% include "dashboards/kubernetes/partials/_inventory_summary.html" %}
@@ -80,7 +51,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div id="kubernetes-dashboard-panel-capacity"
                      role="tabpanel"
                      aria-labelledby="kubernetes-dashboard-tab-capacity"
@@ -115,7 +85,6 @@
                             </div>
                         </div>
                     </div>
-
                     <div id="dashboard-top-consumers"
                          hx-get="{{ url_for('kubernetes_dashboard.section', section='top_consumers') }}?{{ dashboard_cluster_query }}"
                          hx-trigger="revealed"
@@ -126,7 +95,6 @@
                         {% endwith %}
                     </div>
                 </div>
-
                 <div id="kubernetes-dashboard-panel-signals"
                      role="tabpanel"
                      aria-labelledby="kubernetes-dashboard-tab-signals"
@@ -152,7 +120,6 @@
                             {% include "dashboards/kubernetes/partials/_alert_response_guidance.html" %}
                         </div>
                     </div>
-
                     <div id="dashboard-recommended-actions"
                          hx-get="{{ url_for('kubernetes_dashboard.section', section='recommended_actions') }}?{{ dashboard_cluster_query }}"
                          hx-trigger="revealed"
@@ -163,7 +130,6 @@
                         {% endwith %}
                     </div>
                 </div>
-
                 <div id="kubernetes-dashboard-panel-reporting"
                      role="tabpanel"
                      aria-labelledby="kubernetes-dashboard-tab-reporting"

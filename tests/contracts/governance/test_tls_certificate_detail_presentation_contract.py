@@ -5,9 +5,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 def test_tls_certificate_detail_uses_full_workspace_modal_content() -> None:
     page = (ROOT / 'app/templates/governance/tls_certificates/detail.html').read_text()
-    detail = (
-        ROOT / 'app/templates/governance/tls_certificates/partials/_detail_content.html'
-    ).read_text()
+    detail = (ROOT / 'app/templates/governance/tls_certificates/partials/_detail_content.html').read_text()
     index = (ROOT / 'app/templates/governance/tls_certificates/index.html').read_text()
 
     assert 'partials/_detail_content.html' in page
@@ -23,9 +21,7 @@ def test_tls_certificate_detail_uses_full_workspace_modal_content() -> None:
 
 
 def test_tls_certificate_detail_keeps_governance_boundary_and_technical_evidence() -> None:
-    detail = (
-        ROOT / 'app/templates/governance/tls_certificates/partials/_detail_content.html'
-    ).read_text()
+    detail = (ROOT / 'app/templates/governance/tls_certificates/partials/_detail_content.html').read_text()
 
     assert 'Common Name' in detail
     assert 'Days Remaining' in detail

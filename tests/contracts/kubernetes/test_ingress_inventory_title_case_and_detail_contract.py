@@ -15,7 +15,10 @@ def test_ingress_inventory_uses_canonical_resource_page_pattern() -> None:
     card = read('app/templates/inventory/ingresses/partials/_table_card.html')
     table = read('app/templates/inventory/ingresses/partials/_table_content.html')
 
-    assert "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')" in routes
+    assert (
+        "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')"
+        in routes
+    )
     assert 'id="ingresses-page-workspace"' in workspace
     assert 'inventory/components/_data_freshness.html' in workspace
     assert 'page_hero.context_card(' in hero

@@ -38,7 +38,7 @@ def main() -> int:
         errors,
     )
     require(
-        "total_count = len(regular_specs)" in collector,
+        'total_count = len(regular_specs)' in collector,
         'Ready totals must use regular Pod specification containers.',
         errors,
     )
@@ -107,7 +107,8 @@ def main() -> int:
     )
 
     require(
-        "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')" in routes,
+        "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')"
+        in routes,
         'Pod workspace partial must be registered.',
         errors,
     )
@@ -172,14 +173,12 @@ def main() -> int:
     ):
         require(token in detail, f'Pod detail is missing explicit evidence state: {token}', errors)
     require(
-        'pod.specification_evidence_reported' in detail
-        and 'pod.runtime_evidence_reported' in detail,
+        'pod.specification_evidence_reported' in detail and 'pod.runtime_evidence_reported' in detail,
         'Pod detail must distinguish specification and runtime evidence.',
         errors,
     )
     require(
-        '<caption class="sr-only">Volumes and mounts for Pod' in detail
-        and detail.count('scope="col"') >= 4,
+        '<caption class="sr-only">Volumes and mounts for Pod' in detail and detail.count('scope="col"') >= 4,
         'Pod volume table requires accessible structure.',
         errors,
     )

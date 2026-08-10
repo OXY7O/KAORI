@@ -3,9 +3,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_record_detail_modal.html" as record_detail_modal %}
-
 {% block title %}Generated Report Detail{% endblock title %}
-
 {% block dashboard_content %}
     {% set report_status_tone = 'normal' if payload.report.raw_status == 'ready' else ('critical' if payload.report.raw_status == 'failed' else ('warning' if payload.report.raw_status == 'archived' else 'pending')) %}
     {% set file_tone = 'normal' if payload.report.file_state.tone == 'green' else ('critical' if payload.report.file_state.tone == 'red' else ('warning' if payload.report.file_state.tone == 'amber' else 'unknown')) %}
@@ -15,10 +13,11 @@
     {% set hero_action_label = 'Download ' ~ payload.report.artifact_label if payload.report.can_download_artifact else ('Open Storage' if payload.artifact_access_notice else 'Back to Registry') %}
     {% set hero_action_href = url_for('reports.download_report_artifact', report_id=payload.report.id) if payload.report.can_download_artifact else (payload.artifact_access_notice.action_href if payload.artifact_access_notice else url_for('reports.generated_reports')) %}
     {% set hero_action_icon = 'download' if payload.report.can_download_artifact else ('hard-drive' if payload.artifact_access_notice else 'arrow-left') %}
-    {% set primary_action_classes = 'inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-kaori-soft disabled:text-content-muted' %}
+    {% set primary_action_classes = "inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-kaori-soft disabled:text-content-muted" %}
     {% set storage_reference_modal_id = 'generated-report-storage-reference-' ~ payload.report.id %}
-
-    <div class="space-y-5" data-generated-report-detail="operational-dossier-v5" data-generated-detail-polish="professional-v1">
+    <div class="space-y-5"
+         data-generated-report-detail="operational-dossier-v5"
+         data-generated-detail-polish="professional-v1">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -34,31 +33,29 @@
                         </div>
                     {% endcall %}
                 </div>
-
-                {{ page_hero.context_card(
-                    'Generated Report Delivery Posture',
-                    'Delivery Posture',
-                    'Report Status',
-                    payload.report.status,
-                    report_status_tone,
-                    [
-                        ('file-type-2', 'Format', payload.report.output_format, 'Artifact Contract'),
-                        (payload.report.file_state.icon, 'Availability', payload.report.file_state.label, 'Verified On Detail View')
-                    ],
-                    hero_action_label,
-                    hero_action_href,
-                    hero_action_icon
+                {{ page_hero.context_card('Generated Report Delivery Posture',
+                                'Delivery Posture',
+                                'Report Status',
+                                payload.report.status,
+                                report_status_tone,
+                                [
+                                ('file-type-2', 'Format', payload.report.output_format, 'Artifact Contract') ,
+                (payload.report.file_state.icon, 'Availability', payload.report.file_state.label, 'Verified On Detail View')
+                ],
+                hero_action_label,
+                hero_action_href,
+                hero_action_icon
                 ) }}
             </div>
         </section>
-
         {% if attempt_active and retained_ready_artifact %}
             <section class="rounded-2xl border border-kaori-primary/20 bg-kaori-soft/45 px-5 py-4 shadow-sm"
                      role="status"
                      data-generated-detail-regeneration-state="active-retained">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm" aria-hidden="true">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm"
+                              aria-hidden="true">
                             <i data-lucide="refresh-cw" class="h-4 w-4"></i>
                         </span>
                         <div class="min-w-0">
@@ -78,7 +75,8 @@
                      data-generated-detail-regeneration-state="failed-retained">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning-text shadow-sm" aria-hidden="true">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning-text shadow-sm"
+                              aria-hidden="true">
                             <i data-lucide="shield-check" class="h-4 w-4"></i>
                         </span>
                         <div class="min-w-0">
@@ -90,22 +88,24 @@
                 </div>
             </section>
         {% endif %}
-
         {% if payload.artifact_access_notice %}
             <section class="rounded-2xl border border-status-warning-border bg-status-warning-soft px-5 py-4 shadow-sm"
                      role="status"
                      data-generated-detail-storage-notice="true">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning-text" aria-hidden="true">
-                            <i data-lucide="{{ payload.artifact_access_notice.icon }}" class="h-4 w-4"></i>
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning-text"
+                              aria-hidden="true">
+                            <i data-lucide="{{ payload.artifact_access_notice.icon }}"
+                               class="h-4 w-4"></i>
                         </span>
                         <div class="min-w-0">
                             <h2 class="text-sm font-bold text-status-warning-text">{{ payload.artifact_access_notice.title }}</h2>
                             <p class="mt-1 text-xs leading-5 text-content-secondary">{{ payload.artifact_access_notice.description }}</p>
                         </div>
                     </div>
-                    <a href="{{ payload.artifact_access_notice.action_href }}" class="{{ table_ui.action_classes() }} shrink-0">
+                    <a href="{{ payload.artifact_access_notice.action_href }}"
+                       class="{{ table_ui.action_classes() }} shrink-0">
                         <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>
                         {{ payload.artifact_access_notice.action_label }}
                     </a>
@@ -116,7 +116,8 @@
                      role="status"
                      data-generated-detail-missing-artifact="true">
                 <div class="flex items-start gap-3">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-critical-text" aria-hidden="true">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-critical-text"
+                          aria-hidden="true">
                         <i data-lucide="file-warning" class="h-4 w-4"></i>
                     </span>
                     <div>
@@ -126,7 +127,6 @@
                 </div>
             </section>
         {% endif %}
-
         <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
                  data-generated-detail-block="report-overview"
                  data-report-overview-layout="balanced-dossier">
@@ -145,12 +145,12 @@
                     </div>
                 </div>
             </header>
-
             <div class="grid gap-0 xl:grid-cols-12" data-report-overview-grid="true">
                 <div class="xl:col-span-8 xl:border-r xl:border-outline-subtle">
                     <div class="p-5 sm:p-6">
                         <div class="flex items-start gap-3">
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
                                 <i data-lucide="file-text" class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
@@ -158,37 +158,50 @@
                                 <p class="mt-1 text-xs leading-5 text-content-muted">Persisted contract and ownership context used to generate this artifact.</p>
                             </div>
                         </div>
-
-                        <dl class="mt-5 grid gap-x-8 gap-y-0 sm:grid-cols-2 lg:grid-cols-3" data-report-context="true">
+                        <dl class="mt-5 grid gap-x-8 gap-y-0 sm:grid-cols-2 lg:grid-cols-3"
+                            data-report-context="true">
                             <div class="border-t border-outline-subtle py-3">
                                 <dt class="text-xs font-semibold text-content-muted">Report Type</dt>
-                                <dd class="mt-1.5 text-sm font-bold text-content-primary">{{ payload.report.report_type }}</dd>
+                                <dd class="mt-1.5 text-sm font-bold text-content-primary">
+                                    {{ payload.report.report_type }}
+                                </dd>
                             </div>
                             <div class="border-t border-outline-subtle py-3">
                                 <dt class="text-xs font-semibold text-content-muted">Cluster</dt>
-                                <dd class="mt-1.5 break-words text-sm font-bold text-content-primary">{{ payload.report.cluster }}</dd>
+                                <dd class="mt-1.5 break-words text-sm font-bold text-content-primary">
+                                    {{ payload.report.cluster }}
+                                </dd>
                             </div>
                             <div class="border-t border-outline-subtle py-3">
                                 <dt class="text-xs font-semibold text-content-muted">Namespace</dt>
-                                <dd class="mt-1.5 break-words text-sm font-bold text-content-primary">{{ payload.report.namespace }}</dd>
+                                <dd class="mt-1.5 break-words text-sm font-bold text-content-primary">
+                                    {{ payload.report.namespace }}
+                                </dd>
                             </div>
                             <div class="border-t border-outline-subtle py-3">
                                 <dt class="text-xs font-semibold text-content-muted">Period</dt>
-                                <dd class="mt-1.5 text-sm font-bold text-content-primary">{{ payload.report.period }}</dd>
+                                <dd class="mt-1.5 text-sm font-bold text-content-primary">
+                                    {{ payload.report.period }}
+                                </dd>
                             </div>
                             <div class="border-t border-outline-subtle py-3">
                                 <dt class="text-xs font-semibold text-content-muted">Requested By</dt>
-                                <dd class="mt-1.5 text-sm font-bold text-content-primary">{{ payload.report.generated_by }}</dd>
+                                <dd class="mt-1.5 text-sm font-bold text-content-primary">
+                                    {{ payload.report.generated_by }}
+                                </dd>
                                 <p class="mt-0.5 text-xs text-content-muted">{{ payload.report.generated_by_meta.status_label }}</p>
                             </div>
                             <div class="border-t border-outline-subtle py-3">
                                 <dt class="text-xs font-semibold text-content-muted">Report ID</dt>
-                                <dd class="mt-1.5 break-all text-sm font-bold text-content-primary">{{ payload.report.id }}</dd>
+                                <dd class="mt-1.5 break-all text-sm font-bold text-content-primary">
+                                    {{ payload.report.id }}
+                                </dd>
                             </div>
                         </dl>
-
-                        <div class="mt-2 flex items-start gap-3 rounded-xl border border-kaori-primary/15 bg-kaori-soft/30 px-4 py-3" data-governed-scope-note="true">
-                            <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary" aria-hidden="true">
+                        <div class="mt-2 flex items-start gap-3 rounded-xl border border-kaori-primary/15 bg-kaori-soft/30 px-4 py-3"
+                             data-governed-scope-note="true">
+                            <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
+                                  aria-hidden="true">
                                 <i data-lucide="shield-check" class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
@@ -198,27 +211,49 @@
                         </div>
                     </div>
                 </div>
-
-                <aside class="xl:col-span-4" aria-labelledby="generated-detail-artifact-delivery-title" data-artifact-delivery-panel="true">
+                <aside class="xl:col-span-4"
+                       aria-labelledby="generated-detail-artifact-delivery-title"
+                       data-artifact-delivery-panel="true">
                     <div class="p-5 sm:p-6">
                         <div class="flex items-start gap-3">
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
                                 <i data-lucide="package-check" class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
-                                <h3 id="generated-detail-artifact-delivery-title" class="text-sm font-bold text-content-primary">Artifact Delivery</h3>
+                                <h3 id="generated-detail-artifact-delivery-title"
+                                    class="text-sm font-bold text-content-primary">Artifact Delivery</h3>
                                 <p class="mt-1 text-xs leading-5 text-content-muted">Retained artifact state and storage delivery posture.</p>
                             </div>
                         </div>
-
                         <dl class="mt-5 divide-y divide-outline-subtle border-y border-outline-subtle">
-                            <div class="flex items-start justify-between gap-4 py-3"><dt class="text-xs font-semibold text-content-muted">Output Format</dt><dd class="text-right text-sm font-bold text-content-primary">{{ payload.report.output_format }}</dd></div>
-                            <div class="flex items-start justify-between gap-4 py-3"><dt class="text-xs font-semibold text-content-muted">File Size</dt><dd class="text-right text-sm font-bold text-content-primary">{{ payload.report.file_size }}</dd></div>
-                            <div class="flex items-start justify-between gap-4 py-3"><dt class="text-xs font-semibold text-content-muted">Storage Backend</dt><dd class="max-w-[62%] break-words text-right text-sm font-bold text-content-primary">{{ payload.report.storage_backend_label }}</dd></div>
-                            <div class="flex items-center justify-between gap-4 py-3"><dt class="text-xs font-semibold text-content-muted">Availability</dt><dd>{{ table_label.status_indicator_label(payload.report.file_state.label, file_tone) }}</dd></div>
+                            <div class="flex items-start justify-between gap-4 py-3">
+                                <dt class="text-xs font-semibold text-content-muted">Output Format</dt>
+                                <dd class="text-right text-sm font-bold text-content-primary">
+                                    {{ payload.report.output_format }}
+                                </dd>
+                            </div>
+                            <div class="flex items-start justify-between gap-4 py-3">
+                                <dt class="text-xs font-semibold text-content-muted">File Size</dt>
+                                <dd class="text-right text-sm font-bold text-content-primary">
+                                    {{ payload.report.file_size }}
+                                </dd>
+                            </div>
+                            <div class="flex items-start justify-between gap-4 py-3">
+                                <dt class="text-xs font-semibold text-content-muted">Storage Backend</dt>
+                                <dd class="max-w-[62%] break-words text-right text-sm font-bold text-content-primary">
+                                    {{ payload.report.storage_backend_label }}
+                                </dd>
+                            </div>
+                            <div class="flex items-center justify-between gap-4 py-3">
+                                <dt class="text-xs font-semibold text-content-muted">Availability</dt>
+                                <dd>
+                                    {{ table_label.status_indicator_label(payload.report.file_state.label, file_tone) }}
+                                </dd>
+                            </div>
                         </dl>
-
-                        <div class="mt-4 flex flex-col gap-3 rounded-xl border border-outline-subtle bg-surface-subtle/45 px-4 py-3 sm:flex-row sm:items-center sm:justify-between" data-storage-reference-handoff="true">
+                        <div class="mt-4 flex flex-col gap-3 rounded-xl border border-outline-subtle bg-surface-subtle/45 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                             data-storage-reference-handoff="true">
                             <div class="min-w-0">
                                 <p class="text-xs font-bold text-content-primary">Technical Storage Reference</p>
                                 <p class="mt-1 text-xs leading-5 text-content-muted">View retained storage URI and object key.</p>
@@ -231,16 +266,15 @@
                                     aria-controls="{{ storage_reference_modal_id }}"
                                     data-generated-storage-reference-open>
                                 <span>View Storage Reference</span>
-                                <i data-lucide="chevron-right" class="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden="true"></i>
+                                <i data-lucide="chevron-right"
+                                   class="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-0.5"
+                                   aria-hidden="true"></i>
                             </button>
                         </div>
                     </div>
                 </aside>
             </div>
         </section>
-
-
-
         {% call record_detail_modal.render(
             storage_reference_modal_id,
             'report-' ~ payload.report.id ~ '-storage-reference',
@@ -250,12 +284,14 @@
             icon='hard-drive',
             footer_text='Storage references are read-only artifact delivery evidence. Use Reports Storage for backend validation and repair.',
             size='standard'
-        ) %}
+            ) %}
             <div class="space-y-4" data-generated-storage-reference-modal="true">
-                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card" data-storage-reference-delivery-context="true">
+                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                         data-storage-reference-delivery-context="true">
                     <div class="flex flex-col gap-4 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
                         <div class="flex min-w-0 items-start gap-3">
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
                                 <i data-lucide="package-check" class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
@@ -266,31 +302,39 @@
                         </div>
                         {{ table_label.status_indicator_label(payload.report.file_state.label, file_tone) }}
                     </div>
-
                     <dl class="grid gap-px bg-outline-subtle sm:grid-cols-2">
                         <div class="bg-surface-card px-4 py-3.5 sm:px-5">
                             <dt class="text-xs font-semibold text-content-muted">Storage Backend</dt>
-                            <dd class="mt-1.5 break-words text-sm font-bold text-content-primary">{{ payload.report.storage_backend_label }}</dd>
+                            <dd class="mt-1.5 break-words text-sm font-bold text-content-primary">
+                                {{ payload.report.storage_backend_label }}
+                            </dd>
                         </div>
                         <div class="bg-surface-card px-4 py-3.5 sm:px-5">
                             <dt class="text-xs font-semibold text-content-muted">Output Format</dt>
-                            <dd class="mt-1.5 text-sm font-bold text-content-primary">{{ payload.report.output_format }}</dd>
+                            <dd class="mt-1.5 text-sm font-bold text-content-primary">
+                                {{ payload.report.output_format }}
+                            </dd>
                         </div>
                         <div class="bg-surface-card px-4 py-3.5 sm:px-5">
                             <dt class="text-xs font-semibold text-content-muted">File Size</dt>
-                            <dd class="mt-1.5 text-sm font-bold text-content-primary">{{ payload.report.file_size }}</dd>
+                            <dd class="mt-1.5 text-sm font-bold text-content-primary">
+                                {{ payload.report.file_size }}
+                            </dd>
                         </div>
                         <div class="bg-surface-card px-4 py-3.5 sm:px-5">
                             <dt class="text-xs font-semibold text-content-muted">Report ID</dt>
-                            <dd class="mt-1.5 break-all text-sm font-bold text-content-primary">{{ payload.report.id }}</dd>
+                            <dd class="mt-1.5 break-all text-sm font-bold text-content-primary">
+                                {{ payload.report.id }}
+                            </dd>
                         </div>
                     </dl>
                 </section>
-
-                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card" data-storage-reference-technical-evidence="true">
+                <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                         data-storage-reference-technical-evidence="true">
                     <header class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
                         <div class="flex items-start gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
                                 <i data-lucide="route" class="h-4 w-4"></i>
                             </span>
                             <div>
@@ -310,10 +354,11 @@
                         </div>
                     </div>
                 </section>
-
-                <section class="rounded-xl border border-kaori-primary/15 bg-kaori-soft/30 px-4 py-3.5" data-storage-reference-boundary="true">
+                <section class="rounded-xl border border-kaori-primary/15 bg-kaori-soft/30 px-4 py-3.5"
+                         data-storage-reference-boundary="true">
                     <div class="flex items-start gap-3">
-                        <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary" aria-hidden="true">
+                        <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
+                              aria-hidden="true">
                             <i data-lucide="shield-check" class="h-4 w-4"></i>
                         </span>
                         <div>
@@ -324,7 +369,6 @@
                 </section>
             </div>
         {% endcall %}
-
         <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
                  data-generated-detail-block="generation-evidence"
                  data-generated-detail-actions-embedded="true">
@@ -337,41 +381,61 @@
                             <p class="{{ table_ui.block_description_classes() }}">Execution lifecycle, persisted report definition, and operator actions in one workspace.</p>
                         </div>
                     </div>
-
-                    <div class="flex flex-wrap items-center gap-2 xl:justify-end" id="report-actions" data-generated-detail-report-actions="true">
+                    <div class="flex flex-wrap items-center gap-2 xl:justify-end"
+                         id="report-actions"
+                         data-generated-detail-report-actions="true">
                         {% if payload.job_execution %}{{ table_label.status_indicator_label(payload.job_execution.status_label, payload.job_execution.status_tone) }}{% endif %}
-                        <a href="{{ url_for('reports.generated_reports') }}" class="{{ table_ui.action_classes() }}">
+                        <a href="{{ url_for('reports.generated_reports') }}"
+                           class="{{ table_ui.action_classes() }}">
                             <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
                             Back to Registry
                         </a>
                         {% if payload.report.can_download_artifact %}
-                            <a href="{{ url_for('reports.download_report_artifact', report_id=payload.report.id) }}" class="{{ primary_action_classes }}" data-generated-detail-primary-action="download">
+                            <a href="{{ url_for('reports.download_report_artifact', report_id=payload.report.id) }}"
+                               class="{{ primary_action_classes }}"
+                               data-generated-detail-primary-action="download">
                                 <i data-lucide="download" class="h-4 w-4" aria-hidden="true"></i>
                                 Download {{ payload.report.artifact_label }}
                             </a>
                         {% endif %}
                         {% if payload.report.can_generate_artifact %}
-                            <form method="POST" action="{{ url_for('reports.generate_report_output', report_id=payload.report.id) }}">
-                                {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                <button type="submit" data-operation-submit data-loading-label="Queueing Generation..." class="{{ primary_action_classes if not payload.report.can_download_artifact and not payload.report.can_restore_report else table_ui.action_classes() }}" {% if not payload.report.can_download_artifact and not payload.report.can_restore_report %}data-generated-detail-primary-action="regenerate"{% endif %}>
+                            <form method="POST"
+                                  action="{{ url_for('reports.generate_report_output', report_id=payload.report.id) }}">
+                                {% if csrf_token is defined %}
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                {% endif %}
+                                <button type="submit"
+                                        data-operation-submit
+                                        data-loading-label="Queueing Generation..."
+                                        class="{{ primary_action_classes if not payload.report.can_download_artifact and not payload.report.can_restore_report else table_ui.action_classes() }}"
+                                        {% if not payload.report.can_download_artifact and not payload.report.can_restore_report %}data-generated-detail-primary-action="regenerate"{% endif %}>
                                     <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
                                     <span data-operation-submit-label>{{ payload.report.generate_artifact_label }}</span>
                                 </button>
                             </form>
                         {% endif %}
                         {% if payload.report.can_archive_report %}
-                            <form method="POST" action="{{ url_for('reports.archive_generated_report', report_id=payload.report.id) }}">
+                            <form method="POST"
+                                  action="{{ url_for('reports.archive_generated_report', report_id=payload.report.id) }}">
                                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                <button type="submit" data-operation-submit data-loading-label="Archiving Report..." class="{{ table_ui.action_classes() }}">
+                                <button type="submit"
+                                        data-operation-submit
+                                        data-loading-label="Archiving Report..."
+                                        class="{{ table_ui.action_classes() }}">
                                     <i data-lucide="archive" class="h-4 w-4" aria-hidden="true"></i>
                                     <span data-operation-submit-label>Archive Report</span>
                                 </button>
                             </form>
                         {% endif %}
                         {% if payload.report.can_restore_report %}
-                            <form method="POST" action="{{ url_for('reports.restore_generated_report', report_id=payload.report.id) }}">
+                            <form method="POST"
+                                  action="{{ url_for('reports.restore_generated_report', report_id=payload.report.id) }}">
                                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                <button type="submit" data-operation-submit data-loading-label="Restoring Report..." class="{{ primary_action_classes }}" data-generated-detail-primary-action="restore">
+                                <button type="submit"
+                                        data-operation-submit
+                                        data-loading-label="Restoring Report..."
+                                        class="{{ primary_action_classes }}"
+                                        data-generated-detail-primary-action="restore">
                                     <i data-lucide="rotate-ccw" class="h-4 w-4" aria-hidden="true"></i>
                                     <span data-operation-submit-label>Restore Report</span>
                                 </button>
@@ -380,16 +444,16 @@
                     </div>
                 </div>
             </header>
-
             <div class="p-5 sm:p-6">
                 {% if payload.job_execution %}
                     {% set lifecycle_items = [
-                        ('01', 'Requested', payload.report.created_at, 'Request Persisted'),
-                        ('02', 'Queued', payload.job_execution.queued_at, 'Reports Queue'),
-                        ('03', 'Started', payload.job_execution.started_at, 'Worker Execution'),
-                        ('04', 'Completed', payload.job_execution.completed_at, 'Terminal Attempt')
-                    ] %}
-                    <div class="border-b border-outline-subtle pb-5" data-generation-lifecycle="true">
+                                            ('01', 'Requested', payload.report.created_at, 'Request Persisted'),
+                                            ('02', 'Queued', payload.job_execution.queued_at, 'Reports Queue'),
+                                            ('03', 'Started', payload.job_execution.started_at, 'Worker Execution'),
+                                            ('04', 'Completed', payload.job_execution.completed_at, 'Terminal Attempt')
+                                        ] %}
+                    <div class="border-b border-outline-subtle pb-5"
+                         data-generation-lifecycle="true">
                         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                             {% for number, label, value, caption in lifecycle_items %}
                                 <div class="relative min-w-0 xl:pr-5 {% if not loop.last %}xl:after:absolute xl:after:right-0 xl:after:top-4 xl:after:h-px xl:after:w-5 xl:after:bg-outline-subtle{% endif %}">
@@ -404,35 +468,61 @@
                         </div>
                     </div>
                 {% endif %}
-
-                <div class="mt-5 space-y-5" data-generated-evidence-layout="stacked-bands-v2">
+                <div class="mt-5 space-y-5"
+                     data-generated-evidence-layout="stacked-bands-v2">
                     <section class="min-w-0"
                              aria-labelledby="generated-detail-latest-attempt-title"
                              data-generated-detail-latest-attempt-panel="true">
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div>
-                                <h3 id="generated-detail-latest-attempt-title" class="text-sm font-bold text-content-primary">Latest Generation Attempt</h3>
+                                <h3 id="generated-detail-latest-attempt-title"
+                                    class="text-sm font-bold text-content-primary">Latest Generation Attempt</h3>
                                 <p class="mt-1 text-xs leading-5 text-content-muted">Latest worker execution attached to this report record.</p>
                             </div>
                             {% if payload.job_execution %}{{ table_label.status_indicator_label(payload.job_execution.status_label, payload.job_execution.status_tone) }}{% endif %}
                         </div>
-
                         {% if payload.job_execution %}
-                            <dl class="mt-4 grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4" data-generated-detail-latest-attempt="true">
-                                <div class="min-w-0 bg-surface-card px-4 py-3.5"><dt class="text-xs font-semibold text-content-muted">Execution ID</dt><dd class="mt-1.5 break-all text-sm font-bold text-content-primary">{{ payload.job_execution.public_id }}</dd></div>
-                                <div class="min-w-0 bg-surface-card px-4 py-3.5"><dt class="text-xs font-semibold text-content-muted">Trigger</dt><dd class="mt-1.5 text-sm font-bold text-content-primary">{{ payload.job_execution.trigger_label }}</dd></div>
-                                <div class="min-w-0 bg-surface-card px-4 py-3.5"><dt class="text-xs font-semibold text-content-muted">Queue</dt><dd class="mt-1.5 text-sm font-bold text-content-primary">{{ payload.job_execution.queue_name }}</dd></div>
-                                <div class="min-w-0 bg-surface-card px-4 py-3.5"><dt class="text-xs font-semibold text-content-muted">Duration</dt><dd class="mt-1.5 text-sm font-bold text-content-primary">{{ payload.job_execution.duration }}</dd></div>
+                            <dl class="mt-4 grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4"
+                                data-generated-detail-latest-attempt="true">
+                                <div class="min-w-0 bg-surface-card px-4 py-3.5">
+                                    <dt class="text-xs font-semibold text-content-muted">Execution ID</dt>
+                                    <dd class="mt-1.5 break-all text-sm font-bold text-content-primary">
+                                        {{ payload.job_execution.public_id }}
+                                    </dd>
+                                </div>
+                                <div class="min-w-0 bg-surface-card px-4 py-3.5">
+                                    <dt class="text-xs font-semibold text-content-muted">Trigger</dt>
+                                    <dd class="mt-1.5 text-sm font-bold text-content-primary">
+                                        {{ payload.job_execution.trigger_label }}
+                                    </dd>
+                                </div>
+                                <div class="min-w-0 bg-surface-card px-4 py-3.5">
+                                    <dt class="text-xs font-semibold text-content-muted">Queue</dt>
+                                    <dd class="mt-1.5 text-sm font-bold text-content-primary">
+                                        {{ payload.job_execution.queue_name }}
+                                    </dd>
+                                </div>
+                                <div class="min-w-0 bg-surface-card px-4 py-3.5">
+                                    <dt class="text-xs font-semibold text-content-muted">Duration</dt>
+                                    <dd class="mt-1.5 text-sm font-bold text-content-primary">
+                                        {{ payload.job_execution.duration }}
+                                    </dd>
+                                </div>
                             </dl>
-
                             {% if payload.job_execution.is_active %}
-                                <div class="mt-3 rounded-xl border border-kaori-primary/15 bg-kaori-soft/35 px-4 py-3" data-generated-detail-active-progress="true">
+                                <div class="mt-3 rounded-xl border border-kaori-primary/15 bg-kaori-soft/35 px-4 py-3"
+                                     data-generated-detail-active-progress="true">
                                     <div class="flex items-center justify-between gap-3 text-xs font-semibold text-content-secondary"><span>{{ payload.job_execution.progress_message }}</span><span>{{ payload.job_execution.progress_label }}</span></div>
-                                    <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-disabled"><div class="h-full rounded-full bg-kaori-primary" style="width: {{ payload.job_execution.progress }}%"></div></div>
+                                    <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-disabled">
+                                        <div class="h-full rounded-full bg-kaori-primary"
+                                             style="width: {{ payload.job_execution.progress }}%"></div>
+                                    </div>
                                 </div>
                             {% else %}
-                                <div class="mt-3 flex items-start gap-3 rounded-xl border border-kaori-primary/15 bg-kaori-soft/25 px-4 py-3" data-generated-attempt-interpretation="true">
-                                    <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary" aria-hidden="true"><i data-lucide="split" class="h-4 w-4"></i></span>
+                                <div class="mt-3 flex items-start gap-3 rounded-xl border border-kaori-primary/15 bg-kaori-soft/25 px-4 py-3"
+                                     data-generated-attempt-interpretation="true">
+                                    <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
+                                          aria-hidden="true"><i data-lucide="split" class="h-4 w-4"></i></span>
                                     <div>
                                         <p class="text-xs font-bold text-content-primary">Artifact and Attempt Are Independent</p>
                                         <p class="mt-1 text-xs leading-5 text-content-muted">Artifact availability is evaluated independently from the latest generation attempt. A failed regeneration does not invalidate a previously verified retained artifact.</p>
@@ -445,27 +535,27 @@
                                 <p class="mt-1 text-xs leading-5 text-content-muted">This report does not currently reference a canonical Reports worker execution.</p>
                             </div>
                         {% endif %}
-
                         {% if payload.report.error_message and payload.report.error_message != 'No error recorded' %}
-                            <div class="mt-3 rounded-xl border border-status-warning-border bg-status-warning-soft px-4 py-3" data-generated-detail-generation-note="true">
+                            <div class="mt-3 rounded-xl border border-status-warning-border bg-status-warning-soft px-4 py-3"
+                                 data-generated-detail-generation-note="true">
                                 <p class="text-xs font-bold text-status-warning-text">Latest Generation Note</p>
                                 <p class="mt-1 text-xs leading-5 text-content-secondary">{{ payload.report.error_message }}</p>
                             </div>
                         {% endif %}
                     </section>
-
                     <section class="border-t border-outline-subtle pt-5"
                              aria-labelledby="generated-detail-definition-title"
                              data-generated-detail-definition-panel="true">
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div>
-                                <h3 id="generated-detail-definition-title" class="text-sm font-bold text-content-primary">Persisted Report Definition</h3>
+                                <h3 id="generated-detail-definition-title"
+                                    class="text-sm font-bold text-content-primary">Persisted Report Definition</h3>
                                 <p class="mt-1 text-xs leading-5 text-content-muted">Content selection and governed evidence scope reused by regeneration.</p>
                             </div>
                             {{ table_label.metadata_label(payload.report.sections_count ~ ' Sections', 'list-checks') }}
                         </div>
-
-                        <div class="mt-4 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card" data-generated-definition-workspace="true">
+                        <div class="mt-4 overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card"
+                             data-generated-definition-workspace="true">
                             <section class="px-4 py-4 sm:px-5" data-generated-definition-sections="true">
                                 <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
@@ -474,12 +564,14 @@
                                     </div>
                                     <span class="text-xs font-semibold text-content-muted">{{ payload.report.sections_count }} Selected</span>
                                 </div>
-
                                 {% if payload.report.sections %}
-                                    <div class="mt-3 flex flex-wrap gap-2" data-generated-detail-sections="true">
+                                    <div class="mt-3 flex flex-wrap gap-2"
+                                         data-generated-detail-sections="true">
                                         {% for section in payload.report.sections %}
                                             <span class="inline-flex items-center gap-1.5 rounded-md border border-outline-subtle bg-surface-subtle/55 px-2.5 py-1.5 text-xs font-semibold text-content-secondary">
-                                                <i data-lucide="check" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>
+                                                <i data-lucide="check"
+                                                   class="h-3.5 w-3.5 text-kaori-primary"
+                                                   aria-hidden="true"></i>
                                                 {{ section.label }}
                                             </span>
                                         {% endfor %}
@@ -491,23 +583,45 @@
                                     </div>
                                 {% endif %}
                             </section>
-
-                            <section class="border-t border-outline-subtle" data-generated-definition-scope-section="true">
+                            <section class="border-t border-outline-subtle"
+                                     data-generated-definition-scope-section="true">
                                 <div class="px-4 pt-4 sm:px-5">
                                     <p class="text-xs font-bold text-content-primary">Evidence Scope</p>
                                     <p class="mt-1 text-xs leading-5 text-content-muted">Persisted runtime boundary reused for regeneration.</p>
                                 </div>
-                                <dl class="mt-3 grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4" data-generated-definition-scope="true">
-                                    <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5"><dt class="text-xs font-semibold text-content-muted">Cluster</dt><dd class="mt-1.5 break-words text-sm font-bold text-content-primary">{{ payload.report.cluster }}</dd></div>
-                                    <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5"><dt class="text-xs font-semibold text-content-muted">Namespace</dt><dd class="mt-1.5 break-words text-sm font-bold text-content-primary">{{ payload.report.namespace }}</dd></div>
-                                    <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5"><dt class="text-xs font-semibold text-content-muted">Period</dt><dd class="mt-1.5 text-sm font-bold text-content-primary">{{ payload.report.period }}</dd></div>
-                                    <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5"><dt class="text-xs font-semibold text-content-muted">Output Format</dt><dd class="mt-1.5 text-sm font-bold text-content-primary">{{ payload.report.output_format }}</dd></div>
+                                <dl class="mt-3 grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4"
+                                    data-generated-definition-scope="true">
+                                    <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
+                                        <dt class="text-xs font-semibold text-content-muted">Cluster</dt>
+                                        <dd class="mt-1.5 break-words text-sm font-bold text-content-primary">
+                                            {{ payload.report.cluster }}
+                                        </dd>
+                                    </div>
+                                    <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
+                                        <dt class="text-xs font-semibold text-content-muted">Namespace</dt>
+                                        <dd class="mt-1.5 break-words text-sm font-bold text-content-primary">
+                                            {{ payload.report.namespace }}
+                                        </dd>
+                                    </div>
+                                    <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
+                                        <dt class="text-xs font-semibold text-content-muted">Period</dt>
+                                        <dd class="mt-1.5 text-sm font-bold text-content-primary">
+                                            {{ payload.report.period }}
+                                        </dd>
+                                    </div>
+                                    <div class="min-w-0 bg-surface-card px-4 py-3.5 sm:px-5">
+                                        <dt class="text-xs font-semibold text-content-muted">Output Format</dt>
+                                        <dd class="mt-1.5 text-sm font-bold text-content-primary">
+                                            {{ payload.report.output_format }}
+                                        </dd>
+                                    </div>
                                 </dl>
                             </section>
-
-                            <section class="border-t border-kaori-primary/15 bg-kaori-soft/30 px-4 py-3.5 sm:px-5" data-generated-definition-governance="true">
+                            <section class="border-t border-kaori-primary/15 bg-kaori-soft/30 px-4 py-3.5 sm:px-5"
+                                     data-generated-definition-governance="true">
                                 <div class="flex items-start gap-3">
-                                    <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary" aria-hidden="true">
+                                    <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
+                                          aria-hidden="true">
                                         <i data-lucide="shield-check" class="h-4 w-4"></i>
                                     </span>
                                     <div class="min-w-0">

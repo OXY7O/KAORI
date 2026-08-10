@@ -1,6 +1,5 @@
 {% import "components/table_label.html" as table_label %}
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
-
 <div class="overflow-x-auto">
     <table class="w-full min-w-[980px] table-fixed border-collapse text-left">
         <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold uppercase tracking-wide text-content-muted">
@@ -19,7 +18,8 @@
                 <tr class="bg-surface-card align-top transition-colors hover:bg-surface-hover">
                     <td class="px-5 py-4">
                         <div class="flex min-w-0 items-start gap-3">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
                                 <i data-lucide="list-checks" class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
@@ -57,7 +57,10 @@
                                 aria-controls="{{ detail_target_id }}"
                                 class="group inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary shadow-sm transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                             <span data-detail-toggle-label>View Rule</span>
-                            <i data-detail-chevron data-lucide="chevron-down" class="h-4 w-4 transition-transform" aria-hidden="true"></i>
+                            <i data-detail-chevron
+                               data-lucide="chevron-down"
+                               class="h-4 w-4 transition-transform"
+                               aria-hidden="true"></i>
                         </button>
                     </td>
                 </tr>

@@ -24,4 +24,7 @@ def test_threshold_eta_uses_projected_points_and_selected_horizon() -> None:
     assert 'def _calculate_threshold_eta(' in CALCULATION
     assert "f'Beyond {horizon_days}d horizon'" in CALCULATION
     assert 'for point in forecast_points:' in CALCULATION
-    assert 'slope_per_day' not in CALCULATION.split('def _calculate_threshold_eta', 1)[1].split('def _resolve_summary_posture', 1)[0]
+    assert (
+        'slope_per_day'
+        not in CALCULATION.split('def _calculate_threshold_eta', 1)[1].split('def _resolve_summary_posture', 1)[0]
+    )

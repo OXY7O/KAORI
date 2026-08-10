@@ -12,13 +12,6 @@ from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window
 from app.extensions.db import db
 from app.models.report import ReportTemplate
 from app.models.user import User
-from app.reports.export.constants import (
-    DEFAULT_REPORT_DOMAIN,
-    DEFAULT_REPORT_SOURCE_KIND,
-    REPORT_DOMAIN_DESCRIPTIONS,
-    REPORT_DOMAIN_LABELS,
-    SOURCE_KIND_LABELS,
-)
 from app.reports.catalog import (
     OUTPUT_FORMAT_OPTIONS,
     REPORT_FAMILY_ANALYTICS,
@@ -29,12 +22,19 @@ from app.reports.catalog import (
     get_default_output_format,
     get_report_type_spec,
 )
+from app.reports.export.constants import (
+    DEFAULT_REPORT_DOMAIN,
+    DEFAULT_REPORT_SOURCE_KIND,
+    REPORT_DOMAIN_DESCRIPTIONS,
+    REPORT_DOMAIN_LABELS,
+    SOURCE_KIND_LABELS,
+)
 from app.reports.generate.service import SECTION_OPTIONS
 
 SYSTEM_TEMPLATE_ITEMS: list[dict[str, Any]] = [
     {
         'id': spec.value,
-        'name': f"{spec.label.removesuffix(' Report')} Template",
+        'name': f'{spec.label.removesuffix(" Report")} Template',
         'report_type': spec.value,
         'report_type_label': spec.label.removesuffix(' Report'),
         'description': spec.description,
@@ -68,9 +68,7 @@ def get_report_templates_payload(
 
     return {
         'page_title': 'Report Templates',
-        'page_subtitle': (
-            'Manage protected defaults and reusable custom report structures.'
-        ),
+        'page_subtitle': ('Manage protected defaults and reusable custom report structures.'),
         'summary_cards': get_summary_cards(all_templates),
         'posture': get_template_posture(all_templates),
         'filter_options': get_filter_options(),
@@ -90,9 +88,7 @@ def get_report_templates_payload(
         'allowed_formats_by_report_type': {
             str(option['value']): list(option['allowed_formats']) for option in REPORT_TYPE_OPTIONS
         },
-        'report_family_by_report_type': {
-            str(option['value']): str(option['family']) for option in REPORT_TYPE_OPTIONS
-        },
+        'report_family_by_report_type': {str(option['value']): str(option['family']) for option in REPORT_TYPE_OPTIONS},
     }
 
 
@@ -134,8 +130,12 @@ def build_system_template_item(template: dict[str, Any]) -> dict[str, Any]:
         'status_tone': get_status_tone(str(template['status'])),
         'renderer_status': 'Ready' if template_id in IMPLEMENTED_TEMPLATE_IDS else 'Review',
         'renderer_tone': 'green' if template_id in IMPLEMENTED_TEMPLATE_IDS else 'gray',
-        'renderer_label': 'Canonical artifact renderer ready' if template_id in IMPLEMENTED_TEMPLATE_IDS else 'Renderer needs review',
-        'generate_href': build_generate_href(str(template['report_type']), sections, output_format=str(template['output_format']).lower()),
+        'renderer_label': 'Canonical artifact renderer ready'
+        if template_id in IMPLEMENTED_TEMPLATE_IDS
+        else 'Renderer needs review',
+        'generate_href': build_generate_href(
+            str(template['report_type']), sections, output_format=str(template['output_format']).lower()
+        ),
         'duplicate_href': url_for('reports.duplicate_system_template', template_id=template_id),
         'edit_href': '',
         'delete_href': '',
@@ -394,7 +394,7 @@ def apply_template_state(template: ReportTemplate, form_state: dict[str, Any]) -
     template.output_format = form_state['output_format']
     template.sections = form_state['sections']
     if template.id is None and not template.source_template_key:
-        template.source_template_key = f"system:{form_state['report_type']}"
+        template.source_template_key = f'system:{form_state["report_type"]}'
 
 
 def apply_template_owner_snapshot(template: ReportTemplate, user_id: int | None) -> None:
@@ -414,7 +414,9 @@ def apply_template_owner_snapshot(template: ReportTemplate, user_id: int | None)
 def get_summary_cards(templates: list[dict[str, Any]]) -> list[dict[str, str]]:
     system_templates = sum(1 for template in templates if template['ownership'] == 'system')
     custom_templates = sum(1 for template in templates if template['ownership'] == 'custom')
-    active_custom_templates = sum(1 for template in templates if template['ownership'] == 'custom' and template['status'] == 'active')
+    active_custom_templates = sum(
+        1 for template in templates if template['ownership'] == 'custom' and template['status'] == 'active'
+    )
     return [
         {
             'label': 'System Templates',
@@ -453,15 +455,9 @@ def get_template_posture(templates: list[dict[str, Any]]) -> dict[str, Any]:
     system_count = sum(1 for item in templates if item.get('ownership') == 'system')
     custom_count = sum(1 for item in templates if item.get('ownership') == 'custom')
     active_custom_count = sum(
-        1
-        for item in templates
-        if item.get('ownership') == 'custom' and item.get('status') == 'active'
+        1 for item in templates if item.get('ownership') == 'custom' and item.get('status') == 'active'
     )
-    draft_count = sum(
-        1
-        for item in templates
-        if item.get('ownership') == 'custom' and item.get('status') == 'draft'
-    )
+    draft_count = sum(1 for item in templates if item.get('ownership') == 'custom' and item.get('status') == 'draft')
     catalog_count = len(REPORT_TYPE_SPECS)
     catalog_analytics_count = sum(1 for spec in REPORT_TYPE_SPECS if spec.family == REPORT_FAMILY_ANALYTICS)
     catalog_inventory_count = sum(1 for spec in REPORT_TYPE_SPECS if spec.family == REPORT_FAMILY_INVENTORY)
@@ -568,10 +564,7 @@ def build_templates_pagination(
     return {
         **pagination.as_dict(),
         'per_page_options': list(PER_PAGE_OPTIONS),
-        'label': (
-            f'Showing {pagination.start_item}–{pagination.end_item} '
-            f'of {pagination.total_items} Templates'
-        ),
+        'label': (f'Showing {pagination.start_item}–{pagination.end_item} of {pagination.total_items} Templates'),
     }
 
 

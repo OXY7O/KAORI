@@ -4,11 +4,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from app.analytics.common.params import (
-    get_per_page_arg,
-    get_positive_int_arg,
-    get_query_value,
-)
+from app.analytics.common.params import get_per_page_arg, get_positive_int_arg, get_query_value
 
 TOP_CONSUMERS_PAYLOAD_SCHEMA_VERSION = 3
 
@@ -95,11 +91,7 @@ def get_selected_resource(query_args: Mapping[str, Any]) -> str:
 
 
 def get_sort_options(selected_resource: str) -> list[dict[str, str]]:
-    return (
-        SINGLE_RESOURCE_SORT_OPTIONS
-        if selected_resource != 'all'
-        else ALL_RESOURCE_SORT_OPTIONS
-    )
+    return SINGLE_RESOURCE_SORT_OPTIONS if selected_resource != 'all' else ALL_RESOURCE_SORT_OPTIONS
 
 
 def get_selected_sort(
@@ -159,23 +151,15 @@ class TopConsumersSelection:
     per_page: int = 5
 
     @classmethod
-    def from_mapping(cls, query_args: Mapping[str, Any]) -> 'TopConsumersSelection':
+    def from_mapping(cls, query_args: Mapping[str, Any]) -> TopConsumersSelection:
         resource = get_selected_resource(query_args)
         return cls(
-            namespace=get_query_value(
-                query_args=query_args, name='namespace', default=''
-            ),
+            namespace=get_query_value(query_args=query_args, name='namespace', default=''),
             resource=resource,
-            search=get_query_value(
-                query_args=query_args, name='search', default=''
-            ),
+            search=get_query_value(query_args=query_args, name='search', default=''),
             sort=get_selected_sort(query_args, resource),
             priority=get_selected_priority(query_args),
             focus=get_selected_focus(query_args),
-            page=get_positive_int_arg(
-                query_args=query_args, name='page', default=1
-            ),
-            per_page=get_per_page_arg(
-                query_args=query_args, name='per_page', default=5
-            ),
+            page=get_positive_int_arg(query_args=query_args, name='page', default=1),
+            per_page=get_per_page_arg(query_args=query_args, name='per_page', default=5),
         )

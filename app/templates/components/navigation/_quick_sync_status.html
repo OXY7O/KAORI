@@ -13,7 +13,7 @@
     view_url=url_for('jobs.executions', queue='inventory', search=sync.task_id),
     action_label='View Job',
     hx_sync='this:replace'
-) %}
+    ) %}
     <div class="mt-3 grid grid-cols-3 gap-2">
         <div class="rounded-lg border border-outline-subtle bg-status-normal-soft px-2.5 py-2">
             <p class="text-xs font-semibold uppercase tracking-wide text-status-normal-text">Synced</p>

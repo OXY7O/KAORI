@@ -22,66 +22,60 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ page_hero.context_card(
-                    'ConfigMap Management context',
-                    'Operation Boundary',
-                    'Live ConfigMap Workflows',
-                    'Validate First',
-                    'info',
-                    [
-                        ('radio-tower', 'Target', 'Live API', 'Live Kubernetes'),
-                        ('scroll-text', 'Outcome', 'Audited', 'Activity Audit')
-                    ],
-                    'Manage Clusters',
-                    url_for('integrations.kubernetes'),
-                    'server-cog'
+                {{ page_hero.context_card('ConfigMap Management context',
+                                'Operation Boundary',
+                                'Live ConfigMap Workflows',
+                                'Validate First',
+                                'info',
+                                [
+                                ('radio-tower', 'Target', 'Live API', 'Live Kubernetes') ,
+                ('scroll-text', 'Outcome', 'Audited', 'Activity Audit')
+                ],
+                'Manage Clusters',
+                url_for('integrations.kubernetes'),
+                'server-cog'
                 ) }}
             </div>
         </section>
-
         {{ evidence_boundary.render() }}
-
         <div id="configmap-workflows">
             {% call workflow_catalog.render(
                 'Choose a ConfigMap Operation',
                 'Each workflow owns its live target, validation, impact, and audit boundary.'
-            ) %}
-                {{ workflow_card.render(
-                    'Create ConfigMap',
-                    'Create text or binary configuration without overwriting an existing object.',
-                    'file-plus-2',
-                    can_create,
-                    'Standard Operation',
-                    'Server-Side Dry-Run',
-                    'Create Only',
-                    url_for('kubernetes_operations.create_configmap'),
-                    'Create',
-                    'plus'
+                ) %}
+                {{ workflow_card.render('Create ConfigMap',
+                                'Create text or binary configuration without overwriting an existing object.',
+                                'file-plus-2',
+                                can_create,
+                                'Standard Operation',
+                                'Server-Side Dry-Run',
+                                'Create Only',
+                                url_for('kubernetes_operations.create_configmap') ,
+                'Create',
+                'plus'
                 ) }}
-                {{ workflow_card.render(
-                    'Update ConfigMap',
-                    'Review live values and apply a validated merge or complete replacement.',
-                    'file-pen-line',
-                    can_update,
-                    'Controlled Mutation',
-                    'Diff and Dry-Run',
-                    'Live Object',
-                    url_for('kubernetes_operations.update_configmap'),
-                    'Update',
-                    'pencil-line'
+                {{ workflow_card.render('Update ConfigMap',
+                                'Review live values and apply a validated merge or complete replacement.',
+                                'file-pen-line',
+                                can_update,
+                                'Controlled Mutation',
+                                'Diff and Dry-Run',
+                                'Live Object',
+                                url_for('kubernetes_operations.update_configmap') ,
+                'Update',
+                'pencil-line'
                 ) }}
-                {{ workflow_card.render(
-                    'Delete ConfigMap',
-                    'Review known consumers before a validated and explicitly confirmed deletion.',
-                    'trash-2',
-                    can_delete,
-                    'Destructive Operation',
-                    'Authorization Preflight',
-                    'Exact Target',
-                    url_for('kubernetes_operations.delete_configmap'),
-                    'Delete',
-                    'trash-2',
-                    'critical'
+                {{ workflow_card.render('Delete ConfigMap',
+                                'Review known consumers before a validated and explicitly confirmed deletion.',
+                                'trash-2',
+                                can_delete,
+                                'Destructive Operation',
+                                'Authorization Preflight',
+                                'Exact Target',
+                                url_for('kubernetes_operations.delete_configmap') ,
+                'Delete',
+                'trash-2',
+                'critical'
                 ) }}
             {% endcall %}
         </div>

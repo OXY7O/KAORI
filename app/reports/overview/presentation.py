@@ -84,12 +84,8 @@ def normalize_reports_overview_payload(payload: Mapping[str, Any] | None) -> dic
         normalized['current_status_summary'] = _build_current_status_summary(current_status)
 
     normalized['reporting_context'] = _normalize_reporting_context(normalized.get('reporting_context'))
-    normalized['reporting_operating_model'] = _normalize_operating_model(
-        normalized.get('reporting_operating_model')
-    )
-    normalized['data_collection_status'] = _normalize_data_collection_status(
-        normalized.get('data_collection_status')
-    )
+    normalized['reporting_operating_model'] = _normalize_operating_model(normalized.get('reporting_operating_model'))
+    normalized['data_collection_status'] = _normalize_data_collection_status(normalized.get('data_collection_status'))
 
     if not normalized.get('related_information'):
         normalized['related_information'] = [dict(item) for item in _RELATED_INFORMATION]
@@ -106,15 +102,12 @@ def normalize_reports_overview_payload(payload: Mapping[str, Any] | None) -> dic
     normalized['reporting_operations'] = _normalize_reporting_operations(
         normalized.get('reporting_operations'), normalized
     )
-    normalized['reporting_coverage'] = _normalize_reporting_coverage(
-        normalized.get('reporting_coverage')
-    )
+    normalized['reporting_coverage'] = _normalize_reporting_coverage(normalized.get('reporting_coverage'))
     normalized['artifact_statistics'] = _normalize_artifact_statistics(normalized.get('artifact_statistics'))
     normalized['artifact_portfolio'] = _normalize_artifact_portfolio(normalized.get('artifact_portfolio'))
     normalized['automation_summary'] = _normalize_automation_summary(normalized.get('automation_summary'))
 
     return normalized
-
 
 
 def _normalize_summary_cards(raw: Any) -> list[dict[str, Any]]:
@@ -171,8 +164,10 @@ def _normalize_reporting_operations(raw: Any, payload: Mapping[str, Any]) -> lis
         if items:
             return items[:3]
 
-    worker = payload.get('worker_context') if isinstance(payload.get('worker_context'), Mapping) else {}
-    storage = payload.get('storage_context') if isinstance(payload.get('storage_context'), Mapping) else {}
+    raw_worker = payload.get('worker_context')
+    raw_storage = payload.get('storage_context')
+    worker = raw_worker if isinstance(raw_worker, Mapping) else {}
+    storage = raw_storage if isinstance(raw_storage, Mapping) else {}
     return [
         {
             'label': 'Generation Queue',
@@ -212,7 +207,8 @@ def _normalize_reporting_coverage(raw: Any) -> list[dict[str, Any]]:
         groups = [dict(item) for item in raw if isinstance(item, Mapping)]
         if groups:
             for group in groups:
-                items = group.get('items') if isinstance(group.get('items'), list) else []
+                raw_items = group.get('items')
+                items = raw_items if isinstance(raw_items, list) else []
                 group.setdefault('contract_count', len(items))
             return groups[:2]
 
@@ -240,21 +236,43 @@ def _normalize_reporting_coverage(raw: Any) -> list[dict[str, Any]]:
 
 def _normalize_artifact_statistics(raw: Any) -> list[dict[str, Any]]:
     defaults = [
-        {'label': 'Requests This Month', 'value': '0', 'caption': 'Report requests created this calendar month', 'icon': 'calendar-range'},
-        {'label': 'Completion Rate', 'value': '—', 'caption': 'Ready or archived among resolved requests', 'icon': 'badge-check'},
-        {'label': 'Artifact Footprint', 'value': '0 B', 'caption': 'Stored ready and archived artifacts', 'icon': 'database'},
-        {'label': 'Custom Templates', 'value': '0', 'caption': 'Reusable operator-defined templates', 'icon': 'layout-template'},
+        {
+            'label': 'Requests This Month',
+            'value': '0',
+            'caption': 'Report requests created this calendar month',
+            'icon': 'calendar-range',
+        },
+        {
+            'label': 'Completion Rate',
+            'value': '—',
+            'caption': 'Ready or archived among resolved requests',
+            'icon': 'badge-check',
+        },
+        {
+            'label': 'Artifact Footprint',
+            'value': '0 B',
+            'caption': 'Stored ready and archived artifacts',
+            'icon': 'database',
+        },
+        {
+            'label': 'Custom Templates',
+            'value': '0',
+            'caption': 'Reusable operator-defined templates',
+            'icon': 'layout-template',
+        },
     ]
     if not isinstance(raw, list):
         return defaults
     items = [dict(item) for item in raw if isinstance(item, Mapping)]
-    return (items + defaults[len(items):])[:4]
+    return (items + defaults[len(items) :])[:4]
 
 
 def _normalize_artifact_portfolio(raw: Any) -> dict[str, list[dict[str, str]]]:
     if isinstance(raw, Mapping):
-        families = [dict(item) for item in raw.get('families', []) if isinstance(item, Mapping)]
-        formats = [dict(item) for item in raw.get('formats', []) if isinstance(item, Mapping)]
+        raw_families = raw.get('families')
+        raw_formats = raw.get('formats')
+        families = [dict(item) for item in raw_families if isinstance(item, Mapping)] if isinstance(raw_families, list) else []
+        formats = [dict(item) for item in raw_formats if isinstance(item, Mapping)] if isinstance(raw_formats, list) else []
         if families and formats:
             return {'families': families, 'formats': formats}
     return {
@@ -280,12 +298,14 @@ def _normalize_automation_summary(raw: Any) -> dict[str, str]:
         'available_contracts': str(raw.get('available_contracts', '0')),
     }
 
+
 def _normalize_report_type_coverage(raw: Any) -> dict[str, Any]:
     if not isinstance(raw, Mapping):
         return {'domains': [], 'available_count': 0, 'total_count': 0}
 
-    if isinstance(raw.get('domains'), list):
-        domains = [_normalize_domain(item) for item in raw.get('domains', []) if isinstance(item, Mapping)]
+    raw_domains = raw.get('domains')
+    if isinstance(raw_domains, list):
+        domains = [_normalize_domain(item) for item in raw_domains if isinstance(item, Mapping)]
     else:
         domains = []
         for key, value in raw.items():
@@ -306,7 +326,8 @@ def _normalize_report_type_coverage(raw: Any) -> dict[str, Any]:
 def _normalize_domain(raw: Mapping[str, Any]) -> dict[str, Any]:
     key = str(raw.get('key', 'report'))
     items = []
-    for item in raw.get('items', []) if isinstance(raw.get('items'), list) else []:
+    raw_items = raw.get('items')
+    for item in raw_items if isinstance(raw_items, list) else []:
         if not isinstance(item, Mapping):
             continue
         status = str(item.get('status', 'Reserved'))
@@ -399,7 +420,8 @@ def _normalize_reporting_context(raw: Any) -> list[dict[str, Any]]:
     for item in raw:
         if not isinstance(item, Mapping):
             continue
-        bullets = item.get('bullets') if isinstance(item.get('bullets'), list) else []
+        raw_bullets = item.get('bullets')
+        bullets = raw_bullets if isinstance(raw_bullets, list) else []
         detail = item.get('detail') or ' '.join(str(value) for value in bullets if value)
         normalized.append(
             {
@@ -464,7 +486,8 @@ def _normalize_data_collection_status(raw: Any) -> list[dict[str, Any]]:
         status = str(item.get('status', 'Reserved'))
         tone = _status_tone(status, item.get('tone'))
         stage = 'ready' if tone == 'normal' else 'reserved' if tone == 'unknown' else 'planned'
-        details = item.get('items') if isinstance(item.get('items'), list) else []
+        raw_details = item.get('items')
+        details = raw_details if isinstance(raw_details, list) else []
         normalized.append(
             {
                 'stage': stage,

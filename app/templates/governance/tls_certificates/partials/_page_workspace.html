@@ -2,18 +2,18 @@
     {% if not payload.schema_readiness.ready %}
         {% include "governance/tls_certificates/partials/_schema_blocker.html" %}
     {% else %}
-    <span id="tls-certificates-background-refresh-trigger"
-          class="htmx-indicator hidden"
-          aria-hidden="true"
-          hx-get="{{ url_for('governance.tls_certificates', cluster_id=payload.filters.cluster_id, namespace=payload.filters.namespace, status=payload.filters.status, search=payload.filters.search, page=payload.pagination.page, per_page=payload.pagination.per_page, partial_mode='page_workspace') }}"
-          hx-trigger="tlsInventorySyncFinished from:body"
-          hx-target="#tls-certificates-page-workspace"
-          hx-swap="outerHTML"
-          hx-indicator="this"></span>
-    {% include "governance/tls_certificates/partials/_snapshot_context.html" %}
-    {% include "governance/tls_certificates/partials/_sync_panel.html" %}
-    {% include "governance/tls_certificates/partials/_summary_cards.html" %}
-    {% include "governance/tls_certificates/partials/_table.html" %}
+        <span id="tls-certificates-background-refresh-trigger"
+              class="htmx-indicator hidden"
+              aria-hidden="true"
+              hx-get="{{ url_for('governance.tls_certificates', cluster_id=payload.filters.cluster_id, namespace=payload.filters.namespace, status=payload.filters.status, search=payload.filters.search, page=payload.pagination.page, per_page=payload.pagination.per_page, partial_mode='page_workspace') }}"
+              hx-trigger="tlsInventorySyncFinished from:body"
+              hx-target="#tls-certificates-page-workspace"
+              hx-swap="outerHTML"
+              hx-indicator="this"></span>
+        {% include "governance/tls_certificates/partials/_snapshot_context.html" %}
+        {% include "governance/tls_certificates/partials/_sync_panel.html" %}
+        {% include "governance/tls_certificates/partials/_summary_cards.html" %}
+        {% include "governance/tls_certificates/partials/_table.html" %}
     {% endif %}
 </div>
 {% if sync_feedback %}
@@ -35,7 +35,6 @@
         {% include "components/operational_toast.html" %}
     {% endwith %}
 {% endif %}
-
 {% if sync_progress and sync_progress.is_active %}
     {% with toast_oob=true %}
         {% include "governance/tls_certificates/partials/_sync_progress_toast.html" %}

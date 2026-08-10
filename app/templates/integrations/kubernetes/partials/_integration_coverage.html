@@ -1,10 +1,8 @@
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-
 {% macro compact_state(status, label) -%}
     {{ integration_status(status, label, display='text') }}
 {%- endmacro %}
-
 {% set coverage_status = 'ready' if stats.total > 0 and stats.fully_operational == stats.total else ('degraded' if stats.total > 0 and stats.fully_operational > 0 else ('validation_required' if stats.total > 0 else 'not_configured')) %}
 {% set paths = [
     {
@@ -113,7 +111,6 @@
         ]
     }
 ] %}
-
 <section aria-labelledby="kubernetes-integration-coverage-title"
          class="{{ integration_ui.section_shell_classes() }}"
          data-kaori-coverage-summary>
@@ -122,17 +119,19 @@
             <div class="flex min-w-0 items-start gap-3">
                 {{ integration_ui.palette_icon('workflow', 'brand', size='lg', rounded='xl') }}
                 <div class="min-w-0">
-                    <h2 id="kubernetes-integration-coverage-title" class="text-lg font-semibold text-content-primary">Operational Readiness Paths</h2>
+                    <h2 id="kubernetes-integration-coverage-title"
+                        class="text-lg font-semibold text-content-primary">Operational Readiness Paths</h2>
                     <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Compare how each operational consumer resolves Kubernetes authority, provider readiness, binding evidence, and its effective consumer gate.</p>
                 </div>
             </div>
             {{ compact_state(coverage_status, (stats.fully_operational ~ ' of ' ~ stats.total ~ ' Operational') if stats.total > 0 else 'Not Configured') }}
         </div>
     </header>
-
-    <div class="grid items-stretch gap-4 p-4 sm:p-5 xl:grid-cols-3" data-kaori-operational-readiness-paths>
+    <div class="grid items-stretch gap-4 p-4 sm:p-5 xl:grid-cols-3"
+         data-kaori-operational-readiness-paths>
         {% for path in paths %}
-            <article class="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-outline-subtle bg-surface-card" data-kaori-operational-path-card>
+            <article class="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                     data-kaori-operational-path-card>
                 <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
                     <div class="flex min-w-0 items-start gap-3">
                         {{ integration_ui.palette_icon(path.icon, 'brand') }}
@@ -145,19 +144,18 @@
                         </div>
                     </div>
                 </header>
-
                 <div class="flex-1 px-4 py-4 sm:px-5">
                     <div class="mb-3 flex items-center justify-between gap-3">
                         <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Readiness Path</p>
                         <p class="text-xs font-medium text-content-muted">4 Stages</p>
                     </div>
-
-                    <ol class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-subtle" aria-label="{{ path.title }} readiness path">
+                    <ol class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-subtle"
+                        aria-label="{{ path.title }} readiness path">
                         {% for step in path.steps %}
-                            <li class="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)_auto] items-start gap-3 border-b border-outline-subtle px-3 py-3 last:border-b-0" data-kaori-readiness-step>
-                                <span class="{{ integration_ui.palette_icon_classes('brand' if step.mode in ['required', 'effective'] else 'neutral', size='xs', rounded='md') }} text-xs font-semibold tabular-nums" aria-hidden="true">
-                                    {{ '%02d'|format(loop.index) }}
-                                </span>
+                            <li class="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)_auto] items-start gap-3 border-b border-outline-subtle px-3 py-3 last:border-b-0"
+                                data-kaori-readiness-step>
+                                <span class="{{ integration_ui.palette_icon_classes('brand' if step.mode in ['required', 'effective'] else 'neutral', size='xs', rounded='md') }} text-xs font-semibold tabular-nums"
+                                      aria-hidden="true">{{ '%02d'|format(loop.index) }}</span>
                                 <div class="min-w-0">
                                     <p class="text-xs font-semibold text-content-primary">{{ step.title }}</p>
                                     <p class="mt-1 text-xs leading-5 text-content-muted">{{ step.detail }}</p>
@@ -167,16 +165,16 @@
                         {% endfor %}
                     </ol>
                 </div>
-
-                <footer class="border-t border-outline-subtle bg-surface-hover px-4 py-3 sm:px-5" data-kaori-operational-outcome>
+                <footer class="border-t border-outline-subtle bg-surface-hover px-4 py-3 sm:px-5"
+                        data-kaori-operational-outcome>
                     <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Operational Outcome</p>
                     <p class="mt-1.5 text-sm font-semibold text-content-primary">{{ path.outcome }}</p>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Effective consumer resolution for this operational path.</p>
                 </footer>
             </article>
         {% endfor %}
-
-        <section class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3 xl:col-span-3" aria-label="Provider resolution boundary">
+        <section class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3 xl:col-span-3"
+                 aria-label="Provider resolution boundary">
             <div class="flex items-start gap-3">
                 {{ integration_ui.palette_icon('route', 'brand', size='sm') }}
                 <div class="min-w-0">

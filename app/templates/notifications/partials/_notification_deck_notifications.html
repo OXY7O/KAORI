@@ -11,7 +11,8 @@
             <p class="mt-0.5 text-xs text-content-muted">The same records shown on the Notifications page.</p>
         </div>
         {% if unread_count %}
-            <form method="POST" action="{{ url_for('notifications.mark_all_read', surface='panel') }}">
+            <form method="POST"
+                  action="{{ url_for('notifications.mark_all_read', surface='panel') }}">
                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                 <button type="submit"
                         hx-post="{{ url_for('notifications.mark_all_read', surface='panel') }}"
@@ -21,17 +22,14 @@
             </form>
         {% endif %}
     </div>
-
     {% if attention_count %}
-        {{ operational_callout.render(
-            attention_count ~ ' notification' ~ ('' if attention_count == 1 else 's') ~ ' need attention',
-            'Unread warnings and failed operations are highlighted.',
-            icon='triangle-alert',
-            tone='warning',
-            variant='semantic'
+        {{ operational_callout.render(attention_count ~ ' notification' ~ ('' if attention_count == 1 else 's') ~ ' need attention',
+        'Unread warnings and failed operations are highlighted.',
+        icon='triangle-alert',
+        tone='warning',
+        variant='semantic'
         ) }}
     {% endif %}
-
     {% if history_items %}
         {% for notification in history_items %}
             {{ center_item.notification_item(notification, surface='panel', target='#notification-deck-notifications-content', compact=true, swap='innerHTML') }}

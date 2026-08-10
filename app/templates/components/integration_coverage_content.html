@@ -85,19 +85,18 @@
         </table>
     </div>
     {% set coverage_query_params = {
-        'tab': 'coverage',
-        'q': selected_query,
-        'readiness': selected_readiness,
-        'compatibility': selected_compatibility,
-        'deployment_type': selected_deployment_type,
-        'page': 1,
-        'per_page': registry_per_page,
-        'coverage_q': selected_coverage_query,
-        'coverage_environment': selected_coverage_environment,
-        'coverage_status': selected_coverage_status
-    } %}
-    {{ provider_registry.pagination_footer(
-        pagination,
+            'tab': 'coverage',
+            'q': selected_query,
+            'readiness': selected_readiness,
+            'compatibility': selected_compatibility,
+            'deployment_type': selected_deployment_type,
+            'page': 1,
+            'per_page': registry_per_page,
+            'coverage_q': selected_coverage_query,
+            'coverage_environment': selected_coverage_environment,
+            'coverage_status': selected_coverage_status
+        } %}
+    {{ provider_registry.pagination_footer(pagination,
         provider.registry_endpoint,
         '#' ~ provider.key ~ '-coverage-content',
         '#' ~ provider.key ~ '-coverage-loading',
@@ -105,6 +104,5 @@
         item_label='Scopes',
         swap='innerHTML',
         page_param='coverage_page',
-        per_page_param='coverage_per_page'
-    ) }}
+        per_page_param='coverage_per_page') }}
 {%- endmacro %}

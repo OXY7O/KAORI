@@ -5,14 +5,14 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 def read(path: str) -> str:
-    return (ROOT / path).read_text(encoding="utf-8")
+    return (ROOT / path).read_text(encoding='utf-8')
 
 
 def test_minimum_validation_rbac_remains_modal() -> None:
-    source = read("app/templates/integrations/kubernetes/partials/_minimum_validation_rbac.html")
+    source = read('app/templates/integrations/kubernetes/partials/_minimum_validation_rbac.html')
 
-    assert "Minimum Validation RBAC Example" in source
-    assert "Open RBAC Examples" in source
+    assert 'Minimum Validation RBAC Example' in source
+    assert 'Open RBAC Examples' in source
     assert 'x-teleport="body"' in source
     assert 'role="dialog"' in source
     assert 'aria-modal="true"' in source
@@ -29,53 +29,53 @@ def test_minimum_validation_rbac_remains_modal() -> None:
     assert 'max-h-[26rem]' in source
     assert 'max-h-[22rem]' in source
     assert 'xl:grid-cols-2' not in source
-    assert "<details" not in source
+    assert '<details' not in source
 
 
 def test_kubernetes_runtime_health_uses_latest_decision_workspace() -> None:
-    source = read("app/templates/integrations/kubernetes/partials/_runtime_workspace.html")
+    source = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
 
-    assert "Runtime Health & Diagnostics" in source
-    assert "data-kaori-runtime-workspace-v8" in source
-    assert "Runtime Decision" in source
-    assert "data-kaori-runtime-decision-summary" in source
-    assert "Runtime Posture" in source
-    assert "Primary Finding" in source
-    assert "Diagnostic Evidence" in source
-    assert "runtime_state.message" not in source
-    assert "Persisted Runtime Refresh evidence" in source
+    assert 'Runtime Health & Diagnostics' in source
+    assert 'data-kaori-runtime-workspace-v8' in source
+    assert 'Runtime Decision' in source
+    assert 'data-kaori-runtime-decision-summary' in source
+    assert 'Runtime Posture' in source
+    assert 'Primary Finding' in source
+    assert 'Diagnostic Evidence' in source
+    assert 'runtime_state.message' not in source
+    assert 'Persisted Runtime Refresh evidence' in source
 
 
 def test_integration_scope_pagination_uses_title_case_item_label() -> None:
-    coverage = read("app/templates/components/integration_coverage_content.html")
-    provider_registry = read("app/templates/integrations/components/_provider_registry.html")
+    coverage = read('app/templates/components/integration_coverage_content.html')
+    provider_registry = read('app/templates/integrations/components/_provider_registry.html')
 
     assert "item_label='Scopes'" in coverage
     assert "item_label='Connections'" in provider_registry
 
 
 def test_prometheus_validation_keeps_compact_contract_and_modal_detail() -> None:
-    source = read("app/templates/prometheus/partials/_detail_validation_content.html")
-    registry = read("app/templates/prometheus/partials/_capability_registry.html")
+    source = read('app/templates/prometheus/partials/_detail_validation_content.html')
+    registry = read('app/templates/prometheus/partials/_capability_registry.html')
 
     assert 'import "integrations/components/_record_detail_modal.html" as record_detail_modal' in registry
-    assert "Prometheus Validation & PromQL" in source
-    assert "record_actions.view_more(" in registry
-    assert "provider_capability_detail.content(" in registry
-    assert "provider_capability_detail.content(" in registry
-    assert "Runnable PromQL Query" in registry
-    assert "Hide Details" not in source
+    assert 'Prometheus Validation & PromQL' in source
+    assert 'record_actions.view_more(' in registry
+    assert 'provider_capability_detail.content(' in registry
+    assert 'provider_capability_detail.content(' in registry
+    assert 'Runnable PromQL Query' in registry
+    assert 'Hide Details' not in source
     assert 'x-show="open"' not in source
 
 
 def test_alertmanager_capability_matrix_uses_modal_detail() -> None:
-    source = read("app/templates/alertmanager/partials/_detail_validation_content.html")
-    registry = read("app/templates/alertmanager/partials/_capability_registry.html")
+    source = read('app/templates/alertmanager/partials/_detail_validation_content.html')
+    registry = read('app/templates/alertmanager/partials/_capability_registry.html')
 
     assert 'import "integrations/components/_record_detail_modal.html" as record_detail_modal' in registry
-    assert "Alertmanager Validation & Capability Matrix" in source
-    assert "record_actions.view_more(" in registry
-    assert "provider_capability_detail.content(" in registry
-    assert "Runnable API Request" in registry
-    assert "Hide Details" not in source
+    assert 'Alertmanager Validation & Capability Matrix' in source
+    assert 'record_actions.view_more(' in registry
+    assert 'provider_capability_detail.content(' in registry
+    assert 'Runnable API Request' in registry
+    assert 'Hide Details' not in source
     assert 'x-show="open"' not in source

@@ -14,8 +14,7 @@ def make_points(count: int = 28) -> list[ForecastPoint]:
     start = datetime(2026, 1, 1, tzinfo=UTC)
     seasonal = [0.0, 1.0, 2.0, 1.0, 0.0, -1.0, -2.0]
     return [
-        ForecastPoint(start + timedelta(days=index), 20.0 + index * 0.4 + seasonal[index % 7])
-        for index in range(count)
+        ForecastPoint(start + timedelta(days=index), 20.0 + index * 0.4 + seasonal[index % 7]) for index in range(count)
     ]
 
 

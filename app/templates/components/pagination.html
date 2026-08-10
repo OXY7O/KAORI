@@ -22,7 +22,15 @@
 {% macro resource_name(resource_label, total_items) -%}
     {% set label = resource_label|default('Records', true) %}
     {% if total_items == 1 %}
-        {% if label.endswith('ies') %}{{ label[:-3] }}y{% elif label.endswith('sses') %}{{ label[:-2] }}{% elif label.endswith('s') %}{{ label[:-1] }}{% else %}{{ label }}{% endif %}
+        {% if label.endswith('ies') %}
+            {{ label[:-3] }}y
+        {% elif label.endswith('sses') %}
+            {{ label[:-2] }}
+        {% elif label.endswith('s') %}
+            {{ label[:-1] }}
+        {% else %}
+            {{ label }}
+        {% endif %}
     {% else %}
         {{ label }}
     {% endif %}
@@ -44,7 +52,10 @@
             {% set _ = first_args.update({page_param: 1}) %}
             {% set first_url = url_for(href_endpoint_name, **first_args) %}
             {% set first_hx_url = url_for(endpoint_name, **first_args) %}
-            <a href="{{ first_url }}"{% if hx_target %} hx-get="{{ first_hx_url }}" hx-target="{{ hx_target }}" hx-swap="{{ hx_swap }}"{% if hx_indicator %} hx-indicator="{{ hx_indicator }}"{% endif %}{% endif %} class="{{ navigation_classes(false) }} min-w-9 px-2">1</a>
+            <a href="{{ first_url }}"
+               {% if hx_target %} hx-get="{{ first_hx_url }}" hx-target="{{ hx_target }}" hx-swap="{{ hx_swap }}"{% if hx_indicator %} hx-indicator="{{ hx_indicator }}"{% endif %}
+               {% endif %}
+               class="{{ navigation_classes(false) }} min-w-9 px-2">1</a>
             {% if window_start > 2 %}<span class="px-1 text-content-muted" aria-hidden="true">…</span>{% endif %}
         {% endif %}
         {% for page_number in range(window_start, window_end + 1) %}
@@ -56,7 +67,10 @@
                 {% set _ = page_args.update({page_param: page_number}) %}
                 {% set page_url = url_for(href_endpoint_name, **page_args) %}
                 {% set page_hx_url = url_for(endpoint_name, **page_args) %}
-                <a href="{{ page_url }}"{% if hx_target %} hx-get="{{ page_hx_url }}" hx-target="{{ hx_target }}" hx-swap="{{ hx_swap }}"{% if hx_indicator %} hx-indicator="{{ hx_indicator }}"{% endif %}{% endif %} class="{{ navigation_classes(false) }} min-w-9 px-2">{{ page_number }}</a>
+                <a href="{{ page_url }}"
+                   {% if hx_target %} hx-get="{{ page_hx_url }}" hx-target="{{ hx_target }}" hx-swap="{{ hx_swap }}"{% if hx_indicator %} hx-indicator="{{ hx_indicator }}"{% endif %}
+                   {% endif %}
+                   class="{{ navigation_classes(false) }} min-w-9 px-2">{{ page_number }}</a>
             {% endif %}
         {% endfor %}
         {% if window_end < total_pages %}
@@ -66,7 +80,10 @@
             {% set _ = last_args.update({page_param: total_pages}) %}
             {% set last_url = url_for(href_endpoint_name, **last_args) %}
             {% set last_hx_url = url_for(endpoint_name, **last_args) %}
-            <a href="{{ last_url }}"{% if hx_target %} hx-get="{{ last_hx_url }}" hx-target="{{ hx_target }}" hx-swap="{{ hx_swap }}"{% if hx_indicator %} hx-indicator="{{ hx_indicator }}"{% endif %}{% endif %} class="{{ navigation_classes(false) }} min-w-9 px-2">{{ total_pages }}</a>
+            <a href="{{ last_url }}"
+               {% if hx_target %} hx-get="{{ last_hx_url }}" hx-target="{{ hx_target }}" hx-swap="{{ hx_swap }}"{% if hx_indicator %} hx-indicator="{{ hx_indicator }}"{% endif %}
+               {% endif %}
+               class="{{ navigation_classes(false) }} min-w-9 px-2">{{ total_pages }}</a>
         {% endif %}
     </span>
 {%- endmacro %}

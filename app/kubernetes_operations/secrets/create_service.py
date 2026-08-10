@@ -10,17 +10,13 @@ from kubernetes.config.config_exception import ConfigException
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
 from app.common.kubernetes_secrets import scrub_secret_payload
+from app.common.sensitive_uploads import decode_utf8
 from app.governance.tls_certificates.certificate import validate_certificate_pair
 from app.integrations.kubernetes.resolver import tls_policy_for_cluster
 from app.integrations.kubernetes.tls import weak_tls_context
 from app.kubernetes_operations.secrets.contracts import SecretOperationResult
-from app.kubernetes_operations.secrets.live_service import (
-    core_api,
-    get_cluster,
-    verify_live_namespace,
-)
+from app.kubernetes_operations.secrets.live_service import core_api, get_cluster, verify_live_namespace
 from app.kubernetes_operations.secrets.validation import (
-    decode_utf8,
     read_required_upload,
     required,
     validate_data_key,
@@ -49,6 +45,7 @@ SECRET_KUBERNETES_TYPES = {
     'ssh-auth': 'kubernetes.io/ssh-auth',
 }
 
+
 def get_secret_create_context() -> dict[str, Any]:
     """Return stable Create Secret page context.
 
@@ -61,9 +58,6 @@ def get_secret_create_context() -> dict[str, Any]:
         'namespace_options': {},
         'secret_types': SECRET_TYPE_LABELS,
     }
-
-
-
 
 
 def _build_string_data(form: Any, files: Any, secret_type: str) -> tuple[dict[str, str], dict[str, Any]]:

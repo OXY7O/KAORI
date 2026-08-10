@@ -2,7 +2,13 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from flask import Blueprint, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from flask_login import current_user
 from sqlalchemy.exc import IntegrityError
 
@@ -41,9 +47,9 @@ from app.users.service import (
     can_reset_user_password,
     can_restore_user,
     create_or_update_user,
+    lock_active_super_admin_boundary,
     normalize_provider_filters,
     normalize_user_filters,
-    lock_active_super_admin_boundary,
     record_admin_event,
     restore_user,
     set_user_active,

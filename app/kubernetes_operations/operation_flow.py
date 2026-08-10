@@ -1,13 +1,9 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TypeVar
 
 
-_ResultT = TypeVar('_ResultT')
-
-
-def validate_then_apply(
+def validate_then_apply[_ResultT](
     *,
     validate: Callable[[], object],
     apply: Callable[[], _ResultT],

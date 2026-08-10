@@ -21,8 +21,8 @@ def test_storage_heavy_record_tabs_load_on_first_activation() -> None:
     section = read('app/templates/analytics/storage/partials/_storage_section.html')
 
     assert section.count('kaori:analytics-tab-activated once') == 3
-    assert "storage_filesystem_summary" in section
-    assert section.count("storage_persistent_summary") >= 2
+    assert 'storage_filesystem_summary' in section
+    assert section.count('storage_persistent_summary') >= 2
     assert 'storage-filesystem-lazy-indicator' in section
     assert 'persistent-volume-claims-lazy-indicator' in section
     assert 'persistent-volumes-lazy-indicator' in section
@@ -38,7 +38,7 @@ def test_storage_uses_canonical_tab_and_mixed_scope_ownership() -> None:
     assert "STORAGE_TABS = ('capacity', 'filesystem', 'pvc', 'pv', 'recommendations')" in presentation
     assert "name='tab'" in presentation
     assert "name='storage_tab'" not in presentation
-    assert "parameters=_snapshot_parameters()" in routes
+    assert 'parameters=_snapshot_parameters()' in routes
     assert "return {'cluster_id': cluster_id}" in routes
     assert 'name="namespace"' in controls
     assert "record_filter.select('storage_node'" in filesystem
@@ -189,12 +189,8 @@ def test_storage_pv_partial_usage_and_filesystem_context_are_visible() -> None:
     domain = read('app/analytics/storage/domain.py')
     payloads = read('app/analytics/common/payloads.py')
     overview = read('app/templates/analytics/storage/partials/_overview.html')
-    capacity = read(
-        'app/templates/analytics/storage/partials/_capacity_utilization_panel.html'
-    )
-    pv_panel = read(
-        'app/templates/analytics/storage/partials/_persistent_volumes_panel.html'
-    )
+    capacity = read('app/templates/analytics/storage/partials/_capacity_utilization_panel.html')
+    pv_panel = read('app/templates/analytics/storage/partials/_persistent_volumes_panel.html')
 
     assert "'observed_claim_usage_evidence_complete': used_complete" in domain
     assert "'observed_claim_usage_coverage_display'" in domain

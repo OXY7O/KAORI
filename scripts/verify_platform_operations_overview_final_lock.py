@@ -87,7 +87,12 @@ def main() -> int:
         if forbidden in template:
             errors.append(f'Overview must remain navigation-only and use the compact v1.1 layout: {forbidden}')
 
-    if not (menu.index('Overview') < menu.index('Jobs &amp; Executions') < menu.index('Data Lifecycle') < menu.index('K8s Administration')):
+    if not (
+        menu.index('Overview')
+        < menu.index('Jobs &amp; Executions')
+        < menu.index('Data Lifecycle')
+        < menu.index('K8s Administration')
+    ):
         errors.append('Platform Operations navigation order drifted')
 
     for required in (

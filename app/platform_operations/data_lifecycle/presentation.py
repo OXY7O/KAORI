@@ -48,8 +48,7 @@ def build_data_lifecycle_overview_summary() -> dict[str, int]:
 
     supported = tuple(sorted(DOMAIN_FACTORIES))
     stored = {
-        item.domain: item
-        for item in DataLifecyclePolicy.query.filter(DataLifecyclePolicy.domain.in_(supported)).all()
+        item.domain: item for item in DataLifecyclePolicy.query.filter(DataLifecyclePolicy.domain.in_(supported)).all()
     }
     enabled_domain_count = 0
     for domain_name in supported:

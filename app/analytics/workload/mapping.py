@@ -134,18 +134,26 @@ def metrics_coverage(
     maximum = max(observed)
     if pod_count <= 0 or maximum == 0:
         return {
-            'label': 'Unavailable', 'tone': 'unknown', 'observed': 0,
+            'label': 'Unavailable',
+            'tone': 'unknown',
+            'observed': 0,
             'total': max(pod_count, 0),
             'description': 'No complete runtime and selected-window observations are available.',
         }
     if complete == pod_count:
         return {
-            'label': 'Complete', 'tone': 'normal', 'observed': pod_count,
-            'total': pod_count, 'description': f'{pod_count} of {pod_count} Pods',
+            'label': 'Complete',
+            'tone': 'normal',
+            'observed': pod_count,
+            'total': pod_count,
+            'description': f'{pod_count} of {pod_count} Pods',
         }
     return {
-        'label': 'Partial', 'tone': 'warning', 'observed': complete,
-        'total': pod_count, 'description': f'{complete} of {pod_count} Pods',
+        'label': 'Partial',
+        'tone': 'warning',
+        'observed': complete,
+        'total': pod_count,
+        'description': f'{complete} of {pod_count} Pods',
     }
 
 
@@ -201,9 +209,7 @@ def workload_risk(request_label: str, limit_label: str, metrics_label: str, reco
 def build_workload_scope_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     total = len(rows)
     evidence_available = total > 0
-    request_complete = sum(
-        1 for row in rows if row.get('request_coverage', {}).get('label') == 'Complete'
-    )
+    request_complete = sum(1 for row in rows if row.get('request_coverage', {}).get('label') == 'Complete')
     coverage = safe_round(safe_percent(request_complete, total), 2)
     return {
         'scope_evidence_available': evidence_available,
@@ -211,12 +217,8 @@ def build_workload_scope_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         'scope_request_complete': request_complete,
         'scope_request_coverage_percent': coverage,
         'scope_request_coverage_display': f'{coverage:.2f}' if evidence_available else 'N/A',
-        'scope_best_effort_count': sum(
-            1 for row in rows if row.get('qos', {}).get('label') == 'BestEffort'
-        ),
-        'scope_high_risk_count': sum(
-            1 for row in rows if row.get('risk', {}).get('label') in {'High', 'Critical'}
-        ),
+        'scope_best_effort_count': sum(1 for row in rows if row.get('qos', {}).get('label') == 'BestEffort'),
+        'scope_high_risk_count': sum(1 for row in rows if row.get('risk', {}).get('label') in {'High', 'Critical'}),
         'scope_complete_evidence_count': sum(
             1 for row in rows if row.get('metrics_coverage', {}).get('label') == 'Complete'
         ),
@@ -238,8 +240,14 @@ def build_workload_mapping_payload(
     owner_map = evidence.owner_map
     qos_map = evidence.qos_map
     signal_maps = (
-        cpu_requests, cpu_limits, cpu_current, cpu_peak,
-        memory_requests, memory_limits, memory_current, memory_peak,
+        cpu_requests,
+        cpu_limits,
+        cpu_current,
+        cpu_peak,
+        memory_requests,
+        memory_limits,
+        memory_current,
+        memory_peak,
     )
     keys = set(owner_map) | set(qos_map)
     for values in signal_maps:
@@ -273,16 +281,38 @@ def build_workload_mapping_payload(
 
 def _empty_aggregate(namespace: str, pod: str, owner: dict[str, str]) -> dict[str, Any]:
     return {
-        'workload': owner['name'], 'type': owner['kind'], 'namespace': namespace,
-        'replicas': 0, 'pods': [], 'qos_distribution': {},
-        **{name: 0.0 for name in (
-            'cpu_request_raw', 'cpu_limit_raw', 'cpu_current_raw', 'cpu_peak_sum_raw',
-            'memory_request_raw', 'memory_limit_raw', 'memory_current_raw', 'memory_peak_sum_raw',
-        )},
-        **{name: 0 for name in (
-            'cpu_request_pods', 'cpu_limit_pods', 'cpu_current_pods', 'cpu_peak_pods',
-            'memory_request_pods', 'memory_limit_pods', 'memory_current_pods', 'memory_peak_pods',
-        )},
+        'workload': owner['name'],
+        'type': owner['kind'],
+        'namespace': namespace,
+        'replicas': 0,
+        'pods': [],
+        'qos_distribution': {},
+        **{
+            name: 0.0
+            for name in (
+                'cpu_request_raw',
+                'cpu_limit_raw',
+                'cpu_current_raw',
+                'cpu_peak_sum_raw',
+                'memory_request_raw',
+                'memory_limit_raw',
+                'memory_current_raw',
+                'memory_peak_sum_raw',
+            )
+        },
+        **{
+            name: 0
+            for name in (
+                'cpu_request_pods',
+                'cpu_limit_pods',
+                'cpu_current_pods',
+                'cpu_peak_pods',
+                'memory_request_pods',
+                'memory_limit_pods',
+                'memory_current_pods',
+                'memory_peak_pods',
+            )
+        },
     }
 
 
@@ -312,8 +342,11 @@ def _build_mapping_row(item: dict[str, Any]) -> dict[str, Any]:
     requests = request_coverage(item['cpu_request_pods'], item['memory_request_pods'], pod_count)
     limits = limit_coverage(item['cpu_limit_pods'], item['memory_limit_pods'], pod_count)
     metrics = metrics_coverage(
-        pod_count, item['cpu_current_pods'], item['memory_current_pods'],
-        item['cpu_peak_pods'], item['memory_peak_pods'],
+        pod_count,
+        item['cpu_current_pods'],
+        item['memory_current_pods'],
+        item['cpu_peak_pods'],
+        item['memory_peak_pods'],
     )
     availability = {
         'cpu_current': item['cpu_current_pods'] == pod_count and item['cpu_request_raw'] > 0,
@@ -324,21 +357,33 @@ def _build_mapping_row(item: dict[str, Any]) -> dict[str, Any]:
     percentages = {
         'cpu_current': _percent(item['cpu_current_raw'], item['cpu_request_raw'], availability['cpu_current']),
         'cpu_peak': _percent(item['cpu_peak_sum_raw'], item['cpu_request_raw'], availability['cpu_peak']),
-        'memory_current': _percent(item['memory_current_raw'], item['memory_request_raw'], availability['memory_current']),
+        'memory_current': _percent(
+            item['memory_current_raw'], item['memory_request_raw'], availability['memory_current']
+        ),
         'memory_peak': _percent(item['memory_peak_sum_raw'], item['memory_request_raw'], availability['memory_peak']),
     }
     recommendation = workload_recommendation(
-        percentages['cpu_current'], percentages['cpu_peak'],
-        percentages['memory_current'], percentages['memory_peak'],
-        requests['label'], limits['label'], metrics['label'],
+        percentages['cpu_current'],
+        percentages['cpu_peak'],
+        percentages['memory_current'],
+        percentages['memory_peak'],
+        requests['label'],
+        limits['label'],
+        metrics['label'],
     )
     risk = workload_risk(requests['label'], limits['label'], metrics['label'], recommendation)
     return {
-        'workload': item['workload'], 'type': item['type'], 'namespace': item['namespace'],
-        'replicas': pod_count, 'request_coverage': requests, 'limit_coverage': limits,
+        'workload': item['workload'],
+        'type': item['type'],
+        'namespace': item['namespace'],
+        'replicas': pod_count,
+        'request_coverage': requests,
+        'limit_coverage': limits,
         'configuration_status': resource_configuration(requests, limits),
-        'metrics_coverage': metrics, 'qos': workload_qos(item['qos_distribution']),
-        'risk': risk, 'recommendation': recommendation,
+        'metrics_coverage': metrics,
+        'qos': workload_qos(item['qos_distribution']),
+        'risk': risk,
+        'recommendation': recommendation,
         **_raw_and_display_fields(item, availability, percentages),
         'detail': {'pods': sorted(item['pods']), 'qos_distribution': item['qos_distribution']},
     }
@@ -354,8 +399,14 @@ def _raw_and_display_fields(
     percentages: dict[str, float],
 ) -> dict[str, Any]:
     raw_names = (
-        'cpu_request_raw', 'cpu_limit_raw', 'cpu_current_raw', 'cpu_peak_sum_raw',
-        'memory_request_raw', 'memory_limit_raw', 'memory_current_raw', 'memory_peak_sum_raw',
+        'cpu_request_raw',
+        'cpu_limit_raw',
+        'cpu_current_raw',
+        'cpu_peak_sum_raw',
+        'memory_request_raw',
+        'memory_limit_raw',
+        'memory_current_raw',
+        'memory_peak_sum_raw',
     )
     return {
         **{name: item[name] for name in raw_names},
@@ -372,13 +423,21 @@ def _raw_and_display_fields(
         'memory_request_utilization_available': availability['memory_current'],
         'memory_peak_request_utilization_available': availability['memory_peak'],
         'cpu_request_utilization': percentages['cpu_current'],
-        'cpu_request_utilization_display': format_decimal(percentages['cpu_current']) if availability['cpu_current'] else 'N/A',
+        'cpu_request_utilization_display': format_decimal(percentages['cpu_current'])
+        if availability['cpu_current']
+        else 'N/A',
         'cpu_peak_request_utilization': percentages['cpu_peak'],
-        'cpu_peak_request_utilization_display': format_decimal(percentages['cpu_peak']) if availability['cpu_peak'] else 'N/A',
+        'cpu_peak_request_utilization_display': format_decimal(percentages['cpu_peak'])
+        if availability['cpu_peak']
+        else 'N/A',
         'memory_request_utilization': percentages['memory_current'],
-        'memory_request_utilization_display': format_decimal(percentages['memory_current']) if availability['memory_current'] else 'N/A',
+        'memory_request_utilization_display': format_decimal(percentages['memory_current'])
+        if availability['memory_current']
+        else 'N/A',
         'memory_peak_request_utilization': percentages['memory_peak'],
-        'memory_peak_request_utilization_display': format_decimal(percentages['memory_peak']) if availability['memory_peak'] else 'N/A',
+        'memory_peak_request_utilization_display': format_decimal(percentages['memory_peak'])
+        if availability['memory_peak']
+        else 'N/A',
     }
 
 

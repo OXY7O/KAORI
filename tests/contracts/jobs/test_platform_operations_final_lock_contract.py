@@ -41,9 +41,15 @@ def test_platform_operations_final_lock_is_documented_and_release_gated() -> Non
     assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V2_1_AUDIT_2026_08_08.md').exists()
     assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V2_2_AUDIT_2026_08_08.md').exists()
     assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_OVERVIEW_FINAL_LOCK_AUDIT_2026_08_08.md').exists()
-    assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_AUDIT_2026_08_08.md').exists()
-    assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md').exists()
-    assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_2_AUDIT_2026_08_08.md').exists()
+    assert (
+        ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_AUDIT_2026_08_08.md'
+    ).exists()
+    assert (
+        ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md'
+    ).exists()
+    assert (
+        ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_2_AUDIT_2026_08_08.md'
+    ).exists()
     assert 'verify_platform_operations_final_lock.py' in read('scripts/quality_gate.sh')
     assert 'verify_platform_operations_overview_final_lock.py' in read('scripts/quality_gate.sh')
     assert 'verify_notification_center_final_lock.py' in read('scripts/quality_gate.sh')
@@ -99,6 +105,7 @@ def test_platform_operations_has_no_accepted_ui_style_debt() -> None:
 
     baseline = json.loads(read('docs/architecture/ui-style-debt-baseline.json')).get('files', {})
     assert not [
-        path for path in baseline
+        path
+        for path in baseline
         if path.startswith('app/templates/platform_operations/') or path.startswith('app/templates/jobs/')
     ]

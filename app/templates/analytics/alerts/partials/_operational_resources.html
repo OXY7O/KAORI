@@ -6,23 +6,67 @@
 {% set contact_point = resource_links.get('contact_point', {'configured': false, 'label': 'Contact Point', 'name': none, 'email': none, 'url': none, 'description': 'Escalation contact point or PIC is not configured yet.'}) %}
 <section class="{{ analysis_surface.snapshot_shell_classes() }}">
     <header class="{{ analysis_surface.snapshot_header_classes() }}">
-        <div class="flex min-w-0 items-start gap-3"><span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="external-link" class="h-4 w-4"></i></span><div class="min-w-0"><h3 class="text-lg font-semibold text-content-primary">Operational Resources</h3><p class="mt-1 text-sm leading-6 text-content-muted">Open investigation tools, runbook references, and escalation contacts from the active signal workflow.</p></div></div>
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="external-link" class="h-4 w-4"></i></span>
+            <div class="min-w-0">
+                <h3 class="text-lg font-semibold text-content-primary">Operational Resources</h3>
+                <p class="mt-1 text-sm leading-6 text-content-muted">Open investigation tools, runbook references, and escalation contacts from the active signal workflow.</p>
+            </div>
+        </div>
         {{ table_label.metadata_label('3 Resource Boundaries', size='compact') }}
     </header>
     <div class="divide-y divide-outline-subtle">
         {% set resources = [
-            ('Alertmanager Console', 'siren', alertmanager_resource.configured and alertmanager_resource.url, alertmanager_resource.url, 'Inspect grouping, routing, inhibition, receivers, and active silences.', 'Open Console', 'Configure under Integrations'),
-            ('Runbook Portal', 'book-open-check', runbook_resource.configured and runbook_resource.url, runbook_resource.url, runbook_resource.description|default('Open the shared operational runbook catalog.', true), 'Open Runbooks', 'Portal URL Not Available')
-        ] %}
+                    ('Alertmanager Console', 'siren', alertmanager_resource.configured and alertmanager_resource.url, alertmanager_resource.url, 'Inspect grouping, routing, inhibition, receivers, and active silences.', 'Open Console', 'Configure under Integrations'),
+                    ('Runbook Portal', 'book-open-check', runbook_resource.configured and runbook_resource.url, runbook_resource.url, runbook_resource.description|default('Open the shared operational runbook catalog.', true), 'Open Runbooks', 'Portal URL Not Available')
+                ] %}
         {% for title, icon, configured, href, description, action_label, missing_label in resources %}
             <article class="flex flex-col gap-4 bg-surface-card px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
-                <div class="flex min-w-0 items-start gap-3"><span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="{{ icon }}" class="h-5 w-5"></i></span><div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><h4 class="text-sm font-semibold text-content-primary">{{ title }}</h4>{{ table_label.status_label('Configured' if configured else 'Not Configured', 'normal' if configured else 'unknown', size='compact') }}</div><p class="mt-1 text-sm leading-6 text-content-muted">{{ description }}</p></div></div>
-                {% if configured %}<a href="{{ href }}" target="_blank" rel="noopener noreferrer" class="{{ table_ui.action_classes() }} shrink-0"><i data-lucide="external-link" class="h-4 w-4"></i>{{ action_label }}</a>{% else %}<span class="text-xs font-semibold text-content-muted">{{ missing_label }}</span>{% endif %}
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="{{ icon }}" class="h-5 w-5"></i></span>
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h4 class="text-sm font-semibold text-content-primary">{{ title }}</h4>
+                            {{ table_label.status_label('Configured' if configured else 'Not Configured', 'normal' if configured else 'unknown', size='compact') }}
+                        </div>
+                        <p class="mt-1 text-sm leading-6 text-content-muted">{{ description }}</p>
+                    </div>
+                </div>
+                {% if configured %}
+                    <a href="{{ href }}"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       class="{{ table_ui.action_classes() }} shrink-0"><i data-lucide="external-link" class="h-4 w-4"></i>{{ action_label }}</a>
+                {% else %}
+                    <span class="text-xs font-semibold text-content-muted">{{ missing_label }}</span>
+                {% endif %}
             </article>
         {% endfor %}
         <article class="flex flex-col gap-4 bg-surface-card px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
-            <div class="flex min-w-0 items-start gap-3"><span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="user-round-check" class="h-5 w-5"></i></span><div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><h4 class="text-sm font-semibold text-content-primary">Contact Point</h4>{{ table_label.status_label('Configured' if contact_point.configured else 'Not Configured', 'normal' if contact_point.configured else 'unknown', size='compact') }}</div><p class="mt-1 text-sm leading-6 text-content-muted">{{ contact_point.description }}</p>{% if contact_point.name %}<p class="mt-1 text-xs font-semibold text-content-secondary">{{ contact_point.name }}</p>{% endif %}</div></div>
-            {% if contact_point.configured and contact_point.url %}<a href="{{ contact_point.url }}" target="_blank" rel="noopener noreferrer" class="{{ table_ui.action_classes() }} shrink-0"><i data-lucide="external-link" class="h-4 w-4"></i>Open Contact</a>{% elif contact_point.configured and contact_point.email %}<a href="mailto:{{ contact_point.email }}" class="{{ table_ui.action_classes() }} shrink-0"><i data-lucide="mail" class="h-4 w-4"></i>Contact Owner</a>{% else %}<span class="text-xs font-semibold text-content-muted">Contact Boundary Not Available</span>{% endif %}
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="user-round-check" class="h-5 w-5"></i></span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h4 class="text-sm font-semibold text-content-primary">Contact Point</h4>
+                        {{ table_label.status_label('Configured' if contact_point.configured else 'Not Configured', 'normal' if contact_point.configured else 'unknown', size='compact') }}
+                    </div>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">{{ contact_point.description }}</p>
+                    {% if contact_point.name %}
+                        <p class="mt-1 text-xs font-semibold text-content-secondary">{{ contact_point.name }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% if contact_point.configured and contact_point.url %}
+                <a href="{{ contact_point.url }}"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="{{ table_ui.action_classes() }} shrink-0"><i data-lucide="external-link" class="h-4 w-4"></i>Open Contact</a>
+            {% elif contact_point.configured and contact_point.email %}
+                <a href="mailto:{{ contact_point.email }}"
+                   class="{{ table_ui.action_classes() }} shrink-0"><i data-lucide="mail" class="h-4 w-4"></i>Contact Owner</a>
+            {% else %}
+                <span class="text-xs font-semibold text-content-muted">Contact Boundary Not Available</span>
+            {% endif %}
         </article>
     </div>
     {% call analysis_surface.boundary_card(
@@ -30,16 +74,18 @@
         'KAORI exposes configured references only. Authentication, authorization, and lifecycle remain controlled by the destination system.',
         icon='external-link',
         label='Integration Boundary'
-    ) %}
+        ) %}
         <dl class="grid gap-2 sm:grid-cols-3">
             {% for label, value in [
                 ('References', 'Configured Links Only'),
                 ('Authentication', 'Destination Controlled'),
                 ('Lifecycle', 'External Ownership')
-            ] %}
+                ] %}
                 <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
                     <dt class="text-xs font-medium text-content-muted">{{ label }}</dt>
-                    <dd class="mt-1 text-xs font-semibold text-content-primary">{{ value }}</dd>
+                    <dd class="mt-1 text-xs font-semibold text-content-primary">
+                        {{ value }}
+                    </dd>
                 </div>
             {% endfor %}
         </dl>

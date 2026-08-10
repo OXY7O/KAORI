@@ -28,11 +28,11 @@ def normalize_role_filters(args: Mapping[str, str | None]) -> dict[str, Any]:
     }
 
 
-def _required_permission_ids(selected_permission_ids: set[int], permissions_by_module: dict[str, list[Permission]]) -> set[int]:
+def _required_permission_ids(
+    selected_permission_ids: set[int], permissions_by_module: dict[str, list[Permission]]
+) -> set[int]:
     permission_by_id = {
-        permission.id: permission
-        for permissions in permissions_by_module.values()
-        for permission in permissions
+        permission.id: permission for permissions in permissions_by_module.values() for permission in permissions
     }
     key_to_id = {permission.key: permission.id for permission in permission_by_id.values()}
     selected_keys = {
@@ -140,9 +140,7 @@ def build_roles_index_context(*, can_manage_roles: bool, filters: Mapping[str, A
     custom_roles = len(role_rows) - system_roles
     active_roles = sum(1 for row in role_rows if row['record'].is_active)
     assigned_users = sum(row['assigned_users'] for row in role_rows)
-    inactive_assigned_users = sum(
-        row['assigned_users'] for row in role_rows if not row['record'].is_active
-    )
+    inactive_assigned_users = sum(row['assigned_users'] for row in role_rows if not row['record'].is_active)
     total_permissions = Permission.query.count()
 
     if active_roles == 0 or inactive_assigned_users:
@@ -217,9 +215,7 @@ def build_role_detail_context(*, role: Role, can_manage_roles: bool) -> dict[str
         User.role_id == role.id,
         User.deleted_at.is_(None),
     ).count()
-    provider_mappings = IdentityProvider.query.filter(
-        IdentityProvider.default_role_id == role.id
-    ).count()
+    provider_mappings = IdentityProvider.query.filter(IdentityProvider.default_role_id == role.id).count()
 
     permissions = sorted(role.permissions, key=lambda item: (item.module or '', item.key))
     module_map: dict[str, list[Permission]] = {}

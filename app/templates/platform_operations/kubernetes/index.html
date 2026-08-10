@@ -20,13 +20,12 @@
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="{{ page_hero.aside_classes() }}" aria-label="Kubernetes administration posture">
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="Kubernetes administration posture">
                     <div class="{{ page_hero.context_panel_classes() }}">
-                        {{ page_hero.context_header(
-                            'Administration Control Plane',
-                            'Governance & Protected Access',
-                            'server-cog'
-                        ) }}
+                        {{ page_hero.context_header('Administration Control Plane',
+                                                'Governance & Protected Access',
+                                                'server-cog') }}
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
                             {{ page_hero.context_metric('blocks', 'Available Controls', 1, 'Production-ready workspaces') }}
                             {{ page_hero.context_metric('badge-check', 'Ready Clusters', ready_cluster_count ~ ' / ' ~ cluster_count, 'Reveal prerequisites verified') }}
@@ -36,15 +35,16 @@
                 </aside>
             </div>
         </section>
-
-        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm" aria-labelledby="kubernetes-administration-overview-title">
+        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+                 aria-labelledby="kubernetes-administration-overview-title">
             <header class="flex flex-col gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <div class="flex min-w-0 items-start gap-3">
                     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
                         <i data-lucide="layout-dashboard" class="h-5 w-5" aria-hidden="true"></i>
                     </span>
                     <div class="min-w-0">
-                        <h2 id="kubernetes-administration-overview-title" class="text-base font-semibold text-content-primary">Administration Overview</h2>
+                        <h2 id="kubernetes-administration-overview-title"
+                            class="text-base font-semibold text-content-primary">Administration Overview</h2>
                         <p class="mt-0.5 text-xs leading-5 text-content-muted">Current administrative coverage and readiness across connected Kubernetes clusters.</p>
                     </div>
                 </div>
@@ -52,11 +52,11 @@
             </header>
             <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
                 {% set metrics = [
-                    ('blocks', 'Available Controls', '1', 'Protected Secret Reveal'),
-                    ('server', 'Connected Clusters', cluster_count, 'Registered Kubernetes scope'),
-                    ('badge-check', 'Reveal Ready', ready_cluster_count, 'Security prerequisites verified'),
-                    ('boxes', 'Protected Namespaces', enabled_namespace_count, 'Step-up or approval policy')
-                ] %}
+                                    ('blocks', 'Available Controls', '1', 'Protected Secret Reveal'),
+                                    ('server', 'Connected Clusters', cluster_count, 'Registered Kubernetes scope'),
+                                    ('badge-check', 'Reveal Ready', ready_cluster_count, 'Security prerequisites verified'),
+                                    ('boxes', 'Protected Namespaces', enabled_namespace_count, 'Step-up or approval policy')
+                                ] %}
                 {% for icon, label, value, helper in metrics %}
                     <article class="bg-surface-card p-5">
                         <div class="flex items-start justify-between gap-3">
@@ -73,16 +73,12 @@
                 {% endfor %}
             </div>
         </section>
-
-        {{ framed_workspace_tabs.render([('overview', 'Overview', 'layout-dashboard'), ('secret-reveal', 'Secret Reveal', 'scan-eye')], prefix='kubernetes-administration', aria_label='Kubernetes Administration Workspaces') }}
-
+        {{ framed_workspace_tabs.render([('overview', 'Overview', 'layout-dashboard') , ('secret-reveal', 'Secret Reveal', 'scan-eye')], prefix='kubernetes-administration', aria_label='Kubernetes Administration Workspaces') }}
         <div class="min-w-0">
             <div id="kubernetes-administration-panel-overview"
                  role="tabpanel"
                  x-show="activeTab === 'overview'"
-                 x-cloak>
-                {% include "platform_operations/kubernetes/_overview_workspace.html" %}
-            </div>
+                 x-cloak>{% include "platform_operations/kubernetes/_overview_workspace.html" %}</div>
             <div id="kubernetes-administration-panel-secret-reveal"
                  role="tabpanel"
                  x-show="activeTab === 'secret-reveal'"
@@ -93,7 +89,9 @@
                 <div class="flex min-h-56 items-center justify-center rounded-2xl border border-outline-default bg-surface-card shadow-sm">
                     <div class="text-center">
                         <span class="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                            <i data-lucide="loader-circle" class="h-5 w-5 animate-spin" aria-hidden="true"></i>
+                            <i data-lucide="loader-circle"
+                               class="h-5 w-5 animate-spin"
+                               aria-hidden="true"></i>
                         </span>
                         <p class="mt-3 text-sm font-semibold text-content-primary">Loading Secret Reveal Administration</p>
                         <p class="mt-1 text-xs text-content-muted">Collecting cluster readiness and namespace policy context.</p>

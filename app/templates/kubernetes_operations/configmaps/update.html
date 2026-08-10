@@ -21,19 +21,18 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ page_hero.context_card(
-                    'Update ConfigMap context',
-                    'Update Workflow',
-                    'Controlled ConfigMap Update',
-                    'Preview Required',
-                    'info',
-                    [
-                        ('radio-tower', 'Source', 'Live', 'Kubernetes API'),
-                        ('git-compare-arrows', 'Mutation', 'Merge / Replace', 'Previewed change', true)
-                    ],
-                    'Back to ConfigMap Management',
-                    url_for('kubernetes_operations.configmap_management'),
-                    'arrow-left'
+                {{ page_hero.context_card('Update ConfigMap context',
+                                'Update Workflow',
+                                'Controlled ConfigMap Update',
+                                'Preview Required',
+                                'info',
+                                [
+                                ('radio-tower', 'Source', 'Live', 'Kubernetes API') ,
+                ('git-compare-arrows', 'Mutation', 'Merge / Replace', 'Previewed change', true)
+                ],
+                'Back to ConfigMap Management',
+                url_for('kubernetes_operations.configmap_management'),
+                'arrow-left'
                 ) }}
             </div>
         </section>
@@ -74,44 +73,38 @@
                     {% set validation_preview = none %}
                     {% include 'kubernetes_operations/configmaps/_validation_preview.html' %}
                     {% call configmap_ui.action_bar('git-compare-arrows', 'Validate Before Update', 'Preview and validate the latest changes before applying the update.') %}
-                        <button name="operation" value="validate" class="{{ configmap_ui.validate_button_classes() }}"><i data-lucide="scan-search" class="h-4 w-4"></i>Preview and Validate</button>
-                        <button name="operation" value="update" data-validation-apply disabled aria-disabled="true" title="Run validation after the latest input change before applying this operation" class="{{ configmap_ui.primary_button_classes() }}"><i data-lucide="save" class="h-4 w-4"></i>Apply Update</button>
+                        <button name="operation"
+                                value="validate"
+                                class="{{ configmap_ui.validate_button_classes() }}"><i data-lucide="scan-search" class="h-4 w-4"></i>Preview and Validate</button>
+                        <button name="operation"
+                                value="update"
+                                data-validation-apply
+                                disabled
+                                aria-disabled="true"
+                                title="Run validation after the latest input change before applying this operation"
+                                class="{{ configmap_ui.primary_button_classes() }}"><i data-lucide="save" class="h-4 w-4"></i>Apply Update</button>
                     {% endcall %}
                 </div>
                 <aside class="{{ context_rail.rail_classes() }} xl:sticky xl:top-6">
-                    {% set configmap_update_flow = [
-                        ('Select Object', 'Choose the registered cluster, live namespace, and existing ConfigMap target.'),
-                        ('Review Current State', 'Load current values, immutable state, resource version, and best-effort workload context.'),
-                        ('Preview and Validate', 'Review the effective merge or replacement diff and run Kubernetes server-side dry-run.'),
-                        ('Apply Update', 'Patch the same validated live object with resource-version protection against concurrent changes.')
-                    ] %}
-                    {{ info_flow.render(
-                        'Controlled ConfigMap Update',
-                        'How a live ConfigMap change is reviewed and safely applied.',
-                        configmap_update_flow,
-                        icon='workflow',
-                        note='Changing the target, update mode, or proposed entries invalidates the previous preview and disables Apply Update.',
-                        note_icon='circle-alert',
-                        open_by_default=true
-                    ) }}
-                    {% set configmap_update_guardrails = [
-                        ('eye', 'Live Read First', 'Current values are loaded directly from Kubernetes before editing.'),
-                        ('git-compare-arrows', 'Effective Diff', 'Added, changed, and removed keys are reviewed before apply.'),
-                        ('scan-search', 'Dry-Run Validation', 'KAORI validates the proposed update before modifying the live object.'),
-                        ('lock-keyhole', 'Immutable Protection', 'Immutable ConfigMaps remain blocked from update operations.')
-                    ] %}
-                    {{ information_guide_card.render(
-                        'Update Guardrails',
-                        'Additional controls for a live ConfigMap update.',
-                        configmap_update_guardrails,
-                        icon='shield-check',
-                        open_by_default=false,
-                        compact_action=true
-                    ) }}
+                    {% set configmap_update_flow = [('Select Object', 'Choose the registered cluster, live namespace, and existing ConfigMap target.'), ('Review Current State', 'Load current values, immutable state, resource version, and best-effort workload context.'), ('Preview and Validate', 'Review the effective merge or replacement diff and run Kubernetes server-side dry-run.'), ('Apply Update', 'Patch the same validated live object with resource-version protection against concurrent changes.')] %}
+                    {{ info_flow.render('Controlled ConfigMap Update',
+                                        'How a live ConfigMap change is reviewed and safely applied.',
+                                        configmap_update_flow,
+                                        icon='workflow',
+                                        note='Changing the target, update mode, or proposed entries invalidates the previous preview and disables Apply Update.',
+                                        note_icon='circle-alert',
+                                        open_by_default=true) }}
+                    {% set configmap_update_guardrails = [('eye', 'Live Read First', 'Current values are loaded directly from Kubernetes before editing.'), ('git-compare-arrows', 'Effective Diff', 'Added, changed, and removed keys are reviewed before apply.'), ('scan-search', 'Dry-Run Validation', 'KAORI validates the proposed update before modifying the live object.'), ('lock-keyhole', 'Immutable Protection', 'Immutable ConfigMaps remain blocked from update operations.')] %}
+                    {{ information_guide_card.render('Update Guardrails',
+                                        'Additional controls for a live ConfigMap update.',
+                                        configmap_update_guardrails,
+                                        icon='shield-check',
+                                        open_by_default=false,
+                                        compact_action=true) }}
                 </aside>
             </div>
         </form>
     </div>
-<script src="{{ url_for('static', filename='js/configmap_editor.js') }}"></script>
-<script src="{{ url_for('static', filename='js/validated_operations.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/configmap_editor.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/validated_operations.js') }}"></script>
 {% endblock dashboard_content %}

@@ -121,9 +121,7 @@ def _payload(*, quota_available: bool = True, mapping_available: bool = True) ->
         'tenant_quota_summary': {
             'scope_total': len(quota_rows),
             'scope_covered': sum(
-                1
-                for item in quota_rows
-                if item.get('quota_status', {}).get('label') in {'Complete', 'Partial'}
+                1 for item in quota_rows if item.get('quota_status', {}).get('label') in {'Complete', 'Partial'}
             ),
             'scope_near_limit_count': 1 if quota_rows else 0,
             'rows': quota_rows,
@@ -204,9 +202,7 @@ def _rendered_html(
         _payload(quota_available=quota_available, mapping_available=mapping_available),
     )
     project_root = Path(__file__).resolve().parents[2]
-    rendered_html = _environment(project_root).get_template(document.template_name).render(
-        document=document
-    )
+    rendered_html = _environment(project_root).get_template(document.template_name).render(document=document)
     return document, rendered_html, project_root
 
 

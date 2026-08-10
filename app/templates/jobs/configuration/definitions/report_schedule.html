@@ -10,10 +10,9 @@
     ('clock-3', 'Next Automatic Check', policy.next_run_at|user_datetime if policy.next_run_at else 'Not Scheduled', 'Next policy dispatch'),
     ('history', 'Latest Execution', selected_job.latest_job.status_label if selected_job.latest_job else 'No History', selected_job.latest_job.queued_at if selected_job.latest_job else 'No execution recorded')
 ] %}
-{% set overview_notice = 'The dispatcher checks due schedule definitions, then generates reports on the dedicated Reports worker.' %}
+{% set overview_notice = "The dispatcher checks due schedule definitions, then generates reports on the dedicated Reports worker." %}
 <div class="space-y-5">
     {% include "jobs/configuration/_job_overview.html" %}
-
     <section class="{{ operational_section.shell_classes() }}">
         <header class="border-b border-kaori-primary/15 bg-kaori-soft px-5 py-4 sm:px-6">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -61,7 +60,6 @@
                         </div>
                     </label>
                 </div>
-
                 <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                     {% for channel in selected_job.delivery_channels %}
                         <article class="rounded-xl border border-outline-subtle bg-surface-card p-4">
@@ -76,11 +74,15 @@
                 </div>
             </div>
             <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-                <p class="flex items-start gap-2 text-xs leading-5 text-content-muted"><i data-lucide="info" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i><span>Schedule definitions remain on Reports → Schedules. This policy controls worker dispatch only.</span></p>
-                {% if can_configure %}<button type="submit" class="{{ action_button.classes('primary') }}"><i data-lucide="save" class="h-4 w-4"></i>Save Policy</button>{% else %}{{ table_label.status_indicator_label('View Only', 'unknown') }}{% endif %}
+                <p class="flex items-start gap-2 text-xs leading-5 text-content-muted"><i data-lucide="info"
+   class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i><span>Schedule definitions remain on Reports → Schedules. This policy controls worker dispatch only.</span></p>
+                {% if can_configure %}
+                    <button type="submit" class="{{ action_button.classes('primary') }}"><i data-lucide="save" class="h-4 w-4"></i>Save Policy</button>
+                {% else %}
+                    {{ table_label.status_indicator_label('View Only', 'unknown') }}
+                {% endif %}
             </footer>
         </form>
     </section>
-
     {% include "jobs/configuration/_execution_activity.html" %}
 </div>

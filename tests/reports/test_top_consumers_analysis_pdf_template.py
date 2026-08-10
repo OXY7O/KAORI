@@ -136,7 +136,9 @@ def test_top_consumers_keeps_memory_values_normalized_and_single_line() -> None:
 
 def test_top_consumers_methodology_uses_side_by_side_boundary_columns() -> None:
     rendered_html = _rendered_html()
-    shared = (PROJECT_ROOT / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css').read_text(encoding='utf-8')
+    shared = (PROJECT_ROOT / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css').read_text(
+        encoding='utf-8'
+    )
 
     assert 'class="boundary-columns"' in rendered_html
     assert 'Included in This Report' in rendered_html
@@ -144,14 +146,18 @@ def test_top_consumers_methodology_uses_side_by_side_boundary_columns() -> None:
     assert 'grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)' in shared
     assert 'column-gap: 12mm' in shared
 
+
 def test_top_consumers_renderer_registration_is_present() -> None:
     builder = (PROJECT_ROOT / 'app' / 'reports' / 'export' / 'html_pdf' / 'builder.py').read_text(encoding='utf-8')
-    registry = (PROJECT_ROOT / 'app' / 'reports' / 'export' / 'html_pdf' / 'analytics_publication_standard.py').read_text(encoding='utf-8')
+    registry = (
+        PROJECT_ROOT / 'app' / 'reports' / 'export' / 'html_pdf' / 'analytics_publication_standard.py'
+    ).read_text(encoding='utf-8')
     engine = (PROJECT_ROOT / 'app' / 'reports' / 'export' / 'html_pdf' / 'engine.py').read_text(encoding='utf-8')
 
     assert "report.report_type == 'top_consumers'" in builder
     assert "'reports/pdf/top_consumers_analysis.html': 'top_consumers_analysis.css'" in registry
     assert 'ANALYTICS_TEMPLATE_STYLESHEETS' in engine
+
 
 def test_top_consumers_weasyprint_layout_is_exactly_nine_a4_pages(tmp_path: Path) -> None:
     output_path = tmp_path / 'top-consumers-validation.pdf'

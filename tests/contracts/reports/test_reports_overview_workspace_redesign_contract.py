@@ -107,7 +107,6 @@ def test_estate_capability_merges_artifact_mix_reuse_and_contracts() -> None:
     assert "url_for('reports.report_templates')" in source
     assert "url_for('reports.templates')" not in source
 
-
     for label in ('Artifact Footprint', 'Custom Templates'):
         assert label in service
         assert label in presentation
@@ -127,8 +126,15 @@ def test_overview_is_not_an_artifact_registry_or_configuration_page() -> None:
     )
 
     for forbidden in (
-        'Access Key', 'Secret Key', 'Bucket Prefix', 'Retention Days',
-        'Cron Expression', 'Storage Path', 'Recent Generated Reports',
-        'Reporting Statistics', 'Reporting Portfolio', 'Reporting Capability',
+        'Access Key',
+        'Secret Key',
+        'Bucket Prefix',
+        'Retention Days',
+        'Cron Expression',
+        'Storage Path',
+        'Recent Generated Reports',
+        'Reporting Statistics',
+        'Reporting Portfolio',
+        'Reporting Capability',
     ):
         assert forbidden not in combined

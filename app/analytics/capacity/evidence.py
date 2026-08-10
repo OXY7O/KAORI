@@ -16,57 +16,25 @@ CAPACITY_REQUIRED_CAPABILITIES = (
     'resource_requests_limits',
 )
 
-CURRENT_WORKER_PODS_QUERY = get_query_expression(
-    'analytics.capacity.queries.CURRENT_WORKER_PODS_QUERY'
-)
-READY_WORKER_NODE_COUNT_QUERY = get_query_expression(
-    'analytics.capacity.queries.READY_WORKER_NODE_COUNT_QUERY'
-)
-WORKER_NODE_COUNT_QUERY = get_query_expression(
-    'analytics.capacity.queries.WORKER_NODE_COUNT_QUERY'
-)
-WORKER_CPU_ALLOCATABLE_QUERY = get_query_expression(
-    'analytics.capacity.queries.WORKER_CPU_ALLOCATABLE_QUERY'
-)
-WORKER_CPU_LIMITS_TOTAL_QUERY = get_query_expression(
-    'analytics.capacity.queries.WORKER_CPU_LIMITS_TOTAL_QUERY'
-)
-WORKER_CPU_PEAK_QUERY_TEMPLATE = get_query_expression(
-    'analytics.capacity.queries.WORKER_CPU_PEAK_QUERY_TEMPLATE'
-)
-WORKER_CPU_REQUESTS_TOTAL_QUERY = get_query_expression(
-    'analytics.capacity.queries.WORKER_CPU_REQUESTS_TOTAL_QUERY'
-)
-WORKER_CPU_USAGE_QUERY = get_query_expression(
-    'analytics.capacity.queries.WORKER_CPU_USAGE_QUERY'
-)
-WORKER_MEMORY_ALLOCATABLE_QUERY = get_query_expression(
-    'analytics.capacity.queries.WORKER_MEMORY_ALLOCATABLE_QUERY'
-)
-WORKER_MEMORY_LIMITS_TOTAL_QUERY = get_query_expression(
-    'analytics.capacity.queries.WORKER_MEMORY_LIMITS_TOTAL_QUERY'
-)
-WORKER_MEMORY_PEAK_QUERY_TEMPLATE = get_query_expression(
-    'analytics.capacity.queries.WORKER_MEMORY_PEAK_QUERY_TEMPLATE'
-)
+CURRENT_WORKER_PODS_QUERY = get_query_expression('analytics.capacity.queries.CURRENT_WORKER_PODS_QUERY')
+READY_WORKER_NODE_COUNT_QUERY = get_query_expression('analytics.capacity.queries.READY_WORKER_NODE_COUNT_QUERY')
+WORKER_NODE_COUNT_QUERY = get_query_expression('analytics.capacity.queries.WORKER_NODE_COUNT_QUERY')
+WORKER_CPU_ALLOCATABLE_QUERY = get_query_expression('analytics.capacity.queries.WORKER_CPU_ALLOCATABLE_QUERY')
+WORKER_CPU_LIMITS_TOTAL_QUERY = get_query_expression('analytics.capacity.queries.WORKER_CPU_LIMITS_TOTAL_QUERY')
+WORKER_CPU_PEAK_QUERY_TEMPLATE = get_query_expression('analytics.capacity.queries.WORKER_CPU_PEAK_QUERY_TEMPLATE')
+WORKER_CPU_REQUESTS_TOTAL_QUERY = get_query_expression('analytics.capacity.queries.WORKER_CPU_REQUESTS_TOTAL_QUERY')
+WORKER_CPU_USAGE_QUERY = get_query_expression('analytics.capacity.queries.WORKER_CPU_USAGE_QUERY')
+WORKER_MEMORY_ALLOCATABLE_QUERY = get_query_expression('analytics.capacity.queries.WORKER_MEMORY_ALLOCATABLE_QUERY')
+WORKER_MEMORY_LIMITS_TOTAL_QUERY = get_query_expression('analytics.capacity.queries.WORKER_MEMORY_LIMITS_TOTAL_QUERY')
+WORKER_MEMORY_PEAK_QUERY_TEMPLATE = get_query_expression('analytics.capacity.queries.WORKER_MEMORY_PEAK_QUERY_TEMPLATE')
 WORKER_MEMORY_REQUESTS_TOTAL_QUERY = get_query_expression(
     'analytics.capacity.queries.WORKER_MEMORY_REQUESTS_TOTAL_QUERY'
 )
-WORKER_MEMORY_USAGE_QUERY = get_query_expression(
-    'analytics.capacity.queries.WORKER_MEMORY_USAGE_QUERY'
-)
-WORKER_POD_ALLOCATABLE_QUERY = get_query_expression(
-    'analytics.capacity.queries.WORKER_POD_ALLOCATABLE_QUERY'
-)
-NODE_FILESYSTEM_CAPACITY_QUERY = get_query_expression(
-    'analytics.utilization.queries.STORAGE_CAPACITY'
-)
-NODE_FILESYSTEM_AVAILABLE_QUERY = get_query_expression(
-    'analytics.utilization.queries.STORAGE_AVAILABLE'
-)
-NODE_FILESYSTEM_USAGE_QUERY = get_query_expression(
-    'analytics.utilization.queries.STORAGE_USAGE'
-)
+WORKER_MEMORY_USAGE_QUERY = get_query_expression('analytics.capacity.queries.WORKER_MEMORY_USAGE_QUERY')
+WORKER_POD_ALLOCATABLE_QUERY = get_query_expression('analytics.capacity.queries.WORKER_POD_ALLOCATABLE_QUERY')
+NODE_FILESYSTEM_CAPACITY_QUERY = get_query_expression('analytics.utilization.queries.STORAGE_CAPACITY')
+NODE_FILESYSTEM_AVAILABLE_QUERY = get_query_expression('analytics.utilization.queries.STORAGE_AVAILABLE')
+NODE_FILESYSTEM_USAGE_QUERY = get_query_expression('analytics.utilization.queries.STORAGE_USAGE')
 
 CAPACITY_TIME_RANGE_STEP_MAP = {
     '1h': '5m',
@@ -84,9 +52,7 @@ def capacity_time_step(time_range: str) -> str:
 
 
 def build_range_query(query_template: str, time_range: str) -> str:
-    return query_template.replace('__TIME_RANGE__', time_range).replace(
-        '__TIME_STEP__', capacity_time_step(time_range)
-    )
+    return query_template.replace('__TIME_RANGE__', time_range).replace('__TIME_STEP__', capacity_time_step(time_range))
 
 
 @dataclass(frozen=True, slots=True)
@@ -133,9 +99,7 @@ class CapacityEvidenceCollector:
             required_capabilities=CAPACITY_REQUIRED_CAPABILITIES,
         )
         if not isinstance(response, dict):
-            raise PrometheusError(
-                f'Prometheus returned {type(response).__name__}; expected a response mapping.'
-            )
+            raise PrometheusError(f'Prometheus returned {type(response).__name__}; expected a response mapping.')
         data = response.get('data', {})
         result = data.get('result', []) if isinstance(data, dict) else []
         if not isinstance(result, list):
@@ -176,18 +140,14 @@ class CapacityEvidenceCollector:
                 requests=self.scalar(WORKER_CPU_REQUESTS_TOTAL_QUERY),
                 limits=self.scalar(WORKER_CPU_LIMITS_TOTAL_QUERY),
                 actual=self.scalar(WORKER_CPU_USAGE_QUERY),
-                peak=self.scalar(
-                    build_range_query(WORKER_CPU_PEAK_QUERY_TEMPLATE, time_range)
-                ),
+                peak=self.scalar(build_range_query(WORKER_CPU_PEAK_QUERY_TEMPLATE, time_range)),
             ),
             memory=AllocationEvidence(
                 allocatable=self.scalar(WORKER_MEMORY_ALLOCATABLE_QUERY),
                 requests=self.scalar(WORKER_MEMORY_REQUESTS_TOTAL_QUERY),
                 limits=self.scalar(WORKER_MEMORY_LIMITS_TOTAL_QUERY),
                 actual=self.scalar(WORKER_MEMORY_USAGE_QUERY),
-                peak=self.scalar(
-                    build_range_query(WORKER_MEMORY_PEAK_QUERY_TEMPLATE, time_range)
-                ),
+                peak=self.scalar(build_range_query(WORKER_MEMORY_PEAK_QUERY_TEMPLATE, time_range)),
             ),
             pod_capacity=self.scalar(WORKER_POD_ALLOCATABLE_QUERY),
             current_pods=self.scalar(CURRENT_WORKER_PODS_QUERY),

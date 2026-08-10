@@ -2,7 +2,6 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
 {% set items = payload['items']|default([], true) %}
-
 {% if items %}
     <div class="hidden lg:block">
         <table class="w-full table-fixed text-left text-sm text-content-secondary">
@@ -27,7 +26,8 @@
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }}">
                             <div class="flex min-w-0 items-start gap-3">
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="sparkles" class="h-4 w-4"></i></span>
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true"><i data-lucide="sparkles" class="h-4 w-4"></i></span>
                                 <div class="min-w-0">
                                     <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ item.title }}</p>
                                     <p class="mt-1 line-clamp-2 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ item.list_summary|default(item.summary, true) }}</p>
@@ -49,14 +49,13 @@
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_label(item.severity_label, item.tone, size='compact') }}</td>
                         <td class="{{ table_ui.cell_classes(true) }}">
-                            {{ resource_detail_modal.detail_button(
-                                item.rule_key,
-                                url_for('intelligence.recommendation_details', recommendation_key=item.rule_key),
-                                item.title,
-                                'Recommendation',
-                                label='Review',
-                                icon='panel-right-open',
-                                controls='resource-detail-drawer'
+                            {{ resource_detail_modal.detail_button(item.rule_key,
+                                                        url_for('intelligence.recommendation_details', recommendation_key=item.rule_key) ,
+                            item.title,
+                            'Recommendation',
+                            label='Review',
+                            icon='panel-right-open',
+                            controls='resource-detail-drawer'
                             ) }}
                         </td>
                     </tr>
@@ -64,13 +63,13 @@
             </tbody>
         </table>
     </div>
-
     <div class="grid gap-3 p-4 lg:hidden">
         {% for item in items %}
             <article class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                 <div class="flex items-start justify-between gap-3">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="sparkles" class="h-4 w-4"></i></span>
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true"><i data-lucide="sparkles" class="h-4 w-4"></i></span>
                         <div class="min-w-0">
                             <h3 class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ item.title }}</h3>
                             <p class="mt-1 line-clamp-2 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ item.list_summary|default(item.summary, true) }}</p>
@@ -79,10 +78,20 @@
                     {{ table_label.status_label(item.severity_label, item.tone, size='compact') }}
                 </div>
                 <dl class="mt-4 grid gap-3 rounded-lg border border-outline-subtle bg-surface-hover p-3 sm:grid-cols-2">
-                    <div><dt class="text-xs text-content-muted">Affected Scope</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ item.scope_title|default('Cluster Scope', true) }}</dd></div>
-                    <div><dt class="text-xs text-content-muted">Evidence</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ item.signal_source_label }}</dd></div>
+                    <div>
+                        <dt class="text-xs text-content-muted">Affected Scope</dt>
+                        <dd class="mt-1 text-sm font-semibold text-content-primary">
+                            {{ item.scope_title|default('Cluster Scope', true) }}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-content-muted">Evidence</dt>
+                        <dd class="mt-1 text-sm font-semibold text-content-primary">
+                            {{ item.signal_source_label }}
+                        </dd>
+                    </div>
                 </dl>
-                <div class="mt-3">{{ resource_detail_modal.detail_button(item.rule_key, url_for('intelligence.recommendation_details', recommendation_key=item.rule_key), item.title, 'Recommendation', 'w-full', label='Review', icon='panel-right-open', controls='resource-detail-drawer') }}</div>
+                <div class="mt-3">{{ resource_detail_modal.detail_button(item.rule_key, url_for('intelligence.recommendation_details', recommendation_key=item.rule_key) , item.title, 'Recommendation', 'w-full', label='Review', icon='panel-right-open', controls='resource-detail-drawer') }}</div>
             </article>
         {% endfor %}
     </div>

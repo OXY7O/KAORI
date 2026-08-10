@@ -17,17 +17,11 @@ def role_version_token(role: Role) -> str:
     if updated_at.tzinfo is None:
         updated_at = updated_at.replace(tzinfo=UTC)
     permission_ids = ','.join(str(permission.id) for permission in sorted(role.permissions, key=lambda item: item.id))
-    return f"{updated_at.astimezone(UTC).isoformat(timespec='microseconds')}|{permission_ids}"
+    return f'{updated_at.astimezone(UTC).isoformat(timespec="microseconds")}|{permission_ids}'
 
 
 def lock_role_for_mutation(role_id: int) -> Role | None:
-    role = (
-        db.session.query(Role)
-        .populate_existing()
-        .filter(Role.id == int(role_id))
-        .with_for_update()
-        .one_or_none()
-    )
+    role = db.session.query(Role).populate_existing().filter(Role.id == int(role_id)).with_for_update().one_or_none()
     if role is not None:
         # Permission membership participates in the stale-form token. Expire the
         # relationship after the locked refresh so the comparison reads the

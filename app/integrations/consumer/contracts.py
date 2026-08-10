@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Generic, TypeVar
-
-PayloadT = TypeVar('PayloadT')
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -53,7 +51,7 @@ class ConsumerSource:
 
 
 @dataclass(frozen=True)
-class ConsumerResult(Generic[PayloadT]):
+class ConsumerResult[PayloadT]:
     ok: bool
     payload: PayloadT
     source: ConsumerSource | None = None

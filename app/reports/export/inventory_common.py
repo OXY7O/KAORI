@@ -94,9 +94,7 @@ def build_inventory_export_dataset(
 ) -> InventoryExportDataset:
     profile = get_inventory_workbook_profile(report_type)
     if context.report_type != report_type:
-        raise ValueError(
-            'Inventory export context does not match the requested report type.'
-        )
+        raise ValueError('Inventory export context does not match the requested report type.')
     return InventoryExportDataset(
         profile=profile,
         context=context,

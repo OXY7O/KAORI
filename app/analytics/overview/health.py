@@ -117,11 +117,7 @@ def _collect_evidence(payload: dict[str, Any]) -> HealthEvidence:
 
 
 def _cluster_health(evidence: HealthEvidence) -> dict[str, str]:
-    critical = (
-        evidence.critical_alerts > 0
-        or evidence.max_pressure >= 90
-        or evidence.forecast_is_high
-    )
+    critical = evidence.critical_alerts > 0 or evidence.max_pressure >= 90 or evidence.forecast_is_high
     warning = any(
         (
             evidence.active_alerts > 0,
@@ -137,9 +133,13 @@ def _cluster_health(evidence: HealthEvidence) -> dict[str, str]:
     if not evidence.evidence_available:
         return _signal('Unknown', 'unknown', 'gray', 'Committed analytics evidence is not available for this cluster.')
     if critical:
-        return _signal('Critical', 'critical', 'red', 'Critical signal detected from alerts, resource pressure, or forecast risk.')
+        return _signal(
+            'Critical', 'critical', 'red', 'Critical signal detected from alerts, resource pressure, or forecast risk.'
+        )
     if warning:
-        return _signal('Warning', 'warning', 'amber', 'Operational warning detected. Review the prioritized recommendations.')
+        return _signal(
+            'Warning', 'warning', 'amber', 'Operational warning detected. Review the prioritized recommendations.'
+        )
     if not evidence.evidence_complete:
         description = (
             f'No current risk is visible in available evidence, but only '
@@ -170,7 +170,12 @@ def _capacity_risk(evidence: HealthEvidence) -> dict[str, str]:
     if score > 0:
         return _signal('Medium', 'warning', 'amber', 'Capacity risk is present across one or more available signals.')
     if not all(availability):
-        return _signal('Limited', 'warning', 'amber', 'Available capacity signals show no risk, but cross-domain evidence is incomplete.')
+        return _signal(
+            'Limited',
+            'warning',
+            'amber',
+            'Available capacity signals show no risk, but cross-domain evidence is incomplete.',
+        )
     return _signal('Low', 'normal', 'green', 'Capacity risk is currently low across all expected signals.')
 
 
@@ -180,10 +185,7 @@ def _capacity_risk_score(evidence: HealthEvidence) -> int:
             int(evidence.resource_available and evidence.max_pressure >= 75),
             int(evidence.resource_available and evidence.max_pressure >= 90),
             int(evidence.storage_available and evidence.pvc_risk_count > 0),
-            int(
-                evidence.forecast_available
-                and (evidence.forecast_risk_count > 0 or evidence.forecast_is_medium)
-            ),
+            int(evidence.forecast_available and (evidence.forecast_risk_count > 0 or evidence.forecast_is_medium)),
             2 * int(evidence.forecast_is_high),
             int(evidence.workload_available and evidence.workload_issue_count > 0),
             int(evidence.workload_available and evidence.workload_issue_count >= 10),
@@ -253,8 +255,7 @@ def _resource_pressure(evidence: HealthEvidence) -> dict[str, str]:
         'status': meta['status'],
         'tone': meta['tone'],
         'description': (
-            f'{evidence.highest_pressure_resource} is the highest signal at '
-            f'{int(round(evidence.max_pressure))}%.'
+            f'{evidence.highest_pressure_resource} is the highest signal at {int(round(evidence.max_pressure))}%.'
         ),
     }
 
@@ -269,7 +270,7 @@ def _highest_resource_pressure(resource: dict[str, Any], available: bool) -> tup
     }
     if not pressures:
         return None, 0.0
-    highest = max(pressures, key=pressures.get)
+    highest = max(pressures, key=lambda label: pressures[label])
     return highest, pressures[highest]
 
 

@@ -35,7 +35,8 @@ def _condition_rows(status) -> list[dict[str, str]]:
                 'message': _string_value(_model_value(condition, 'message'), 'Not Reported'),
                 'last_transition_time': _isoformat_datetime(
                     _model_value(condition, 'last_transition_time', 'lastTransitionTime')
-                ),
+                )
+                or 'Not Reported',
             }
         )
     return rows
@@ -209,7 +210,6 @@ def _workload_details(
     )
     details.update(canonical_fields or {})
     return details
-
 
 
 def _deployment_row(deployment) -> dict | None:

@@ -19,7 +19,8 @@
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="{{ page_hero.aside_classes() }}" aria-label="Access identity and authorization posture">
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="Access identity and authorization posture">
                     <div class="{{ page_hero.context_panel_classes() }}">
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
@@ -38,20 +39,20 @@
                 </aside>
             </div>
         </section>
-
         {% call operational_section.render(
             'Workspace Posture',
             'Each Access workspace keeps its own authority while exposing a compact signal here.',
             'radar',
             header_badge=table_label.status_indicator_label(access_overview.overall_status_label, access_overview.overall_status_tone),
             body_classes='bg-surface-page p-4 sm:p-5'
-        ) %}
+            ) %}
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
                 {% for workspace in access_overview.workspaces %}
                     <article class="group flex min-h-[20rem] flex-col rounded-xl border border-outline-default bg-surface-card shadow-sm transition hover:border-outline-strong hover:shadow-md {{ workspace.grid_classes }} {% if access_overview.workspace_count is odd and loop.last %}md:col-span-2{% endif %}">
                         <div class="flex items-start justify-between gap-4 p-5">
                             <div class="flex min-w-0 items-start gap-3">
-                                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary dark:text-kaori-accent" aria-hidden="true">
+                                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary dark:text-kaori-accent"
+                                      aria-hidden="true">
                                     <i data-lucide="{{ workspace.icon }}" class="h-5 w-5"></i>
                                 </span>
                                 <div class="min-w-0">
@@ -66,30 +67,33 @@
                             {% for icon, label, value in workspace.metrics %}
                                 <div class="min-w-0 px-3 py-4">
                                     <dt class="flex items-center gap-1.5 text-xs font-semibold leading-5 text-content-muted">
-                                        <i data-lucide="{{ icon }}" class="h-3.5 w-3.5 shrink-0" aria-hidden="true"></i>
+                                        <i data-lucide="{{ icon }}"
+                                           class="h-3.5 w-3.5 shrink-0"
+                                           aria-hidden="true"></i>
                                         <span class="truncate" title="{{ label }}">{{ label }}</span>
                                     </dt>
-                                    <dd class="mt-1 text-lg font-semibold leading-6 text-content-primary">{{ value }}</dd>
+                                    <dd class="mt-1 text-lg font-semibold leading-6 text-content-primary">
+                                        {{ value }}
+                                    </dd>
                                 </div>
                             {% endfor %}
                         </dl>
                         <p class="px-5 pt-4 text-xs leading-5 text-content-muted">{{ workspace.supporting_text }}</p>
                         <div class="mt-auto flex items-center justify-between gap-3 p-5">
                             <span class="text-xs font-medium text-content-muted">{{ workspace.boundary_label }}</span>
-                            {{ section_link_button.render(url_for(workspace.action_endpoint), workspace.action_label, icon='arrow-right') }}
+                            {{ section_link_button.render(url_for(workspace.action_endpoint) , workspace.action_label, icon='arrow-right') }}
                         </div>
                     </article>
                 {% endfor %}
             </div>
         {% endcall %}
-
         {% if access_overview.boundaries %}
             {% call operational_section.render(
                 'Access Boundaries',
                 'Identity, authentication, authorization, and audit remain separate control responsibilities.',
                 'waypoints',
                 body_classes='p-0'
-            ) %}
+                ) %}
                 <div class="grid gap-px bg-outline-subtle md:grid-cols-2 {% if access_overview.boundaries|length >= 4 %}xl:grid-cols-4{% endif %}">
                     {% for boundary in access_overview.boundaries %}
                         <article class="bg-surface-card p-5">

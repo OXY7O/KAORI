@@ -283,10 +283,13 @@ def test_storage_semantics_distinguish_not_allowed_not_reported_and_not_applicab
 ) -> None:
     semantics = _load_semantics(monkeypatch)
 
-    assert semantics.expansion_presentation(
-        'StorageClass',
-        {'allow_volume_expansion_reported': True, 'allow_volume_expansion': False},
-    ) == 'Not Allowed'
+    assert (
+        semantics.expansion_presentation(
+            'StorageClass',
+            {'allow_volume_expansion_reported': True, 'allow_volume_expansion': False},
+        )
+        == 'Not Allowed'
+    )
     assert semantics.expansion_presentation('StorageClass', {}) == 'Not Reported'
     assert semantics.expansion_presentation('PersistentVolume', {}) == 'Not Applicable'
     assert semantics.lifecycle_presentation('PersistentVolumeClaim', None, {}) == ('Not Reported', 'unknown')
@@ -312,11 +315,17 @@ def test_storage_semantics_distinguish_classless_and_missing_specification(
         None,
         {'specification_evidence_reported': False},
     ) == ('Not Reported', 'PersistentVolumeClaim')
-    assert semantics.binding_reference(
-        'PersistentVolumeClaim',
-        {'specification_evidence_reported': False},
-    ) == 'Not Reported'
-    assert semantics.binding_reference(
-        'PersistentVolumeClaim',
-        {'specification_evidence_reported': True, 'volume_name': None},
-    ) == 'Waiting for Volume'
+    assert (
+        semantics.binding_reference(
+            'PersistentVolumeClaim',
+            {'specification_evidence_reported': False},
+        )
+        == 'Not Reported'
+    )
+    assert (
+        semantics.binding_reference(
+            'PersistentVolumeClaim',
+            {'specification_evidence_reported': True, 'volume_name': None},
+        )
+        == 'Waiting for Volume'
+    )

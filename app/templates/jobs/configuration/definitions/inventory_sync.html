@@ -13,7 +13,6 @@
 {% set overview_notice = (selected_job.blocked_cluster_count ~ ' cluster binding(s) will be skipped until canonical access is enabled.') if selected_job.blocked_cluster_count else 'Successful runs commit one complete inventory generation per eligible cluster.' %}
 <div class="space-y-5">
     {% include "jobs/configuration/_job_overview.html" %}
-
     <section class="{{ operational_section.shell_classes() }}">
         <header class="border-b border-kaori-primary/15 bg-kaori-soft px-5 py-4 sm:px-6">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -64,15 +63,15 @@
                         </span>
                         <span class="mt-1 block text-xs leading-5 text-content-muted">Allowed range: {{ definition.minimum_interval_minutes }}–{{ definition.maximum_interval_minutes }} minutes.</span>
                         <div class="relative mt-3">
-                            {{ policy_form.interval_minutes(
-                                class_="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 pr-20 text-sm font-semibold text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-surface-disabled",
-                                min=definition.minimum_interval_minutes,
-                                max=definition.maximum_interval_minutes,
-                                disabled=not can_configure
-                            ) }}
+                            {{ policy_form.interval_minutes(class_="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 pr-20 text-sm font-semibold text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-surface-disabled",
+                                                        min=definition.minimum_interval_minutes,
+                                                        max=definition.maximum_interval_minutes,
+                                                        disabled=not can_configure) }}
                             <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-medium text-content-muted">Minutes</span>
                         </div>
-                        {% for error in policy_form.interval_minutes.errors %}<p class="mt-2 text-xs font-medium text-status-critical-text">{{ error }}</p>{% endfor %}
+                        {% for error in policy_form.interval_minutes.errors %}
+                            <p class="mt-2 text-xs font-medium text-status-critical-text">{{ error }}</p>
+                        {% endfor %}
                         {% if policy_error %}<p class="mt-2 text-xs font-medium text-status-critical-text">{{ policy_error }}</p>{% endif %}
                     </label>
                 </div>
@@ -85,15 +84,31 @@
                         <span class="text-xs text-content-muted">Scheduler metadata</span>
                     </div>
                     <dl class="grid divide-y divide-outline-subtle text-xs sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-                        <div class="px-4 py-3"><dt class="font-semibold text-content-muted">Last Dispatch</dt><dd class="mt-1 font-semibold text-content-primary">{{ policy.last_dispatched_at|user_datetime if policy.last_dispatched_at else 'Never Dispatched' }}</dd></div>
-                        <div class="px-4 py-3"><dt class="font-semibold text-content-muted">Next Scheduled</dt><dd class="mt-1 font-semibold text-content-primary">{{ policy.next_run_at|user_datetime if policy.next_run_at else 'Not Scheduled' }}</dd></div>
-                        <div class="px-4 py-3"><dt class="font-semibold text-content-muted">Policy Updated</dt><dd class="mt-1 font-semibold text-content-primary">{{ policy.updated_at|user_datetime }}</dd></div>
+                        <div class="px-4 py-3">
+                            <dt class="font-semibold text-content-muted">Last Dispatch</dt>
+                            <dd class="mt-1 font-semibold text-content-primary">
+                                {{ policy.last_dispatched_at|user_datetime if policy.last_dispatched_at else 'Never Dispatched' }}
+                            </dd>
+                        </div>
+                        <div class="px-4 py-3">
+                            <dt class="font-semibold text-content-muted">Next Scheduled</dt>
+                            <dd class="mt-1 font-semibold text-content-primary">
+                                {{ policy.next_run_at|user_datetime if policy.next_run_at else 'Not Scheduled' }}
+                            </dd>
+                        </div>
+                        <div class="px-4 py-3">
+                            <dt class="font-semibold text-content-muted">Policy Updated</dt>
+                            <dd class="mt-1 font-semibold text-content-primary">
+                                {{ policy.updated_at|user_datetime }}
+                            </dd>
+                        </div>
                     </dl>
                 </div>
             </div>
             <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <div class="flex items-start gap-2 text-xs leading-5 text-content-muted">
-                    <i data-lucide="info" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
+                    <i data-lucide="info"
+                       class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
                     <p>Saved changes are picked up by the scheduler without restarting Celery Beat.</p>
                 </div>
                 {% if can_configure %}
@@ -104,6 +119,5 @@
             </footer>
         </form>
     </section>
-
     {% include "jobs/configuration/_execution_activity.html" %}
 </div>

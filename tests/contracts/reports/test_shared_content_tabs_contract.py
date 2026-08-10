@@ -14,7 +14,7 @@ def test_shared_content_tabs_preserve_analytics_geometry_and_offer_server_owned_
 
     # Geometry is the Analytics compact-tab treatment: soft embedded strip,
     # rounded bordered items, KAORI violet active state, and compact spacing.
-    assert "border-b border-outline-subtle bg-surface-hover px-5 py-2 sm:px-6" in shared
+    assert 'border-b border-outline-subtle bg-surface-hover px-5 py-2 sm:px-6' in shared
     assert 'flex flex-wrap gap-2' in shared
     assert 'rounded-lg border px-3.5 text-sm font-semibold' in shared
     assert 'border-kaori-primary bg-kaori-soft text-kaori-primary-dark dark:text-kaori-accent' in shared

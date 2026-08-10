@@ -99,7 +99,7 @@ def build_job_configuration_context(*, selected_job_key: str | None = None) -> d
             'manual_action_icon': 'database-zap',
             'execution_scope_label': 'All Eligible Clusters',
             'execution_scope_detail': (
-                f"{selected_context.get('eligible_cluster_count', 0)} eligible cluster bindings"
+                f'{selected_context.get("eligible_cluster_count", 0)} eligible cluster bindings'
             ),
         },
         'governance.tls_certificates.sync': {
@@ -107,7 +107,7 @@ def build_job_configuration_context(*, selected_job_key: str | None = None) -> d
             'manual_action_icon': 'refresh-cw',
             'execution_scope_label': 'Eligible TLS Clusters',
             'execution_scope_detail': (
-                f"{selected_context.get('eligible_cluster_count', 0)} eligible cluster bindings"
+                f'{selected_context.get("eligible_cluster_count", 0)} eligible cluster bindings'
             ),
         },
         'analytics.materialize': {
@@ -115,8 +115,8 @@ def build_job_configuration_context(*, selected_job_key: str | None = None) -> d
             'manual_action_icon': 'chart-no-axes-combined',
             'execution_scope_label': 'Configured Analytics Snapshots',
             'execution_scope_detail': (
-                f"{selected_context.get('dataset_count', 0)} dataset families across "
-                f"{selected_context.get('eligible_cluster_count', 0)} clusters"
+                f'{selected_context.get("dataset_count", 0)} dataset families across '
+                f'{selected_context.get("eligible_cluster_count", 0)} clusters'
             ),
         },
         'reports.schedule.dispatch': {
@@ -124,7 +124,7 @@ def build_job_configuration_context(*, selected_job_key: str | None = None) -> d
             'manual_action_icon': 'file-clock',
             'execution_scope_label': 'Enabled Report Schedules',
             'execution_scope_detail': (
-                f"{selected_context.get('active_schedule_count', 0)} enabled schedule definitions"
+                f'{selected_context.get("active_schedule_count", 0)} enabled schedule definitions'
             ),
         },
         'analytics.forecast.materialize': {
@@ -132,8 +132,8 @@ def build_job_configuration_context(*, selected_job_key: str | None = None) -> d
             'manual_action_icon': 'chart-spline',
             'execution_scope_label': 'Configured Forecast Snapshots',
             'execution_scope_detail': (
-                f"{selected_context.get('dataset_count', 0)} forecast dataset across "
-                f"{selected_context.get('eligible_cluster_count', 0)} clusters"
+                f'{selected_context.get("dataset_count", 0)} forecast dataset across '
+                f'{selected_context.get("eligible_cluster_count", 0)} clusters'
             ),
         },
     }
@@ -148,13 +148,9 @@ def build_job_configuration_context(*, selected_job_key: str | None = None) -> d
             },
         )
     )
-    selected_context['execution_disabled'] = not bool(
-        selected_context.get('eligible_cluster_count', 1)
-    )
+    selected_context['execution_disabled'] = not bool(selected_context.get('eligible_cluster_count', 1))
     enabled_count = sum(1 for policy in policies if policy.enabled)
-    attention_count = sum(
-        1 for policy in policies if policy.last_dispatch_status in _ATTENTION_DISPATCH_STATUSES
-    )
+    attention_count = sum(1 for policy in policies if policy.last_dispatch_status in _ATTENTION_DISPATCH_STATUSES)
     active_executions = JobExecution.query.filter(
         JobExecution.status.in_(ACTIVE_JOB_STATUSES),
         JobExecution.completed_at.is_(None),

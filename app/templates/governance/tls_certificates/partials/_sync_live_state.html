@@ -1,19 +1,15 @@
 {% import "components/table_label.html" as table_label %}
 <div id="tls-sync-live-state"
      class="min-w-0"
-     {% if payload.sync_state.is_active and payload.sync_state.active_job_public_id %}
-     hx-get="{{ url_for('governance.tls_certificates_sync_status', public_id=payload.sync_state.active_job_public_id, cluster_id=payload.filters.cluster_id, namespace=payload.filters.namespace, status=payload.filters.status, search=payload.filters.search, page=payload.filters.page|default(1), per_page=payload.filters.per_page|default(5)) }}"
-     hx-trigger="every 1s"
-     hx-target="this"
-     hx-swap="outerHTML swap:0ms settle:0ms"
-     hx-indicator="#tls-sync-panel-poll-indicator"
-     hx-sync="this:replace"
-     {% endif %}>
-    <span id="tls-sync-panel-poll-indicator" class="htmx-indicator hidden" aria-hidden="true"></span>
+     {% if payload.sync_state.is_active and payload.sync_state.active_job_public_id %} hx-get="{{ url_for('governance.tls_certificates_sync_status', public_id=payload.sync_state.active_job_public_id, cluster_id=payload.filters.cluster_id, namespace=payload.filters.namespace, status=payload.filters.status, search=payload.filters.search, page=payload.filters.page|default(1) , per_page=payload.filters.per_page|default(5)) }}" hx-trigger="every 1s" hx-target="this" hx-swap="outerHTML swap:0ms settle:0ms" hx-indicator="#tls-sync-panel-poll-indicator" hx-sync="this:replace" {% endif %}>
+    <span id="tls-sync-panel-poll-indicator"
+          class="htmx-indicator hidden"
+          aria-hidden="true"></span>
     <div class="flex min-w-0 items-start gap-3">
         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
               aria-hidden="true">
-            <i data-lucide="{{ payload.sync_state.icon|default('refresh-cw') }}" class="h-4 w-4 {% if payload.sync_state.is_active %}animate-spin{% endif %}"></i>
+            <i data-lucide="{{ payload.sync_state.icon|default('refresh-cw') }}"
+               class="h-4 w-4 {% if payload.sync_state.is_active %}animate-spin{% endif %}"></i>
         </span>
         <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-2">

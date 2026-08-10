@@ -2,7 +2,8 @@
     {% set border_class = 'border-status-critical-border' if tone == 'critical' else ('border-status-info-border' if tone == 'info' else 'border-status-warning-border') %}
     {% set background_class = 'bg-status-critical-soft' if tone == 'critical' else ('bg-status-info-soft' if tone == 'info' else 'bg-status-warning-soft') %}
     {% set icon_class = 'text-status-critical' if tone == 'critical' else ('text-status-info' if tone == 'info' else 'text-status-warning') %}
-    <section class="rounded-xl border {{ border_class }} {{ background_class }} px-4 py-3 {{ extra_class }}" role="status">
+    <section class="rounded-xl border {{ border_class }} {{ background_class }} px-4 py-3 {{ extra_class }}"
+             role="status">
         <div class="flex items-start gap-3">
             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-surface-card {{ icon_class }} shadow-sm">
                 <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
