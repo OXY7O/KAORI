@@ -56,4 +56,7 @@ def test_secret_reveal_step_up_aligns_password_and_verify_action() -> None:
     assert 'sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end' in step_up
     assert 'form_field.label_row(' in step_up and 'Current KAORI Password' in step_up
     assert 'class="{{ form_field.input_classes() }}"' in step_up
-    assert 'form_field.help(' in step_up and 'Step-up is required only before consuming an approved reveal request.' in step_up
+    assert (
+        'form_field.help(' in step_up
+        and 'Step-up is required only before consuming an approved reveal request.' in step_up
+    )
