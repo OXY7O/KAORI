@@ -143,7 +143,6 @@
         const target = event.detail?.target || event.target
         if (target?.id === PAGE_ID) window.setTimeout(initializeTracker, 0)
     })
-
     ;['htmx:responseError', 'htmx:sendError', 'htmx:timeout'].forEach((eventName) => {
         document.body.addEventListener(eventName, markFailed)
     })
