@@ -1077,6 +1077,19 @@ def format_status_label(status: str) -> str:
     }.get(status, status.title())
 
 
+def serialize_recent_report(report: Report) -> dict[str, Any]:
+    """Return the compact, storage-safe report summary shared by overview payloads."""
+    return {
+        'name': report.name,
+        'report_type_label': str(report.report_type or '').replace('_', ' ').title(),
+        'created_at': report.created_at.isoformat() if report.created_at is not None else None,
+        'file_size_display': format_file_size(report.file_size_bytes),
+        'status': report.status,
+        'status_label': format_status_label(report.status),
+        'status_tone': get_status_tone(report.status),
+    }
+
+
 def get_status_tone(status: str) -> str:
     return {
         'requested': 'blue',

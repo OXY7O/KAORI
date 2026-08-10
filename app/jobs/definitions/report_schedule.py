@@ -1,8 +1,9 @@
+from app.common.job_execution_contract import registered_job_operation_label
 from app.jobs.definitions.base import JobDefinition
 
 REPORT_SCHEDULE_DEFINITION = JobDefinition(
     key='reports.schedule.dispatch',
-    name='Report Schedule Dispatcher',
+    name=registered_job_operation_label('dispatch_due_reports'),
     domain='Reports',
     description='Dispatch due report schedules through the Reports worker.',
     icon='file-clock',

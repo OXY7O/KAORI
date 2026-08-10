@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from app.common.job_execution_contract import job_operation_label
 from app.jobs.definitions import (
     ANALYTICS_REFRESH_DEFINITION,
     FORECAST_REFRESH_DEFINITION,
@@ -37,10 +38,3 @@ def get_job_definition_by_operation(operation: str) -> JobDefinition:
     except KeyError as exc:
         raise LookupError(f'Unknown registered job operation: {operation}') from exc
 
-
-def job_operation_label(operation: str) -> str:
-    """Return the canonical user-facing name for a registered job operation."""
-    try:
-        return get_job_definition_by_operation(operation).name
-    except LookupError:
-        return operation.replace('_', ' ').title()

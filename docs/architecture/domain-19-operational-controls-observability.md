@@ -1,5 +1,7 @@
 # Domain 19 — Operational Controls & Resolver Observability
 
+> **Current release status (2026-08-10): Foundation retained; automated Intelligence remediation remains held.** Operational-control primitives may remain in use by controlled resolver paths, but this document does not imply that the retired Domain 18 application orchestrator is enabled.
+
 ## Purpose
 
 Domain 19 adds fail-closed operational controls around the end-to-end remediation workflow. Resolver execution must stop when KAORI's global kill switch, cluster maintenance mode, concurrency limit, rate limit, or circuit breaker blocks the target.

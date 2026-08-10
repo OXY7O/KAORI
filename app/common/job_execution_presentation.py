@@ -4,7 +4,7 @@ import json
 from typing import Any
 
 from app.common.presentation import present_user_datetime
-from app.jobs.registry import job_operation_label
+from app.common.job_execution_contract import job_operation_label
 from app.models.job import JobExecution
 
 _JOB_ICONS = {

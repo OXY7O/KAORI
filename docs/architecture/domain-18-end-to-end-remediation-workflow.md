@@ -1,5 +1,7 @@
 # Domain 18 — End-to-End Remediation Workflow Integration
 
+> **Current release status (2026-08-10): Historical design reference.** The dormant `app/knowledge/remediation_workflow.py` orchestrator was removed from the release source because it had no runtime/test/entrypoint consumer. Intelligence remediation is held for the next controlled redesign; this document must not be read as an enabled current-release execution path.
+
 ## Purpose
 
 Domain 18 connects the safety components from Domains 8–17 into one explicit remediation workflow without collapsing their authorization boundaries.
@@ -12,9 +14,9 @@ Alert → Runbook match → Candidate → Review promotion → Decision
 
 ## Production Changes
 
-### `app/knowledge/remediation_workflow.py`
+### Historical `app/knowledge/remediation_workflow.py`
 
-Provides three application-level entry points:
+The retired prototype provided three application-level entry points:
 
 - `ingest_alert_for_review()` matches an alert and persists a non-executable candidate;
 - `promote_reviewed_candidate()` performs explicit candidate-to-decision promotion;
@@ -58,25 +60,24 @@ Route the task explicitly:
 
 Keep the queue unconsumed until non-production resolver policy and registry fingerprints have been validated.
 
-## Validation
+## Historical Validation
+
+The original Domain 18 test paths were retired together with the dormant application orchestrator. The current release must instead prove that the retired module is absent and that no unresolved runtime/import dependency remains:
 
 ```bash
-pytest -q \
-  tests/intelligence/test_end_to_end_remediation_workflow.py \
-  tests/contracts/intelligence/test_domain18_end_to_end_workflow_contract.py
-
+python scripts/verify_module_reachability.py
+python scripts/verify_import_cycles.py
 python scripts/verify_architecture_boundaries.py
-bash scripts/quality_gate.sh
 ```
 
-A non-production acceptance test must prove the full chain from a test alert through a successful Kubernetes Deployment restart and execution-journal evidence.
+A future Intelligence remediation redesign must add new permanent contract and functional tests before any end-to-end mutation path is enabled again.
 
 ## Rollback
 
 1. stop consumers of `resolver-execution`;
 2. disable resolver deployment policies;
 3. preserve pending/queued/running journals and Activity Audit evidence;
-4. revert `app/knowledge/remediation_workflow.py` and `app/resolver/tasks.py`;
+4. restore only an approved, tested remediation application contract and the matching resolver worker implementation;
 5. restart web and workers.
 
 No database downgrade is required.

@@ -1,3 +1,4 @@
+from app.common.job_execution_contract import registered_job_operation_label
 from app.jobs.definitions.base import JobDefinition
 
 JOB_KEY = 'governance.tls_certificates.sync'
@@ -5,7 +6,7 @@ ADAPTER_MODULE = 'app.governance.tls_certificates.job_adapter'
 
 TLS_CERTIFICATE_SYNC_DEFINITION = JobDefinition(
     key=JOB_KEY,
-    name='TLS Certificate Sync',
+    name=registered_job_operation_label('tls_certificate_sync'),
     domain='Kubernetes Governance',
     description='Refresh TLS Secret inventory, Ingress usage, expiry, and freshness.',
     icon='shield-check',

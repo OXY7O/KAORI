@@ -75,7 +75,7 @@ def main() -> int:
     analytics_job_adapter = read('app/analytics/job_adapter.py')
     dashboard_snapshots = read('app/dashboards/kubernetes/snapshots.py')
     require(
-        'from app.analytics.materialization.dashboard_alerts import build_dashboard_alerts_context' in analytics_catalog,
+        "builder_path='app.analytics.materialization.dashboard_alerts:build_dashboard_alerts_context'" in analytics_catalog,
         'Dashboard alert materialization must be owned by Analytics.',
         errors,
     )
@@ -94,6 +94,7 @@ def main() -> int:
     inventory_job_adapter = read('app/inventory/job_adapter.py')
     notifications_queries = read('app/notifications/queries.py')
     shared_job_presentation = read('app/common/job_execution_presentation.py')
+    shared_job_contract = read('app/common/job_execution_contract.py')
     require(
         'from app.jobs.registry import get_job_definition' in runtime_recovery,
         'Integration recovery must dispatch through the registered job boundary.',
@@ -121,8 +122,16 @@ def main() -> int:
         errors,
     )
     require(
-        'app.jobs.presentation' not in notifications_queries and 'app.jobs.service' not in shared_job_presentation,
+        'app.jobs.presentation' not in notifications_queries
+        and 'app.jobs.service' not in shared_job_presentation
+        and 'app.jobs.registry' not in shared_job_presentation,
         'Shared job presentation must not recreate the Notifications-Jobs dependency cycle.',
+        errors,
+    )
+    require(
+        'from app.common.job_execution_contract import job_operation_label' in shared_job_presentation
+        and "'tls_certificate_sync': 'TLS Certificate Sync'" in shared_job_contract,
+        'Shared job operation labels must be owned by the Common execution presentation contract.',
         errors,
     )
 

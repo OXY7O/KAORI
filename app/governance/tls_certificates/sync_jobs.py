@@ -3,6 +3,11 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from app.governance.tls_certificates.constants import (
+    TLS_SYNC_JOB_TYPE,
+    TLS_SYNC_OPERATION,
+    TLS_SYNC_QUEUE,
+)
 from app.governance.tls_certificates.tasks import sync_tls_certificates_task
 from app.integrations.kubernetes.resolver import connection_for_cluster
 from app.jobs.constants import ACTIVE_JOB_STATUSES, WORKLOAD_STANDARD
@@ -13,9 +18,6 @@ from app.models.job import JobExecution
 
 logger = logging.getLogger(__name__)
 
-TLS_SYNC_QUEUE = 'inventory'
-TLS_SYNC_JOB_TYPE = 'tls_certificate_inventory'
-TLS_SYNC_OPERATION = 'tls_certificate_sync'
 
 
 class NoEligibleTLSCertificateTargets(RuntimeError):

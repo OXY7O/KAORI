@@ -10,6 +10,7 @@ REPORTING_GUIDANCE = DASHBOARD_DIR / "partials" / "_reporting_guidance.html"
 WORKSPACE_TABS = ROOT / "app" / "templates" / "components" / "workspace_tabs.html"
 METRIC_CARD = ROOT / "app" / "templates" / "components" / "operational_metric_card.html"
 KPI_CARDS = DASHBOARD_DIR / "partials" / "_kpi_cards.html"
+TOP_CONSUMERS = DASHBOARD_DIR / "partials" / "_top_consumers.html"
 ROUTES = ROOT / "app" / "dashboards" / "kubernetes" / "routes.py"
 SERVICE = ROOT / "app" / "dashboards" / "kubernetes" / "service.py"
 README = ROOT / "app" / "dashboards" / "kubernetes" / "README.md"
@@ -67,6 +68,7 @@ def verify() -> None:
     workspace_tabs = _read(WORKSPACE_TABS)
     metric_card = _read(METRIC_CARD)
     kpi_cards = _read(KPI_CARDS)
+    top_consumers = _read(TOP_CONSUMERS)
     routes = _read(ROUTES)
     service = _read(SERVICE)
     readme = _read(README)
@@ -156,6 +158,20 @@ def verify() -> None:
     if "semantic_tones" in kpi_cards or "scope_tone" in kpi_cards:
         raise AssertionError("dashboard KPI template still contains dead tone mapping")
 
+    _require(
+        top_consumers,
+        (
+            "Select a cluster to view committed CPU and memory consumer signals.",
+            "Committed memory consumer data is not available yet.",
+            "'bg-kaori-primary' if item.signal_state == 'normal'",
+        ),
+        "dashboard top-consumer snapshot presentation",
+    )
+    if "from Prometheus" in top_consumers or "'bg-status-info',\n                dashboard.top_consumers_snapshot.memory" in top_consumers:
+        raise AssertionError(
+            "dashboard top-consumer presentation must use committed-snapshot wording and KAORI Violet normal-state ranking"
+        )
+
     for name in SECTION_PARTIALS:
         source = _read(DASHBOARD_DIR / "partials" / name)
         _require(
@@ -242,7 +258,7 @@ def verify() -> None:
     print(
         "KAORI operational dashboard standard passed: canonical composition, snapshot-only web boundary, "
         "URL-backed keyboard-accessible tabs, shared style ownership, format-neutral reporting guidance, "
-        "documentation, audit, and quality-gate enforcement match v1.1."
+        "top-consumer snapshot semantics, documentation, audit, and quality-gate enforcement match v1.1."
     )
 
 

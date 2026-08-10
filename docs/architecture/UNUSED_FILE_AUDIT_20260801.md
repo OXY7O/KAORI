@@ -84,11 +84,11 @@ These files are obsolete because their canonical replacements are already active
 
 These are local/generated artifacts and must not be included in source ZIP deliveries.
 
-## Candidates Retained Pending Architecture Decision
+## Architecture Decision Update — 2026-08-10
 
-### `app/knowledge/remediation_workflow.py`
+`app/knowledge/remediation_workflow.py` was formally retired from the current release after module-reachability validation confirmed that it had no runtime import, configured entrypoint, permanent test, or script consumer. Intelligence remediation remains held for a future controlled redesign. Historical Domain 18 documentation is retained only as design history and is explicitly marked non-current.
 
-Static analysis found no runtime imports, but the module is explicitly documented by `docs/architecture/domain-18-end-to-end-remediation-workflow.md`. It is retained as an intentional architecture workflow until the Knowledge/Intelligence execution path is either wired or formally retired.
+`app/users/identity.py` was also removed after the same reachability check confirmed that its identity-source helpers were unused and duplicated provider-family ownership already held by the authentication provider catalog.
 
 ## Intentionally Retained
 

@@ -1,23 +1,24 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
+from importlib import import_module
 from dataclasses import dataclass
-from typing import Any
-
-from app.analytics.alerts.application import get_alerts_materialization_context
-from app.analytics.capacity.service import get_capacity_page_context
-from app.analytics.forecast.service import get_forecast_analysis_context
-from app.analytics.storage.service import get_storage_analysis_context
-from app.analytics.top_consumers.service import get_top_consumers_context
-from app.analytics.utilization.materialization import (
-    get_utilization_node_context,
-    get_utilization_summary_context,
-    get_utilization_trend_context,
-)
-from app.analytics.workload.service import get_workload_analysis_context
-from app.analytics.materialization.dashboard_alerts import build_dashboard_alerts_context
+from typing import Any, cast
 
 ContextBuilder = Callable[[Mapping[str, Any]], dict[str, Any]]
+
+
+def _resolve_builder(path: str) -> ContextBuilder:
+    module_name, separator, attribute_name = path.partition(':')
+    if not separator or not module_name or not attribute_name:
+        raise ValueError(f'Invalid analytics dataset builder path: {path}')
+    module = import_module(module_name)
+    try:
+        builder = getattr(module, attribute_name)
+    except AttributeError as exc:
+        raise LookupError(f'Analytics dataset builder not found: {path}') from exc
+    return cast(ContextBuilder, builder)
+
 
 _RANGE_BUDGET_MULTIPLIER = {
     '1h': 0.5,
@@ -44,7 +45,7 @@ _TREND_RANGE_BY_HOURS = {
 class AnalyticsDataset:
     key: str
     label: str
-    builder: ContextBuilder
+    builder_path: str
     default_parameters: tuple[dict[str, str], ...]
     freshness_minutes: int
     stale_grace_minutes: int
@@ -55,12 +56,17 @@ class AnalyticsDataset:
     execution_priority: int = 100
     task_budget_seconds: int = 180
 
+    @property
+    def builder(self) -> ContextBuilder:
+        """Resolve the worker-only builder when a materialization run executes."""
+        return _resolve_builder(self.builder_path)
+
 
 ANALYTICS_DATASETS: tuple[AnalyticsDataset, ...] = (
     AnalyticsDataset(
         key='dashboard.kubernetes.alerts',
         label='Kubernetes Dashboard Alerts',
-        builder=build_dashboard_alerts_context,
+        builder_path='app.analytics.materialization.dashboard_alerts:build_dashboard_alerts_context',
         default_parameters=({},),
         freshness_minutes=5,
         stale_grace_minutes=30,
@@ -72,7 +78,7 @@ ANALYTICS_DATASETS: tuple[AnalyticsDataset, ...] = (
     AnalyticsDataset(
         key='analytics.alerts',
         label='Alerts and Anomalies',
-        builder=get_alerts_materialization_context,
+        builder_path='app.analytics.alerts.application:get_alerts_materialization_context',
         default_parameters=({'source': 'auto'},),
         freshness_minutes=5,
         stale_grace_minutes=30,
@@ -85,7 +91,7 @@ ANALYTICS_DATASETS: tuple[AnalyticsDataset, ...] = (
     AnalyticsDataset(
         key='analytics.utilization.summary',
         label='Utilization Summary',
-        builder=get_utilization_summary_context,
+        builder_path='app.analytics.utilization.materialization:get_utilization_summary_context',
         default_parameters=({},),
         freshness_minutes=10,
         stale_grace_minutes=120,
@@ -103,7 +109,7 @@ ANALYTICS_DATASETS: tuple[AnalyticsDataset, ...] = (
     AnalyticsDataset(
         key='analytics.utilization.trend',
         label='Utilization Trend',
-        builder=get_utilization_trend_context,
+        builder_path='app.analytics.utilization.materialization:get_utilization_trend_context',
         default_parameters=tuple({'trend_hours': value} for value in ('1', '6', '12', '24', '168', '720', '1440')),
         freshness_minutes=15,
         stale_grace_minutes=720,
@@ -122,7 +128,7 @@ ANALYTICS_DATASETS: tuple[AnalyticsDataset, ...] = (
     AnalyticsDataset(
         key='analytics.utilization.node',
         label='Utilization Node Detail',
-        builder=get_utilization_node_context,
+        builder_path='app.analytics.utilization.materialization:get_utilization_node_context',
         default_parameters=(),
         freshness_minutes=10,
         stale_grace_minutes=120,
@@ -141,7 +147,7 @@ ANALYTICS_DATASETS: tuple[AnalyticsDataset, ...] = (
     AnalyticsDataset(
         key='analytics.capacity',
         label='Capacity Analysis',
-        builder=get_capacity_page_context,
+        builder_path='app.analytics.capacity.service:get_capacity_page_context',
         default_parameters=tuple({'time_range': value} for value in ('1h', '6h', '12h', '24h', '7d', '30d', '60d')),
         freshness_minutes=20,
         stale_grace_minutes=1440,
@@ -160,7 +166,7 @@ ANALYTICS_DATASETS: tuple[AnalyticsDataset, ...] = (
     AnalyticsDataset(
         key='analytics.storage',
         label='Storage Analysis',
-        builder=get_storage_analysis_context,
+        builder_path='app.analytics.storage.service:get_storage_analysis_context',
         default_parameters=({},),
         freshness_minutes=20,
         stale_grace_minutes=1440,
@@ -175,7 +181,7 @@ ANALYTICS_DATASETS: tuple[AnalyticsDataset, ...] = (
     AnalyticsDataset(
         key='analytics.workload',
         label='Workload Analysis',
-        builder=get_workload_analysis_context,
+        builder_path='app.analytics.workload.service:get_workload_analysis_context',
         default_parameters=tuple({'time_range': value} for value in ('1h', '6h', '12h', '24h', '7d', '30d', '60d')),
         freshness_minutes=20,
         stale_grace_minutes=1440,
@@ -194,7 +200,7 @@ ANALYTICS_DATASETS: tuple[AnalyticsDataset, ...] = (
     AnalyticsDataset(
         key='analytics.top_consumers',
         label='Top Consumers',
-        builder=get_top_consumers_context,
+        builder_path='app.analytics.top_consumers.service:get_top_consumers_context',
         default_parameters=({},),
         freshness_minutes=15,
         stale_grace_minutes=720,
@@ -216,7 +222,7 @@ ANALYTICS_DATASETS: tuple[AnalyticsDataset, ...] = (
 FORECAST_DATASET = AnalyticsDataset(
     key='analytics.forecast',
     label='Capacity Forecast',
-    builder=get_forecast_analysis_context,
+    builder_path='app.analytics.forecast.service:get_forecast_analysis_context',
     default_parameters=tuple(
         {'history_window': history_window}
         for history_window in ('7d', '30d', '90d')

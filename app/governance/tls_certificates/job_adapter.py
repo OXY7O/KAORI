@@ -3,10 +3,9 @@ from __future__ import annotations
 from typing import Any
 
 from app.common.job_execution_presentation import present_job_execution
+from app.governance.tls_certificates.constants import TLS_SYNC_JOB_TYPE, TLS_SYNC_OPERATION
 from app.governance.tls_certificates.sync_jobs import (
     NoEligibleTLSCertificateTargets,
-    TLS_SYNC_JOB_TYPE,
-    TLS_SYNC_OPERATION,
     build_tls_certificate_targets,
     enqueue_tls_certificate_sync,
 )

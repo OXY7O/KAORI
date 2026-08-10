@@ -8,6 +8,7 @@ phase="${1:---all}"
 
 run_static() {
     bash scripts/verify_source_hygiene.sh
+    python scripts/verify_release_governance.py
     python scripts/verify_python_syntax.py
     python scripts/verify_single_pdf_engine.py
     python scripts/verify_analytics_pdf_publication.py
@@ -41,7 +42,9 @@ run_static() {
     python scripts/verify_notification_center_final_lock.py
     python scripts/verify_integrations_final_lock.py
     python scripts/verify_hero_component_standard.py
+    python scripts/verify_title_case_standard.py
     python scripts/verify_operational_dashboard_standard.py
+    python scripts/verify_analytics_compact_label_standard.py
     python scripts/verify_sidebar_navigation_standard.py
     python scripts/verify_snapshot_context_bar_standard.py
     python -m ruff check app migrations tests scripts

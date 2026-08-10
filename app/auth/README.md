@@ -135,7 +135,7 @@ Functional Auth tests live under `tests/auth/`; architecture ownership checks li
 ```bash
 pytest -q tests/auth -m functional
 pytest -q tests/contracts/auth -m contract
-pytest -q tests/auth -m functional --cov=app.auth --cov=app.users.identity --cov-report=term-missing
+pytest -q tests/auth -m functional --cov=app.auth --cov-report=term-missing
 ```
 
 The security regression contracts specifically cover session admission, safe post-login redirects, remember-cookie revocation, bounded remember-me duration, rate-limit audit evidence, and `authentication.v2` actor/target semantics.

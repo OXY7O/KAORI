@@ -1,3 +1,4 @@
+from app.common.job_execution_contract import registered_job_operation_label
 from app.jobs.definitions.base import JobDefinition
 
 ADAPTER_MODULE = 'app.analytics.job_adapter'
@@ -6,7 +7,7 @@ JOB_KEY = 'analytics.materialize'
 
 ANALYTICS_REFRESH_DEFINITION = JobDefinition(
     key=JOB_KEY,
-    name='Analytics Data Refresh',
+    name=registered_job_operation_label('materialize_analytics'),
     domain='Kubernetes Analytics',
     description='Refresh shared Kubernetes analytics snapshots.',
     icon='chart-no-axes-combined',

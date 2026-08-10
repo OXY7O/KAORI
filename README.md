@@ -48,6 +48,8 @@ Start with:
 - [`docs/architecture/quality-gates.md`](docs/architecture/quality-gates.md)
 - [`docs/architecture/job-execution-foundation.md`](docs/architecture/job-execution-foundation.md)
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
+- [`docs/deployment/RELEASE_GOVERNANCE.md`](docs/deployment/RELEASE_GOVERNANCE.md)
+- [`CHANGELOG.md`](CHANGELOG.md)
 
 ## Source Archives
 

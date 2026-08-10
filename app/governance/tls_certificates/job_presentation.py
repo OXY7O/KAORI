@@ -6,7 +6,7 @@ from typing import Any
 from sqlalchemy import or_
 
 from app.common.presentation import present_user_datetime
-from app.governance.tls_certificates.sync_jobs import TLS_SYNC_JOB_TYPE, TLS_SYNC_OPERATION
+from app.governance.tls_certificates.constants import TLS_SYNC_JOB_TYPE, TLS_SYNC_OPERATION
 from app.jobs.constants import ACTIVE_JOB_STATUSES
 from app.models.job import JobExecution, JobExecutionSubscriber
 

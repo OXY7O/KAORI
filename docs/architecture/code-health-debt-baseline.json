@@ -28,7 +28,6 @@
     "app/jobs/service.py::create_or_attach_job": 17,
     "app/knowledge/candidate_review.py::promote_candidate": 10,
     "app/knowledge/matching.py::create_alert_binding": 11,
-    "app/knowledge/remediation_workflow.py::promote_reviewed_candidate": 10,
     "app/knowledge/service.py::create_revision": 14,
     "app/notifications/service.py::record_operational_activity": 11,
     "app/prometheus/resolver.py::_decision_reason": 10,

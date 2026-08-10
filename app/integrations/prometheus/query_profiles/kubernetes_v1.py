@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.integrations.prometheus.query_profiles import alerts_v1
+import app.integrations.prometheus.query_profiles.alerts_v1 as alerts_v1
 from app.integrations.prometheus.query_profiles.forecast_v1 import FORECAST_QUERIES
 from app.integrations.prometheus.query_profiles.types import QueryDefinition
 

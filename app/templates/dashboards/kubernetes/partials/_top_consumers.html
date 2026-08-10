@@ -26,8 +26,7 @@
                                     <span class="shrink-0">{{ item.signal_label }}</span>
                                 </div>
                                 {% if item.percent is not none %}
-                                    {% set normal_class = 'bg-kaori-primary' if title == 'CPU' else 'bg-status-info' %}
-                                    {% set signal_bar_class = 'bg-status-critical' if item.signal_state == 'critical' else ('bg-status-warning' if item.signal_state == 'warning' else (normal_class if item.signal_state == 'normal' else 'bg-status-unknown')) %}
+                                    {% set signal_bar_class = 'bg-status-critical' if item.signal_state == 'critical' else ('bg-status-warning' if item.signal_state == 'warning' else ('bg-kaori-primary' if item.signal_state == 'normal' else 'bg-status-unknown')) %}
                                     {{ progress_bar.bar(
                                         item.percent if item.percent <= 100 else 100,
                                         track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover',
@@ -70,7 +69,7 @@
         {% set blocked_state_icon = 'server-off' %}
         {% set blocked_state_label = 'Cluster Required' %}
         {% set blocked_state_title = 'Select Cluster' %}
-        {% set blocked_state_description = 'Select a cluster to view top CPU and memory consumers from Prometheus.' %}
+        {% set blocked_state_description = 'Select a cluster to view committed CPU and memory consumer signals.' %}
         {% set blocked_state_tone = 'warning' %}
         {% include 'components/states/_blocked_state.html' %}
     {% else %}
@@ -86,10 +85,10 @@
             {{ consumer_panel(
                 'Memory',
                 'memory-stick',
-                'bg-status-info',
+                'bg-kaori-primary',
                 dashboard.top_consumers_snapshot.memory,
                 'Memory Consumer Data Not Available',
-                'Prometheus memory consumer data is not available yet.'
+                'Committed memory consumer data is not available yet.'
             ) }}
         </div>
 

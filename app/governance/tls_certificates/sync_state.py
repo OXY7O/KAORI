@@ -9,7 +9,7 @@ from app.jobs.policies.service import get_or_create_job_policy
 from app.models.governance import TLSCertificateCollectionState, TLSCertificateInventory
 from app.models.job import JobExecution
 
-from .sync_jobs import TLS_SYNC_JOB_TYPE, TLS_SYNC_OPERATION
+from .constants import TLS_SYNC_JOB_TYPE, TLS_SYNC_OPERATION
 
 _SUCCESS_STATUSES = ('succeeded', 'partially_succeeded')
 

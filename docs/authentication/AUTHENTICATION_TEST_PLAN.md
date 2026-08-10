@@ -69,7 +69,7 @@ Run inside the KAORI dev container:
 
 ```bash
 pytest -q tests/auth
-pytest -q tests/auth --cov=app.auth --cov=app.users.identity --cov-report=term-missing
+pytest -q tests/auth --cov=app.auth --cov-report=term-missing
 ```
 
 Route/integration coverage must verify CSRF, login GET/POST, authenticated redirect, login metadata, normalized flashes, rate-limit responses, SSO start/callback, POST-only logout, and Activity Audit records.
