@@ -62,7 +62,7 @@ Impact context can lag behind the live object. The UI must label it as inventory
 ## UI contract
 
 - The landing page uses Compact Hero, Live Mutation Evidence Boundary, and Operational Workflow Catalog.
-- ConfigMap Management keeps the canonical Hero right context box and workflow catalog. Create uses the shared **Form + Right Context** layout derived from the Integration registration pattern; Update/Delete remain migration targets until browser-reviewed.
+- ConfigMap Management keeps the canonical Hero right context box and workflow catalog. Create, Update, and Delete use the shared **Form + Right Context** layout derived from the Integration registration pattern.
 - Form labels use 12 px semibold typography; normal controls use a 40 px minimum height and proportional 14 px values.
 - ConfigMap text and binary rows use `components/structured_entry_editor.html`.
 - Raw payload fields may retain monospace typography; ordinary identity and configuration values remain proportional.
@@ -97,7 +97,7 @@ Impact context can lag behind the live object. The UI must label it as inventory
 - Create and Update use the reusable validation action bar. Final mutation actions stay neutral and disabled until the latest payload passes validation.
 - Dynamic entry handling and cluster/namespace dependency behavior live in `app/static/js/configmap_editor.js`; templates no longer embed imperative `onchange` handlers or per-partial scripts.
 - Every ConfigMap hero uses the canonical `page_hero.context_card()` posture panel: one eyebrow/title header, one compact semantic status, two operational metrics, and one full-width contextual CTA. The panel contains no descriptive paragraph and does not own mutation submission.
-- Create follows the shared **Form + Right Context** standard derived from Add Kubernetes Connection and Register Prometheus/Alertmanager Connection. Geometry is owned by `components/form_with_context_rail.html`; the secondary column uses `info_flow.html` and `information_guide_card.html`, while validation and mutation actions remain inside the primary form card. Update/Delete retain their current reviewed implementation until migrated individually.
+- Create, Update, and Delete follow the shared **Form + Right Context** standard derived from Add Kubernetes Connection and Register Prometheus/Alertmanager Connection. Geometry is owned by `components/form_with_context_rail.html`; workflow/safety guidance stays secondary, while validation and mutation actions remain in the main task column.
 
 ### Shared action-bar contract
 
@@ -109,8 +109,8 @@ Impact context can lag behind the live object. The UI must label it as inventory
 
 - The ConfigMap Management hero links to Kubernetes cluster management.
 - Create, update, and delete workflow heroes return to ConfigMap Management.
-- Create uses `data-kubernetes-operation-layout="integration-form-v6"` and `data-kubernetes-operation-experience="integration-reference-v6"` for current release evidence, while the actual geometry is owned by `components/form_with_context_rail.html`.
-- Update/Delete are reviewed separately rather than inheriting Create geometry by copy/paste.
+- Create, Update, and Delete use `data-kubernetes-operation-layout="form-context-v1"` with operation-specific experience markers while geometry is owned by `components/form_with_context_rail.html`.
+- Each operation keeps its own task semantics without copying the shared 8/12 + 4/12 layout classes.
 - The Hero right-side context panel remains part of the canonical Hero and is not a content right rail.
 
 ## Current KAORI operations pattern
@@ -120,7 +120,7 @@ The canonical presentation is documented in `docs/design/patterns/KUBERNETES_CON
 
 ## Workspace density
 
-Create uses the **Form + Right Context** standard: one primary form card containing identity, data, validation, and embedded actions, with a separate intrinsic-height guidance column. It intentionally preserves the same visual geometry already used by Add Kubernetes Connection and Register Prometheus/Alertmanager Connection. Update/Delete remain migration targets pending browser review.
+All ConfigMap CRUD uses the **Form + Right Context** standard. Create uses one primary definition card; Update/Delete keep live target and impact/current-state surfaces in the main 8/12 column while ordered workflow and safety guidance live in the 4/12 context column.
 
 
 ## Canonical service boundaries

@@ -29,7 +29,7 @@ Every mutation workspace distinguishes three authorities:
 
 Inventory impact evidence is best effort. It must not be described as complete dependency analysis.
 
-## Canonical Mutation Workspace — Task-Fit Layout v6
+## Canonical Mutation Workspace — Task-Fit Layout v7
 
 ```text
 Management / Registry
@@ -39,7 +39,10 @@ Ordinary CRUD mutation
 → Main task workspace + shared compact right context rail
 → validation evidence + canonical action bar remain in the main task
 
-Special protected workflows (TLS / Reveal)
+Protected Reveal New Request
+→ shared Form + Right Context request task
+
+Protected Reveal registries / TLS
 → dedicated reviewed composition
 ```
 
@@ -141,7 +144,7 @@ Operational results use `components/operational_toast.html` and `#operational-to
 
 Browser review established the Integration registration composition as a reusable KAORI layout family rather than a provider-specific implementation detail. The pattern is now formally named **Form + Right Context** and is available to any focused create, edit, register, or configuration task whose main form should remain dominant while workflow/safety/reference guidance remains secondary.
 
-Create ConfigMap is the first cross-domain consumer of the shared component. The Integration registration pages retain their existing copied geometry until the Integrations final recheck; during that review they should migrate to the shared component without changing appearance or interaction behavior.
+Create ConfigMap established the cross-domain reference; Update/Delete ConfigMap, Create/Replace/Delete Secret, and Protected Reveal New Request now consume the same shared component. The Integration registration pages retain their existing copied geometry until the Integrations final recheck; during that review they should migrate to the shared component without changing appearance or interaction behavior.
 
 Canonical composition:
 
@@ -165,9 +168,7 @@ guidance column
 → Information Guide / Related Page / Context Guidance as needed
 ```
 
-Create ConfigMap keeps the compatibility markers `data-kubernetes-operation-layout="integration-form-v6"` and `data-kubernetes-operation-experience="integration-reference-v6"` for current release evidence, but geometry ownership is the shared Form + Right Context component. New reviewed consumers must not copy `xl:grid-cols-12`, `xl:col-span-8`, or `xl:col-span-4` bundles directly.
-
-Update/Delete ConfigMap and Secret CRUD remain migration targets until they are reviewed individually. TLS and Protected Reveal retain their dedicated reviewed layouts rather than inheriting this geometry automatically.
+Reviewed ConfigMap CRUD and Secret CRUD use `data-kubernetes-operation-layout="form-context-v1"` and consume the shared Form + Right Context geometry. Protected Reveal uses the same geometry only inside the `New Request` tab; `My Requests` and `Approvals` remain full-width registry views. New reviewed consumers must not copy `xl:grid-cols-12`, `xl:col-span-8`, or `xl:col-span-4` bundles directly. TLS rotation retains its dedicated reviewed full-width composition.
 
 See `docs/design/components/FORM_WITH_CONTEXT_RAIL.md`.
 

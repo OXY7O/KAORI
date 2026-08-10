@@ -9,7 +9,7 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_operations_mutation_pages_use_the_canonical_full_width_v2_workspace() -> None:
+def test_operations_ordinary_crud_and_protected_reveal_use_form_with_right_context() -> None:
     paths = (
         'app/templates/kubernetes_operations/configmaps/create.html',
         'app/templates/kubernetes_operations/configmaps/update.html',
@@ -18,22 +18,27 @@ def test_operations_mutation_pages_use_the_canonical_full_width_v2_workspace() -
         'app/templates/kubernetes_operations/secrets/replace.html',
         'app/templates/kubernetes_operations/secrets/delete.html',
         'app/templates/kubernetes_operations/secrets/reveal.html',
-        'app/templates/kubernetes_operations/secrets/tls_rotation.html',
     )
 
     for relative in paths:
         source = read(relative)
-        assert 'data-kubernetes-operation-layout="full-width-v2"' in source
-        assert 'context_rail.html' not in source
+        assert 'data-kubernetes-operation-layout="form-context-v1"' in source
+        assert 'components/form_with_context_rail.html' in source
+        assert 'form_context.layout_classes()' in source
+        assert 'form_context.rail_classes()' in source
+        assert 'workflow_control(' not in source
 
 
-def test_shared_operation_component_owns_sections_workflows_guardrails_and_embedded_actions() -> None:
+def test_special_tls_rotation_retains_reviewed_full_width_workspace() -> None:
+    source = read('app/templates/kubernetes_operations/secrets/tls_rotation.html')
+    assert 'data-kubernetes-operation-layout="full-width-v2"' in source
+    assert 'workflow_control(' in source
+
+
+def test_shared_operation_component_keeps_special_workflow_and_embedded_action_primitives() -> None:
     component = read('app/templates/components/kubernetes_operation_ui.html')
-
     assert 'macro workspace_section' in component
     assert 'macro workflow_control' in component
-    assert 'data-kubernetes-operation-workflow' in component
-    assert 'data-kubernetes-operation-guardrails' in component
     assert 'components/operational_point_flow.html' in component
     assert 'embedded=true' in component
 
@@ -57,4 +62,4 @@ def test_operations_release_evidence_is_documented_and_wired_to_the_quality_gate
     assert 'verify_kubernetes_operations_final_lock.py' in quality_gate
     assert 'tests/kubernetes_operations' in quality_gate
     assert 'test_kubernetes_operations_final_release_contract.py' in coverage
-    assert 'Full-Width Mutation Workspace v2' in pattern
+    assert 'Task-Fit Layout v7' in pattern

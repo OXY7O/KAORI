@@ -6,7 +6,7 @@ from jinja2 import Environment
 
 ROOT = Path(__file__).resolve().parents[3]
 TEMPLATES = ROOT / 'app/templates/kubernetes_operations'
-MUTATION_TEMPLATES = (
+FORM_CONTEXT_TEMPLATES = (
     TEMPLATES / 'configmaps/create.html',
     TEMPLATES / 'configmaps/update.html',
     TEMPLATES / 'configmaps/delete.html',
@@ -14,7 +14,6 @@ MUTATION_TEMPLATES = (
     TEMPLATES / 'secrets/replace.html',
     TEMPLATES / 'secrets/delete.html',
     TEMPLATES / 'secrets/reveal.html',
-    TEMPLATES / 'secrets/tls_rotation.html',
 )
 
 
@@ -27,15 +26,16 @@ def test_kubernetes_operations_templates_parse_with_jinja() -> None:
         environment.parse(template.read_text(encoding='utf-8'))
 
 
-def test_mutation_workspaces_use_full_width_shared_components_without_page_local_ui_debt() -> None:
-    for template in MUTATION_TEMPLATES:
+def test_reviewed_form_context_workspaces_use_shared_geometry_without_page_local_ui_debt() -> None:
+    for template in FORM_CONTEXT_TEMPLATES:
         source = template.read_text(encoding='utf-8')
         lowered = source.lower()
 
-        assert 'data-kubernetes-operation-layout="full-width-v2"' in source
-        assert 'context_rail.html' not in source
-        assert 'context_rail.layout_classes' not in source
-        assert 'context_rail.rail_classes' not in source
+        assert 'data-kubernetes-operation-layout="form-context-v1"' in source
+        assert 'components/form_with_context_rail.html' in source
+        assert 'form_context.layout_classes()' in source
+        assert 'form_context.main_classes()' in source
+        assert 'form_context.rail_classes()' in source
         assert ' style=' not in lowered
         assert ' onclick=' not in lowered
         assert ' onchange=' not in lowered

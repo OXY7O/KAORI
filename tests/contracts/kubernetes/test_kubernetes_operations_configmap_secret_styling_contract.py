@@ -30,7 +30,7 @@ def test_management_landings_use_flat_operational_workflow_catalog() -> None:
         assert 'min-h-[23rem]' not in source
 
 
-def test_live_mutation_pages_use_full_width_v2_without_content_rails() -> None:
+def test_reviewed_crud_and_protected_reveal_use_form_with_right_context() -> None:
     pages = (
         'configmaps/create.html',
         'configmaps/update.html',
@@ -39,18 +39,19 @@ def test_live_mutation_pages_use_full_width_v2_without_content_rails() -> None:
         'secrets/replace.html',
         'secrets/delete.html',
         'secrets/reveal.html',
-        'secrets/tls_rotation.html',
     )
     for relative in pages:
         source = (TEMPLATES / 'kubernetes_operations' / relative).read_text(encoding='utf-8')
         assert 'operation_evidence_boundary.html' in source
-        assert 'data-kubernetes-operation-layout="full-width-v2"' in source
-        assert 'context_rail.html' not in source
-        assert 'context_rail.layout_classes' not in source
-        assert 'context_rail.rail_classes' not in source
+        assert 'data-kubernetes-operation-layout="form-context-v1"' in source
+        assert 'components/form_with_context_rail.html' in source
+        assert 'form_context.layout_classes()' in source
+        assert 'form_context.rail_classes()' in source
+        assert 'info_flow.html' in source
+        assert 'information_guide_card.html' in source
 
 
-def test_crud_workflows_use_shared_full_width_control_section() -> None:
+def test_reviewed_crud_moves_workflow_guidance_to_right_context() -> None:
     for relative in (
         'app/templates/kubernetes_operations/configmaps/create.html',
         'app/templates/kubernetes_operations/configmaps/update.html',
@@ -59,12 +60,11 @@ def test_crud_workflows_use_shared_full_width_control_section() -> None:
         'app/templates/kubernetes_operations/secrets/replace.html',
         'app/templates/kubernetes_operations/secrets/delete.html',
         'app/templates/kubernetes_operations/secrets/reveal.html',
-        'app/templates/kubernetes_operations/secrets/tls_rotation.html',
     ):
         source = read(relative)
-        assert 'secret_ui.workflow_control(' in source or 'configmap_ui.workflow_control(' in source
-        assert 'information_guide_card.html' not in source
-        assert 'info_flow.html' not in source
+        assert 'workflow_control(' not in source
+        assert 'information_guide_card.html' in source
+        assert 'info_flow.html' in source
 
     component = read('app/templates/components/kubernetes_operation_ui.html')
     assert 'data-kubernetes-operation-workflow' in component

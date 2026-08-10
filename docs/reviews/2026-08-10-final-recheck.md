@@ -183,14 +183,14 @@ Governance becomes **PASS — LOCKED** only after authoritative Static Quality, 
 
 Current verdict: **TARGETED FIX — AUTHORITATIVE VALIDATION PENDING**
 
-The final recheck intentionally reopens presentation composition because retiring the former content right rail left ConfigMap and Secret CRUD workspaces stretched across the available width. Browser review rejected both blanket full-width and custom task-rail experiments. `Create Kubernetes ConfigMap` now uses the approved **Form + Right Context** standard derived from the existing Kubernetes, Prometheus, and Alertmanager registration forms; other CRUD pages migrate only after individual browser review.
+The final recheck intentionally reopens presentation composition because retiring the former content right rail left ConfigMap and Secret CRUD workspaces stretched across the available width. Browser review rejected both blanket full-width and custom task-rail experiments. `Create Kubernetes ConfigMap` established the approved **Form + Right Context** reference derived from the existing Kubernetes, Prometheus, and Alertmanager registration forms. The same shared geometry is now applied to ConfigMap Update/Delete, Secret Create/Replace/Delete, and the Protected Reveal `New Request` task.
 
 ### Findings and dispositions
 
 1. **AuthZ-before-readiness fixed.** The Kubernetes Operations Blueprint clusterless `before_request` is retired. `cluster_required()` executes only inside route RBAC for ConfigMap, Secret CRUD, Protected Reveal, and TLS operations.
-2. **Create ConfigMap reference stabilized.** The initial full-width and custom task-rail treatments were rejected in browser review. Create ConfigMap now reuses the formal Form + Right Context pattern: one dominant primary form card plus one intrinsic-height contextual guidance column. Geometry ownership is shared and Integration registration pages become migration targets for DRY-only refactoring during their own final recheck.
-3. **Layout selection is task-fit.** Ordinary create/edit/register/configuration tasks may use Form + Right Context. Protected Reveal and TLS keep dedicated reviewed compositions when supporting content is not truly secondary.
-4. **Shared ownership increased.** `kubernetes_operation_ui.html` owns workspace sections and workflow controls; page-local rail/workflow variants are not retained.
+2. **Form + Right Context propagated.** ConfigMap Create/Update/Delete and Secret Create/Replace/Delete now consume `form_with_context_rail.html`; workflow and safety guidance live in canonical right-side boxes while validation and mutation actions remain in the main task.
+3. **Protected Reveal split by task type.** The `New Request` tab uses Form + Right Context for target/request controls and security guidance, while `My Requests` and `Approvals` remain full-width registries. TLS workflows retain their dedicated reviewed compositions.
+4. **Shared ownership increased.** `form_with_context_rail.html` owns the 8/12 + 4/12 geometry; `info_flow.html` and `information_guide_card.html` own side guidance. `kubernetes_operation_ui.html` remains the owner for reusable special workflow and action primitives.
 5. **L0–L7 evidence added.** Operations now has dedicated Contract, Unit, Functional, Integration, Security, Rendering/UI, E2E, and final-lock evidence.
 6. **Documentation ownership formalized.** Form + Right Context is now an approved reusable design option with shared geometry, canonical side-box ownership, and a future behavior-neutral DRY migration path for Integration registration pages.
 

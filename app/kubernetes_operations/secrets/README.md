@@ -287,3 +287,11 @@ Protected Kubernetes Secret Reveal does not own a separate readiness or namespac
 ## Global Gate Troubleshooting
 
 If a Namespace is policy-enabled but the Protected Kubernetes Secret Reveal Cluster selector is disabled, check the deployment-level gate first. `KUBERNETES_SECRET_REVEAL_ENABLED` must be `true` and the KAORI web application must be restarted/redeployed so Flask reloads the configuration. Namespace Policy enablement never bypasses or implicitly flips this kill switch.
+
+## Form + Right Context layout
+
+- Create, Replace, and Delete Secret use `components/form_with_context_rail.html`.
+- The main 8/12 task column owns target selection, Secret material/current state, validation, and mutation/destructive actions.
+- The 4/12 right context column owns `Info Flow` plus one compact safety/policy guide; it never owns the mutation action or Secret values.
+- Protected Reveal uses Form + Right Context only in the `New Request` tab. `My Requests` and `Approvals` remain full-width registries.
+- TLS rotation keeps its dedicated reviewed full-width composition.

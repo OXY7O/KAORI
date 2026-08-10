@@ -10,8 +10,8 @@
 {% block title %}Create ConfigMap{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6"
-         data-kubernetes-operation-layout="integration-form-v6"
-         data-kubernetes-operation-experience="integration-reference-v6">
+         data-kubernetes-operation-layout="form-context-v1"
+         data-kubernetes-operation-experience="configmap-create-v1">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -25,17 +25,8 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ page_hero.context_card(
-                    'Create ConfigMap context',
-                    'Create Workflow',
-                    'Controlled ConfigMap Creation',
-                    'Create Only',
-                    'info',
-                    [('scan-search', 'Validation', 'Required', 'Server-side dry-run', true), ('target', 'Target Scope', 'Single', 'One live object')],
-                    'Back to ConfigMap Management',
-                    url_for('kubernetes_operations.configmap_management'),
-                    'arrow-left'
-                ) }}
+                {% set create_context_metrics = [('scan-search', 'Validation', 'Required', 'Server-side dry-run', true), ('target', 'Target Scope', 'Single', 'One live object')] %}
+                {{ page_hero.context_card('Create ConfigMap context', 'Create Workflow', 'Controlled ConfigMap Creation', 'Create Only', 'info', create_context_metrics, 'Back to ConfigMap Management', url_for('kubernetes_operations.configmap_management') , 'arrow-left') }}
             </div>
         </section>
         {{ evidence_boundary.render() }}
@@ -111,7 +102,6 @@
                             {% if namespace_error %}{{ live_lookup.warning('Live namespace lookup failed', namespace_error, '') }}{% endif %}
                         </div>
                     </section>
-
                     <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated">
                         <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
                             <div class="flex min-w-0 items-start gap-3">
@@ -137,7 +127,6 @@
                             {% include 'kubernetes_operations/configmaps/_entries_editor.html' %}
                         </div>
                     </section>
-
                     <section>
                         <div class="mb-4 flex items-start gap-3">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
@@ -165,22 +154,16 @@
                             class="{{ configmap_ui.primary_button_classes() }}"><i data-lucide="file-plus-2" class="h-4 w-4"></i>Create ConfigMap</button>
                 {% endcall %}
             </section>
-
             <aside class="{{ form_context.rail_classes() }}"
                    aria-label="Create ConfigMap guidance">
                 {% set configmap_create_flow = [('Select Target', 'Choose the registered cluster and a namespace loaded from the live Kubernetes API.'), ('Define Configuration', 'Set the create-only name, configuration keys, content types, and mutability policy.'), ('Validate Object', 'Run Kubernetes server-side dry-run against the latest definition without creating anything.'), ('Create ConfigMap', 'Submit exactly the validated object. Any later input change requires validation again.')] %}
-                {{ info_flow.render('ConfigMap Creation Flow',
-                                    'How a proposed definition becomes one audited live ConfigMap.',
-                                    configmap_create_flow,
-                                    icon='waypoints',
-                                    note='Changing the target, name, data, type, or immutable setting invalidates the previous validation.',
-                                    note_icon='circle-alert',
-                                    open_by_default=true) }}
+                {% set configmap_create_note = "Changing the target, name, data, type, or immutable setting invalidates the previous validation." %}
+                {{ info_flow.render('ConfigMap Creation Flow', 'How a proposed definition becomes one audited live ConfigMap.', configmap_create_flow, icon='waypoints', note=configmap_create_note, note_icon='circle-alert', open_by_default=true) }}
                 {% set configmap_create_guardrails = [('shield-check', 'Create Only', 'An existing ConfigMap with the same name is never overwritten.'), ('scan-search', 'Validate First', 'Create unlocks only for the exact form state accepted by server-side dry-run.'), ('radio-tower', 'Live Namespace Source', 'Namespace choices are loaded from the selected Kubernetes API.'), ('scroll-text', 'Metadata-Only Audit', 'Actor, target, operation, and result are recorded without copying ConfigMap values.')] %}
                 {{ information_guide_card.render('Creation Safety Contract',
-                                                'Boundaries that remain active throughout this create workflow.',
-                                                configmap_create_guardrails,
-                                                icon='shield-check') }}
+                                'Boundaries that remain active throughout this create workflow.',
+                                configmap_create_guardrails,
+                                icon='shield-check') }}
             </aside>
         </form>
     </div>

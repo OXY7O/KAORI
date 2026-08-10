@@ -20,13 +20,16 @@ def test_global_gate_guidance_uses_compact_activation_tip() -> None:
     assert '<span class="mt-1.5 block text-xs leading-5 text-status-warning-text">' not in page
 
 
-def test_protected_reveal_uses_full_width_lifecycle_without_context_rail() -> None:
+def test_protected_reveal_new_request_uses_form_with_right_context() -> None:
     page = read('app/templates/kubernetes_operations/secrets/reveal.html')
-    assert 'data-kubernetes-operation-layout="full-width-v2"' in page
-    assert 'context_rail.html' not in page
-    assert 'context_rail.layout_classes' not in page
-    assert 'Protected Reveal Lifecycle' in page
-    assert 'secret_ui.workflow_control(' in page
+    assert 'data-kubernetes-operation-layout="form-context-v1"' in page
+    assert 'components/form_with_context_rail.html' in page
+    assert 'form_context.layout_classes()' in page
+    assert 'form_context.main_classes()' in page
+    assert 'form_context.rail_classes()' in page
+    assert 'Protected Reveal Flow' in page
+    assert 'Reveal Safety Contract' in page
+    assert 'secret_ui.workflow_control(' not in page
 
 
 def test_administration_readiness_and_boundary_cards_use_content_height() -> None:

@@ -5,8 +5,8 @@ ROOT = Path(__file__).resolve().parents[3]
 
 def test_configmap_create_uses_the_same_form_grid_as_connection_registration_pages() -> None:
     template = (ROOT / 'app/templates/kubernetes_operations/configmaps/create.html').read_text(encoding='utf-8')
-    assert 'data-kubernetes-operation-layout="integration-form-v6"' in template
-    assert 'data-kubernetes-operation-experience="integration-reference-v6"' in template
+    assert 'data-kubernetes-operation-layout="form-context-v1"' in template
+    assert 'data-kubernetes-operation-experience="configmap-create-v1"' in template
     assert 'components/form_with_context_rail.html' in template
     assert 'form_context.layout_classes()' in template
     assert 'form_context.main_classes()' in template

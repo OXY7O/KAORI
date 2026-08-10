@@ -2,9 +2,14 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/operation_evidence_boundary.html" as evidence_boundary %}
 {% import "components/kubernetes_operation_ui.html" as configmap_ui %}
+{% import "components/info_flow.html" as info_flow %}
+{% import "components/information_guide_card.html" as information_guide_card %}
+{% import "components/form_with_context_rail.html" as form_context %}
 {% block title %}Update ConfigMap{% endblock title %}
 {% block dashboard_content %}
-    <div class="grid gap-6" data-kubernetes-operation-layout="full-width-v2">
+    <div class="space-y-6"
+         data-kubernetes-operation-layout="form-context-v1"
+         data-kubernetes-operation-experience="configmap-update-v1">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -18,19 +23,7 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ page_hero.context_card('Update ConfigMap context',
-                                'Update Workflow',
-                                'Controlled ConfigMap Mutation',
-                                'Preview Required',
-                                'info',
-                                [
-                                ('eye', 'Source', 'Live Read', 'Current object first', true) ,
-                ('git-compare-arrows', 'Mutation', 'Merge / Replace', 'Previewed change', true)
-                ],
-                'Back to ConfigMap Management',
-                url_for('kubernetes_operations.configmap_management'),
-                'arrow-left'
-                ) }}
+                {{ page_hero.context_card('Update ConfigMap context', 'Update Workflow', 'Controlled ConfigMap Mutation', 'Preview Required', 'info', [('eye', 'Source', 'Live Read', 'Current object first', true) , ('git-compare-arrows', 'Mutation', 'Merge / Replace', 'Previewed change', true)], 'Back to ConfigMap Management', url_for('kubernetes_operations.configmap_management'), 'arrow-left') }}
             </div>
         </section>
         {{ evidence_boundary.render() }}
@@ -44,41 +37,78 @@
               hx-swap="innerHTML"
               hx-sync="this:drop"
               hx-disabled-elt="find button"
-              class="space-y-5">
+              class="{{ form_context.layout_classes() }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            {% call configmap_ui.workspace_section('search', 'Live ConfigMap Target', 'Select the cluster, namespace, and ConfigMap whose current state will be loaded.', marker='configmap-live-target') %}
-                <div id="configmap-workspace">
-                    {% set workspace_mode = "update" %}
-                    {% set namespaces = selected_namespaces %}
-                    {% set configmaps = selected_configmaps %}
-                    {% include 'kubernetes_operations/configmaps/_workspace.html' %}
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ form_context.main_classes() }}"
+                     data-kubernetes-operation-form="configmap-update">
+                {{ configmap_ui.section_header('file-pen-line', 'ConfigMap Update', 'Select one live ConfigMap, edit the intended state, then validate the exact effective change before apply.') }}
+                <div class="divide-y divide-outline-subtle">
+                    <section class="p-5 sm:p-6">
+                        <div class="mb-4 flex items-start gap-3">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true"><i data-lucide="target" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold text-content-primary">Live ConfigMap Target</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Bind the update to one registered cluster, namespace, and existing ConfigMap.</p>
+                            </div>
+                        </div>
+                        <div id="configmap-workspace">
+                            {% set workspace_mode = "update" %}
+                            {% set namespaces = selected_namespaces %}
+                            {% set configmaps = selected_configmaps %}
+                            {% include 'kubernetes_operations/configmaps/_workspace.html' %}
+                        </div>
+                    </section>
+                    <section class="p-5 sm:p-6">
+                        <div class="mb-4 flex items-start gap-3">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true"><i data-lucide="diff" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold text-content-primary">Current State &amp; Proposed Change</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Edit keys, choose merge or replacement semantics, and review known workload impact.</p>
+                            </div>
+                        </div>
+                        <div id="configmap-editor">
+                            {% if target or target_error %}
+                                {% include 'kubernetes_operations/configmaps/_editor.html' %}
+                            {% else %}
+                                {{ configmap_ui.empty_state('file-search', 'Select a ConfigMap to Begin', 'Current keys and workload context will appear here.') }}
+                            {% endif %}
+                        </div>
+                    </section>
+                    <section class="p-5 sm:p-6">
+                        <div class="mb-4 flex items-start gap-3">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true"><i data-lucide="scan-search" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold text-content-primary">Validation Preview</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Review the effective diff and server-side dry-run result for the latest form state.</p>
+                            </div>
+                        </div>
+                        {% set validation_preview = none %}
+                        {% include 'kubernetes_operations/configmaps/_validation_preview.html' %}
+                    </section>
                 </div>
-            {% endcall %}
-            {% call configmap_ui.workspace_section('diff', 'Current State & Proposed Change', 'Edit keys, choose merge or replacement semantics, and review committed workload context.', marker='configmap-change-workspace') %}
-                <div id="configmap-editor">
-                    {% if target or target_error %}
-                        {% include 'kubernetes_operations/configmaps/_editor.html' %}
-                    {% else %}
-                        {{ configmap_ui.empty_state('file-search', 'Select a ConfigMap to Begin', 'Current keys and workload context will appear here.') }}
-                    {% endif %}
-                </div>
-            {% endcall %}
-            {% set validation_preview = none %}
-            {% include 'kubernetes_operations/configmaps/_validation_preview.html' %}
-            {% set configmap_update_steps = [('target', 'Select Object', 'Bind the registered cluster, namespace, and existing ConfigMap.'), ('eye', 'Review Current State', 'Load values, resourceVersion, immutable state, and consumer evidence.'), ('scan-search', 'Preview & Validate', 'Review the effective diff and run Kubernetes server-side dry-run.'), ('save', 'Apply Update', 'Patch the same validated resourceVersion once.')] %}
-            {% set configmap_update_guardrails = [('eye', 'Live Read First', 'Current data is loaded directly from Kubernetes before editing.'), ('git-compare-arrows', 'Effective Diff', 'Added, changed, and removed keys are explicit before apply.'), ('lock-keyhole', 'Immutable Protected', 'Immutable ConfigMaps remain blocked from mutation.'), ('shield-check', 'Stale Write Blocked', 'resourceVersion prevents applying to a changed live target.')] %}
-            {% call configmap_ui.workflow_control('Controlled ConfigMap Update', 'The update stays bound to one live object from selection through validation and apply.', configmap_update_steps, configmap_update_guardrails, 'Changing the target, update mode, or proposed entries invalidates the previous preview.', action_title='Validate Before Update', action_description='Preview and validate the latest changes before applying the update.', aria_label='Update ConfigMap Workflow') %}
-                <button name="operation"
-                        value="validate"
-                        class="{{ configmap_ui.validate_button_classes() }}"><i data-lucide="scan-search" class="h-4 w-4"></i>Preview and Validate</button>
-                <button name="operation"
-                        value="update"
-                        data-validation-apply
-                        disabled
-                        aria-disabled="true"
-                        title="Run validation after the latest input change before applying this operation"
-                        class="{{ configmap_ui.primary_button_classes() }}"><i data-lucide="save" class="h-4 w-4"></i>Apply Update</button>
-            {% endcall %}
+                {% call configmap_ui.action_bar('scan-search', 'Validate Before Update', 'Preview and validate the latest changes before applying the update.', embedded=true) %}
+                    <button name="operation"
+                            value="validate"
+                            class="{{ configmap_ui.validate_button_classes() }}"><i data-lucide="scan-search" class="h-4 w-4"></i>Preview and Validate</button>
+                    <button name="operation"
+                            value="update"
+                            data-validation-apply
+                            disabled
+                            aria-disabled="true"
+                            title="Run validation after the latest input change before applying this operation"
+                            class="{{ configmap_ui.primary_button_classes() }}"><i data-lucide="save" class="h-4 w-4"></i>Apply Update</button>
+                {% endcall %}
+            </section>
+            <aside class="{{ form_context.rail_classes() }}"
+                   aria-label="ConfigMap update guidance">
+                {% set configmap_update_flow = [('Select Object', 'Choose one live ConfigMap and load its current resourceVersion.'), ('Review & Edit', 'Choose Merge or Replace and change only the intended keys.'), ('Preview & Validate', 'Inspect the effective diff and run server-side dry-run.'), ('Apply Update', 'Apply exactly the validated state to the same live resourceVersion.')] %}
+                {{ info_flow.render('ConfigMap Update Flow', 'A bounded update path from live read to one validated mutation.', configmap_update_flow, icon='git-compare-arrows', note='Changing the target, update mode, or proposed entries invalidates the previous validation.', note_icon='circle-alert', open_by_default=true) }}
+                {% set configmap_update_guardrails = [('eye', 'Live Read First', 'Current data and immutable state are read directly from Kubernetes before editing.'), ('git-compare-arrows', 'Effective Diff', 'Added, changed, removed, and unchanged keys are explicit before apply.'), ('lock-keyhole', 'Immutable Protected', 'Immutable ConfigMaps remain blocked from mutation.'), ('shield-check', 'Stale Write Blocked', 'resourceVersion prevents applying to a target that changed after review.')] %}
+                {{ information_guide_card.render('Update Safety Contract', 'Controls that stay active while the live object is edited.', configmap_update_guardrails, icon='shield-check') }}
+            </aside>
         </form>
     </div>
     <script src="{{ url_for('static', filename='js/configmap_editor.js') }}"></script>

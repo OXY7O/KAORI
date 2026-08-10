@@ -8,10 +8,11 @@ OPERATION_TEMPLATES = (
     'app/templates/kubernetes_operations/secrets/create.html',
     'app/templates/kubernetes_operations/secrets/replace.html',
     'app/templates/kubernetes_operations/secrets/delete.html',
+    'app/templates/kubernetes_operations/secrets/reveal.html',
 )
 
 
-def test_shared_operation_ui_owns_full_width_workflow_guidance() -> None:
+def test_shared_operation_ui_retains_special_full_width_workflow_primitive() -> None:
     component = (ROOT / 'app/templates/components/kubernetes_operation_ui.html').read_text(encoding='utf-8')
     assert 'macro workflow_control' in component
     assert 'components/operational_point_flow.html' in component
@@ -21,20 +22,20 @@ def test_shared_operation_ui_owns_full_width_workflow_guidance() -> None:
     assert 'embedded=true' in component
 
 
-def test_configmap_create_uses_the_integration_registration_layout_while_other_crud_remains_migration_scope() -> None:
-    create = (ROOT / 'app/templates/kubernetes_operations/configmaps/create.html').read_text(encoding='utf-8')
-    assert 'data-kubernetes-operation-layout="integration-form-v6"' in create
-    assert 'data-kubernetes-operation-experience="integration-reference-v6"' in create
-    assert 'components/form_with_context_rail.html' in create
-    assert 'form_context.layout_classes()' in create
-    assert 'form_context.main_classes()' in create
-    assert 'form_context.rail_classes()' in create
-    assert 'components/info_flow.html' in create
-    assert 'components/information_guide_card.html' in create
-    assert 'components/context_rail.html' not in create
-    assert 'workflow_control(' not in create
-
-    for relative in OPERATION_TEMPLATES[1:]:
+def test_reviewed_configmap_secret_crud_and_reveal_use_form_with_right_context() -> None:
+    for relative in OPERATION_TEMPLATES:
         template = (ROOT / relative).read_text(encoding='utf-8')
-        assert 'data-kubernetes-operation-layout="full-width-v2"' in template
-        assert 'workflow_control(' in template
+        assert 'data-kubernetes-operation-layout="form-context-v1"' in template
+        assert 'components/form_with_context_rail.html' in template
+        assert 'form_context.layout_classes()' in template
+        assert 'form_context.main_classes()' in template
+        assert 'form_context.rail_classes()' in template
+        assert 'components/info_flow.html' in template
+        assert 'components/information_guide_card.html' in template
+        assert 'workflow_control(' not in template
+
+
+def test_tls_rotation_keeps_its_dedicated_full_width_workflow() -> None:
+    template = (ROOT / 'app/templates/kubernetes_operations/secrets/tls_rotation.html').read_text(encoding='utf-8')
+    assert 'data-kubernetes-operation-layout="full-width-v2"' in template
+    assert 'workflow_control(' in template

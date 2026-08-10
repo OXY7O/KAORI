@@ -39,7 +39,7 @@ def _template_environment() -> Environment:
     return environment
 
 
-def test_create_secret_template_renders_full_width_creation_controls() -> None:
+def test_create_secret_template_renders_form_context_creation_controls() -> None:
     rendered = (
         _template_environment()
         .get_template('kubernetes_operations/secrets/create.html')
@@ -55,6 +55,6 @@ def test_create_secret_template_renders_full_width_creation_controls() -> None:
     )
 
     assert 'Controlled Secret Creation' in rendered
-    assert 'No Persistence' in rendered
+    assert 'No KAORI Value Persistence' in rendered
     assert 'Create Only' in rendered
     assert 'Validate Before Creation' in rendered

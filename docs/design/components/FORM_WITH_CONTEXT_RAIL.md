@@ -31,8 +31,14 @@ Current visual references are:
 - Register Prometheus Connection
 - Register Alertmanager Connection
 - Create Kubernetes ConfigMap
+- Update Kubernetes ConfigMap
+- Delete Kubernetes ConfigMap
+- Create Kubernetes Secret
+- Replace Kubernetes Secret Data
+- Delete Kubernetes Secret
+- Protected Kubernetes Secret Reveal — New Request
 
-The three Integration registration pages are the original visual references. Create ConfigMap is the first cross-domain consumer of the formal shared layout contract. Alertmanager currently retains a minor legacy gap variation; its Integrations final recheck should normalize that spacing while preserving the accepted composition.
+The three Integration registration pages are the original visual references. Kubernetes Operations now consumes the formal shared contract across reviewed ConfigMap CRUD, Secret CRUD, and the Protected Reveal New Request task. Alertmanager currently retains a minor legacy gap variation; its Integrations final recheck should normalize that spacing while preserving the accepted composition.
 
 During the Integrations final recheck, their copied `8/12 + 4/12` geometry should be replaced by the shared component **without changing the task hierarchy or interaction behavior**.
 
@@ -114,8 +120,9 @@ Typical examples:
 
 - Add/Register connection;
 - Create ConfigMap;
-- ordinary ConfigMap update/delete after individual review;
-- ordinary Secret create/replace/delete after individual review;
+- ConfigMap create/update/delete;
+- Secret create/replace/delete;
+- Protected Reveal New Request when target/request controls benefit from secondary policy guidance;
 - provider configuration forms.
 
 ### Choose Full-Width Workspace Instead
@@ -126,7 +133,7 @@ Typical examples:
 
 - analytics and topology;
 - full resource registries;
-- protected reveal;
+- Protected Reveal request registries (`My Requests` / `Approvals`), which remain full-width data views;
 - certificate evidence workspaces;
 - complex TLS rotation flows after their dedicated review.
 

@@ -131,47 +131,44 @@ def main() -> int:
     ):
         require(token in form_context, f'Form + Right Context component missing canonical geometry: {token}', errors)
 
-    for relative in MUTATION_TEMPLATES:
+    form_context_pages = (
+        'app/templates/kubernetes_operations/configmaps/create.html',
+        'app/templates/kubernetes_operations/configmaps/update.html',
+        'app/templates/kubernetes_operations/configmaps/delete.html',
+        'app/templates/kubernetes_operations/secrets/create.html',
+        'app/templates/kubernetes_operations/secrets/replace.html',
+        'app/templates/kubernetes_operations/secrets/delete.html',
+        'app/templates/kubernetes_operations/secrets/reveal.html',
+    )
+    for relative in form_context_pages:
         source = read(relative)
-        if relative == 'app/templates/kubernetes_operations/configmaps/create.html':
-            for token in (
-                'data-kubernetes-operation-layout="integration-form-v6"',
-                'data-kubernetes-operation-experience="integration-reference-v6"',
-                'components/form_with_context_rail.html',
-                'form_context.layout_classes()',
-                'form_context.main_classes()',
-                'form_context.rail_classes()',
-                'data-kubernetes-operation-form="configmap-create"',
-                'components/info_flow.html',
-                'components/information_guide_card.html',
-                'ConfigMap Definition',
-                'ConfigMap Creation Flow',
-                'Creation Safety Contract',
-                'embedded=true',
-            ):
-                require(token in source, f'ConfigMap Create integration-reference layout missing: {token}', errors)
-            require(
-                'components/context_rail.html' not in source,
-                'ConfigMap Create must use the shared Form + Right Context geometry instead of the generic fixed-width rail.',
-                errors,
-            )
-            require(
-                'workflow_control(' not in source and 'workspace_section(' not in source,
-                'ConfigMap Create must keep one primary form card with internal sections instead of stacked mutation cards.',
-                errors,
-            )
-            continue
+        for token in (
+            'data-kubernetes-operation-layout="form-context-v1"',
+            'components/form_with_context_rail.html',
+            'form_context.layout_classes()',
+            'form_context.main_classes()',
+            'form_context.rail_classes()',
+            'components/info_flow.html',
+            'components/information_guide_card.html',
+        ):
+            require(token in source, f'{relative} Form + Right Context contract missing: {token}', errors)
+        require(
+            'workflow_control(' not in source,
+            f'{relative} must keep workflow/safety guidance in the right context column instead of a full-width workflow card.',
+            errors,
+        )
 
-        require(
-            'data-kubernetes-operation-layout="full-width-v2"' in source,
-            f'{relative} must retain its current reviewed mutation workspace until migrated individually.',
-            errors,
-        )
-        require(
-            'workflow_control(' in source,
-            f'{relative} must use the shared workflow/guardrail control until its task-focused migration.',
-            errors,
-        )
+    bulk_tls = read('app/templates/kubernetes_operations/secrets/tls_rotation.html')
+    require(
+        'data-kubernetes-operation-layout="full-width-v2"' in bulk_tls,
+        'Bulk TLS rotation must retain its dedicated full-width reviewed workspace.',
+        errors,
+    )
+    require(
+        'workflow_control(' in bulk_tls,
+        'Bulk TLS rotation must retain the full-width controlled workflow section.',
+        errors,
+    )
 
     single_tls = read('app/templates/kubernetes_operations/secrets/tls_rotate.html')
     require(
@@ -199,7 +196,7 @@ def main() -> int:
         for retired_wording in ('shared 22rem wide', 'sticky right-column wrapper', 'sticky right column'):
             require(retired_wording not in source, f'{source_name} still documents retired rail wording.', errors)
     require(
-        'Canonical Mutation Workspace — Task-Fit Layout v6' in pattern,
+        'Canonical Mutation Workspace — Task-Fit Layout v7' in pattern,
         'Operations design pattern must document the current task-fit layout policy.',
         errors,
     )
