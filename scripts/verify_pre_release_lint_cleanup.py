@@ -109,6 +109,38 @@ def main() -> int:
     ):
         forbid(relative, token, errors)
 
+    for relative, token in (
+        (
+            'app/alertmanager/bindings.py',
+            'from __future__ import annotations\n\nfrom sqlalchemy.exc import SQLAlchemyError',
+        ),
+        (
+            'app/alertmanager/service.py',
+            'from urllib.parse import urlsplit\n\nfrom sqlalchemy.exc import SQLAlchemyError',
+        ),
+        (
+            'app/integrations/alertmanager/binding_management.py',
+            'from __future__ import annotations\n\nfrom sqlalchemy.exc import SQLAlchemyError',
+        ),
+        (
+            'app/integrations/alertmanager/binding_validation.py',
+            'from typing import Any\n\nfrom sqlalchemy.exc import SQLAlchemyError',
+        ),
+        (
+            'app/integrations/prometheus/binding_management.py',
+            'from __future__ import annotations\n\nfrom sqlalchemy.exc import SQLAlchemyError',
+        ),
+        (
+            'app/integrations/prometheus/binding_validation.py',
+            'from typing import Any\n\nfrom sqlalchemy.exc import SQLAlchemyError',
+        ),
+        (
+            'app/prometheus/service.py',
+            'from urllib.parse import urlsplit\n\nfrom sqlalchemy.exc import SQLAlchemyError',
+        ),
+    ):
+        require(relative, token, errors)
+
     job_verifier = read('scripts/verify_report_job_standard.py')
     if '; continue' in job_verifier or 'if token not in text: errors.append' in job_verifier:
         errors.append('scripts/verify_report_job_standard.py: compact multi-statement lint debt remains')

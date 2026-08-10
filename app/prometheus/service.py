@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 from urllib.parse import urlsplit
+
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.common.integration_errors import describe_integration_failure

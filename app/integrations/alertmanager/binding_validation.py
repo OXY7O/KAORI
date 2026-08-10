@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from typing import Any
+
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db

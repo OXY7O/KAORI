@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.alertmanager.forms import AlertmanagerBindingForm
