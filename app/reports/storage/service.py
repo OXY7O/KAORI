@@ -806,8 +806,7 @@ def get_report_storage_payload(*, workspace: str | None = None) -> dict[str, Any
         'integrity_check': {
             'mode': 'Manual integrity scan',
             'description': (
-                'Use Check Artifact Integrity to validate database file_path references against the configured storage backends. '  # noqa: E501
-                'This is read-only and does not delete local or S3 objects.'
+                'Validate stored report references against the active backend. Read-only; nothing is deleted.'
             ),
             'action_query': 'integrity=1',
             'max_items': 500,
@@ -816,8 +815,7 @@ def get_report_storage_payload(*, workspace: str | None = None) -> dict[str, Any
         'cleanup_dry_run': {
             'mode': 'Read-only cleanup preview',
             'description': (
-                'Use Cleanup Dry Run to preview which report artifact records match the defined retention policy. '  # noqa: E501
-                'This does not delete files, S3 objects, or database rows.'
+                'Preview records that match retention rules without deleting artifacts or database rows.'
             ),
             'action_query': 'cleanup_dry_run=1',
             'default_retention_days': get_cleanup_dry_run_retention_days(),

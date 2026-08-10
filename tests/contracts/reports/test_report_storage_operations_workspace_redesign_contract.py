@@ -36,12 +36,14 @@ def test_storage_page_uses_balanced_hero_and_one_state_aware_posture() -> None:
     assert 'Generated Reports' in template
     assert 'data-report-storage-posture=' in template
     assert 'Storage Operations Posture' in template
-    assert 'data-storage-posture-layout="decision-readiness-tip"' in template
+    assert 'data-storage-posture-layout="editorial-readiness"' in template
     assert 'Storage Decision' in template
     assert 'Automatic Storage Readiness' in template
     assert 'data-report-storage-readiness-monitor="true"' in template
     assert 'data-storage-readiness-tip="true"' in template
     assert 'Operational Tip' in template
+    assert 'data-storage-decision-list="true"' in template
+    assert 'data-storage-readiness-strip="true"' in template
 
     assert 'Tracked Artifacts' not in template
     assert 'Ready Reports' not in template
@@ -187,3 +189,25 @@ def test_integrity_samples_are_presented_as_registry_rows_not_freeform_cards() -
     assert [item['status'] for item in result['review_samples']] == ['Missing', 'Error']
     assert result['review_samples'][0]['tone'] == 'critical'
     assert result['review_samples'][1]['tone'] == 'warning'
+
+
+def test_storage_integrity_and_retention_use_editorial_boundaries_not_card_grids() -> None:
+    template = read('app/templates/reports/storage/index.html')
+    service = read('app/reports/storage/service.py')
+
+    assert 'data-storage-integrity-actions="split-workspace"' in template
+    assert 'Validate stored report references against the active backend. Read-only; nothing is deleted.' in service
+    assert 'Use Check Artifact Integrity to validate database file_path references' not in service
+
+    assert 'data-storage-retention-layout="editorial-policy"' in template
+    assert 'data-storage-retention-summary="policy-strip"' in template
+    assert 'data-storage-retention-governance="split-boundary"' in template
+    assert 'data-storage-cleanup-action="inline-boundary"' in template
+    assert 'Retention identifies review candidates; deletion remains explicitly governed.' in template
+    assert 'Preview records that match retention rules without deleting artifacts or database rows.' in service
+
+    # Regression guards against the previous card-heavy retention layout only.
+    retention = template.split('data-storage-retention-layout="editorial-policy"', 1)[1]
+    assert '<div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">' not in retention
+    assert '<div class="mt-4 grid gap-4 lg:grid-cols-2">' not in retention
+    assert 'rounded-xl border border-outline-subtle bg-surface-subtle p-4' not in retention

@@ -1,0 +1,398 @@
+[1mdiff --git a/app/reports/storage/service.py b/app/reports/storage/service.py[m
+[1mindex 85aa5fe3..d4cf76aa 100644[m
+[1m--- a/app/reports/storage/service.py[m
+[1m+++ b/app/reports/storage/service.py[m
+[36m@@ -806,8 +806,7 @@[m [mdef get_report_storage_payload(*, workspace: str | None = None) -> dict[str, Any[m
+         'integrity_check': {[m
+             'mode': 'Manual integrity scan',[m
+             'description': ([m
+[31m-                'Use Check Artifact Integrity to validate database file_path references against the configured storage backends. '  # noqa: E501[m
+[31m-                'This is read-only and does not delete local or S3 objects.'[m
+[32m+[m[32m                'Validate stored report references against the active backend. Read-only; nothing is deleted.'[m
+             ),[m
+             'action_query': 'integrity=1',[m
+             'max_items': 500,[m
+[36m@@ -816,8 +815,7 @@[m [mdef get_report_storage_payload(*, workspace: str | None = None) -> dict[str, Any[m
+         'cleanup_dry_run': {[m
+             'mode': 'Read-only cleanup preview',[m
+             'description': ([m
+[31m-                'Use Cleanup Dry Run to preview which report artifact records match the defined retention policy. '  # noqa: E501[m
+[31m-                'This does not delete files, S3 objects, or database rows.'[m
+[32m+[m[32m                'Preview records that match retention rules without deleting artifacts or database rows.'[m
+             ),[m
+             'action_query': 'cleanup_dry_run=1',[m
+             'default_retention_days': get_cleanup_dry_run_retention_days(),[m
+[1mdiff --git a/app/templates/reports/storage/index.html b/app/templates/reports/storage/index.html[m
+[1mindex 9d8b4742..c37cfade 100644[m
+[1m--- a/app/templates/reports/storage/index.html[m
+[1m+++ b/app/templates/reports/storage/index.html[m
+[36m@@ -57,7 +57,7 @@[m
+         <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"[m
+                  data-report-storage-posture="{{ posture.status_tone }}"[m
+                  data-report-storage-readiness-monitor="true"[m
+[31m-                 data-storage-posture-layout="decision-readiness-tip">[m
+[32m+[m[32m                 data-storage-posture-layout="editorial-readiness">[m
+             <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">[m
+                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">[m
+                     <div class="flex min-w-0 items-start gap-3">[m
+[36m@@ -73,36 +73,36 @@[m
+                 </div>[m
+             </header>[m
+ [m
+[31m-            <div class="grid xl:grid-cols-12">[m
+[32m+[m[32m            <div class="grid xl:grid-cols-12" data-storage-posture-body="editorial-readiness">[m
+                 <section class="border-b border-outline-subtle p-5 sm:p-6 xl:col-span-5 xl:border-b-0 xl:border-r"[m
+                          data-storage-execution-boundary="true">[m
+                     <p class="text-xs font-semibold text-kaori-primary">Storage Decision</p>[m
+                     <h3 class="mt-1 text-lg font-semibold text-content-primary">{{ posture.title }}</h3>[m
+[31m-                    <p class="mt-2 text-sm leading-6 text-content-muted">{{ posture.description }}</p>[m
+[32m+[m[32m                    <p class="mt-2 max-w-xl text-sm leading-6 text-content-muted">{{ posture.description }}</p>[m
+ [m
+[31m-                    <div class="mt-5 divide-y divide-outline-subtle rounded-xl border border-outline-subtle bg-surface-subtle">[m
+[31m-                        <div class="flex items-center justify-between gap-4 px-4 py-3">[m
+[32m+[m[32m                    <dl class="mt-5 border-y border-outline-subtle" data-storage-decision-list="true">[m
+[32m+[m[32m                        <div class="flex items-center justify-between gap-4 py-3">[m
+                             <div class="min-w-0">[m
+[31m-                                <p class="text-sm font-semibold text-content-primary">Active Backend</p>[m
+[31m-                                <p class="mt-0.5 truncate text-xs text-content-muted">Storage target used by generated report artifacts</p>[m
+[32m+[m[32m                                <dt class="text-sm font-semibold text-content-primary">Active Backend</dt>[m
+[32m+[m[32m                                <dd class="mt-0.5 text-xs text-content-muted">Artifact storage target</dd>[m
+                             </div>[m
+                             <span class="shrink-0 text-sm font-semibold text-content-primary">{{ payload.active_backend|upper }}</span>[m
+                         </div>[m
+[31m-                        <div class="flex items-center justify-between gap-4 px-4 py-3">[m
+[32m+[m[32m                        <div class="flex items-center justify-between gap-4 border-t border-outline-subtle py-3">[m
+                             <div class="min-w-0">[m
+[31m-                                <p class="text-sm font-semibold text-content-primary">Artifact Read</p>[m
+[31m-                                <p class="mt-0.5 text-xs text-content-muted">Downloads and integrity reads</p>[m
+[32m+[m[32m                                <dt class="text-sm font-semibold text-content-primary">Artifact Read</dt>[m
+[32m+[m[32m                                <dd class="mt-0.5 text-xs text-content-muted">Download and integrity access</dd>[m
+                             </div>[m
+                             {{ table_label.status_indicator_label(posture.read_label, posture.read_tone) }}[m
+                         </div>[m
+[31m-                        <div class="flex items-center justify-between gap-4 px-4 py-3">[m
+[32m+[m[32m                        <div class="flex items-center justify-between gap-4 border-t border-outline-subtle py-3">[m
+                             <div class="min-w-0">[m
+[31m-                                <p class="text-sm font-semibold text-content-primary">Artifact Write</p>[m
+[31m-                                <p class="mt-0.5 text-xs text-content-muted">Generation and scheduled artifact writes</p>[m
+[32m+[m[32m                                <dt class="text-sm font-semibold text-content-primary">Artifact Write</dt>[m
+[32m+[m[32m                                <dd class="mt-0.5 text-xs text-content-muted">Generation and scheduled writes</dd>[m
+                             </div>[m
+                             {{ table_label.status_indicator_label(posture.write_label, posture.write_tone) }}[m
+                         </div>[m
+[31m-                    </div>[m
+[32m+[m[32m                    </dl>[m
+                 </section>[m
+ [m
+                 <section class="p-5 sm:p-6 xl:col-span-7" data-storage-readiness-panel="true">[m
+[36m@@ -110,36 +110,35 @@[m
+                         <div>[m
+                             <p class="text-xs font-semibold text-kaori-primary">Readiness Monitor</p>[m
+                             <h3 class="mt-1 text-base font-semibold text-content-primary">Automatic Storage Readiness</h3>[m
+[31m-                            <p class="mt-1 text-xs leading-5 text-content-muted">Lightweight health evidence shared across Reports without performing a write on every page request.</p>[m
+[32m+[m[32m                            <p class="mt-1 text-xs leading-5 text-content-muted">Shared lightweight health evidence for Reports.</p>[m
+                         </div>[m
+                         {{ table_label.status_indicator_label(posture.monitor_label, posture.monitor_tone) }}[m
+                     </div>[m
+ [m
+[31m-                    <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">[m
+[31m-                        <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">[m
+[31m-                            <p class="text-xs font-medium text-content-muted">Check Mode</p>[m
+[31m-                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ 'Every ' ~ payload.readiness_monitor.interval_minutes ~ ' Min' if payload.readiness_monitor.enabled else 'On Demand' }}</p>[m
+[32m+[m[32m                    <dl class="mt-4 grid border-y border-outline-subtle sm:grid-cols-2 xl:grid-cols-4 xl:divide-x xl:divide-outline-subtle"[m
+[32m+[m[32m                        data-storage-readiness-strip="true">[m
+[32m+[m[32m                        <div class="py-3 sm:pr-4 xl:px-4 xl:first:pl-0">[m
+[32m+[m[32m                            <dt class="text-xs font-medium text-content-muted">Check Mode</dt>[m
+[32m+[m[32m                            <dd class="mt-1 text-sm font-semibold text-content-primary">{{ 'Every ' ~ payload.readiness_monitor.interval_minutes ~ ' Min' if payload.readiness_monitor.enabled else 'On Demand' }}</dd>[m
+                         </div>[m
+[31m-                        <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">[m
+[31m-                            <p class="text-xs font-medium text-content-muted">Last Check</p>[m
+[31m-                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ payload.readiness_monitor.checked_label }}</p>[m
+[32m+[m[32m                        <div class="border-t border-outline-subtle py-3 sm:border-t-0 sm:pl-4 xl:px-4">[m
+[32m+[m[32m                            <dt class="text-xs font-medium text-content-muted">Last Check</dt>[m
+[32m+[m[32m                            <dd class="mt-1 text-sm font-semibold text-content-primary">{{ payload.readiness_monitor.checked_label }}</dd>[m
+                         </div>[m
+[31m-                        <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">[m
+[31m-                            <p class="text-xs font-medium text-content-muted">Evidence Source</p>[m
+[31m-                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ posture.source_label }}</p>[m
+[32m+[m[32m                        <div class="border-t border-outline-subtle py-3 sm:pr-4 xl:border-t-0 xl:px-4">[m
+[32m+[m[32m                            <dt class="text-xs font-medium text-content-muted">Evidence Source</dt>[m
+[32m+[m[32m                            <dd class="mt-1 text-sm font-semibold text-content-primary">{{ posture.source_label }}</dd>[m
+                         </div>[m
+[31m-                        <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">[m
+[31m-                            <p class="text-xs font-medium text-content-muted">Strong Verification</p>[m
+[31m-                            <div class="mt-1">{{ table_label.status_indicator_label(posture.verification_label, posture.verification_tone) }}</div>[m
+[32m+[m[32m                        <div class="border-t border-outline-subtle py-3 sm:pl-4 xl:border-t-0 xl:px-4 xl:last:pr-0">[m
+[32m+[m[32m                            <dt class="text-xs font-medium text-content-muted">Strong Verification</dt>[m
+[32m+[m[32m                            <dd class="mt-1">{{ table_label.status_indicator_label(posture.verification_label, posture.verification_tone) }}</dd>[m
+                         </div>[m
+[31m-                    </div>[m
+[32m+[m[32m                    </dl>[m
+ [m
+[31m-                    <div class="mt-4 rounded-xl border border-brand-outline bg-kaori-soft p-4"[m
+[32m+[m[32m                    <div class="mt-4 border-l-2 border-kaori-primary pl-4"[m
+                          data-storage-readiness-tip="true">[m
+                         <div class="flex items-start gap-3">[m
+[31m-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary" aria-hidden="true">[m
+[31m-                                <i data-lucide="lightbulb" class="h-4 w-4"></i>[m
+[31m-                            </span>[m
+[32m+[m[32m                            <i data-lucide="lightbulb" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>[m
+                             <div class="min-w-0">[m
+                                 <p class="text-xs font-semibold text-kaori-primary">Operational Tip</p>[m
+                                 <p class="mt-1 text-sm font-semibold text-content-primary">{{ posture.tip_title }}</p>[m
+[36m@@ -250,49 +249,47 @@[m
+                 </div>[m
+             {% elif payload.workspace == 'integrity' %}[m
+                 <div class="p-5 sm:p-6">[m
+[31m-                    <div class="grid gap-4 lg:grid-cols-2">[m
+[31m-                        <section class="rounded-xl border border-outline-subtle bg-surface-subtle p-5">[m
+[31m-                            <div class="flex items-start gap-3">[m
+[31m-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">[m
+[31m-                                    <i data-lucide="activity" class="h-4 w-4"></i>[m
+[31m-                                </span>[m
+[31m-                                <div>[m
+[31m-                                    <h3 class="text-sm font-semibold text-content-primary">Strong Backend Verification</h3>[m
+[31m-                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ payload.verification.description }}</p>[m
+[32m+[m[32m                    <section data-storage-integrity-actions="split-workspace">[m
+[32m+[m[32m                        <div class="grid lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle">[m
+[32m+[m[32m                            <div class="pb-5 lg:pb-0 lg:pr-6">[m
+[32m+[m[32m                                <div class="flex items-start gap-3">[m
+[32m+[m[32m                                    <i data-lucide="activity" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>[m
+[32m+[m[32m                                    <div>[m
+[32m+[m[32m                                        <h3 class="text-sm font-semibold text-content-primary">Strong Backend Verification</h3>[m
+[32m+[m[32m                                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ payload.verification.description }}</p>[m
+[32m+[m[32m                                        <p class="mt-2 text-xs font-medium text-content-secondary">Write → confirm → delete verification object</p>[m
+[32m+[m[32m                                    </div>[m
+                                 </div>[m
+[32m+[m[32m                                <a href="{{ url_for('reports.storage', verify='1', workspace='integrity') }}"[m
+[32m+[m[32m                                   class="mt-4 inline-flex min-h-9 items-center justify-center gap-2 rounded-md bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark">[m
+[32m+[m[32m                                    <i data-lucide="play-circle" class="h-4 w-4" aria-hidden="true"></i>[m
+[32m+[m[32m                                    Verify Active Backend[m
+[32m+[m[32m                                </a>[m
+                             </div>[m
+[31m-                            <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-card px-4 py-3 text-xs leading-5 text-content-muted">Write small object → confirm existence → delete verification object.</div>[m
+[31m-                            <a href="{{ url_for('reports.storage', verify='1', workspace='integrity') }}"[m
+[31m-                               class="mt-4 inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-md bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark">[m
+[31m-                                <i data-lucide="play-circle" class="h-4 w-4" aria-hidden="true"></i>[m
+[31m-                                Verify Active Backend[m
+[31m-                            </a>[m
+[31m-                        </section>[m
+[31m-                        <section class="rounded-xl border border-outline-subtle bg-surface-subtle p-5">[m
+[31m-                            <div class="flex items-start gap-3">[m
+[31m-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">[m
+[31m-                                    <i data-lucide="search-check" class="h-4 w-4"></i>[m
+[31m-                                </span>[m
+[31m-                                <div>[m
+[31m-                                    <h3 class="text-sm font-semibold text-content-primary">Artifact Integrity Scan</h3>[m
+[31m-                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ payload.integrity_check.description }}</p>[m
+[32m+[m[32m                            <div class="border-t border-outline-subtle pt-5 lg:border-t-0 lg:pl-6 lg:pt-0">[m
+[32m+[m[32m                                <div class="flex items-start gap-3">[m
+[32m+[m[32m                                    <i data-lucide="search-check" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>[m
+[32m+[m[32m                                    <div>[m
+[32m+[m[32m                                        <h3 class="text-sm font-semibold text-content-primary">Artifact Integrity Scan</h3>[m
+[32m+[m[32m                                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ payload.integrity_check.description }}</p>[m
+[32m+[m[32m                                        <p class="mt-2 text-xs font-medium text-content-secondary">Read only · Up to {{ payload.integrity_check.max_items }} records</p>[m
+[32m+[m[32m                                    </div>[m
+                                 </div>[m
+[32m+[m[32m                                {% if payload.storage_actions_enabled %}[m
+[32m+[m[32m                                    <a href="{{ url_for('reports.storage', integrity='1', workspace='integrity') }}"[m
+[32m+[m[32m                                       class="mt-4 inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-brand-outline bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:bg-surface-hover">[m
+[32m+[m[32m                                        <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>[m
+[32m+[m[32m                                        Check Artifact Integrity[m
+[32m+[m[32m                                    </a>[m
+[32m+[m[32m                                {% else %}[m
+[32m+[m[32m                                    <span aria-disabled="true" class="mt-4 inline-flex min-h-9 cursor-not-allowed items-center justify-center gap-2 rounded-md border border-outline-subtle bg-surface-card px-4 text-sm font-semibold text-content-muted opacity-70">[m
+[32m+[m[32m                                        <i data-lucide="pause-circle" class="h-4 w-4" aria-hidden="true"></i>[m
+[32m+[m[32m                                        Integrity Check Paused[m
+[32m+[m[32m                                    </span>[m
+[32m+[m[32m                                {% endif %}[m
+                             </div>[m
+[31m-                            <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-card px-4 py-3 text-xs leading-5 text-content-muted">Read-only scan · Maximum {{ payload.integrity_check.max_items }} records per run.</div>[m
+[31m-                            {% if payload.storage_actions_enabled %}[m
+[31m-                                <a href="{{ url_for('reports.storage', integrity='1', workspace='integrity') }}"[m
+[31m-                                   class="mt-4 inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-md border border-brand-outline bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:bg-surface-hover">[m
+[31m-                                    <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>[m
+[31m-                                    Check Artifact Integrity[m
+[31m-                                </a>[m
+[31m-                            {% else %}[m
+[31m-                                <span aria-disabled="true" class="mt-4 inline-flex min-h-9 w-full cursor-not-allowed items-center justify-center gap-2 rounded-md border border-outline-subtle bg-surface-card px-4 text-sm font-semibold text-content-muted opacity-70">[m
+[31m-                                    <i data-lucide="pause-circle" class="h-4 w-4" aria-hidden="true"></i>[m
+[31m-                                    Integrity Check Paused[m
+[31m-                                </span>[m
+[31m-                            {% endif %}[m
+[31m-                        </section>[m
+[31m-                    </div>[m
+[32m+[m[32m                        </div>[m
+[32m+[m[32m                    </section>[m
+                     {% if payload.integrity_result %}[m
+                         {% set integrity = payload.integrity_result %}[m
+                         <section class="mt-5 overflow-hidden rounded-xl border border-outline-subtle">[m
+[36m@@ -339,59 +336,88 @@[m
+                 </div>[m
+             {% else %}[m
+                 <div class="p-5 sm:p-6">[m
+[31m-                    <section>[m
+[32m+[m[32m                    <section data-storage-retention-layout="editorial-policy">[m
+                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">[m
+                             <div>[m
+                                 <p class="text-xs font-semibold text-kaori-primary">Retention Governance</p>[m
+                                 <h3 class="mt-1 text-base font-semibold text-content-primary">Artifact Retention & Cleanup Policy</h3>[m
+[31m-                                <p class="mt-1 text-sm leading-6 text-content-muted">Retention defines candidate scope only. Destructive deletion remains guarded and is not exposed as an uncontrolled UI action.</p>[m
+[32m+[m[32m                                <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted">Retention identifies review candidates; deletion remains explicitly governed.</p>[m
+                             </div>[m
+                             {{ table_label.status_indicator_label(payload.retention_policy.status, 'normal' if payload.retention_policy.auto_cleanup_enabled else 'warning') }}[m
+                         </div>[m
+[31m-                        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">[m
+[31m-                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3"><p class="text-xs text-content-muted">Cleanup Mode</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ payload.retention_policy.mode }}</p></div>[m
+[31m-                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3"><p class="text-xs text-content-muted">Retention</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ payload.retention_policy.retention_days }} Days</p></div>[m
+[31m-                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3"><p class="text-xs text-content-muted">Archive Retention</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ payload.retention_policy.archive_retention_days }} Days</p></div>[m
+[31m-                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3"><p class="text-xs text-content-muted">Orphan Detection</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ 'Enabled' if payload.retention_policy.orphan_detection_enabled else 'Disabled' }}</p></div>[m
+[31m-                        </div>[m
+[31m-                        <div class="mt-4 grid gap-4 lg:grid-cols-2">[m
+[31m-                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle p-4">[m
+[31m-                                <p class="text-xs font-semibold text-content-primary">Defined Policy Rules</p>[m
+[31m-                                <div class="mt-3 space-y-2">[m
+[32m+[m
+[32m+[m[32m                        <dl class="mt-5 grid border-y border-outline-subtle sm:grid-cols-2 xl:grid-cols-4 xl:divide-x xl:divide-outline-subtle"[m
+[32m+[m[32m                            data-storage-retention-summary="policy-strip">[m
+[32m+[m[32m                            <div class="py-3 sm:pr-4 xl:px-4 xl:first:pl-0">[m
+[32m+[m[32m                                <dt class="text-xs text-content-muted">Cleanup Mode</dt>[m
+[32m+[m[32m                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ payload.retention_policy.mode }}</dd>[m
+[32m+[m[32m                            </div>[m
+[32m+[m[32m                            <div class="border-t border-outline-subtle py-3 sm:border-t-0 sm:pl-4 xl:px-4">[m
+[32m+[m[32m                                <dt class="text-xs text-content-muted">Retention</dt>[m
+[32m+[m[32m                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ payload.retention_policy.retention_days }} Days</dd>[m
+[32m+[m[32m                            </div>[m
+[32m+[m[32m                            <div class="border-t border-outline-subtle py-3 sm:pr-4 xl:border-t-0 xl:px-4">[m
+[32m+[m[32m                                <dt class="text-xs text-content-muted">Archive Retention</dt>[m
+[32m+[m[32m                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ payload.retention_policy.archive_retention_days }} Days</dd>[m
+[32m+[m[32m                            </div>[m
+[32m+[m[32m                            <div class="border-t border-outline-subtle py-3 sm:pl-4 xl:border-t-0 xl:px-4 xl:last:pr-0">[m
+[32m+[m[32m                                <dt class="text-xs text-content-muted">Orphan Detection</dt>[m
+[32m+[m[32m                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ 'Enabled' if payload.retention_policy.orphan_detection_enabled else 'Disabled' }}</dd>[m
+[32m+[m[32m                            </div>[m
+[32m+[m[32m                        </dl>[m
+[32m+[m
+[32m+[m[32m                        <div class="mt-5 grid gap-5 lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle"[m
+[32m+[m[32m                             data-storage-retention-governance="split-boundary">[m
+[32m+[m[32m                            <section class="lg:pr-6">[m
+[32m+[m[32m                                <div class="flex items-center gap-2">[m
+[32m+[m[32m                                    <i data-lucide="shield-check" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>[m
+[32m+[m[32m                                    <h4 class="text-sm font-semibold text-content-primary">Policy Guardrails</h4>[m
+[32m+[m[32m                                </div>[m
+[32m+[m[32m                                <div class="mt-3 space-y-2.5">[m
+                                     {% for rule in payload.retention_policy.policy_rules %}[m
+[31m-                                        <div class="flex items-start gap-2 text-xs leading-5 text-content-muted"><i data-lucide="shield-check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i><span>{{ rule }}</span></div>[m
+[32m+[m[32m                                        <div class="flex items-start gap-2 text-xs leading-5 text-content-muted"><i data-lucide="check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i><span>{{ rule }}</span></div>[m
+                                     {% endfor %}[m
+                                 </div>[m
+[31m-                            </div>[m
+[31m-                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle p-4">[m
+[31m-                                <p class="text-xs font-semibold text-content-primary">Safe Regenerate Boundary</p>[m
+[31m-                                <p class="mt-2 text-xs leading-5 text-content-muted">{{ payload.retention_policy.safe_regenerate_behavior }}</p>[m
+[32m+[m[32m                            </section>[m
+[32m+[m[32m                            <section class="border-t border-outline-subtle pt-5 lg:border-t-0 lg:pl-6 lg:pt-0">[m
+[32m+[m[32m                                <div class="flex items-center gap-2">[m
+[32m+[m[32m                                    <i data-lucide="rotate-cw" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>[m
+[32m+[m[32m                                    <h4 class="text-sm font-semibold text-content-primary">Operational Boundary</h4>[m
+[32m+[m[32m                                </div>[m
+[32m+[m[32m                                <p class="mt-3 text-xs leading-5 text-content-muted">{{ payload.retention_policy.safe_regenerate_behavior }}</p>[m
+                                 <p class="mt-4 text-xs font-semibold text-content-primary">Before Enabling Cleanup</p>[m
+                                 <div class="mt-2 space-y-2">[m
+                                     {% for step in payload.retention_policy.next_steps %}[m
+[31m-                                        <div class="flex items-start gap-2 text-xs leading-5 text-content-muted"><i data-lucide="check-circle-2" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i><span>{{ step }}</span></div>[m
+[32m+[m[32m                                        <div class="flex items-start gap-2 text-xs leading-5 text-content-muted"><i data-lucide="chevron-right" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i><span>{{ step }}</span></div>[m
+                                     {% endfor %}[m
+                                 </div>[m
+[31m-                            </div>[m
+[32m+[m[32m                            </section>[m
+                         </div>[m
+                     </section>[m
+[31m-                    <section class="mt-5 rounded-xl border border-outline-subtle bg-surface-subtle p-5">[m
+[31m-                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">[m
+[31m-                            <div>[m
+[31m-                                <h3 class="text-sm font-semibold text-content-primary">Cleanup Dry Run</h3>[m
+[31m-                                <p class="mt-1 max-w-3xl text-xs leading-5 text-content-muted">{{ payload.cleanup_dry_run.description }}</p>[m
+[32m+[m
+[32m+[m[32m                    <section class="mt-5 border-t border-outline-subtle pt-5"[m
+[32m+[m[32m                             data-storage-cleanup-action="inline-boundary">[m
+[32m+[m[32m                        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">[m
+[32m+[m[32m                            <div class="flex min-w-0 items-start gap-3">[m
+[32m+[m[32m                                <i data-lucide="scan-search" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>[m
+[32m+[m[32m                                <div class="min-w-0">[m
+[32m+[m[32m                                    <div class="flex flex-wrap items-center gap-2">[m
+[32m+[m[32m                                        <h3 class="text-sm font-semibold text-content-primary">Cleanup Dry Run</h3>[m
+[32m+[m[32m                                        {{ table_label.status_indicator_label('Read Only', 'info') }}[m
+[32m+[m[32m                                    </div>[m
+[32m+[m[32m                                    <p class="mt-1 max-w-3xl text-xs leading-5 text-content-muted">{{ payload.cleanup_dry_run.description }}</p>[m
+[32m+[m[32m                                </div>[m
+                             </div>[m
+[31m-                            {{ table_label.status_indicator_label('Read Only', 'info') }}[m
+[32m+[m[32m                            {% if payload.storage_actions_enabled %}[m
+[32m+[m[32m                                <a href="{{ url_for('reports.storage', cleanup_dry_run='1', workspace='retention') }}"[m
+[32m+[m[32m                                   class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-md border border-brand-outline bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:bg-surface-hover">[m
+[32m+[m[32m                                    <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>[m
+[32m+[m[32m                                    Preview Cleanup Candidates[m
+[32m+[m[32m                                </a>[m
+[32m+[m[32m                            {% else %}[m
+[32m+[m[32m                                <span aria-disabled="true" class="inline-flex min-h-9 shrink-0 cursor-not-allowed items-center justify-center gap-2 rounded-md border border-outline-subtle bg-surface-card px-4 text-sm font-semibold text-content-muted opacity-70"><i data-lucide="pause-circle" class="h-4 w-4" aria-hidden="true"></i>Cleanup Preview Paused</span>[m
+[32m+[m[32m                            {% endif %}[m
+                         </div>[m
+[31m-                        {% if payload.storage_actions_enabled %}[m
+[31m-                            <a href="{{ url_for('reports.storage', cleanup_dry_run='1', workspace='retention') }}"[m
+[31m-                               class="mt-4 inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-brand-outline bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:bg-surface-hover">[m
+[31m-                                <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>[m
+[31m-                                Preview Cleanup Candidates[m
+[31m-                            </a>[m
+[31m-                        {% else %}[m
+[31m-                            <span aria-disabled="true" class="mt-4 inline-flex min-h-9 cursor-not-allowed items-center justify-center gap-2 rounded-md border border-outline-subtle bg-surface-card px-4 text-sm font-semibold text-content-muted opacity-70"><i data-lucide="pause-circle" class="h-4 w-4" aria-hidden="true"></i>Cleanup Preview Paused</span>[m
+[31m-                        {% endif %}[m
+                     </section>[m
+                     {% if payload.cleanup_dry_run_result %}[m
+                         {% set cleanup = payload.cleanup_dry_run_result %}[m
+[1mdiff --git a/tests/contracts/reports/test_report_storage_operations_workspace_redesign_contract.py b/tests/contracts/reports/test_report_storage_operations_workspace_redesign_contract.py[m
+[1mindex ad203578..a7b62885 100644[m
+[1m--- a/tests/contracts/reports/test_report_storage_operations_workspace_redesign_contract.py[m
+[1m+++ b/tests/contracts/reports/test_report_storage_operations_workspace_redesign_contract.py[m
+[36m@@ -36,12 +36,14 @@[m [mdef test_storage_page_uses_balanced_hero_and_one_state_aware_posture() -> None:[m
+     assert 'Generated Reports' in template[m
+     assert 'data-report-storage-posture=' in template[m
+     assert 'Storage Operations Posture' in template[m
+[31m-    assert 'data-storage-posture-layout="decision-readiness-tip"' in template[m
+[32m+[m[32m    assert 'data-storage-posture-layout="editorial-readiness"' in template[m
+     assert 'Storage Decision' in template[m
+     assert 'Automatic Storage Readiness' in template[m
+     assert 'data-report-storage-readiness-monitor="true"' in template[m
+     assert 'data-storage-readiness-tip="true"' in template[m
+     assert 'Operational Tip' in template[m
+[32m+[m[32m    assert 'data-storage-decision-list="true"' in template[m
+[32m+[m[32m    assert 'data-storage-readiness-strip="true"' in template[m
+ [m
+     assert 'Tracked Artifacts' not in template[m
+     assert 'Ready Reports' not in template[m
+[36m@@ -187,3 +189,25 @@[m [mdef test_integrity_samples_are_presented_as_registry_rows_not_freeform_cards() -[m
+     assert [item['status'] for item in result['review_samples']] == ['Missing', 'Error'][m
+     assert result['review_samples'][0]['tone'] == 'critical'[m
+     assert result['review_samples'][1]['tone'] == 'warning'[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef test_storage_integrity_and_retention_use_editorial_boundaries_not_card_grids() -> None:[m
+[32m+[m[32m    template = read('app/templates/reports/storage/index.html')[m
+[32m+[m[32m    service = read('app/reports/storage/service.py')[m
+[32m+[m
+[32m+[m[32m    assert 'data-storage-integrity-actions="split-workspace"' in template[m
+[32m+[m[32m    assert 'Validate stored report references against the active backend. Read-only; nothing is deleted.' in service[m
+[32m+[m[32m    assert 'Use Check Artifact Integrity to validate database file_path references' not in service[m
+[32m+[m
+[32m+[m[32m    assert 'data-storage-retention-layout="editorial-policy"' in template[m
+[32m+[m[32m    assert 'data-storage-retention-summary="policy-strip"' in template[m
+[32m+[m[32m    assert 'data-storage-retention-governance="split-boundary"' in template[m
+[32m+[m[32m    assert 'data-storage-cleanup-action="inline-boundary"' in template[m
+[32m+[m[32m    assert 'Retention identifies review candidates; deletion remains explicitly governed.' in template[m
+[32m+[m[32m    assert 'Preview records that match retention rules without deleting artifacts or database rows.' in service[m
+[32m+[m
+[32m+[m[32m    # Regression guards against the previous card-heavy retention layout only.[m
+[32m+[m[32m    retention = template.split('data-storage-retention-layout="editorial-policy"', 1)[1][m
+[32m+[m[32m    assert '<div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">' not in retention[m
+[32m+[m[32m    assert '<div class="mt-4 grid gap-4 lg:grid-cols-2">' not in retention[m
+[32m+[m[32m    assert 'rounded-xl border border-outline-subtle bg-surface-subtle p-4' not in retention[m

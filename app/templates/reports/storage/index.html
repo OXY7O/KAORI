@@ -57,7 +57,7 @@
         <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
                  data-report-storage-posture="{{ posture.status_tone }}"
                  data-report-storage-readiness-monitor="true"
-                 data-storage-posture-layout="decision-readiness-tip">
+                 data-storage-posture-layout="editorial-readiness">
             <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
@@ -73,36 +73,36 @@
                 </div>
             </header>
 
-            <div class="grid xl:grid-cols-12">
+            <div class="grid xl:grid-cols-12" data-storage-posture-body="editorial-readiness">
                 <section class="border-b border-outline-subtle p-5 sm:p-6 xl:col-span-5 xl:border-b-0 xl:border-r"
                          data-storage-execution-boundary="true">
                     <p class="text-xs font-semibold text-kaori-primary">Storage Decision</p>
                     <h3 class="mt-1 text-lg font-semibold text-content-primary">{{ posture.title }}</h3>
-                    <p class="mt-2 text-sm leading-6 text-content-muted">{{ posture.description }}</p>
+                    <p class="mt-2 max-w-xl text-sm leading-6 text-content-muted">{{ posture.description }}</p>
 
-                    <div class="mt-5 divide-y divide-outline-subtle rounded-xl border border-outline-subtle bg-surface-subtle">
-                        <div class="flex items-center justify-between gap-4 px-4 py-3">
+                    <dl class="mt-5 border-y border-outline-subtle" data-storage-decision-list="true">
+                        <div class="flex items-center justify-between gap-4 py-3">
                             <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">Active Backend</p>
-                                <p class="mt-0.5 truncate text-xs text-content-muted">Storage target used by generated report artifacts</p>
+                                <dt class="text-sm font-semibold text-content-primary">Active Backend</dt>
+                                <dd class="mt-0.5 text-xs text-content-muted">Artifact storage target</dd>
                             </div>
                             <span class="shrink-0 text-sm font-semibold text-content-primary">{{ payload.active_backend|upper }}</span>
                         </div>
-                        <div class="flex items-center justify-between gap-4 px-4 py-3">
+                        <div class="flex items-center justify-between gap-4 border-t border-outline-subtle py-3">
                             <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">Artifact Read</p>
-                                <p class="mt-0.5 text-xs text-content-muted">Downloads and integrity reads</p>
+                                <dt class="text-sm font-semibold text-content-primary">Artifact Read</dt>
+                                <dd class="mt-0.5 text-xs text-content-muted">Download and integrity access</dd>
                             </div>
                             {{ table_label.status_indicator_label(posture.read_label, posture.read_tone) }}
                         </div>
-                        <div class="flex items-center justify-between gap-4 px-4 py-3">
+                        <div class="flex items-center justify-between gap-4 border-t border-outline-subtle py-3">
                             <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">Artifact Write</p>
-                                <p class="mt-0.5 text-xs text-content-muted">Generation and scheduled artifact writes</p>
+                                <dt class="text-sm font-semibold text-content-primary">Artifact Write</dt>
+                                <dd class="mt-0.5 text-xs text-content-muted">Generation and scheduled writes</dd>
                             </div>
                             {{ table_label.status_indicator_label(posture.write_label, posture.write_tone) }}
                         </div>
-                    </div>
+                    </dl>
                 </section>
 
                 <section class="p-5 sm:p-6 xl:col-span-7" data-storage-readiness-panel="true">
@@ -110,36 +110,35 @@
                         <div>
                             <p class="text-xs font-semibold text-kaori-primary">Readiness Monitor</p>
                             <h3 class="mt-1 text-base font-semibold text-content-primary">Automatic Storage Readiness</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Lightweight health evidence shared across Reports without performing a write on every page request.</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Shared lightweight health evidence for Reports.</p>
                         </div>
                         {{ table_label.status_indicator_label(posture.monitor_label, posture.monitor_tone) }}
                     </div>
 
-                    <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                        <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">
-                            <p class="text-xs font-medium text-content-muted">Check Mode</p>
-                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ 'Every ' ~ payload.readiness_monitor.interval_minutes ~ ' Min' if payload.readiness_monitor.enabled else 'On Demand' }}</p>
+                    <dl class="mt-4 grid border-y border-outline-subtle sm:grid-cols-2 xl:grid-cols-4 xl:divide-x xl:divide-outline-subtle"
+                        data-storage-readiness-strip="true">
+                        <div class="py-3 sm:pr-4 xl:px-4 xl:first:pl-0">
+                            <dt class="text-xs font-medium text-content-muted">Check Mode</dt>
+                            <dd class="mt-1 text-sm font-semibold text-content-primary">{{ 'Every ' ~ payload.readiness_monitor.interval_minutes ~ ' Min' if payload.readiness_monitor.enabled else 'On Demand' }}</dd>
                         </div>
-                        <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">
-                            <p class="text-xs font-medium text-content-muted">Last Check</p>
-                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ payload.readiness_monitor.checked_label }}</p>
+                        <div class="border-t border-outline-subtle py-3 sm:border-t-0 sm:pl-4 xl:px-4">
+                            <dt class="text-xs font-medium text-content-muted">Last Check</dt>
+                            <dd class="mt-1 text-sm font-semibold text-content-primary">{{ payload.readiness_monitor.checked_label }}</dd>
                         </div>
-                        <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">
-                            <p class="text-xs font-medium text-content-muted">Evidence Source</p>
-                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ posture.source_label }}</p>
+                        <div class="border-t border-outline-subtle py-3 sm:pr-4 xl:border-t-0 xl:px-4">
+                            <dt class="text-xs font-medium text-content-muted">Evidence Source</dt>
+                            <dd class="mt-1 text-sm font-semibold text-content-primary">{{ posture.source_label }}</dd>
                         </div>
-                        <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">
-                            <p class="text-xs font-medium text-content-muted">Strong Verification</p>
-                            <div class="mt-1">{{ table_label.status_indicator_label(posture.verification_label, posture.verification_tone) }}</div>
+                        <div class="border-t border-outline-subtle py-3 sm:pl-4 xl:border-t-0 xl:px-4 xl:last:pr-0">
+                            <dt class="text-xs font-medium text-content-muted">Strong Verification</dt>
+                            <dd class="mt-1">{{ table_label.status_indicator_label(posture.verification_label, posture.verification_tone) }}</dd>
                         </div>
-                    </div>
+                    </dl>
 
-                    <div class="mt-4 rounded-xl border border-brand-outline bg-kaori-soft p-4"
+                    <div class="mt-4 border-l-2 border-kaori-primary pl-4"
                          data-storage-readiness-tip="true">
                         <div class="flex items-start gap-3">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary" aria-hidden="true">
-                                <i data-lucide="lightbulb" class="h-4 w-4"></i>
-                            </span>
+                            <i data-lucide="lightbulb" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
                             <div class="min-w-0">
                                 <p class="text-xs font-semibold text-kaori-primary">Operational Tip</p>
                                 <p class="mt-1 text-sm font-semibold text-content-primary">{{ posture.tip_title }}</p>
@@ -250,49 +249,47 @@
                 </div>
             {% elif payload.workspace == 'integrity' %}
                 <div class="p-5 sm:p-6">
-                    <div class="grid gap-4 lg:grid-cols-2">
-                        <section class="rounded-xl border border-outline-subtle bg-surface-subtle p-5">
-                            <div class="flex items-start gap-3">
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
-                                    <i data-lucide="activity" class="h-4 w-4"></i>
-                                </span>
-                                <div>
-                                    <h3 class="text-sm font-semibold text-content-primary">Strong Backend Verification</h3>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ payload.verification.description }}</p>
+                    <section data-storage-integrity-actions="split-workspace">
+                        <div class="grid lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle">
+                            <div class="pb-5 lg:pb-0 lg:pr-6">
+                                <div class="flex items-start gap-3">
+                                    <i data-lucide="activity" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                    <div>
+                                        <h3 class="text-sm font-semibold text-content-primary">Strong Backend Verification</h3>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ payload.verification.description }}</p>
+                                        <p class="mt-2 text-xs font-medium text-content-secondary">Write → confirm → delete verification object</p>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-card px-4 py-3 text-xs leading-5 text-content-muted">Write small object → confirm existence → delete verification object.</div>
-                            <a href="{{ url_for('reports.storage', verify='1', workspace='integrity') }}"
-                               class="mt-4 inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-md bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark">
-                                <i data-lucide="play-circle" class="h-4 w-4" aria-hidden="true"></i>
-                                Verify Active Backend
-                            </a>
-                        </section>
-                        <section class="rounded-xl border border-outline-subtle bg-surface-subtle p-5">
-                            <div class="flex items-start gap-3">
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
-                                    <i data-lucide="search-check" class="h-4 w-4"></i>
-                                </span>
-                                <div>
-                                    <h3 class="text-sm font-semibold text-content-primary">Artifact Integrity Scan</h3>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ payload.integrity_check.description }}</p>
-                                </div>
-                            </div>
-                            <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-card px-4 py-3 text-xs leading-5 text-content-muted">Read-only scan · Maximum {{ payload.integrity_check.max_items }} records per run.</div>
-                            {% if payload.storage_actions_enabled %}
-                                <a href="{{ url_for('reports.storage', integrity='1', workspace='integrity') }}"
-                                   class="mt-4 inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-md border border-brand-outline bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:bg-surface-hover">
-                                    <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
-                                    Check Artifact Integrity
+                                <a href="{{ url_for('reports.storage', verify='1', workspace='integrity') }}"
+                                   class="mt-4 inline-flex min-h-9 items-center justify-center gap-2 rounded-md bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark">
+                                    <i data-lucide="play-circle" class="h-4 w-4" aria-hidden="true"></i>
+                                    Verify Active Backend
                                 </a>
-                            {% else %}
-                                <span aria-disabled="true" class="mt-4 inline-flex min-h-9 w-full cursor-not-allowed items-center justify-center gap-2 rounded-md border border-outline-subtle bg-surface-card px-4 text-sm font-semibold text-content-muted opacity-70">
-                                    <i data-lucide="pause-circle" class="h-4 w-4" aria-hidden="true"></i>
-                                    Integrity Check Paused
-                                </span>
-                            {% endif %}
-                        </section>
-                    </div>
+                            </div>
+                            <div class="border-t border-outline-subtle pt-5 lg:border-t-0 lg:pl-6 lg:pt-0">
+                                <div class="flex items-start gap-3">
+                                    <i data-lucide="search-check" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                    <div>
+                                        <h3 class="text-sm font-semibold text-content-primary">Artifact Integrity Scan</h3>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ payload.integrity_check.description }}</p>
+                                        <p class="mt-2 text-xs font-medium text-content-secondary">Read only · Up to {{ payload.integrity_check.max_items }} records</p>
+                                    </div>
+                                </div>
+                                {% if payload.storage_actions_enabled %}
+                                    <a href="{{ url_for('reports.storage', integrity='1', workspace='integrity') }}"
+                                       class="mt-4 inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-brand-outline bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:bg-surface-hover">
+                                        <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
+                                        Check Artifact Integrity
+                                    </a>
+                                {% else %}
+                                    <span aria-disabled="true" class="mt-4 inline-flex min-h-9 cursor-not-allowed items-center justify-center gap-2 rounded-md border border-outline-subtle bg-surface-card px-4 text-sm font-semibold text-content-muted opacity-70">
+                                        <i data-lucide="pause-circle" class="h-4 w-4" aria-hidden="true"></i>
+                                        Integrity Check Paused
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </section>
                     {% if payload.integrity_result %}
                         {% set integrity = payload.integrity_result %}
                         <section class="mt-5 overflow-hidden rounded-xl border border-outline-subtle">
@@ -339,59 +336,88 @@
                 </div>
             {% else %}
                 <div class="p-5 sm:p-6">
-                    <section>
+                    <section data-storage-retention-layout="editorial-policy">
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div>
                                 <p class="text-xs font-semibold text-kaori-primary">Retention Governance</p>
                                 <h3 class="mt-1 text-base font-semibold text-content-primary">Artifact Retention & Cleanup Policy</h3>
-                                <p class="mt-1 text-sm leading-6 text-content-muted">Retention defines candidate scope only. Destructive deletion remains guarded and is not exposed as an uncontrolled UI action.</p>
+                                <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted">Retention identifies review candidates; deletion remains explicitly governed.</p>
                             </div>
                             {{ table_label.status_indicator_label(payload.retention_policy.status, 'normal' if payload.retention_policy.auto_cleanup_enabled else 'warning') }}
                         </div>
-                        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3"><p class="text-xs text-content-muted">Cleanup Mode</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ payload.retention_policy.mode }}</p></div>
-                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3"><p class="text-xs text-content-muted">Retention</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ payload.retention_policy.retention_days }} Days</p></div>
-                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3"><p class="text-xs text-content-muted">Archive Retention</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ payload.retention_policy.archive_retention_days }} Days</p></div>
-                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3"><p class="text-xs text-content-muted">Orphan Detection</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ 'Enabled' if payload.retention_policy.orphan_detection_enabled else 'Disabled' }}</p></div>
-                        </div>
-                        <div class="mt-4 grid gap-4 lg:grid-cols-2">
-                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle p-4">
-                                <p class="text-xs font-semibold text-content-primary">Defined Policy Rules</p>
-                                <div class="mt-3 space-y-2">
+
+                        <dl class="mt-5 grid border-y border-outline-subtle sm:grid-cols-2 xl:grid-cols-4 xl:divide-x xl:divide-outline-subtle"
+                            data-storage-retention-summary="policy-strip">
+                            <div class="py-3 sm:pr-4 xl:px-4 xl:first:pl-0">
+                                <dt class="text-xs text-content-muted">Cleanup Mode</dt>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ payload.retention_policy.mode }}</dd>
+                            </div>
+                            <div class="border-t border-outline-subtle py-3 sm:border-t-0 sm:pl-4 xl:px-4">
+                                <dt class="text-xs text-content-muted">Retention</dt>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ payload.retention_policy.retention_days }} Days</dd>
+                            </div>
+                            <div class="border-t border-outline-subtle py-3 sm:pr-4 xl:border-t-0 xl:px-4">
+                                <dt class="text-xs text-content-muted">Archive Retention</dt>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ payload.retention_policy.archive_retention_days }} Days</dd>
+                            </div>
+                            <div class="border-t border-outline-subtle py-3 sm:pl-4 xl:border-t-0 xl:px-4 xl:last:pr-0">
+                                <dt class="text-xs text-content-muted">Orphan Detection</dt>
+                                <dd class="mt-1 text-sm font-semibold text-content-primary">{{ 'Enabled' if payload.retention_policy.orphan_detection_enabled else 'Disabled' }}</dd>
+                            </div>
+                        </dl>
+
+                        <div class="mt-5 grid gap-5 lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle"
+                             data-storage-retention-governance="split-boundary">
+                            <section class="lg:pr-6">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="shield-check" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                    <h4 class="text-sm font-semibold text-content-primary">Policy Guardrails</h4>
+                                </div>
+                                <div class="mt-3 space-y-2.5">
                                     {% for rule in payload.retention_policy.policy_rules %}
-                                        <div class="flex items-start gap-2 text-xs leading-5 text-content-muted"><i data-lucide="shield-check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i><span>{{ rule }}</span></div>
+                                        <div class="flex items-start gap-2 text-xs leading-5 text-content-muted"><i data-lucide="check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i><span>{{ rule }}</span></div>
                                     {% endfor %}
                                 </div>
-                            </div>
-                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle p-4">
-                                <p class="text-xs font-semibold text-content-primary">Safe Regenerate Boundary</p>
-                                <p class="mt-2 text-xs leading-5 text-content-muted">{{ payload.retention_policy.safe_regenerate_behavior }}</p>
+                            </section>
+                            <section class="border-t border-outline-subtle pt-5 lg:border-t-0 lg:pl-6 lg:pt-0">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="rotate-cw" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                                    <h4 class="text-sm font-semibold text-content-primary">Operational Boundary</h4>
+                                </div>
+                                <p class="mt-3 text-xs leading-5 text-content-muted">{{ payload.retention_policy.safe_regenerate_behavior }}</p>
                                 <p class="mt-4 text-xs font-semibold text-content-primary">Before Enabling Cleanup</p>
                                 <div class="mt-2 space-y-2">
                                     {% for step in payload.retention_policy.next_steps %}
-                                        <div class="flex items-start gap-2 text-xs leading-5 text-content-muted"><i data-lucide="check-circle-2" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i><span>{{ step }}</span></div>
+                                        <div class="flex items-start gap-2 text-xs leading-5 text-content-muted"><i data-lucide="chevron-right" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i><span>{{ step }}</span></div>
                                     {% endfor %}
                                 </div>
-                            </div>
+                            </section>
                         </div>
                     </section>
-                    <section class="mt-5 rounded-xl border border-outline-subtle bg-surface-subtle p-5">
-                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                            <div>
-                                <h3 class="text-sm font-semibold text-content-primary">Cleanup Dry Run</h3>
-                                <p class="mt-1 max-w-3xl text-xs leading-5 text-content-muted">{{ payload.cleanup_dry_run.description }}</p>
+
+                    <section class="mt-5 border-t border-outline-subtle pt-5"
+                             data-storage-cleanup-action="inline-boundary">
+                        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                            <div class="flex min-w-0 items-start gap-3">
+                                <i data-lucide="scan-search" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h3 class="text-sm font-semibold text-content-primary">Cleanup Dry Run</h3>
+                                        {{ table_label.status_indicator_label('Read Only', 'info') }}
+                                    </div>
+                                    <p class="mt-1 max-w-3xl text-xs leading-5 text-content-muted">{{ payload.cleanup_dry_run.description }}</p>
+                                </div>
                             </div>
-                            {{ table_label.status_indicator_label('Read Only', 'info') }}
+                            {% if payload.storage_actions_enabled %}
+                                <a href="{{ url_for('reports.storage', cleanup_dry_run='1', workspace='retention') }}"
+                                   class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-md border border-brand-outline bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:bg-surface-hover">
+                                    <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
+                                    Preview Cleanup Candidates
+                                </a>
+                            {% else %}
+                                <span aria-disabled="true" class="inline-flex min-h-9 shrink-0 cursor-not-allowed items-center justify-center gap-2 rounded-md border border-outline-subtle bg-surface-card px-4 text-sm font-semibold text-content-muted opacity-70"><i data-lucide="pause-circle" class="h-4 w-4" aria-hidden="true"></i>Cleanup Preview Paused</span>
+                            {% endif %}
                         </div>
-                        {% if payload.storage_actions_enabled %}
-                            <a href="{{ url_for('reports.storage', cleanup_dry_run='1', workspace='retention') }}"
-                               class="mt-4 inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-brand-outline bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:bg-surface-hover">
-                                <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
-                                Preview Cleanup Candidates
-                            </a>
-                        {% else %}
-                            <span aria-disabled="true" class="mt-4 inline-flex min-h-9 cursor-not-allowed items-center justify-center gap-2 rounded-md border border-outline-subtle bg-surface-card px-4 text-sm font-semibold text-content-muted opacity-70"><i data-lucide="pause-circle" class="h-4 w-4" aria-hidden="true"></i>Cleanup Preview Paused</span>
-                        {% endif %}
                     </section>
                     {% if payload.cleanup_dry_run_result %}
                         {% set cleanup = payload.cleanup_dry_run_result %}
