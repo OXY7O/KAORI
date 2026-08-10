@@ -59,6 +59,7 @@ def main() -> int:
     root_routes = read('app/kubernetes_operations/routes.py')
     operation_flow = read('app/kubernetes_operations/operation_flow.py')
     shared_ui = read('app/templates/components/kubernetes_operation_ui.html')
+    form_context = read('app/templates/components/form_with_context_rail.html')
     quality_gate = read('scripts/quality_gate.sh')
     coverage = read('scripts/verify_feature_test_coverage.py')
     pattern = read('docs/design/patterns/KUBERNETES_CONFIGMAP_SECRET_OPERATIONS.md')
@@ -123,15 +124,23 @@ def main() -> int:
     ):
         require(token in shared_ui, f'Shared Operations UI missing canonical token: {token}', errors)
 
+    for token in (
+        'grid gap-6 xl:grid-cols-12 xl:items-start',
+        'min-w-0 xl:col-span-8',
+        'min-w-0 space-y-4 xl:col-span-4 xl:sticky xl:top-5',
+    ):
+        require(token in form_context, f'Form + Right Context component missing canonical geometry: {token}', errors)
+
     for relative in MUTATION_TEMPLATES:
         source = read(relative)
         if relative == 'app/templates/kubernetes_operations/configmaps/create.html':
             for token in (
                 'data-kubernetes-operation-layout="integration-form-v6"',
                 'data-kubernetes-operation-experience="integration-reference-v6"',
-                'grid gap-6 xl:grid-cols-12 xl:items-start',
-                'xl:col-span-8',
-                'space-y-4 xl:col-span-4 xl:sticky xl:top-5',
+                'components/form_with_context_rail.html',
+                'form_context.layout_classes()',
+                'form_context.main_classes()',
+                'form_context.rail_classes()',
                 'data-kubernetes-operation-form="configmap-create"',
                 'components/info_flow.html',
                 'components/information_guide_card.html',
@@ -143,7 +152,7 @@ def main() -> int:
                 require(token in source, f'ConfigMap Create integration-reference layout missing: {token}', errors)
             require(
                 'components/context_rail.html' not in source,
-                'ConfigMap Create must use the proven static Integration registration grid instead of an experimental task-rail macro.',
+                'ConfigMap Create must use the shared Form + Right Context geometry instead of the generic fixed-width rail.',
                 errors,
             )
             require(
@@ -190,8 +199,8 @@ def main() -> int:
         for retired_wording in ('shared 22rem wide', 'sticky right-column wrapper', 'sticky right column'):
             require(retired_wording not in source, f'{source_name} still documents retired rail wording.', errors)
     require(
-        'Canonical Mutation Workspace — Task-Fit Layout v5' in pattern,
-        'Operations design pattern must document the task-fit v4 layout policy.',
+        'Canonical Mutation Workspace — Task-Fit Layout v6' in pattern,
+        'Operations design pattern must document the current task-fit layout policy.',
         errors,
     )
     require(

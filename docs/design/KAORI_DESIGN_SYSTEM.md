@@ -188,21 +188,15 @@ Use a visible violet focus ring with a surface-colored offset. Functional transi
 
 Detailed component rules are maintained separately:
 
-- Engineering/final-recheck index: `docs/standards/KAORI_ENGINEERING_STANDARD_V1.md`
-- Color and semantic palette: `docs/design/components/COLOR_AND_SEMANTIC.md`
 - Dark mode: `docs/design/components/DARK_MODE.md`
 - Hero: `docs/design/components/HERO.md`
 - Tables and compact labels: `docs/design/components/TABLE_AND_LABEL.md`
-- Pagination: `docs/design/components/PAGINATION.md`
-- Tab registry: `docs/design/components/TAB_STYLES.md`
 - Related page relationships: `docs/design/components/RELATED_PAGE_CARD.md`
 - Right contextual rail: `docs/design/components/RIGHT_CONTEXT_RAIL.md`
+- Form + right context: `docs/design/components/FORM_WITH_CONTEXT_RAIL.md`
 - View More Content: `docs/design/components/VIEW_MORE_CONTENT.md`
-- Modal and drawer selection: `docs/design/components/MODAL_DRAWER.md`
 - Form submission actions: `docs/design/components/FORM_ACTION_BAR.md`
 - Operational action feedback: `docs/design/components/OPERATIONAL_ACTION_FEEDBACK.md`
-- Navbar/application shell: `docs/design/components/NAVBAR.md`
-- Sidebar navigation: `docs/design/components/SIDEBAR_NAVIGATION.md`
 - Reusable page composition: `docs/design/patterns/`
 
 A page must consume shared components rather than recreate their utility strings.
@@ -286,6 +280,11 @@ Place those rules in `docs/modules/` or the owning module README. Reusable struc
 ## Hero context-panel baseline
 
 The Node Inventory right-side hero panel is the baseline for compact operational posture panels. Alertmanager Integrations and other applicable pages must use the shared `page_hero` context-panel macros. Human-readable hero metadata uses Title Case while technical identifiers preserve canonical casing. See `components/HERO.md`.
+
+
+## Form + Right Context
+
+Use the shared Form + Right Context pattern for focused create, edit, register, and configuration tasks where one primary form remains dominant and concise workflow/safety/reference guidance belongs beside it. The canonical desktop geometry is the proven Integration registration `8/12 + 4/12` split. New reviewed consumers must use `components/form_with_context_rail.html`; do not copy the grid classes into page templates. Existing Kubernetes, Prometheus, and Alertmanager registration pages remain visual references and should migrate to the shared geometry during their Integration final recheck without changing appearance. See `components/FORM_WITH_CONTEXT_RAIL.md`.
 
 ## Info Flow
 

@@ -62,7 +62,7 @@ Impact context can lag behind the live object. The UI must label it as inventory
 ## UI contract
 
 - The landing page uses Compact Hero, Live Mutation Evidence Boundary, and Operational Workflow Catalog.
-- ConfigMap Management keeps the canonical Hero right context box and workflow catalog. Create uses **Task-Focused Mutation Workspace v4** with the shared wide right context rail; Update/Delete remain migration targets until browser-reviewed.
+- ConfigMap Management keeps the canonical Hero right context box and workflow catalog. Create uses the shared **Form + Right Context** layout derived from the Integration registration pattern; Update/Delete remain migration targets until browser-reviewed.
 - Form labels use 12 px semibold typography; normal controls use a 40 px minimum height and proportional 14 px values.
 - ConfigMap text and binary rows use `components/structured_entry_editor.html`.
 - Raw payload fields may retain monospace typography; ordinary identity and configuration values remain proportional.
@@ -97,7 +97,7 @@ Impact context can lag behind the live object. The UI must label it as inventory
 - Create and Update use the reusable validation action bar. Final mutation actions stay neutral and disabled until the latest payload passes validation.
 - Dynamic entry handling and cluster/namespace dependency behavior live in `app/static/js/configmap_editor.js`; templates no longer embed imperative `onchange` handlers or per-partial scripts.
 - Every ConfigMap hero uses the canonical `page_hero.context_card()` posture panel: one eyebrow/title header, one compact semantic status, two operational metrics, and one full-width contextual CTA. The panel contains no descriptive paragraph and does not own mutation submission.
-- Create follows the proven Integration registration geometry used by Add Kubernetes Connection and Register Prometheus/Alertmanager Connection: one primary form card (`xl:col-span-8`) plus one sticky guidance column (`xl:col-span-4`). The secondary column uses `info_flow.html` and `information_guide_card.html`; validation and mutation actions remain inside the primary form card. Update/Delete retain their current reviewed implementation until migrated individually.
+- Create follows the shared **Form + Right Context** standard derived from Add Kubernetes Connection and Register Prometheus/Alertmanager Connection. Geometry is owned by `components/form_with_context_rail.html`; the secondary column uses `info_flow.html` and `information_guide_card.html`, while validation and mutation actions remain inside the primary form card. Update/Delete retain their current reviewed implementation until migrated individually.
 
 ### Shared action-bar contract
 
@@ -109,7 +109,7 @@ Impact context can lag behind the live object. The UI must label it as inventory
 
 - The ConfigMap Management hero links to Kubernetes cluster management.
 - Create, update, and delete workflow heroes return to ConfigMap Management.
-- Create uses `data-kubernetes-operation-layout="integration-form-v6"` and `data-kubernetes-operation-experience="integration-reference-v6"`. Its form grid intentionally matches the tested Integrations pattern: `xl:grid-cols-12`, primary form `xl:col-span-8`, guidance `xl:col-span-4 xl:sticky xl:top-5`.
+- Create uses `data-kubernetes-operation-layout="integration-form-v6"` and `data-kubernetes-operation-experience="integration-reference-v6"` for current release evidence, while the actual geometry is owned by `components/form_with_context_rail.html`.
 - Update/Delete are reviewed separately rather than inheriting Create geometry by copy/paste.
 - The Hero right-side context panel remains part of the canonical Hero and is not a content right rail.
 
@@ -120,7 +120,7 @@ The canonical presentation is documented in `docs/design/patterns/KUBERNETES_CON
 
 ## Workspace density
 
-Create uses the **Integration Registration Form Reference v6**: one primary form card containing identity, data, validation, and embedded actions, with a separate intrinsic-height guidance column. This is intentionally the same desktop geometry already used by Add Kubernetes Connection and Register Prometheus/Alertmanager Connection. Update/Delete remain migration targets pending browser review.
+Create uses the **Form + Right Context** standard: one primary form card containing identity, data, validation, and embedded actions, with a separate intrinsic-height guidance column. It intentionally preserves the same visual geometry already used by Add Kubernetes Connection and Register Prometheus/Alertmanager Connection. Update/Delete remain migration targets pending browser review.
 
 
 ## Canonical service boundaries
@@ -140,6 +140,6 @@ No internal compatibility aliases or session-stored delete tokens are retained.
 
 Every validation and mutation outcome uses `components/operational_toast.html` and the durable Activity Audit event created from the same normalized payload. Success, information, and warning toasts auto-dismiss according to the global policy; errors remain visible until dismissed. Hover or keyboard focus pauses the timer. At most four toasts remain visible.
 
-## Integration Registration Form Reference v6
+## Form + Right Context Standard
 
-`Create Kubernetes ConfigMap` now reuses the proven form composition already established by Add Kubernetes Connection and Register Prometheus/Alertmanager Connection. The page uses one primary form card for `Target & Identity` → `ConfigMap Data` → `Validation` → embedded actions, plus one sticky secondary guidance column containing `ConfigMap Creation Flow` and `Creation Safety Contract`. Experimental v4/v5 task-rail macros are retired instead of becoming another layout family. Update and Delete are migrated only after this reference is browser-approved.
+`Create Kubernetes ConfigMap` is the first Kubernetes Operations consumer of the formal `components/form_with_context_rail.html` geometry. It preserves the proven composition established by Add Kubernetes Connection and Register Prometheus/Alertmanager Connection: one primary form card for `Target & Identity` → `ConfigMap Data` → `Validation` → embedded actions, plus one sticky secondary guidance column containing `ConfigMap Creation Flow` and `Creation Safety Contract`. During the Integrations final recheck, the three registration reference pages should migrate their copied geometry to the same shared component without visual changes. Update and Delete are migrated only after individual browser review.

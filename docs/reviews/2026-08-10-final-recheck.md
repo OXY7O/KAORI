@@ -183,16 +183,16 @@ Governance becomes **PASS — LOCKED** only after authoritative Static Quality, 
 
 Current verdict: **TARGETED FIX — AUTHORITATIVE VALIDATION PENDING**
 
-The final recheck intentionally reopens presentation composition because retiring the former content right rail left ConfigMap and Secret CRUD workspaces stretched across the available width. The first full-width pass proved too mechanical in browser review, so `Create Kubernetes ConfigMap` is now the reference **Guided Mutation Experience v3** while the no-rail `full-width-v2` shell remains the structural boundary. Other CRUD pages are migrated only after this reference is visually accepted.
+The final recheck intentionally reopens presentation composition because retiring the former content right rail left ConfigMap and Secret CRUD workspaces stretched across the available width. Browser review rejected both blanket full-width and custom task-rail experiments. `Create Kubernetes ConfigMap` now uses the approved **Form + Right Context** standard derived from the existing Kubernetes, Prometheus, and Alertmanager registration forms; other CRUD pages migrate only after individual browser review.
 
 ### Findings and dispositions
 
 1. **AuthZ-before-readiness fixed.** The Kubernetes Operations Blueprint clusterless `before_request` is retired. `cluster_required()` executes only inside route RBAC for ConfigMap, Secret CRUD, Protected Reveal, and TLS operations.
-2. **Create ConfigMap reference rebuilt again.** The initial full-width treatment was still rail-era structure stretched across the viewport. Create ConfigMap now groups the user journey into `Define ConfigMap` → `Add ConfigMap Data` → `Review & Create`, with in-section safety guidance and one embedded validation/action surface. Update/Delete ConfigMap and Secret CRUD remain the next migration targets.
-3. **Protected Reveal and Bulk TLS aligned.** Both retire the content rail while preserving protected-value, approval, target-selection, and validation contracts.
+2. **Create ConfigMap reference stabilized.** The initial full-width and custom task-rail treatments were rejected in browser review. Create ConfigMap now reuses the formal Form + Right Context pattern: one dominant primary form card plus one intrinsic-height contextual guidance column. Geometry ownership is shared and Integration registration pages become migration targets for DRY-only refactoring during their own final recheck.
+3. **Layout selection is task-fit.** Ordinary create/edit/register/configuration tasks may use Form + Right Context. Protected Reveal and TLS keep dedicated reviewed compositions when supporting content is not truly secondary.
 4. **Shared ownership increased.** `kubernetes_operation_ui.html` owns workspace sections and workflow controls; page-local rail/workflow variants are not retained.
 5. **L0–L7 evidence added.** Operations now has dedicated Contract, Unit, Functional, Integration, Security, Rendering/UI, E2E, and final-lock evidence.
-6. **Documentation debt removed.** Domain READMEs and the canonical Operations pattern no longer direct engineers back to the retired 22rem sticky rail.
+6. **Documentation ownership formalized.** Form + Right Context is now an approved reusable design option with shared geometry, canonical side-box ownership, and a future behavior-neutral DRY migration path for Integration registration pages.
 
 ### Lock condition
 

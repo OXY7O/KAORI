@@ -25,9 +25,10 @@ def test_configmap_create_uses_the_integration_registration_layout_while_other_c
     create = (ROOT / 'app/templates/kubernetes_operations/configmaps/create.html').read_text(encoding='utf-8')
     assert 'data-kubernetes-operation-layout="integration-form-v6"' in create
     assert 'data-kubernetes-operation-experience="integration-reference-v6"' in create
-    assert 'grid gap-6 xl:grid-cols-12 xl:items-start' in create
-    assert 'xl:col-span-8' in create
-    assert 'space-y-4 xl:col-span-4 xl:sticky xl:top-5' in create
+    assert 'components/form_with_context_rail.html' in create
+    assert 'form_context.layout_classes()' in create
+    assert 'form_context.main_classes()' in create
+    assert 'form_context.rail_classes()' in create
     assert 'components/info_flow.html' in create
     assert 'components/information_guide_card.html' in create
     assert 'components/context_rail.html' not in create

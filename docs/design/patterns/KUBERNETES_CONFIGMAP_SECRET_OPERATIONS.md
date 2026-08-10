@@ -29,7 +29,7 @@ Every mutation workspace distinguishes three authorities:
 
 Inventory impact evidence is best effort. It must not be described as complete dependency analysis.
 
-## Canonical Mutation Workspace — Task-Fit Layout v5
+## Canonical Mutation Workspace — Task-Fit Layout v6
 
 ```text
 Management / Registry
@@ -47,10 +47,10 @@ Rules:
 
 - choose layout by task semantics instead of applying one geometry to every Operations page;
 - ConfigMap Management and Secret Management retain their canonical Hero context box and workflow catalog;
-- ordinary CRUD forms should reuse the proven Integration registration geometry when a supporting right column materially improves scanability: `grid gap-6 xl:grid-cols-12 xl:items-start`, primary form `xl:col-span-8`, guidance `space-y-4 xl:col-span-4 xl:sticky xl:top-5`;
+- ordinary CRUD forms should use the shared **Form + Right Context** layout when a supporting right column materially improves scanability; geometry is owned by `components/form_with_context_rail.html` and must not be copied into newly reviewed templates;
 - the secondary column is limited to concise reusable guidance such as one primary `info_flow` and one secondary guide; it must use intrinsic height and never contain the mutation action itself;
 - the primary form should be one canonical form card with internal sections rather than a stack of independent mutation cards; validation and the canonical action bar remain inside that primary card;
-- do not introduce a new geometry macro when an existing reviewed KAORI page already provides the intended form composition;
+- do not introduce a new page-local geometry when the shared Form + Right Context or another reviewed KAORI pattern already fits;
 - controls use 40 px geometry and 12 px labels;
 - mutation remains validation-gated, but the server always performs a fresh provider validation immediately before mutation;
 - target identity, payload/current state, validation evidence, and destructive impact remain visually distinct rather than becoming one stretched card;
@@ -134,35 +134,44 @@ Create and Update use one server-side dry-run for a validation request. A final 
 Operational results use `components/operational_toast.html` and `#operational-toast-stack`. The toast and Activity Audit record originate from the same normalized event. The stack is limited to four visible items. Success, information, and warning results auto-dismiss; errors persist. Hover and keyboard focus pause auto-dismiss. Legacy quick-action toast templates, close handlers, and domain feedback wrappers are not retained.
 
 
-## Integration Registration Form Reference v6
+## Form + Right Context Reference v1
 
-**Reference implementations:** Add Kubernetes Connection, Register Prometheus Connection, Register Alertmanager Connection, and Create Kubernetes ConfigMap.
+**Canonical component:** `components/form_with_context_rail.html`  
+**Visual references:** Add Kubernetes Connection, Register Prometheus Connection, Register Alertmanager Connection, and Create Kubernetes ConfigMap.
 
-Browser review rejected the experimental full-width and custom task-rail iterations because they created a new geometry family and did not match the visual balance already proven in Integrations. Ordinary CRUD should first reuse an existing reviewed KAORI form pattern before introducing new layout primitives.
+Browser review established the Integration registration composition as a reusable KAORI layout family rather than a provider-specific implementation detail. The pattern is now formally named **Form + Right Context** and is available to any focused create, edit, register, or configuration task whose main form should remain dominant while workflow/safety/reference guidance remains secondary.
 
-The Create ConfigMap reference therefore uses exactly the Integration registration grid:
+Create ConfigMap is the first cross-domain consumer of the shared component. The Integration registration pages retain their existing copied geometry until the Integrations final recheck; during that review they should migrate to the shared component without changing appearance or interaction behavior.
+
+Canonical composition:
 
 ```text
-form grid
-→ grid gap-6 xl:grid-cols-12 xl:items-start
+form layout
+→ form_context.layout_classes()
+→ 12-column desktop grid
 
 primary form card
-→ xl:col-span-8
+→ form_context.main_classes()
+→ 8/12 columns
 → one outer card
 → identity / payload / validation as internal sections
 → embedded final action bar
 
 guidance column
-→ space-y-4 xl:col-span-4 xl:sticky xl:top-5
+→ form_context.rail_classes()
+→ 4/12 columns
+→ sticky top-5
 → Info Flow
-→ Information Guide / related contextual card
+→ Information Guide / Related Page / Context Guidance as needed
 ```
 
-The canonical markers are `data-kubernetes-operation-layout="integration-form-v6"` and `data-kubernetes-operation-experience="integration-reference-v6"`. The ConfigMap create page must not import the experimental task-rail geometry or reconstruct its primary task as several sibling cards.
+Create ConfigMap keeps the compatibility markers `data-kubernetes-operation-layout="integration-form-v6"` and `data-kubernetes-operation-experience="integration-reference-v6"` for current release evidence, but geometry ownership is the shared Form + Right Context component. New reviewed consumers must not copy `xl:grid-cols-12`, `xl:col-span-8`, or `xl:col-span-4` bundles directly.
 
-Update/Delete ConfigMap and Secret CRUD remain migration targets until the Create reference is browser-approved. TLS and Protected Reveal retain their dedicated reviewed layouts rather than inheriting this geometry automatically.
+Update/Delete ConfigMap and Secret CRUD remain migration targets until they are reviewed individually. TLS and Protected Reveal retain their dedicated reviewed layouts rather than inheriting this geometry automatically.
+
+See `docs/design/components/FORM_WITH_CONTEXT_RAIL.md`.
 
 ### Responsive rule
 
-The Integration registration pattern intentionally stacks the secondary guidance below the primary form below `xl`. This is already the behavior used by the existing Kubernetes, Prometheus, and Alertmanager registration pages and is therefore the canonical responsive contract for this form family. Do not create a separate `lg` task-rail breakpoint solely for Kubernetes Operations.
+The Form + Right Context pattern stacks the guidance below the primary form below `xl`. This preserves the same semantic order used by existing Kubernetes, Prometheus, and Alertmanager registration pages. Do not create a provider- or domain-specific breakpoint solely to keep the rail visible.
 

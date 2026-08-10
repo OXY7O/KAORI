@@ -6,6 +6,7 @@
 {% import "components/kubernetes_operation_ui.html" as configmap_ui %}
 {% import "components/info_flow.html" as info_flow %}
 {% import "components/information_guide_card.html" as information_guide_card %}
+{% import "components/form_with_context_rail.html" as form_context %}
 {% block title %}Create ConfigMap{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6"
@@ -48,9 +49,9 @@
               hx-swap="innerHTML"
               hx-sync="this:drop"
               hx-disabled-elt="find button"
-              class="grid gap-6 xl:grid-cols-12 xl:items-start">
+              class="{{ form_context.layout_classes() }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-span-8"
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ form_context.main_classes() }}"
                      data-kubernetes-operation-form="configmap-create">
                 <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                     <div class="flex items-start gap-3">
@@ -165,7 +166,7 @@
                 {% endcall %}
             </section>
 
-            <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5"
+            <aside class="{{ form_context.rail_classes() }}"
                    aria-label="Create ConfigMap guidance">
                 {% set configmap_create_flow = [('Select Target', 'Choose the registered cluster and a namespace loaded from the live Kubernetes API.'), ('Define Configuration', 'Set the create-only name, configuration keys, content types, and mutability policy.'), ('Validate Object', 'Run Kubernetes server-side dry-run against the latest definition without creating anything.'), ('Create ConfigMap', 'Submit exactly the validated object. Any later input change requires validation again.')] %}
                 {{ info_flow.render('ConfigMap Creation Flow',

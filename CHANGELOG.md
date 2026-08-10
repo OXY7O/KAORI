@@ -5,10 +5,12 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 ## [Unreleased]
 ### Changed
 
+- Create Kubernetes ConfigMap now consumes shared Form + Right Context geometry instead of copying the Integration registration grid, preserving the approved visual composition while establishing reusable ownership for future Integration refactoring.
 - Rebuilt Create Kubernetes ConfigMap on the proven Integration registration form pattern used by Add Kubernetes Connection and Register Prometheus/Alertmanager Connection: one `xl:col-span-8` primary form card with internal identity/data/validation sections plus one `xl:col-span-4` sticky guidance column; retired the experimental task-rail geometry instead of adding another KAORI layout family.
 
 ### Added
 
+- Added the canonical **Form + Right Context** layout component and design standard for focused create/edit/register/configuration tasks, using the proven Integration registration 8/12 main-form + 4/12 contextual-guidance composition and a documented behavior-neutral DRY migration path for Kubernetes, Prometheus, and Alertmanager registration pages.
 - Added permanent Kubernetes Governance L0–L7 release evidence and `verify_governance_final_lock.py` for AuthZ-first readiness, TLS data minimization, canonical UI ownership, and dead-surface protection.
 - Added permanent Kubernetes Inventory L0–L7 release evidence and `verify_inventory_final_lock.py` for AuthZ ordering, committed-snapshot ownership, canonical UI composition, Topology database ownership, and residual-file protection.
 - Established `docs/standards/KAORI_ENGINEERING_STANDARD_V1.md` as the mandatory final-recheck index covering the shared Violet palette, Hero variants, tables/pagination/status, right context rails, tab families, progressive disclosure, feedback, notifications, shell navigation, accessibility, security, and test evidence.

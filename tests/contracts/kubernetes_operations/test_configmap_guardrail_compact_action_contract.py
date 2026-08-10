@@ -7,9 +7,10 @@ def test_configmap_create_uses_the_same_form_grid_as_connection_registration_pag
     template = (ROOT / 'app/templates/kubernetes_operations/configmaps/create.html').read_text(encoding='utf-8')
     assert 'data-kubernetes-operation-layout="integration-form-v6"' in template
     assert 'data-kubernetes-operation-experience="integration-reference-v6"' in template
-    assert 'class="grid gap-6 xl:grid-cols-12 xl:items-start"' in template
-    assert 'xl:col-span-8' in template
-    assert 'space-y-4 xl:col-span-4 xl:sticky xl:top-5' in template
+    assert 'components/form_with_context_rail.html' in template
+    assert 'form_context.layout_classes()' in template
+    assert 'form_context.main_classes()' in template
+    assert 'form_context.rail_classes()' in template
     assert 'data-kubernetes-operation-form="configmap-create"' in template
     assert 'ConfigMap Definition' in template
     assert 'ConfigMap Creation Flow' in template
@@ -30,13 +31,17 @@ def test_configmap_create_reuses_the_proven_integration_form_geometry() -> None:
         ROOT / 'app/templates/prometheus/instance_form.html',
         ROOT / 'app/templates/alertmanager/instance_form.html',
     )
+    component = (ROOT / 'app/templates/components/form_with_context_rail.html').read_text(encoding='utf-8')
     layout_tokens = (
         'grid gap-6 xl:grid-cols-12 xl:items-start',
         'xl:col-span-8',
         'space-y-4 xl:col-span-4 xl:sticky xl:top-5',
     )
+    assert 'form_context.layout_classes()' in create
+    assert 'form_context.main_classes()' in create
+    assert 'form_context.rail_classes()' in create
     for token in layout_tokens:
-        assert token in create
+        assert token in component
         assert any(token in path.read_text(encoding='utf-8') for path in references)
 
 

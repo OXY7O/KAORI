@@ -138,9 +138,9 @@ Permanent reviewed-domain evidence is organized as:
 - L6 Rendering/UI — `tests/rendering/kubernetes_operations/test_kubernetes_operations_rendering.py`;
 - L7 E2E Smoke — `tests/e2e/kubernetes_operations/test_kubernetes_operations_smoke.py`.
 
-## Task-Focused v4 Browser Correction
+## Form + Right Context Browser Correction
 
-Browser review confirmed that both the blanket full-width redesign and the custom v4/v5 task-rail experiments diverged from KAORI's already successful Integration registration forms. Create ConfigMap is therefore rebuilt on the same explicit 12-column form grid used by Add Kubernetes Connection and Register Prometheus/Alertmanager Connection: one `xl:col-span-8` primary form card plus one `xl:col-span-4 xl:sticky xl:top-5` guidance column. Experimental task-rail macros are retired. ConfigMap Management and Secret Management keep their existing Hero context box + workflow catalog. This Integration-derived geometry is not propagated to Update/Delete/Secret CRUD until the Create reference is browser-approved.
+Browser review confirmed that both the blanket full-width redesign and the custom v4/v5 task-rail experiments diverged from KAORI's already successful Integration registration forms. Create ConfigMap is therefore rebuilt on the same 12-column composition used by Add Kubernetes Connection and Register Prometheus/Alertmanager Connection, but geometry ownership is now formalized in `components/form_with_context_rail.html`. Experimental task-rail macros are retired. ConfigMap Management and Secret Management keep their existing Hero context box + workflow catalog. This shared Form + Right Context pattern is not propagated to Update/Delete/Secret CRUD until each workflow is browser-reviewed. During the Integrations final recheck, the three original registration pages should migrate to the shared geometry without visual changes.
 
 The functional release gate was also corrected to remove the nonexistent `tests/kubernetes` directory. Kubernetes Operations functional evidence lives under `tests/kubernetes_operations`. Test harnesses were aligned with current RBAC, CSRF, TLS-policy, and SQLAlchemy exception contracts so failures represent production behavior instead of stale fixtures.
 

@@ -23,6 +23,13 @@ Use the shared geometry from:
 
 Do not copy the default 20rem or wide 22rem grid classes into page templates. Request the shared geometry through `context_rail.layout_classes()` or `context_rail.layout_classes('wide')`.
 
+
+## Relationship to Form + Right Context
+
+The generic Right Context Rail uses a flexible main area plus a fixed `20rem` or `22rem` rail. It remains valid for information-heavy pages that already use that geometry.
+
+Focused create/edit/register/configuration forms use the separate **Form + Right Context** pattern when the proven Integration-style `8/12 + 4/12` split is a better task fit. See `FORM_WITH_CONTEXT_RAIL.md`. Do not mix both geometry systems on the same page.
+
 ## Geometry
 
 - Default desktop split: flexible primary workspace plus a fixed 20rem rail.
