@@ -135,6 +135,22 @@ def main() -> int:
         errors,
     )
     require(
+        "xl:grid-cols-[minmax(20rem,0.72fr)_minmax(0,1.28fr)]" in single_rotation,
+        'Single TLS rotation target identity and posture must use the balanced compact two-area layout.',
+        errors,
+    )
+    require(
+        "lg:grid-cols-[minmax(14rem,1.15fr)_minmax(9rem,0.55fr)_minmax(10rem,0.65fr)_auto]"
+        in single_rotation,
+        'Single TLS rotation Governance posture must use the compact horizontal evidence strip.',
+        errors,
+    )
+    require(
+        "xl:grid-cols-[minmax(0,1.45fr)_minmax(20rem,0.55fr)]" not in single_rotation,
+        'Single TLS rotation must not restore the oversized flow/posture side-panel split.',
+        errors,
+    )
+    require(
         'TLS Certificate Validation Completed' in tls_routes,
         'TLS rotation notifications must preserve TLS acronym and Title Case.',
         errors,

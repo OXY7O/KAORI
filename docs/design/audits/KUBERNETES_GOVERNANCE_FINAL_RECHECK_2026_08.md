@@ -27,3 +27,8 @@ No schema change is required by this final recheck. Existing TLS inventory/colle
 ## Verdict
 
 **TARGETED FIX — AUTHORITATIVE VALIDATION PENDING** until the devcontainer Static Quality, L0–L7 suites, browser smoke, and full release gate pass.
+
+### Single TLS rotation density refinement
+
+The full-width rotation workspace was compacted after browser review to avoid large unused visual regions. `Target TLS Secret` now balances locked target identity and committed TLS posture in one two-area section. `Controlled Rotation & Governance Posture` renders the four-step flow full-width and follows it with one horizontal evidence strip for status, Days Remaining, Host Coverage, and the Certificate Details handoff. The previous large flow/posture side-panel split is explicitly retired and guarded by contract/verifier checks.
+

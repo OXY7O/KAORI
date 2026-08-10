@@ -15,7 +15,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ### Changed
 
-- Consolidated TLS Governance certificate posture and inventory operations into one canonical workspace, aligned TLS detail-modal status placement with Inventory, and redesigned single TLS rotation as a full-width three-section flow with embedded validation actions and Governance posture.
+- Refined the single TLS Secret rotation workspace density: the target identity and committed posture now share a balanced section, while rotation flow and Governance posture use a compact full-width evidence strip instead of a large side-panel split.
 - Hardened Kubernetes Governance request ownership so TLS cluster/readiness blockers execute only after route RBAC, while preserving the locked TLS registry, worker sync, operational feedback, and rotation handoff design.
 - Hardened Kubernetes Inventory read ownership: clusterless HTMX blocking now executes after `inventory.view`, and Topology reads API Server metadata from the eagerly loaded canonical cluster-connection relationship instead of the integration resolver.
 - Harden Kubernetes Dashboard release ownership: remove unused compatibility/dead internal surface, use explicit selected-cluster naming, keep empty consumer messaging snapshot-only, and add layered Unit/Integration/Security/Rendering/E2E release evidence without changing the locked visual design.

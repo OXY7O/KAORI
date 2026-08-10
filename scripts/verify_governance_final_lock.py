@@ -160,6 +160,13 @@ def main() -> int:
         'Single TLS rotation must retain the full-width integrated three-section workspace.',
         errors,
     )
+    require(
+        "xl:grid-cols-[minmax(20rem,0.72fr)_minmax(0,1.28fr)]" in rotate
+        and "lg:grid-cols-[minmax(14rem,1.15fr)_minmax(9rem,0.55fr)_minmax(10rem,0.65fr)_auto]"
+        in rotate,
+        'Single TLS rotation must retain the compact target/posture and Governance evidence density contract.',
+        errors,
+    )
     constants = read('app/governance/tls_certificates/constants.py')
     for option in ('5', '10', '25', '50'):
         require(option in constants, f'TLS pagination standard must retain {option}.', errors)
