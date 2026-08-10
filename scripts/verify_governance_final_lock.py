@@ -144,8 +144,13 @@ def main() -> int:
     summary = read('app/templates/governance/tls_certificates/partials/_summary_cards.html')
     rotate = read('app/templates/kubernetes_operations/secrets/tls_rotate.html')
     require(
-        'detail.header_badge_row()' in detail,
-        'TLS detail status must align below the descriptive text through the shared detail header badge row.',
+        'detail.header_badge_row()' in detail
+        and 'data-kaori-tls-detail-layout="evidence-workspace-v2"' in detail
+        and 'Certificate Identity &amp; Validity' in detail
+        and 'Coverage &amp; Consumer Evidence' in detail
+        and 'Collection &amp; Governance' in detail
+        and 'detail.detail_card(' not in detail,
+        'TLS Certificate Detail must retain the compact evidence-workspace composition and aligned status header.',
         errors,
     )
     require(
@@ -161,10 +166,11 @@ def main() -> int:
         errors,
     )
     require(
-        "xl:grid-cols-[minmax(20rem,0.72fr)_minmax(0,1.28fr)]" in rotate
-        and "lg:grid-cols-[minmax(14rem,1.15fr)_minmax(9rem,0.55fr)_minmax(10rem,0.65fr)_auto]"
-        in rotate,
-        'Single TLS rotation must retain the compact target/posture and Governance evidence density contract.',
+        'md:grid-cols-3' in rotate
+        and 'sm:grid-cols-2 xl:grid-cols-4' in rotate
+        and 'lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.55fr)]' in rotate
+        and 'xl:grid-cols-[minmax(20rem,0.72fr)_minmax(0,1.28fr)]' not in rotate,
+        'Single TLS rotation must retain the compact target identity strip and posture evidence grid.',
         errors,
     )
     constants = read('app/governance/tls_certificates/constants.py')

@@ -30,5 +30,9 @@ No schema change is required by this final recheck. Existing TLS inventory/colle
 
 ### Single TLS rotation density refinement
 
-The full-width rotation workspace was compacted after browser review to avoid large unused visual regions. `Target TLS Secret` now balances locked target identity and committed TLS posture in one two-area section. `Controlled Rotation & Governance Posture` renders the four-step flow full-width and follows it with one horizontal evidence strip for status, Days Remaining, Host Coverage, and the Certificate Details handoff. The previous large flow/posture side-panel split is explicitly retired and guarded by contract/verifier checks.
+The full-width rotation workspace was compacted after browser review to avoid large unused visual regions. `Target TLS Secret` now uses a three-column identity strip followed by a bounded Current TLS Posture header, four compact metrics, and an Issuer/Fingerprint technical row. This replaces the earlier target/posture split, which left unused space and made long fingerprints wrap excessively. `Controlled Rotation & Governance Posture` renders the four-step flow full-width and follows it with one horizontal evidence strip for status, Days Remaining, Host Coverage, and the Certificate Details handoff. The previous large flow/posture side-panel split is explicitly retired and guarded by contract/verifier checks.
+
+### TLS Certificate Detail evidence workspace
+
+The Certificate Detail composition was rebuilt as `evidence-workspace-v2`. The shared detail partial still serves both the registry Full Workspace Modal and the direct-link page, but it now has only three primary sections: `Certificate Identity & Validity`, `Coverage & Consumer Evidence`, and `Collection & Governance`. The previous independent identity, validity, coverage, collection, certificate-identity, and rotation-handoff cards were removed to reduce card nesting and vertical whitespace. Host Coverage Matrix remains the detailed relationship evidence table, while collection state and the controlled rotation handoff are consolidated into one Governance footer.
 

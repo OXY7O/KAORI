@@ -113,6 +113,15 @@ def main() -> int:
     )
     for token in ('coverage_reported', 'ingress_mapping_reported', 'Not Reported'):
         require(token in detail or token in table, f'TLS UI missing evidence semantic token: {token}', errors)
+    require(
+        'data-kaori-tls-detail-layout="evidence-workspace-v2"' in detail
+        and 'Certificate Identity &amp; Validity' in detail
+        and 'Coverage &amp; Consumer Evidence' in detail
+        and 'Collection &amp; Governance' in detail
+        and 'detail.detail_card(' not in detail,
+        'TLS Certificate Detail must retain the compact evidence-workspace v2 composition.',
+        errors,
+    )
 
     for token in (
         'Certificate File',
@@ -135,14 +144,15 @@ def main() -> int:
         errors,
     )
     require(
-        "xl:grid-cols-[minmax(20rem,0.72fr)_minmax(0,1.28fr)]" in single_rotation,
-        'Single TLS rotation target identity and posture must use the balanced compact two-area layout.',
+        'md:grid-cols-3' in single_rotation
+        and 'sm:grid-cols-2 xl:grid-cols-4' in single_rotation
+        and 'lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.55fr)]' in single_rotation,
+        'Single TLS rotation target identity and posture must use the compact identity-strip/evidence-grid layout.',
         errors,
     )
     require(
-        "lg:grid-cols-[minmax(14rem,1.15fr)_minmax(9rem,0.55fr)_minmax(10rem,0.65fr)_auto]"
-        in single_rotation,
-        'Single TLS rotation Governance posture must use the compact horizontal evidence strip.',
+        'xl:grid-cols-[minmax(20rem,0.72fr)_minmax(0,1.28fr)]' not in single_rotation,
+        'Single TLS rotation must not restore the oversized target/posture split.',
         errors,
     )
     require(

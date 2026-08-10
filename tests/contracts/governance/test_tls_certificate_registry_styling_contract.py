@@ -80,6 +80,6 @@ def test_tls_governance_uses_canonical_permissions_and_evidence() -> None:
     assert 'TLSCertificateCollectionState' in model
     assert 'coverage_state' in model
     assert 'tls_certificate_collection_states' in migration
-    assert 'Collection Evidence' in detail_template
+    assert 'Collection &amp; Governance' in detail_template
     assert 'Inventory Updated' in detail_template
-    assert 'whitespace-nowrap text-sm font-semibold leading-5 text-content-primary' in detail_template
+    assert 'data-kaori-tls-detail-layout="evidence-workspace-v2"' in detail_template
