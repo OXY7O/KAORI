@@ -93,3 +93,18 @@ TLS Governance uses two distinct execution paths:
 Only safe metadata may be delivered: cluster, namespace, Secret identity, certificate fingerprint, validity dates, SAN coverage counts, job identifiers, and result counts. Certificate bytes and private-key material are never persisted or rendered.
 
 The canonical workspace is `_page_workspace.html`, the canonical job presenter is `job_presentation.py`, and active progress uses `_sync_progress_toast.html`. The removed `toast.py`, `_inventory_scope.html`, `_content.html`, and `_sync_toast.html` files must not return.
+
+## Final release evidence
+
+The final Governance release boundary is reviewed through the KAORI L0–L7 strategy:
+
+- **L0 Static Quality:** canonical quality gate plus `verify_governance_final_lock.py` and the TLS Governance verifier.
+- **L1 Contract:** Governance/TLS ownership, collection, mutation, worker, and final-release contracts.
+- **L2 Unit:** certificate validity, hostname matching, and terminal sync-outcome policy.
+- **L3 Functional:** request-level AuthZ-before-readiness behavior for TLS inventory and sync status.
+- **L4 Integration:** SQLAlchemy certificate registry pagination/read-model behavior.
+- **L5 Security Regression:** permission ownership, requester-scoped job visibility, private-key minimization, and payload scrubbing.
+- **L6 Rendering/UI Contract:** canonical Hero, table/status/pagination, Full Workspace Modal, and no page-local inline handlers.
+- **L7 End-to-End Smoke:** real Flask/session/layout TLS Governance smoke with external infrastructure isolated.
+
+Kubernetes/provider semantics remain worker/integration concerns; deterministic E2E smoke does not require a live Kubernetes cluster.

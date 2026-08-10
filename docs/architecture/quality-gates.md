@@ -214,3 +214,5 @@ code
 → git diff review
 → dedicated Git commit
 ```
+
+- Kubernetes Governance final recheck: `verify_governance_final_lock.py` plus Unit, Functional, Integration, Security, Rendering/UI, E2E, and Governance Contract evidence are mandatory after the domain is reviewed.

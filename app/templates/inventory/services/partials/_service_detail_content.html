@@ -21,9 +21,11 @@
                         {{ table_label.metadata_label(service.type) }}
                     </div>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Access model, backend registration, port mapping, selected Pods, and network configuration from the committed snapshot.</p>
+                    {% call detail.header_badge_row() %}
+                        {{ table_label.status_indicator_label(service.backend.label, service.backend.tone, size='detail') }}
+                    {% endcall %}
                 </div>
             </div>
-            <div class="self-start sm:self-auto">{{ table_label.status_indicator_label(service.backend.label, service.backend.tone, size='detail') }}</div>
         </header>
         {{ detail.summary_strip([
                 ('Access Model', service.access_model, service.type) ,

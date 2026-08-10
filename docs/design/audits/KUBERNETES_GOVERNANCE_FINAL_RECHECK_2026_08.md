@@ -1,0 +1,27 @@
+# Kubernetes Governance Final Recheck — August 2026
+
+## Scope
+
+Reviewed Kubernetes Governance Overview and TLS Certificate Governance against the KAORI Engineering Standard v1 without redesigning the accepted workspace.
+
+## Findings
+
+1. Blueprint-level clusterless handling could respond before route-level RBAC. The blocker is retired; TLS routes now authorize first and evaluate readiness inside the protected request path.
+2. `get_active_tls_sync_job()` had no runtime/test/script caller and is removed instead of retained as compatibility surface.
+3. TLS collection retains the data-minimization boundary: only `tls.crt` is decoded for inventory; `tls.key` is never read by the collector. Mutation scrubs live Secret and encoded upload payloads.
+4. Existing canonical UI remains: shared Hero, Status Badge Box / Context Icon Box, shared table/status/pagination, Full Workspace Modal, operational progress toast, Notification Deck and Activity Audit delivery.
+5. Governance now has permanent L0–L7 release evidence and a final-lock verifier wired into the release gate.
+6. TLS wildcard host coverage is explicitly single-label: `*.example.com` covers `api.example.com` but not deeper names such as `deep.api.example.com`.
+7. The standalone validity-policy test restores every temporary `sys.modules` package entry after loading certificate policy code, so Governance functional-test collection cannot be poisoned by a fake `app` package.
+
+## Performance and reliability
+
+The registry paginates rows in SQL with the canonical default 5 and options 5/10/25/50. Sync is dispatched through canonical Jobs/Celery ownership with overlap control, retries, user-scoped progress status, terminal Activity Audit, and Notification Deck evidence. Web reads do not mutate Kubernetes.
+
+## Database and migration
+
+No schema change is required by this final recheck. Existing TLS inventory/collection/update-event migrations remain authoritative and the global single-head migration gate remains mandatory.
+
+## Verdict
+
+**TARGETED FIX — AUTHORITATIVE VALIDATION PENDING** until the devcontainer Static Quality, L0–L7 suites, browser smoke, and full release gate pass.

@@ -13,6 +13,7 @@ The final recheck found and corrected three release-relevant residuals:
 1. **Authorization ordering:** the clusterless HTMX response previously lived in a Blueprint `before_request`, which could short-circuit route-level `inventory.view`. It is now a protected-view guard that executes after authorization.
 2. **Legacy/dead surface:** unused `format_byte_count`, `format_gib`, `_split_inventory_values`, and the empty/stale Inventory partial README are retired.
 3. **Topology ownership:** API Server display metadata now comes from the eagerly loaded canonical `Cluster.kubernetes_connection` relationship. The read side no longer invokes the Kubernetes integration resolver for presentation metadata.
+4. **Post-lock modal alignment refinement:** Full Workspace Modal lifecycle/readiness/collection labels now use one shared header-state row aligned with the title/description text column. This removes the detached label placement below the leading resource icon without changing modal content or status semantics.
 
 ## KAORI UI standard applicability
 
@@ -89,6 +90,6 @@ L7 End-to-End Smoke
 
 ## Release verdict
 
-**TARGETED FIX — AUTHORITATIVE VALIDATION PENDING**
+**TARGETED FIX — LOCK REMAINS; BROWSER VALIDATION PENDING**
 
 Source-level verifier, architecture, rendering, security, and contract evidence must be green, followed by authoritative devcontainer Ruff/Ruff Format/djLint/Pyright/Prettier, Functional/Integration/E2E execution, browser smoke, and the full release gate. Once those pass, Inventory becomes **PASS — LOCKED** without reopening its visual design.

@@ -1,4 +1,4 @@
-# Inventory Resource Page Pattern v1.1
+# Inventory Resource Page Pattern v1.2
 
 **Status:** Locked reference pattern  
 **Scope:** Kubernetes Inventory Overview, Nodes, Namespaces, Configuration, Workloads, Pods, Services, Ingresses, Storage, and Topology
@@ -64,6 +64,10 @@ A Blueprint-level `before_request` must not short-circuit protected Inventory pa
 Nodes, Namespaces, Configuration, Workloads, Pods, Services, Ingresses, and Storage use **Detail Style 2 — Full Workspace Modal** through `components/resource_detail_modal.html` and shared detail-content primitives. Inventory Overview uses the shared Side Drawer. Topology uses the adaptive explorer Inspector/Details drawer.
 
 Do not add page-local modal markup, local expandable-row JavaScript, nested scroll boxes, or a fourth disclosure pattern. Detail endpoints remain committed-snapshot reads and must not call Kubernetes live.
+
+### Full Workspace Modal resource-header alignment
+
+The leading resource icon, title/metadata, description, and state evidence form one identity block. Lifecycle/readiness/collection labels rendered beneath the description use the shared `detail.header_badge_row()` primitive and align with the **text-content column after the leading icon**. Do not place the state label as a separate flex child that drops below and aligns with the modal's outer left edge on narrower widths. This keeps Node through Configuration headers visually consistent without changing semantic status treatment.
 
 ## Architecture and ownership
 

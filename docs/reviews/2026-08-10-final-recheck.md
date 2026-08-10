@@ -106,7 +106,7 @@ The Dashboard remains read-only and provider-free on the web request path; autho
 
 ## 03 — Kubernetes Inventory
 
-Current verdict: **TARGETED FIX — AUTHORITATIVE VALIDATION PENDING**
+Current verdict: **TARGETED FIX — LOCK REMAINS**
 
 No visual redesign is introduced. The approved Inventory Overview/resource/Topology composition remains the baseline.
 
@@ -116,7 +116,8 @@ No visual redesign is introduced. The approved Inventory Overview/resource/Topol
 2. **Dead surface retired.** Unused `format_byte_count`, `format_gib`, `_split_inventory_values`, and the empty/stale Inventory partial README are removed.
 3. **Topology read ownership corrected.** API Server display metadata comes from the eagerly loaded canonical `Cluster.kubernetes_connection` database relationship instead of the Kubernetes integration resolver.
 4. **L0–L7 evidence added.** Inventory now has dedicated final-lock, Unit, Functional, Integration, Security, Rendering/UI, E2E, and final Contract evidence.
-5. **Canonical documentation updated.** Inventory resource-page pattern v1.1 records committed-generation ownership, AuthZ ordering, Hero Status Badge Box, Full Workspace Modal, SQL pagination, accessibility, and performance/reliability boundaries.
+5. **Canonical documentation updated.** Inventory resource-page pattern v1.2 records committed-generation ownership, AuthZ ordering, Hero Status Badge Box, Full Workspace Modal, resource-header label alignment, SQL pagination, accessibility, and performance/reliability boundaries.
+6. **Minor modal alignment defect corrected.** Lifecycle/readiness/collection labels stay below the description but now align with the title/description text column through the shared detail primitive instead of dropping under the leading icon.
 
 ### Review matrix
 
@@ -143,7 +144,7 @@ No visual redesign is introduced. The approved Inventory Overview/resource/Topol
 | Maintainability/readability | PASS source review | Residual helpers removed; request/data ownership explicitly documented and verified. |
 | Reliability | PASS source review | Reads last committed generation; missing evidence does not trigger provider fallback. |
 | Database & migration | N/A for code change | No schema migration required; existing generation model remains canonical. |
-| Documentation | PASS source review | Pattern v1.1, domain README, final audit, quality-gate/test docs updated. |
+| Documentation | PASS source review | Pattern v1.2, domain README, final audit, quality-gate/test docs updated. |
 | Contract Test | ADDED / pending authoritative suite | Final release contract plus existing Inventory contracts. |
 | Unit Test | ADDED / pending authoritative suite | Topology selection policy. |
 | Functional Test | ADDED / pending authoritative suite | AuthZ/readiness request ordering plus existing behavior tests. |
@@ -156,8 +157,28 @@ No visual redesign is introduced. The approved Inventory Overview/resource/Topol
 
 ### Lock condition
 
-Inventory becomes **PASS — LOCKED** only after authoritative Static Quality, Unit, Functional, Integration, Security, Rendering/UI, E2E, browser smoke, and full release gate pass.
+Inventory remains design-locked. This targeted modal-alignment fix does not reopen the design; return the verdict to **PASS — LOCKED** after the focused browser/formatter regression passes.
+
+## 04 — Kubernetes Governance
+
+Current verdict: **TARGETED FIX — AUTHORITATIVE VALIDATION PENDING**
+
+No visual redesign is introduced. The accepted Governance Overview and TLS Certificate Registry remain the baseline.
+
+### Findings and dispositions
+
+1. Blueprint-level clusterless handling is removed so `governance.view`, `tls_certificates.view`, and `tls_certificates.sync` authorize before readiness/blocker behavior.
+2. Orphan `get_active_tls_sync_job()` is retired rather than preserved as compatibility surface.
+3. Existing TLS data-minimization and mutation-scrubbing boundaries remain unchanged and are promoted into permanent Security Regression evidence.
+4. Governance Overview Hero is classified as **Context Icon Box**; TLS Registry Hero uses the canonical **Status Badge Box**. Shared table/status/pagination, Full Workspace Modal, progress toast, Notification Deck and Activity Audit remain unchanged.
+5. Governance now owns permanent L0–L7 release evidence and a final-lock verifier in the canonical quality gate.
+6. TLS wildcard matching is corrected to single-label semantics, preventing `*.example.com` from being interpreted as covering deeper multi-label hostnames.
+7. Governance standalone certificate-policy tests now restore temporary `sys.modules` packages, making collection order deterministic and preventing the fake-package `create_app` import failure.
+
+### Lock condition
+
+Governance becomes **PASS — LOCKED** only after authoritative Static Quality, Contract, Unit, Functional, Integration, Security, Rendering/UI, E2E, browser smoke, and full release gate pass.
 
 ## Next review
 
-`04 — Kubernetes Governance` starts only after Kubernetes Inventory reaches `PASS — LOCKED`.
+`05 — Kubernetes Operations` starts only after Kubernetes Governance reaches `PASS — LOCKED`.

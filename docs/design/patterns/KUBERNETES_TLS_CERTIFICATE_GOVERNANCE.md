@@ -71,6 +71,8 @@ Not Reported
 
 Coverage is declaration evidence, not live endpoint reachability. Host values remain Technical Values. Opening a declared host is an explicit action and never proves route availability.
 
+Wildcard identities use single-label semantics. `*.example.com` covers `api.example.com`, but it does not cover `example.com` or `deep.api.example.com`. KAORI must not broaden wildcard coverage across multiple DNS labels.
+
 ## Compact registry table
 
 ```text
@@ -165,3 +167,36 @@ The Kubernetes API response is processed transiently by the collector. KAORI may
 - Notification payloads contain only safe certificate metadata and counts; certificate bytes, private keys, Secret values, raw exceptions, and provider payload dumps are prohibited.
 - Toast labels may state **Activity Audit** or **Notification Deck** only when the corresponding persistence was confirmed.
 - User-facing notification and execution titles preserve canonical acronyms and Title Case. The registered sync display name is **TLS Certificate Sync**; generic snake-case `.title()` reconstruction is not used for registered job names.
+
+## Final release contract
+
+### Authorization before readiness
+
+Governance readiness or clusterless handling must never short-circuit route authorization. The canonical order is:
+
+```text
+request
+  ↓
+permission_required
+  ↓
+cluster/schema readiness
+  ↓
+read or dispatch
+  ↓
+render / operational feedback
+```
+
+`governance_bp.before_request` must not own clusterless responses. TLS read/status/sync paths evaluate their readiness only after `tls_certificates.view` or `tls_certificates.sync` has admitted the request.
+
+### Hero right-side standard
+
+Governance uses only approved KAORI Hero right accessories:
+
+- Governance Overview: **Context Icon Box** through the canonical Hero context header.
+- TLS Certificate Registry: **Status Badge Box** inside the canonical status-oriented Hero context card.
+
+No page-local fourth Hero accessory type is permitted.
+
+### L0–L7 release evidence
+
+The release boundary requires Static Quality, Contract, Unit, Functional, Integration, Security Regression, Rendering/UI Contract, and End-to-End Smoke evidence. Kubernetes/provider reachability remains an Integration/worker responsibility; the E2E smoke validates Flask/session/templates/application shell deterministically without requiring a live cluster.

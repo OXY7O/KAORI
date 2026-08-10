@@ -7,7 +7,6 @@ from sqlalchemy import or_
 
 from app.common.presentation import present_user_datetime
 from app.governance.tls_certificates.constants import TLS_SYNC_JOB_TYPE, TLS_SYNC_OPERATION
-from app.jobs.constants import ACTIVE_JOB_STATUSES
 from app.models.job import JobExecution, JobExecutionSubscriber
 
 
@@ -27,15 +26,6 @@ def _visible_query(user_id: int):
 
 def get_visible_tls_sync_job(*, public_id: str, user_id: int) -> JobExecution | None:
     return _visible_query(user_id).filter(JobExecution.public_id == public_id).first()
-
-
-def get_active_tls_sync_job(*, user_id: int) -> JobExecution | None:
-    return (
-        _visible_query(user_id)
-        .filter(JobExecution.status.in_(ACTIVE_JOB_STATUSES))
-        .order_by(JobExecution.updated_at.desc(), JobExecution.id.desc())
-        .first()
-    )
 
 
 def _duration_seconds(job: JobExecution) -> int | None:

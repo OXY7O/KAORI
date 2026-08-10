@@ -176,12 +176,40 @@ def main() -> int:
             errors,
         )
         require('detail_button(' in table, f'{resource} table must expose canonical View Details action.', errors)
+        detail_partial = {
+            'nodes': '_node_detail_content.html',
+            'namespaces': '_namespace_detail_content.html',
+            'configuration': '_configuration_detail_content.html',
+            'workloads': '_workload_detail_content.html',
+            'pods': '_pod_detail_content.html',
+            'services': '_service_detail_content.html',
+            'ingresses': '_ingress_detail_content.html',
+            'storage': '_storage_detail_content.html',
+        }[resource]
+        detail_source = read(f'app/templates/inventory/{resource}/partials/{detail_partial}')
+        require(
+            'detail.header_badge_row()' in detail_source,
+            f'{resource} detail header must align state labels with the text-content column.',
+            errors,
+        )
+        require(
+            'self-start sm:self-auto' not in detail_source,
+            f'{resource} detail header must not detach state labels below the leading icon.',
+            errors,
+        )
+
+    detail_primitives = read('app/templates/components/details/_detail_content.html')
+    require(
+        'macro header_badge_row()' in detail_primitives and 'data-resource-detail-header-state' in detail_primitives,
+        'Shared detail primitives must own Inventory header-state alignment.',
+        errors,
+    )
 
     standard = read('docs/design/patterns/INVENTORY_RESOURCE_PAGE.md')
     audit = read('docs/design/audits/KUBERNETES_INVENTORY_FINAL_RECHECK_2026_08.md')
     require(
-        '# Inventory Resource Page Pattern v1.1' in standard,
-        'Inventory Resource Page standard must be v1.1.',
+        '# Inventory Resource Page Pattern v1.2' in standard,
+        'Inventory Resource Page standard must be v1.2.',
         errors,
     )
     for phrase in (

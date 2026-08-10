@@ -20,14 +20,14 @@
                         {% if item.is_default %}{{ table_label.metadata_label("Default") }}{% endif %}
                     </div>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Committed provisioning, capacity, access, binding, relationship, and lifecycle evidence.</p>
+                    {% call detail.header_badge_row() %}
+                        {% if item.type == 'StorageClass' %}
+                            {{ table_label.metadata_label(item.lifecycle_label) }}
+                        {% else %}
+                            {{ table_label.status_indicator_label(item.lifecycle_label, item.lifecycle_tone, size='detail') }}
+                        {% endif %}
+                    {% endcall %}
                 </div>
-            </div>
-            <div class="self-start sm:self-auto">
-                {% if item.type == 'StorageClass' %}
-                    {{ table_label.metadata_label(item.lifecycle_label) }}
-                {% else %}
-                    {{ table_label.status_indicator_label(item.lifecycle_label, item.lifecycle_tone, size='detail') }}
-                {% endif %}
             </div>
         </header>
         {{ detail.summary_strip([

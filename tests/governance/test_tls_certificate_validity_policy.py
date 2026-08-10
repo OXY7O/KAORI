@@ -20,20 +20,38 @@ def _load_module(module_name: str, path: Path):
 
 
 def _load_certificate_module():
-    for name in ('app', 'app.governance', PACKAGE_NAME):
-        if name not in sys.modules:
-            package = types.ModuleType(name)
-            package.__path__ = []  # type: ignore[attr-defined]
-            sys.modules[name] = package
-
-    _load_module(
+    module_names = (
+        'app',
+        'app.governance',
+        PACKAGE_NAME,
         f'{PACKAGE_NAME}.constants',
-        ROOT / 'app/governance/tls_certificates/constants.py',
-    )
-    return _load_module(
         f'{PACKAGE_NAME}.certificate',
-        ROOT / 'app/governance/tls_certificates/certificate.py',
     )
+    missing = object()
+    previous_modules = {name: sys.modules.get(name, missing) for name in module_names}
+
+    try:
+        for name in ('app', 'app.governance', PACKAGE_NAME):
+            if name not in sys.modules:
+                package = types.ModuleType(name)
+                package.__path__ = []  # type: ignore[attr-defined]
+                sys.modules[name] = package
+
+        _load_module(
+            f'{PACKAGE_NAME}.constants',
+            ROOT / 'app/governance/tls_certificates/constants.py',
+        )
+        return _load_module(
+            f'{PACKAGE_NAME}.certificate',
+            ROOT / 'app/governance/tls_certificates/certificate.py',
+        )
+    finally:
+        for name in reversed(module_names):
+            previous = previous_modules[name]
+            if previous is missing:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = previous
 
 
 certificate = _load_certificate_module()

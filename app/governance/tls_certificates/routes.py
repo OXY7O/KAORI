@@ -39,6 +39,40 @@ logger = logging.getLogger(__name__)
 _SYNC_FILTER_KEYS = ('cluster_id', 'namespace', 'status', 'search', 'page', 'per_page')
 
 
+def _clusterless_read_response():
+    if has_registered_clusters() is not False:
+        return None
+    if request.headers.get('HX-Request') == 'true' or request.args.get('partial_mode'):
+        return render_template('components/cluster/_onboarding_banner.html')
+    return None
+
+
+def _clusterless_detail_response():
+    if has_registered_clusters() is not False:
+        return None
+    if request.headers.get('HX-Request') == 'true':
+        return render_template('components/cluster/_onboarding_banner.html')
+    return redirect(url_for('governance.tls_certificates'))
+
+
+def _clusterless_sync_response():
+    if has_registered_clusters() is not False:
+        return None
+    if request.headers.get('HX-Request') == 'true':
+        return render_template('components/cluster/_onboarding_banner.html')
+
+    record_operational_activity(
+        user_id=current_user.id,
+        event_type='governance_tls_cluster_required',
+        status='warning',
+        title='Kubernetes Cluster Setup Required',
+        message='Add a Kubernetes cluster before using TLS certificate governance actions in KAORI.',
+        action_url=url_for('integrations.kubernetes'),
+        queue_feedback=True,
+    )
+    return redirect(url_for('governance.tls_certificates'))
+
+
 def _sync_filter_args(source) -> dict[str, Any]:
     return {key: (source.get(key) or '').strip() for key in _SYNC_FILTER_KEYS}
 
@@ -101,6 +135,10 @@ def _render_sync_response(
 
 @permission_required('tls_certificates.view')
 def tls_certificates_index():
+    clusterless_response = _clusterless_read_response()
+    if clusterless_response is not None:
+        return clusterless_response
+
     payload = get_tls_certificate_page(request.args)
     partial_mode = request.args.get('partial_mode')
 
@@ -130,6 +168,10 @@ def tls_certificates_index():
 
 @permission_required('tls_certificates.sync')
 def tls_certificates_sync_status(public_id: str):
+    clusterless_response = _clusterless_read_response()
+    if clusterless_response is not None:
+        return clusterless_response
+
     job = get_visible_tls_sync_job(public_id=public_id, user_id=int(current_user.id))
     if job is None:
         abort(404)
@@ -207,8 +249,9 @@ def tls_certificates_sync_status(public_id: str):
 
 @permission_required('tls_certificates.view')
 def tls_certificates_detail(certificate_id: int):
-    if has_registered_clusters() is False:
-        return redirect(url_for('governance.tls_certificates'))
+    clusterless_response = _clusterless_detail_response()
+    if clusterless_response is not None:
+        return clusterless_response
 
     record = get_tls_certificate_detail(certificate_id)
     if record is None:
@@ -245,6 +288,10 @@ def tls_certificates_detail(certificate_id: int):
 
 @permission_required('tls_certificates.sync')
 def tls_certificates_sync():
+    clusterless_response = _clusterless_sync_response()
+    if clusterless_response is not None:
+        return clusterless_response
+
     filter_args = _sync_filter_args(request.form)
     cluster_id = filter_args['cluster_id'] or None
     is_htmx = request.headers.get('HX-Request') == 'true'

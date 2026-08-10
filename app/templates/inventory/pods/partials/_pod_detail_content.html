@@ -22,9 +22,11 @@
                         {{ table_label.metadata_label(pod.namespace, 'folder-tree') }}
                     </div>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Runtime, placement, container, storage, and configuration evidence from the committed snapshot.</p>
+                    {% call detail.header_badge_row() %}
+                        {{ table_label.status_indicator_label(pod.operational_state_label, pod.operational_state_tone, size='detail') }}
+                    {% endcall %}
                 </div>
             </div>
-            <div class="self-start sm:self-auto">{{ table_label.status_indicator_label(pod.operational_state_label, pod.operational_state_tone, size='detail') }}</div>
         </header>
         {{ detail.summary_strip([
                 ('Runtime State', pod.operational_state_label, pod.state_evidence) ,

@@ -59,3 +59,5 @@ pytest -q tests/contracts/kubernetes/test_inventory_final_release_contract.py -m
 
 The Inventory integration read-model test validates current-generation filtering and SQL pagination through the actual SQLAlchemy repository path. Provider/infrastructure integration remains separate from deterministic application-shell E2E smoke.
 
+
+- Kubernetes Governance final recheck: `verify_governance_final_lock.py` plus Unit, Functional, Integration, Security, Rendering/UI, E2E, and Governance Contract evidence are mandatory after the domain is reviewed.

@@ -24,9 +24,11 @@
                         {{ table_label.metadata_label(node.role_display) }}
                     </div>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Node identity, capacity, runtime, connectivity, scheduling, and condition evidence from the latest committed inventory snapshot.</p>
+                    {% call detail.header_badge_row() %}
+                        {{ table_label.status_indicator_label(node.status_display, node_status_tone, size='detail') }}
+                    {% endcall %}
                 </div>
             </div>
-            <div class="self-start sm:self-auto">{{ table_label.status_indicator_label(node.status_display, node_status_tone, size='detail') }}</div>
         </header>
         <div data-resource-detail-summary
              class="grid gap-3 border-b border-outline-subtle bg-surface-card p-4 sm:grid-cols-2 xl:grid-cols-4">

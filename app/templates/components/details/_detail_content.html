@@ -12,6 +12,10 @@
 {% macro expanded_workspace_icon_classes() -%}
     flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary
 {%- endmacro %}
+{% macro header_badge_row() -%}
+    <div data-resource-detail-header-state
+         class="mt-2 flex min-w-0 flex-wrap items-center gap-2">{{ caller() }}</div>
+{%- endmacro %}
 {% macro inline_detail_shell_classes() -%}
     overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm
 {%- endmacro %}

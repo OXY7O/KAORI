@@ -21,9 +21,11 @@
                         {{ table_label.metadata_label(workload.namespace, 'folder-tree') }}
                     </div>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Runtime, delivery, placement, and relationship evidence from the committed snapshot.</p>
+                    {% call detail.header_badge_row() %}
+                        {{ table_label.status_indicator_label(workload.operational_state_label, workload.operational_state_tone, size='detail') }}
+                    {% endcall %}
                 </div>
             </div>
-            <div class="self-start sm:self-auto">{{ table_label.status_indicator_label(workload.operational_state_label, workload.operational_state_tone, size='detail') }}</div>
         </header>
         {{ detail.summary_strip([
                 ('Operational State', workload.operational_state_label, workload.state_display) ,

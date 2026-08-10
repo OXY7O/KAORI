@@ -50,7 +50,9 @@ def test_tls_terminal_delivery_precedes_job_completion() -> None:
     assert tasks.index('deck_user_ids = _notify_requesters(') < tasks.index('context.succeed(')
     assert "result['activity_audit_saved']" in tasks
     assert "result['notification_deck_user_ids']" in tasks
-    assert 'notification_deck_visible = (' in presentation
+    assert (
+        'notification_deck_visible = user_id is not None and int(user_id) in notification_deck_user_ids' in presentation
+    )
 
 
 def test_tls_sync_distinguishes_mapping_warning_from_fatal_collection_failure() -> None:

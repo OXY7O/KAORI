@@ -21,9 +21,11 @@
                         {{ table_label.status_indicator_label(item.mutation_label, item.mutation_tone) }}
                     </div>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Protected key-index metadata, collection capability, mutation configuration, and evidence-aware current Pod references.</p>
+                    {% call detail.header_badge_row() %}
+                        {{ table_label.metadata_label(item.collection_state, 'database') }}
+                    {% endcall %}
                 </div>
             </div>
-            <div class="self-start sm:self-auto">{{ table_label.metadata_label(item.collection_state, 'database') }}</div>
         </header>
         {{ detail.summary_strip([
                 ('Object Type', item.type, item.secret_type if item.type == 'Secret' else 'ConfigMap metadata') ,

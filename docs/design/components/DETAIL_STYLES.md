@@ -42,6 +42,8 @@ Node, Namespace, Workload, Pod, Service, Ingress, Storage, and Configuration Inv
 - loading and error states stay inside the modal;
 - detail root uses `data-kaori-detail-variant="full-workspace-modal"`;
 - fetched detail marks its resource header with `data-resource-detail-header`;
+- lifecycle/readiness/collection state shown below a resource-header description uses the shared `detail.header_badge_row()` owner and aligns with the title/description text column after the leading icon;
+- do not detach that state label as a sibling that can wrap beneath the leading icon or modal outer edge;
 - the summary uses the shared `data-resource-detail-summary` owner.
 
 ### Content order

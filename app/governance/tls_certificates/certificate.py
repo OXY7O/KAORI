@@ -270,7 +270,10 @@ def hostname_matches_pattern(hostname: str, pattern: str) -> bool:
 
     if pattern.startswith('*.'):
         suffix = pattern[1:]
-        return hostname.endswith(suffix) and hostname.count('.') >= pattern.count('.')
+        if not hostname.endswith(suffix):
+            return False
+        wildcard_label = hostname[: -len(suffix)]
+        return bool(wildcard_label) and '.' not in wildcard_label
 
     return False
 

@@ -17,9 +17,11 @@
                         {{ table_label.metadata_label(namespace.cluster_name, 'building-2') }}
                     </div>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Lifecycle, controls, composition, and security evidence from the committed snapshot.</p>
+                    {% call detail.header_badge_row() %}
+                        {{ table_label.status_indicator_label(namespace.lifecycle_label, namespace.lifecycle_tone, size='detail') }}
+                    {% endcall %}
                 </div>
             </div>
-            <div class="self-start sm:self-auto">{{ table_label.status_indicator_label(namespace.lifecycle_label, namespace.lifecycle_tone, size='detail') }}</div>
         </header>
         {{ detail.summary_strip([
                 ('Lifecycle', namespace.lifecycle_label, '') ,

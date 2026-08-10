@@ -22,9 +22,11 @@
                         {{ table_label.metadata_label(ingress.class) }}
                     </div>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Declared host scope, controller publication, TLS Secret references, and backend routes from one committed snapshot.</p>
+                    {% call detail.header_badge_row() %}
+                        {{ table_label.status_indicator_label(ingress.detail_posture_label, ingress.detail_posture_tone, size='detail') }}
+                    {% endcall %}
                 </div>
             </div>
-            <div class="self-start sm:self-auto">{{ table_label.status_indicator_label(ingress.detail_posture_label, ingress.detail_posture_tone, size='detail') }}</div>
         </header>
         {{ detail.summary_strip([
                 ('Host Scope', ingress.host_label, ingress.host_supporting) ,

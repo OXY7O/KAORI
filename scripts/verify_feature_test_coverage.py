@@ -26,6 +26,13 @@ _REQUIRED_TEST_FILES = {
     'tests/rendering/inventory/test_inventory_rendering.py': 2,
     'tests/integration/inventory/test_node_inventory_read_model.py': 1,
     'tests/e2e/inventory/test_inventory_smoke.py': 2,
+    'tests/contracts/governance/test_governance_final_release_contract.py': 4,
+    'tests/unit/governance/test_tls_governance_policy.py': 3,
+    'tests/governance/test_tls_governance_route_characterization.py': 3,
+    'tests/security/governance/test_tls_governance_security.py': 3,
+    'tests/rendering/governance/test_tls_governance_rendering.py': 2,
+    'tests/integration/governance/test_tls_certificate_read_model.py': 1,
+    'tests/e2e/governance/test_tls_governance_smoke.py': 2,
 }
 
 

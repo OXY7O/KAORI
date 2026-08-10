@@ -6,6 +6,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ### Added
 
+- Added permanent Kubernetes Governance L0–L7 release evidence and `verify_governance_final_lock.py` for AuthZ-first readiness, TLS data minimization, canonical UI ownership, and dead-surface protection.
 - Added permanent Kubernetes Inventory L0–L7 release evidence and `verify_inventory_final_lock.py` for AuthZ ordering, committed-snapshot ownership, canonical UI composition, Topology database ownership, and residual-file protection.
 - Established `docs/standards/KAORI_ENGINEERING_STANDARD_V1.md` as the mandatory final-recheck index covering the shared Violet palette, Hero variants, tables/pagination/status, right context rails, tab families, progressive disclosure, feedback, notifications, shell navigation, accessibility, security, and test evidence.
 - Added permanent Welcome behavioral characterization and direct Welcome final-lock gate coverage for the final release recheck.
@@ -14,6 +15,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ### Changed
 
+- Hardened Kubernetes Governance request ownership so TLS cluster/readiness blockers execute only after route RBAC, while preserving the locked TLS registry, worker sync, operational feedback, and rotation handoff design.
 - Hardened Kubernetes Inventory read ownership: clusterless HTMX blocking now executes after `inventory.view`, and Topology reads API Server metadata from the eagerly loaded canonical cluster-connection relationship instead of the integration resolver.
 - Harden Kubernetes Dashboard release ownership: remove unused compatibility/dead internal surface, use explicit selected-cluster naming, keep empty consumer messaging snapshot-only, and add layered Unit/Integration/Security/Rendering/E2E release evidence without changing the locked visual design.
 - Restarted the final release recheck from Welcome under the consolidated KAORI Engineering Standard v1 and recorded the per-standard applicability matrix for locked-page review.
@@ -29,10 +31,13 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ### Removed
 
+- Removed the orphan TLS Governance `get_active_tls_sync_job()` presentation helper; no compatibility wrapper is retained.
 - Removed unused Inventory `format_byte_count`, `format_gib`, and `_split_inventory_values` helpers plus the stale empty Inventory partial README; no compatibility wrapper is retained.
 
 ### Fixed
 
+- Aligned Kubernetes Inventory Full Workspace Modal state/collection labels with the resource text-content column through one shared header-state primitive, removing the detached label placement below the leading icon.
+- Corrected TLS wildcard host coverage to single-label semantics (`*.example.com` no longer matches `deep.api.example.com`) and isolated the standalone certificate-policy test harness so it cannot shadow the real `app` package during Governance functional-test collection.
 - Restored authenticated top-navbar Quick Actions, Notification Deck, and Account interactions by moving the malformed inline Alpine state program into the syntax-checked `kaoriNavbar` static controller.
 - Completed the follow-up quality-gate cleanup from the second lint/type run: restored required workload quota bindings, fixed forecast snapshot recommendation counting, corrected Kubernetes Operations contract setup, widened the cluster dependency typing boundary for SQLAlchemy models, and added optional-value guards for forecast PDF, XLSX footer, dashboard pagination, and scheduled report dispatch paths.
 - Resolved pre-release lint and type-safety defects across Analytics, Inventory, Governance, Kubernetes Operations, Reports, Integrations, Platform Operations, Access support code, and release scripts.
@@ -45,6 +50,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ### Security
 
+- Closed a Governance authorization-order regression where Blueprint-level clusterless handling could respond before `tls_certificates.view` / `tls_certificates.sync`; readiness now runs only inside authorized TLS request paths.
 - Closed an Inventory authorization-order regression where Blueprint-level clusterless HTMX handling could respond before route-level `inventory.view`; readiness evaluation now occurs only after authorization.
 - Narrowed 21 database, credential-decoding, and report-catalog exception boundaries to explicit exception classes; the broad-exception burn-down ceiling remains 198 rather than increasing with the stale ledger.
 - Removed the dormant end-to-end remediation orchestrator from the current release source while Intelligence remediation is held for the next controlled redesign.
