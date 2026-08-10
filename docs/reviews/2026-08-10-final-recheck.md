@@ -193,6 +193,8 @@ The final recheck intentionally reopens presentation composition because retirin
 4. **Shared ownership increased.** `form_with_context_rail.html` owns the 8/12 + 4/12 geometry; `info_flow.html` and `information_guide_card.html` own side guidance. `kubernetes_operation_ui.html` remains the owner for reusable special workflow and action primitives.
 5. **L0–L7 evidence added.** Operations now has dedicated Contract, Unit, Functional, Integration, Security, Rendering/UI, E2E, and final-lock evidence.
 6. **Documentation ownership formalized.** Form + Right Context is now an approved reusable design option with shared geometry, canonical side-box ownership, and a future behavior-neutral DRY migration path for Integration registration pages.
+7. **Protected Reveal navigation and lifecycle corrected.** Peer views now use Integrated Workspace Tabs instead of Compact Segmented Tabs; URL/deep-link state activates the correct panel, request submission returns to `My Requests`, approval decisions stay in `Approvals`, and step-up is presented only after a request is approved.
+8. **Protected Reveal refresh stability hardened.** Initial panel ownership remains server-authoritative until the client validates a complete tab/panel pair; explicit `reveal_view` state wins over stale hashes while valid hash-only deep links require a complete tab/panel pair, and the Platform Operations cross-lock now follows the current Form + Right Context ownership.
 
 ### Lock condition
 

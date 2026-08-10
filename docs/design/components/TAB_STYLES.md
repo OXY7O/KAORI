@@ -20,13 +20,15 @@ A new style is justified only when the content relationship or interaction model
 |---|---|
 | Semantic key | `integrated-workspace` |
 | Component | `components/workspace_tabs.html` |
-| Reference | Kubernetes Operations Dashboard |
+| References | Kubernetes Operations Dashboard; Protected Secret Reveal |
 | Content relationship | Peer sections within one workspace and one active scope |
 | Surface | Integrated divider; no separate card shell |
 | State | Stored in the URL and preserved through HTMX scope changes |
 | Layout | Horizontal tabs with narrow-screen overflow |
 
-Use Tab Style 1 for operational dashboards, analytics workspaces, and similar pages where each tab is a peer perspective on the same governed context.
+Use Tab Style 1 for operational dashboards, analytics workspaces, and peer task/status/approval views such as Protected Secret Reveal, where each tab is a full workspace perspective on the same governed context.
+
+For server-rendered workspaces that use the client-controlled `render_controlled()` variant, the server-selected panel is the initial source of truth. Client code must validate that the requested key has both a tab and a panel before changing `hidden` state. Explicit URL query state takes precedence; a legacy hash-only deep link may select a different view only after the controller validates the matching tab/panel pair. Otherwise the server-rendered active panel remains authoritative, so refresh cannot blank the workspace.
 
 ## Tab Style 2 — Framed Workspace Tabs
 

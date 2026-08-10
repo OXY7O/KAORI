@@ -1,5 +1,6 @@
 {% import "components/structured_entry_editor.html" as entry_editor %}
-<div class="mb-2 hidden grid-cols-[minmax(10rem,0.72fr)_8rem_minmax(14rem,1.6fr)_2.5rem] gap-3 px-3 text-xs font-semibold uppercase tracking-wide text-content-muted lg:grid"
+{% set task_focused = configmap_entry_task_focused|default(false) %}
+<div class="mb-2 hidden gap-3 px-3 text-xs font-semibold uppercase tracking-wide text-content-muted {{ 'xl:grid xl:grid-cols-[minmax(9rem,0.72fr) _7rem_minmax(12rem,1.6fr)_2.5rem]' if task_focused else 'lg:grid lg:grid-cols-[minmax(10rem,0.72fr)_8rem_minmax(14rem,1.6fr)_2.5rem]' }}"
      aria-hidden="true">
     <span>Key</span>
     <span>Type</span>
@@ -8,16 +9,16 @@
 </div>
 <div id="configmap-entries" class="space-y-3">
     {% for key, value in entries %}
-        <div class="configmap-entry {{ entry_editor.row_classes('configmap') }}">
+        <div class="configmap-entry {{ entry_editor.row_classes('configmap-task' if task_focused else 'configmap') }}">
             <label class="min-w-0">
-                <span class="mb-1 block {{ entry_editor.label_classes() }} lg:hidden">Key</span>
+                <span class="mb-1 block {{ entry_editor.label_classes() }} {{ 'xl:hidden' if task_focused else 'lg:hidden' }}">Key</span>
                 <input name="entry_key"
                        value="{{ key }}"
                        placeholder="Key"
                        class="{{ entry_editor.control_classes() }}">
             </label>
             <label class="min-w-0">
-                <span class="mb-1 block {{ entry_editor.label_classes() }} lg:hidden">Content Type</span>
+                <span class="mb-1 block {{ entry_editor.label_classes() }} {{ 'xl:hidden' if task_focused else 'lg:hidden' }}">Content Type</span>
                 <select name="entry_kind" class="{{ entry_editor.control_classes() }}">
                     <option value="text" {{ 'selected' if value.kind == 'text' else '' }}>Text
                     </option>
@@ -26,7 +27,7 @@
                 </select>
             </label>
             <label class="min-w-0">
-                <span class="mb-1 block {{ entry_editor.label_classes() }} lg:hidden">Value</span>
+                <span class="mb-1 block {{ entry_editor.label_classes() }} {{ 'xl:hidden' if task_focused else 'lg:hidden' }}">Value</span>
                 <textarea name="entry_value"
                           rows="3"
                           placeholder="Value"
@@ -45,22 +46,22 @@
         data-add-entry
         class="mt-3 {{ entry_editor.add_button_classes() }}"><i data-lucide="plus" class="h-4 w-4"></i>Add Entry</button>
 <template id="configmap-entry-template">
-    <div class="configmap-entry {{ entry_editor.row_classes('configmap') }}">
+    <div class="configmap-entry {{ entry_editor.row_classes('configmap-task' if task_focused else 'configmap') }}">
         <label class="min-w-0">
-            <span class="mb-1 block {{ entry_editor.label_classes() }} lg:hidden">Key</span>
+            <span class="mb-1 block {{ entry_editor.label_classes() }} {{ 'xl:hidden' if task_focused else 'lg:hidden' }}">Key</span>
             <input name="entry_key"
                    placeholder="Key"
                    class="{{ entry_editor.control_classes() }}">
         </label>
         <label class="min-w-0">
-            <span class="mb-1 block {{ entry_editor.label_classes() }} lg:hidden">Content Type</span>
+            <span class="mb-1 block {{ entry_editor.label_classes() }} {{ 'xl:hidden' if task_focused else 'lg:hidden' }}">Content Type</span>
             <select name="entry_kind" class="{{ entry_editor.control_classes() }}">
                 <option value="text">Text</option>
                 <option value="binary">Binary / Base64</option>
             </select>
         </label>
         <label class="min-w-0">
-            <span class="mb-1 block {{ entry_editor.label_classes() }} lg:hidden">Value</span>
+            <span class="mb-1 block {{ entry_editor.label_classes() }} {{ 'xl:hidden' if task_focused else 'lg:hidden' }}">Value</span>
             <textarea name="entry_value"
                       rows="3"
                       placeholder="Value"

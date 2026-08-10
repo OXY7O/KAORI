@@ -31,21 +31,23 @@ A clusterless response must never execute before the route permission decorator.
 
 ## Mutation Workspace Evolution
 
-The previous 22rem content right rail is retired from ConfigMap CRUD and Secret Create/Replace/Delete/Protected Reveal/Bulk TLS Rotation. Removing the rail alone was not sufficient because the former primary column became visually over-wide. Each workflow was recomposed through shared primitives:
+The final Operations layout is task-fit rather than globally full-width. Ordinary ConfigMap/Secret CRUD and Protected Reveal `New Request` use the shared Form + Right Context pattern, while registry/status tabs and TLS protected workflows retain their own reviewed compositions.
 
 ```text
-Hero
-Evidence Boundary
-Target / Identity
-Payload / Current State / Impact
-Validation Evidence
-Workflow Steps + Guardrails
-Embedded Action Bar
+Ordinary mutation
+→ 8/12 main form: target, payload/current state, validation, final action
+→ 4/12 context: workflow + safety/policy guidance
+
+Protected Reveal
+→ Integrated Workspace Tabs
+→ New Request uses Form + Right Context
+→ My Requests / Approvals remain full-width status/decision views
+
+TLS
+→ dedicated reviewed protected workflow
 ```
 
-`components/kubernetes_operation_ui.html` owns `workspace_section()` and `workflow_control()`. The latter composes `operational_point_flow`, compact guardrails, warning/help text, and the embedded canonical form action bar. Page-local right-rail or workflow-card variants are not retained.
-
-The Hero right-side context/status/action accessory remains part of the canonical Hero and is not a content rail.
+`components/form_with_context_rail.html` owns ordinary mutation geometry. `components/kubernetes_operation_ui.html` continues to own shared section/action primitives. The Hero right-side context/status/action accessory remains part of the canonical Hero and is not a content rail.
 
 ## Workflow dispositions
 
@@ -93,9 +95,11 @@ The Hero right-side context/status/action accessory remains part of the canonica
 
 ### Protected Reveal
 
-- existing segmented request/requests/approvals workspace retained;
-- target, step-up, approval, and one-time protected value remain the primary surface;
-- retired right rail replaced by full-width Protected Reveal Lifecycle guidance;
+- `New Request`, `My Requests`, and `Approvals` use Tab Style 1 — Integrated Workspace Tabs because each is a peer workspace;
+- request creation owns target/key/reason/ticket only; step-up is not shown as a prerequisite before submission;
+- `step_up` Namespace policy produces an approved request immediately, while `approval_required` waits for a different authorized approver;
+- `My Requests` owns the post-approval step-up and one-time reveal action;
+- tab state is preserved through `reveal_view`, and existing request/approval deep-link anchors activate the matching panel before scrolling;
 - private-key classes remain rotation-only and are never revealable.
 
 ### TLS Rotation
@@ -154,3 +158,9 @@ The redesign becomes **PASS — LOCKED** only after authoritative devcontainer S
 - Protected Secret Reveal target selectors use the same field baseline.
 - Secret Replace renders Validate/Replace actions inside the HTMX-refreshed content partial so selecting a target cannot leave the page without its mutation controls.
 - The Design System and Design README again register `docs/standards/KAORI_ENGINEERING_STANDARD_V1.md` as the mandatory final-recheck engineering index.
+### Protected Reveal Refresh Stability Follow-Up
+
+- The server-rendered `active_reveal_view` now remains authoritative during initial paint; the JavaScript controller changes panel visibility only after validating a complete tab/panel pair.
+- Explicit `reveal_view` query state wins over legacy hashes; hash-only deep links are honored only after a complete tab/panel pair is validated, otherwise the server-selected view remains visible.
+- Platform Operations' Secret Reveal v1.7 verifier now accepts the current `form_with_context_rail.html` ownership for the Protected Reveal `New Request` task while retaining the natural-height checks for Platform Operations administration surfaces.
+

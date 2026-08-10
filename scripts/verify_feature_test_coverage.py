@@ -34,6 +34,7 @@ _REQUIRED_TEST_FILES = {
     'tests/integration/governance/test_tls_certificate_read_model.py': 1,
     'tests/e2e/governance/test_tls_governance_smoke.py': 2,
     'tests/contracts/kubernetes_operations/test_kubernetes_operations_final_release_contract.py': 4,
+    'tests/contracts/kubernetes_operations/test_secret_reveal_request_flow_contract.py': 4,
     'tests/unit/kubernetes_operations/test_operation_flow.py': 3,
     'tests/kubernetes_operations/test_route_authorization_characterization.py': 3,
     'tests/security/kubernetes_operations/test_kubernetes_operations_security.py': 3,

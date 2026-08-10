@@ -182,6 +182,62 @@ def main() -> int:
         errors,
     )
 
+    reveal_page = read('app/templates/kubernetes_operations/secrets/reveal.html')
+    reveal_tabs = read('app/templates/components/workspace_tabs.html')
+    reveal_script = read('app/static/js/secret_reveal_workspace.js')
+    reveal_routes = read('app/kubernetes_operations/secrets/reveal_routes.py')
+    reveal_step_up = read('app/templates/kubernetes_operations/secrets/_reveal_step_up.html')
+    for token in (
+        'components/workspace_tabs.html',
+        'workspace_tabs.render_controlled',
+        'data-secret-reveal-active-view="{{ active_reveal_view }}"',
+    ):
+        require(token in reveal_page, f'Protected Reveal workspace tab contract missing: {token}', errors)
+    require(
+        'components/segmented_tabs.html' not in reveal_page,
+        'Protected Reveal peer workspaces must use Integrated Workspace Tabs, not Compact Segmented Tabs.',
+        errors,
+    )
+    require(
+        'macro render_controlled' in reveal_tabs,
+        'Integrated Workspace Tabs must expose the shared client-controlled variant.',
+        errors,
+    )
+    for token in (
+        "const viewParam = 'reveal_view';",
+        "['#my-secret-reveal-requests', 'mine']",
+        "['#pending-secret-reveal-approvals', 'approvals']",
+        'resolveTabFromLocation',
+        'window.history.replaceState',
+        'const viewState = (root) =>',
+        'const activeTab = state.tabByKey.get(key);',
+        'const activePanel = state.panelByKey.get(key);',
+        "panel.toggleAttribute('hidden', panel !== activePanel);",
+        'const serverVisiblePanel = state.panels.find((panel) => !panel.hidden);',
+    ):
+        require(token in reveal_script, f'Protected Reveal tab-state contract missing: {token}', errors)
+    for token in (
+        "request.args.get('reveal_view')",
+        "'active_reveal_view': active_reveal_view",
+        "reveal_view='mine'",
+        "reveal_view='approvals'",
+    ):
+        require(token in reveal_routes, f'Protected Reveal route-state contract missing: {token}', errors)
+    require(
+        'Reveal Session Step-Up' in reveal_step_up and 'approved request is ready to be consumed' in reveal_step_up,
+        'Protected Reveal step-up must remain in the approved-request consumption flow.',
+        errors,
+    )
+    new_request_panel = reveal_page.split('data-secret-reveal-panel="new"', 1)[1].split(
+        'data-secret-reveal-panel="mine"',
+        1,
+    )[0]
+    require(
+        'Reveal Session Step-Up' not in new_request_panel,
+        'Protected Reveal New Request must not require step-up before request creation.',
+        errors,
+    )
+
     for obsolete in (
         'app/kubernetes_operations/secrets/routes.py',
         'app/templates/kubernetes_operations/_components.html',
@@ -221,17 +277,29 @@ def main() -> int:
         errors,
     )
 
+    form_field = read('app/templates/components/form_field.html')
+    replace_page = read('app/templates/kubernetes_operations/secrets/replace.html')
+    replace_content = read('app/templates/kubernetes_operations/secrets/_replace_content_form.html')
+    require(
+        'min-h-6' in form_field and 'mt-2 h-10 w-full' in form_field,
+        'Form Field Alignment contract drifted.',
+        errors,
+    )
+    require(
+        'replace-secret-apply-button' in replace_content and 'Replace Selected Data' in replace_content,
+        'Secret Replace must render its apply action inside the HTMX-swapped content.',
+        errors,
+    )
+    require(
+        '{% if target and not target.immutable %}' not in replace_page,
+        'Secret Replace page must not gate actions on stale parent target state.',
+        errors,
+    )
+
     if errors:
         for error in errors:
             print(f'ERROR: {error}')
         return 1
-
-    form_field = read('app/templates/components/form_field.html')
-    replace_page = read('app/templates/kubernetes_operations/secrets/replace.html')
-    replace_content = read('app/templates/kubernetes_operations/secrets/_replace_content_form.html')
-    require('min-h-6' in form_field and 'mt-2 h-10 w-full' in form_field, 'Form Field Alignment contract drifted.', errors)
-    require('replace-secret-apply-button' in replace_content and 'Replace Selected Data' in replace_content, 'Secret Replace must render its apply action inside the HTMX-swapped content.', errors)
-    require('{% if target and not target.immutable %}' not in replace_page, 'Secret Replace page must not gate actions on stale parent target state.', errors)
 
     print(
         'KAORI Kubernetes Operations final-lock passed: AuthZ-first cluster prerequisites, '

@@ -46,6 +46,32 @@ Protected Reveal registries / TLS
 → dedicated reviewed composition
 ```
 
+### Protected Reveal workspace contract
+
+Protected Secret Reveal uses **Tab Style 1 — Integrated Workspace Tabs** because `New Request`, `My Requests`, and `Approvals` are peer workspaces rather than local component views.
+
+```text
+New Request
+→ choose target + one revealable key
+→ provide reason + ticket/reference
+→ submit request
+
+Namespace policy
+→ step_up: request is immediately approved
+→ approval_required: request waits for an independent approver
+
+My Requests
+→ observe Pending / Approved / Revealed / Denied / Expired
+→ after approval, perform session step-up
+→ reveal the approved key once
+
+Approvals
+→ review requests from other users
+→ approve or deny without exposing Secret values
+```
+
+Deep links and notification actions preserve `reveal_view` and map the existing request/approval anchors to the correct visible panel. Request creation must not force step-up before the request exists.
+
 Rules:
 
 - choose layout by task semantics instead of applying one geometry to every Operations page;

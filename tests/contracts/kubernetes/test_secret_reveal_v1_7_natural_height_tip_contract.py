@@ -27,6 +27,8 @@ def test_protected_reveal_new_request_uses_form_with_right_context() -> None:
     assert 'form_context.layout_classes()' in page
     assert 'form_context.main_classes()' in page
     assert 'form_context.rail_classes()' in page
+    assert "context_rail.layout_classes('wide')" not in page
+    assert 'context_rail.rail_classes()' not in page
     assert 'Protected Reveal Flow' in page
     assert 'Reveal Safety Contract' in page
     assert 'secret_ui.workflow_control(' not in page

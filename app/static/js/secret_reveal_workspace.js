@@ -2,11 +2,62 @@
     const rootSelector = '[data-secret-reveal-workspace]'
     const tabSelector = '[data-secret-reveal-tab]'
     const panelSelector = '[data-secret-reveal-panel]'
+    const viewParam = 'reveal_view'
+    const deepLinkViews = new Map([
+        ['#my-secret-reveal-requests', 'mine'],
+        ['#secret-reveal-request-status', 'mine'],
+        ['#reveal-session-step-up', 'mine'],
+        ['#pending-secret-reveal-approvals', 'approvals'],
+    ])
     let pollTimer = null
 
     const renderIcons = () => {
         window.renderKaoriIcons?.()
         if (!window.renderKaoriIcons && window.lucide) window.lucide.createIcons()
+    }
+
+    const viewState = (root) => {
+        const tabs = [...root.querySelectorAll(tabSelector)]
+        const panels = [...root.querySelectorAll(panelSelector)]
+        const tabByKey = new Map(tabs.map((tab) => [tab.dataset.secretRevealTab, tab]).filter(([key]) => Boolean(key)))
+        const panelByKey = new Map(
+            panels.map((panel) => [panel.dataset.secretRevealPanel, panel]).filter(([key]) => Boolean(key))
+        )
+        const keys = [...tabByKey.keys()].filter((key) => panelByKey.has(key))
+        return { tabs, panels, tabByKey, panelByKey, keys }
+    }
+
+    const resolveTabFromLocation = (root) => {
+        const state = viewState(root)
+        const available = new Set(state.keys)
+        const requested = new URL(window.location.href).searchParams.get(viewParam)
+        if (requested && available.has(requested)) return requested
+
+        const hashView = deepLinkViews.get(window.location.hash)
+        if (hashView && available.has(hashView)) return hashView
+
+        const serverView = root.dataset.secretRevealActiveView
+        if (serverView && available.has(serverView)) return serverView
+
+        const serverVisiblePanel = state.panels.find((panel) => !panel.hidden)
+        const visibleKey = serverVisiblePanel?.dataset.secretRevealPanel
+        if (visibleKey && available.has(visibleKey)) return visibleKey
+
+        return available.has('new') ? 'new' : state.keys[0]
+    }
+
+    const syncLocation = (key) => {
+        if (!window.history?.replaceState) return
+        const url = new URL(window.location.href)
+        url.searchParams.set(viewParam, key)
+        url.hash = ''
+        window.history.replaceState({}, '', url)
+    }
+
+    const revealDeepLink = () => {
+        const target = window.location.hash ? document.querySelector(window.location.hash) : null
+        if (!(target instanceof HTMLElement)) return
+        window.requestAnimationFrame(() => target.scrollIntoView({ block: 'start' }))
     }
 
     const pollActivePanel = (panel) => {
@@ -27,54 +78,85 @@
         pollTimer = window.setInterval(() => pollActivePanel(panel), 4000)
     }
 
-    const selectTab = (root, key, focus = false) => {
-        const tabs = [...root.querySelectorAll(tabSelector)]
-        const panels = [...root.querySelectorAll(panelSelector)]
-        let activePanel = null
-        tabs.forEach((tab) => {
-            const selected = tab.dataset.secretRevealTab === key
+    const selectTab = (root, key, focus = false, updateLocation = false) => {
+        const state = viewState(root)
+        const activeTab = state.tabByKey.get(key)
+        const activePanel = state.panelByKey.get(key)
+
+        // Never hide the server-rendered panel unless the requested view has a
+        // complete tab + panel pair. This keeps refresh/deep-link rendering stable
+        // even when stale markup or a partial deployment temporarily drifts.
+        if (!(activeTab instanceof HTMLElement) || !(activePanel instanceof HTMLElement)) {
+            return false
+        }
+
+        state.tabs.forEach((tab) => {
+            const selected = tab === activeTab
             tab.setAttribute('aria-selected', selected ? 'true' : 'false')
             tab.tabIndex = selected ? 0 : -1
-            tab.classList.toggle('bg-surface-card', selected)
+            tab.classList.toggle('border-kaori-primary', selected)
             tab.classList.toggle('text-kaori-primary', selected)
-            tab.classList.toggle('shadow-sm', selected)
+            tab.classList.toggle('border-transparent', !selected)
             tab.classList.toggle('text-content-muted', !selected)
-            if (selected && focus) tab.focus()
         })
-        panels.forEach((panel) => {
-            const selected = panel.dataset.secretRevealPanel === key
-            panel.hidden = !selected
-            if (selected) activePanel = panel
+
+        state.panels.forEach((panel) => {
+            panel.toggleAttribute('hidden', panel !== activePanel)
         })
+
+        root.dataset.secretRevealActiveView = key
         schedulePolling(activePanel)
+        if (focus) activeTab.focus()
+        if (updateLocation) syncLocation(key)
         renderIcons()
+        return true
     }
 
     const initialise = (root) => {
         if (!(root instanceof HTMLElement) || root.dataset.revealTabsReady === 'true') return
         root.dataset.revealTabsReady = 'true'
-        const tabs = [...root.querySelectorAll(tabSelector)]
-        tabs.forEach((tab, index) => {
-            tab.addEventListener('click', () => selectTab(root, tab.dataset.secretRevealTab))
+        const state = viewState(root)
+
+        state.tabs.forEach((tab, index) => {
+            tab.addEventListener('click', () => {
+                const key = tab.dataset.secretRevealTab
+                if (key) selectTab(root, key, false, true)
+            })
             tab.addEventListener('keydown', (event) => {
                 if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
                 event.preventDefault()
                 let nextIndex = index
-                if (event.key === 'ArrowRight') nextIndex = (index + 1) % tabs.length
-                if (event.key === 'ArrowLeft') nextIndex = (index - 1 + tabs.length) % tabs.length
+                if (event.key === 'ArrowRight') nextIndex = (index + 1) % state.tabs.length
+                if (event.key === 'ArrowLeft') nextIndex = (index - 1 + state.tabs.length) % state.tabs.length
                 if (event.key === 'Home') nextIndex = 0
-                if (event.key === 'End') nextIndex = tabs.length - 1
-                selectTab(root, tabs[nextIndex].dataset.secretRevealTab, true)
+                if (event.key === 'End') nextIndex = state.tabs.length - 1
+                const key = state.tabs[nextIndex]?.dataset.secretRevealTab
+                if (key) selectTab(root, key, true, true)
             })
         })
-        selectTab(root, 'new')
+
+        const initialKey = resolveTabFromLocation(root)
+        if (initialKey) selectTab(root, initialKey)
+        revealDeepLink()
     }
 
     const boot = (scope = document) => {
         if (scope.matches?.(rootSelector)) initialise(scope)
         scope.querySelectorAll?.(rootSelector).forEach(initialise)
     }
+
+    window.addEventListener('hashchange', () => {
+        document.querySelectorAll(rootSelector).forEach((root) => {
+            const key = resolveTabFromLocation(root)
+            if (key) selectTab(root, key)
+            revealDeepLink()
+        })
+    })
     document.addEventListener('htmx:load', (event) => boot(event.detail?.elt || document))
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => boot())
-    else boot()
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => boot())
+    } else {
+        boot()
+    }
 })()

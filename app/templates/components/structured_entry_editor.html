@@ -1,6 +1,8 @@
 {% macro row_classes(columns='configmap') -%}
     {% if columns == 'secret' %}
         grid min-w-0 items-start gap-3 rounded-lg border border-outline-subtle bg-surface-elevated p-3 sm:grid-cols-[minmax(10rem,0.8fr)_minmax(0,1.2fr)_2.5rem]
+    {% elif columns == 'configmap-task' %}
+        grid min-w-0 items-start gap-3 rounded-lg border border-outline-subtle bg-surface-elevated p-3 xl:grid-cols-[minmax(9rem,0.72fr)_7rem_minmax(12rem,1.6fr)_2.5rem]
     {% else %}
         grid min-w-0 items-start gap-3 rounded-lg border border-outline-subtle bg-surface-elevated p-3 lg:grid-cols-[minmax(10rem,0.72fr)_8rem_minmax(14rem,1.6fr)_2.5rem]
     {% endif %}

@@ -232,7 +232,7 @@ Secret values, decoded payloads, certificate bytes, private keys, and tokens are
 - Legacy inline page-size submission handlers are replaced by the global `data-kaori-auto-submit` behavior.
 - Secret Type choices retain the canonical responsive 1/2/3-column choice-card reflow so labels and descriptions remain readable even after the content rail is retired.
 - Create combines Target & Identity, Secret Type, Secret Content, and one full-width workflow/guardrail/action control. Separate Creation Summary or Sensitive Data Policy side boxes are retired.
-- Create/Replace/Delete/Reveal/Bulk TLS use the shared `workflow_control()` for procedure context. Protected Reveal keeps its canonical segmented workspace tabs for New Request, My Requests, and Approvals.
+- ConfigMap/Secret ordinary CRUD and Protected Reveal `New Request` use the reviewed Form + Right Context composition. Protected Reveal uses **Integrated Workspace Tabs** for `New Request`, `My Requests`, and `Approvals`; these are peer workspaces, not compact local views.
 
 ### Shared action-bar contract
 
@@ -241,14 +241,14 @@ Secret values, decoded payloads, certificate bytes, private keys, and tokens are
 - The canonical `action_bar` macro owns call-block rendering so validation and mutation controls use one runtime-safe implementation.
 - Direct component ownership and wrapper absence are covered by `tests/contracts/kubernetes/test_operation_component_caller_contract.py`.
 
-### Hero navigation and full-width workflow layout
+### Hero navigation and mutation workspace layout
 
 - The Secret Management hero links to Kubernetes cluster management.
-- Create, replace, delete, reveal, and bulk TLS rotation workflow heroes return to Secret Management.
-- Create merges target and identity into one bounded section, then separates Secret Type and Secret Content before the shared workflow/guardrail/action control.
-- Replace and Delete keep live target/impact state above one full-width workflow control; no sticky content rail is retained.
-- Protected Reveal keeps target, step-up, approval/request state, one-time value surface, and lifecycle guidance inside the full-width protected workspace.
-- Bulk TLS rotation places peer upload cards and explicit target selection before one full-width controlled workflow with embedded validation/update actions.
+- Create, Replace, Delete, Reveal, and bulk TLS rotation workflow heroes return to Secret Management.
+- Create, Replace, and Delete use the reviewed Form + Right Context geometry: mutation inputs, validation, and actions stay in the main form while workflow/safety guidance stays in the contextual column.
+- Protected Reveal uses Integrated Workspace Tabs. `New Request` owns target/key/context submission, `My Requests` owns approval state, step-up, and one-time consumption, and `Approvals` owns independent approval decisions.
+- Step-up is intentionally **not** part of request creation. `step_up` policy creates an approved request immediately; `approval_required` waits for a different authorized approver. Both require step-up only before consuming an approved request.
+- Bulk TLS rotation retains its dedicated reviewed full-width workflow because it is a multi-target protected operation.
 - The Hero right-side context panel remains part of the canonical Hero and is not a content right rail.
 
 ### TLS rotation presentation
@@ -275,7 +275,7 @@ Secret values, decoded payloads, certificate bytes, private keys, and tokens are
 The canonical presentation is documented in `docs/design/patterns/KUBERNETES_CONFIGMAP_SECRET_OPERATIONS.md`.
 
 - Use the wording **No KAORI Value Persistence**: values are processed transiently and excluded from KAORI persistence, notifications, and Activity Audit metadata.
-- Protected Reveal polls only the active segmented workspace and renders one-time material through `components/protected_value_panel.html`.
+- Protected Reveal polls only the active Integrated Workspace Tab panel and renders one-time material through `components/protected_value_panel.html`.
 - Delete requires a final destructive confirmation modal after exact-name entry and non-destructive validation. The modal does not replace the signed receipt, RBAC preflight, target reread, or resourceVersion precondition.
 - Reveal registries and bulk TLS tables use scoped endpoint-aware HTMX pagination.
 

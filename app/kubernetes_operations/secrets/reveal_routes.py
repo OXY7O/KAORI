@@ -111,6 +111,7 @@ def _notify_secret_reveal_approvers(record: Any) -> None:
 
     action_url = url_for(
         'kubernetes_operations.reveal_secret',
+        reveal_view='approvals',
         _anchor='pending-secret-reveal-approvals',
     )
     metadata = _reveal_request_metadata(record)
@@ -184,10 +185,18 @@ def reveal_secret_page():
         if target_context.get('target') is not None
         else workspace_context.get('selected_namespace_policy', 'disabled')
     )
+    status_context = _reveal_status_context()
+    requested_view = (request.args.get('reveal_view') or 'new').strip().lower()
+    allowed_views = {'new', 'mine'}
+    if status_context['can_approve']:
+        allowed_views.add('approvals')
+    active_reveal_view = requested_view if requested_view in allowed_views else 'new'
+
     page_context = {
-        **_reveal_status_context(),
+        **status_context,
         **workspace_context,
         **target_context,
+        'active_reveal_view': active_reveal_view,
         'selected_secret_name': selected_secret_name,
         'selected_key_name': request.args.get('key_name', '').strip(),
         'selected_cluster': selected_cluster,
@@ -269,13 +278,23 @@ def request_secret_reveal():
             status=result.status,
             title=result.title,
             message=result.message,
-            action_url=url_for('kubernetes_operations.reveal_secret'),
+            action_url=url_for(
+                'kubernetes_operations.reveal_secret',
+                reveal_view='mine',
+                _anchor='my-secret-reveal-requests',
+            ),
             action_label='Open Protected Secret Reveal',
             metadata=result.metadata,
             queue_feedback=True,
         )
         _notify_secret_reveal_approvers(result.request_record)
-        return redirect(url_for('kubernetes_operations.reveal_secret'))
+        return redirect(
+            url_for(
+                'kubernetes_operations.reveal_secret',
+                reveal_view='mine',
+                _anchor='my-secret-reveal-requests',
+            )
+        )
     except ActiveRevealRequestExists as exc:
         db.session.rollback()
         existing = exc.request_record
@@ -285,6 +304,7 @@ def request_secret_reveal():
             namespace=existing.namespace,
             secret_name=existing.secret_name,
             key_name=existing.key_name,
+            reveal_view='mine',
             _anchor='my-secret-reveal-requests',
         )
         metadata = {
@@ -359,12 +379,16 @@ def reauthenticate_secret_reveal():
             status='error',
             title='Reauthentication failed',
             message=str(exc),
-            action_url=url_for('kubernetes_operations.reveal_secret'),
+            action_url=url_for(
+                'kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='my-secret-reveal-requests'
+            ),
             action_label='Retry reauthentication',
             metadata={'secret_value_recorded': False},
             queue_feedback=True,
         )
-        return redirect(url_for('kubernetes_operations.reveal_secret'))
+        return redirect(
+            url_for('kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='my-secret-reveal-requests')
+        )
 
     password = request.form.get('password') or ''
     if current_user.is_external:
@@ -373,7 +397,9 @@ def reauthenticate_secret_reveal():
             status='error',
             title='Reauthentication unavailable',
             message='External authentication step-up is not available yet. Use a database-managed break-glass account.',
-            action_url=url_for('kubernetes_operations.reveal_secret'),
+            action_url=url_for(
+                'kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='my-secret-reveal-requests'
+            ),
             action_label='Open Protected Secret Reveal',
             metadata={
                 'auth_source': current_user.auth_source,
@@ -387,7 +413,9 @@ def reauthenticate_secret_reveal():
             status='error',
             title='Reauthentication failed',
             message='The current account password is incorrect.',
-            action_url=url_for('kubernetes_operations.reveal_secret'),
+            action_url=url_for(
+                'kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='my-secret-reveal-requests'
+            ),
             action_label='Retry reauthentication',
             metadata={
                 'auth_source': current_user.auth_source,
@@ -402,7 +430,9 @@ def reauthenticate_secret_reveal():
             status='success',
             title='Protected reveal session verified',
             message='One-time Secret reveal actions are available for the configured short session window.',
-            action_url=url_for('kubernetes_operations.reveal_secret'),
+            action_url=url_for(
+                'kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='my-secret-reveal-requests'
+            ),
             action_label='Open Protected Secret Reveal',
             metadata={
                 'auth_source': current_user.auth_source,
@@ -411,7 +441,9 @@ def reauthenticate_secret_reveal():
             },
             queue_feedback=True,
         )
-    return redirect(url_for('kubernetes_operations.reveal_secret'))
+    return redirect(
+        url_for('kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='my-secret-reveal-requests')
+    )
 
 
 @permission_required('kubernetes_secrets.approve_reveal')
@@ -438,7 +470,11 @@ def decide_secret_reveal_request(request_id: str):
                 if approved
                 else 'The protected Secret reveal request was denied.'
             ),
-            action_url=url_for('kubernetes_operations.reveal_secret'),
+            action_url=url_for(
+                'kubernetes_operations.reveal_secret',
+                reveal_view='approvals',
+                _anchor='pending-secret-reveal-approvals',
+            ),
             action_label='Review reveal requests',
             metadata=_reveal_request_metadata(record),
             queue_feedback=True,
@@ -454,7 +490,11 @@ def decide_secret_reveal_request(request_id: str):
                     if approved
                     else 'Your protected Secret reveal request was denied.'
                 ),
-                action_url=url_for('kubernetes_operations.reveal_secret'),
+                action_url=url_for(
+                    'kubernetes_operations.reveal_secret',
+                    reveal_view='mine',
+                    _anchor='my-secret-reveal-requests',
+                ),
                 metadata=_reveal_request_metadata(record),
             )
         except Exception:
@@ -467,7 +507,11 @@ def decide_secret_reveal_request(request_id: str):
             status='error',
             title='Secret reveal decision failed',
             message=str(exc),
-            action_url=url_for('kubernetes_operations.reveal_secret'),
+            action_url=url_for(
+                'kubernetes_operations.reveal_secret',
+                reveal_view='approvals',
+                _anchor='pending-secret-reveal-approvals',
+            ),
             action_label='Review reveal requests',
             metadata={
                 'reveal_request_id': request_id,
@@ -483,7 +527,11 @@ def decide_secret_reveal_request(request_id: str):
             status='error',
             title='Secret reveal decision failed',
             message='KAORI could not save the reveal decision because of an internal error.',
-            action_url=url_for('kubernetes_operations.reveal_secret'),
+            action_url=url_for(
+                'kubernetes_operations.reveal_secret',
+                reveal_view='approvals',
+                _anchor='pending-secret-reveal-approvals',
+            ),
             action_label='Review reveal requests',
             metadata={
                 'reveal_request_id': request_id,
@@ -492,7 +540,11 @@ def decide_secret_reveal_request(request_id: str):
             },
             queue_feedback=True,
         )
-    return redirect(url_for('kubernetes_operations.reveal_secret'))
+    return redirect(
+        url_for(
+            'kubernetes_operations.reveal_secret', reveal_view='approvals', _anchor='pending-secret-reveal-approvals'
+        )
+    )
 
 
 @permission_required('kubernetes_secrets.reveal')
@@ -522,7 +574,9 @@ def reveal_secret_value(request_id: str):
                 f'{result.key_name} was revealed once for '
                 f'{result.expires_in_seconds} seconds. The value was not stored by KAORI.'
             ),
-            action_url=url_for('kubernetes_operations.reveal_secret'),
+            action_url=url_for(
+                'kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='my-secret-reveal-requests'
+            ),
             action_label='Open Protected Secret Reveal',
             metadata=result.metadata,
         )
@@ -540,7 +594,9 @@ def reveal_secret_value(request_id: str):
             status='error',
             title='Secret reveal failed',
             message=str(exc),
-            action_url=url_for('kubernetes_operations.reveal_secret'),
+            action_url=url_for(
+                'kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='my-secret-reveal-requests'
+            ),
             action_label='Review reveal request',
             metadata=metadata,
         )
@@ -554,7 +610,9 @@ def reveal_secret_value(request_id: str):
             status='error',
             title='Secret reveal failed',
             message='KAORI could not complete the protected reveal because of an internal error.',
-            action_url=url_for('kubernetes_operations.reveal_secret'),
+            action_url=url_for(
+                'kubernetes_operations.reveal_secret', reveal_view='mine', _anchor='my-secret-reveal-requests'
+            ),
             action_label='Review reveal request',
             metadata={'reveal_request_id': request_id, 'secret_value_recorded': False},
         )

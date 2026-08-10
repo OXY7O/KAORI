@@ -41,9 +41,9 @@ def test_configmap_and_secret_target_rows_use_shared_form_field_contract() -> No
 def test_secret_replace_actions_live_in_htmx_swapped_target_content() -> None:
     page = read('app/templates/kubernetes_operations/secrets/replace.html')
     partial = read('app/templates/kubernetes_operations/secrets/_replace_content_form.html')
-    assert "{% if target and not target.immutable %}" not in page
+    assert '{% if target and not target.immutable %}' not in page
     assert 'replace-secret-apply-button' in partial
     assert 'Validate Replacement' in partial
     assert 'Replace Selected Data' in partial
     assert 'Current Values Stay Hidden' in partial
-    assert "embedded=true" in partial
+    assert 'embedded=true' in partial
