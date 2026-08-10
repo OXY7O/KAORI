@@ -12,7 +12,7 @@ from flask import (
 )
 from flask_login import current_user
 
-from app.kubernetes_operations.operation_flow import validate_then_apply
+from app.kubernetes_operations.operation_flow import cluster_required, validate_then_apply
 from app.kubernetes_operations.secrets.create_service import execute_secret_operation, get_secret_create_context
 from app.kubernetes_operations.secrets.delete_service import (
     execute_secret_deletion,
@@ -81,6 +81,7 @@ def _safe_opaque_entries(form: Any) -> list[dict[str, Any]]:
     'kubernetes_secrets.rotate_tls',
     'kubernetes_secrets.bulk_rotate_tls',
 )
+@cluster_required('Secret Management')
 def secret_management_index():
     return render_template(
         'kubernetes_operations/secrets/index.html',
@@ -89,6 +90,7 @@ def secret_management_index():
 
 
 @permission_required('kubernetes_secrets.create')
+@cluster_required('Secret Management')
 def secret_namespace_options():
     cluster_id = request.args.get('cluster_id', '')
     selected_namespace = request.args.get('namespace', '')
@@ -110,6 +112,7 @@ def secret_namespace_options():
 
 
 @permission_required('kubernetes_secrets.create')
+@cluster_required('Secret Management')
 def create_secret():
     operation_feedback = None
     submitted = _safe_secret_submission(request.form) if request.method == 'POST' else {}
@@ -236,6 +239,7 @@ def _replacement_target_metadata(target: Any | None, *, operation: str) -> dict[
 
 
 @permission_required('kubernetes_secrets.replace')
+@cluster_required('Secret Management')
 def replace_secret_workspace():
     return render_template(
         'kubernetes_operations/secrets/_replace_target_workspace.html',
@@ -249,6 +253,7 @@ def replace_secret_workspace():
 
 
 @permission_required('kubernetes_secrets.replace')
+@cluster_required('Secret Management')
 def replace_secret_content():
     return render_template(
         'kubernetes_operations/secrets/_replace_content_form.html',
@@ -261,6 +266,7 @@ def replace_secret_content():
 
 
 @permission_required('kubernetes_secrets.replace')
+@cluster_required('Secret Management')
 def replace_secret():
     operation_feedback = None
     is_htmx = request.headers.get('HX-Request') == 'true'
@@ -389,6 +395,7 @@ def replace_secret():
 
 
 @permission_required('kubernetes_secrets.delete')
+@cluster_required('Secret Management')
 def delete_secret_workspace():
     return render_template(
         'kubernetes_operations/secrets/_delete_target_workspace.html',
@@ -402,6 +409,7 @@ def delete_secret_workspace():
 
 
 @permission_required('kubernetes_secrets.delete')
+@cluster_required('Secret Management')
 def delete_secret_target():
     return render_template(
         'kubernetes_operations/secrets/_delete_target.html',
@@ -414,6 +422,7 @@ def delete_secret_target():
 
 
 @permission_required('kubernetes_secrets.delete')
+@cluster_required('Secret Management')
 def delete_secret():
     operation_feedback = None
     delete_validation_token = None

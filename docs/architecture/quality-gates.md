@@ -4,6 +4,8 @@
 
 KAORI uses mandatory release gates to prevent behavior regressions, import-cycle failures, architecture drift, migration divergence, generated artifacts, and duplicated UI implementation before a production image is published.
 
+Kubernetes Operations adds `verify_kubernetes_operations_final_lock.py` to the static phase. The verifier freezes AuthZ-first cluster prerequisites, Full-Width Mutation Workspace v2 ownership, retired content-rail absence, and L0–L7 permanent evidence for ConfigMap/Secret CRUD.
+
 The canonical local entrypoint is:
 
 ```bash

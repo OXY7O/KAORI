@@ -21,6 +21,7 @@ run_static() {
     python scripts/verify_tabular_export_standard.py
     python scripts/verify_inventory_final_lock.py
     python scripts/verify_governance_final_lock.py
+    python scripts/verify_kubernetes_operations_final_lock.py
     python scripts/verify_node_inventory_standard.py
     python scripts/verify_namespace_inventory_standard.py
     python scripts/verify_configuration_inventory_standard.py
@@ -80,7 +81,7 @@ run_tests() {
     # Domain characterization tests are explicit release gates. This protects
     # them from environment-level PYTEST_ADDOPTS or marker filtering that may
     # otherwise deselect unmarked behavioral tests.
-    pytest -q tests/welcome tests/dashboards tests/analytics tests/inventory tests/governance tests/kubernetes -m functional
+    pytest -q tests/welcome tests/dashboards tests/analytics tests/inventory tests/governance tests/kubernetes_operations tests/kubernetes -m functional
     pytest -q tests/e2e -m e2e
 }
 

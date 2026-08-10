@@ -1,6 +1,7 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/form_action_bar.html" as form_action_bar %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/operational_point_flow.html" as point_flow %}
 {# Canonical KAORI primitives for guarded Kubernetes mutation workflows. #}
 {% macro section_header(icon, title, description, tone='brand') -%}
     <header class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-5 py-4 sm:px-6">
@@ -62,6 +63,42 @@
             <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>{{ boundary_text }}
         </div>
     </div>
+{%- endmacro %}
+
+{% macro workspace_section(icon, title, description, tone='brand', body_classes='p-5 sm:p-6', marker=None) -%}
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"{% if marker %} data-kubernetes-operation-section="{{ marker }}"{% endif %}>
+        {{ section_header(icon, title, description, tone) }}
+        <div class="{{ body_classes }}">{{ caller() }}</div>
+    </section>
+{%- endmacro %}
+{% macro workflow_control(title, description, steps, guardrails, note=None, tone='brand', action_title=None, action_description=None, aria_label='Operation Workflow') -%}
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm" data-kubernetes-operation-workflow>
+        {{ section_header('workflow', title, description, tone) }}
+        <div class="space-y-5 p-5 sm:p-6">
+            {{ point_flow.render(steps, aria_label=aria_label) }}
+            {% if note %}
+                <div class="flex items-start gap-2.5 rounded-lg border {{ 'border-status-critical-border bg-status-critical-soft text-status-critical-text' if tone == 'critical' else 'border-status-warning-border bg-status-warning-soft text-status-warning-text' }} px-4 py-3">
+                    <i data-lucide="circle-alert" class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true"></i>
+                    <p class="text-xs leading-5">{{ note }}</p>
+                </div>
+            {% endif %}
+        </div>
+        {% if guardrails %}
+            <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4" data-kubernetes-operation-guardrails>
+                {% for item in guardrails %}
+                    <div class="min-w-0 bg-surface-subtle px-4 py-3.5">
+                        {{ guardrail(item[0], item[1], item[2], item[3] if item|length > 3 else 'brand') }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% if action_title and caller is defined %}
+            {% set action_content = caller() %}
+            {% call form_action_bar.render(action_description or '', aria_label, action_title, embedded=true) %}
+                {{ action_content | safe }}
+            {% endcall %}
+        {% endif %}
+    </section>
 {%- endmacro %}
 {% macro action_bar(icon, title, description, aria_label='Operation Actions', embedded=false) -%}
     {% set action_content = caller() %}

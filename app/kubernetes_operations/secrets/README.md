@@ -176,7 +176,7 @@ The retired `app/kubernetes_operations/secrets/routes.py` file must not be recre
 ## Design contract
 
 - Landing uses Compact Hero, Live Mutation Evidence Boundary, and Operational Workflow Catalog.
-- Create, Replace, Delete, Reveal, and single TLS Rotation use canonical primary work plus the shared 22rem wide Right Context Rail where secondary context is required.
+- Create, Replace, Delete, Protected Reveal, and TLS mutation workspaces use **Full-Width Mutation Workspace v2** or the established full-width TLS evidence workspace; retired content right rails must not return.
 - Form labels use 12 px semibold typography; normal controls use a 40 px minimum height and proportional 14 px values.
 - Secret Type uses the responsive Operational Choice Card Group with one selected border, a quiet leading Violet accent, soft surface, and compact `Selected` marker; generic sensitive entries use Structured Entry Editor.
 - Validation, approval, expiry, readiness, and destructive states use semantic colors. Operation classification remains separate from permission state.
@@ -230,9 +230,9 @@ Secret values, decoded payloads, certificate bytes, private keys, and tokens are
 - Validation, primary, secondary, destructive, and disabled actions use shared button macros so state changes do not alter geometry or produce thick borders.
 - Workflow section headers use one icon container, title hierarchy, description scale, outline, and surface treatment across Create, Replace, Delete, Reveal, and TLS rotation.
 - Legacy inline page-size submission handlers are replaced by the global `data-kaori-auto-submit` behavior.
-- Secret Type choices do not force a five-card row; desktop uses at most three columns so descriptions remain readable.
-- Creation Summary uses reusable operation summary items, while Sensitive Data Policy and Replacement Semantics use the canonical information-guide component.
-- Delete and TLS Rotation may use `components/info_flow.html` for secondary procedure context. Protected Reveal uses Tab Style 2 for New Request, My Requests, and Approvals.
+- Secret Type choices retain the canonical responsive 1/2/3-column choice-card reflow so labels and descriptions remain readable even after the content rail is retired.
+- Create combines Target & Identity, Secret Type, Secret Content, and one full-width workflow/guardrail/action control. Separate Creation Summary or Sensitive Data Policy side boxes are retired.
+- Create/Replace/Delete/Reveal/Bulk TLS use the shared `workflow_control()` for procedure context. Protected Reveal keeps its canonical segmented workspace tabs for New Request, My Requests, and Approvals.
 
 ### Shared action-bar contract
 
@@ -241,18 +241,20 @@ Secret values, decoded payloads, certificate bytes, private keys, and tokens are
 - The canonical `action_bar` macro owns call-block rendering so validation and mutation controls use one runtime-safe implementation.
 - Direct component ownership and wrapper absence are covered by `tests/contracts/kubernetes/test_operation_component_caller_contract.py`.
 
-### Hero navigation and workflow layout
+### Hero navigation and full-width workflow layout
 
 - The Secret Management hero links to Kubernetes cluster management.
 - Create, replace, delete, reveal, and bulk TLS rotation workflow heroes return to Secret Management.
-- Secret creation keeps its Form Action Bar inside the primary column. Creation Summary and Sensitive Data Policy are secondary expandable boxes closed by default.
-- Delete flow and guardrails are grouped inside one sticky right-column wrapper. They must never be separate grid rows, because a sticky flow card would overlap guardrails while the page scrolls.
-- Bulk TLS rotation places two peer upload cards first, then a full-width arrow-based Controlled TLS Rotation Flow, followed by validation actions. It does not use a tall side flow panel.
+- Create merges target and identity into one bounded section, then separates Secret Type and Secret Content before the shared workflow/guardrail/action control.
+- Replace and Delete keep live target/impact state above one full-width workflow control; no sticky content rail is retained.
+- Protected Reveal keeps target, step-up, approval/request state, one-time value surface, and lifecycle guidance inside the full-width protected workspace.
+- Bulk TLS rotation places peer upload cards and explicit target selection before one full-width controlled workflow with embedded validation/update actions.
+- The Hero right-side context panel remains part of the canonical Hero and is not a content right rail.
 
 ### TLS rotation presentation
 
 - The single TLS Secret rotation hero returns to Secret Management; it does not use an in-page `Open Replacement Form` hero action.
-- The rotation workflow uses the canonical target card, replacement-pair upload surface, shared guardrails, shared action bar, and sticky controlled-flow panel.
+- Single TLS rotation uses the canonical compact target/posture workspace, replacement-pair validation surface, and integrated full-width controlled-flow/Governance posture section; the retired sticky controlled-flow panel must not return.
 - Single and bulk TLS rotation use the same peer upload-card treatment: explicit `tls.crt` / `tls.key` identity, file-format badge, inner dashed chooser boundary, selected filename, and transient-key wording.
 - Bulk `Target TLS Secrets` uses `components/table.html` and `components/pagination.html` for Inventory-standard header, loading state, filters, Cluster and Namespace identities, semantic status, empty state, Rows Per Page, Previous/Next, and numeric page links.
 - Bulk pagination keeps a normal full-page `href` and a separate HTMX `hx-get` partial URL so fallback navigation remains valid and `outerHTML` swaps reinitialize numeric page links.
@@ -264,7 +266,7 @@ Secret values, decoded payloads, certificate bytes, private keys, and tokens are
 - Any certificate or private-key file change invalidates the prior validation and disables Update again.
 - The final update endpoint validates the uploaded pair again before mutation, so the browser gate is never treated as an authorization or integrity boundary.
 - Specialized TLS validation renders certificate evidence inline because operators must review Common Name, new expiry, SAN coverage, and fingerprint before applying the rotation.
-- The right column contains both the controlled flow and the reusable Related Governance Workspace card linking back to the canonical TLS certificate posture.
+- Certificate Governance evidence is integrated into the full-width rotation workspace; no separate right column is retained.
 - Bulk TLS rotation documents a fifth `Validate Outcome` step: review per-target update results and synchronize TLS inventory to confirm the resulting certificate posture.
 
 

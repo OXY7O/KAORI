@@ -1,14 +1,20 @@
 from pathlib import Path
 
-
-def test_configmap_create_guardrails_use_chevron_only_compact_action():
-    template = Path('app/templates/kubernetes_operations/configmaps/create.html').read_text()
-    assert 'compact_action=true' in template
+ROOT = Path(__file__).resolve().parents[3]
 
 
-def test_shared_guidance_components_support_compact_action():
-    view_more = Path('app/templates/components/view_more_content.html').read_text()
-    guide = Path('app/templates/components/information_guide_card.html').read_text()
-    assert 'compact_action=false' in view_more
-    assert '{% if not compact_action %}' in view_more
-    assert 'compact_action=compact_action' in guide
+def test_configmap_create_uses_full_width_shared_workflow_guardrails() -> None:
+    template = (ROOT / 'app/templates/kubernetes_operations/configmaps/create.html').read_text(encoding='utf-8')
+    assert 'data-kubernetes-operation-layout="full-width-v2"' in template
+    assert 'configmap_ui.workflow_control(' in template
+    assert 'context_rail.html' not in template
+    assert 'information_guide_card.html' not in template
+
+
+def test_shared_operation_workflow_control_owns_guardrail_and_action_geometry() -> None:
+    component = (ROOT / 'app/templates/components/kubernetes_operation_ui.html').read_text(encoding='utf-8')
+    assert 'data-kubernetes-operation-workflow' in component
+    assert 'data-kubernetes-operation-guardrails' in component
+    assert 'sm:grid-cols-2 xl:grid-cols-4' in component
+    assert 'form_action_bar.render' in component
+    assert 'embedded=true' in component

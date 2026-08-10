@@ -1,6 +1,42 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from functools import wraps
+from typing import Any, cast
+
+from flask import flash, redirect, render_template, request, url_for
+
+from app.cluster.onboarding import has_registered_clusters
+
+
+def cluster_required[ViewT: Callable[..., Any]](operation_label: str) -> Callable[[ViewT], ViewT]:
+    """Run the Kubernetes cluster prerequisite only after route authorization."""
+
+    def decorator(view: ViewT) -> ViewT:
+        @wraps(view)
+        def wrapped(*args: Any, **kwargs: Any):
+            if has_registered_clusters() is not False:
+                return view(*args, **kwargs)
+
+            is_partial = request.headers.get('HX-Request') == 'true' or request.args.get('partial_mode')
+            if is_partial:
+                return render_template('components/cluster/_onboarding_banner.html'), 409
+
+            if request.method == 'GET':
+                return (
+                    render_template(
+                        'kubernetes_operations/cluster_required.html',
+                        requested_operation=operation_label,
+                    ),
+                    409,
+                )
+
+            flash('Add a Kubernetes cluster before running Kubernetes operations.', 'warning')
+            return redirect(url_for('integrations.kubernetes'))
+
+        return cast(ViewT, wrapped)
+
+    return decorator
 
 
 def validate_then_apply[ResultT](

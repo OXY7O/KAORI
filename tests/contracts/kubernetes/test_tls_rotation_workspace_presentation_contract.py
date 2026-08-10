@@ -6,47 +6,41 @@ ROTATE_TEMPLATE = ROOT / 'app/templates/kubernetes_operations/secrets/tls_rotate
 
 
 def _template() -> str:
-    return TEMPLATE.read_text()
+    return TEMPLATE.read_text(encoding='utf-8')
 
 
 def _rotate_template() -> str:
-    return ROTATE_TEMPLATE.read_text()
+    return ROTATE_TEMPLATE.read_text(encoding='utf-8')
 
 
-def test_tls_rotation_uses_one_primary_workspace_with_expandable_point_flow() -> None:
+def test_bulk_tls_rotation_uses_full_width_upload_target_and_workflow_sections() -> None:
     template = _template()
-
-    assert 'Controlled TLS Rotation Flow' in template
+    assert 'data-kubernetes-operation-layout="full-width-v2"' in template
+    assert 'Controlled Bulk TLS Rotation' in template
     assert 'Validate Before Bulk Rotation' in template
     assert 'id="tls-secret-update-form"' in template
-    assert 'view_more.render(' in template
-    assert 'point_flow.render' in template
-    assert 'open_by_default=false' in template
-    assert "closed_label='View Flow'" in template
-    assert 'operational_flow_steps.render' not in template
+    assert 'secret_ui.workflow_control(' in template
+    assert 'view_more.render(' not in template
     assert 'Controlled File Boundary' in template
-    assert 'info_flow.render' not in template
-    assert '<aside' not in template
+    assert 'context_rail.html' not in template
     assert 'lg:grid-cols-2' in template
-    assert 'xl:grid-cols-3' not in template
 
 
-def test_tls_rotation_actions_are_inside_the_primary_form() -> None:
+def test_bulk_tls_rotation_actions_target_the_upload_form_after_full_width_recomposition() -> None:
     template = _template()
     form_start = template.index('id="tls-secret-update-form"')
     form_end = template.index('</form>', form_start)
-    form = template[form_start:form_end]
-
-    assert 'Validate Selected' in form
-    assert 'Update Selected' in form
-    assert "secret_ui.action_bar('shield-check', 'Validate Before Bulk Rotation'" in form
-    assert 'Controlled File Boundary' in form
-    assert 'Validation Required:' in form
+    workflow_index = template.index("secret_ui.workflow_control('Controlled Bulk TLS Rotation'")
+    assert form_end < workflow_index
+    assert 'hx-include="#tls-secret-update-form"' in template[workflow_index:]
+    assert 'Validate Selected' in template[workflow_index:]
+    assert 'Update Selected' in template[workflow_index:]
+    assert 'Validation Required' not in template
+    assert 'Changing either uploaded file or the selected target set invalidates the previous preview.' in template
 
 
 def test_tls_rotation_file_names_can_wrap_without_truncation() -> None:
     template = _template()
-
     assert 'x-text="crtFileName"' in template
     assert 'x-text="keyFileName"' in template
     assert 'break-words text-xs font-medium text-content-secondary [overflow-wrap:anywhere]' in template
@@ -55,9 +49,8 @@ def test_tls_rotation_file_names_can_wrap_without_truncation() -> None:
 
 def test_single_tls_rotation_page_surfaces_current_tls_posture() -> None:
     template = _rotate_template()
-
     assert 'Current TLS Posture' in template
-    assert 'Committed certificate validity and coverage for the selected Secret' in template
+    assert 'Committed validity and host coverage' in template
     assert 'Expires At' in template
     assert 'Days Remaining' in template
     assert 'Host Coverage' in template
@@ -67,7 +60,6 @@ def test_single_tls_rotation_page_surfaces_current_tls_posture() -> None:
 
 def test_single_tls_rotation_validation_is_embedded_with_upload_pair() -> None:
     template = _rotate_template()
-
     assert 'Replacement Certificate Pair & Validation' in template
     assert "secret_ui.action_bar('shield-check', 'Validate Before Update'" in template
     assert 'embedded=true' in template

@@ -20,6 +20,7 @@ from app.kubernetes_operations.configmaps.service import (
     read_configmap,
     update_configmap,
 )
+from app.kubernetes_operations.operation_flow import cluster_required
 from app.notifications.feedback import OperationalDeliveryPolicy
 from app.notifications.service import (
     create_transient_feedback,
@@ -228,11 +229,13 @@ def _unexpected_failure(
     'kubernetes_configmaps.update',
     'kubernetes_configmaps.delete',
 )
+@cluster_required('ConfigMap Management')
 def configmap_management_index():
     return render_template('kubernetes_operations/configmaps/index.html', **get_context())
 
 
 @permission_required('kubernetes_configmaps.create')
+@cluster_required('ConfigMap Management')
 def configmap_namespace_options():
     namespaces: list[str] = []
     namespace_error = None
@@ -252,6 +255,7 @@ def configmap_namespace_options():
 
 
 @permission_required('kubernetes_configmaps.create')
+@cluster_required('ConfigMap Management')
 def create_configmap_page():
     if request.method == 'GET':
         return render_template('kubernetes_operations/configmaps/create.html', **get_context())
@@ -324,6 +328,7 @@ def create_configmap_page():
 
 
 @any_permission_required('kubernetes_configmaps.update', 'kubernetes_configmaps.delete')
+@cluster_required('ConfigMap Management')
 def configmap_workspace():
     cluster_id, namespace, configmap_name = _target_values(request.args)
     context = _selection_context(cluster_id, namespace, configmap_name)
@@ -344,6 +349,7 @@ def configmap_workspace():
 
 
 @permission_required('kubernetes_configmaps.update')
+@cluster_required('ConfigMap Management')
 def configmap_editor():
     try:
         target = _load_selected_target(request.args)
@@ -368,6 +374,7 @@ def configmap_editor():
 
 
 @permission_required('kubernetes_configmaps.delete')
+@cluster_required('ConfigMap Management')
 def configmap_delete_target():
     try:
         target = _load_selected_target(request.args)
@@ -392,6 +399,7 @@ def configmap_delete_target():
 
 
 @permission_required('kubernetes_configmaps.update')
+@cluster_required('ConfigMap Management')
 def update_configmap_page():
     if request.method == 'POST':
         validate_only = request.form.get('operation') != 'update'
@@ -485,6 +493,7 @@ def update_configmap_page():
 
 
 @permission_required('kubernetes_configmaps.delete')
+@cluster_required('ConfigMap Management')
 def delete_configmap_page():
     if request.method == 'POST':
         validate_only = request.form.get('operation') != 'delete'

@@ -55,6 +55,7 @@ def main() -> int:
         'verify_operational_dashboard_standard.py',
         'verify_inventory_final_lock.py',
         'verify_governance_final_lock.py',
+        'verify_kubernetes_operations_final_lock.py',
         'verify_node_inventory_standard.py',
         'verify_namespace_inventory_standard.py',
         'verify_configuration_inventory_standard.py',

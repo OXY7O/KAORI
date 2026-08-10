@@ -1,5 +1,6 @@
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[3]
 OPERATION_TEMPLATES = (
     'app/templates/kubernetes_operations/configmaps/create.html',
     'app/templates/kubernetes_operations/configmaps/update.html',
@@ -10,18 +11,21 @@ OPERATION_TEMPLATES = (
 )
 
 
-def test_shared_guidance_shell_supports_chevron_only_compact_action():
-    shell = Path('app/templates/components/view_more_content.html').read_text()
-    guide = Path('app/templates/components/information_guide_card.html').read_text()
+def test_shared_operation_ui_owns_full_width_workflow_guidance() -> None:
+    component = (ROOT / 'app/templates/components/kubernetes_operation_ui.html').read_text(encoding='utf-8')
+    assert 'macro workflow_control' in component
+    assert 'components/operational_point_flow.html' in component
+    assert 'data-kubernetes-operation-workflow' in component
+    assert 'data-kubernetes-operation-guardrails' in component
+    assert 'form_action_bar.render' in component
+    assert 'embedded=true' in component
 
-    assert 'compact_action=false' in shell
-    assert 'grid-cols-[auto_minmax(0,1fr)_auto]' in shell
-    assert '{% if not compact_action %}' in shell
-    assert 'sr-only group-open:hidden' in shell
-    assert 'compact_action=compact_action' in guide
 
-
-def test_secret_and_configmap_operation_rails_use_compact_action():
-    for template_path in OPERATION_TEMPLATES:
-        template = Path(template_path).read_text()
-        assert 'compact_action=true' in template, template_path
+def test_secret_and_configmap_crud_pages_do_not_restore_right_rail_guidance() -> None:
+    for relative in OPERATION_TEMPLATES:
+        template = (ROOT / relative).read_text(encoding='utf-8')
+        assert 'data-kubernetes-operation-layout="full-width-v2"' in template
+        assert 'context_rail.html' not in template
+        assert 'information_guide_card.html' not in template
+        assert 'info_flow.html' not in template
+        assert 'workflow_control(' in template

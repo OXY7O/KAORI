@@ -20,23 +20,13 @@ def test_global_gate_guidance_uses_compact_activation_tip() -> None:
     assert '<span class="mt-1.5 block text-xs leading-5 text-status-warning-text">' not in page
 
 
-def test_protected_reveal_returns_to_natural_context_rail_height() -> None:
-    context_rail = read('app/templates/components/context_rail.html')
+def test_protected_reveal_uses_full_width_lifecycle_without_context_rail() -> None:
     page = read('app/templates/kubernetes_operations/secrets/reveal.html')
-
-    assert "layout_classes(width='default')" in context_rail
-    assert 'xl:items-start' in context_rail
-    assert 'rail_classes()' in context_rail
-    assert 'items-stretch' not in context_rail
-    assert "align='start'" not in context_rail
-    assert 'rail_classes(fill=false)' not in context_rail
-
-    assert "context_rail.layout_classes('wide')" in page
-    assert 'context_rail.rail_classes()' in page
-    assert "context_rail.layout_classes('wide', 'stretch')" not in page
-    assert 'context_rail.rail_classes(true)' not in page
-    assert "extra_classes='h-full'" not in page
-
+    assert 'data-kubernetes-operation-layout="full-width-v2"' in page
+    assert 'context_rail.html' not in page
+    assert 'context_rail.layout_classes' not in page
+    assert 'Protected Reveal Lifecycle' in page
+    assert 'secret_ui.workflow_control(' in page
 
 def test_administration_readiness_and_boundary_cards_use_content_height() -> None:
     page = read('app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html')

@@ -16,6 +16,7 @@ from flask_login import current_user
 
 from app.extensions.db import db
 from app.extensions.limiter import limiter
+from app.kubernetes_operations.operation_flow import cluster_required
 from app.kubernetes_operations.secrets.reveal_service import (
     ActiveRevealRequestExists,
     create_reveal_request,
@@ -162,6 +163,7 @@ def _reveal_request_metadata(record: Any) -> dict[str, Any]:
 
 
 @any_permission_required('kubernetes_secrets.reveal', 'kubernetes_secrets.approve_reveal')
+@cluster_required('Protected Secret Reveal')
 def reveal_secret_page():
     selected_cluster_id = request.args.get('cluster_id', '')
     selected_namespace = request.args.get('namespace', '')
@@ -198,6 +200,7 @@ def reveal_secret_page():
 
 
 @any_permission_required('kubernetes_secrets.reveal', 'kubernetes_secrets.approve_reveal')
+@cluster_required('Protected Secret Reveal')
 def reveal_secret_status():
     return render_template(
         'kubernetes_operations/secrets/_reveal_request_status.html',
@@ -206,6 +209,7 @@ def reveal_secret_status():
 
 
 @permission_required('kubernetes_secrets.approve_reveal')
+@cluster_required('Protected Secret Reveal')
 def reveal_secret_approvals():
     return render_template(
         'kubernetes_operations/secrets/_reveal_pending_approvals.html',
@@ -214,6 +218,7 @@ def reveal_secret_approvals():
 
 
 @permission_required('kubernetes_secrets.reveal')
+@cluster_required('Protected Secret Reveal')
 def reveal_secret_workspace():
     return render_template(
         'kubernetes_operations/secrets/_reveal_target_workspace.html',
@@ -227,6 +232,7 @@ def reveal_secret_workspace():
 
 
 @permission_required('kubernetes_secrets.reveal')
+@cluster_required('Protected Secret Reveal')
 def reveal_secret_content():
     return render_template(
         'kubernetes_operations/secrets/_reveal_request_form.html',
@@ -249,6 +255,7 @@ def reveal_secret_content():
     methods=['POST'],
     key_func=lambda: f'user:{current_user.get_id()}',
 )
+@cluster_required('Protected Secret Reveal')
 def request_secret_reveal():
     try:
         _validate_secret_operation_csrf()
@@ -342,6 +349,7 @@ def request_secret_reveal():
     methods=['POST'],
     key_func=lambda: f'user:{current_user.get_id()}',
 )
+@cluster_required('Protected Secret Reveal')
 def reauthenticate_secret_reveal():
     try:
         _validate_secret_operation_csrf()
@@ -407,6 +415,7 @@ def reauthenticate_secret_reveal():
 
 
 @permission_required('kubernetes_secrets.approve_reveal')
+@cluster_required('Protected Secret Reveal')
 def decide_secret_reveal_request(request_id: str):
     decision = (request.form.get('decision') or '').strip().lower()
     try:
@@ -495,6 +504,7 @@ def decide_secret_reveal_request(request_id: str):
     methods=['POST'],
     key_func=lambda: f'user:{current_user.get_id()}',
 )
+@cluster_required('Protected Secret Reveal')
 def reveal_secret_value(request_id: str):
     feedback: dict[str, Any]
     revealed_value = None

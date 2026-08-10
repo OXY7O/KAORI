@@ -14,6 +14,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ### Changed
 
+- Rebuilt Kubernetes Operations ConfigMap/Secret mutation workspaces as **Full-Width Mutation Workspace v2**, replacing the retired content right rail with bounded target/payload/impact sections plus shared workflow, guardrail, and embedded-action controls.
 - Rebuilt TLS Certificate Detail into the compact `evidence-workspace-v2` composition, grouping identity/validity, coverage/consumers, and collection/Governance evidence instead of nested detail-card stacks.
 - Refined `Target TLS Secret` into a three-column identity strip plus compact posture metrics and a dedicated Issuer/Fingerprint row, retiring the space-heavy target/posture split.
 - Hardened Kubernetes Governance request ownership so TLS cluster/readiness blockers execute only after route RBAC, while preserving the locked TLS registry, worker sync, operational feedback, and rotation handoff design.
@@ -49,6 +50,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ### Security
 
+- Closed a Kubernetes Operations authorization-order regression by retiring the Blueprint clusterless `before_request`; ConfigMap, Secret, Protected Reveal, and TLS cluster prerequisites now execute only after route RBAC.
 - Closed a Governance authorization-order regression where Blueprint-level clusterless handling could respond before `tls_certificates.view` / `tls_certificates.sync`; readiness now runs only inside authorized TLS request paths.
 - Closed an Inventory authorization-order regression where Blueprint-level clusterless HTMX handling could respond before route-level `inventory.view`; readiness evaluation now occurs only after authorization.
 - Narrowed 21 database, credential-decoding, and report-catalog exception boundaries to explicit exception classes; the broad-exception burn-down ceiling remains 198 rather than increasing with the stale ledger.

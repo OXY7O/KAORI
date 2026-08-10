@@ -61,3 +61,18 @@ The Inventory integration read-model test validates current-generation filtering
 
 
 - Kubernetes Governance final recheck: `verify_governance_final_lock.py` plus Unit, Functional, Integration, Security, Rendering/UI, E2E, and Governance Contract evidence are mandatory after the domain is reviewed.
+
+## Kubernetes Operations final recheck
+
+```bash
+pytest -q tests/unit/kubernetes_operations -m unit
+pytest -q tests/kubernetes_operations -m functional
+pytest -q tests/integration/kubernetes_operations -m integration
+pytest -q tests/security/kubernetes_operations -m security
+pytest -q tests/rendering/kubernetes_operations -m rendering
+pytest -q tests/e2e/kubernetes_operations -m e2e
+pytest -q tests/contracts/kubernetes_operations -m contract
+```
+
+Kubernetes Operations E2E smoke exercises real Flask routing/session/application-shell rendering with Kubernetes infrastructure isolated. Live-provider semantics are covered in Integration and domain Functional tests. The final-lock security contract requires RBAC to execute before the cluster prerequisite on every ConfigMap, Secret, Protected Reveal, and TLS operation route.
+

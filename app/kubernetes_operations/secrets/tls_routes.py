@@ -10,9 +10,9 @@ from flask import (
     url_for,
 )
 
-from app.cluster.onboarding import has_registered_clusters
 from app.governance.tls_certificates.service import get_tls_certificate_detail, get_tls_certificate_page
 from app.governance.tls_certificates.updates import apply_bulk_update, apply_certificate_update, preview_uploaded_pair
+from app.kubernetes_operations.operation_flow import cluster_required
 from app.kubernetes_operations.secrets.route_support import (
     notification_response_context as _notification_response_context,
 )
@@ -157,10 +157,8 @@ def _record_validation_activity(
 
 
 @permission_required('kubernetes_secrets.rotate_tls')
+@cluster_required('TLS Secret Rotation')
 def tls_secret_rotate(certificate_id: int):
-    if has_registered_clusters() is False:
-        return redirect(url_for('governance.tls_certificates'))
-
     record = get_tls_certificate_detail(certificate_id)
     if record is None:
         _record_secret_activity(
@@ -181,6 +179,7 @@ def tls_secret_rotate(certificate_id: int):
 
 
 @permission_required('kubernetes_secrets.rotate_tls')
+@cluster_required('TLS Secret Rotation')
 def tls_secret_rotate_preview(certificate_id: int):
     csrf_failure = _tls_csrf_guard(url_for('kubernetes_operations.tls_secret_rotate', certificate_id=certificate_id))
     if csrf_failure is not None:
@@ -216,6 +215,7 @@ def tls_secret_rotate_preview(certificate_id: int):
 
 
 @permission_required('kubernetes_secrets.rotate_tls')
+@cluster_required('TLS Secret Rotation')
 def tls_secret_rotate_apply(certificate_id: int):
     csrf_failure = _tls_csrf_guard(url_for('kubernetes_operations.tls_secret_rotate', certificate_id=certificate_id))
     if csrf_failure is not None:
@@ -275,10 +275,8 @@ def tls_secret_rotate_apply(certificate_id: int):
 
 
 @permission_required('kubernetes_secrets.bulk_rotate_tls')
+@cluster_required('TLS Secret Rotation')
 def tls_secret_bulk_rotation_page():
-    if has_registered_clusters() is False:
-        return redirect(url_for('governance.tls_certificates'))
-
     payload = get_tls_certificate_page(request.args)
     partial_mode = request.args.get('partial_mode')
 
@@ -306,6 +304,7 @@ def tls_secret_bulk_rotation_page():
 
 
 @permission_required('kubernetes_secrets.bulk_rotate_tls')
+@cluster_required('TLS Secret Rotation')
 def tls_secret_bulk_rotation_preview():
     csrf_failure = _tls_csrf_guard(url_for('kubernetes_operations.tls_secret_bulk_rotation'))
     if csrf_failure is not None:
@@ -342,6 +341,7 @@ def tls_secret_bulk_rotation_preview():
 
 
 @permission_required('kubernetes_secrets.bulk_rotate_tls')
+@cluster_required('TLS Secret Rotation')
 def tls_secret_bulk_rotation_apply():
     csrf_failure = _tls_csrf_guard(url_for('kubernetes_operations.tls_secret_bulk_rotation'))
     if csrf_failure is not None:

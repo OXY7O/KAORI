@@ -16,7 +16,8 @@ def test_secret_management_uses_canonical_split_route_ownership() -> None:
     assert not (ROOT / 'tests/kubernetes_operations/test_secret_delete_workflow.py').exists()
     tls_routes = read('app/kubernetes_operations/secrets/tls_routes.py')
     overview = read('app/kubernetes_operations/secrets/service.py')
-    assert 'from app.governance.tls_certificates.service import (' in tls_routes
+    assert 'from app.governance.tls_certificates.service import' in tls_routes
+    assert 'get_tls_certificate_detail' in tls_routes and 'get_tls_certificate_page' in tls_routes
     assert 'apply_bulk_update' not in overview and '__all__' not in overview
     tls_service = read('app/governance/tls_certificates/service.py')
     tls_updates = read('app/governance/tls_certificates/updates.py')
@@ -24,7 +25,10 @@ def test_secret_management_uses_canonical_split_route_ownership() -> None:
     assert "'cert_bytes':" not in tls_updates and "'key_bytes':" not in tls_updates
     assert 'def preview_uploaded_pair' not in tls_service
     assert 'def apply_certificate_update' not in tls_service
-    assert 'from app.governance.tls_certificates.updates import (' in tls_routes
+    assert 'from app.governance.tls_certificates.updates import' in tls_routes
+    assert all(
+        name in tls_routes for name in ('apply_bulk_update', 'apply_certificate_update', 'preview_uploaded_pair')
+    )
     assert 'read_namespaced_secret(' in tls_mutation
     assert "for dry_run in ('All', None)" in tls_mutation
     assert "'metadata': {'resourceVersion': resource_version}" in tls_mutation

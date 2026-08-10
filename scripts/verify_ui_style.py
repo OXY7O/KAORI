@@ -46,6 +46,7 @@ _NEXT = re.compile(r'>\s*Next\s*<', re.IGNORECASE)
 _TABLIST = re.compile(r'role=[\"\']tablist[\"\']', re.IGNORECASE)
 _APPROVED_SEMANTIC_BORDER_COMPONENTS = {
     'app/templates/components/operational_callout.html',
+    'app/templates/components/kubernetes_operation_ui.html',
 }
 _APPROVED_STANDARD_SURFACE_COMPONENTS = {
     'app/templates/components/table.html',
@@ -56,6 +57,7 @@ _APPROVED_STANDARD_SURFACE_COMPONENTS = {
     'app/templates/components/operation_evidence_boundary.html',
     'app/templates/components/protected_value_panel.html',
     'app/templates/components/activity_status_card.html',
+    'app/templates/components/kubernetes_operation_ui.html',
 }
 
 _APPROVED_ARBITRARY_TEXT_COMPONENTS = {

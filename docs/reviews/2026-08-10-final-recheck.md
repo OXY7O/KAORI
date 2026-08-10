@@ -106,7 +106,7 @@ The Dashboard remains read-only and provider-free on the web request path; autho
 
 ## 03 — Kubernetes Inventory
 
-Current verdict: **TARGETED FIX — LOCK REMAINS**
+Current verdict: **PASS — LOCKED**
 
 No visual redesign is introduced. The approved Inventory Overview/resource/Topology composition remains the baseline.
 
@@ -161,7 +161,7 @@ Inventory remains design-locked. This targeted modal-alignment fix does not reop
 
 ## 04 — Kubernetes Governance
 
-Current verdict: **TARGETED FIX — AUTHORITATIVE VALIDATION PENDING**
+Current verdict: **PASS — LOCKED**
 
 No visual redesign is introduced. The accepted Governance Overview and TLS Certificate Registry remain the baseline.
 
@@ -179,6 +179,25 @@ No visual redesign is introduced. The accepted Governance Overview and TLS Certi
 
 Governance becomes **PASS — LOCKED** only after authoritative Static Quality, Contract, Unit, Functional, Integration, Security, Rendering/UI, E2E, browser smoke, and full release gate pass.
 
+## 05 — Kubernetes Operations
+
+Current verdict: **TARGETED FIX — AUTHORITATIVE VALIDATION PENDING**
+
+The final recheck intentionally reopens presentation composition because retiring the former content right rail left ConfigMap and Secret CRUD workspaces stretched across the available width. The product/security contracts remain stable; the UI is recomposed as **Full-Width Mutation Workspace v2** rather than restoring the rail.
+
+### Findings and dispositions
+
+1. **AuthZ-before-readiness fixed.** The Kubernetes Operations Blueprint clusterless `before_request` is retired. `cluster_required()` executes only inside route RBAC for ConfigMap, Secret CRUD, Protected Reveal, and TLS operations.
+2. **CRUD composition rebuilt.** ConfigMap Create/Update/Delete and Secret Create/Replace/Delete use bounded full-width target/payload/impact sections plus one shared workflow/guardrail/action control.
+3. **Protected Reveal and Bulk TLS aligned.** Both retire the content rail while preserving protected-value, approval, target-selection, and validation contracts.
+4. **Shared ownership increased.** `kubernetes_operation_ui.html` owns workspace sections and workflow controls; page-local rail/workflow variants are not retained.
+5. **L0–L7 evidence added.** Operations now has dedicated Contract, Unit, Functional, Integration, Security, Rendering/UI, E2E, and final-lock evidence.
+6. **Documentation debt removed.** Domain READMEs and the canonical Operations pattern no longer direct engineers back to the retired 22rem sticky rail.
+
+### Lock condition
+
+Operations becomes **PASS — LOCKED** only after authoritative Static Quality, all L0–L7 evidence, browser regression across ConfigMap/Secret workflows, and the full release gate pass.
+
 ## Next review
 
-`05 — Kubernetes Operations` starts only after Kubernetes Governance reaches `PASS — LOCKED`.
+`06 — Kubernetes Analytics` starts only after Kubernetes Operations reaches `PASS — LOCKED`.

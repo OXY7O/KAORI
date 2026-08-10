@@ -62,7 +62,7 @@ Impact context can lag behind the live object. The UI must label it as inventory
 ## UI contract
 
 - The landing page uses Compact Hero, Live Mutation Evidence Boundary, and Operational Workflow Catalog.
-- Create, Update, and Delete use the canonical primary workspace plus shared Right Context Rail.
+- Create, Update, and Delete use **Full-Width Mutation Workspace v2**; the retired content right rail must not return.
 - Form labels use 12 px semibold typography; normal controls use a 40 px minimum height and proportional 14 px values.
 - ConfigMap text and binary rows use `components/structured_entry_editor.html`.
 - Raw payload fields may retain monospace typography; ordinary identity and configuration values remain proportional.
@@ -97,7 +97,7 @@ Impact context can lag behind the live object. The UI must label it as inventory
 - Create and Update use the reusable validation action bar. Final mutation actions stay neutral and disabled until the latest payload passes validation.
 - Dynamic entry handling and cluster/namespace dependency behavior live in `app/static/js/configmap_editor.js`; templates no longer embed imperative `onchange` handlers or per-partial scripts.
 - Every ConfigMap hero uses the canonical `page_hero.context_card()` posture panel: one eyebrow/title header, one compact semantic status, two operational metrics, and one full-width contextual CTA. The panel contains no descriptive paragraph and does not own mutation submission.
-- Create, Update, and Delete use the canonical `components/info_flow.html` timeline for operational steps. Custom dark workflow cards and domain-specific workflow-step markup are not retained.
+- Create, Update, and Delete use `components/kubernetes_operation_ui.html::workflow_control()` for one full-width operational flow, guardrail grid, and embedded canonical action bar. Page-local workflow cards and a secondary right rail are not retained.
 
 ### Shared action-bar contract
 
@@ -105,12 +105,13 @@ Impact context can lag behind the live object. The UI must label it as inventory
 - The canonical `action_bar` macro owns call-block rendering so validation and mutation controls use one runtime-safe implementation.
 - Direct component ownership and wrapper absence are covered by `tests/contracts/kubernetes/test_operation_component_caller_contract.py`.
 
-### Hero navigation and delete layout
+### Hero navigation and full-width workflow layout
 
 - The ConfigMap Management hero links to Kubernetes cluster management.
 - Create, update, and delete workflow heroes return to ConfigMap Management.
-- Delete flow and guardrails are grouped inside one sticky right-column wrapper. They must never be separate grid rows, because a sticky flow card would overlap guardrails while the page scrolls.
-
+- Mutation pages use `data-kubernetes-operation-layout="full-width-v2"` and shared full-width sections for target identity, payload/current state, validation evidence, workflow steps, guardrails, and embedded actions.
+- Content right rails are retired for ConfigMap CRUD. A mutation form must never be widened by simply deleting the rail; its information hierarchy must be recomposed through shared `workspace_section()` and `workflow_control()` primitives.
+- The Hero right-side context panel remains part of the canonical Hero and is not a content right rail.
 
 ## Current KAORI operations pattern
 
@@ -119,7 +120,7 @@ The canonical presentation is documented in `docs/design/patterns/KUBERNETES_CON
 
 ## Workspace density
 
-Create, Update, and Delete use the shared 22rem wide mutation rail. Primary Info Flow remains visible. Secondary guardrail collections are expandable and closed by default. Form Action Bar remains within the primary workspace and separates its title from helper copy.
+Create, Update, and Delete use **Full-Width Mutation Workspace v2**. Target identity and mutation payload remain separate sections; validation evidence stays adjacent to the form state it validates; workflow steps and four compact guardrails form one shared control section; the Form Action Bar is embedded at the end of that section. The layout must remain dense on a 14-inch viewport and stack naturally on narrow screens without restoring a sticky content rail.
 
 
 ## Canonical service boundaries

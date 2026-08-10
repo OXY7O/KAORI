@@ -29,25 +29,44 @@ Every mutation workspace distinguishes three authorities:
 
 Inventory impact evidence is best effort. It must not be described as complete dependency analysis.
 
-## Canonical mutation workspace
+## Canonical mutation workspace — Full-Width Mutation Workspace v2
 
 ```text
 Compact Hero
 Evidence Boundary
-Primary Form + Right Context Rail
+Target / Identity
+Payload, Current State, or Impact
 Validation Evidence
-Canonical Form Action Bar
+Workflow Steps + Guardrails
+Embedded Canonical Form Action Bar
 ```
 
 Rules:
 
-- primary work appears before the context rail in DOM order;
-- context rail uses `components/context_rail.html` with the shared 22rem `wide` variant;
+- content right rails are retired for ConfigMap Create/Update/Delete and Secret Create/Replace/Delete/Protected Reveal/Bulk TLS Rotation;
+- removing a rail is not sufficient: the former primary column must be recomposed into bounded full-width sections through `components/kubernetes_operation_ui.html`;
+- `workspace_section()` owns section geometry and `workflow_control()` owns the operational point flow, compact guardrail grid, warning/note, and embedded action bar;
 - controls use 40 px geometry and 12 px labels;
 - mutation remains validation-gated, but the server always performs a fresh provider validation immediately before mutation;
-- primary Info Flow remains visible; secondary summaries, policies, guardrails, and related guidance are expandable and closed by default;
-- Form Action Bar remains inside the primary column and separates its title from concise helper copy;
-- detailed instructions belong in Info Flow or a focused guidance card, not repeated across Hero, form, rail, and footer.
+- target identity, payload/current state, validation evidence, and destructive impact remain visually distinct rather than becoming one stretched card;
+- the canonical Hero may still own a right-side Context/Status/Action accessory; that Hero accessory is not a content right rail;
+- light/dark, keyboard focus, HTMX loading, error states, and 14-inch/narrow responsive behavior are mandatory.
+
+### Request security order
+
+Every protected Kubernetes Operations route follows:
+
+```text
+Authentication
+→ RBAC permission
+→ cluster prerequisite
+→ CSRF / request validation
+→ live Kubernetes read or mutation
+→ Activity Audit / Operational Feedback
+```
+
+The canonical boundary is **AuthZ → cluster prerequisite → request validation → live provider**. The cluster prerequisite is implemented with `cluster_required()` inside the route permission boundary. A Blueprint `before_request` must not return cluster onboarding/readiness responses before authorization.
+
 
 ## ConfigMap entry editing
 
@@ -55,7 +74,7 @@ ConfigMap text and binary entries use Structured Entry Editor. Update keeps Merg
 
 ## Secret creation and replacement
 
-Secret Type uses Operational Choice Card Group with responsive 1/2/3-column reflow. The selected option uses a strong Violet boundary, selected surface, check icon, and explicit `Selected` marker; changing only the rail summary is insufficient. Existing values are never rendered in Replace. Blank replacement inputs mean unchanged; submitted values mean replace.
+Secret Type uses Operational Choice Card Group with the canonical responsive 1/2/3-column reflow. The selected option uses a strong Violet boundary, selected surface, check icon, and explicit `Selected` marker; changing only the rail summary is insufficient. Existing values are never rendered in Replace. Blank replacement inputs mean unchanged; submitted values mean replace.
 
 Use the wording `No KAORI Value Persistence`: values are processed transiently and excluded from KAORI storage, notifications, and audit metadata. Do not claim the process never receives plaintext.
 
@@ -92,7 +111,7 @@ Reveal registries and bulk TLS target tables use scoped HTMX pagination with exp
 
 ## Bulk TLS Rotation layout
 
-Bulk TLS Rotation presents certificate and private-key upload as two peer main-content cards. A compact file-processing boundary follows them. The five-step Controlled TLS Rotation Flow is rendered full width beneath the upload cards through `components/operational_flow_steps.html`, using arrows rather than a tall side column. Validation actions remain in the canonical Form Action Bar beneath the flow.
+Bulk TLS Rotation presents certificate and private-key upload as two peer main-content cards. A compact file-processing boundary follows them. The five-step Controlled TLS Rotation Flow is rendered full width after upload and target selection through the shared `workflow_control()` primitive. Validation/update actions are embedded in the same control section rather than separated into a side panel.
 
 Single TLS rotation also uses a full-width workspace. `Target TLS Secret` is a compact identity-first section: Cluster, Namespace, and Secret form one three-column strip; Current TLS Posture follows with a four-metric grid and a separate Issuer/Fingerprint row so long technical values have enough width. The retired target/posture split must not return. `Replacement Certificate Pair & Validation` combines the peer `tls.crt` / `tls.key` upload cards, guardrails, validation result, and an embedded canonical action bar. `Controlled Rotation & Governance Posture` renders `components/operational_point_flow.html` full-width and follows it with one compact horizontal Governance evidence strip; the retired large side panel and sticky right-side controlled-flow/posture rail must not return.
 
