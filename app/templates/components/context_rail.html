@@ -7,8 +7,13 @@
   readiness block.
 #}
 {% macro layout_classes(width='default') -%}
-    grid gap-6 {{ 'xl:grid-cols-[minmax(0,1fr) _22rem]' if width == 'wide' else 'xl:grid-cols-[minmax(0,1fr)_20rem]' }} xl:items-start
+    {% if width == 'wide' -%}
+        grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start
+    {%- else -%}
+        grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start
+    {%- endif %}
 {%- endmacro %}
+
 {% macro main_classes() -%}
     min-w-0 space-y-6
 {%- endmacro %}

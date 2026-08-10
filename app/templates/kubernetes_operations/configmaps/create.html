@@ -1,7 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/operation_evidence_boundary.html" as evidence_boundary %}
-{% import "components/context_rail.html" as context_rail %}
 {% import "components/live_lookup_notice.html" as live_lookup %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/kubernetes_operation_ui.html" as configmap_ui %}
@@ -9,9 +8,9 @@
 {% import "components/information_guide_card.html" as information_guide_card %}
 {% block title %}Create ConfigMap{% endblock title %}
 {% block dashboard_content %}
-    <div class="grid gap-6"
-         data-kubernetes-operation-layout="context-rail-v4"
-         data-kubernetes-operation-experience="task-focused-v4">
+    <div class="space-y-6"
+         data-kubernetes-operation-layout="integration-form-v6"
+         data-kubernetes-operation-experience="integration-reference-v6">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
@@ -31,10 +30,7 @@
                     'Controlled ConfigMap Creation',
                     'Create Only',
                     'info',
-                    [
-                        ('scan-search', 'Validation', 'Required', 'Server-side dry-run', true),
-                        ('target', 'Target Scope', 'Single', 'One live object')
-                    ],
+                    [('scan-search', 'Validation', 'Required', 'Server-side dry-run', true), ('target', 'Target Scope', 'Single', 'One live object')],
                     'Back to ConfigMap Management',
                     url_for('kubernetes_operations.configmap_management'),
                     'arrow-left'
@@ -52,15 +48,35 @@
               hx-swap="innerHTML"
               hx-sync="this:drop"
               hx-disabled-elt="find button"
-              class="space-y-6">
+              class="grid gap-6 xl:grid-cols-12 xl:items-start">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="{{ context_rail.layout_classes('wide') }}">
-                <main class="{{ context_rail.main_classes() }}">
-                    {% call configmap_ui.workspace_section('map-pin', 'Target & Identity', 'Choose one live namespace and define a create-only ConfigMap name.', marker='configmap-target') %}
-                        <div class="grid gap-5 lg:grid-cols-3">
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-span-8"
+                     data-kubernetes-operation-form="configmap-create">
+                <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
+                            <i data-lucide="file-plus-2" class="h-5 w-5" aria-hidden="true"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h2 class="text-base font-semibold text-content-primary">ConfigMap Definition</h2>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">Choose the live target, define application configuration data, and validate the exact create-only object before persistence.</p>
+                        </div>
+                    </div>
+                </header>
+                <div class="space-y-6 p-5 sm:p-6">
+                    <section>
+                        <div class="mb-4 flex items-start gap-3">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
+                                <i data-lucide="map-pin" class="h-4 w-4" aria-hidden="true"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold text-content-primary">Target &amp; Identity</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Select one registered cluster, one live namespace, and a create-only Kubernetes object name.</p>
+                            </div>
+                        </div>
+                        <div class="grid gap-5 lg:grid-cols-2">
                             <label class="block min-w-0">
-                                <span class="text-xs font-semibold text-content-primary">Cluster</span>
-                                <span class="mt-1 block text-xs leading-5 text-content-muted">Registered cluster that owns the target namespace.</span>
+                                <span class="mb-1.5 block text-sm font-semibold text-content-primary">Cluster</span>
                                 <select name="cluster_id"
                                         required
                                         hx-get="{{ url_for('kubernetes_operations.configmap_namespace_options') }}"
@@ -68,39 +84,42 @@
                                         hx-swap="outerHTML"
                                         hx-include="this"
                                         data-configmap-cluster
-                                        class="mt-2 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                                     <option value="">Select cluster</option>
                                     {% for cluster in clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}
                                 </select>
+                                <p class="mt-1.5 text-xs leading-5 text-content-muted">Registered cluster that owns the target namespace.</p>
                             </label>
                             {% include 'kubernetes_operations/configmaps/_namespace_options.html' %}
-                            <label class="block min-w-0">
-                                <span class="flex items-center justify-between gap-2">
-                                    <span class="text-xs font-semibold text-content-primary">ConfigMap Name</span>
-                                    {{ table_label.status_label('Create Only', 'normal', 'shield-check') }}
-                                </span>
-                                <span class="mt-1 block text-xs leading-5 text-content-muted">Use a stable DNS-compatible object name.</span>
-                                <input id="configmap-name"
-                                       name="configmap_name"
-                                       required
-                                       disabled
-                                       placeholder="Select namespace first"
-                                       autocomplete="off"
-                                       class="mt-2 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-                            </label>
                         </div>
+                        <label class="mt-5 block min-w-0">
+                            <span class="mb-1.5 flex items-center justify-between gap-2">
+                                <span class="text-sm font-semibold text-content-primary">ConfigMap Name</span>
+                                {{ table_label.status_label('Create Only', 'normal', 'shield-check') }}
+                            </span>
+                            <input id="configmap-name"
+                                   name="configmap_name"
+                                   required
+                                   disabled
+                                   placeholder="Select namespace first"
+                                   autocomplete="off"
+                                   class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                            <p class="mt-1.5 text-xs leading-5 text-content-muted">Use a stable DNS-compatible name. Existing ConfigMaps are never overwritten by this workflow.</p>
+                        </label>
                         <div id="configmap-live-lookup-notice" class="mt-4">
                             {% if namespace_error %}{{ live_lookup.warning('Live namespace lookup failed', namespace_error, '') }}{% endif %}
                         </div>
-                    {% endcall %}
+                    </section>
 
-                    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                        <div class="flex flex-col gap-4 border-b border-outline-default bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated">
+                        <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
                             <div class="flex min-w-0 items-start gap-3">
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="braces" class="h-4 w-4"></i></span>
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
+                                    <i data-lucide="braces" class="h-4 w-4" aria-hidden="true"></i>
+                                </span>
                                 <div class="min-w-0">
-                                    <h2 class="text-sm font-semibold text-content-primary">ConfigMap Data</h2>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Add the keys consumed by the workload. Use Binary/Base64 only when the application requires it.</p>
+                                    <h3 class="text-sm font-semibold text-content-primary">ConfigMap Data</h3>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Add the configuration keys consumed by the workload. Use Binary/Base64 only when the application requires it.</p>
                                 </div>
                             </div>
                             <label class="inline-flex min-h-9 shrink-0 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary shadow-sm">
@@ -110,61 +129,58 @@
                                        class="rounded border-outline-strong text-kaori-primary focus:ring-outline-focus">
                                 Immutable
                             </label>
-                        </div>
-                        <div class="p-5 sm:p-6">
+                        </header>
+                        <div class="p-4 sm:p-5">
                             {% set entries = [('', {'kind': 'text', 'value': ''})] %}
+                            {% set configmap_entry_task_focused = false %}
                             {% include 'kubernetes_operations/configmaps/_entries_editor.html' %}
                         </div>
                     </section>
 
-                    {% set validation_preview = none %}
-                    {% include 'kubernetes_operations/configmaps/_validation_preview.html' %}
-                    {% call configmap_ui.action_bar('scan-search', 'Validate Before Creation', 'Validate the latest target and data before creating this ConfigMap.') %}
-                        <button name="operation"
-                                value="validate"
-                                class="{{ configmap_ui.validate_button_classes() }}"><i data-lucide="scan-search" class="h-4 w-4"></i>Validate</button>
-                        <button name="operation"
-                                value="create"
-                                data-validation-apply
-                                disabled
-                                aria-disabled="true"
-                                title="Run validation after the latest input change before applying this operation"
-                                class="{{ configmap_ui.primary_button_classes() }}"><i data-lucide="file-plus-2" class="h-4 w-4"></i>Create ConfigMap</button>
-                    {% endcall %}
-                </main>
+                    <section>
+                        <div class="mb-4 flex items-start gap-3">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
+                                <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold text-content-primary">Validation</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Kubernetes server-side dry-run must accept the latest form state before creation is enabled.</p>
+                            </div>
+                        </div>
+                        {% set validation_preview = none %}
+                        {% include 'kubernetes_operations/configmaps/_validation_preview.html' %}
+                    </section>
+                </div>
+                {% call configmap_ui.action_bar('scan-search', 'Validate Before Creation', 'Validate the latest target and data before creating this ConfigMap.', embedded=true) %}
+                    <button name="operation"
+                            value="validate"
+                            class="{{ configmap_ui.validate_button_classes() }}"><i data-lucide="scan-search" class="h-4 w-4"></i>Validate</button>
+                    <button name="operation"
+                            value="create"
+                            data-validation-apply
+                            disabled
+                            aria-disabled="true"
+                            title="Run validation after the latest input change before applying this operation"
+                            class="{{ configmap_ui.primary_button_classes() }}"><i data-lucide="file-plus-2" class="h-4 w-4"></i>Create ConfigMap</button>
+                {% endcall %}
+            </section>
 
-                <aside class="{{ context_rail.rail_classes() }} xl:sticky xl:top-6">
-                    {% set configmap_create_flow = [
-                        ('Select Target', 'Choose the registered cluster and a namespace loaded from the live Kubernetes API.'),
-                        ('Define Data', 'Add text values or valid base64 binary values and choose whether the ConfigMap is immutable.'),
-                        ('Validate', 'Run a Kubernetes server-side dry-run against the latest form state without creating anything.'),
-                        ('Create', 'Submit exactly the validated create-only manifest. Name conflicts stop without overwrite.')
-                    ] %}
-                    {{ info_flow.render(
-                        'Create ConfigMap Flow',
-                        'Four bounded steps from definition to a live object.',
-                        configmap_create_flow,
-                        icon='workflow',
-                        note='Changing the target, data, or immutable setting invalidates the previous validation.',
-                        note_icon='circle-alert',
-                        open_by_default=true
-                    ) }}
-                    {% set configmap_create_guardrails = [
-                        ('shield-check', 'Create Only', 'An existing ConfigMap with the same name is never overwritten.'),
-                        ('scan-search', 'Validate First', 'The Create action unlocks only after the latest form state passes dry-run.'),
-                        ('radio-tower', 'Live Target', 'Namespace choices come from the selected Kubernetes cluster.'),
-                        ('scroll-text', 'Audited Result', 'Actor, target, operation, and outcome are recorded without copying values.')
-                    ] %}
-                    {{ information_guide_card.render(
-                        'Creation Guardrails',
-                        'Safety boundaries that remain active during this workflow.',
-                        configmap_create_guardrails,
-                        icon='shield-check',
-                        open_by_default=false,
-                        compact_action=true
-                    ) }}
-                </aside>
-            </div>
+            <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5"
+                   aria-label="Create ConfigMap guidance">
+                {% set configmap_create_flow = [('Select Target', 'Choose the registered cluster and a namespace loaded from the live Kubernetes API.'), ('Define Configuration', 'Set the create-only name, configuration keys, content types, and mutability policy.'), ('Validate Object', 'Run Kubernetes server-side dry-run against the latest definition without creating anything.'), ('Create ConfigMap', 'Submit exactly the validated object. Any later input change requires validation again.')] %}
+                {{ info_flow.render('ConfigMap Creation Flow',
+                                    'How a proposed definition becomes one audited live ConfigMap.',
+                                    configmap_create_flow,
+                                    icon='waypoints',
+                                    note='Changing the target, name, data, type, or immutable setting invalidates the previous validation.',
+                                    note_icon='circle-alert',
+                                    open_by_default=true) }}
+                {% set configmap_create_guardrails = [('shield-check', 'Create Only', 'An existing ConfigMap with the same name is never overwritten.'), ('scan-search', 'Validate First', 'Create unlocks only for the exact form state accepted by server-side dry-run.'), ('radio-tower', 'Live Namespace Source', 'Namespace choices are loaded from the selected Kubernetes API.'), ('scroll-text', 'Metadata-Only Audit', 'Actor, target, operation, and result are recorded without copying ConfigMap values.')] %}
+                {{ information_guide_card.render('Creation Safety Contract',
+                                                'Boundaries that remain active throughout this create workflow.',
+                                                configmap_create_guardrails,
+                                                icon='shield-check') }}
+            </aside>
         </form>
     </div>
     <script src="{{ url_for('static', filename='js/configmap_editor.js') }}"></script>

@@ -127,20 +127,28 @@ def main() -> int:
         source = read(relative)
         if relative == 'app/templates/kubernetes_operations/configmaps/create.html':
             for token in (
-                'data-kubernetes-operation-layout="context-rail-v4"',
-                'data-kubernetes-operation-experience="task-focused-v4"',
-                'components/context_rail.html',
-                "context_rail.layout_classes('wide')",
-                'context_rail.rail_classes()',
+                'data-kubernetes-operation-layout="integration-form-v6"',
+                'data-kubernetes-operation-experience="integration-reference-v6"',
+                'grid gap-6 xl:grid-cols-12 xl:items-start',
+                'xl:col-span-8',
+                'space-y-4 xl:col-span-4 xl:sticky xl:top-5',
+                'data-kubernetes-operation-form="configmap-create"',
                 'components/info_flow.html',
                 'components/information_guide_card.html',
-                'Create ConfigMap Flow',
-                'Creation Guardrails',
+                'ConfigMap Definition',
+                'ConfigMap Creation Flow',
+                'Creation Safety Contract',
+                'embedded=true',
             ):
-                require(token in source, f'ConfigMap Create context-rail reference missing: {token}', errors)
+                require(token in source, f'ConfigMap Create integration-reference layout missing: {token}', errors)
             require(
-                'workflow_control(' not in source,
-                'ConfigMap Create must keep workflow guidance in the compact right rail instead of a full-width workflow block.',
+                'components/context_rail.html' not in source,
+                'ConfigMap Create must use the proven static Integration registration grid instead of an experimental task-rail macro.',
+                errors,
+            )
+            require(
+                'workflow_control(' not in source and 'workspace_section(' not in source,
+                'ConfigMap Create must keep one primary form card with internal sections instead of stacked mutation cards.',
                 errors,
             )
             continue
@@ -182,7 +190,7 @@ def main() -> int:
         for retired_wording in ('shared 22rem wide', 'sticky right-column wrapper', 'sticky right column'):
             require(retired_wording not in source, f'{source_name} still documents retired rail wording.', errors)
     require(
-        'Canonical Mutation Workspace — Task-Fit Layout v4' in pattern,
+        'Canonical Mutation Workspace — Task-Fit Layout v5' in pattern,
         'Operations design pattern must document the task-fit v4 layout policy.',
         errors,
     )
@@ -214,7 +222,7 @@ def main() -> int:
 
     print(
         'KAORI Kubernetes Operations final-lock passed: AuthZ-first cluster prerequisites, '
-        'task-appropriate ConfigMap/Secret mutation workspaces, shared context-rail ownership, layered release evidence, '
+        'task-appropriate ConfigMap/Secret mutation workspaces, reviewed Integration registration geometry, layered release evidence, '
         'and canonical shared workflow ownership are aligned.'
     )
     return 0

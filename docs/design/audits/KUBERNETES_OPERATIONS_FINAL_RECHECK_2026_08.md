@@ -29,7 +29,7 @@ Authentication
 
 A clusterless response must never execute before the route permission decorator.
 
-## Full-Width Mutation Workspace v2
+## Mutation Workspace Evolution
 
 The previous 22rem content right rail is retired from ConfigMap CRUD and Secret Create/Replace/Delete/Protected Reveal/Bulk TLS Rotation. Removing the rail alone was not sufficient because the former primary column became visually over-wide. Each workflow was recomposed through shared primitives:
 
@@ -140,7 +140,7 @@ Permanent reviewed-domain evidence is organized as:
 
 ## Task-Focused v4 Browser Correction
 
-Two browser iterations confirmed that a blanket no-rail rule is not appropriate for CRUD mutation forms. Stretching the old primary column across the viewport produced long cards with weak scan hierarchy. Create ConfigMap is therefore reopened as the Task-Focused v4 reference: its main task column owns target/identity, data, validation evidence, and actions, while the shared wide context rail carries only one primary flow and one secondary safety guide. ConfigMap Management and Secret Management keep their original Hero context box + workflow catalog. The v4 geometry is not propagated to Update/Delete/Secret CRUD until this reference is visually accepted.
+Browser review confirmed that both the blanket full-width redesign and the custom v4/v5 task-rail experiments diverged from KAORI's already successful Integration registration forms. Create ConfigMap is therefore rebuilt on the same explicit 12-column form grid used by Add Kubernetes Connection and Register Prometheus/Alertmanager Connection: one `xl:col-span-8` primary form card plus one `xl:col-span-4 xl:sticky xl:top-5` guidance column. Experimental task-rail macros are retired. ConfigMap Management and Secret Management keep their existing Hero context box + workflow catalog. This Integration-derived geometry is not propagated to Update/Delete/Secret CRUD until the Create reference is browser-approved.
 
 The functional release gate was also corrected to remove the nonexistent `tests/kubernetes` directory. Kubernetes Operations functional evidence lives under `tests/kubernetes_operations`. Test harnesses were aligned with current RBAC, CSRF, TLS-policy, and SQLAlchemy exception contracts so failures represent production behavior instead of stale fixtures.
 

@@ -21,14 +21,16 @@ def test_shared_operation_ui_owns_full_width_workflow_guidance() -> None:
     assert 'embedded=true' in component
 
 
-def test_configmap_create_uses_the_shared_right_context_rail_while_other_crud_remains_migration_scope() -> None:
+def test_configmap_create_uses_the_integration_registration_layout_while_other_crud_remains_migration_scope() -> None:
     create = (ROOT / 'app/templates/kubernetes_operations/configmaps/create.html').read_text(encoding='utf-8')
-    assert 'data-kubernetes-operation-layout="context-rail-v4"' in create
-    assert 'data-kubernetes-operation-experience="task-focused-v4"' in create
-    assert 'components/context_rail.html' in create
+    assert 'data-kubernetes-operation-layout="integration-form-v6"' in create
+    assert 'data-kubernetes-operation-experience="integration-reference-v6"' in create
+    assert 'grid gap-6 xl:grid-cols-12 xl:items-start' in create
+    assert 'xl:col-span-8' in create
+    assert 'space-y-4 xl:col-span-4 xl:sticky xl:top-5' in create
     assert 'components/info_flow.html' in create
     assert 'components/information_guide_card.html' in create
-    assert "context_rail.layout_classes('wide')" in create
+    assert 'components/context_rail.html' not in create
     assert 'workflow_control(' not in create
 
     for relative in OPERATION_TEMPLATES[1:]:

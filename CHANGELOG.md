@@ -3,10 +3,9 @@
 All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for release identity.
 
 ## [Unreleased]
-
 ### Changed
 
-- Reopened the Kubernetes Operations CRUD layout after browser review: ConfigMap Management and Secret Management retain their canonical Hero context box/workflow catalog, while Create ConfigMap now uses the shared wide right context rail for concise workflow and safety guidance instead of stretched full-width cards.
+- Rebuilt Create Kubernetes ConfigMap on the proven Integration registration form pattern used by Add Kubernetes Connection and Register Prometheus/Alertmanager Connection: one `xl:col-span-8` primary form card with internal identity/data/validation sections plus one `xl:col-span-4` sticky guidance column; retired the experimental task-rail geometry instead of adding another KAORI layout family.
 
 ### Added
 
@@ -19,7 +18,6 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ### Changed
 
-- Rebuilt `Create Kubernetes ConfigMap` as the first guided mutation experience (`guided-v3`): target/identity, payload, and review/create are now three decision-oriented sections instead of a rail-era form stretched across the viewport.
 - Corrected Kubernetes Operations functional release wiring and test harness assumptions: the nonexistent `tests/kubernetes` path was removed, clusterless onboarding expectations now respect RBAC, standalone Secret template rendering provides CSRF context, Secret create tests isolate TLS policy resolution, and TLS persistence failure tests now emulate `SQLAlchemyError`.
 - Rebuilt Kubernetes Operations ConfigMap/Secret mutation workspaces as **Full-Width Mutation Workspace v2**, replacing the retired content right rail with bounded target/payload/impact sections plus shared workflow, guardrail, and embedded-action controls.
 - Rebuilt TLS Certificate Detail into the compact `evidence-workspace-v2` composition, grouping identity/validity, coverage/consumers, and collection/Governance evidence instead of nested detail-card stacks.
