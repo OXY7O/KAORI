@@ -59,3 +59,32 @@ Do not paginate the current Welcome catalog. Add pagination only when the catalo
 - desktop uses a fixed category anchor and flexible card grid;
 - smaller screens stack the anchor above the cards;
 - semantic reading order is unchanged.
+## Security boundary
+
+- `/` and `/welcome` require an authenticated session.
+- Welcome permission checks control discoverability only; destination routes remain authoritative for authorization.
+- The browser receives only workspace cards already authorized by the server. Search must never fetch capability data or permission metadata.
+- A `None` permission target is allowed only for a genuinely universal authenticated destination; the current exception is personal Settings (`settings.account`).
+- Welcome must remain provider-free: no Kubernetes, Prometheus, Alertmanager, database repository, or worker query is allowed in the landing request.
+
+## Accessibility and keyboard contract
+
+- the workspace search has an accessible label even though the visible UI uses a placeholder;
+- visible result counts use polite live-region semantics;
+- workspace cards expose a descriptive accessible name and visible `focus-visible` treatment;
+- `/` focuses search only when the user is not already editing a text control;
+- `Escape` clears the active search, restores all authorized cards, and releases focus;
+- hiding a filtered capability group must not reorder the remaining semantic reading order.
+
+## Release evidence
+
+The final Welcome release boundary is protected by:
+
+```text
+scripts/verify_welcome_final_lock.py
+tests/welcome/test_welcome_characterization.py
+tests/contracts/welcome/test_welcome_navigation_contract.py
+```
+
+The canonical quality gate must run the Welcome verifier directly and the functional test suite must execute the permanent Welcome characterization tests.
+

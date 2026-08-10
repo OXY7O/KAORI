@@ -6,6 +6,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ### Added
 
+- Added permanent Welcome behavioral characterization and direct Welcome final-lock gate coverage for the final release recheck.
 - Release-governance documentation and an automated release-metadata verifier.
 - Pre-release type-safety guardrails for provider exceptions, Secret scrubbing, snapshot boundaries, recovery counters, ORM construction, and XLSX page setup.
 

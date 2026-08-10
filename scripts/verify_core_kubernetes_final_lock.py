@@ -49,6 +49,7 @@ def main() -> int:
 
     quality_gate = read('scripts/quality_gate.sh')
     for verifier_name in (
+        'verify_welcome_final_lock.py',
         'verify_core_kubernetes_final_lock.py',
         'verify_analytics_compact_label_standard.py',
         'verify_operational_dashboard_standard.py',

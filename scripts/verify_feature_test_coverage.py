@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Require functional characterization evidence for Inventory and Analytics foundations."""
+"""Require permanent functional characterization evidence for reviewed KAORI domains."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ import ast
 from pathlib import Path
 
 _REQUIRED_TEST_FILES = {
+    'tests/welcome/test_welcome_characterization.py': 4,
     'tests/analytics/test_alerts_characterization.py': 5,
     'tests/analytics/test_capacity_logic_characterization.py': 2,
     'tests/analytics/test_forecast_logic_characterization.py': 3,
@@ -53,7 +54,7 @@ def validate(root: Path) -> list[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description='Validate Inventory and Analytics functional characterization coverage.'
+        description='Validate permanent functional characterization coverage for reviewed KAORI domains.'
     )
     parser.add_argument('--root', type=Path, default=Path('.'))
     args = parser.parse_args()

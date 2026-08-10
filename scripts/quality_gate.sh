@@ -9,6 +9,7 @@ phase="${1:---all}"
 run_static() {
     bash scripts/verify_source_hygiene.sh
     python scripts/verify_release_governance.py
+    python scripts/verify_welcome_final_lock.py
     python scripts/verify_python_syntax.py
     python scripts/verify_single_pdf_engine.py
     python scripts/verify_analytics_pdf_publication.py
@@ -74,7 +75,7 @@ run_tests() {
     # Domain characterization tests are explicit release gates. This protects
     # them from environment-level PYTEST_ADDOPTS or marker filtering that may
     # otherwise deselect unmarked behavioral tests.
-    pytest -q tests/analytics tests/inventory tests/kubernetes -m functional
+    pytest -q tests/welcome tests/analytics tests/inventory tests/kubernetes -m functional
     pytest -q \
         tests/analytics/test_alerts_characterization.py \
         tests/analytics/test_alerts_source_fallback_characterization.py

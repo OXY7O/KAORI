@@ -34,3 +34,10 @@ Welcome is the authenticated platform landing page and is not an infrastructure 
 - Workspace search operates only on cards already rendered for the current user, so client-side filtering cannot reveal unauthorized destinations.
 - Keep workspace descriptions concise and suitable for a growing number of features.
 - Do not add pagination while the grouped catalog remains compact. Any future server-driven pagination must use the shared pagination component.
+## Release evidence
+
+- `scripts/verify_welcome_final_lock.py` is the canonical Welcome release verifier and must be called directly by `scripts/quality_gate.sh`.
+- `tests/welcome/test_welcome_characterization.py` is permanent behavioral evidence for permission-filtered discoverability, universal Settings access, first-authorized target resolution, and multi-permission deduplication.
+- `tests/contracts/welcome/test_welcome_navigation_contract.py` remains supporting structural/UI evidence; it must not be the only Welcome test.
+- `scripts/verify_feature_test_coverage.py` must require the Welcome behavioral characterization module after this final recheck.
+
