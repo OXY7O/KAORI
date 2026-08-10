@@ -1,4 +1,4 @@
-(() => {
+;(() => {
     const ROOT_SELECTOR = '[data-kaori-recommendation-pager]'
     const ITEM_SELECTOR = '[data-kaori-recommendation-item]'
 

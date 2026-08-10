@@ -1,44 +1,38 @@
-import { readFile } from "node:fs/promises";
+import { readFile } from 'node:fs/promises'
 
-const outputPath = new URL("../app/static/css/output.css", import.meta.url);
+const outputPath = new URL('../app/static/css/output.css', import.meta.url)
 const requiredFragments = [
-  "--kaori-brand-primary",
-  ".bg-kaori-primary",
-  ".bg-surface-card",
-  ".border-outline-default",
-  ".text-content-primary",
-  "--kaori-surface-shell",
-  ".bg-surface-shell",
-  ".kaori-hero-shell",
-  ".sidebar-parent-active",
-];
+    '--kaori-brand-primary',
+    '.bg-kaori-primary',
+    '.bg-surface-card',
+    '.border-outline-default',
+    '.text-content-primary',
+    '--kaori-surface-shell',
+    '.bg-surface-shell',
+    '.kaori-hero-shell',
+    '.sidebar-parent-active',
+]
 
-let css;
+let css
 try {
-  css = await readFile(outputPath, "utf8");
+    css = await readFile(outputPath, 'utf8')
 } catch (error) {
-  console.error("KAORI CSS validation failed: app/static/css/output.css is missing.");
-  console.error(error.message);
-  process.exit(1);
+    console.error('KAORI CSS validation failed: app/static/css/output.css is missing.')
+    console.error(error.message)
+    process.exit(1)
 }
 
-const missingFragments = requiredFragments.filter(
-  (fragment) => !css.includes(fragment),
-);
+const missingFragments = requiredFragments.filter((fragment) => !css.includes(fragment))
 
 if (missingFragments.length > 0) {
-  console.error(
-    "KAORI CSS validation failed: the compiled stylesheet is missing required design tokens/utilities:",
-  );
-  for (const fragment of missingFragments) {
-    console.error(`- ${fragment}`);
-  }
-  console.error(
-    "Build from frontend/styles.css. Do not use the obsolete frontend/src/input.css entrypoint.",
-  );
-  process.exit(1);
+    console.error('KAORI CSS validation failed: the compiled stylesheet is missing required design tokens/utilities:')
+    for (const fragment of missingFragments) {
+        console.error(`- ${fragment}`)
+    }
+    console.error('Build from frontend/styles.css. Do not use the obsolete frontend/src/input.css entrypoint.')
+    process.exit(1)
 }
 
 console.log(
-  "KAORI CSS validation passed: Violet Infrastructure and neutral-first dark-mode tokens/utilities are present.",
-);
+    'KAORI CSS validation passed: Violet Infrastructure and neutral-first dark-mode tokens/utilities are present.'
+)

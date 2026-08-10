@@ -1,4 +1,4 @@
-(() => {
+;(() => {
     const SELECTOR = '[data-detail-toggle]'
     const inFlight = new Map()
 
@@ -20,9 +20,10 @@
         button.classList.toggle('border-brand-outline', open)
         button.classList.toggle('bg-kaori-soft', open)
         button.classList.toggle('text-kaori-primary-dark', open)
-        if (label) label.textContent = open
-            ? (button.dataset.detailCloseLabel || 'Close Details')
-            : (button.dataset.detailOpenLabel || 'View Details')
+        if (label)
+            label.textContent = open
+                ? button.dataset.detailCloseLabel || 'Close Details'
+                : button.dataset.detailOpenLabel || 'View Details'
         if (leadingIcon) leadingIcon.setAttribute('data-lucide', open ? 'x' : 'eye')
         if (chevron) chevron.classList.toggle('rotate-180', open)
     }
@@ -170,7 +171,6 @@
         openButton(button)
     })
 })()
-
 ;(() => {
     const HOST_SELECTOR = '[data-resource-detail-modal-host]'
     const TOGGLE_SELECTOR = '[data-resource-detail-toggle]'
@@ -312,7 +312,7 @@
                 </span>
                 <div class="min-w-0">
                     <p class="text-xs font-semibold leading-5 text-kaori-primary">${escapeHtml(contextLabel)} Details</p>
-                    <h2 id="resource-detail-modal-title" class="break-words text-lg font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">${escapeHtml(name || ((type || 'Resource') + ' Details'))}</h2>
+                    <h2 id="resource-detail-modal-title" class="break-words text-lg font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">${escapeHtml(name || (type || 'Resource') + ' Details')}</h2>
                     <p class="mt-1 text-sm leading-5 text-content-muted">Loading ${escapeHtml(String(contextLabel || 'Resource').toLowerCase())} evidence.</p>
                 </div>
             </div>
@@ -370,7 +370,12 @@
         else url.searchParams.delete(DETAIL_PARAM)
 
         const state = detailId
-            ? { ...(history.state || {}), kaoriResourceDetail: true, detailId: String(detailId), detailSession: SESSION_TOKEN }
+            ? {
+                  ...(history.state || {}),
+                  kaoriResourceDetail: true,
+                  detailId: String(detailId),
+                  detailSession: SESSION_TOKEN,
+              }
             : { ...(history.state || {}), kaoriResourceDetail: false, detailId: null, detailSession: null }
 
         if (mode === 'replace') history.replaceState(state, '', url)
@@ -447,8 +452,9 @@
     function openFromUrl(detailId) {
         const modalHost = host()
         if (!modalHost || !detailId) return
-        const button = [...document.querySelectorAll(TOGGLE_SELECTOR)]
-            .find((candidate) => candidate.dataset.detailId === String(detailId))
+        const button = [...document.querySelectorAll(TOGGLE_SELECTOR)].find(
+            (candidate) => candidate.dataset.detailId === String(detailId)
+        )
         if (button) {
             activeOpener = button
             openFromButton(button, null)
@@ -457,7 +463,13 @@
         const detailUrl = detailUrlFromTemplate(modalHost, detailId)
         if (!detailUrl) return
         activeOpener = null
-        loadModalDetail(modalHost, detailId, detailUrl, modalHost.dataset.resourceType, `${modalHost.dataset.resourceType || 'Resource'} #${detailId}`)
+        loadModalDetail(
+            modalHost,
+            detailId,
+            detailUrl,
+            modalHost.dataset.resourceType,
+            `${modalHost.dataset.resourceType || 'Resource'} #${detailId}`
+        )
     }
 
     function closeModal({ updateHistory = true } = {}) {
@@ -485,8 +497,11 @@
     }
 
     function focusableElements(dialog) {
-        return [...dialog.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
-            .filter((element) => !element.closest('[hidden]') && element.offsetParent !== null)
+        return [
+            ...dialog.querySelectorAll(
+                'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            ),
+        ].filter((element) => !element.closest('[hidden]') && element.offsetParent !== null)
     }
 
     document.addEventListener('click', (event) => {

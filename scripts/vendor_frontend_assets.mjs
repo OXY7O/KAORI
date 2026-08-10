@@ -35,7 +35,6 @@ const assets = [
         minimumBytes: 150000,
         globalName: 'Chart',
     },
-
 ]
 
 const fonts = [
@@ -100,9 +99,7 @@ for (const asset of assets) {
     const vendoredBuffer = normalizeJavascript(sourceBuffer)
 
     if (vendoredBuffer.length < asset.minimumBytes) {
-        throw new Error(
-            `${asset.packageName} asset is unexpectedly small: ${vendoredBuffer.length} bytes`
-        )
+        throw new Error(`${asset.packageName} asset is unexpectedly small: ${vendoredBuffer.length} bytes`)
     }
 
     await writeFile(targetPath, vendoredBuffer)
@@ -124,12 +121,9 @@ for (const asset of assets) {
         sha256: sha256(vendoredBuffer),
         bytes: vendoredBuffer.length,
         browser_global: asset.globalName,
-        license_path: licenseTarget
-            ? path.posix.relative(projectRoot, licenseTarget).replaceAll('\\', '/')
-            : null,
+        license_path: licenseTarget ? path.posix.relative(projectRoot, licenseTarget).replaceAll('\\', '/') : null,
     })
 }
-
 
 for (const font of fonts) {
     const { packageRoot, metadata } = await packageMetadata(font.packageName)
@@ -165,28 +159,18 @@ for (const font of fonts) {
         family: font.family,
         weight: font.weight,
         style: font.style,
-        license_path: licenseTarget
-            ? path.posix.relative(projectRoot, licenseTarget).replaceAll('\\', '/')
-            : null,
+        license_path: licenseTarget ? path.posix.relative(projectRoot, licenseTarget).replaceAll('\\', '/') : null,
     })
 }
 
 manifest.assets.sort((left, right) => left.package.localeCompare(right.package))
 manifest.fonts.sort((left, right) => left.package.localeCompare(right.package))
-await writeFile(
-    path.join(vendorRoot, 'manifest.json'),
-    `${JSON.stringify(manifest, null, 2)}\n`,
-    'utf8'
-)
+await writeFile(path.join(vendorRoot, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
 
 const managedDirectories = new Set(assets.map((asset) => asset.target.split('/')[0]))
 for (const directory of managedDirectories) {
-    const sourceMapFiles = (await readdir(path.join(vendorRoot, directory))).filter((name) =>
-        name.endsWith('.map')
-    )
-    await Promise.all(
-        sourceMapFiles.map((name) => rm(path.join(vendorRoot, directory, name), { force: true }))
-    )
+    const sourceMapFiles = (await readdir(path.join(vendorRoot, directory))).filter((name) => name.endsWith('.map'))
+    await Promise.all(sourceMapFiles.map((name) => rm(path.join(vendorRoot, directory, name), { force: true })))
 }
 
 console.log(`Vendored ${manifest.assets.length} frontend runtime assets and ${manifest.fonts.length} local font.`)

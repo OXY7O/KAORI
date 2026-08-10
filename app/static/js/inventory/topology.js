@@ -59,7 +59,19 @@ const startTopologyWorkspace = () => {
     if (!canvas || !clusterSelect || !namespaceSelect || !scopeSelect || !depthSelect) return
 
     const STATE_KEY = 'kaori.topology.workspace.v5'
-    const resourceTypes = ['cluster', 'namespace', 'node', 'workload', 'pod', 'service', 'ingress', 'configmap', 'secret', 'pvc', 'pv']
+    const resourceTypes = [
+        'cluster',
+        'namespace',
+        'node',
+        'workload',
+        'pod',
+        'service',
+        'ingress',
+        'configmap',
+        'secret',
+        'pvc',
+        'pv',
+    ]
     const relationshipTypes = ['contains', 'owns', 'scheduled_on', 'selects', 'routes_to', 'uses', 'mounts', 'binds']
 
     let cy = null
@@ -78,17 +90,23 @@ const startTopologyWorkspace = () => {
     let collapsedHiddenIds = new Set()
     let childrenByNode = new Map()
 
-    const cssToken = (name, fallback = '') => (
+    const cssToken = (name, fallback = '') =>
         window.getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
-    )
 
-    const domainForType = (type) => ({
-        cluster: 'scope', namespace: 'scope',
-        node: 'compute', workload: 'compute', pod: 'compute',
-        service: 'networking', ingress: 'networking',
-        configmap: 'configuration', secret: 'configuration',
-        pvc: 'storage', pv: 'storage',
-    }[type] || 'compute')
+    const domainForType = (type) =>
+        ({
+            cluster: 'scope',
+            namespace: 'scope',
+            node: 'compute',
+            workload: 'compute',
+            pod: 'compute',
+            service: 'networking',
+            ingress: 'networking',
+            configmap: 'configuration',
+            secret: 'configuration',
+            pvc: 'storage',
+            pv: 'storage',
+        })[type] || 'compute'
 
     const getTypeVisual = (type) => {
         const domain = domainForType(type)
@@ -115,17 +133,27 @@ const startTopologyWorkspace = () => {
     }
 
     const edgeTokenNames = {
-        owns: '--kaori-topology-edge-owns', scheduled_on: '--kaori-topology-edge-scheduled',
-        selects: '--kaori-topology-edge-selects', routes_to: '--kaori-topology-edge-routes',
-        uses: '--kaori-topology-edge-uses', mounts: '--kaori-topology-edge-mounts',
-        binds: '--kaori-topology-edge-binds', contains: '--kaori-topology-edge-contains',
+        owns: '--kaori-topology-edge-owns',
+        scheduled_on: '--kaori-topology-edge-scheduled',
+        selects: '--kaori-topology-edge-selects',
+        routes_to: '--kaori-topology-edge-routes',
+        uses: '--kaori-topology-edge-uses',
+        mounts: '--kaori-topology-edge-mounts',
+        binds: '--kaori-topology-edge-binds',
+        contains: '--kaori-topology-edge-contains',
     }
-    const edgeColor = (relationship) => cssToken(edgeTokenNames[relationship] || '--kaori-topology-edge-contains', 'CanvasText')
+    const edgeColor = (relationship) =>
+        cssToken(edgeTokenNames[relationship] || '--kaori-topology-edge-contains', 'CanvasText')
 
     const relationshipUi = {
-        owns: { icon: 'boxes' }, scheduled_on: { icon: 'server' }, selects: { icon: 'network' },
-        routes_to: { icon: 'route' }, uses: { icon: 'link-2' }, mounts: { icon: 'database' },
-        binds: { icon: 'hard-drive' }, contains: { icon: 'folder-tree' },
+        owns: { icon: 'boxes' },
+        scheduled_on: { icon: 'server' },
+        selects: { icon: 'network' },
+        routes_to: { icon: 'route' },
+        uses: { icon: 'link-2' },
+        mounts: { icon: 'database' },
+        binds: { icon: 'hard-drive' },
+        contains: { icon: 'folder-tree' },
     }
 
     const statusSurfaceClasses = {
@@ -136,37 +164,70 @@ const startTopologyWorkspace = () => {
         unknown: ['bg-status-unknown-soft', 'text-status-unknown-text', 'bg-status-unknown'],
     }
 
-    const statusDotColor = (tone) => ({
-        healthy: cssToken('--kaori-status-normal', 'CanvasText'),
-        warning: cssToken('--kaori-status-warning', 'CanvasText'),
-        critical: cssToken('--kaori-status-critical', 'CanvasText'),
-        info: cssToken('--kaori-status-info', 'CanvasText'),
-        unknown: cssToken('--kaori-status-unknown', 'GrayText'),
-    }[tone] || cssToken('--kaori-status-unknown', 'GrayText'))
+    const statusDotColor = (tone) =>
+        ({
+            healthy: cssToken('--kaori-status-normal', 'CanvasText'),
+            warning: cssToken('--kaori-status-warning', 'CanvasText'),
+            critical: cssToken('--kaori-status-critical', 'CanvasText'),
+            info: cssToken('--kaori-status-info', 'CanvasText'),
+            unknown: cssToken('--kaori-status-unknown', 'GrayText'),
+        })[tone] || cssToken('--kaori-status-unknown', 'GrayText')
 
-    const humanizeType = (value) => ({
-        cluster: 'Cluster', namespace: 'Namespace', node: 'Node', workload: 'Workload', pod: 'Pod',
-        service: 'Service', ingress: 'Ingress', configmap: 'ConfigMap', secret: 'Secret', pvc: 'PVC', pv: 'PV',
-    }[value] || value)
+    const humanizeType = (value) =>
+        ({
+            cluster: 'Cluster',
+            namespace: 'Namespace',
+            node: 'Node',
+            workload: 'Workload',
+            pod: 'Pod',
+            service: 'Service',
+            ingress: 'Ingress',
+            configmap: 'ConfigMap',
+            secret: 'Secret',
+            pvc: 'PVC',
+            pv: 'PV',
+        })[value] || value
 
     const pluralizeType = (value, count) => {
         if (Number(count) === 1) return humanizeType(value)
-        return ({
-            cluster: 'Clusters', namespace: 'Namespaces', node: 'Nodes', workload: 'Workloads', pod: 'Pods',
-            service: 'Services', ingress: 'Ingresses', configmap: 'ConfigMaps', secret: 'Secrets', pvc: 'PVCs', pv: 'PVs',
-        }[value] || `${humanizeType(value)} Resources`)
+        return (
+            {
+                cluster: 'Clusters',
+                namespace: 'Namespaces',
+                node: 'Nodes',
+                workload: 'Workloads',
+                pod: 'Pods',
+                service: 'Services',
+                ingress: 'Ingresses',
+                configmap: 'ConfigMaps',
+                secret: 'Secrets',
+                pvc: 'PVCs',
+                pv: 'PVs',
+            }[value] || `${humanizeType(value)} Resources`
+        )
     }
 
-    const titleCaseText = (value) => String(value ?? '')
-        .replaceAll('_', ' ')
-        .replaceAll('-', ' ')
-        .replace(/\b[a-z]/g, (character) => character.toUpperCase())
+    const titleCaseText = (value) =>
+        String(value ?? '')
+            .replaceAll('_', ' ')
+            .replaceAll('-', ' ')
+            .replace(/\b[a-z]/g, (character) => character.toUpperCase())
 
     const nodeBadgeCache = new Map()
-    const nodeTypeGlyph = (type) => ({
-        cluster: 'CL', namespace: 'NS', node: 'ND', workload: 'WL', pod: 'PD',
-        service: 'SV', ingress: 'IN', configmap: 'CM', secret: 'SC', pvc: 'PC', pv: 'PV',
-    }[type] || 'RS')
+    const nodeTypeGlyph = (type) =>
+        ({
+            cluster: 'CL',
+            namespace: 'NS',
+            node: 'ND',
+            workload: 'WL',
+            pod: 'PD',
+            service: 'SV',
+            ingress: 'IN',
+            configmap: 'CM',
+            secret: 'SC',
+            pvc: 'PC',
+            pv: 'PV',
+        })[type] || 'RS'
 
     const nodeBadgeSvg = (type, tone) => {
         const visual = getTypeVisual(type)
@@ -187,7 +248,12 @@ const startTopologyWorkspace = () => {
         const parsed = new Date(value)
         if (Number.isNaN(parsed.getTime())) return value
         return new Intl.DateTimeFormat(undefined, {
-            day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short',
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZoneName: 'short',
         }).format(parsed)
     }
 
@@ -260,25 +326,31 @@ const startTopologyWorkspace = () => {
             button.classList.toggle('text-content-muted', !active)
         })
         if (activeView === 'list') renderResourceList()
-        else if (cy) window.requestAnimationFrame(() => { cy.resize(); fitGraphToCanvas() })
+        else if (cy)
+            window.requestAnimationFrame(() => {
+                cy.resize()
+                fitGraphToCanvas()
+            })
         if (updateUrl) updateUrl()
     }
 
     const bindSegmentedKeyboard = (buttons, activate) => {
-        buttons.forEach((button) => button.addEventListener('keydown', (event) => {
-            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
-            const enabledButtons = buttons.filter((item) => !item.disabled)
-            const index = enabledButtons.indexOf(button)
-            if (index < 0 || !enabledButtons.length) return
-            event.preventDefault()
-            let nextIndex = index
-            if (event.key === 'ArrowRight') nextIndex = (index + 1) % enabledButtons.length
-            if (event.key === 'ArrowLeft') nextIndex = (index - 1 + enabledButtons.length) % enabledButtons.length
-            if (event.key === 'Home') nextIndex = 0
-            if (event.key === 'End') nextIndex = enabledButtons.length - 1
-            enabledButtons[nextIndex]?.focus()
-            activate(enabledButtons[nextIndex])
-        }))
+        buttons.forEach((button) =>
+            button.addEventListener('keydown', (event) => {
+                if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+                const enabledButtons = buttons.filter((item) => !item.disabled)
+                const index = enabledButtons.indexOf(button)
+                if (index < 0 || !enabledButtons.length) return
+                event.preventDefault()
+                let nextIndex = index
+                if (event.key === 'ArrowRight') nextIndex = (index + 1) % enabledButtons.length
+                if (event.key === 'ArrowLeft') nextIndex = (index - 1 + enabledButtons.length) % enabledButtons.length
+                if (event.key === 'Home') nextIndex = 0
+                if (event.key === 'End') nextIndex = enabledButtons.length - 1
+                enabledButtons[nextIndex]?.focus()
+                activate(enabledButtons[nextIndex])
+            })
+        )
     }
 
     const relationshipCountsByNode = () => {
@@ -296,7 +368,7 @@ const startTopologyWorkspace = () => {
         if (cy) {
             return cy.nodes(':visible').map((node) => ({
                 id: () => node.id(),
-                data: (key) => key ? node.data(key) : node.data(),
+                data: (key) => (key ? node.data(key) : node.data()),
                 relationshipCount: () => node.connectedEdges(':visible').length,
                 graphNode: node,
             }))
@@ -311,17 +383,18 @@ const startTopologyWorkspace = () => {
                 const data = item.data || {}
                 return {
                     id: () => data.id,
-                    data: (key) => key ? data[key] : data,
+                    data: (key) => (key ? data[key] : data),
                     relationshipCount: () => relationshipCounts.get(data.id) || 0,
                     graphNode: null,
                 }
             })
     }
 
-    const sortedVisibleNodeRecords = () => visibleNodeRecords().sort((a, b) => {
-        const typeCompare = humanizeType(a.data('type')).localeCompare(humanizeType(b.data('type')))
-        return typeCompare || String(a.data('label') || '').localeCompare(String(b.data('label') || ''))
-    })
+    const sortedVisibleNodeRecords = () =>
+        visibleNodeRecords().sort((a, b) => {
+            const typeCompare = humanizeType(a.data('type')).localeCompare(humanizeType(b.data('type')))
+            return typeCompare || String(a.data('label') || '').localeCompare(String(b.data('label') || ''))
+        })
 
     const renderResourceList = () => {
         if (!resourceListBody) return
@@ -345,7 +418,7 @@ const startTopologyWorkspace = () => {
             applyStatusSurface(
                 row.querySelector('[data-list-status]'),
                 row.querySelector('[data-list-status-dot]'),
-                data.status_tone,
+                data.status_tone
             )
             text(row, '[data-list-relationships]', node.relationshipCount())
             row.querySelector('[data-list-details]')?.addEventListener('click', () => selectNodeById(node.id()))
@@ -366,22 +439,22 @@ const startTopologyWorkspace = () => {
                     'background-color': (node) => getTypeVisual(node.data('type')).fill,
                     'border-color': (node) => getTypeVisual(node.data('type')).border,
                     'border-width': 2,
-                    'color': labelText,
+                    color: labelText,
                     'font-family': 'Inter, sans-serif',
                     'font-size': 10,
                     'font-weight': 600,
-                    'height': 44,
-                    'label': workspaceState.nodeLabels ? 'data(display_label)' : '',
+                    height: 44,
+                    label: workspaceState.nodeLabels ? 'data(display_label)' : '',
                     'line-height': 1.2,
                     'min-zoomed-font-size': 8,
                     'overlay-opacity': 0,
-                    'padding': 0,
-                    'shape': 'round-rectangle',
+                    padding: 0,
+                    shape: 'round-rectangle',
                     'shadow-blur': 10,
                     'shadow-color': cssToken('--kaori-content-primary', 'CanvasText'),
                     'shadow-offset-x': 0,
                     'shadow-offset-y': 3,
-                    'shadow-opacity': 0.10,
+                    'shadow-opacity': 0.1,
                     'text-background-color': labelBackground,
                     'text-background-opacity': 0.94,
                     'text-background-padding': 3,
@@ -396,7 +469,7 @@ const startTopologyWorkspace = () => {
                     'text-overflow-wrap': 'normal',
                     'text-valign': 'bottom',
                     'text-wrap': 'ellipsis',
-                    'width': 76,
+                    width: 76,
                     'background-image': (node) => nodeBadgeSvg(node.data('type'), node.data('status_tone')),
                     'background-width': '100%',
                     'background-height': '100%',
@@ -407,8 +480,11 @@ const startTopologyWorkspace = () => {
                     'background-image-containment': 'inside',
                 },
             },
-            { selector: 'node[type = "cluster"]', style: { 'font-size': 11, 'font-weight': 700, 'height': 52, 'text-max-width': 240, 'width': 96 } },
-            { selector: 'node[type = "namespace"]', style: { 'height': 48, 'text-max-width': 230, 'width': 88 } },
+            {
+                selector: 'node[type = "cluster"]',
+                style: { 'font-size': 11, 'font-weight': 700, height: 52, 'text-max-width': 240, width: 96 },
+            },
+            { selector: 'node[type = "namespace"]', style: { height: 48, 'text-max-width': 230, width: 88 } },
             {
                 selector: 'edge',
                 style: {
@@ -416,7 +492,7 @@ const startTopologyWorkspace = () => {
                     'font-family': 'Inter, sans-serif',
                     'font-size': 9,
                     'font-weight': 600,
-                    'label': '',
+                    label: '',
                     'line-color': (edge) => edgeColor(edge.data('relationship')),
                     'line-opacity': 0.68,
                     'min-zoomed-font-size': 8,
@@ -424,12 +500,12 @@ const startTopologyWorkspace = () => {
                     'target-arrow-color': (edge) => edgeColor(edge.data('relationship')),
                     'target-arrow-shape': 'triangle',
                     'arrow-scale': 0.78,
-                    'color': labelText,
+                    color: labelText,
                     'text-background-color': labelBackground,
                     'text-background-opacity': 0.96,
                     'text-background-padding': 4,
                     'text-rotation': 'autorotate',
-                    'width': 1.5,
+                    width: 1.5,
                 },
             },
             {
@@ -441,33 +517,77 @@ const startTopologyWorkspace = () => {
                     'target-arrow-shape': 'none',
                     'taxi-direction': 'downward',
                     'taxi-turn': 24,
-                    'width': 1,
+                    width: 1,
                 },
             },
-            { selector: 'edge.edge-label-visible', style: { 'label': 'data(label)' } },
-            { selector: '.dimmed', style: { 'opacity': 0.10, 'text-opacity': 0.06 } },
-            { selector: '.focused', style: { 'opacity': 1, 'text-opacity': 1, 'z-index': 999 } },
-            { selector: '.path-active', style: { 'opacity': 1, 'text-opacity': 1, 'z-index': 1100, 'line-opacity': 1, 'width': 3, 'label': 'data(label)' } },
+            { selector: 'edge.edge-label-visible', style: { label: 'data(label)' } },
+            { selector: '.dimmed', style: { opacity: 0.1, 'text-opacity': 0.06 } },
+            { selector: '.focused', style: { opacity: 1, 'text-opacity': 1, 'z-index': 999 } },
+            {
+                selector: '.path-active',
+                style: {
+                    opacity: 1,
+                    'text-opacity': 1,
+                    'z-index': 1100,
+                    'line-opacity': 1,
+                    width: 3,
+                    label: 'data(label)',
+                },
+            },
             { selector: 'node.path-active', style: { 'border-width': 3, 'shadow-opacity': 0.22 } },
-            { selector: '.search-match', style: { 'border-color': brandAccent, 'border-width': 3, 'opacity': 1, 'z-index': 1150 } },
-            { selector: ':selected', style: { 'border-color': brandPrimary, 'border-width': 3, 'line-color': brandPrimary, 'target-arrow-color': brandPrimary, 'z-index': 1200 } },
+            {
+                selector: '.search-match',
+                style: { 'border-color': brandAccent, 'border-width': 3, opacity: 1, 'z-index': 1150 },
+            },
+            {
+                selector: ':selected',
+                style: {
+                    'border-color': brandPrimary,
+                    'border-width': 3,
+                    'line-color': brandPrimary,
+                    'target-arrow-color': brandPrimary,
+                    'z-index': 1200,
+                },
+            },
         ]
     }
 
-    const getLayoutMode = () => layoutModeSelect?.value === 'dependency' ? 'dependency' : 'hierarchy'
+    const getLayoutMode = () => (layoutModeSelect?.value === 'dependency' ? 'dependency' : 'hierarchy')
 
     const layoutOptions = () => {
         if (getLayoutMode() === 'dependency') {
             return {
-                name: 'cose', animate: 'end', animationDuration: 420, animationEasing: 'ease-out-cubic', fit: true,
-                nodeDimensionsIncludeLabels: true, padding: 80, idealEdgeLength: 210, edgeElasticity: 100,
-                nodeRepulsion: 620000, gravity: 0.30, numIter: 1600, componentSpacing: 165,
-                nestingFactor: 0.8, initialTemp: 200, coolingFactor: 0.96, minTemp: 1, randomize: true,
+                name: 'cose',
+                animate: 'end',
+                animationDuration: 420,
+                animationEasing: 'ease-out-cubic',
+                fit: true,
+                nodeDimensionsIncludeLabels: true,
+                padding: 80,
+                idealEdgeLength: 210,
+                edgeElasticity: 100,
+                nodeRepulsion: 620000,
+                gravity: 0.3,
+                numIter: 1600,
+                componentSpacing: 165,
+                nestingFactor: 0.8,
+                initialTemp: 200,
+                coolingFactor: 0.96,
+                minTemp: 1,
+                randomize: true,
             }
         }
         return {
-            name: 'breadthfirst', animate: false, circle: false, directed: true, fit: true, grid: true,
-            maximal: false, nodeDimensionsIncludeLabels: true, padding: 64, spacingFactor: 1.88,
+            name: 'breadthfirst',
+            animate: false,
+            circle: false,
+            directed: true,
+            fit: true,
+            grid: true,
+            maximal: false,
+            nodeDimensionsIncludeLabels: true,
+            padding: 64,
+            spacingFactor: 1.88,
         }
     }
 
@@ -597,7 +717,11 @@ const startTopologyWorkspace = () => {
             view: activeView,
         }
         Object.entries(values).forEach(([key, value]) => {
-            const isDefault = (key === 'scope' && value === 'all') || (key === 'depth' && value === '1') || (key === 'layout' && value === 'hierarchy') || (key === 'view' && value === 'graph')
+            const isDefault =
+                (key === 'scope' && value === 'all') ||
+                (key === 'depth' && value === '1') ||
+                (key === 'layout' && value === 'hierarchy') ||
+                (key === 'view' && value === 'graph')
             if (value && !isDefault) url.searchParams.set(key, value)
             else url.searchParams.delete(key)
         })
@@ -608,13 +732,20 @@ const startTopologyWorkspace = () => {
         if (nodeLabelToggle) nodeLabelToggle.checked = workspaceState.nodeLabels
         if (edgeLabelToggle) edgeLabelToggle.checked = workspaceState.edgeLabels
         if (groupNamespaceToggle) groupNamespaceToggle.checked = workspaceState.groupByNamespace
-        resourceToggles.forEach((toggle) => { toggle.checked = workspaceState.resources[toggle.dataset.topologyResourceToggle] !== false })
-        relationshipToggles.forEach((toggle) => { toggle.checked = workspaceState.relationships[toggle.dataset.topologyRelationshipToggle] !== false })
+        resourceToggles.forEach((toggle) => {
+            toggle.checked = workspaceState.resources[toggle.dataset.topologyResourceToggle] !== false
+        })
+        relationshipToggles.forEach((toggle) => {
+            toggle.checked = workspaceState.relationships[toggle.dataset.topologyRelationshipToggle] !== false
+        })
     }
 
     const updateSummary = (payload) => {
         const summary = payload.summary || {}
-        const setText = (id, value) => { const element = $(id); if (element) element.textContent = value }
+        const setText = (id, value) => {
+            const element = $(id)
+            if (element) element.textContent = value
+        }
         setText('topology-hero-clusters', summary.clusters ?? 0)
         setText('topology-hero-namespaces', summary.namespaces ?? 0)
         setText('topology-hero-resources', summary.resources ?? 0)
@@ -622,7 +753,8 @@ const startTopologyWorkspace = () => {
         setText('topology-hero-coverage', summary.omitted_nodes ?? 0)
         $('topology-hero-coverage-complete')?.classList.toggle('hidden', Boolean(summary.truncated))
         $('topology-hero-coverage-limited')?.classList.toggle('hidden', !summary.truncated)
-        if (filterSummary) filterSummary.textContent = `${summary.scope_label || 'All Resources'} · ${summary.depth_label || '1 Level'}`
+        if (filterSummary)
+            filterSummary.textContent = `${summary.scope_label || 'All Resources'} · ${summary.depth_label || '1 Level'}`
         document.querySelectorAll('[data-topology-count-type]').forEach((element) => {
             element.textContent = payload.type_counts?.[element.dataset.topologyCountType] ?? 0
         })
@@ -680,8 +812,16 @@ const startTopologyWorkspace = () => {
         })
     }
 
-    const enabledResourceTypes = () => new Set(resourceToggles.filter((toggle) => toggle.checked).map((toggle) => toggle.dataset.topologyResourceToggle))
-    const enabledRelationshipTypes = () => new Set(relationshipToggles.filter((toggle) => toggle.checked).map((toggle) => toggle.dataset.topologyRelationshipToggle))
+    const enabledResourceTypes = () =>
+        new Set(
+            resourceToggles.filter((toggle) => toggle.checked).map((toggle) => toggle.dataset.topologyResourceToggle)
+        )
+    const enabledRelationshipTypes = () =>
+        new Set(
+            relationshipToggles
+                .filter((toggle) => toggle.checked)
+                .map((toggle) => toggle.dataset.topologyRelationshipToggle)
+        )
 
     const updateEdgeLabelClasses = () => {
         if (!cy) return
@@ -707,7 +847,8 @@ const startTopologyWorkspace = () => {
             node.style('display', visible ? 'element' : 'none')
         })
         cy.edges().forEach((edge) => {
-            const endpointsVisible = edge.source().style('display') !== 'none' && edge.target().style('display') !== 'none'
+            const endpointsVisible =
+                edge.source().style('display') !== 'none' && edge.target().style('display') !== 'none'
             const visible = relationships.has(edge.data('relationship')) && endpointsVisible
             edge.style('display', visible ? 'element' : 'none')
         })
@@ -754,10 +895,25 @@ const startTopologyWorkspace = () => {
         const data = node.data()
         const sameCluster = cy.nodes(':visible').filter((candidate) => candidate.data('cluster_id') === data.cluster_id)
         const anchors = []
-        const add = (collection) => collection.forEach((item) => { if (item.id() !== node.id() && !anchors.some((existing) => existing.id() === item.id())) anchors.push(item) })
+        const add = (collection) =>
+            collection.forEach((item) => {
+                if (item.id() !== node.id() && !anchors.some((existing) => existing.id() === item.id()))
+                    anchors.push(item)
+            })
         add(sameCluster.filter('[type = "cluster"]'))
-        if (data.namespace) add(sameCluster.filter((candidate) => candidate.data('type') === 'namespace' && candidate.data('namespace') === data.namespace))
-        add(node.connectedEdges(':visible').connectedNodes(':visible').filter('[type = "workload"], [type = "node"], [type = "service"], [type = "ingress"]'))
+        if (data.namespace)
+            add(
+                sameCluster.filter(
+                    (candidate) =>
+                        candidate.data('type') === 'namespace' && candidate.data('namespace') === data.namespace
+                )
+            )
+        add(
+            node
+                .connectedEdges(':visible')
+                .connectedNodes(':visible')
+                .filter('[type = "workload"], [type = "node"], [type = "service"], [type = "ingress"]')
+        )
         return anchors.slice(0, 8)
     }
 
@@ -803,9 +959,7 @@ const startTopologyWorkspace = () => {
         return element
     }
 
-    const statusTone = (value) => (
-        ['healthy', 'warning', 'critical', 'info'].includes(value) ? value : 'unknown'
-    )
+    const statusTone = (value) => (['healthy', 'warning', 'critical', 'info'].includes(value) ? value : 'unknown')
 
     const applyStatusSurface = (label, dot, tone) => {
         const normalized = statusTone(tone)
@@ -826,13 +980,13 @@ const startTopologyWorkspace = () => {
     const renderValueRows = (container, fields) => {
         container?.replaceChildren()
         fields.forEach((field) => {
-            const normalizedLabel = String(field.label || '').trim().toLowerCase()
+            const normalizedLabel = String(field.label || '')
+                .trim()
+                .toLowerCase()
             const row = cloneTemplate('topology-field-row-template')
             if (!row) return
             text(row, '[data-field-label]', field.label)
-            const displayValue = normalizedLabel === 'status'
-                ? titleCaseText(field.value)
-                : field.value
+            const displayValue = normalizedLabel === 'status' ? titleCaseText(field.value) : field.value
             const valueElement = text(row, '[data-field-value]', displayValue || 'Not Reported')
             if (normalizedLabel === 'api server' && valueElement) {
                 valueElement.classList.remove('break-words')
@@ -878,17 +1032,20 @@ const startTopologyWorkspace = () => {
 
         const clusterId = selectedNode.data('cluster_id')
         const clusterName = selectedNode.data('cluster_name') || selectedNode.data('label')
-        const clusterNodes = cy.nodes(':visible').filter((item) => (
-            item.id() === selectedNode.id()
-            || (clusterId && item.data('cluster_id') === clusterId)
-            || (!clusterId && item.data('cluster_name') === clusterName)
-        ))
+        const clusterNodes = cy
+            .nodes(':visible')
+            .filter(
+                (item) =>
+                    item.id() === selectedNode.id() ||
+                    (clusterId && item.data('cluster_id') === clusterId) ||
+                    (!clusterId && item.data('cluster_name') === clusterName)
+            )
         if (!clusterNodes.length) return
 
         const nodeIds = new Set(clusterNodes.map((item) => item.id()))
-        const clusterEdges = cy.edges(':visible').filter((edge) => (
-            nodeIds.has(edge.source().id()) && nodeIds.has(edge.target().id())
-        ))
+        const clusterEdges = cy
+            .edges(':visible')
+            .filter((edge) => nodeIds.has(edge.source().id()) && nodeIds.has(edge.target().id()))
 
         const logicalWidth = Math.max(180, miniMap.clientWidth || 220)
         const logicalHeight = 144
@@ -911,13 +1068,19 @@ const startTopologyWorkspace = () => {
         let minY = Math.min(...positions.map((position) => position.y))
         let maxY = Math.max(...positions.map((position) => position.y))
 
-        if (maxX - minX < 1) { minX -= 1; maxX += 1 }
-        if (maxY - minY < 1) { minY -= 1; maxY += 1 }
+        if (maxX - minX < 1) {
+            minX -= 1
+            maxX += 1
+        }
+        if (maxY - minY < 1) {
+            minY -= 1
+            maxY += 1
+        }
 
         const padding = 14
         const scale = Math.min(
             (logicalWidth - padding * 2) / (maxX - minX),
-            (logicalHeight - padding * 2) / (maxY - minY),
+            (logicalHeight - padding * 2) / (maxY - minY)
         )
         const graphWidth = (maxX - minX) * scale
         const graphHeight = (maxY - minY) * scale
@@ -966,7 +1129,14 @@ const startTopologyWorkspace = () => {
         ctx.setLineDash([])
 
         miniMap._kaoriMiniMap = {
-            minX, minY, scale, offsetX, offsetY, logicalWidth, logicalHeight, clusterNodes,
+            minX,
+            minY,
+            scale,
+            offsetX,
+            offsetY,
+            logicalWidth,
+            logicalHeight,
+            clusterNodes,
         }
 
         if (!miniMap.dataset.kaoriBound) {
@@ -1022,7 +1192,7 @@ const startTopologyWorkspace = () => {
         applyStatusSurface(
             view.querySelector('[data-node-status]'),
             view.querySelector('[data-node-status-dot]'),
-            data.status_tone,
+            data.status_tone
         )
         const description = view.querySelector('[data-node-description]')
         if (description && data.description) {
@@ -1033,8 +1203,15 @@ const startTopologyWorkspace = () => {
         text(view, '[data-highlight-label]', pathHighlightActive ? 'Clear Path' : 'Highlight Path')
         const collapseButton = view.querySelector('#topology-collapse-button')
         collapseButton.disabled = !childCount
-        view.querySelector('[data-collapse-icon]')?.setAttribute('data-lucide', isCollapsed ? 'unfold-vertical' : 'fold-vertical')
-        text(view, '[data-collapse-label]', childCount ? (isCollapsed ? `Expand ${childCount}` : `Collapse ${childCount}`) : 'No Loaded Children')
+        view.querySelector('[data-collapse-icon]')?.setAttribute(
+            'data-lucide',
+            isCollapsed ? 'unfold-vertical' : 'fold-vertical'
+        )
+        text(
+            view,
+            '[data-collapse-label]',
+            childCount ? (isCollapsed ? `Expand ${childCount}` : `Collapse ${childCount}`) : 'No Loaded Children'
+        )
 
         const fields = [
             { label: 'Cluster', value: data.cluster_name || 'Not Reported' },
@@ -1069,11 +1246,14 @@ const startTopologyWorkspace = () => {
             })
             detailsPanelLocal.hidden = activeDrawerTab !== 'details'
             relationshipsPanel.hidden = activeDrawerTab !== 'relationships'
-            if (activeDrawerTab === 'relationships') renderRelationshipRows(relationshipsPanel.querySelector('[data-node-relationships]'), node)
+            if (activeDrawerTab === 'relationships')
+                renderRelationshipRows(relationshipsPanel.querySelector('[data-node-relationships]'), node)
             if (activeDrawerTab === 'details') scheduleDrawerMiniMapUpdate()
             window.lucide?.createIcons()
         }
-        tabButtons.forEach((button) => button.addEventListener('click', () => activateTab(button.dataset.topologyNodeTab)))
+        tabButtons.forEach((button) =>
+            button.addEventListener('click', () => activateTab(button.dataset.topologyNodeTab))
+        )
         bindSegmentedKeyboard(tabButtons, (button) => activateTab(button.dataset.topologyNodeTab))
         view.querySelector('#topology-highlight-path-button')?.addEventListener('click', () => {
             if (pathHighlightActive) {
@@ -1172,7 +1352,7 @@ const startTopologyWorkspace = () => {
         applyStatusSurface(
             view.querySelector('[data-node-status]'),
             view.querySelector('[data-node-status-dot]'),
-            data.status_tone,
+            data.status_tone
         )
         const description = view.querySelector('[data-node-description]')
         if (description && data.description) {
@@ -1227,7 +1407,9 @@ const startTopologyWorkspace = () => {
             }
             window.lucide?.createIcons()
         }
-        tabButtons.forEach((button) => button.addEventListener('click', () => activateTab(button.dataset.topologyNodeTab)))
+        tabButtons.forEach((button) =>
+            button.addEventListener('click', () => activateTab(button.dataset.topologyNodeTab))
+        )
         bindSegmentedKeyboard(tabButtons, (button) => activateTab(button.dataset.topologyNodeTab))
         detailContent.replaceChildren(view)
         activateTab(activeDrawerTab)
@@ -1282,14 +1464,21 @@ const startTopologyWorkspace = () => {
             event.target.connectedNodes().addClass('focused')
             renderEdgeDetails(event.target)
         })
-        cy.on('tap', (event) => { if (event.target === cy) clearSelection() })
+        cy.on('tap', (event) => {
+            if (event.target === cy) clearSelection()
+        })
         cy.on('mouseover', 'edge', (event) => event.target.addClass('edge-label-visible'))
-        cy.on('mouseout', 'edge', (event) => { if (!workspaceState.edgeLabels && !event.target.selected() && !event.target.hasClass('path-active')) event.target.removeClass('edge-label-visible') })
-        cy.on('mouseover', 'node', (event) => { if (!workspaceState.edgeLabels) event.target.connectedEdges(':visible').addClass('edge-label-visible') })
+        cy.on('mouseout', 'edge', (event) => {
+            if (!workspaceState.edgeLabels && !event.target.selected() && !event.target.hasClass('path-active'))
+                event.target.removeClass('edge-label-visible')
+        })
+        cy.on('mouseover', 'node', (event) => {
+            if (!workspaceState.edgeLabels) event.target.connectedEdges(':visible').addClass('edge-label-visible')
+        })
         cy.on('mouseout', 'node', () => updateEdgeLabelClasses())
         cy.on('pan zoom resize render position', () => {
             scheduleBoundaryUpdate()
-            })
+        })
     }
 
     const applyCurrentLayout = () => {
@@ -1331,7 +1520,9 @@ const startTopologyWorkspace = () => {
 
     const renderSearchResults = (term) => {
         if (!searchResults) return
-        const normalized = String(term || '').trim().toLowerCase()
+        const normalized = String(term || '')
+            .trim()
+            .toLowerCase()
         cy?.nodes().removeClass('search-match')
         searchResults.replaceChildren()
         searchResultNodes = []
@@ -1341,15 +1532,23 @@ const startTopologyWorkspace = () => {
             if (searchSummary) searchSummary.textContent = 'Search and open a resource in the current topology scope.'
             return
         }
-        const matches = visibleNodeRecords().filter((node) => {
-            const data = node.data()
-            return [data.label, data.kind, data.type, data.cluster_name, data.namespace, data.status]
-                .filter(Boolean).join(' ').toLowerCase().includes(normalized)
-        }).sort((a, b) => {
-            const aLabel = String(a.data('label') || '').toLowerCase()
-            const bLabel = String(b.data('label') || '').toLowerCase()
-            return Number(bLabel.startsWith(normalized)) - Number(aLabel.startsWith(normalized)) || aLabel.localeCompare(bLabel)
-        })
+        const matches = visibleNodeRecords()
+            .filter((node) => {
+                const data = node.data()
+                return [data.label, data.kind, data.type, data.cluster_name, data.namespace, data.status]
+                    .filter(Boolean)
+                    .join(' ')
+                    .toLowerCase()
+                    .includes(normalized)
+            })
+            .sort((a, b) => {
+                const aLabel = String(a.data('label') || '').toLowerCase()
+                const bLabel = String(b.data('label') || '').toLowerCase()
+                return (
+                    Number(bLabel.startsWith(normalized)) - Number(aLabel.startsWith(normalized)) ||
+                    aLabel.localeCompare(bLabel)
+                )
+            })
         if (cy) {
             matches.forEach((node) => cy.getElementById(node.id()).addClass('search-match'))
         }
@@ -1368,7 +1567,8 @@ const startTopologyWorkspace = () => {
                 button.id = `topology-search-option-${index}`
                 button.setAttribute('role', 'option')
                 button.setAttribute('aria-selected', 'false')
-                button.className = 'flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus'
+                button.className =
+                    'flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus'
                 const iconShell = document.createElement('span')
                 iconShell.className = `flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border kaori-topology-domain-${ui.domain}`
                 const icon = document.createElement('i')
@@ -1391,7 +1591,8 @@ const startTopologyWorkspace = () => {
         }
         searchResults.classList.remove('hidden')
         searchInput.setAttribute('aria-expanded', 'true')
-        if (searchSummary) searchSummary.textContent = `${matches.length} matching ${matches.length === 1 ? 'resource' : 'resources'} found.`
+        if (searchSummary)
+            searchSummary.textContent = `${matches.length} matching ${matches.length === 1 ? 'resource' : 'resources'} found.`
         window.lucide?.createIcons()
     }
 
@@ -1431,13 +1632,13 @@ const startTopologyWorkspace = () => {
             boundary.style.width = `${box.w + padding * 2}px`
             boundary.style.height = `${box.h + padding * 2}px`
             const label = document.createElement('span')
-            label.className = 'absolute -top-3 left-3 rounded-md border border-outline-default bg-surface-card px-2 py-0.5 text-xs font-semibold text-kaori-primary shadow-sm'
+            label.className =
+                'absolute -top-3 left-3 rounded-md border border-outline-default bg-surface-card px-2 py-0.5 text-xs font-semibold text-kaori-primary shadow-sm'
             label.textContent = namespace
             boundary.appendChild(label)
             boundaryLayer.appendChild(boundary)
         })
     }
-
 
     const downloadBlob = (blob, filename) => {
         const url = URL.createObjectURL(blob)
@@ -1455,16 +1656,28 @@ const startTopologyWorkspace = () => {
         const visibleIds = new Set(visibleNodes.map((node) => node.id))
         const visibleEdges = cy
             ? cy.edges(':visible').map((edge) => edge.data())
-            : (currentPayload.edges || []).map((edge) => edge?.data || {}).filter((edge) => visibleIds.has(edge.source) && visibleIds.has(edge.target))
+            : (currentPayload.edges || [])
+                  .map((edge) => edge?.data || {})
+                  .filter((edge) => visibleIds.has(edge.source) && visibleIds.has(edge.target))
         const payload = {
             product: 'KAORI',
             generated_at: new Date().toISOString(),
-            filters: { cluster_id: clusterSelect.value, namespace: namespaceSelect.value, scope: scopeSelect.value, depth: depthSelect.value, layout: getLayoutMode(), view: activeView },
+            filters: {
+                cluster_id: clusterSelect.value,
+                namespace: namespaceSelect.value,
+                scope: scopeSelect.value,
+                depth: depthSelect.value,
+                layout: getLayoutMode(),
+                view: activeView,
+            },
             summary: currentPayload.summary || {},
             nodes: visibleNodes,
             edges: visibleEdges,
         }
-        downloadBlob(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }), `kaori-topology-${Date.now()}.json`)
+        downloadBlob(
+            new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }),
+            `kaori-topology-${Date.now()}.json`
+        )
     }
 
     const exportPng = () => {
@@ -1477,12 +1690,18 @@ const startTopologyWorkspace = () => {
             output.width = image.width
             output.height = image.height + footer
             const ctx = output.getContext('2d')
-            ctx.fillStyle = cssToken('--kaori-surface-card', 'white'); ctx.fillRect(0, 0, output.width, output.height)
+            ctx.fillStyle = cssToken('--kaori-surface-card', 'white')
+            ctx.fillRect(0, 0, output.width, output.height)
             ctx.drawImage(image, 0, 0)
-            ctx.fillStyle = cssToken('--kaori-content-secondary', 'GrayText'); ctx.font = '24px sans-serif'
-            const collected = currentPayload.summary?.last_collected_at ? formatDateTime(currentPayload.summary.last_collected_at) : 'No snapshot timestamp'
+            ctx.fillStyle = cssToken('--kaori-content-secondary', 'GrayText')
+            ctx.font = '24px sans-serif'
+            const collected = currentPayload.summary?.last_collected_at
+                ? formatDateTime(currentPayload.summary.last_collected_at)
+                : 'No snapshot timestamp'
             ctx.fillText(`KAORI · Kubernetes Topology · ${collected}`, 18, image.height + 29)
-            output.toBlob((blob) => { if (blob) downloadBlob(blob, `kaori-topology-${Date.now()}.png`) }, 'image/png')
+            output.toBlob((blob) => {
+                if (blob) downloadBlob(blob, `kaori-topology-${Date.now()}.png`)
+            }, 'image/png')
         }
         image.src = dataUrl
     }
@@ -1507,7 +1726,9 @@ const startTopologyWorkspace = () => {
             renderEmptyInspector()
             renderResourceList()
             setRuntimeStatus()
-            showError('The graph renderer is unavailable. Resource List remains available from the committed inventory snapshot.')
+            showError(
+                'The graph renderer is unavailable. Resource List remains available from the committed inventory snapshot.'
+            )
             const pngButton = $('topology-export-png-button')
             if (pngButton) pngButton.disabled = true
             setActiveView('list')
@@ -1598,7 +1819,9 @@ const startTopologyWorkspace = () => {
         })
         try {
             const response = await fetch(`${config.data_url}?${params.toString()}`, {
-                credentials: 'same-origin', headers: { Accept: 'application/json' }, signal: fetchController.signal,
+                credentials: 'same-origin',
+                headers: { Accept: 'application/json' },
+                signal: fetchController.signal,
             })
             if (!response.ok) throw new Error(`Topology request failed with HTTP ${response.status}.`)
             createGraph(await response.json())
@@ -1616,39 +1839,56 @@ const startTopologyWorkspace = () => {
     createGraph(currentPayload)
     setActiveView(activeView, { updateUrl: false })
 
-    clusterSelect.addEventListener('change', () => { updateNamespaceOptions(''); fetchGraph() })
+    clusterSelect.addEventListener('change', () => {
+        updateNamespaceOptions('')
+        fetchGraph()
+    })
     namespaceSelect.addEventListener('change', fetchGraph)
     scopeSelect.addEventListener('change', fetchGraph)
     depthSelect.addEventListener('change', fetchGraph)
-    layoutModeSelect?.addEventListener('change', () => { updateUrl(); applyCurrentLayout() })
+    layoutModeSelect?.addEventListener('change', () => {
+        updateUrl()
+        applyCurrentLayout()
+    })
 
     nodeLabelToggle?.addEventListener('change', () => {
         workspaceState.nodeLabels = nodeLabelToggle.checked
         saveWorkspaceState()
-        if (cy) cy.style().selector('node').style('label', workspaceState.nodeLabels ? 'data(display_label)' : '').update()
+        if (cy)
+            cy.style()
+                .selector('node')
+                .style('label', workspaceState.nodeLabels ? 'data(display_label)' : '')
+                .update()
         scheduleBoundaryUpdate()
     })
 
     edgeLabelToggle?.addEventListener('change', () => {
         workspaceState.edgeLabels = edgeLabelToggle.checked
-        saveWorkspaceState(); updateEdgeLabelClasses()
+        saveWorkspaceState()
+        updateEdgeLabelClasses()
     })
 
     groupNamespaceToggle?.addEventListener('change', () => {
         workspaceState.groupByNamespace = groupNamespaceToggle.checked
-        saveWorkspaceState(); scheduleBoundaryUpdate()
+        saveWorkspaceState()
+        scheduleBoundaryUpdate()
     })
 
+    resourceToggles.forEach((toggle) =>
+        toggle.addEventListener('change', () => {
+            workspaceState.resources[toggle.dataset.topologyResourceToggle] = toggle.checked
+            saveWorkspaceState()
+            applyVisibility({ relayout: true })
+        })
+    )
 
-    resourceToggles.forEach((toggle) => toggle.addEventListener('change', () => {
-        workspaceState.resources[toggle.dataset.topologyResourceToggle] = toggle.checked
-        saveWorkspaceState(); applyVisibility({ relayout: true })
-    }))
-
-    relationshipToggles.forEach((toggle) => toggle.addEventListener('change', () => {
-        workspaceState.relationships[toggle.dataset.topologyRelationshipToggle] = toggle.checked
-        saveWorkspaceState(); applyVisibility({ relayout: getLayoutMode() === 'dependency' })
-    }))
+    relationshipToggles.forEach((toggle) =>
+        toggle.addEventListener('change', () => {
+            workspaceState.relationships[toggle.dataset.topologyRelationshipToggle] = toggle.checked
+            saveWorkspaceState()
+            applyVisibility({ relayout: getLayoutMode() === 'dependency' })
+        })
+    )
 
     searchInput.addEventListener('input', () => {
         window.clearTimeout(searchTimer)
@@ -1681,8 +1921,12 @@ const startTopologyWorkspace = () => {
     $('topology-controls-button')?.addEventListener('click', () => openPane(controlsPanel))
     $('topology-details-button')?.addEventListener('click', () => openPane(detailsPanel))
     paneBackdrop?.addEventListener('click', closePanes)
-    document.querySelectorAll('[data-topology-close-pane]').forEach((button) => button.addEventListener('click', closePanes))
-    document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closePanes() })
+    document
+        .querySelectorAll('[data-topology-close-pane]')
+        .forEach((button) => button.addEventListener('click', closePanes))
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closePanes()
+    })
 
     $('topology-fit-button')?.addEventListener('click', fitGraphToCanvas)
     $('topology-reset-button')?.addEventListener('click', () => {
@@ -1700,16 +1944,21 @@ const startTopologyWorkspace = () => {
     if (window.ResizeObserver && canvasShell) {
         const observer = new ResizeObserver(() => {
             if (!cy) return
-            cy.resize(); scheduleBoundaryUpdate(); scheduleDrawerMiniMapUpdate()
+            cy.resize()
+            scheduleBoundaryUpdate()
+            scheduleDrawerMiniMapUpdate()
         })
         observer.observe(canvasShell)
     }
 
-    $('theme-toggle')?.addEventListener('click', () => window.setTimeout(() => {
-        if (!cy) return
-        cy.style(graphStyle())
-        scheduleBoundaryUpdate(); scheduleDrawerMiniMapUpdate()
-    }, 0))
+    $('theme-toggle')?.addEventListener('click', () =>
+        window.setTimeout(() => {
+            if (!cy) return
+            cy.style(graphStyle())
+            scheduleBoundaryUpdate()
+            scheduleDrawerMiniMapUpdate()
+        }, 0)
+    )
 }
 
 startTopologyWorkspace()

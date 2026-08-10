@@ -1,8 +1,10 @@
-(() => {
+;(() => {
     const ROOT_SELECTOR = '[data-role-permission-editor]'
 
     function normalize(value) {
-        return String(value || '').trim().toLowerCase()
+        return String(value || '')
+            .trim()
+            .toLowerCase()
     }
 
     function initializeRolePermissionEditor(root) {
@@ -39,8 +41,8 @@
 
         function syncModuleExpansionAction() {
             const visibleSections = visibleModuleSections()
-            const allExpanded = visibleSections.length > 0
-                && visibleSections.every((section) => section.dataset.expanded === 'true')
+            const allExpanded =
+                visibleSections.length > 0 && visibleSections.every((section) => section.dataset.expanded === 'true')
 
             if (moduleToggleAllLabel) {
                 moduleToggleAllLabel.textContent = allExpanded ? 'Collapse all' : 'Expand all'
@@ -159,7 +161,6 @@
                 })
             }
         })
-
 
         moduleToggleAllButton?.addEventListener('click', () => {
             const sections = visibleModuleSections()

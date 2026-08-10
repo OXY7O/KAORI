@@ -49,7 +49,8 @@
 
         document.addEventListener('keydown', (event) => {
             const activeElement = document.activeElement
-            const editingText = activeElement instanceof HTMLInputElement ||
+            const editingText =
+                activeElement instanceof HTMLInputElement ||
                 activeElement instanceof HTMLTextAreaElement ||
                 activeElement?.isContentEditable
 

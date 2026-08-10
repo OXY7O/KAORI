@@ -16,19 +16,13 @@ const expectedPackages = new Map([
     ['chart.js', 'app/static/vendor/chartjs/chart.umd.min.js'],
 ])
 
-const expectedFonts = new Map([
-    ['@fontsource-variable/inter', 'app/static/fonts/inter/inter-latin-wght-normal.woff2'],
-])
+const expectedFonts = new Map([['@fontsource-variable/inter', 'app/static/fonts/inter/inter-latin-wght-normal.woff2']])
 
 function sha256(buffer) {
     return createHash('sha256').update(buffer).digest('hex')
 }
 
-if (
-    manifest.schema_version !== 1 ||
-    !Array.isArray(manifest.assets) ||
-    !Array.isArray(manifest.fonts)
-) {
+if (manifest.schema_version !== 1 || !Array.isArray(manifest.assets) || !Array.isArray(manifest.fonts)) {
     throw new Error('Invalid frontend vendor manifest schema.')
 }
 
@@ -43,9 +37,7 @@ for (const [packageName, runtimePath] of expectedPackages) {
 
     const pinnedVersion = packageJson.devDependencies?.[packageName]
     if (!pinnedVersion || pinnedVersion !== record.version || /[~^*xX]/u.test(pinnedVersion)) {
-        throw new Error(
-            `${packageName} must use one exact version in package.json and manifest.`
-        )
+        throw new Error(`${packageName} must use one exact version in package.json and manifest.`)
     }
 
     if (record.runtime_path !== runtimePath) {
@@ -103,6 +95,4 @@ if (fontRecords.size !== expectedFonts.size) {
     throw new Error('Vendor manifest contains an unexpected or unmanaged local font package.')
 }
 
-console.log(
-    `Verified ${expectedPackages.size} pinned frontend runtime assets and ${expectedFonts.size} local font.`
-)
+console.log(`Verified ${expectedPackages.size} pinned frontend runtime assets and ${expectedFonts.size} local font.`)
