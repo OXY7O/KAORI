@@ -152,7 +152,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
             'context, and controlled remediation workflows.'
         ),
         'icon': 'shield-check',
-        'scope': 'Cross-domain',
+        'scope': 'Compute',
         'group': 'assurance',
         'targets': (
             ('governance.view', 'governance.overview'),
