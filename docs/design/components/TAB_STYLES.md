@@ -28,7 +28,7 @@ A new style is justified only when the content relationship or interaction model
 
 Use Tab Style 1 for operational dashboards, analytics workspaces, and peer task/status/approval views such as Protected Secret Reveal, where each tab is a full workspace perspective on the same governed context.
 
-For server-rendered workspaces that use the client-controlled `render_controlled()` variant, the server-selected panel is the initial source of truth. Client code must validate that the requested key has both a tab and a panel before changing `hidden` state. Explicit URL query state takes precedence; a legacy hash-only deep link may select a different view only after the controller validates the matching tab/panel pair. Otherwise the server-rendered active panel remains authoritative, so refresh cannot blank the workspace.
+For server-rendered peer workspaces that need URL persistence, use the canonical Alpine `render()` contract with an optional fifth `href` tuple value. Alpine owns instant tab switching and URL synchronization; the real `href` is only a progressive server-navigation fallback if Alpine is unavailable. Panels bind visibility to `activeTab`, while the server-selected view remains the initial state on refresh. Do not add a second custom JavaScript tab controller beside Integrated Workspace Tabs.
 
 ## Tab Style 2 — Framed Workspace Tabs
 

@@ -189,8 +189,11 @@ def main() -> int:
     reveal_step_up = read('app/templates/kubernetes_operations/secrets/_reveal_step_up.html')
     for token in (
         'components/workspace_tabs.html',
-        'workspace_tabs.render_controlled',
-        'data-secret-reveal-active-view="{{ active_reveal_view }}"',
+        'workspace_tabs.render(reveal_tabs',
+        "activeTab: '{{ active_reveal_view }}'",
+        'setTab(tab)',
+        "url.searchParams.set('reveal_view', tab)",
+        'window.history.replaceState',
     ):
         require(token in reveal_page, f'Protected Reveal workspace tab contract missing: {token}', errors)
     require(
@@ -199,28 +202,38 @@ def main() -> int:
         errors,
     )
     require(
-        'macro render_controlled' in reveal_tabs,
-        'Integrated Workspace Tabs must expose the shared client-controlled variant.',
+        '@click.prevent="setTab(' in reveal_tabs
+        and 'data-kaori-tab-fallback="server-navigation"' in reveal_tabs
+        and 'href="{{ tab_href }}"' in reveal_tabs,
+        'Integrated Workspace Tabs must switch through Alpine while retaining server-navigation fallback.',
         errors,
     )
     for token in (
-        'viewParam',
-        'reveal_view',
+        "x-show=\"activeTab === 'new'\"",
+        "x-show=\"activeTab === 'mine'\"",
+        "x-bind:hidden=\"activeTab !== 'new'\"",
+        "x-bind:hidden=\"activeTab !== 'mine'\"",
         '#my-secret-reveal-requests',
         '#pending-secret-reveal-approvals',
-        'resolveTabFromLocation',
-        'window.history.replaceState',
-        'const viewState = (root) =>',
-        'tabByKey.get(key)',
-        'panelByKey.get(key)',
-        'toggleAttribute',
-        'serverVisiblePanel',
-        'event.preventDefault()',
     ):
-        require(token in reveal_script, f'Protected Reveal tab-state contract missing: {token}', errors)
+        require(token in reveal_page, f'Protected Reveal Alpine panel-state contract missing: {token}', errors)
     require(
-        'data-kaori-tab-fallback="server-navigation"' in reveal_tabs and 'href="{{ tab_href }}"' in reveal_tabs,
-        'Protected Reveal controlled tabs must retain server-navigation fallback when JavaScript is unavailable.',
+        "information_guide_card.render('Reveal Safety Contract'" in reveal_page
+        and "protected_reveal_guardrails, icon='shield-check', open_by_default=false" in reveal_page,
+        'Protected Reveal Safety Contract must remain collapsed by default.',
+        errors,
+    )
+    for token in (
+        'const activePanel = (root) =>',
+        '!panel.hidden',
+        "querySelector('[data-reveal-poll-owner]')",
+        'window.setInterval',
+        'secret-reveal:tab-changed',
+    ):
+        require(token in reveal_script, f'Protected Reveal active-panel polling contract missing: {token}', errors)
+    require(
+        'viewState' not in reveal_script and 'selectTab' not in reveal_script and 'event.preventDefault' not in reveal_script,
+        'Protected Reveal polling script must not duplicate Integrated Workspace Tab navigation ownership.',
         errors,
     )
     require(
