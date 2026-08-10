@@ -65,8 +65,13 @@ def build_storage_operations_posture(
         status_tone = 'normal'
         title = 'Artifact Storage Ready'
         description = (
-            'The active backend is readable and writable for report generation, downloads, '
-            'scheduled execution, and artifact verification.'
+            'The active backend is ready for report generation, downloads, scheduled execution, '
+            'and retained artifact verification.'
+        )
+        tip_title = 'Use Strong Verification for Recovery Events'
+        tip_text = (
+            'Automatic readiness is intentionally lightweight. Run Verify Storage after a write failure, '
+            'endpoint or credential change, or recovery from a storage outage.'
         )
     elif read_available and verification_required:
         status_label = 'Verification Required'
@@ -76,20 +81,35 @@ def build_storage_operations_posture(
             'Existing artifacts remain readable, but new artifact writes stay paused until '
             'strong storage verification succeeds.'
         )
+        tip_title = 'Complete Strong Verification Before Resuming Writes'
+        tip_text = (
+            'Connectivity has recovered, but write readiness is still guarded. Use Verify Storage to '
+            'confirm the write, existence, and cleanup path before retrying generation.'
+        )
     elif reachable:
         status_label = 'Needs Review'
         status_tone = 'warning'
         title = 'Artifact Writes Paused'
         description = (
-            'The active backend is reachable but not ready for the complete report artifact lifecycle.'
+            'The active backend is reachable, but the report artifact write path is not ready.'
+        )
+        tip_title = 'Review the Write Path'
+        tip_text = (
+            'Check bucket or directory permissions, object prefix, and backend configuration. After the '
+            'write path is corrected, run Verify Storage before resuming report generation.'
         )
     else:
         status_label = 'Disconnected'
         status_tone = 'warning'
         title = 'Artifact Execution Paused'
         description = (
-            'Report metadata remains available while storage-dependent generation, downloads, '
-            'verification, and scheduled artifact execution stay paused.'
+            'Storage-dependent generation, downloads, verification, and scheduled artifact execution '
+            'remain paused until backend connectivity is restored.'
+        )
+        tip_title = 'Restore Connectivity First'
+        tip_text = (
+            'Check the endpoint or filesystem path, credentials, bucket access, and network reachability. '
+            'After recovery, run Verify Storage before allowing new artifact writes.'
         )
 
     return {
@@ -102,17 +122,15 @@ def build_storage_operations_posture(
         'read_tone': 'normal' if read_available else 'warning',
         'write_label': 'Ready' if write_available else 'Paused',
         'write_tone': 'normal' if write_available else 'warning',
-        'metadata_label': 'Available',
-        'metadata_tone': 'normal',
         'verification_label': 'Required' if verification_required else 'Not Required',
         'verification_tone': 'warning' if verification_required else 'normal',
         'monitor_label': 'Automatic' if readiness_monitor.get('enabled') else 'Manual',
         'monitor_tone': 'normal' if readiness_monitor.get('enabled') else 'unknown',
         'ready_reports': int(artifact_summary.get('ready_reports', 0) or 0),
-        'tracked_artifacts': int(artifact_summary.get('reports_with_files', 0) or 0),
-        'tracked_size': str(artifact_summary.get('total_size') or '0 B'),
         'checked_label': str(readiness_monitor.get('checked_label') or 'Not Checked'),
         'source_label': str(readiness_monitor.get('source_label') or 'Unknown'),
+        'tip_title': tip_title,
+        'tip_text': tip_text,
     }
 
 

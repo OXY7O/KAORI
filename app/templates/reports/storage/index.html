@@ -56,7 +56,8 @@
 
         <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
                  data-report-storage-posture="{{ posture.status_tone }}"
-                 data-report-storage-readiness-monitor="true">
+                 data-report-storage-readiness-monitor="true"
+                 data-storage-posture-layout="decision-readiness-tip">
             <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
@@ -65,111 +66,89 @@
                         </span>
                         <div class="min-w-0">
                             <h2 class="text-base font-semibold text-content-primary">Storage Operations Posture</h2>
-                            <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted">One operational boundary for artifact readability, write readiness, automatic health monitoring, and retained report evidence.</p>
+                            <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted">Current backend readiness for reading retained artifacts and accepting new report writes.</p>
                         </div>
                     </div>
                     {{ table_label.status_indicator_label(posture.status_label, posture.status_tone) }}
                 </div>
             </header>
+
             <div class="grid xl:grid-cols-12">
-                <div class="border-b border-outline-subtle p-5 sm:p-6 xl:col-span-5 xl:border-b-0 xl:border-r">
-                    <p class="text-xs font-semibold text-kaori-primary">Execution Boundary</p>
+                <section class="border-b border-outline-subtle p-5 sm:p-6 xl:col-span-5 xl:border-b-0 xl:border-r"
+                         data-storage-execution-boundary="true">
+                    <p class="text-xs font-semibold text-kaori-primary">Storage Decision</p>
                     <h3 class="mt-1 text-lg font-semibold text-content-primary">{{ posture.title }}</h3>
                     <p class="mt-2 text-sm leading-6 text-content-muted">{{ posture.description }}</p>
+
                     <div class="mt-5 divide-y divide-outline-subtle rounded-xl border border-outline-subtle bg-surface-subtle">
                         <div class="flex items-center justify-between gap-4 px-4 py-3">
-                            <div>
-                                <p class="text-sm font-semibold text-content-primary">Report Metadata</p>
-                                <p class="mt-0.5 text-xs text-content-muted">Registry and persisted report records</p>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">Active Backend</p>
+                                <p class="mt-0.5 truncate text-xs text-content-muted">Storage target used by generated report artifacts</p>
                             </div>
-                            {{ table_label.status_indicator_label(posture.metadata_label, posture.metadata_tone) }}
+                            <span class="shrink-0 text-sm font-semibold text-content-primary">{{ payload.active_backend|upper }}</span>
                         </div>
                         <div class="flex items-center justify-between gap-4 px-4 py-3">
-                            <div>
+                            <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">Artifact Read</p>
-                                <p class="mt-0.5 text-xs text-content-muted">Download and integrity-read path</p>
+                                <p class="mt-0.5 text-xs text-content-muted">Downloads and integrity reads</p>
                             </div>
                             {{ table_label.status_indicator_label(posture.read_label, posture.read_tone) }}
                         </div>
                         <div class="flex items-center justify-between gap-4 px-4 py-3">
-                            <div>
+                            <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">Artifact Write</p>
-                                <p class="mt-0.5 text-xs text-content-muted">Generation and scheduled artifact path</p>
+                                <p class="mt-0.5 text-xs text-content-muted">Generation and scheduled artifact writes</p>
                             </div>
                             {{ table_label.status_indicator_label(posture.write_label, posture.write_tone) }}
                         </div>
                     </div>
-                </div>
-                <div class="xl:col-span-7">
-                    <div class="grid border-b border-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
-                        <div class="border-b border-outline-subtle px-5 py-4 sm:border-r xl:border-b-0">
-                            <p class="text-xs font-medium text-content-muted">Active Backend</p>
-                            <p class="mt-1 text-xl font-semibold text-content-primary">{{ payload.active_backend|upper }}</p>
-                            <p class="mt-1 text-xs text-content-muted">{{ posture.backend_label }}</p>
+                </section>
+
+                <section class="p-5 sm:p-6 xl:col-span-7" data-storage-readiness-panel="true">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-kaori-primary">Readiness Monitor</p>
+                            <h3 class="mt-1 text-base font-semibold text-content-primary">Automatic Storage Readiness</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Lightweight health evidence shared across Reports without performing a write on every page request.</p>
                         </div>
-                        <div class="border-b border-outline-subtle px-5 py-4 xl:border-b-0 xl:border-r">
-                            <p class="text-xs font-medium text-content-muted">Tracked Artifacts</p>
-                            <p class="mt-1 text-xl font-semibold text-content-primary">{{ posture.tracked_artifacts }}</p>
-                            <p class="mt-1 text-xs text-content-muted">Canonical storage references</p>
+                        {{ table_label.status_indicator_label(posture.monitor_label, posture.monitor_tone) }}
+                    </div>
+
+                    <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">
+                            <p class="text-xs font-medium text-content-muted">Check Mode</p>
+                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ 'Every ' ~ payload.readiness_monitor.interval_minutes ~ ' Min' if payload.readiness_monitor.enabled else 'On Demand' }}</p>
                         </div>
-                        <div class="border-b border-outline-subtle px-5 py-4 sm:border-b-0 sm:border-r">
-                            <p class="text-xs font-medium text-content-muted">Ready Reports</p>
-                            <p class="mt-1 text-xl font-semibold text-content-primary">{{ posture.ready_reports }}</p>
-                            <p class="mt-1 text-xs text-content-muted">Database lifecycle state</p>
+                        <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">
+                            <p class="text-xs font-medium text-content-muted">Last Check</p>
+                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ payload.readiness_monitor.checked_label }}</p>
                         </div>
-                        <div class="px-5 py-4">
-                            <p class="text-xs font-medium text-content-muted">Tracked Size</p>
-                            <p class="mt-1 text-xl font-semibold text-content-primary">{{ posture.tracked_size }}</p>
-                            <p class="mt-1 text-xs text-content-muted">Recorded artifact size</p>
+                        <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">
+                            <p class="text-xs font-medium text-content-muted">Evidence Source</p>
+                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ posture.source_label }}</p>
+                        </div>
+                        <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">
+                            <p class="text-xs font-medium text-content-muted">Strong Verification</p>
+                            <div class="mt-1">{{ table_label.status_indicator_label(posture.verification_label, posture.verification_tone) }}</div>
                         </div>
                     </div>
-                    <div class="p-5 sm:p-6">
-                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <p class="text-sm font-semibold text-content-primary">Automatic Storage Readiness</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Lightweight connectivity checks publish one shared readiness state for every Reports page.</p>
-                            </div>
-                            {{ table_label.status_indicator_label(posture.monitor_label, posture.monitor_tone) }}
-                        </div>
-                        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">
-                                <p class="text-xs font-medium text-content-muted">Interval</p>
-                                <p class="mt-1 text-sm font-semibold text-content-primary">Every {{ payload.readiness_monitor.interval_minutes }} Min</p>
-                            </div>
-                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">
-                                <p class="text-xs font-medium text-content-muted">Last Check</p>
-                                <p class="mt-1 text-sm font-semibold text-content-primary">{{ payload.readiness_monitor.checked_label }}</p>
-                            </div>
-                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">
-                                <p class="text-xs font-medium text-content-muted">Evidence Source</p>
-                                <p class="mt-1 text-sm font-semibold text-content-primary">{{ posture.source_label }}</p>
-                            </div>
-                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">
-                                <p class="text-xs font-medium text-content-muted">Strong Verification</p>
-                                <div class="mt-1">{{ table_label.status_indicator_label(posture.verification_label, posture.verification_tone) }}</div>
+
+                    <div class="mt-4 rounded-xl border border-brand-outline bg-kaori-soft p-4"
+                         data-storage-readiness-tip="true">
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary" aria-hidden="true">
+                                <i data-lucide="lightbulb" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-kaori-primary">Operational Tip</p>
+                                <p class="mt-1 text-sm font-semibold text-content-primary">{{ posture.tip_title }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ posture.tip_text }}</p>
                             </div>
                         </div>
                     </div>
-                </div>
+                </section>
             </div>
-            {% if not backend_status.available %}
-                <div class="border-t border-outline-subtle bg-status-warning-soft px-5 py-4 sm:px-6">
-                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="flex min-w-0 items-start gap-3">
-                            <i data-lucide="triangle-alert" class="mt-0.5 h-4 w-4 shrink-0 text-status-warning" aria-hidden="true"></i>
-                            <div>
-                                <p class="text-sm font-semibold text-status-warning-text">{{ backend_status.title }}</p>
-                                <p class="mt-1 text-xs leading-5 text-status-warning-text">{{ backend_status.description }}</p>
-                            </div>
-                        </div>
-                        <a href="{{ url_for('reports.storage', verify='1', workspace='overview') }}"
-                           class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-md border border-status-warning-border bg-surface-card px-3 text-xs font-semibold text-status-warning-text transition hover:bg-surface-hover">
-                            <i data-lucide="refresh-cw" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                            Verify Storage
-                        </a>
-                    </div>
-                </div>
-            {% endif %}
         </section>
 
         <section id="report-storage-workspace"

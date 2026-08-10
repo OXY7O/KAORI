@@ -36,9 +36,17 @@ def test_storage_page_uses_balanced_hero_and_one_state_aware_posture() -> None:
     assert 'Generated Reports' in template
     assert 'data-report-storage-posture=' in template
     assert 'Storage Operations Posture' in template
+    assert 'data-storage-posture-layout="decision-readiness-tip"' in template
+    assert 'Storage Decision' in template
     assert 'Automatic Storage Readiness' in template
     assert 'data-report-storage-readiness-monitor="true"' in template
+    assert 'data-storage-readiness-tip="true"' in template
+    assert 'Operational Tip' in template
 
+    assert 'Tracked Artifacts' not in template
+    assert 'Ready Reports' not in template
+    assert 'Tracked Size' not in template
+    assert 'Report Metadata' not in template
     assert 'reports/components/_summary_strip.html' not in template
     assert 'xl:grid-cols-[minmax(0,1fr)_380px]' not in template
     for raw_palette in ('emerald-', 'amber-', 'rose-', 'slate-'):
@@ -85,7 +93,7 @@ def test_storage_workspace_normalization_is_deterministic() -> None:
     assert normalize('unknown-workspace') == 'overview'
 
 
-def test_storage_posture_separates_metadata_read_and_write_availability() -> None:
+def test_storage_posture_keeps_only_read_write_and_state_aware_tip() -> None:
     symbols = load_service_symbols('build_storage_operations_posture')
     build = symbols['build_storage_operations_posture']
     monitor = {
@@ -114,7 +122,8 @@ def test_storage_posture_separates_metadata_read_and_write_availability() -> Non
     assert ready['status_label'] == 'Storage Ready'
     assert ready['read_label'] == 'Available'
     assert ready['write_label'] == 'Ready'
-    assert ready['metadata_label'] == 'Available'
+    assert ready['tip_title'] == 'Use Strong Verification for Recovery Events'
+    assert 'lightweight' in ready['tip_text']
 
     degraded = build(
         backend_name='s3',
@@ -132,6 +141,7 @@ def test_storage_posture_separates_metadata_read_and_write_availability() -> Non
     assert degraded['read_label'] == 'Available'
     assert degraded['write_label'] == 'Paused'
     assert degraded['verification_label'] == 'Required'
+    assert degraded['tip_title'] == 'Complete Strong Verification Before Resuming Writes'
 
     disconnected = build(
         backend_name='s3',
@@ -146,9 +156,9 @@ def test_storage_posture_separates_metadata_read_and_write_availability() -> Non
         readiness_monitor=monitor,
     )
     assert disconnected['status_label'] == 'Disconnected'
-    assert disconnected['metadata_label'] == 'Available'
     assert disconnected['read_label'] == 'Paused'
     assert disconnected['write_label'] == 'Paused'
+    assert disconnected['tip_title'] == 'Restore Connectivity First'
 
 
 def test_integrity_samples_are_presented_as_registry_rows_not_freeform_cards() -> None:
