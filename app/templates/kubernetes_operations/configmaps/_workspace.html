@@ -1,17 +1,18 @@
 {% import "components/live_lookup_notice.html" as live_lookup %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/form_field.html" as form_field %}
 <input type="hidden"
        name="workspace_mode"
        value="{{ workspace_mode|default('update') }}">
 <div class="grid gap-4 md:grid-cols-3">
     <label class="block min-w-0" for="configmap-cluster">
-        <span class="text-xs font-semibold text-content-primary">Cluster</span>
+        {{ form_field.label_row('Cluster') }}
         <select id="configmap-cluster"
                 name="cluster_id"
                 hx-get="{{ url_for('kubernetes_operations.configmap_workspace') }}"
                 hx-target="#configmap-workspace"
                 hx-include="closest #configmap-workspace"
-                class="mt-2 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                class="{{ form_field.select_classes() }} font-medium">
             <option value="">Select cluster</option>
             {% for cluster in clusters|default([]) %}
                 <option value="{{ cluster.id }}"
@@ -21,13 +22,13 @@
         </select>
     </label>
     <label class="block min-w-0" for="configmap-namespace">
-        <span class="text-xs font-semibold text-content-primary">Namespace</span>
+        {{ form_field.label_row('Namespace') }}
         <select id="configmap-namespace"
                 name="namespace"
                 hx-get="{{ url_for('kubernetes_operations.configmap_workspace') }}"
                 hx-target="#configmap-workspace"
                 hx-include="closest #configmap-workspace"
-                class="mt-2 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20"
+                class="{{ form_field.select_classes() }} font-medium"
                 {{ 'disabled' if not selected_cluster_id or not namespaces else '' }}>
             <option value="">
                 {% if not selected_cluster_id %}
@@ -45,20 +46,17 @@
             {% endfor %}
         </select>
         {% if selected_cluster_id and not selection_error and not namespaces %}
-            <span class="mt-2 block text-xs leading-5 text-content-muted">No live namespace is available for the selected cluster.</span>
+            {{ form_field.help('No live namespace is available for the selected cluster.') }}
         {% endif %}
     </label>
     <label class="block min-w-0" for="configmap-name">
-        <span class="flex items-center justify-between gap-2">
-            <span class="text-xs font-semibold text-content-primary">ConfigMap</span>
-            {{ table_label.status_label('Live', 'normal', 'radio') }}
-        </span>
+        {{ form_field.label_row('ConfigMap', 'Live', 'normal', 'radio') }}
         <select id="configmap-name"
                 name="configmap_name"
                 hx-get="{{ delete_target_url if workspace_mode == 'delete' else url_for('kubernetes_operations.configmap_editor') }}"
                 hx-target="{{ '#configmap-delete-target' if workspace_mode == 'delete' else '#configmap-editor' }}"
                 hx-include="closest #configmap-workspace"
-                class="mt-2 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20"
+                class="{{ form_field.select_classes() }} font-medium"
                 {{ 'disabled' if not selected_namespace or not configmaps else '' }}>
             <option value="">
                 {% if not selected_namespace %}
@@ -76,7 +74,7 @@
             {% endfor %}
         </select>
         {% if selected_namespace and not configmaps and not selection_error %}
-            <span class="mt-2 block text-xs leading-5 text-content-muted">No ConfigMap currently exists in this live namespace.</span>
+            {{ form_field.help('No ConfigMap currently exists in this live namespace.') }}
         {% endif %}
     </label>
 </div>

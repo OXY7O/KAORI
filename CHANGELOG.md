@@ -4,6 +4,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ## [Unreleased]
 ### Changed
+- Standardized ConfigMap/Secret CRUD target-field vertical alignment through a shared form-field primitive, restored Secret Replace actions inside the HTMX-refreshed target content, and repaired the Design System final-recheck Engineering Standard index.
 
 - Standardized reviewed Kubernetes Operations task pages on the shared **Form + Right Context** pattern: ConfigMap Create/Update/Delete, Secret Create/Replace/Delete, and Protected Reveal `New Request` now reuse one 8/12 main-task + 4/12 contextual-guidance geometry derived from the proven Integration registration forms. TLS workflows and Reveal registries retain their dedicated reviewed layouts.
 

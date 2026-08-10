@@ -182,3 +182,18 @@ Do not:
 - Layout stacks in semantic order below `xl`.
 - Light/dark, 14-inch, narrow viewport, focus, validation, loading, and error states are checked.
 - No page-local layout family is introduced.
+
+## Form Field Alignment Contract
+
+Form + Right Context pages use a single target-field baseline. The canonical primitive is `components/form_field.html`.
+
+Rules:
+
+- every label row reserves `min-h-6`, including fields without a status badge;
+- `Live`, `Create Only`, or similar compact metadata belongs in that label row and must not push the control downward;
+- the control begins immediately after the label row with the canonical `mt-2` spacing;
+- descriptive/help copy is rendered **below** the control, never between label and control;
+- target selects use the same `h-10` control height across ConfigMap, Secret, and Protected Reveal workflows;
+- a grid row must not mix `h-10` and `h-11` controls.
+
+This keeps Cluster, Namespace, object-name, mutability, and live-target selectors vertically aligned on desktop while preserving semantic stacking on narrow viewports.

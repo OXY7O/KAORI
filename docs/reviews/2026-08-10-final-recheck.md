@@ -201,3 +201,10 @@ Operations becomes **PASS — LOCKED** only after authoritative Static Quality, 
 ## Next review
 
 `06 — Kubernetes Analytics` starts only after Kubernetes Operations reaches `PASS — LOCKED`.
+
+### CRUD Form Alignment and Secret Replace Action Follow-Up
+
+- ConfigMap and Secret CRUD target rows now use the shared `components/form_field.html` vertical-alignment contract: equal label-row height, `h-10` controls, and helper text below controls.
+- Protected Secret Reveal target selectors use the same field baseline.
+- Secret Replace renders Validate/Replace actions inside the HTMX-refreshed content partial so selecting a target cannot leave the page without its mutation controls.
+- The Design System and Design README again register `docs/standards/KAORI_ENGINEERING_STANDARD_V1.md` as the mandatory final-recheck engineering index.

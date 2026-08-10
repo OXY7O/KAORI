@@ -25,7 +25,9 @@ def require(condition: bool, message: str, errors: list[str]) -> None:
 def main() -> int:
     errors: list[str] = []
     component = read('app/templates/components/form_with_context_rail.html')
+    form_field = read('app/templates/components/form_field.html')
     standard = read('docs/design/components/FORM_WITH_CONTEXT_RAIL.md')
+    form_field_standard = read('docs/design/components/FORM_FIELD.md')
     form_standard = read('docs/design/components/FORM.md')
     right_rail = read('docs/design/components/RIGHT_CONTEXT_RAIL.md')
     design_readme = read('docs/design/README.md')
@@ -40,6 +42,23 @@ def main() -> int:
         'min-w-0 space-y-4 xl:col-span-4 xl:sticky xl:top-5',
     ):
         require(token in component, f'Form + Right Context component missing canonical token: {token}', errors)
+
+    for token in (
+        'macro label_row',
+        'min-h-6',
+        'macro select_classes',
+        'mt-2 h-10 w-full',
+        'macro help',
+    ):
+        require(token in form_field, f'Form Field component missing canonical alignment token: {token}', errors)
+
+    for token in (
+        '# KAORI Form Field Alignment Standard',
+        'Helper / Validation Copy',
+        'never between label and control',
+        'do not mix `h-10` and `h-11`',
+    ):
+        require(token in form_field_standard, f'Form Field documentation missing: {token}', errors)
 
     for relative in FORM_CONTEXT_CONSUMERS:
         source = read(relative)
@@ -101,6 +120,11 @@ def main() -> int:
     require(
         'components/FORM_WITH_CONTEXT_RAIL.md' in design_readme,
         'Design README must index Form + Right Context.',
+        errors,
+    )
+    require(
+        'components/FORM_FIELD.md' in design_readme,
+        'Design README must index Form Field alignment.',
         errors,
     )
     require(

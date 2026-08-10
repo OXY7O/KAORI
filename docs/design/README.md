@@ -2,6 +2,7 @@
 
 ## Start Here
 
+- `../standards/KAORI_ENGINEERING_STANDARD_V1.md` — mandatory final-recheck and engineering review index.
 - `KAORI_STYLING_GUIDE.md` — practical implementation and page-review guide.
 - `KAORI_DESIGN_SYSTEM.md` — authoritative global visual and interaction contract.
 
@@ -47,6 +48,7 @@ Authoritative shell standards include the locked application-shell navigation co
 - `components/PEER_CONTENT_GRID.md`
 - `components/RIGHT_CONTEXT_RAIL.md`
 - `components/FORM_WITH_CONTEXT_RAIL.md`
+- `components/FORM_FIELD.md`
 - `components/LOADING.md`
 - `components/INFO_FLOW.md`
 - `components/RELATED_PAGE_CARD.md`

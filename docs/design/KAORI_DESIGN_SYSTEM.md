@@ -14,6 +14,10 @@ KAORI UI documentation is organized into four layers:
 
 A reference implementation demonstrates a contract; its domain-specific content is never a global rule.
 
+### Final-recheck engineering index
+
+The mandatory engineering and release-review source of truth is `docs/standards/KAORI_ENGINEERING_STANDARD_V1.md`. The Design System governs visual and interaction contracts; the Engineering Standard is the final-recheck index for architecture, testing, security, reliability, documentation, release governance, and CI/CD evidence.
+
 ## Design direction
 
 The visual concept is **KAORI Violet Infrastructure**: a modern enterprise operations interface with a violet brand identity, neutral operational surfaces, restrained elevation, and conventional infrastructure status semantics.

@@ -1,12 +1,13 @@
 {% import "components/live_lookup_notice.html" as live_lookup %}
+{% import "components/form_field.html" as form_field %}
 <div id="configmap-namespace-field">
     <label class="block min-w-0" for="namespace">
-        <span class="text-xs font-semibold text-content-primary">Namespace</span>
+        {{ form_field.label_row('Namespace') }}
         <select id="namespace"
                 name="namespace"
                 required
                 data-configmap-namespace
-                class="mt-2 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20 disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-disabled"
+                class="{{ form_field.select_classes() }} font-medium"
                 {% if not namespaces %}disabled{% endif %}>
             <option value="">
                 {% if not cluster_selected %}
@@ -24,9 +25,9 @@
             {% endfor %}
         </select>
         {% if cluster_selected and not namespace_error and not namespaces %}
-            <span class="mt-2 block text-xs leading-5 text-content-muted">No live namespace is available for the selected cluster.</span>
+            {{ form_field.help('No live namespace is available for the selected cluster.') }}
         {% elif namespaces %}
-            <span class="mt-2 block text-xs leading-5 text-content-muted">Loaded directly from the selected Kubernetes API.</span>
+            {{ form_field.help('Loaded directly from the selected Kubernetes API.') }}
         {% endif %}
     </label>
 </div>

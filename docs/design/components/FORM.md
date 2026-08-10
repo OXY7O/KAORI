@@ -4,6 +4,8 @@ Form and filter labels use Title Case, 12 px semibold. Values use 14 px regular.
 
 Page-level form inputs and selects use a 40 px minimum height, `rounded-lg` geometry, soft border, visible Violet focus ring, and contextual placeholder. Selects and action controls use pointer cursors; disabled controls use cursor-not-allowed. Compact table-filter controls are the documented exception and use `rounded-md` through `components/table.html`.
 
+Peer fields that must align across a grid use `components/form_field.html`; label rows reserve a common 24 px height, controls remain 40 px, and helper copy sits below the control. See `FORM_FIELD.md`.
+
 Desktop filter groups remain on one row when space permits. Mobile layouts stack without horizontal page overflow.
 
 ## Form Action Footer

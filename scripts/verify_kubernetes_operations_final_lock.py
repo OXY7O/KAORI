@@ -226,6 +226,13 @@ def main() -> int:
             print(f'ERROR: {error}')
         return 1
 
+    form_field = read('app/templates/components/form_field.html')
+    replace_page = read('app/templates/kubernetes_operations/secrets/replace.html')
+    replace_content = read('app/templates/kubernetes_operations/secrets/_replace_content_form.html')
+    require('min-h-6' in form_field and 'mt-2 h-10 w-full' in form_field, 'Form Field Alignment contract drifted.', errors)
+    require('replace-secret-apply-button' in replace_content and 'Replace Selected Data' in replace_content, 'Secret Replace must render its apply action inside the HTMX-swapped content.', errors)
+    require('{% if target and not target.immutable %}' not in replace_page, 'Secret Replace page must not gate actions on stale parent target state.', errors)
+
     print(
         'KAORI Kubernetes Operations final-lock passed: AuthZ-first cluster prerequisites, '
         'task-appropriate ConfigMap/Secret mutation workspaces, reviewed Integration registration geometry, layered release evidence, '

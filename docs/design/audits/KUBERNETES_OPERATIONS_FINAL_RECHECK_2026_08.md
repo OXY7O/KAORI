@@ -147,3 +147,10 @@ The functional release gate was also corrected to remove the nonexistent `tests/
 ## Lock condition
 
 The redesign becomes **PASS — LOCKED** only after authoritative devcontainer Static Quality, Contract, Unit, Functional, Integration, Security, Rendering/UI, E2E smoke, 14-inch/light/dark browser regression, and the canonical `quality_gate.sh --all` pass.
+
+### CRUD Form Alignment and Secret Replace Action Follow-Up
+
+- ConfigMap and Secret CRUD target rows now use the shared `components/form_field.html` vertical-alignment contract: equal label-row height, `h-10` controls, and helper text below controls.
+- Protected Secret Reveal target selectors use the same field baseline.
+- Secret Replace renders Validate/Replace actions inside the HTMX-refreshed content partial so selecting a target cannot leave the page without its mutation controls.
+- The Design System and Design README again register `docs/standards/KAORI_ENGINEERING_STANDARD_V1.md` as the mandatory final-recheck engineering index.
