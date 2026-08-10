@@ -1,0 +1,36 @@
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[3]
+
+
+def read(path: str) -> str:
+    return (ROOT / path).read_text()
+
+
+def test_shared_content_tabs_preserve_analytics_geometry_and_offer_server_owned_links() -> None:
+    shared = read('app/templates/components/content_tabs.html')
+    analytics = read('app/templates/analytics/components/_content_tabs.html')
+    storage = read('app/templates/reports/storage/index.html')
+
+    # Geometry is the Analytics compact-tab treatment: soft embedded strip,
+    # rounded bordered items, KAORI violet active state, and compact spacing.
+    assert "border-b border-outline-subtle bg-surface-hover px-5 py-2 sm:px-6" in shared
+    assert 'flex flex-wrap gap-2' in shared
+    assert 'rounded-lg border px-3.5 text-sm font-semibold' in shared
+    assert 'border-kaori-primary bg-kaori-soft text-kaori-primary-dark dark:text-kaori-accent' in shared
+    assert 'render_buttons' in shared
+    assert 'render_links' in shared
+    assert 'data-kaori-tab-variant="content-tabs-server"' in shared
+
+    # Analytics keeps its existing public macro but delegates the geometry to
+    # the shared component, avoiding a Reports-vs-Analytics style fork.
+    assert 'components/content_tabs.html' in analytics
+    assert 'content_tabs.render_buttons' in analytics
+    assert "data_namespace='analytics'" in analytics
+
+    # Storage consumes the same global component with server-owned URL state.
+    assert 'components/content_tabs.html' in storage
+    assert 'content_tabs.render_links' in storage
+    assert "data_namespace='storage'" in storage
+    assert 'components/framed_workspace_tabs.html' not in storage
+    assert 'framed_tabs.render_navigation' not in storage

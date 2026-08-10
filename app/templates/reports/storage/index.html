@@ -1,6 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
-{% import "components/framed_workspace_tabs.html" as framed_tabs %}
+{% import "components/content_tabs.html" as content_tabs %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% block title %}Reports Storage{% endblock title %}
@@ -167,11 +167,18 @@
                     </div>
                 </div>
             </header>
-            {{ framed_tabs.render_navigation([
-                ('overview', 'Storage Overview', 'hard-drive', overview_href),
-                ('integrity', 'Integrity & Verification', 'shield-check', integrity_href),
-                ('retention', 'Retention & Cleanup', 'archive', retention_href)
-            ], payload.workspace, prefix='report-storage', aria_label='Report Storage Sections') }}
+            {{ content_tabs.render_links(
+                'report-storage',
+                [
+                    ('overview', 'Storage Overview', 'hard-drive', overview_href),
+                    ('integrity', 'Integrity & Verification', 'shield-check', integrity_href),
+                    ('retention', 'Retention & Cleanup', 'archive', retention_href)
+                ],
+                payload.workspace,
+                'Report Storage Sections',
+                embedded=true,
+                data_namespace='storage'
+            ) }}
 
             {% if payload.workspace == 'overview' %}
                 <div class="p-5 sm:p-6">

@@ -56,11 +56,12 @@ def test_storage_page_uses_balanced_hero_and_one_state_aware_posture() -> None:
         assert raw_palette not in template
 
 
-def test_storage_workspace_reuses_framed_tabs_and_canonical_table_presentation() -> None:
+def test_storage_workspace_reuses_analytics_style_content_tabs_and_canonical_table_presentation() -> None:
     template = read('app/templates/reports/storage/index.html')
 
-    assert 'components/framed_workspace_tabs.html' in template
-    assert 'framed_tabs.render_navigation' in template
+    assert 'components/content_tabs.html' in template
+    assert 'content_tabs.render_links' in template
+    assert "data_namespace='storage'" in template
     assert "('overview', 'Storage Overview'" in template
     assert "('integrity', 'Integrity & Verification'" in template
     assert "('retention', 'Retention & Cleanup'" in template
