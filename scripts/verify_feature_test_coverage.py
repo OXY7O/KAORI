@@ -19,6 +19,13 @@ _REQUIRED_TEST_FILES = {
     'tests/rendering/dashboards/test_kubernetes_dashboard_rendering.py': 2,
     'tests/integration/dashboards/test_kubernetes_dashboard_repository.py': 1,
     'tests/e2e/dashboards/test_kubernetes_dashboard_smoke.py': 2,
+    'tests/contracts/kubernetes/test_inventory_final_release_contract.py': 4,
+    'tests/unit/inventory/test_inventory_topology_selection.py': 3,
+    'tests/inventory/test_inventory_route_characterization.py': 3,
+    'tests/security/inventory/test_inventory_security.py': 3,
+    'tests/rendering/inventory/test_inventory_rendering.py': 2,
+    'tests/integration/inventory/test_node_inventory_read_model.py': 1,
+    'tests/e2e/inventory/test_inventory_smoke.py': 2,
 }
 
 

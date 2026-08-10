@@ -1,9 +1,25 @@
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable
 from typing import Any
 
 from flask import url_for
 from flask_login import current_user
+
+WelcomeTarget = tuple[str | None, str]
+
+
+def resolve_welcome_target(
+    targets: Iterable[WelcomeTarget],
+    has_permission: Callable[[str], bool],
+) -> str | None:
+    """Return the first target authorized for the current Welcome catalog context."""
+
+    for permission_key, endpoint in targets:
+        if permission_key is None or has_permission(permission_key):
+            return endpoint
+    return None
+
 
 WELCOME_WORKSPACE_GROUP_DEFINITIONS: tuple[dict[str, str], ...] = (
     {
@@ -215,12 +231,10 @@ def build_welcome_workspace_groups() -> list[dict[str, Any]]:
     }
 
     for definition in WELCOME_SHORTCUT_DEFINITIONS:
-        resolved_endpoint: str | None = None
-
-        for permission_key, endpoint in definition['targets']:
-            if permission_key is None or current_user.has_permission(permission_key):
-                resolved_endpoint = endpoint
-                break
+        resolved_endpoint = resolve_welcome_target(
+            definition['targets'],
+            current_user.has_permission,
+        )
 
         if resolved_endpoint is None:
             continue

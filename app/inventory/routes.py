@@ -1,5 +1,7 @@
 import logging
-from typing import Any
+from collections.abc import Callable
+from functools import wraps
+from typing import Any, TypeVar, cast
 
 from flask import (
     Blueprint,
@@ -80,6 +82,8 @@ from app.rbac.decorators import permission_required
 
 logger = logging.getLogger(__name__)
 
+_View = TypeVar('_View', bound=Callable[..., Any])
+
 _INVENTORY_PARTIAL_TEMPLATES = {
     resource: {
         'index': f'inventory/{resource}/index.html',
@@ -104,18 +108,16 @@ def inject_inventory_freshness_context() -> dict[str, Any]:
     return {'inventory_freshness': get_inventory_freshness_context(cluster_id=cluster_id)}
 
 
-@inventory_bp.before_request
-def block_clusterless_inventory_partials():
-    """Keep direct HTMX inventory requests aligned with the full-page blocker."""
-    if request.method != 'GET' or request.headers.get('HX-Request') != 'true':
-        return None
+def _clusterless_inventory_htmx_guard(view: _View) -> _View:
+    """Block authorized direct HTMX reads when no Kubernetes cluster is registered."""
 
-    if has_registered_clusters() is False:
-        return render_template(
-            'components/cluster/_onboarding_banner.html',
-        )
+    @wraps(view)
+    def guarded(*args: Any, **kwargs: Any) -> Any:
+        if request.headers.get('HX-Request') == 'true' and has_registered_clusters() is False:
+            return render_template('components/cluster/_onboarding_banner.html')
+        return view(*args, **kwargs)
 
-    return None
+    return cast(_View, guarded)
 
 
 @inventory_bp.post('/<string:cluster_id>/sync')
@@ -215,6 +217,7 @@ def _inventory_scope_label(clusters: list[Any], cluster_id: str) -> str:
 
 @inventory_bp.route('/')
 @permission_required('inventory.view')
+@_clusterless_inventory_htmx_guard
 def overview():
     cluster_page = request.args.get(
         'cluster_page',
@@ -256,6 +259,7 @@ def overview():
 
 @inventory_bp.get('/topology')
 @permission_required('inventory.view')
+@_clusterless_inventory_htmx_guard
 def topology():
     context = build_topology_page_context(
         cluster_id=request.args.get('cluster_id', '', type=str),
@@ -272,6 +276,7 @@ def topology():
 
 @inventory_bp.get('/topology/data')
 @permission_required('inventory.view')
+@_clusterless_inventory_htmx_guard
 def topology_data():
     graph = build_topology_graph(
         cluster_id=request.args.get('cluster_id', '', type=str),
@@ -285,6 +290,7 @@ def topology_data():
 
 @inventory_bp.route('/nodes')
 @permission_required('inventory.view')
+@_clusterless_inventory_htmx_guard
 def nodes():
     clusters, cluster_id = _inventory_cluster_scope(request.args.get('cluster_id', '', type=str))
     role = request.args.get('role', '', type=str)
@@ -330,6 +336,7 @@ def nodes():
 
 @inventory_bp.get('/nodes/<int:node_id>/details')
 @permission_required('inventory.view')
+@_clusterless_inventory_htmx_guard
 def node_details(node_id: int):
     node = get_node_detail(node_id)
     if node is None:
@@ -339,6 +346,7 @@ def node_details(node_id: int):
 
 @inventory_bp.route('/namespaces')
 @permission_required('inventory.view')
+@_clusterless_inventory_htmx_guard
 def namespaces():
     clusters, cluster_id = _inventory_cluster_scope(request.args.get('cluster_id', '', type=str))
     status = request.args.get('status', '', type=str)
@@ -373,6 +381,7 @@ def namespaces():
 
 @inventory_bp.get('/namespaces/<int:namespace_id>/details')
 @permission_required('inventory.view')
+@_clusterless_inventory_htmx_guard
 def namespace_details(namespace_id: int):
     namespace = get_namespace_detail(namespace_id)
     if namespace is None:
@@ -385,6 +394,7 @@ def namespace_details(namespace_id: int):
 
 @inventory_bp.route('/configuration')
 @permission_required('inventory.view')
+@_clusterless_inventory_htmx_guard
 def configuration():
     clusters, cluster_id = _inventory_cluster_scope(request.args.get('cluster_id', '', type=str))
     namespace = request.args.get('namespace', '', type=str)
@@ -427,6 +437,7 @@ def configuration():
 
 @inventory_bp.get('/configuration/<int:configuration_id>/details')
 @permission_required('inventory.view')
+@_clusterless_inventory_htmx_guard
 def configuration_details(configuration_id: int):
     item = get_configuration_detail(configuration_id)
     if item is None:
@@ -439,6 +450,7 @@ def configuration_details(configuration_id: int):
 
 @inventory_bp.route('/workloads')
 @permission_required('inventory.view')
+@_clusterless_inventory_htmx_guard
 def workloads():
     clusters, cluster_id = _inventory_cluster_scope(request.args.get('cluster_id', '', type=str))
     namespace = request.args.get('namespace', '', type=str)
@@ -497,6 +509,7 @@ def workloads():
 
 @inventory_bp.get('/workloads/<int:workload_id>/details')
 @permission_required('inventory.view')
+@_clusterless_inventory_htmx_guard
 def workload_details(workload_id: int):
     workload = get_workload_detail(workload_id)
     if workload is None:
@@ -509,6 +522,7 @@ def workload_details(workload_id: int):
 
 @inventory_bp.route('/pods')
 @permission_required('inventory.view')
+@_clusterless_inventory_htmx_guard
 def pods():
     clusters, cluster_id = _inventory_cluster_scope(request.args.get('cluster_id', '', type=str))
     namespace = request.args.get('namespace', '', type=str)
@@ -576,6 +590,7 @@ def pods():
 
 @inventory_bp.get('/pods/<int:pod_id>/details')
 @permission_required('inventory.view')
+@_clusterless_inventory_htmx_guard
 def pod_details(pod_id: int):
     pod = get_pod_detail(
         pod_id,
@@ -592,6 +607,7 @@ def pod_details(pod_id: int):
 
 @inventory_bp.route('/services')
 @permission_required('inventory.view')
+@_clusterless_inventory_htmx_guard
 def services():
     clusters, cluster_id = _inventory_cluster_scope(request.args.get('cluster_id', '', type=str))
     namespace = request.args.get('namespace', '', type=str)
@@ -634,6 +650,7 @@ def services():
 
 @inventory_bp.get('/services/<int:service_id>/details')
 @permission_required('inventory.view')
+@_clusterless_inventory_htmx_guard
 def service_details(service_id: int):
     service = get_service_detail(service_id)
     if service is None:
@@ -646,6 +663,7 @@ def service_details(service_id: int):
 
 @inventory_bp.route('/ingresses')
 @permission_required('inventory.view')
+@_clusterless_inventory_htmx_guard
 def ingresses():
     clusters, cluster_id = _inventory_cluster_scope(request.args.get('cluster_id', '', type=str))
     namespace = request.args.get('namespace', '', type=str)
@@ -694,6 +712,7 @@ def ingresses():
 
 @inventory_bp.get('/ingresses/<int:ingress_id>/details')
 @permission_required('inventory.view')
+@_clusterless_inventory_htmx_guard
 def ingress_details(ingress_id: int):
     ingress = get_ingress_detail(ingress_id)
     if ingress is None:
@@ -706,6 +725,7 @@ def ingress_details(ingress_id: int):
 
 @inventory_bp.route('/storage')
 @permission_required('inventory.view')
+@_clusterless_inventory_htmx_guard
 def storage():
     clusters, cluster_id = _inventory_cluster_scope(request.args.get('cluster_id', '', type=str))
     namespace = request.args.get('namespace', '', type=str)
@@ -761,6 +781,7 @@ def storage():
 
 @inventory_bp.get('/storage/<int:storage_id>/details')
 @permission_required('inventory.view')
+@_clusterless_inventory_htmx_guard
 def storage_details(storage_id: int):
     storage_item = get_storage_detail(storage_id)
     if storage_item is None:

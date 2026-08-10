@@ -2,7 +2,7 @@
 
 ## 1. Review result
 
-The current registry contains **55 permission keys**. Static review of Python route guards, aggregate guards, runtime `has_permission()` checks, navigation visibility, and welcome shortcut declarations found no application permission reference that is missing from `DEFAULT_PERMISSIONS`.
+The current registry contains **54 permission keys**. Static review of Python route guards, aggregate guards, runtime `has_permission()` checks, navigation visibility, and welcome shortcut declarations found no application permission reference that is missing from `DEFAULT_PERMISSIONS`.
 
 This means the registry is complete for the current code surface. It does not mean every registered key is an active independent authorization boundary.
 
@@ -21,15 +21,11 @@ Most registry keys are active server-side contracts enforced by `permission_requ
 
 UI visibility must follow these keys, but server-side enforcement remains authoritative.
 
-### 2.2 Authenticated baseline keys
+### 2.2 Authenticated baseline key
 
-`welcome.view` and `settings.view` are assigned to every protected default role, but the Welcome workspace and personal General Settings remain available to authenticated users by product design.
+`settings.view` remains assigned to every protected default role, while personal General Settings remains available to authenticated users by product design. It is therefore a baseline capability rather than an independent deny boundary and must not be presented as a reliable way to remove self-service settings access from a custom role. Settings final recheck will resolve whether this key should be formalized or retired.
 
-Consequences:
-
-- these keys are not currently strict route-level deny boundaries;
-- they should not be presented as a reliable way to remove Welcome or self-service settings access from a custom role;
-- a future cleanup should either formalize them as authenticated baseline capabilities or remove them through an explicit compatibility migration.
+`welcome.view` is no longer part of the registry. Welcome is an authenticated landing route, so retaining a permission that did not guard the route created a false authorization contract. Migration `20260810_retire_welcome_view` removes the key and its historical role assignments.
 
 ### 2.3 Reserved key
 

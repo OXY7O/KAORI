@@ -13,6 +13,14 @@ For each item use one of:
 - `N/A` — not semantically applicable to the page.
 - `BLOCK RELEASE` — unresolved correctness, security, reliability, or release evidence gap.
 
+## Product contract baseline
+
+Before reviewing implementation details, define what the page/domain is for, who may use it, its authoritative data source, whether reads are live or snapshot-backed, its mutation boundary, and which behavior is intentionally out of scope. UI must not imply a capability the backend contract does not provide.
+
+## Static quality baseline
+
+Canonical source must pass Ruff, Ruff Format, djLint, Pyright, first-party JavaScript syntax, Prettier, source hygiene, architecture/import-cycle/reachability checks, code-health ceilings, and migration-graph validation. Do not duplicate formatter/linter ownership with brittle verifier strings.
+
 ## 1. Brand, color, theme, and typography
 
 Canonical owners:
@@ -200,33 +208,81 @@ Each final recheck asks whether the current tests actually prove behavior rather
 
 A verifier should protect a durable invariant, not whitespace. Formatter/linter/type-checker ownership must not be duplicated by brittle source-string checks.
 
-## 17. Per-page final recheck checklist
+## 17. Performance
+
+Review query cardinality, indexes used by common filters/sorts, N+1 access, unbounded lists, in-memory pagination, repeated serialization, provider calls on web requests, payload size, HTMX swap scope, and synchronous work that belongs in a worker. A page must stay bounded at realistic production data volumes.
+
+## 18. Maintainability and readability
+
+Prefer clear ownership, small cohesive functions, explicit contracts, descriptive names, DRY shared components, and direct control flow over compatibility layers or clever indirection. Code-health baselines are debt ceilings, not permission to grow complexity. Tests and verifiers must explain durable behavior rather than mirror formatting.
+
+## 19. Database and migration integrity
+
+Every persistence change must preserve one Alembic head, explicit upgrade behavior, intentional downgrade behavior, transaction safety, constraints/indexes, and a migration regression test when data or authorization state is transformed. Historical migrations remain immutable unless repairing a proven migration defect.
+
+## 20. Documentation lifecycle
+
+Documentation changes with the code. Product contracts, architecture ownership, security boundaries, operator procedures, tests, and deployment guidance must be understandable without relying on chat history. Mark useful historical audits as historical; remove obsolete duplicate docs and references instead of leaving contradictory guidance.
+
+## 21. Release governance, changelog, and Semantic Versioning
+
+Keep work under `[Unreleased]` until release approval. `CHANGELOG.md` records operator-relevant Added/Changed/Fixed/Security/Removed entries. Select MAJOR/MINOR/PATCH from the actual product/API/data/deployment contract, then align application version, Git tag, build SHA/date, image metadata, System Information, and release notes.
+
+## 22. CI/CD and modern infrastructure
+
+Local and CI release gates must use the same canonical commands. CI must fail closed, use pinned tool/runtime versions, provision required PostgreSQL/Redis services for integration/e2e evidence, build the production image only after quality gates pass, and publish traceable immutable artifacts with provenance/SBOM where supported. Deployment must have explicit migration, health/readiness, rollback, and configuration ownership.
+
+### End-to-End smoke dependency rule
+
+End-to-End Smoke must exercise the real application journey while remaining deterministic in developer and CI environments. Use the actual Flask route/session/template/application shell, but isolate external infrastructure unless the smoke explicitly provisions that dependency. PostgreSQL, Redis, Kubernetes, Prometheus, Alertmanager, and S3/MinIO semantics belong to Integration tests or a separately provisioned full-stack environment. A release smoke must not fail merely because an unrelated local infrastructure service is absent.
+
+## 23. Observability and auditability
+
+Privileged mutations, background work, authentication outcomes, provider failures, and operational decisions require enough structured evidence to diagnose failures without exposing secrets. Notification feedback is user-facing state; Activity Audit and job/runtime evidence are the durable operational record where required.
+
+## 24. Dependency, configuration, and supply-chain hygiene
+
+Keep dependencies pinned through canonical lock/compiled files, remove unused packages and vendor assets, prohibit secrets in source/images/logs, validate environment configuration at boundaries, and keep generated/vendor frontend artifacts reproducible. Production images must be built from reviewed source, not mutable local state.
+
+## 25. Per-page final recheck checklist
 
 For every page/domain record:
 
 1. Product/data contract.
-2. Route and RBAC.
+2. Route, authentication, and RBAC.
 3. Architecture and ownership.
-4. Legacy/dead code.
-5. Security and reliability.
-6. Hero including the three right-header variants.
-7. Violet/theme/light-dark.
-8. Tables/status/pagination where applicable.
-9. Right content rail where applicable.
-10. Tab type where applicable.
-11. View Details/modal/drawer/expand behavior where applicable.
-12. Buttons/action bars.
-13. Loading/toast/notification behavior.
-14. Navbar/sidebar global shell interaction.
-15. Responsive/14-inch layout.
-16. Accessibility.
-17. Empty/error/blocked states.
-18. DRY/reusable component ownership.
-19. Title Case/technical typography.
-20. Tests and missing negative cases.
-21. Verifiers/scripts.
-22. Documentation.
-23. Performance/query/provider boundaries.
-24. Regression and release-gate evidence.
+4. Legacy/dead/compatibility code and unused files.
+5. Standard linters/formatters/type checks.
+6. Semantic typography and Title Case.
+7. Shared KAORI style/design standardization.
+8. Hero including the three right-header variants.
+9. Tables/status/pagination where applicable.
+10. Right content rail where applicable.
+11. Tab type where applicable.
+12. View Details/modal/drawer/expand behavior where applicable.
+13. Buttons/action bars.
+14. Loading/toast/notification behavior.
+15. Navbar/sidebar global shell interaction.
+16. Light/dark and responsive/14-inch layout.
+17. Accessibility.
+18. Secure by Design and negative authorization/disclosure cases.
+19. Performance/query/provider boundaries.
+20. Maintainability/readability/DRY ownership.
+21. Reliability, timeout/retry/idempotency/failure states.
+22. Database and migration integrity.
+23. Empty/error/blocked/permission states.
+24. Static Quality evidence.
+25. Contract Test evidence.
+26. Unit Test evidence or explicit N/A justification.
+27. Functional Test evidence.
+28. Integration Test evidence or explicit N/A justification.
+29. Security Regression evidence.
+30. Rendering/UI Contract evidence.
+31. End-to-End Smoke evidence.
+32. Verifiers/scripts rationalization.
+33. Documentation freshness/readability.
+34. Observability/audit evidence where applicable.
+35. Release governance/changelog/version evidence.
+36. CI/CD and production-artifact evidence.
 
 Only after all applicable items pass may the page be marked `PASS — LOCKED`.

@@ -45,3 +45,17 @@ pytest -q tests/migrations -m migration
 ```
 
 Do not keep a debug reproduction after its permanent regression test exists.
+Inventory final-recheck commands:
+
+```bash
+pytest -q tests/unit/inventory -m unit
+pytest -q tests/inventory -m functional
+pytest -q tests/integration/inventory -m integration
+pytest -q tests/security/inventory -m security
+pytest -q tests/rendering/inventory -m rendering
+pytest -q tests/e2e/inventory -m e2e
+pytest -q tests/contracts/kubernetes/test_inventory_final_release_contract.py -m contract
+```
+
+The Inventory integration read-model test validates current-generation filtering and SQL pagination through the actual SQLAlchemy repository path. Provider/infrastructure integration remains separate from deterministic application-shell E2E smoke.
+

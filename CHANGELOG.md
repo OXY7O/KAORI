@@ -6,6 +6,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ### Added
 
+- Added permanent Kubernetes Inventory L0–L7 release evidence and `verify_inventory_final_lock.py` for AuthZ ordering, committed-snapshot ownership, canonical UI composition, Topology database ownership, and residual-file protection.
 - Established `docs/standards/KAORI_ENGINEERING_STANDARD_V1.md` as the mandatory final-recheck index covering the shared Violet palette, Hero variants, tables/pagination/status, right context rails, tab families, progressive disclosure, feedback, notifications, shell navigation, accessibility, security, and test evidence.
 - Added permanent Welcome behavioral characterization and direct Welcome final-lock gate coverage for the final release recheck.
 - Release-governance documentation and an automated release-metadata verifier.
@@ -13,6 +14,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ### Changed
 
+- Hardened Kubernetes Inventory read ownership: clusterless HTMX blocking now executes after `inventory.view`, and Topology reads API Server metadata from the eagerly loaded canonical cluster-connection relationship instead of the integration resolver.
 - Harden Kubernetes Dashboard release ownership: remove unused compatibility/dead internal surface, use explicit selected-cluster naming, keep empty consumer messaging snapshot-only, and add layered Unit/Integration/Security/Rendering/E2E release evidence without changing the locked visual design.
 - Restarted the final release recheck from Welcome under the consolidated KAORI Engineering Standard v1 and recorded the per-standard applicability matrix for locked-page review.
 - Synchronized the code-health debt ledger with the canonical formatted release-candidate source while keeping the 800/160/30/8 default ceilings unchanged, and added an integrity verifier that forbids hidden slack or stale debt entries.
@@ -24,6 +26,10 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Analytics materialization builders are resolved only when worker materialization executes, removing an eager service-registry import cycle.
 - TLS certificate job identifiers are owned by the TLS governance constants module instead of the dispatcher implementation.
 - Canonical job-operation display labels are shared through a domain-neutral execution presentation contract.
+
+### Removed
+
+- Removed unused Inventory `format_byte_count`, `format_gib`, and `_split_inventory_values` helpers plus the stale empty Inventory partial README; no compatibility wrapper is retained.
 
 ### Fixed
 
@@ -39,6 +45,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ### Security
 
+- Closed an Inventory authorization-order regression where Blueprint-level clusterless HTMX handling could respond before route-level `inventory.view`; readiness evaluation now occurs only after authorization.
 - Narrowed 21 database, credential-decoding, and report-catalog exception boundaries to explicit exception classes; the broad-exception burn-down ceiling remains 198 rather than increasing with the stale ledger.
 - Removed the dormant end-to-end remediation orchestrator from the current release source while Intelligence remediation is held for the next controlled redesign.
 

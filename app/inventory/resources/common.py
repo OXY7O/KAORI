@@ -48,9 +48,6 @@ def _display_boolean(value: Any) -> str:
     return '-'
 
 
-def _split_inventory_values(value: str | None) -> list[str]:
-    return [item.strip() for item in (value or '').split(',') if item.strip() and item.strip() != '-']
-
 
 def _selector_matches(
     selector: dict[str, str],

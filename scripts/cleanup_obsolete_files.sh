@@ -41,6 +41,7 @@ obsolete_paths=(
   'app/dashboards/kubernetes/snapshot_builder.py'
   'app/analytics/common/cache.py'
   'app/templates/inventory/components/_detail_macros.html'
+  'app/templates/inventory/partials/_README.md'
   'app/templates/inventory/namespaces/partials/_inventory_scope.html'
   'app/templates/inventory/nodes/partials/_inventory_scope.html'
   'app/templates/inventory/pods/partials/_inventory_scope.html'

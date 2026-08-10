@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from sqlalchemy import false
+from sqlalchemy.orm import joinedload
 
 from app.common.inventory_generation import filter_current_generation
 from app.inventory.topology.contracts import TopologyRecords, TopologySelection
@@ -20,7 +21,9 @@ from app.models import (
 
 
 def load_clusters(cluster_id: str) -> list[Cluster]:
-    query = Cluster.query.order_by(Cluster.created_at.asc(), Cluster.id.asc())
+    query = Cluster.query.options(joinedload(Cluster.kubernetes_connection)).order_by(
+        Cluster.created_at.asc(), Cluster.id.asc()
+    )
     return query.filter(Cluster.id == cluster_id).all() if cluster_id else query.all()
 
 

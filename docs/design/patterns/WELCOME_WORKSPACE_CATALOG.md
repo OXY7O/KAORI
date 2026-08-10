@@ -82,9 +82,13 @@ The final Welcome release boundary is protected by:
 
 ```text
 scripts/verify_welcome_final_lock.py
-tests/welcome/test_welcome_characterization.py
 tests/contracts/welcome/test_welcome_navigation_contract.py
+tests/welcome/test_welcome_characterization.py
+tests/security/welcome/test_welcome_security.py
+tests/rendering/welcome/test_welcome_rendering.py
+tests/e2e/welcome/test_welcome_smoke.py
+tests/migrations/test_retire_welcome_view_permission.py
 ```
 
-The canonical quality gate must run the Welcome verifier directly and the functional test suite must execute the permanent Welcome characterization tests.
+The canonical quality gate runs the Welcome verifier directly, executes permanent behavioral/security/rendering evidence, and runs E2E smoke as a separate test phase. `welcome.view` is retired because authenticated session admission is the actual Welcome boundary.
 

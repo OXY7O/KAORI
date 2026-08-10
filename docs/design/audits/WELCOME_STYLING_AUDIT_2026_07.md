@@ -1,5 +1,10 @@
 # Welcome Styling Audit — July 2026
 
+## Historical status
+
+This document is retained as historical styling evidence. Current implementation/release requirements are owned by `docs/design/patterns/WELCOME_WORKSPACE_CATALOG.md`, `docs/standards/KAORI_ENGINEERING_STANDARD_V1.md`, and the current Final Recheck record. Do not use this July audit as the current release checklist.
+
+
 ## Scope
 
 Reviewed:

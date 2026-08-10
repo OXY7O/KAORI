@@ -102,7 +102,7 @@ All resource inventory pages use the shared KAORI table block, loading bar, filt
 - Namespace Resource Quota and Pod Security values use semibold text, while their detailed Resource Controls content expands naturally without an internal scroll area.
 - Workload and Pod namespace cells reuse the Namespace identity icon without converting the namespace into a semantic badge.
 - Primary workload and Pod operational values use semibold typography; semantic state labels retain their status color.
-- Semantic and metadata badges inside View More summary cards use the same 12px type scale as adjacent detail labels and values. Table badges retain the compact 10px scale.
+- Semantic and metadata badges inside expanded detail summary cards use the same 12px type scale as adjacent detail labels and values. Table badges retain the compact 10px scale.
 - Decorative icons are omitted from placement values, Host Network state, node-selector values, and section-count labels when the text already provides sufficient meaning. Associated-resource timelines center connector lines on their status markers.
 
 - Service, Ingress, Storage, and Configuration tables use the shared Namespace identity treatment. Type/count fields remain plain or semantic text according to their operational meaning, without decorative icons.
@@ -113,7 +113,7 @@ All resource inventory pages use the shared KAORI table block, loading bar, filt
 - Inventory Overview and every resource page use `components/page_hero.html::context_card` for the right-side hero posture. Do not rebuild hero metrics, status badges, or the Manage Clusters action with page-local markup. Inventory Overview keeps exact sync, freshness, and coverage values out of the hero because `snapshot_context_bar.html` owns that context.
 - Resource summary blocks use `inventory/components/_summary.html`. The component owns the summary header, four primary metrics, one progress metric, and two supporting status metrics.
 - Resource table cards use `components/table.html::inventory_block_header`, canonical filter labels/controls, and canonical table/head/body/row classes. Page templates remain responsible only for filter fields and route parameters.
-- View More cards use `components/details/_detail_content.html` for card geometry, rows, metadata rows, and status rows. Local copies of `detail_card`, `detail_row`, `metadata_row`, or `status_row` are not permitted.
+- Expanded detail cards use `components/details/_detail_content.html` for card geometry, rows, metadata rows, and status rows. Local copies of `detail_card`, `detail_row`, `metadata_row`, or `status_row` are not permitted.
 - Summary, table, and detail components must remain presentation-only. They must not query data, infer resource state, or own HTMX endpoints.
 
 ### Namespace Identity and Title-Case Presentation
@@ -213,8 +213,30 @@ cast(PodInventory.labels, JSONB).contains(selector)
 cast(PodInventory.persistent_volume_claims, JSONB).contains([claim_name])
 ```
 
-Non-PostgreSQL development environments use bounded Python matching fallbacks. Do not call `.contains()` directly on the generic JSON columns for PostgreSQL-backed Inventory detail queries.
+Non-PostgreSQL development environments use development-only Python matching fallbacks. Production PostgreSQL paths use JSONB containment and SQL-side filtering; do not treat the fallback as a production-scale query contract or call `.contains()` directly on generic JSON columns for PostgreSQL-backed Inventory detail queries.
 
 ## Full Workspace Modal text wrapping
 
 Inventory detail evidence must remain readable without intentional truncation. The shared modal supports a 100 rem maximum width, hides horizontal page overflow, and lets technical metadata, relation identities, hostnames, labels, annotations, selectors, and multi-line values wrap with `overflow-wrap:anywhere`. Metadata collections do not use nested vertical scrolling.
+
+## Final Recheck release boundary
+
+Inventory protected reads follow `inventory.view` authorization before the clusterless HTMX blocker. The blocker is deliberately route-owned rather than a Blueprint `before_request`, so unauthorized requests cannot probe cluster readiness or read Inventory evidence before authorization. Inventory synchronization remains a separate `clusters.sync` mutation boundary.
+
+The web read side is committed-snapshot only. `overview.py`, `resources/`, and `topology/` must not import Kubernetes/Prometheus/provider clients or network libraries. Topology reads API Server metadata from the eagerly loaded canonical `Cluster.kubernetes_connection` relationship instead of resolving a live integration on the request path.
+
+Final release evidence is layered:
+
+```text
+L0  scripts/verify_inventory_final_lock.py + static quality gate
+L1  tests/contracts/kubernetes/test_inventory_final_release_contract.py
+L2  tests/unit/inventory/
+L3  tests/inventory/
+L4  tests/integration/inventory/
+L5  tests/security/inventory/
+L6  tests/rendering/inventory/
+L7  tests/e2e/inventory/
+```
+
+The canonical design contract is `docs/design/patterns/INVENTORY_RESOURCE_PAGE.md`; the current release audit is `docs/design/audits/KUBERNETES_INVENTORY_FINAL_RECHECK_2026_08.md`.
+

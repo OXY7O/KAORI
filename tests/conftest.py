@@ -8,7 +8,12 @@ TEST_ROOT = Path(__file__).resolve().parent
 _MARKER_BY_BUCKET = {
     'contracts': pytest.mark.contract,
     'debug': pytest.mark.debug,
+    'e2e': pytest.mark.e2e,
+    'integration': pytest.mark.integration,
     'migrations': pytest.mark.migration,
+    'rendering': pytest.mark.rendering,
+    'security': pytest.mark.security,
+    'unit': pytest.mark.unit,
 }
 
 

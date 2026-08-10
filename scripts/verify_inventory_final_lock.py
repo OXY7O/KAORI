@@ -1,0 +1,238 @@
+#!/usr/bin/env python3
+"""Verify the final Kubernetes Inventory release boundary and shared UI contract."""
+
+from __future__ import annotations
+
+import ast
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+ROUTES = ROOT / 'app/inventory/routes.py'
+RESOURCE_NAMES = ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')
+READ_VIEWS = {
+    'overview',
+    'topology',
+    'topology_data',
+    'nodes',
+    'node_details',
+    'namespaces',
+    'namespace_details',
+    'configuration',
+    'configuration_details',
+    'workloads',
+    'workload_details',
+    'pods',
+    'pod_details',
+    'services',
+    'service_details',
+    'ingresses',
+    'ingress_details',
+    'storage',
+    'storage_details',
+}
+
+
+def read(relative: str) -> str:
+    return (ROOT / relative).read_text(encoding='utf-8')
+
+
+def require(condition: bool, message: str, errors: list[str]) -> None:
+    if not condition:
+        errors.append(message)
+
+
+def called_name(decorator: ast.expr) -> str | None:
+    called = decorator.func if isinstance(decorator, ast.Call) else decorator
+    if isinstance(called, ast.Name):
+        return called.id
+    if isinstance(called, ast.Attribute):
+        return called.attr
+    return None
+
+
+def permission(function: ast.FunctionDef) -> str | None:
+    for decorator in function.decorator_list:
+        if not isinstance(decorator, ast.Call) or called_name(decorator) != 'permission_required':
+            continue
+        if decorator.args and isinstance(decorator.args[0], ast.Constant):
+            return str(decorator.args[0].value)
+    return None
+
+
+def main() -> int:
+    errors: list[str] = []
+    routes_source = ROUTES.read_text(encoding='utf-8')
+    tree = ast.parse(routes_source, filename=str(ROUTES))
+    functions = {node.name: node for node in tree.body if isinstance(node, ast.FunctionDef)}
+
+    require(
+        '@inventory_bp.before_request' not in routes_source,
+        'Inventory must not short-circuit AuthZ in before_request.',
+        errors,
+    )
+    require(
+        '_clusterless_inventory_htmx_guard' in routes_source,
+        'Inventory must keep the authorized HTMX clusterless guard.',
+        errors,
+    )
+
+    for name in sorted(READ_VIEWS):
+        function = functions.get(name)
+        require(function is not None, f'Inventory read view {name} is missing.', errors)
+        if function is None:
+            continue
+        decorators = [called_name(decorator) for decorator in function.decorator_list]
+        require(permission(function) == 'inventory.view', f'{name} must require inventory.view.', errors)
+        require(
+            '_clusterless_inventory_htmx_guard' in decorators,
+            f'{name} must use the clusterless HTMX guard after authorization.',
+            errors,
+        )
+        if 'permission_required' in decorators and '_clusterless_inventory_htmx_guard' in decorators:
+            require(
+                decorators.index('permission_required') < decorators.index('_clusterless_inventory_htmx_guard'),
+                f'{name} decorator order must keep permission_required outside the clusterless guard.',
+                errors,
+            )
+
+    sync = functions.get('sync')
+    require(
+        sync is not None and permission(sync) == 'clusters.sync',
+        'Inventory sync must retain clusters.sync.',
+        errors,
+    )
+
+    read_side = '\n'.join(
+        [read('app/inventory/overview.py')]
+        + [path.read_text(encoding='utf-8') for path in sorted((ROOT / 'app/inventory/resources').rglob('*.py'))]
+        + [path.read_text(encoding='utf-8') for path in sorted((ROOT / 'app/inventory/topology').rglob('*.py'))]
+    )
+    for token in (
+        'kubernetes.client',
+        'get_integration(',
+        'client.build',
+        'requests.get(',
+        'requests.post(',
+        'httpx.',
+        'urllib.request',
+        'boto3.client',
+        'app.integrations.kubernetes.resolver',
+    ):
+        require(token not in read_side, f'Inventory read side must remain provider-free: {token}', errors)
+
+    topology_repository = read('app/inventory/topology/repository.py')
+    topology_builder = read('app/inventory/topology/node_builder.py')
+    require(
+        'joinedload(Cluster.kubernetes_connection)' in topology_repository,
+        'Topology cluster identity must eager-load the canonical Kubernetes connection relationship.',
+        errors,
+    )
+    require(
+        'cluster.kubernetes_connection.server' in topology_builder,
+        'Topology API Server presentation must use the loaded DB relationship.',
+        errors,
+    )
+
+    formatting = read('app/inventory/formatting.py')
+    common = read('app/inventory/resources/common.py')
+    for retired in ('def format_byte_count(', 'def format_gib('):
+        require(retired not in formatting, f'Retired Inventory helper must remain removed: {retired}', errors)
+    require(
+        'def _split_inventory_values(' not in common,
+        'Retired Inventory split helper must remain removed.',
+        errors,
+    )
+    require(
+        not (ROOT / 'app/templates/inventory/partials/_README.md').exists(),
+        'Stale empty Inventory template-folder README must remain removed.',
+        errors,
+    )
+
+    overview_hero = read('app/templates/inventory/overview/partials/_hero.html')
+    topology_hero = read('app/templates/inventory/topology/partials/_hero.html')
+    require(
+        'page_hero.context_card(' in overview_hero,
+        'Inventory Overview must use canonical status-oriented Hero context.',
+        errors,
+    )
+    require(
+        'page_hero.context_status_badge(' in topology_hero,
+        'Topology Hero must use the canonical Status Badge Box.',
+        errors,
+    )
+    for resource in RESOURCE_NAMES:
+        hero = read(f'app/templates/inventory/{resource}/partials/_hero.html')
+        table = read(f'app/templates/inventory/{resource}/partials/_table_content.html')
+        require(
+            'page_hero.context_card(' in hero,
+            f'{resource} Hero must use the canonical Status Badge Box context card.',
+            errors,
+        )
+        require('components/table.html' in table, f'{resource} must use the shared table component.', errors)
+        require('components/pagination.html' in table, f'{resource} must use canonical pagination.', errors)
+        require(
+            'components/resource_detail_modal.html' in table,
+            f'{resource} details must use the shared modal.',
+            errors,
+        )
+        require('detail_button(' in table, f'{resource} table must expose canonical View Details action.', errors)
+
+    standard = read('docs/design/patterns/INVENTORY_RESOURCE_PAGE.md')
+    audit = read('docs/design/audits/KUBERNETES_INVENTORY_FINAL_RECHECK_2026_08.md')
+    require(
+        '# Inventory Resource Page Pattern v1.1' in standard,
+        'Inventory Resource Page standard must be v1.1.',
+        errors,
+    )
+    for phrase in (
+        'Authorization before blocker evaluation',
+        'Status Badge Box',
+        '5 / 10 / 25 / 50',
+        'Full Workspace Modal',
+    ):
+        require(phrase in standard, f'Inventory standard must document {phrase}.', errors)
+    require(
+        'Final Recheck' in audit and 'L0–L7' in audit,
+        'Inventory final audit must document layered release evidence.',
+        errors,
+    )
+
+    quality_gate = read('scripts/quality_gate.sh')
+    core_lock = read('scripts/verify_core_kubernetes_final_lock.py')
+    coverage = read('scripts/verify_feature_test_coverage.py')
+    require(
+        'python scripts/verify_inventory_final_lock.py' in quality_gate,
+        'quality_gate.sh must run Inventory final lock.',
+        errors,
+    )
+    require(
+        'verify_inventory_final_lock.py' in core_lock,
+        'Core Kubernetes lock must own Inventory final lock.',
+        errors,
+    )
+    for required_test in (
+        'tests/contracts/kubernetes/test_inventory_final_release_contract.py',
+        'tests/unit/inventory/test_inventory_topology_selection.py',
+        'tests/inventory/test_inventory_route_characterization.py',
+        'tests/security/inventory/test_inventory_security.py',
+        'tests/rendering/inventory/test_inventory_rendering.py',
+        'tests/integration/inventory/test_node_inventory_read_model.py',
+        'tests/e2e/inventory/test_inventory_smoke.py',
+    ):
+        require(required_test in coverage, f'Inventory release evidence is not permanent: {required_test}', errors)
+
+    if errors:
+        for error in errors:
+            print(f'ERROR: {error}')
+        return 1
+
+    print(
+        'KAORI Kubernetes Inventory Final Lock v1 passed: AuthZ-first HTMX blocking, committed-snapshot reads, '
+        'canonical Hero/table/modal/pagination composition, topology DB ownership, zero residual helpers, and L0–L7 '
+        'release evidence are aligned.'
+    )
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

@@ -34,10 +34,25 @@ Welcome is the authenticated platform landing page and is not an infrastructure 
 - Workspace search operates only on cards already rendered for the current user, so client-side filtering cannot reveal unauthorized destinations.
 - Keep workspace descriptions concise and suitable for a growing number of features.
 - Do not add pagination while the grouped catalog remains compact. Any future server-driven pagination must use the shared pagination component.
+## Test strategy
+
+Welcome uses the layered KAORI release strategy:
+
+- **Static Quality** — canonical lint/format/type/architecture/source-hygiene gates.
+- **Contract Test** — `tests/contracts/welcome/test_welcome_navigation_contract.py`.
+- **Unit Test** — `tests/unit/welcome/test_welcome_target_resolution.py` proves deterministic first-authorized/universal/no-match target policy independently from Flask request state.
+- **Functional Test** — `tests/welcome/test_welcome_characterization.py`.
+- **Integration Test** — `N/A`: provider/database integration is intentionally absent from the Welcome product boundary. Database/provider behavior belongs to the Integration layer when a reviewed domain actually owns that boundary.
+- **Security Regression** — `tests/security/welcome/test_welcome_security.py`.
+- **Rendering/UI Contract** — `tests/rendering/welcome/test_welcome_rendering.py`.
+- **End-to-End Smoke** — `tests/e2e/welcome/test_welcome_smoke.py`, using the real Flask application, routing, session, Flask-Login, shared layout, and application shell while isolating external persistence/provider dependencies so the smoke remains deterministic in local and CI runs.
+- **Migration Test** — `tests/migrations/test_retire_welcome_view_permission.py` protects retirement of the non-enforcing legacy permission.
+
 ## Release evidence
 
 - `scripts/verify_welcome_final_lock.py` is the canonical Welcome release verifier and must be called directly by `scripts/quality_gate.sh`.
 - `tests/welcome/test_welcome_characterization.py` is permanent behavioral evidence for permission-filtered discoverability, universal Settings access, first-authorized target resolution, and multi-permission deduplication.
 - `tests/contracts/welcome/test_welcome_navigation_contract.py` remains supporting structural/UI evidence; it must not be the only Welcome test.
-- `scripts/verify_feature_test_coverage.py` must require the Welcome behavioral characterization module after this final recheck.
+- `scripts/verify_feature_test_coverage.py` requires Welcome functional, security, rendering, and E2E evidence after this final recheck.
+- `welcome.view` must not return to `DEFAULT_PERMISSIONS`; authentication, not a synthetic permission, owns Welcome admission.
 

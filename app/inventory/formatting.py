@@ -69,11 +69,6 @@ def format_kubernetes_size(
     return f'{int(size_bytes)} B'
 
 
-def format_byte_count(
-    value: int | None,
-) -> str:
-    return format_kubernetes_size(value)
-
 
 def convert_ki_to_gib(
     value: str | None,
@@ -91,13 +86,6 @@ def convert_storage_to_gib(
 ) -> float:
     return convert_ki_to_gib(value)
 
-
-def format_gib(
-    value: float,
-) -> str:
-    if value <= 0:
-        return '-'
-    return f'{value:g} GiB'
 
 
 def format_quota_value(

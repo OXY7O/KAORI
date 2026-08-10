@@ -52,6 +52,6 @@ Before a release, move approved entries from `[Unreleased]` to `## [X.Y.Z] - YYY
 
 ## Release Gate
 
-The static quality gate runs `scripts/verify_release_governance.py`. The verifier rejects malformed or divergent version defaults, missing changelog structure, missing build-traceability variables, or a release process that is no longer documented.
+The static quality gate runs `scripts/verify_release_governance.py`. The verifier rejects malformed or divergent version defaults, missing changelog structure, missing build-traceability variables, or a release process that is no longer documented. The full `scripts/quality_gate.sh --all` gate additionally owns layered behavioral/security/rendering evidence, explicit E2E smoke, frontend reproducibility, migration integrity, and production-image prerequisites. CI must provision the PostgreSQL/Redis services required by those release tests rather than skipping them.
 
-Do not loosen the verifier to approve a release. Fix the release metadata or documentation instead.
+Do not loosen a verifier, delete a required test, or mark a failing layer as optional to approve a release. Fix the implementation, evidence, metadata, or documentation instead.

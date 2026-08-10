@@ -31,6 +31,8 @@ REQUIRED_COMPONENT_DOCUMENTS = (
 )
 
 REQUIRED_STANDARD_SECTIONS = (
+    '## Product contract baseline',
+    '## Static quality baseline',
     '## 1. Brand, color, theme, and typography',
     '## 2. Hero',
     'Action Icon Box',
@@ -46,7 +48,15 @@ REQUIRED_STANDARD_SECTIONS = (
     '## 11. Accessibility',
     '## 15. Security and reliability',
     '## 16. Testing and release evidence',
-    '## 17. Per-page final recheck checklist',
+    '## 17. Performance',
+    '## 18. Maintainability and readability',
+    '## 19. Database and migration integrity',
+    '## 20. Documentation lifecycle',
+    '## 21. Release governance, changelog, and Semantic Versioning',
+    '## 22. CI/CD and modern infrastructure',
+    '## 23. Observability and auditability',
+    '## 24. Dependency, configuration, and supply-chain hygiene',
+    '## 25. Per-page final recheck checklist',
     'PASS — LOCKED',
 )
 
@@ -78,7 +88,8 @@ def verify() -> None:
 
     print(
         'KAORI Engineering Standard v1 passed: global component guidance, Hero accessory registry, shell, '
-        'accessibility, security, test-evidence, and per-page final-recheck ownership are registered.'
+        'accessibility, security, performance, test-evidence, release governance, CI/CD, and per-page final-recheck '
+        'ownership are registered.'
     )
 
 

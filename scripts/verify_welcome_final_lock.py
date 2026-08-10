@@ -108,6 +108,11 @@ def _verify_catalog_contract(errors: list[str]) -> None:
     require(len(group_keys) == len(set(group_keys)), 'Welcome capability group keys must be unique.', errors)
 
     permission_catalog = _default_permissions()
+    require(
+        'welcome.view' not in permission_catalog,
+        'welcome.view is a retired non-enforcing permission and must not return to the registry.',
+        errors,
+    )
     titles: list[str] = []
     universal_targets: list[tuple[str, str | None, str]] = []
 
@@ -142,8 +147,8 @@ def _verify_catalog_contract(errors: list[str]) -> None:
     )
 
     require(
-        'current_user.has_permission(permission_key)' in source,
-        'Welcome catalog must filter discoverability with current_user.has_permission().',
+        'current_user.has_permission' in source and 'resolve_welcome_target(' in source,
+        'Welcome catalog must resolve discoverability through the canonical permission-aware target resolver.',
         errors,
     )
     require(
@@ -236,13 +241,63 @@ def _verify_presentation_contract(errors: list[str]) -> None:
     )
 
 
+def _test_count(relative: str, errors: list[str]) -> int:
+    path = ROOT / relative
+    require(path.exists(), f'{relative}: required Welcome release-test module is missing.', errors)
+    if not path.exists():
+        return 0
+    try:
+        tree = ast.parse(path.read_text(encoding='utf-8'), filename=str(path))
+    except SyntaxError as exc:
+        errors.append(f'{relative}:{exc.lineno}: invalid Python test module')
+        return 0
+    return sum(
+        1
+        for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith('test_')
+    )
+
+
 def _verify_release_evidence(errors: list[str]) -> None:
-    functional_test = ROOT / 'tests/welcome/test_welcome_characterization.py'
-    require(functional_test.exists(), 'Welcome permanent behavioral characterization test is missing.', errors)
-    if functional_test.exists():
-        tree = ast.parse(functional_test.read_text(encoding='utf-8'), filename=str(functional_test))
-        tests = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name.startswith('test_')]
-        require(len(tests) >= 4, 'Welcome requires at least four permanent behavior tests.', errors)
+    required_tests = {
+        'tests/unit/welcome/test_welcome_target_resolution.py': 3,
+        'tests/welcome/test_welcome_characterization.py': 4,
+        'tests/security/welcome/test_welcome_security.py': 3,
+        'tests/rendering/welcome/test_welcome_rendering.py': 2,
+        'tests/e2e/welcome/test_welcome_smoke.py': 2,
+        'tests/migrations/test_retire_welcome_view_permission.py': 2,
+    }
+    for relative, minimum in required_tests.items():
+        require(
+            _test_count(relative, errors) >= minimum,
+            f'{relative}: Welcome requires at least {minimum} permanent tests.',
+            errors,
+        )
+
+    e2e_smoke = read('tests/e2e/welcome/test_welcome_smoke.py')
+    require(
+        'from app.extensions.db import db' not in e2e_smoke and 'from app.models.user import User' not in e2e_smoke,
+        'Welcome E2E smoke must remain dependency-isolated instead of requiring a live PostgreSQL database.',
+        errors,
+    )
+    require(
+        "monkeypatch.setattr(login_manager, '_user_callback'" in e2e_smoke,
+        'Welcome E2E smoke must exercise authenticated Flask-Login rendering without a persistence dependency.',
+        errors,
+    )
+
+    migration = read('migrations/versions/20260810_retire_welcome_view.py')
+    require(
+        "revision = '20260810_retire_welcome_view'" in migration
+        and "down_revision = '20260809_auth_session_generation'" in migration,
+        'Welcome permission-retirement migration must remain on the canonical Alembic head.',
+        errors,
+    )
+    require(
+        "RETIRED_PERMISSION_KEY = 'welcome.view'" in migration,
+        'Welcome permission-retirement migration must explicitly own the retired key.',
+        errors,
+    )
 
     quality_gate = read('scripts/quality_gate.sh')
     coverage = read('scripts/verify_feature_test_coverage.py')
@@ -253,10 +308,22 @@ def _verify_release_evidence(errors: list[str]) -> None:
         errors,
     )
     require(
-        "'tests/welcome/test_welcome_characterization.py': 4" in coverage,
-        'Feature characterization coverage must require Welcome behavior evidence.',
+        'pytest -q tests/e2e -m e2e' in quality_gate,
+        'quality_gate.sh must execute the explicit E2E smoke layer.',
         errors,
     )
+    for relative, minimum in (
+        ('tests/unit/welcome/test_welcome_target_resolution.py', 3),
+        ('tests/welcome/test_welcome_characterization.py', 4),
+        ('tests/security/welcome/test_welcome_security.py', 3),
+        ('tests/rendering/welcome/test_welcome_rendering.py', 2),
+        ('tests/e2e/welcome/test_welcome_smoke.py', 2),
+    ):
+        require(
+            f"'{relative}': {minimum}" in coverage,
+            f'Feature coverage must require {relative}.',
+            errors,
+        )
     require(
         'verify_welcome_final_lock.py' in core_lock,
         'Core Kubernetes final lock must require Welcome verifier wiring.',
@@ -265,6 +332,9 @@ def _verify_release_evidence(errors: list[str]) -> None:
 
     readme = read('app/welcome/README.md')
     pattern = read('docs/design/patterns/WELCOME_WORKSPACE_CATALOG.md')
+    standard = read('docs/standards/KAORI_ENGINEERING_STANDARD_V1.md')
+    rbac_review = read('docs/rbac/PERMISSION_REGISTRY_REVIEW.md')
+    require('## Test strategy' in readme, 'Welcome README must document the layered test strategy.', errors)
     require('Release evidence' in readme, 'Welcome README must document release evidence.', errors)
     require(
         'Accessibility and keyboard contract' in pattern,
@@ -272,7 +342,19 @@ def _verify_release_evidence(errors: list[str]) -> None:
         errors,
     )
     require(
-        'Security boundary' in pattern, 'Welcome pattern must document the discoverability security boundary.', errors
+        'Security boundary' in pattern,
+        'Welcome pattern must document the discoverability security boundary.',
+        errors,
+    )
+    require(
+        '## 25. Per-page final recheck checklist' in standard,
+        'Engineering Standard must include the expanded release-review checklist.',
+        errors,
+    )
+    require(
+        '`welcome.view` is no longer part of the registry' in rbac_review,
+        'RBAC documentation must record retirement of the false Welcome permission boundary.',
+        errors,
     )
 
 
@@ -289,9 +371,9 @@ def main() -> int:
         return 1
 
     print(
-        'KAORI Welcome final-lock v2 passed: authenticated landing routes, role-aware discoverability, '
-        'provider-free data boundaries, canonical Violet components, accessibility, behavioral coverage, '
-        'and release-gate wiring are aligned.'
+        'KAORI Welcome final-lock v3 passed: authenticated landing routes, role-aware discoverability, '
+        'provider-free data boundaries, canonical Violet components, accessibility, layered test coverage, '
+        'retired permission cleanup, and release-gate wiring are aligned.'
     )
     return 0
 

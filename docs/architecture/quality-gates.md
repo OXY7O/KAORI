@@ -59,6 +59,8 @@ pytest -q tests/welcome tests/dashboards tests/analytics tests/inventory tests/k
 pytest -q tests/e2e -m e2e
 ```
 
+Reviewed-domain static ownership is also explicit. Kubernetes Inventory is protected by `scripts/verify_inventory_final_lock.py`, which validates AuthZ-before-readiness ordering, committed-snapshot/provider boundaries, canonical Hero/table/modal/pagination composition, Topology database ownership, zero residual Inventory helpers/files, documentation ownership, and the permanent L0–L7 evidence manifest. The same verifier is invoked by `quality_gate.sh` and the core Kubernetes final lock.
+
 Separating E2E keeps the smoke boundary visible in CI while avoiding duplicate execution in the broad test run. E2E smoke is deterministic by default: it exercises real Flask routing/session/template/application-shell composition while isolating external persistence/provider dependencies unless the test explicitly provisions them. PostgreSQL, Redis, S3, Kubernetes, Prometheus, and Alertmanager semantics belong to Integration tests. Explicit domain characterization protects core behavioral evidence from environment-level marker configuration or `PYTEST_ADDOPTS`. `scripts/verify_feature_test_coverage.py` must never list planned/nonexistent tests; add a domain requirement only when that evidence is committed during its final recheck.
 
 ### Frontend Gate

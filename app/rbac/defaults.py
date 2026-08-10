@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 DEFAULT_PERMISSIONS = [
-    ('welcome.view', 'workspace', 'view', 'View the KAORI welcome workspace.'),
     ('dashboard.view', 'k8s_dashboard', 'view', 'View the Kubernetes operations dashboard.'),
     ('clusters.view', 'k8s_cluster', 'view', 'View Kubernetes cluster records and connection status.'),
     ('clusters.manage', 'k8s_cluster', 'manage', 'Create, edit, and delete Kubernetes cluster records.'),
@@ -238,7 +237,6 @@ DEFAULT_ROLE_DEFINITIONS = {
 
 DEFAULT_ROLE_PERMISSIONS = {
     'viewer': {
-        'welcome.view',
         'dashboard.view',
         'clusters.view',
         'inventory.view',
@@ -253,7 +251,6 @@ DEFAULT_ROLE_PERMISSIONS = {
         'settings.view',
     },
     'operator': {
-        'welcome.view',
         'dashboard.view',
         'clusters.view',
         'clusters.sync',
@@ -279,7 +276,6 @@ DEFAULT_ROLE_PERMISSIONS = {
         'settings.view',
     },
     'editor': {
-        'welcome.view',
         'dashboard.view',
         'clusters.view',
         'clusters.manage',
@@ -319,7 +315,6 @@ DEFAULT_ROLE_PERMISSIONS = {
     },
     'admin': {permission[0] for permission in DEFAULT_PERMISSIONS if permission[0] != 'kubernetes_secrets.reveal'},
     'auditor': {
-        'welcome.view',
         'dashboard.view',
         'clusters.view',
         'inventory.view',

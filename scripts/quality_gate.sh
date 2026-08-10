@@ -19,6 +19,7 @@ run_static() {
     python scripts/verify_report_job_standard.py
     python scripts/verify_report_storage_resilience.py
     python scripts/verify_tabular_export_standard.py
+    python scripts/verify_inventory_final_lock.py
     python scripts/verify_node_inventory_standard.py
     python scripts/verify_namespace_inventory_standard.py
     python scripts/verify_configuration_inventory_standard.py
@@ -73,15 +74,13 @@ run_static() {
 }
 
 run_tests() {
-    pytest -q -m 'not debug'
+    pytest -q -m 'not debug and not e2e'
 
     # Domain characterization tests are explicit release gates. This protects
     # them from environment-level PYTEST_ADDOPTS or marker filtering that may
     # otherwise deselect unmarked behavioral tests.
     pytest -q tests/welcome tests/dashboards tests/analytics tests/inventory tests/kubernetes -m functional
-    pytest -q \
-        tests/analytics/test_alerts_characterization.py \
-        tests/analytics/test_alerts_source_fallback_characterization.py
+    pytest -q tests/e2e -m e2e
 }
 
 run_frontend() {

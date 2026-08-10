@@ -1,48 +1,146 @@
-# Inventory Resource Page Pattern
+# Inventory Resource Page Pattern v1.1
 
-## Reference
+**Status:** Locked reference pattern  
+**Scope:** Kubernetes Inventory Overview, Nodes, Namespaces, Configuration, Workloads, Pods, Services, Ingresses, Storage, and Topology
 
-Kubernetes Node Inventory is the first canonical implementation.
+## Product contract
 
-## Structure
+Kubernetes Inventory is the committed Kubernetes asset catalog. Web requests read normalized database snapshots only. Collection, normalization, and generation commits belong to worker-side synchronization; list, summary, detail, and topology requests must never introduce a hidden live Kubernetes API call.
+
+All generation-scoped reads use the **latest committed inventory generation**. `ClusterInventory.collected_at` is the generation marker. Superseded or incomplete generations must not be mixed into current rows, filter options, details, counts, or topology relationships.
+
+## Canonical resource-page structure
 
 ```text
 Canonical Hero
-Compact Snapshot Context Bar
-Resource Posture Section
-Filtered Inventory Table
+Snapshot Context Bar
+Resource Posture
+Filter + Shared Inventory Table
+Pagination 5 / 10 / 25 / 50
 Detail Style 2 — Full Workspace Modal
 ```
 
-## Ownership
+Inventory Overview keeps its shared Side Drawer. Topology uses the adaptive visualization workspace with Controls/Inspector drawers below the wide breakpoint.
 
-- Hero: resource identity, active scope, and high-level health posture.
-- Snapshot Context Bar: source, exact collection time, committed coverage, and exceptions.
-- Resource Posture: capacity and domain-specific operational evidence.
-- Table: compact comparison and one row detail action.
-- Full Workspace Modal: complete resource evidence and operational context.
+## Hero contract
 
-## Table rules
+Inventory Overview and the eight resource pages use the shared KAORI Hero implementation. The right-side header accessory is the approved **Status Badge Box** when operational/readiness state is shown. Do not create page-local hero geometry, icon boxes, badges, metric cards, or status treatments.
 
-- Prefer grouped columns over one column per related metric.
-- Technical identifiers use `technical_value.html`.
-- Metadata such as Node role uses `metadata_label`.
-- Operational state uses borderless status or status-indicator labels.
-- Pagination shows resource-aware copy and a visible `Rows` label.
+The Hero owns resource identity and high-level posture. Exact collection timestamp, generation coverage, and snapshot exceptions belong to the Snapshot Context Bar rather than duplicated Hero metadata.
 
-## Data boundary
+## Authorization and readiness request contract
 
-All list, summary, and detail views read the latest committed inventory generation. Detail requests are on demand and must not trigger a live Kubernetes API request.
+**Authorization before blocker evaluation** is mandatory.
 
+Protected GET flow:
 
-## Namespace implementation
+```text
+request
+  ↓
+inventory.view authorization
+  ↓
+clusterless HTMX blocker
+  ↓
+request/filter validation
+  ↓
+committed-snapshot read
+  ↓
+render
+```
 
-Namespace Inventory is the second canonical implementation. It uses Namespace Control Posture, a governance-focused compact table, Technical Metadata Collection, and neutral factual evidence when no explicit governance policy is available.
+A Blueprint-level `before_request` must not short-circuit protected Inventory pages. An unauthorized direct HTMX request must receive the authorization result before KAORI probes cluster readiness or reads Inventory data. `clusters.sync` remains a separate mutation permission for synchronization.
 
-## Workload implementation
+## Table and pagination contract
 
-Workload Inventory is the third canonical implementation. It separates semantic operational posture from type-specific factual state, uses a compact namespaced table, Related Resource Collection for associated Pods, and neutral factual treatment for workload configuration.
+- Use shared `components/table.html` primitives and the Inventory block header.
+- Default page size is **5**; allowed values are **5 / 10 / 25 / 50**.
+- Resource services use SQL pagination through `app.common.pagination.paginate_query`; routes must not materialize all rows and slice them in Python.
+- Namespaced resources use the shared Namespace identity macro.
+- Technical identifiers use canonical technical-value treatment; semantic lifecycle/health state uses the shared compact rectangular status-label contract.
+- Page-size and pagination requests update table content only. Scope/filter changes update the owning workspace so Hero context, summary, dependent filters, and rows remain consistent.
 
-## Pod implementation
+## Detail and progressive-disclosure contract
 
-Pod Inventory is the fourth canonical implementation. It separates operational state from Kubernetes phase/readiness evidence, uses the shared Container Runtime Collection, exposes configuration and storage references, and treats Pod configuration as factual evidence until an explicit policy evaluates it.
+Nodes, Namespaces, Configuration, Workloads, Pods, Services, Ingresses, and Storage use **Detail Style 2 — Full Workspace Modal** through `components/resource_detail_modal.html` and shared detail-content primitives. Inventory Overview uses the shared Side Drawer. Topology uses the adaptive explorer Inspector/Details drawer.
+
+Do not add page-local modal markup, local expandable-row JavaScript, nested scroll boxes, or a fourth disclosure pattern. Detail endpoints remain committed-snapshot reads and must not call Kubernetes live.
+
+## Architecture and ownership
+
+```text
+collectors/
+  Kubernetes API collection + normalization
+        ↓
+persistence.py / synchronization.py
+  atomic generation commit
+        ↓
+resources/ + overview.py + topology/
+  committed read models
+        ↓
+routes.py
+  HTTP / HTMX validation and rendering
+```
+
+Topology reads API Server identity from the canonical `Cluster.kubernetes_connection` database relationship. The relationship is eager-loaded for topology cluster reads; the presentation path must not call the Kubernetes integration resolver merely to display connection metadata.
+
+## Performance and reliability
+
+- Row lists are SQL-paginated before materialization.
+- Aggregate/semantic summaries may scan a projection of the current committed generation when necessary; they must not cause route-level full-result slicing.
+- Topology conditionally loads resource families according to scope/depth and applies its graph/cache/output safeguards. Cluster connection metadata is eager-loaded to avoid resolver/N+1 behavior.
+- Missing or unavailable committed evidence renders a neutral unavailable/unknown state; it does not trigger a live-provider fallback.
+- Synchronization is asynchronous and owns its own retry/failure feedback boundary. Read pages remain available against the last committed generation when collection is not running.
+
+## Accessibility, typography, and visual consistency
+
+- Human-facing headings, labels, field names, table headers, modal titles, and status descriptions use KAORI Title Case.
+- Kubernetes names, namespaces, API values, label/annotation keys, hashes, and other technical identifiers retain native casing and use semantic technical typography where appropriate.
+- Status is not communicated by color alone; shared status labels retain readable text and contrast in Light and Dark modes.
+- Shared table headers, row actions, pagination controls, modal close controls, topology controls, and drawer controls must retain visible keyboard focus and accessible names.
+- Responsive composition must remain usable on the 14-inch baseline and narrow viewports without horizontal page overflow.
+
+## Reference implementations
+
+- **Nodes:** capacity/platform/runtime/scheduling evidence.
+- **Namespaces:** lifecycle, quota/LimitRange, Pod Security, workload composition.
+- **Workloads:** operational state, rollout/configuration, associated Pods.
+- **Pods:** placement/runtime/container/configuration evidence.
+- **Services and Ingresses:** publication, backend, TLS/controller references.
+- **Storage:** StorageClass/PV/PVC provisioning, capacity/access, binding/lifecycle.
+- **Configuration:** protected ConfigMap/Secret key-index metadata; values are never decoded or displayed.
+- **Topology:** committed cross-resource relationships with adaptive explorer presentation.
+
+Lifecycle/configuration facts remain factual Inventory evidence until an explicit Governance policy evaluates them.
+
+## L0–L7 release evidence
+
+Final lock requires all applicable layers:
+
+```text
+L0 Static Quality
+  quality_gate.sh --static + verify_inventory_final_lock.py
+
+L1 Contract Test
+  tests/contracts/kubernetes/test_inventory_final_release_contract.py
+  existing per-resource Inventory contracts
+
+L2 Unit Test
+  tests/unit/inventory/
+
+L3 Functional Test
+  tests/inventory/
+
+L4 Integration Test
+  tests/integration/inventory/
+
+L5 Security Regression
+  tests/security/inventory/
+
+L6 Rendering/UI Contract
+  tests/rendering/inventory/
+
+L7 End-to-End Smoke
+  tests/e2e/inventory/
+```
+
+The final-lock verifier protects AuthZ ordering, committed-snapshot/provider boundaries, canonical Hero/table/modal/pagination composition, Topology database ownership, retired residual helpers/files, documentation ownership, and permanent test evidence.

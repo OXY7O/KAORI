@@ -98,12 +98,66 @@ Welcome is **PASS — LOCKED**. Reopen only for a concrete regression or shared-
 
 ## 02 — Kubernetes Dashboard
 
+Current verdict: **PASS — LOCKED**
+
+No visual redesign was introduced. Final Recheck v3 removed residual compatibility/dead internal surface, corrected snapshot-only wording, formalized the Hero right-side **Context Icon Box** classification, and added permanent L0–L7 release evidence. The final contract/version formatting tails were resolved before the review advanced to Inventory.
+
+The Dashboard remains read-only and provider-free on the web request path; authorization executes before cluster-readiness handling, Cluster Health paginates before snapshot reads, and the reviewed release evidence is now the locked baseline.
+
+## 03 — Kubernetes Inventory
+
 Current verdict: **TARGETED FIX — AUTHORITATIVE VALIDATION PENDING**
 
-No visual redesign is introduced. Final Recheck v3 removes residual compatibility/dead internal surface, corrects snapshot-only wording, formalizes the Hero right-side **Context Icon Box** classification, and adds permanent L0–L7 release evidence. The Dashboard remains read-only and provider-free on the web request path; Cluster Health paginates before inventory/snapshot reads.
+No visual redesign is introduced. The approved Inventory Overview/resource/Topology composition remains the baseline.
 
-Lock condition: authoritative Static Quality, Unit, Functional, Integration, Security, Rendering/UI, E2E, browser smoke, and full release gate must pass.
+### Findings and dispositions
+
+1. **AuthZ-before-readiness fixed.** The clusterless HTMX blocker moved out of Blueprint `before_request` and is now applied inside every protected read path after `inventory.view`, preventing unauthorized requests from probing readiness or receiving an onboarding response before authorization.
+2. **Dead surface retired.** Unused `format_byte_count`, `format_gib`, `_split_inventory_values`, and the empty/stale Inventory partial README are removed.
+3. **Topology read ownership corrected.** API Server display metadata comes from the eagerly loaded canonical `Cluster.kubernetes_connection` database relationship instead of the Kubernetes integration resolver.
+4. **L0–L7 evidence added.** Inventory now has dedicated final-lock, Unit, Functional, Integration, Security, Rendering/UI, E2E, and final Contract evidence.
+5. **Canonical documentation updated.** Inventory resource-page pattern v1.1 records committed-generation ownership, AuthZ ordering, Hero Status Badge Box, Full Workspace Modal, SQL pagination, accessibility, and performance/reliability boundaries.
+
+### Review matrix
+
+| Review area | Result | Evidence / decision |
+| --- | --- | --- |
+| Product Contract | PASS source review | Committed Kubernetes asset catalog; no web-time provider fallback. |
+| Route/AuthN/RBAC | PASS source review | `inventory.view` precedes clusterless HTMX blocker; sync remains `clusters.sync`. |
+| Architecture | PASS source review | Collector/write side separated from committed read models; Topology uses eager-loaded DB relationship. |
+| Legacy/dead/compatibility | PASS source review | Orphan helpers/stale placeholder retired; no Blueprint blocker compatibility path retained. |
+| Static Quality | PENDING authoritative | Ruff, Ruff Format, djLint, Pyright, Prettier/devcontainer run required. |
+| Semantic typography | PASS source review | Human labels Title Case; Kubernetes identifiers retain native casing/technical semantics. |
+| Violet/design standard | PASS source review | Shared Hero, tables, labels, modal/drawer, loading and shell components retained. |
+| Hero | PASS source review | Resource Hero right accessory = **Status Badge Box**. |
+| Tables/status/pagination | PASS source review | Shared table/status components; default 5, options 5/10/25/50. |
+| Right content rail | N/A | Resource pages do not own a right-context rail. |
+| Tabs | N/A | Resource pages use filters/workspaces; Topology uses visualization controls. |
+| Modal/drawer/inline expand | PASS source review | Resource detail = Full Workspace Modal; Overview Side Drawer; Topology adaptive drawer/inspector. |
+| Toast/loading/notification | PASS source review | Canonical read loading; sync mutation uses operational feedback; global notification shell unchanged. |
+| Navbar/sidebar | PASS inherited shell contract | Shared application shell; Inventory adds no page-local shell state. |
+| Light/Dark + responsive | PASS source review | Shared semantic tokens and adaptive workspace/table/detail composition. |
+| Accessibility | PASS source review | Shared accessible table/detail/modal/drawer controls and focus behavior. |
+| Secure by Design | PASS source review | Unauthorized HTMX cannot probe readiness; read side forbids provider/network clients. |
+| Performance | PASS source review | SQL row pagination; current-generation summaries; eager-loaded Topology connection metadata. |
+| Maintainability/readability | PASS source review | Residual helpers removed; request/data ownership explicitly documented and verified. |
+| Reliability | PASS source review | Reads last committed generation; missing evidence does not trigger provider fallback. |
+| Database & migration | N/A for code change | No schema migration required; existing generation model remains canonical. |
+| Documentation | PASS source review | Pattern v1.1, domain README, final audit, quality-gate/test docs updated. |
+| Contract Test | ADDED / pending authoritative suite | Final release contract plus existing Inventory contracts. |
+| Unit Test | ADDED / pending authoritative suite | Topology selection policy. |
+| Functional Test | ADDED / pending authoritative suite | AuthZ/readiness request ordering plus existing behavior tests. |
+| Integration Test | ADDED / pending authoritative suite | Actual SQLAlchemy node current-generation/pagination read model. |
+| Security Regression | PASS source-only targeted | Provider boundary and AuthZ-order contracts. |
+| Rendering/UI Contract | PASS source-only targeted | Inventory templates parse and retain canonical shared components. |
+| End-to-End Smoke | ADDED / pending devcontainer | Actual Flask/session/layout Inventory smoke with external dependencies isolated. |
+| Release governance | PASS source review | `[Unreleased]`; final lock requires full gate before advancing. |
+| CI/CD | PASS source wiring / pending run | New verifier/evidence manifest flow through canonical `quality_gate.sh`. |
+
+### Lock condition
+
+Inventory becomes **PASS — LOCKED** only after authoritative Static Quality, Unit, Functional, Integration, Security, Rendering/UI, E2E, browser smoke, and full release gate pass.
 
 ## Next review
 
-`03 — Kubernetes Inventory` starts only after Kubernetes Dashboard reaches `PASS — LOCKED`.
+`04 — Kubernetes Governance` starts only after Kubernetes Inventory reaches `PASS — LOCKED`.
