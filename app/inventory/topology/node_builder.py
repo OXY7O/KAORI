@@ -83,7 +83,9 @@ class TopologyNodeBuilder:
                 fields=[
                     field('Environment', get_environment_label(cluster.environment)),
                     field('Status', cluster.status),
-                    field('API Server', cluster.kubernetes_connection.server if cluster.kubernetes_connection else None),
+                    field(
+                        'API Server', cluster.kubernetes_connection.server if cluster.kubernetes_connection else None
+                    ),
                     field('Kubernetes Version', inventory.kubernetes_version if inventory else None),
                     field('Nodes', cluster.node_count),
                 ],

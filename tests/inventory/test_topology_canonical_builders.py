@@ -171,7 +171,7 @@ def test_topology_builder_preserves_canonical_nodes_and_relationships() -> None:
         environment='production',
         node_count=1,
         updated_at=collected,
-        server='https://kubernetes.example',
+        kubernetes_connection=SimpleNamespace(server='https://kubernetes.example'),
     )
     namespace = SimpleNamespace(
         id=1,

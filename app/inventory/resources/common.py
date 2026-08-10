@@ -48,7 +48,6 @@ def _display_boolean(value: Any) -> str:
     return '-'
 
 
-
 def _selector_matches(
     selector: dict[str, str],
     labels: dict[str, str],

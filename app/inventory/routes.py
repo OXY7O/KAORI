@@ -1,7 +1,7 @@
 import logging
 from collections.abc import Callable
 from functools import wraps
-from typing import Any, TypeVar, cast
+from typing import Any, cast
 
 from flask import (
     Blueprint,
@@ -82,8 +82,6 @@ from app.rbac.decorators import permission_required
 
 logger = logging.getLogger(__name__)
 
-_View = TypeVar('_View', bound=Callable[..., Any])
-
 _INVENTORY_PARTIAL_TEMPLATES = {
     resource: {
         'index': f'inventory/{resource}/index.html',
@@ -108,7 +106,7 @@ def inject_inventory_freshness_context() -> dict[str, Any]:
     return {'inventory_freshness': get_inventory_freshness_context(cluster_id=cluster_id)}
 
 
-def _clusterless_inventory_htmx_guard(view: _View) -> _View:
+def _clusterless_inventory_htmx_guard[ViewT: Callable[..., Any]](view: ViewT) -> ViewT:
     """Block authorized direct HTMX reads when no Kubernetes cluster is registered."""
 
     @wraps(view)
@@ -117,7 +115,7 @@ def _clusterless_inventory_htmx_guard(view: _View) -> _View:
             return render_template('components/cluster/_onboarding_banner.html')
         return view(*args, **kwargs)
 
-    return cast(_View, guarded)
+    return cast(ViewT, guarded)
 
 
 @inventory_bp.post('/<string:cluster_id>/sync')
