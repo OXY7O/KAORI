@@ -805,13 +805,16 @@ def _get_run_registry(
         page=query_args.get('run_page', 1),
         per_page=query_args.get('run_per_page', PER_PAGE_OPTIONS[0]),
     )
-    schedule_map = {
-        int(item['id']): str(item['name'])
+    schedule_context_map = {
+        int(item['id']): {
+            'name': str(item['name']),
+            'icon': str(item.get('report_icon') or 'calendar-clock'),
+        }
         for item in schedules
         if item.get('id') is not None
     }
     return (
-        [_serialize_run(item, schedule_map) for item in runs],
+        [_serialize_run(item, schedule_context_map) for item in runs],
         pagination,
         selected_filters,
     )
@@ -939,9 +942,9 @@ def _get_recent_runs(limit: int = 8) -> list[dict[str, Any]]:
         .order_by(ReportScheduleRun.started_at.desc(), ReportScheduleRun.id.desc())
         .limit(limit)
     ).all()
-    schedule_map = _get_schedule_map([item.schedule_id for item in runs if item.schedule_id])
+    schedule_context_map = _get_schedule_context_map([item.schedule_id for item in runs if item.schedule_id])
 
-    return [_serialize_run(item, schedule_map) for item in runs]
+    return [_serialize_run(item, schedule_context_map) for item in runs]
 
 
 def _serialize_schedule(
@@ -999,7 +1002,10 @@ def _serialize_schedule(
     }
 
 
-def _serialize_run(run: ReportScheduleRun, schedule_map: dict[int, str]) -> dict[str, Any]:
+def _serialize_run(
+    run: ReportScheduleRun,
+    schedule_context_map: dict[int, dict[str, str]],
+) -> dict[str, Any]:
     delivery_result = run.delivery_result or {}
     requested = int(delivery_result.get('requested', 0) or 0)
     successful = int(delivery_result.get('successful', 0) or 0)
@@ -1019,15 +1025,21 @@ def _serialize_run(run: ReportScheduleRun, schedule_map: dict[int, str]) -> dict
         delivery_tone = 'pending'
 
     duration = _format_run_duration(run.started_at, run.finished_at)
+    schedule_context = schedule_context_map.get(
+        run.schedule_id or 0,
+        {'name': 'Deleted Schedule', 'icon': 'calendar-clock'},
+    )
     return {
         'id': run.id,
         'schedule_id': run.schedule_id,
-        'schedule_name': schedule_map.get(run.schedule_id or 0, 'Deleted Schedule'),
+        'schedule_name': schedule_context['name'],
+        'schedule_icon': schedule_context['icon'],
         'report_id': run.report_id,
         'job_execution_id': run.job_execution_id,
         'status': run.status,
         'status_label': run.status.replace('_', ' ').title(),
         'status_tone': 'normal' if run.status == 'success' else 'critical' if run.status == 'failed' else 'pending',
+        'result_summary': _get_run_result_summary(run),
         'trigger_source': run.trigger_source.replace('_', ' ').title(),
         'started_at': _format_datetime(run.started_at, _get_default_timezone()),
         'finished_at': _format_datetime(run.finished_at, _get_default_timezone()),
@@ -1038,6 +1050,24 @@ def _serialize_run(run: ReportScheduleRun, schedule_map: dict[int, str]) -> dict
         'delivery_tone': delivery_tone,
         'delivery_summary': f'{successful} Sent · {failed} Failed · {skipped} Skipped',
     }
+
+
+def _get_run_result_summary(run: ReportScheduleRun) -> str:
+    status = str(run.status or '').strip().lower()
+    error_message = str(run.error_message or '').strip().casefold()
+
+    if status == 'failed':
+        if 'storage' in error_message:
+            return 'Storage unavailable · View details'
+        return 'Execution failed · View details'
+    if status == 'success':
+        return 'Execution completed successfully'
+    if status == 'queued':
+        return 'Waiting for worker execution'
+    if status in {'started', 'running'}:
+        return 'Execution in progress'
+    return 'Execution state recorded'
+
 
 
 def _format_run_duration(started_at: datetime | None, finished_at: datetime | None) -> str:
@@ -1087,11 +1117,21 @@ def _get_cluster_map(cluster_ids: list[str]) -> dict[str, str]:
     return {item.id: item.name for item in clusters}
 
 
-def _get_schedule_map(schedule_ids: list[int]) -> dict[int, str]:
+def _get_schedule_context_map(schedule_ids: list[int]) -> dict[int, dict[str, str]]:
     if not schedule_ids:
         return {}
     schedules = db.session.scalars(select(ReportSchedule).where(ReportSchedule.id.in_(schedule_ids))).all()
-    return {item.id: item.name for item in schedules}
+    report_icons = {
+        str(item['value']): str(item.get('icon') or 'calendar-clock')
+        for item in REPORT_TYPE_OPTIONS
+    }
+    return {
+        item.id: {
+            'name': item.name,
+            'icon': report_icons.get(str(item.report_type), 'calendar-clock'),
+        }
+        for item in schedules
+    }
 
 
 def _get_default_sections(report_type: str) -> list[str]:

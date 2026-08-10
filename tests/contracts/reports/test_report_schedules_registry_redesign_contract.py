@@ -148,6 +148,22 @@ def test_recent_schedule_runs_are_a_full_server_backed_lifecycle_registry() -> N
     assert 'payload.recent_runs %}' not in template
 
 
+
+def test_schedule_run_rows_use_domain_icons_and_keep_verbose_errors_in_detail_only() -> None:
+    template = read(TEMPLATE)
+    service = read(SERVICE)
+
+    assert 'data-lucide="{{ run.schedule_icon }}"' in template
+    assert '{{ run.result_summary }}' in template
+    assert 'title="{{ run.error_message }}"' not in template
+    assert 'def _get_run_result_summary(' in service
+    assert "'Storage unavailable · View details'" in service
+    assert "'Execution failed · View details'" in service
+    assert "'result_summary': _get_run_result_summary(run)" in service
+    assert "'schedule_icon': schedule_context['icon']" in service
+    # Full retained execution error stays available in the run detail modal.
+    assert '{{ run.error_message }}' in template
+
 def test_schedule_feedback_and_run_now_follow_reports_flow() -> None:
     routes = read(ROUTES)
 
