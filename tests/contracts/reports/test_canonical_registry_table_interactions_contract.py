@@ -25,10 +25,14 @@ def test_registry_controls_are_owned_by_one_shared_component() -> None:
     assert 'data-kaori-canonical-registry-footer' in component
     assert 'hx-trigger="change, input changed delay:450ms"' in component
     assert 'hx-sync="closest section:replace"' in component
-    assert '<input type="hidden" name="page" value="1">' in component
-    assert '<input type="hidden" name="per_page" value="{{ per_page }}">' in component
+    assert 'page_param=\'page\'' in component
+    assert 'per_page_param=\'per_page\'' in component
+    assert '<input type="hidden" name="{{ page_param }}" value="1">' in component
+    assert '<input type="hidden" name="{{ per_page_param }}" value="{{ per_page }}">' in component
     assert 'data-kaori-auto-submit' in component
     assert 'pagination_ui.numeric_pages(' in component
+    assert 'page_param=page_param' in component
+    assert 'name="{{ per_page_param }}"' in component
 
 
 def test_report_registries_consume_shared_controls_instead_of_copying_htmx_contract() -> None:
@@ -56,6 +60,8 @@ def test_report_registry_backends_use_canonical_pagination_module() -> None:
     assert 'PER_PAGE_OPTIONS: tuple[int, ...] = (5, 10, 25, 50)' in canonical
     assert 'def normalize_per_page(' in canonical
     assert 'def build_pagination_window(' in canonical
+    assert 'def paginate_select(' in canonical
+    assert 'statement.order_by(None).subquery()' in canonical
 
     assert 'from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window, normalize_per_page, positive_int' in generated
     assert 'GENERATED_PER_PAGE_OPTIONS' not in generated

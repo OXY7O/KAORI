@@ -138,3 +138,36 @@ def paginate_query(
         list(rows),
         pagination_payload(window, allowed_per_page=allowed_per_page),
     )
+
+
+def paginate_select(
+    session: Any,
+    statement: Any,
+    *,
+    page: Any = 1,
+    per_page: Any = DEFAULT_PER_PAGE,
+    allowed_per_page: tuple[int, ...] = PER_PAGE_OPTIONS,
+) -> tuple[list[Any], dict[str, Any]]:
+    """Paginate a SQLAlchemy Select without materializing the full lifecycle registry.
+
+    The statement must select one scalar entity. Counting is performed from a
+    subquery with ordering removed, while the original statement keeps its
+    caller-owned ordering for the paged fetch.
+    """
+    from sqlalchemy import func, select
+
+    count_statement = select(func.count()).select_from(statement.order_by(None).subquery())
+    total_items = int(session.scalar(count_statement) or 0)
+    window = build_pagination_window(
+        total_items=total_items,
+        page=page,
+        per_page=per_page,
+        allowed_per_page=allowed_per_page,
+    )
+    rows = session.scalars(
+        statement.offset(window.offset).limit(window.per_page)
+    ).all()
+    return (
+        list(rows),
+        pagination_payload(window, allowed_per_page=allowed_per_page),
+    )

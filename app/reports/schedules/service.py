@@ -7,11 +7,11 @@ from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from flask import current_app
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from werkzeug.datastructures import ImmutableMultiDict, MultiDict
 
 from app.common.celery_queue_health import get_queue_readiness
-from app.common.pagination import PER_PAGE_OPTIONS, paginate_sequence
+from app.common.pagination import PER_PAGE_OPTIONS, paginate_select, paginate_sequence
 from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.report import Report, ReportSchedule, ReportScheduleRun
@@ -66,6 +66,21 @@ DAY_OF_WEEK_OPTIONS: list[dict[str, Any]] = [
 
 DEFAULT_TIMEZONE = 'Asia/Jakarta'
 
+RUN_PERIOD_OPTIONS: list[dict[str, str]] = [
+    {'value': '24h', 'label': 'Last 24 Hours'},
+    {'value': '7d', 'label': 'Last 7 Days'},
+    {'value': '30d', 'label': 'Last 30 Days'},
+    {'value': '90d', 'label': 'Last 90 Days'},
+    {'value': 'all', 'label': 'All Retained'},
+]
+
+RUN_PERIOD_DELTAS: dict[str, timedelta] = {
+    '24h': timedelta(hours=24),
+    '7d': timedelta(days=7),
+    '30d': timedelta(days=30),
+    '90d': timedelta(days=90),
+}
+
 
 def get_report_schedules_payload(
     query_args: Mapping[str, str] | None = None,
@@ -78,6 +93,10 @@ def get_report_schedules_payload(
     query_args = query_args or {}
     all_schedules = _get_schedule_rows()
     recent_runs = _get_recent_runs()
+    run_rows, run_pagination, run_selected_filters = _get_run_registry(
+        query_args,
+        all_schedules,
+    )
     cluster_options = _get_cluster_options()
     storage_context = _get_storage_context()
     worker_context = get_queue_readiness(get_reports_queue_name())
@@ -124,6 +143,21 @@ def get_report_schedules_payload(
         'schedules': schedules,
         'all_schedule_count': len(all_schedules),
         'recent_runs': recent_runs,
+        'run_rows': run_rows,
+        'run_pagination': run_pagination,
+        'run_selected_filters': run_selected_filters,
+        'run_filter_options': _get_run_filter_options(all_schedules),
+        'run_registry_query_params': {
+            'workspace': 'runs',
+            **{
+                key: value
+                for key, value in run_selected_filters.items()
+                if value
+            },
+        },
+        'active_workspace': (
+            'runs' if str(query_args.get('workspace', '') or '').strip().lower() == 'runs' else 'registry'
+        ),
         'clusters': cluster_options,
         'report_type_options': REPORT_TYPE_OPTIONS,
         'period_options': _title_case_period_options(),
@@ -152,9 +186,12 @@ def get_report_schedules_payload(
         'pagination': pagination,
         'per_page_options': list(PER_PAGE_OPTIONS),
         'registry_query_params': {
-            key: value
-            for key, value in selected_filters.items()
-            if key in {'search', 'status', 'cadence', 'report_type', 'cluster', 'delivery'} and value
+            'workspace': 'registry',
+            **{
+                key: value
+                for key, value in selected_filters.items()
+                if key in {'search', 'status', 'cadence', 'report_type', 'cluster', 'delivery'} and value
+            },
         },
     }
 
@@ -723,6 +760,104 @@ def _filter_schedule_rows(
     return filtered
 
 
+def _get_run_registry(
+    query_args: Mapping[str, str],
+    schedules: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], dict[str, Any], dict[str, str]]:
+    selected_filters = _get_run_selected_filters(query_args)
+    statement = (
+        select(ReportScheduleRun)
+        .outerjoin(ReportSchedule, ReportScheduleRun.schedule_id == ReportSchedule.id)
+        .order_by(ReportScheduleRun.started_at.desc(), ReportScheduleRun.id.desc())
+    )
+
+    search = selected_filters['run_search'].casefold()
+    if search:
+        pattern = f"%{search}%"
+        statement = statement.where(
+            or_(
+                func.lower(func.coalesce(ReportSchedule.name, 'deleted schedule')).like(pattern),
+                func.lower(func.coalesce(ReportScheduleRun.error_message, '')).like(pattern),
+            )
+        )
+
+    schedule_id = _parse_optional_int(selected_filters['run_schedule'])
+    if schedule_id is not None:
+        statement = statement.where(ReportScheduleRun.schedule_id == schedule_id)
+
+    trigger = selected_filters['run_trigger']
+    if trigger:
+        statement = statement.where(ReportScheduleRun.trigger_source == trigger)
+
+    status = selected_filters['run_status']
+    if status:
+        statement = statement.where(ReportScheduleRun.status == status)
+
+    period = selected_filters['run_period']
+    if period in RUN_PERIOD_DELTAS:
+        statement = statement.where(
+            ReportScheduleRun.started_at >= datetime.now(UTC) - RUN_PERIOD_DELTAS[period]
+        )
+
+    runs, pagination = paginate_select(
+        db.session,
+        statement,
+        page=query_args.get('run_page', 1),
+        per_page=query_args.get('run_per_page', PER_PAGE_OPTIONS[0]),
+    )
+    schedule_map = {
+        int(item['id']): str(item['name'])
+        for item in schedules
+        if item.get('id') is not None
+    }
+    return (
+        [_serialize_run(item, schedule_map) for item in runs],
+        pagination,
+        selected_filters,
+    )
+
+
+def _get_run_selected_filters(query_args: Mapping[str, str]) -> dict[str, str]:
+    period = str(query_args.get('run_period', '30d') or '30d').strip().lower()
+    allowed_periods = {item['value'] for item in RUN_PERIOD_OPTIONS}
+    if period not in allowed_periods:
+        period = '30d'
+    return {
+        'run_search': str(query_args.get('run_search', '') or '').strip(),
+        'run_schedule': str(query_args.get('run_schedule', '') or '').strip(),
+        'run_trigger': str(query_args.get('run_trigger', '') or '').strip().lower(),
+        'run_status': str(query_args.get('run_status', '') or '').strip().lower(),
+        'run_period': period,
+    }
+
+
+def _get_run_filter_options(
+    schedules: list[dict[str, Any]],
+) -> dict[str, list[dict[str, str]]]:
+    return {
+        'schedules': [
+            {'value': '', 'label': 'All Schedules'},
+            *[
+                {'value': str(item['id']), 'label': str(item['name'])}
+                for item in sorted(schedules, key=lambda row: str(row['name']).casefold())
+            ],
+        ],
+        'triggers': [
+            {'value': '', 'label': 'All Triggers'},
+            {'value': 'scheduler', 'label': 'Scheduler'},
+            {'value': 'manual', 'label': 'Manual'},
+        ],
+        'statuses': [
+            {'value': '', 'label': 'All Results'},
+            {'value': 'queued', 'label': 'Queued'},
+            {'value': 'started', 'label': 'Started'},
+            {'value': 'success', 'label': 'Success'},
+            {'value': 'failed', 'label': 'Failed'},
+        ],
+        'periods': list(RUN_PERIOD_OPTIONS),
+    }
+
+
 def _get_schedule_filter_options(
     schedules: list[dict[str, Any]],
     cluster_options: list[dict[str, str]],
@@ -865,20 +1000,59 @@ def _serialize_schedule(
 
 
 def _serialize_run(run: ReportScheduleRun, schedule_map: dict[int, str]) -> dict[str, Any]:
+    delivery_result = run.delivery_result or {}
+    requested = int(delivery_result.get('requested', 0) or 0)
+    successful = int(delivery_result.get('successful', 0) or 0)
+    failed = int(delivery_result.get('failed', 0) or 0)
+    skipped = int(delivery_result.get('skipped', 0) or 0)
+    if requested == 0:
+        delivery_label = 'No Delivery'
+        delivery_tone = 'unknown'
+    elif failed:
+        delivery_label = 'Delivery Failed' if successful == 0 else 'Partial Delivery'
+        delivery_tone = 'critical' if successful == 0 else 'warning'
+    elif successful:
+        delivery_label = 'Delivered'
+        delivery_tone = 'normal'
+    else:
+        delivery_label = 'Delivery Pending'
+        delivery_tone = 'pending'
+
+    duration = _format_run_duration(run.started_at, run.finished_at)
     return {
         'id': run.id,
         'schedule_id': run.schedule_id,
-        'schedule_name': schedule_map.get(run.schedule_id or 0, 'Deleted schedule'),
+        'schedule_name': schedule_map.get(run.schedule_id or 0, 'Deleted Schedule'),
         'report_id': run.report_id,
+        'job_execution_id': run.job_execution_id,
         'status': run.status,
         'status_label': run.status.replace('_', ' ').title(),
         'status_tone': 'normal' if run.status == 'success' else 'critical' if run.status == 'failed' else 'pending',
         'trigger_source': run.trigger_source.replace('_', ' ').title(),
         'started_at': _format_datetime(run.started_at, _get_default_timezone()),
         'finished_at': _format_datetime(run.finished_at, _get_default_timezone()),
+        'duration': duration,
         'error_message': run.error_message,
-        'delivery_result': run.delivery_result or {},
+        'delivery_result': delivery_result,
+        'delivery_label': delivery_label,
+        'delivery_tone': delivery_tone,
+        'delivery_summary': f'{successful} Sent · {failed} Failed · {skipped} Skipped',
     }
+
+
+def _format_run_duration(started_at: datetime | None, finished_at: datetime | None) -> str:
+    if started_at is None:
+        return 'Not Available'
+    if finished_at is None:
+        return 'In Progress'
+    seconds = max(int((_ensure_utc(finished_at) - _ensure_utc(started_at)).total_seconds()), 0)
+    if seconds < 60:
+        return f'{seconds}s'
+    minutes, remaining_seconds = divmod(seconds, 60)
+    if minutes < 60:
+        return f'{minutes}m {remaining_seconds}s' if remaining_seconds else f'{minutes}m'
+    hours, remaining_minutes = divmod(minutes, 60)
+    return f'{hours}h {remaining_minutes}m' if remaining_minutes else f'{hours}h'
 
 
 def _schedule_edit_state(schedule: ReportSchedule) -> dict[str, Any]:

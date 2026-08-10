@@ -15,7 +15,7 @@ def read(path: Path) -> str:
 def test_schedules_use_balanced_canonical_hero_actions() -> None:
     template = read(TEMPLATE)
 
-    assert 'data-report-schedules-page="automation-registry-v2"' in template
+    assert 'data-report-schedules-page="automation-registry-v3"' in template
     assert 'data-schedule-hero-actions="balanced-two"' in template
     assert 'page_hero.context_actions_classes(2)' in template
     assert template.count('page_hero.context_action_classes()') >= 2
@@ -24,25 +24,37 @@ def test_schedules_use_balanced_canonical_hero_actions() -> None:
     assert 'page_hero.context_actions_classes()' not in template
 
 
-def test_schedule_registry_and_recent_runs_share_reusable_tabbed_workspace() -> None:
+def test_schedule_registry_and_run_lifecycle_use_framed_canonical_workspaces() -> None:
     template = read(TEMPLATE)
     service = read(SERVICE)
 
-    assert 'components/workspace_tabs.html' in template
-    assert 'data-schedule-operations-workspace="true"' in template
-    assert "('registry', 'Schedule Registry', 'calendar-range', payload.pagination.total_items)" in template
-    assert "('runs', 'Recent Schedule Runs', 'history', payload.recent_runs|length)" in template
-    assert 'schedule-operations-panel-registry' in template
-    assert 'schedule-operations-panel-runs' in template
+    assert 'components/framed_workspace_tabs.html' in template
+    assert 'framed_workspace_tabs.render_navigation(' in template
+    assert 'data-schedule-operations-workspace="framed-v3"' in template
+    assert "('registry', 'Schedule Registry', 'calendar-range'" in template
+    assert "('runs', 'Recent Schedule Runs', 'history'" in template
+    assert "payload.active_workspace" in template
+    assert "hx_target='#schedule-operations-workspace'" in template
+    assert 'components/workspace_tabs.html' not in template
+    assert 'x-data="{ tabs:' not in template
+
     assert 'data-schedule-registry="true"' in template
-    assert 'data-schedule-runs="recent"' not in template
+    assert 'data-schedule-run-registry="lifecycle-v3"' in template
     assert 'components/table_registry.html' in template
-    assert "registry_ui.filter_form('reports.schedules'" in template
-    assert "registry_ui.footer('reports.schedules'" in template
+    assert template.count("registry_ui.filter_form('reports.schedules'") >= 2
+    assert template.count("registry_ui.footer('reports.schedules'") >= 2
+    assert "page_param='run_page'" in template
+    assert "per_page_param='run_per_page'" in template
     assert 'schedule-registry-loading' in template
+    assert 'schedule-runs-loading' in template
     assert 'xl:grid-cols-6' in template
-    assert 'from app.common.pagination import PER_PAGE_OPTIONS, paginate_sequence' in service
+    assert 'xl:grid-cols-5' in template
+
+    assert 'from app.common.pagination import PER_PAGE_OPTIONS, paginate_select, paginate_sequence' in service
     assert 'paginate_sequence(' in service
+    assert 'paginate_select(' in service
+    assert "query_args.get('run_page', 1)" in service
+    assert "query_args.get('run_per_page', PER_PAGE_OPTIONS[0])" in service
 
 
 def test_schedule_automation_posture_is_state_aware_for_storage_and_worker() -> None:
@@ -98,6 +110,42 @@ def test_schedule_tables_and_actions_keep_kaori_contracts() -> None:
     assert 'bg-rose-' not in template
     assert 'bg-amber-' not in template
     assert 'bg-slate-' not in template
+
+
+
+def test_recent_schedule_runs_are_a_full_server_backed_lifecycle_registry() -> None:
+    template = read(TEMPLATE)
+    service = read(SERVICE)
+
+    for label in [
+        'Recent Schedule Runs',
+        'Schedule',
+        'Trigger',
+        'Result',
+        'Period',
+        'Delivery',
+        'Lifecycle',
+        'Schedule Run Detail',
+        'Execution Lifecycle',
+        'Delivery Evidence',
+        'Execution References',
+    ]:
+        assert label in template
+
+    assert 'data-schedule-run-lifecycle-table="true"' in template
+    assert 'run_search' in template
+    assert 'run_schedule' in template
+    assert 'run_trigger' in template
+    assert 'run_status' in template
+    assert 'run_period' in template
+    assert "'All Retained'" in service
+    assert "'30d'" in service
+    assert 'def _get_run_registry(' in service
+    assert 'def _get_run_selected_filters(' in service
+    assert 'def _get_run_filter_options(' in service
+    assert 'def _format_run_duration(' in service
+    assert '.limit(limit)' in service  # compact summary sampling remains separate from registry paging
+    assert 'payload.recent_runs %}' not in template
 
 
 def test_schedule_feedback_and_run_now_follow_reports_flow() -> None:

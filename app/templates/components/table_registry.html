@@ -12,7 +12,7 @@
   Consumers own only endpoint, filter fields, table content, and optional polling.
 #}
 
-{% macro filter_form(endpoint, registry_id, loading_id, per_page, classes='', marker_name='', marker_value='true') -%}
+{% macro filter_form(endpoint, registry_id, loading_id, per_page, classes='', marker_name='', marker_value='true', page_param='page', per_page_param='per_page') -%}
     <form method="GET"
           action="{{ url_for(endpoint) }}"
           hx-get="{{ url_for(endpoint) }}"
@@ -26,14 +26,16 @@
           data-kaori-canonical-registry-filter="{{ registry_id }}"
           {% if marker_name %}{{ marker_name }}="{{ marker_value }}"{% endif %}
           class="{{ classes }}">
-        <input type="hidden" name="page" value="1">
-        <input type="hidden" name="per_page" value="{{ per_page }}">
+        <input type="hidden" name="{{ page_param }}" value="1">
+        <input type="hidden" name="{{ per_page_param }}" value="{{ per_page }}">
         {{ caller() }}
     </form>
 {%- endmacro %}
 
-{% macro clear_filters_link(endpoint, registry_id, loading_id, per_page, classes, label='Clear Filters') -%}
-    {% set clear_url = url_for(endpoint, per_page=per_page) %}
+{% macro clear_filters_link(endpoint, registry_id, loading_id, per_page, classes, label='Clear Filters', query_params=none, page_param='page', per_page_param='per_page') -%}
+    {% set clear_query = query_params.copy() if query_params else {} %}
+    {% set _ = clear_query.update({page_param: 1, per_page_param: per_page}) %}
+    {% set clear_url = url_for(endpoint, **clear_query) %}
     <a href="{{ clear_url }}"
        hx-get="{{ clear_url }}"
        hx-target="#{{ registry_id }}"
@@ -49,9 +51,9 @@
     </a>
 {%- endmacro %}
 
-{% macro footer(endpoint, registry_id, loading_id, pagination, query_params, per_page_options, resource_label='Records', rows_aria_label='Records per page', control_name='registry') -%}
+{% macro footer(endpoint, registry_id, loading_id, pagination, query_params, per_page_options, resource_label='Records', rows_aria_label='Records per page', control_name='registry', page_param='page', per_page_param='per_page') -%}
     {% set canonical_query = query_params.copy() if query_params else {} %}
-    {% set _ = canonical_query.update({'per_page': pagination.per_page}) %}
+    {% set _ = canonical_query.update({per_page_param: pagination.per_page}) %}
     <footer class="{{ pagination_ui.footer_classes() }}"
             data-kaori-canonical-registry-footer="{{ registry_id }}">
         <div class="{{ pagination_ui.summary_group_classes() }}">
@@ -74,9 +76,9 @@
                 {% for key, value in query_params.items() if value is not none and value|string|length %}
                     <input type="hidden" name="{{ key }}" value="{{ value }}">
                 {% endfor %}
-                <input type="hidden" name="page" value="1">
+                <input type="hidden" name="{{ page_param }}" value="1">
                 <span>Rows</span>
-                <select name="per_page"
+                <select name="{{ per_page_param }}"
                         data-kaori-auto-submit
                         class="{{ pagination_ui.page_size_classes() }}"
                         aria-label="{{ rows_aria_label }}">
@@ -94,7 +96,7 @@
              hx-sync="closest section:replace"
              data-kaori-canonical-registry-pagination="{{ registry_id }}">
             {% set previous_query = canonical_query.copy() %}
-            {% set _ = previous_query.update({'page': pagination.prev_page}) %}
+            {% set _ = previous_query.update({page_param: pagination.prev_page}) %}
             {% if pagination.has_prev %}
                 <a href="{{ url_for(endpoint, **previous_query) }}"
                    hx-get="{{ url_for(endpoint, **previous_query) }}"
@@ -115,7 +117,7 @@
             {{ pagination_ui.numeric_pages(
                 pagination.page,
                 pagination.total_pages,
-                page_param='page',
+                page_param=page_param,
                 hx_target='#' ~ registry_id,
                 hx_indicator='#' ~ loading_id,
                 endpoint=endpoint,
@@ -125,7 +127,7 @@
             ) }}
 
             {% set next_query = canonical_query.copy() %}
-            {% set _ = next_query.update({'page': pagination.next_page}) %}
+            {% set _ = next_query.update({page_param: pagination.next_page}) %}
             {% if pagination.has_next %}
                 <a href="{{ url_for(endpoint, **next_query) }}"
                    hx-get="{{ url_for(endpoint, **next_query) }}"
