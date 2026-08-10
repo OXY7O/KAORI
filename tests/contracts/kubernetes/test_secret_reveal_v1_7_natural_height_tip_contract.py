@@ -28,6 +28,7 @@ def test_protected_reveal_uses_full_width_lifecycle_without_context_rail() -> No
     assert 'Protected Reveal Lifecycle' in page
     assert 'secret_ui.workflow_control(' in page
 
+
 def test_administration_readiness_and_boundary_cards_use_content_height() -> None:
     page = read('app/templates/platform_operations/kubernetes/secret_reveal/_cluster_workspace.html')
 

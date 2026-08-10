@@ -21,16 +21,17 @@ def test_shared_operation_ui_owns_full_width_workflow_guidance() -> None:
     assert 'embedded=true' in component
 
 
-def test_secret_and_configmap_crud_pages_do_not_restore_right_rail_guidance() -> None:
-    for relative in OPERATION_TEMPLATES:
+def test_configmap_create_uses_the_shared_right_context_rail_while_other_crud_remains_migration_scope() -> None:
+    create = (ROOT / 'app/templates/kubernetes_operations/configmaps/create.html').read_text(encoding='utf-8')
+    assert 'data-kubernetes-operation-layout="context-rail-v4"' in create
+    assert 'data-kubernetes-operation-experience="task-focused-v4"' in create
+    assert 'components/context_rail.html' in create
+    assert 'components/info_flow.html' in create
+    assert 'components/information_guide_card.html' in create
+    assert "context_rail.layout_classes('wide')" in create
+    assert 'workflow_control(' not in create
+
+    for relative in OPERATION_TEMPLATES[1:]:
         template = (ROOT / relative).read_text(encoding='utf-8')
         assert 'data-kubernetes-operation-layout="full-width-v2"' in template
-        assert 'context_rail.html' not in template
-        assert 'information_guide_card.html' not in template
-        assert 'info_flow.html' not in template
-        if relative.endswith('configmaps/create.html'):
-            assert 'data-kubernetes-operation-experience="guided-v3"' in template
-            assert 'guidance_panel(' in template
-            assert 'workflow_control(' not in template
-        else:
-            assert 'workflow_control(' in template
+        assert 'workflow_control(' in template

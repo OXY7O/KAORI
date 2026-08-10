@@ -62,7 +62,7 @@ Impact context can lag behind the live object. The UI must label it as inventory
 ## UI contract
 
 - The landing page uses Compact Hero, Live Mutation Evidence Boundary, and Operational Workflow Catalog.
-- Create, Update, and Delete use **Full-Width Mutation Workspace v2**; the retired content right rail must not return.
+- ConfigMap Management keeps the canonical Hero right context box and workflow catalog. Create uses **Task-Focused Mutation Workspace v4** with the shared wide right context rail; Update/Delete remain migration targets until browser-reviewed.
 - Form labels use 12 px semibold typography; normal controls use a 40 px minimum height and proportional 14 px values.
 - ConfigMap text and binary rows use `components/structured_entry_editor.html`.
 - Raw payload fields may retain monospace typography; ordinary identity and configuration values remain proportional.
@@ -97,7 +97,7 @@ Impact context can lag behind the live object. The UI must label it as inventory
 - Create and Update use the reusable validation action bar. Final mutation actions stay neutral and disabled until the latest payload passes validation.
 - Dynamic entry handling and cluster/namespace dependency behavior live in `app/static/js/configmap_editor.js`; templates no longer embed imperative `onchange` handlers or per-partial scripts.
 - Every ConfigMap hero uses the canonical `page_hero.context_card()` posture panel: one eyebrow/title header, one compact semantic status, two operational metrics, and one full-width contextual CTA. The panel contains no descriptive paragraph and does not own mutation submission.
-- Create, Update, and Delete use `components/kubernetes_operation_ui.html::workflow_control()` for one full-width operational flow, guardrail grid, and embedded canonical action bar. Page-local workflow cards and a secondary right rail are not retained.
+- Create uses `components/context_rail.html`, `info_flow.html`, and `information_guide_card.html` for bounded secondary guidance while validation and mutation actions remain in the main task. Update/Delete retain their current reviewed implementation until migrated individually.
 
 ### Shared action-bar contract
 
@@ -109,8 +109,8 @@ Impact context can lag behind the live object. The UI must label it as inventory
 
 - The ConfigMap Management hero links to Kubernetes cluster management.
 - Create, update, and delete workflow heroes return to ConfigMap Management.
-- Mutation pages use `data-kubernetes-operation-layout="full-width-v2"` and shared full-width sections for target identity, payload/current state, validation evidence, workflow steps, guardrails, and embedded actions.
-- Content right rails are retired for ConfigMap CRUD. A mutation form must never be widened by simply deleting the rail; its information hierarchy must be recomposed through shared `workspace_section()` and `workflow_control()` primitives.
+- Create uses `data-kubernetes-operation-layout="context-rail-v4"` and the shared wide 22rem context rail. The rail contains only workflow/safety guidance; validation state and actions remain in the main task.
+- Update/Delete are reviewed separately rather than inheriting Create geometry by copy/paste.
 - The Hero right-side context panel remains part of the canonical Hero and is not a content right rail.
 
 ## Current KAORI operations pattern
@@ -120,7 +120,7 @@ The canonical presentation is documented in `docs/design/patterns/KUBERNETES_CON
 
 ## Workspace density
 
-Create, Update, and Delete use **Full-Width Mutation Workspace v2**. Target identity and mutation payload remain separate sections; validation evidence stays adjacent to the form state it validates; workflow steps and four compact guardrails form one shared control section; the Form Action Bar is embedded at the end of that section. The layout must remain dense on a 14-inch viewport and stack naturally on narrow screens without restoring a sticky content rail.
+Create uses **Task-Focused Mutation Workspace v4**: a bounded main form plus shared wide context rail. The rail is sticky only at desktop width, uses intrinsic-height boxes, and stacks below the task on smaller screens. Target identity, payload, validation evidence, and final actions stay in the main column. Update/Delete remain migration targets pending browser review.
 
 
 ## Canonical service boundaries
@@ -140,6 +140,6 @@ No internal compatibility aliases or session-stored delete tokens are retained.
 
 Every validation and mutation outcome uses `components/operational_toast.html` and the durable Activity Audit event created from the same normalized payload. Success, information, and warning toasts auto-dismiss according to the global policy; errors remain visible until dismissed. Hover or keyboard focus pauses the timer. At most four toasts remain visible.
 
-## Guided Create Reference
+## Task-Focused Create Reference
 
-`Create Kubernetes ConfigMap` is the first `guided-v3` mutation reference. It keeps the no-rail `full-width-v2` shell but does not stretch the previous rail-era form. The page is organized as `Define ConfigMap` → `Add ConfigMap Data` → `Review & Create`, with shared in-section safety guidance and one embedded validation/action surface. Update and Delete are migrated only after the reference layout is visually accepted.
+`Create Kubernetes ConfigMap` is the first `task-focused-v4` mutation reference. Browser review rejected both extremes: the old rail-era page was too fragmented, while the no-rail redesign stretched cards across the viewport. The reference therefore restores the shared 22rem context rail for concise flow/safety guidance while the left task column owns `Target & Identity` → `ConfigMap Data` → validation → final actions. Update and Delete are migrated only after this reference layout is visually accepted.

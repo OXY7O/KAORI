@@ -138,9 +138,9 @@ Permanent reviewed-domain evidence is organized as:
 - L6 Rendering/UI — `tests/rendering/kubernetes_operations/test_kubernetes_operations_rendering.py`;
 - L7 E2E Smoke — `tests/e2e/kubernetes_operations/test_kubernetes_operations_smoke.py`.
 
-## Guided-v3 browser correction
+## Task-Focused v4 Browser Correction
 
-The first no-rail redesign was structurally correct but still visually inherited the old rail-era form: wide cards were stretched across the viewport and the workflow block was too implementation-centric. Browser review therefore reopened Create ConfigMap as the reference guided experience. The new composition uses three decision-oriented sections (`Define ConfigMap`, `Add ConfigMap Data`, `Review & Create`), a shared in-section `guidance_panel()`, and one embedded validation/action surface. The same pattern is intentionally not propagated to the remaining CRUD pages until the reference is visually accepted.
+Two browser iterations confirmed that a blanket no-rail rule is not appropriate for CRUD mutation forms. Stretching the old primary column across the viewport produced long cards with weak scan hierarchy. Create ConfigMap is therefore reopened as the Task-Focused v4 reference: its main task column owns target/identity, data, validation evidence, and actions, while the shared wide context rail carries only one primary flow and one secondary safety guide. ConfigMap Management and Secret Management keep their original Hero context box + workflow catalog. The v4 geometry is not propagated to Update/Delete/Secret CRUD until this reference is visually accepted.
 
 The functional release gate was also corrected to remove the nonexistent `tests/kubernetes` directory. Kubernetes Operations functional evidence lives under `tests/kubernetes_operations`. Test harnesses were aligned with current RBAC, CSRF, TLS-policy, and SQLAlchemy exception contracts so failures represent production behavior instead of stale fixtures.
 

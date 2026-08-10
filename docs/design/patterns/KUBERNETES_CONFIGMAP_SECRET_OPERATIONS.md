@@ -29,23 +29,27 @@ Every mutation workspace distinguishes three authorities:
 
 Inventory impact evidence is best effort. It must not be described as complete dependency analysis.
 
-## Canonical mutation workspace — Full-Width Mutation Workspace v2
+## Canonical Mutation Workspace — Task-Fit Layout v4
 
 ```text
-Compact Hero
-Evidence Boundary
-Target / Identity
-Payload, Current State, or Impact
-Validation Evidence
-Workflow Steps + Guardrails
-Embedded Canonical Form Action Bar
+Management / Registry
+→ Hero + right context accessory + workflow catalog
+
+Ordinary CRUD mutation
+→ Main task workspace + shared compact right context rail
+→ validation evidence + canonical action bar remain in the main task
+
+Special protected workflows (TLS / Reveal)
+→ dedicated reviewed composition
 ```
 
 Rules:
 
-- content right rails are retired for ConfigMap Create/Update/Delete and Secret Create/Replace/Delete/Protected Reveal/Bulk TLS Rotation;
-- removing a rail is not sufficient: the former primary column must be recomposed into bounded full-width sections through `components/kubernetes_operation_ui.html`;
-- `workspace_section()` owns section geometry and `workflow_control()` owns the operational point flow, compact guardrail grid, warning/note, and embedded action bar;
+- choose layout by task semantics instead of applying one geometry to every Operations page;
+- ConfigMap Management and Secret Management retain their canonical Hero context box and workflow catalog;
+- ordinary CRUD forms may use `components/context_rail.html` with the wide 22rem geometry when concise flow/safety guidance materially reduces main-form width;
+- a mutation rail is limited to one primary `info_flow` plus at most one secondary expandable guide; it must use intrinsic height, stack below the form under `xl`, and never contain the mutation action itself;
+- main forms remain owned by shared `workspace_section()` / validation / action-bar primitives;
 - controls use 40 px geometry and 12 px labels;
 - mutation remains validation-gated, but the server always performs a fresh provider validation immediately before mutation;
 - target identity, payload/current state, validation evidence, and destructive impact remain visually distinct rather than becoming one stretched card;
@@ -129,18 +133,18 @@ Create and Update use one server-side dry-run for a validation request. A final 
 Operational results use `components/operational_toast.html` and `#operational-toast-stack`. The toast and Activity Audit record originate from the same normalized event. The stack is limited to four visible items. Success, information, and warning results auto-dismiss; errors persist. Hover and keyboard focus pause auto-dismiss. Legacy quick-action toast templates, close handlers, and domain feedback wrappers are not retained.
 
 
-## Guided Mutation Experience v3
+## Task-Focused Mutation Experience v4
 
 **Reference implementation:** Create Kubernetes ConfigMap.
 
-`full-width-v2` remains the structural no-rail shell, while `guided-v3` defines the user-facing composition that will be migrated across ConfigMap and Secret CRUD after the reference page is visually accepted. The key rule is that removing a right rail must not simply stretch the old form. A guided mutation page should group the work into a small number of decisions:
+`task-focused-v4` selects geometry from the task instead of forcing every mutation into full width. Browser review showed that simply stretching CRUD cards made the forms harder to scan. Create ConfigMap is the reference for ordinary CRUD: the primary task remains on the left while the canonical 22rem right context rail carries only workflow and safety guidance. A mutation page should still group the work into a small number of decisions:
 
 1. define the target and identity,
 2. enter or review the payload,
 3. review validation/readiness,
 4. apply the validated mutation.
 
-Supporting safety information belongs inside the relevant section through the shared `guidance_panel()` primitive. Validation and final actions belong in one `Review & Apply` section rather than a separate oversized workflow card. This keeps 14-inch layouts dense while preserving clear safety boundaries.
+Validation evidence and final actions remain in the main task column. Supporting workflow and guardrails belong in the shared context rail and must not duplicate Hero copy. This keeps the form readable on 14-inch displays while preserving clear safety boundaries.
 
-The Create ConfigMap reference uses `data-kubernetes-operation-experience="guided-v3"`. Update/Delete ConfigMap and Secret CRUD remain migration targets until individually redesigned and browser-reviewed.
+The Create ConfigMap reference uses `data-kubernetes-operation-layout="context-rail-v4"` and `data-kubernetes-operation-experience="task-focused-v4"`. Update/Delete ConfigMap and Secret CRUD remain migration targets until individually redesigned and browser-reviewed. TLS and Protected Reveal retain their dedicated reviewed layouts rather than inheriting this rail automatically.
 

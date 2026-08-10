@@ -125,34 +125,36 @@ def main() -> int:
 
     for relative in MUTATION_TEMPLATES:
         source = read(relative)
+        if relative == 'app/templates/kubernetes_operations/configmaps/create.html':
+            for token in (
+                'data-kubernetes-operation-layout="context-rail-v4"',
+                'data-kubernetes-operation-experience="task-focused-v4"',
+                'components/context_rail.html',
+                "context_rail.layout_classes('wide')",
+                'context_rail.rail_classes()',
+                'components/info_flow.html',
+                'components/information_guide_card.html',
+                'Create ConfigMap Flow',
+                'Creation Guardrails',
+            ):
+                require(token in source, f'ConfigMap Create context-rail reference missing: {token}', errors)
+            require(
+                'workflow_control(' not in source,
+                'ConfigMap Create must keep workflow guidance in the compact right rail instead of a full-width workflow block.',
+                errors,
+            )
+            continue
+
         require(
             'data-kubernetes-operation-layout="full-width-v2"' in source,
-            f'{relative} must use the full-width-v2 mutation workspace.',
+            f'{relative} must retain its current reviewed mutation workspace until migrated individually.',
             errors,
         )
-        for retired in ('context_rail.html', 'context_rail.layout_classes', 'context_rail.rail_classes'):
-            require(
-                retired not in source,
-                f'{relative} must not restore retired content rail token {retired}.',
-                errors,
-            )
-        if relative == 'app/templates/kubernetes_operations/configmaps/create.html':
-            require(
-                'data-kubernetes-operation-experience="guided-v3"' in source,
-                'ConfigMap Create must retain the guided-v3 reference experience.',
-                errors,
-            )
-            require(
-                'guidance_panel(' in source and 'action_bar(' in source and 'workflow_control(' not in source,
-                'ConfigMap Create must use guided review/action composition instead of the oversized workflow block.',
-                errors,
-            )
-        else:
-            require(
-                'workflow_control(' in source,
-                f'{relative} must use the shared workflow/guardrail control.',
-                errors,
-            )
+        require(
+            'workflow_control(' in source,
+            f'{relative} must use the shared workflow/guardrail control until its task-focused migration.',
+            errors,
+        )
 
     single_tls = read('app/templates/kubernetes_operations/secrets/tls_rotate.html')
     require(
@@ -180,8 +182,8 @@ def main() -> int:
         for retired_wording in ('shared 22rem wide', 'sticky right-column wrapper', 'sticky right column'):
             require(retired_wording not in source, f'{source_name} still documents retired rail wording.', errors)
     require(
-        'Full-Width Mutation Workspace v2' in pattern,
-        'Operations design pattern must document full-width v2.',
+        'Canonical Mutation Workspace — Task-Fit Layout v4' in pattern,
+        'Operations design pattern must document the task-fit v4 layout policy.',
         errors,
     )
     require(
@@ -212,7 +214,7 @@ def main() -> int:
 
     print(
         'KAORI Kubernetes Operations final-lock passed: AuthZ-first cluster prerequisites, '
-        'full-width ConfigMap/Secret mutation workspaces, zero retired rail surface, layered release evidence, '
+        'task-appropriate ConfigMap/Secret mutation workspaces, shared context-rail ownership, layered release evidence, '
         'and canonical shared workflow ownership are aligned.'
     )
     return 0

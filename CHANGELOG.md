@@ -4,6 +4,10 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ## [Unreleased]
 
+### Changed
+
+- Reopened the Kubernetes Operations CRUD layout after browser review: ConfigMap Management and Secret Management retain their canonical Hero context box/workflow catalog, while Create ConfigMap now uses the shared wide right context rail for concise workflow and safety guidance instead of stretched full-width cards.
+
 ### Added
 
 - Added permanent Kubernetes Governance L0–L7 release evidence and `verify_governance_final_lock.py` for AuthZ-first readiness, TLS data minimization, canonical UI ownership, and dead-surface protection.
