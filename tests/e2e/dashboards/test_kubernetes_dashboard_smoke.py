@@ -34,16 +34,28 @@ class DashboardSmokeUser(UserMixin):
 
 def _empty_navigation_context() -> dict[str, object]:
     return {
-        'items': [], 'history_items': [], 'attention_items': [], 'active_jobs': [],
-        'active_count': 0, 'attention_count': 0, 'unread_count': 0, 'total_count': 0,
-        'display_limit': 8, 'job_display_limit': 6,
+        'items': [],
+        'history_items': [],
+        'attention_items': [],
+        'active_jobs': [],
+        'active_count': 0,
+        'attention_count': 0,
+        'unread_count': 0,
+        'total_count': 0,
+        'display_limit': 8,
+        'job_display_limit': 6,
     }
 
 
 def _cluster_context() -> dict[str, object]:
     return {
-        'show_banner': False, 'is_kubernetes_scope': True, 'is_blocked': False,
-        'has_clusters': True, 'cluster_count': 1, 'can_manage_clusters': True, 'database_ready': True,
+        'show_banner': False,
+        'is_kubernetes_scope': True,
+        'is_blocked': False,
+        'has_clusters': True,
+        'cluster_count': 1,
+        'can_manage_clusters': True,
+        'database_ready': True,
     }
 
 
