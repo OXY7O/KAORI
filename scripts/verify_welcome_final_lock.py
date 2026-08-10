@@ -86,7 +86,11 @@ def _verify_route_contract(errors: list[str]) -> None:
     )
 
     for fragment in FORBIDDEN_WELCOME_IMPORT_FRAGMENTS:
-        require(fragment not in source, f'Welcome route must not import infrastructure/runtime dependency {fragment}.', errors)
+        require(
+            fragment not in source,
+            f'Welcome route must not import infrastructure/runtime dependency {fragment}.',
+            errors,
+        )
 
 
 def _verify_catalog_contract(errors: list[str]) -> None:
@@ -138,7 +142,7 @@ def _verify_catalog_contract(errors: list[str]) -> None:
     )
 
     require(
-        "current_user.has_permission(permission_key)" in source,
+        'current_user.has_permission(permission_key)' in source,
         'Welcome catalog must filter discoverability with current_user.has_permission().',
         errors,
     )
@@ -148,13 +152,23 @@ def _verify_catalog_contract(errors: list[str]) -> None:
         errors,
     )
     for fragment in FORBIDDEN_WELCOME_IMPORT_FRAGMENTS:
-        require(fragment not in source, f'Welcome catalog must not import infrastructure/runtime dependency {fragment}.', errors)
+        require(
+            fragment not in source,
+            f'Welcome catalog must not import infrastructure/runtime dependency {fragment}.',
+            errors,
+        )
 
     governance = next((item for item in shortcut_definitions if item.get('title') == 'K8s Governance'), None)
     reports = next((item for item in shortcut_definitions if item.get('title') == 'Reports'), None)
     intelligence = next((item for item in shortcut_definitions if item.get('title') == 'Intelligence'), None)
-    require(governance is not None and governance.get('scope') == 'Compute', 'K8s Governance scope must be Compute.', errors)
-    require(reports is not None and reports.get('scope') == 'Cross-domain', 'Reports must retain Cross-domain scope.', errors)
+    require(
+        governance is not None and governance.get('scope') == 'Compute', 'K8s Governance scope must be Compute.', errors
+    )
+    require(
+        reports is not None and reports.get('scope') == 'Cross-domain',
+        'Reports must retain Cross-domain scope.',
+        errors,
+    )
     require(
         intelligence is not None and intelligence.get('scope') == 'Cross-domain',
         'Intelligence must retain Cross-domain scope while the domain remains available.',
@@ -169,7 +183,9 @@ def _verify_presentation_contract(errors: list[str]) -> None:
     script = read('app/static/js/welcome.js')
 
     require('components/page_hero.html' in template, 'Welcome must use the shared page hero.', errors)
-    require('components/welcome_capability_group.html' in template, 'Welcome must use shared capability groups.', errors)
+    require(
+        'components/welcome_capability_group.html' in template, 'Welcome must use shared capability groups.', errors
+    )
     require('components/workspace_link_card.html' in template, 'Welcome must use shared workspace cards.', errors)
     require('components/states/_empty_state.html' in template, 'Welcome must use the shared empty state.', errors)
     require(
@@ -178,19 +194,41 @@ def _verify_presentation_contract(errors: list[str]) -> None:
         errors,
     )
     require('aria-live="polite"' in template, 'Welcome visible-result metadata must remain announced politely.', errors)
-    require('<span class="sr-only">Search Available Workspaces</span>' in template, 'Welcome search must keep an accessible label.', errors)
+    require(
+        '<span class="sr-only">Search Available Workspaces</span>' in template,
+        'Welcome search must keep an accessible label.',
+        errors,
+    )
     require('focus-visible:ring-2' in card, 'Welcome workspace cards must preserve visible keyboard focus.', errors)
-    require('data-group-result-count' in capability, 'Welcome capability groups must expose filtered result counts.', errors)
+    require(
+        'data-group-result-count' in capability, 'Welcome capability groups must expose filtered result counts.', errors
+    )
 
     for forbidden in (' style=', ' onclick=', ' onchange=', ' onkeyup=', ' onkeydown='):
-        require(forbidden not in template.lower(), f'Welcome page must not use page-local inline UI handler/style {forbidden.strip()}.', errors)
+        require(
+            forbidden not in template.lower(),
+            f'Welcome page must not use page-local inline UI handler/style {forbidden.strip()}.',
+            errors,
+        )
 
     for network_api in ('fetch(', 'XMLHttpRequest', 'axios.', 'htmx.ajax', 'WebSocket('):
-        require(network_api not in script, f'Welcome search JS must remain client-only and must not call {network_api}.', errors)
-    require("querySelectorAll('[data-workspace-card]')" in script, 'Welcome search must filter only rendered authorized cards.', errors)
+        require(
+            network_api not in script,
+            f'Welcome search JS must remain client-only and must not call {network_api}.',
+            errors,
+        )
+    require(
+        "querySelectorAll('[data-workspace-card]')" in script,
+        'Welcome search must filter only rendered authorized cards.',
+        errors,
+    )
     require('card.hidden = !matches' in script, 'Welcome search must hide unmatched rendered cards.', errors)
     require('group.hidden = visibleGroupCards.length === 0' in script, 'Welcome search must hide empty groups.', errors)
-    require("event.key === '/'" in script and "event.key === 'Escape'" in script, 'Welcome search keyboard shortcuts changed.', errors)
+    require(
+        "event.key === '/'" in script and "event.key === 'Escape'" in script,
+        'Welcome search keyboard shortcuts changed.',
+        errors,
+    )
 
 
 def _verify_release_evidence(errors: list[str]) -> None:
@@ -204,7 +242,11 @@ def _verify_release_evidence(errors: list[str]) -> None:
     quality_gate = read('scripts/quality_gate.sh')
     coverage = read('scripts/verify_feature_test_coverage.py')
     core_lock = read('scripts/verify_core_kubernetes_final_lock.py')
-    require('python scripts/verify_welcome_final_lock.py' in quality_gate, 'quality_gate.sh must run Welcome final-lock verification directly.', errors)
+    require(
+        'python scripts/verify_welcome_final_lock.py' in quality_gate,
+        'quality_gate.sh must run Welcome final-lock verification directly.',
+        errors,
+    )
     require(
         "'tests/welcome/test_welcome_characterization.py': 4" in coverage,
         'Feature characterization coverage must require Welcome behavior evidence.',
@@ -219,8 +261,14 @@ def _verify_release_evidence(errors: list[str]) -> None:
     readme = read('app/welcome/README.md')
     pattern = read('docs/design/patterns/WELCOME_WORKSPACE_CATALOG.md')
     require('Release evidence' in readme, 'Welcome README must document release evidence.', errors)
-    require('Accessibility and keyboard contract' in pattern, 'Welcome pattern must document accessibility/keyboard behavior.', errors)
-    require('Security boundary' in pattern, 'Welcome pattern must document the discoverability security boundary.', errors)
+    require(
+        'Accessibility and keyboard contract' in pattern,
+        'Welcome pattern must document accessibility/keyboard behavior.',
+        errors,
+    )
+    require(
+        'Security boundary' in pattern, 'Welcome pattern must document the discoverability security boundary.', errors
+    )
 
 
 def main() -> int:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,6 +18,9 @@ README = ROOT / 'app' / 'dashboards' / 'kubernetes' / 'README.md'
 STANDARD = ROOT / 'docs' / 'design' / 'patterns' / 'OPERATIONAL_DASHBOARD.md'
 AUDIT = ROOT / 'docs' / 'design' / 'audits' / 'KUBERNETES_OPERATIONS_DASHBOARD_ALIGNMENT_AUDIT_2026_08.md'
 QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
+FEATURE_COVERAGE = ROOT / 'scripts' / 'verify_feature_test_coverage.py'
+CHARACTERIZATION = ROOT / 'tests' / 'dashboards' / 'test_kubernetes_dashboard_characterization.py'
+SNAPSHOT_FLOW_TEST = ROOT / 'tests' / 'dashboards' / 'test_kubernetes_dashboard_snapshot_flow.py'
 
 SECTION_PARTIALS = (
     '_signal_overview.html',
@@ -55,6 +59,62 @@ def _require(source: str, tokens: tuple[str, ...], owner: str) -> None:
         raise AssertionError(f'{owner}: missing canonical tokens: {", ".join(missing)}')
 
 
+def _function(tree: ast.AST, name: str) -> ast.FunctionDef:
+    for node in getattr(tree, 'body', []):
+        if isinstance(node, ast.FunctionDef) and node.name == name:
+            return node
+    raise AssertionError(f'dashboard route boundary: missing function {name}')
+
+
+def _has_permission_decorator(function: ast.FunctionDef, permission: str) -> bool:
+    for decorator in function.decorator_list:
+        if not isinstance(decorator, ast.Call) or not decorator.args:
+            continue
+        called = decorator.func
+        if isinstance(called, ast.Name) and called.id == 'permission_required':
+            value = decorator.args[0]
+            return isinstance(value, ast.Constant) and value.value == permission
+    return False
+
+
+def _call_lines(function: ast.FunctionDef, name: str) -> list[int]:
+    lines: list[int] = []
+    for node in ast.walk(function):
+        if not isinstance(node, ast.Call):
+            continue
+        called = node.func
+        if isinstance(called, ast.Name) and called.id == name:
+            lines.append(node.lineno)
+    return sorted(lines)
+
+
+def _verify_route_authorization_order(routes: str) -> None:
+    tree = ast.parse(routes, filename=str(ROUTES))
+    index = _function(tree, 'index')
+    section = _function(tree, 'section')
+    if not _has_permission_decorator(index, 'dashboard.view'):
+        raise AssertionError('dashboard route boundary: index must require dashboard.view')
+    if not _has_permission_decorator(section, 'dashboard.view'):
+        raise AssertionError('dashboard route boundary: section must require dashboard.view')
+
+    for node in getattr(tree, 'body', []):
+        if not isinstance(node, ast.FunctionDef):
+            continue
+        for decorator in node.decorator_list:
+            called = decorator.func if isinstance(decorator, ast.Call) else decorator
+            if isinstance(called, ast.Attribute) and called.attr == 'before_request':
+                raise AssertionError(
+                    'dashboard route boundary: authorization-sensitive clusterless responses must not be owned by before_request'
+                )
+
+    cluster_lines = _call_lines(section, 'has_registered_clusters')
+    data_lines = _call_lines(section, 'get_dashboard_section')
+    if len(cluster_lines) != 1 or len(data_lines) != 1 or cluster_lines[0] >= data_lines[0]:
+        raise AssertionError(
+            'dashboard route boundary: protected section must resolve cluster readiness before dashboard data access'
+        )
+
+
 def verify() -> None:
     content = _read(CONTENT)
     signal_overview = _read(SIGNAL_OVERVIEW)
@@ -69,6 +129,9 @@ def verify() -> None:
     standard = _read(STANDARD)
     audit = _read(AUDIT)
     quality_gate = _read(QUALITY_GATE)
+    feature_coverage = _read(FEATURE_COVERAGE)
+    characterization = _read(CHARACTERIZATION)
+    snapshot_flow_test = _read(SNAPSHOT_FLOW_TEST)
 
     _require(
         content,
@@ -174,6 +237,8 @@ def verify() -> None:
             f'dashboard section {name}',
         )
 
+    _verify_route_authorization_order(routes)
+
     _require(
         routes,
         (
@@ -181,6 +246,7 @@ def verify() -> None:
             "DASHBOARD_TABS = {'overview', 'capacity', 'signals', 'reporting'}",
             'CLUSTER_HEALTH_PAGE_SIZES = {5, 10, 25, 50}',
             'SECTION_TEMPLATES = {',
+            'if has_registered_clusters() is False:',
         ),
         'dashboard route boundary',
     )
@@ -211,7 +277,7 @@ def verify() -> None:
         readme,
         (
             'read-only operational projection over committed KAORI data',
-            'OPERATIONAL_DASHBOARD.md` v1.1',
+            'OPERATIONAL_DASHBOARD.md` v1.2',
             'Arrow Left/Right, Home, and End keyboard navigation',
             'artifact-format neutral',
             'Web requests must not query Kubernetes, Prometheus, or Alertmanager directly',
@@ -222,7 +288,7 @@ def verify() -> None:
     _require(
         standard,
         (
-            '# KAORI Operational Dashboard Pattern v1.1',
+            '# KAORI Operational Dashboard Pattern v1.2',
             '**Status:** Locked reference pattern',
             'Kubernetes Operations Dashboard',
             'Identity → Scope → Indicators → Peer analysis → Interpretation → Action',
@@ -230,6 +296,8 @@ def verify() -> None:
             'Arrow Left/Right wrap through tabs',
             'Select a Cluster for Detailed Signals',
             'Reporting guidance must remain format-neutral',
+            'Authorization must complete before clusterless onboarding',
+            'tests/dashboards/test_kubernetes_dashboard_characterization.py',
             'scripts/verify_operational_dashboard_standard.py',
         ),
         'operational dashboard standard',
@@ -241,18 +309,46 @@ def verify() -> None:
             'Approved as the canonical KAORI operational dashboard reference',
             'No visual redesign is required',
             'Corrections made without visual redesign',
-            'Technical risks retained for separate work',
+            'Final Recheck v2',
+            'authorization ordering',
+            'behavioral characterization',
         ),
         'dashboard alignment audit',
     )
 
     if 'python scripts/verify_operational_dashboard_standard.py' not in quality_gate:
         raise AssertionError('scripts/quality_gate.sh does not execute the dashboard standard verifier')
+    if 'tests/dashboards' not in quality_gate:
+        raise AssertionError('scripts/quality_gate.sh does not explicitly execute Dashboard functional tests')
+    if "'tests/dashboards/test_kubernetes_dashboard_characterization.py': 7" not in feature_coverage:
+        raise AssertionError('Dashboard behavioral characterization is not protected by the feature coverage gate')
+
+    _require(
+        characterization,
+        (
+            'test_lazy_section_authorization_runs_before_clusterless_blocker',
+            'test_authorized_clusterless_section_renders_onboarding_without_data_read',
+            'test_unknown_section_returns_404_before_cluster_probe',
+            'test_authorized_section_reads_dashboard_only_after_cluster_readiness',
+            'test_dashboard_tab_selection_is_bounded_to_canonical_tabs',
+            'test_cluster_health_page_size_rejects_unbounded_values',
+            'test_dashboard_index_requires_permission_before_building_context',
+        ),
+        'dashboard behavioral characterization',
+    )
+    if "return [cluster], [option], 'cluster-1', cluster" not in snapshot_flow_test:
+        raise AssertionError('Dashboard snapshot-flow tests still use the retired five-value scope contract')
+    if (
+        'lambda _models, _selected' in snapshot_flow_test
+        or 'models, clusters, options, None, None' in snapshot_flow_test
+    ):
+        raise AssertionError('Dashboard snapshot-flow tests still target retired service helper signatures')
 
     print(
         'KAORI operational dashboard standard passed: canonical composition, snapshot-only web boundary, '
-        'URL-backed keyboard-accessible tabs, shared style ownership, format-neutral reporting guidance, '
-        'top-consumer snapshot semantics, documentation, audit, and quality-gate enforcement match v1.1.'
+        'authorization-first lazy sections, URL-backed keyboard-accessible tabs, shared style ownership, '
+        'format-neutral reporting guidance, top-consumer snapshot semantics, behavioral release evidence, '
+        'documentation, audit, and quality-gate enforcement match v1.2.'
     )
 
 
