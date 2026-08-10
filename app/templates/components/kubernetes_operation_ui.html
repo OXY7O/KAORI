@@ -63,9 +63,9 @@
         </div>
     </div>
 {%- endmacro %}
-{% macro action_bar(icon, title, description, aria_label='Operation Actions') -%}
+{% macro action_bar(icon, title, description, aria_label='Operation Actions', embedded=false) -%}
     {% set action_content = caller() %}
-    {% call form_action_bar.render(description, aria_label, title) %}
+    {% call form_action_bar.render(description, aria_label, title, embedded=embedded) %}
         {{ action_content | safe }}
     {% endcall %}
 {%- endmacro %}

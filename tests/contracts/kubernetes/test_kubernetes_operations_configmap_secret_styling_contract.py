@@ -39,7 +39,6 @@ def test_live_mutation_pages_use_canonical_evidence_and_context_rail() -> None:
         'secrets/create.html',
         'secrets/replace.html',
         'secrets/delete.html',
-        'secrets/tls_rotate.html',
     )
     for relative in pages:
         source = (TEMPLATES / 'kubernetes_operations' / relative).read_text()
@@ -50,6 +49,20 @@ def test_live_mutation_pages_use_canonical_evidence_and_context_rail() -> None:
         assert 'context_rail.rail_classes()' in source
         assert 'xl:grid-cols-[minmax(0,1fr)_' not in source
 
+
+
+def test_single_tls_rotation_uses_full_width_integrated_workspace() -> None:
+    source = read('app/templates/kubernetes_operations/secrets/tls_rotate.html')
+
+    assert 'context_rail.html' not in source
+    assert 'context_rail.layout_classes' not in source
+    assert 'context_rail.rail_classes' not in source
+    assert 'Replacement Certificate Pair & Validation' in source
+    assert "embedded=true" in source
+    assert 'Controlled Rotation & Governance Posture' in source
+    assert 'operational_point_flow.html' in source
+    assert 'TLS Certificate Posture' in source
+    assert 'Open Certificate Details' in source
 
 def test_secret_create_uses_reusable_choice_and_entry_components() -> None:
     source = read('app/templates/kubernetes_operations/secrets/create.html')

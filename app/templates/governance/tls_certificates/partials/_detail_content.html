@@ -25,10 +25,10 @@
                         {{ table_label.metadata_label(record.namespace, 'folder-tree') }}
                     </div>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Certificate identity, validity, declared host coverage, consumer mapping, and collection evidence.</p>
+                    {% call detail.header_badge_row() %}
+                        {{ table_label.status_indicator_label(presentation.status_label or 'Unknown', presentation.status_tone or 'unknown', size='detail') }}
+                    {% endcall %}
                 </div>
-            </div>
-            <div class="self-start sm:self-auto">
-                {{ table_label.status_indicator_label(presentation.status_label or 'Unknown', presentation.status_tone or 'unknown', size='detail') }}
             </div>
         </header>
         {{ detail.summary_strip([

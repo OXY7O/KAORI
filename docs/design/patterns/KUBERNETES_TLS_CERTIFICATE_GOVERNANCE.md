@@ -9,7 +9,7 @@ TLS Certificate Governance is a read-oriented registry for certificate validity,
 ```text
 Compact Hero
 TLS Collection Snapshot
-Certificate Validity Posture
+Certificate Validity & Operations
 Compact Certificate Registry
 Detail Style 2 — Full Workspace Modal
 ```
@@ -105,6 +105,24 @@ Rotation Handoff
 ```
 
 The modal uses permission-aware rotation actions. Governance never owns the mutation form.
+
+The modal header follows the shared Full Workspace Modal alignment contract: lifecycle/status labels sit below the descriptive line and align with the title/description text column, never with the outer-left icon edge.
+
+## Certificate Validity & Operations workspace
+
+TLS inventory synchronization and certificate posture are one operational workspace. `TLS Inventory Operations` is an internal toolbar/state row inside the `Certificate Validity & Operations` section, followed by the six validity/coverage posture metrics. It must not render as a separate sibling card above the posture grid.
+
+## Single TLS rotation workspace
+
+Single TLS rotation is intentionally full width. The old sticky right context rail is retired for this workflow because it created visual imbalance after the main content evolved. The canonical order is:
+
+```text
+Target TLS Secret
+Replacement Certificate Pair & Validation
+Controlled Rotation & Governance Posture
+```
+
+`Target TLS Secret` owns a compact target identity strip and the committed current TLS posture in one section. `Replacement Certificate Pair & Validation` owns both upload cards, file-processing guardrails, validation result, and the embedded Validate/Update action bar. `Controlled Rotation & Governance Posture` combines the four-step mutation flow with compact TLS Governance evidence and the Certificate Details handoff. No page-local right rail, separate validation action card, or standalone posture accordion is used.
 
 ### Rotation file-picker stability
 

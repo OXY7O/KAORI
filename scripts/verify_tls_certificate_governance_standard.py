@@ -121,9 +121,19 @@ def main() -> int:
         'tls.key',
         'border border-outline-default bg-surface-hover p-4',
         'border border-dashed border-outline-strong bg-surface-card',
+        'Replacement Certificate Pair & Validation',
         'Validate Before Update',
+        'embedded=true',
+        'Controlled Rotation & Governance Posture',
+        'operational_point_flow.html',
+        'TLS Certificate Posture',
     ):
         require(token in single_rotation, f'Single TLS rotation missing canonical upload/action token: {token}', errors)
+    require(
+        'context_rail.html' not in single_rotation,
+        'Single TLS rotation must use the full-width integrated workspace rather than a right context rail.',
+        errors,
+    )
     require(
         'TLS Certificate Validation Completed' in tls_routes,
         'TLS rotation notifications must preserve TLS acronym and Title Case.',

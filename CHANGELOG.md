@@ -15,6 +15,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ### Changed
 
+- Consolidated TLS Governance certificate posture and inventory operations into one canonical workspace, aligned TLS detail-modal status placement with Inventory, and redesigned single TLS rotation as a full-width three-section flow with embedded validation actions and Governance posture.
 - Hardened Kubernetes Governance request ownership so TLS cluster/readiness blockers execute only after route RBAC, while preserving the locked TLS registry, worker sync, operational feedback, and rotation handoff design.
 - Hardened Kubernetes Inventory read ownership: clusterless HTMX blocking now executes after `inventory.view`, and Topology reads API Server metadata from the eagerly loaded canonical cluster-connection relationship instead of the integration resolver.
 - Harden Kubernetes Dashboard release ownership: remove unused compatibility/dead internal surface, use explicit selected-cluster naming, keep empty consumer messaging snapshot-only, and add layered Unit/Integration/Security/Rendering/E2E release evidence without changing the locked visual design.
@@ -36,8 +37,6 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ### Fixed
 
-- Aligned Kubernetes Inventory Full Workspace Modal state/collection labels with the resource text-content column through one shared header-state primitive, removing the detached label placement below the leading icon.
-- Corrected TLS wildcard host coverage to single-label semantics (`*.example.com` no longer matches `deep.api.example.com`) and isolated the standalone certificate-policy test harness so it cannot shadow the real `app` package during Governance functional-test collection.
 - Restored authenticated top-navbar Quick Actions, Notification Deck, and Account interactions by moving the malformed inline Alpine state program into the syntax-checked `kaoriNavbar` static controller.
 - Completed the follow-up quality-gate cleanup from the second lint/type run: restored required workload quota bindings, fixed forecast snapshot recommendation counting, corrected Kubernetes Operations contract setup, widened the cluster dependency typing boundary for SQLAlchemy models, and added optional-value guards for forecast PDF, XLSX footer, dashboard pagination, and scheduled report dispatch paths.
 - Resolved pre-release lint and type-safety defects across Analytics, Inventory, Governance, Kubernetes Operations, Reports, Integrations, Platform Operations, Access support code, and release scripts.

@@ -1,12 +1,11 @@
 {% import "components/action_button.html" as action_button %}
-{% import "components/table.html" as table_ui %}
 {% set can_sync = current_user.has_permission('tls_certificates.sync') %}
 {% set can_configure = current_user.has_permission('jobs.view') %}
 {% set can_bulk_rotate = current_user.has_permission('kubernetes_secrets.bulk_rotate_tls') %}
-<section id="tls-registry-actions"
-         class="{{ table_ui.block_classes() }}"
-         aria-label="TLS Registry Operations">
-    <div class="flex flex-col gap-4 px-5 py-4 sm:px-6 xl:flex-row xl:items-center xl:justify-between">
+<div id="tls-registry-actions"
+     class="border-b border-outline-subtle px-5 py-4 sm:px-6"
+     aria-label="TLS Registry Operations">
+    <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div class="min-w-0 flex-1">{% include "governance/tls_certificates/partials/_sync_live_state.html" %}</div>
         <div class="flex shrink-0 flex-wrap items-center gap-2">
             {% if can_sync %}
@@ -56,4 +55,4 @@
             {% endif %}
         </div>
     </div>
-</section>
+</div>

@@ -16,8 +16,10 @@ def test_tls_registry_uses_governance_resource_registry_pattern() -> None:
 
     assert 'partials/_hero.html' in page
     assert 'partials/_snapshot_context.html' in scope
-    assert 'Certificate Validity Posture' in summary
+    assert 'Certificate Validity & Operations' in summary
+    assert 'partials/_sync_panel.html' in summary
     assert 'posture_grid.render' in summary
+    assert 'partials/_sync_panel.html' not in scope
     assert 'TLS Certificate Registry' in table
     assert 'Certificate</th>' in table
     assert 'Host Coverage</th>' in table
@@ -43,6 +45,8 @@ def test_tls_registry_uses_governance_resource_registry_pattern() -> None:
     assert "size='body'" not in table
     assert 'static_detail_row' not in table
     assert 'resource_detail_modal.host(' in index
+    detail = _read('app/templates/governance/tls_certificates/partials/_detail_content.html')
+    assert 'detail.header_badge_row()' in detail
 
 
 def test_tls_registry_status_and_pagination_are_canonical() -> None:

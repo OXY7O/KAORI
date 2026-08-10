@@ -10,10 +10,11 @@
     ('shield-alert', 'Host Coverage Exceptions', coverage_exceptions, 'Partial, uncovered, or unavailable host mapping evidence.', 'warning' if coverage_exceptions else 'normal')
 ] %}
 {% call operational_section_card.render(
-    'Certificate Validity Posture',
-    'Lifecycle and declared-host coverage evidence for the active governance filters.',
+    'Certificate Validity & Operations',
+    'Lifecycle, declared-host coverage, and TLS inventory synchronization for the active governance filters.',
     'gauge',
     body_classes='p-0'
     ) %}
+    {% include "governance/tls_certificates/partials/_sync_panel.html" %}
     {{ posture_grid.render(metrics, columns=3) }}
 {% endcall %}

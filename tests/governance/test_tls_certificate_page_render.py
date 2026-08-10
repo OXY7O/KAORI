@@ -68,11 +68,13 @@ def test_tls_summary_renders_with_canonical_inventory_component() -> None:
     )
     environment.globals['url_for'] = lambda endpoint, **values: f'/{endpoint}'
 
+    current_user = SimpleNamespace(has_permission=lambda _permission: False)
     rendered = environment.get_template('governance/tls_certificates/partials/_summary_cards.html').render(
-        payload=_payload()
+        payload=_payload(), current_user=current_user
     )
 
-    assert 'Certificate Validity Posture' in rendered
+    assert 'Certificate Validity &amp; Operations' in rendered or 'Certificate Validity & Operations' in rendered
+    assert 'TLS Inventory Operations' in rendered
     assert 'Renewal Window' in rendered
     assert 'Host Coverage Exceptions' in rendered
 

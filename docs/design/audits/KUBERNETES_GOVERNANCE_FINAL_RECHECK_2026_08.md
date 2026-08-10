@@ -13,6 +13,8 @@ Reviewed Kubernetes Governance Overview and TLS Certificate Governance against t
 5. Governance now has permanent L0–L7 release evidence and a final-lock verifier wired into the release gate.
 6. TLS wildcard host coverage is explicitly single-label: `*.example.com` covers `api.example.com` but not deeper names such as `deep.api.example.com`.
 7. The standalone validity-policy test restores every temporary `sys.modules` package entry after loading certificate policy code, so Governance functional-test collection cannot be poisoned by a fake `app` package.
+8. TLS Governance UI follow-up consolidates `TLS Inventory Operations` into `Certificate Validity & Operations`, aligns TLS detail-modal status placement with the shared Inventory header contract, and converts single TLS rotation to a full-width integrated workspace without the retired right context rail.
+9. Single TLS rotation now uses three cohesive sections: compact target/posture evidence, combined certificate-pair upload plus embedded validation actions, and combined controlled flow plus Governance posture handoff.
 
 ## Performance and reliability
 

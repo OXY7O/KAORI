@@ -57,9 +57,19 @@ def test_single_tls_rotation_page_surfaces_current_tls_posture() -> None:
     template = _rotate_template()
 
     assert 'Current TLS Posture' in template
-    assert 'Relevant certificate validity and coverage for this live target' in template
+    assert 'Committed certificate validity and coverage for the selected Secret' in template
     assert 'Expires At' in template
     assert 'Days Remaining' in template
     assert 'Host Coverage' in template
     assert 'Fingerprint' in template
     assert "table_label.status_label(record.presentation.status_label or 'Unknown'" in template
+
+
+def test_single_tls_rotation_validation_is_embedded_with_upload_pair() -> None:
+    template = _rotate_template()
+
+    assert 'Replacement Certificate Pair & Validation' in template
+    assert "secret_ui.action_bar('shield-check', 'Validate Before Update'" in template
+    assert 'embedded=true' in template
+    assert 'id="tls-secret-rotate-validation-result"' in template
+    assert 'context_rail.html' not in template

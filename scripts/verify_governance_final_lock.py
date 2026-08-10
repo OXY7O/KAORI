@@ -140,6 +140,26 @@ def main() -> int:
         'TLS detail disclosure must remain the Full Workspace Modal.',
         errors,
     )
+    detail = read('app/templates/governance/tls_certificates/partials/_detail_content.html')
+    summary = read('app/templates/governance/tls_certificates/partials/_summary_cards.html')
+    rotate = read('app/templates/kubernetes_operations/secrets/tls_rotate.html')
+    require(
+        'detail.header_badge_row()' in detail,
+        'TLS detail status must align below the descriptive text through the shared detail header badge row.',
+        errors,
+    )
+    require(
+        'Certificate Validity & Operations' in summary and 'partials/_sync_panel.html' in summary,
+        'TLS posture and inventory operations must remain consolidated in one Governance workspace section.',
+        errors,
+    )
+    require(
+        'Replacement Certificate Pair & Validation' in rotate
+        and 'Controlled Rotation & Governance Posture' in rotate
+        and 'context_rail.html' not in rotate,
+        'Single TLS rotation must retain the full-width integrated three-section workspace.',
+        errors,
+    )
     constants = read('app/governance/tls_certificates/constants.py')
     for option in ('5', '10', '25', '50'):
         require(option in constants, f'TLS pagination standard must retain {option}.', errors)
