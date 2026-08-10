@@ -10,8 +10,10 @@ from app.rbac.decorators import permission_required
 from app.reports.web import render_reports_unavailable
 from app.reports.storage.service import (
     build_report_cleanup_dry_run,
+    build_storage_integrity_presentation,
     clear_report_storage_status_cache,
     get_report_storage_payload,
+    normalize_storage_workspace,
     scan_report_storage_integrity,
     verify_active_report_storage,
 )
@@ -21,9 +23,11 @@ logger = logging.getLogger(__name__)
 
 @permission_required('reports.manage_storage')
 def storage() -> ResponseReturnValue:
+    workspace = normalize_storage_workspace(request.args.get('workspace'))
+
     if request.args.get('cleanup_dry_run') == '1':
         try:
-            payload = get_report_storage_payload()
+            payload = get_report_storage_payload(workspace='retention')
             if payload['storage_actions_enabled']:
                 payload['cleanup_dry_run_result'] = build_report_cleanup_dry_run()
         except Exception:
@@ -38,9 +42,11 @@ def storage() -> ResponseReturnValue:
 
     if request.args.get('integrity') == '1':
         try:
-            payload = get_report_storage_payload()
+            payload = get_report_storage_payload(workspace='integrity')
             if payload['storage_actions_enabled']:
-                payload['integrity_result'] = scan_report_storage_integrity()
+                payload['integrity_result'] = build_storage_integrity_presentation(
+                    scan_report_storage_integrity()
+                )
         except Exception:
             logger.exception('Report storage integrity scan failed.')
             return render_reports_unavailable(
@@ -93,10 +99,10 @@ def storage() -> ResponseReturnValue:
             metadata=metadata,
             queue_feedback=True,
         )
-        return redirect(url_for('reports.storage'))
+        return redirect(url_for('reports.storage', workspace=workspace))
 
     try:
-        payload = get_report_storage_payload()
+        payload = get_report_storage_payload(workspace=workspace)
     except HTTPException:
         raise
     except Exception:

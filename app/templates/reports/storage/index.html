@@ -1,8 +1,15 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
-{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/framed_workspace_tabs.html" as framed_tabs %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
 {% block title %}Reports Storage{% endblock title %}
 {% block dashboard_content %}
+    {% set posture = payload.storage_posture %}
+    {% set backend_status = payload.backend_status %}
+    {% set overview_href = url_for('reports.storage', workspace='overview') %}
+    {% set integrity_href = url_for('reports.storage', workspace='integrity') %}
+    {% set retention_href = url_for('reports.storage', workspace='retention') %}
     <div class="space-y-5">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
@@ -11,9 +18,9 @@
                         <h1 class="{{ page_hero.title_classes() }}">{{ payload.page_title }}</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">{{ payload.page_subtitle }}</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label(payload.lifecycle_summary.icon, payload.lifecycle_summary.label) }}
+                            {{ page_hero.meta_label('database', payload.active_backend|upper ~ ' Backend') }}
                             {{ page_hero.meta_label('lock-keyhole', 'Configuration Protected') }}
-                            {{ page_hero.meta_label('file-check-2', payload.artifact_summary.ready_reports ~ ' Ready Reports') }}
+                            {{ page_hero.meta_label('radio-tower', posture.monitor_label ~ ' Readiness') }}
                         </div>
                     {% endcall %}
                 </div>
@@ -24,503 +31,433 @@
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Storage Posture</p>
                                 <h2 class="{{ page_hero.context_panel_title_classes() }}">Artifact Storage</h2>
                             </div>
-                            {{ page_hero.context_status_badge(payload.backend_status.status, 'normal' if payload.backend_status.available else 'warning') }}
+                            {{ page_hero.context_status_badge(posture.status_label, posture.status_tone) }}
                         </div>
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                            {{ page_hero.context_metric('database', 'Backend', payload.active_backend|upper, 'Active destination', value_classes='text-sm font-semibold leading-5') }}
-                            {{ page_hero.context_metric('file-check-2', 'Ready', payload.artifact_summary.ready_reports, 'Available artifacts') }}
+                            {{ page_hero.context_metric('database', 'Backend', payload.active_backend|upper, posture.backend_label, value_classes='text-sm font-semibold leading-5') }}
+                            {{ page_hero.context_metric('file-check-2', 'Ready', posture.ready_reports, 'Database-ready reports') }}
                         </div>
-                        <div class="{{ page_hero.context_actions_classes() }}">
-                            <a href="{{ url_for('reports.storage', verify=1) }}" class="{{ page_hero.context_action_classes() }}"><i data-lucide="{{ 'refresh-cw' if not payload.backend_status.available else 'activity' }}" class="h-4 w-4"></i>{{ payload.backend_status.action_label }}</a>
-                            <a href="{{ url_for('reports.generated_reports') }}" class="{{ page_hero.context_action_classes() }}"><i data-lucide="files" class="h-4 w-4"></i>Generated</a>
+                        <div class="{{ page_hero.context_actions_classes(2) }}" data-storage-hero-actions="balanced-two">
+                            <a href="{{ url_for('reports.storage', verify='1', workspace='overview') }}"
+                               class="{{ page_hero.context_action_classes() }}">
+                                <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
+                                Verify Storage
+                            </a>
+                            <a href="{{ url_for('reports.generated_reports') }}"
+                               class="{{ page_hero.context_action_classes() }}">
+                                <i data-lucide="files" class="h-4 w-4" aria-hidden="true"></i>
+                                Generated Reports
+                            </a>
                         </div>
                     </div>
                 </aside>
             </div>
         </section>
-        {% include "reports/components/_summary_strip.html" %}
-        <section class="rounded-xl border border-outline-subtle bg-surface-card px-4 py-3 shadow-sm"
+
+        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+                 data-report-storage-posture="{{ posture.status_tone }}"
                  data-report-storage-readiness-monitor="true">
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div class="flex min-w-0 items-center gap-2.5">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
-                        <i data-lucide="radio-tower" class="h-4 w-4"></i>
+            <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                            <i data-lucide="shield-check" class="h-5 w-5"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h2 class="text-base font-semibold text-content-primary">Storage Operations Posture</h2>
+                            <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted">One operational boundary for artifact readability, write readiness, automatic health monitoring, and retained report evidence.</p>
+                        </div>
+                    </div>
+                    {{ table_label.status_indicator_label(posture.status_label, posture.status_tone) }}
+                </div>
+            </header>
+            <div class="grid xl:grid-cols-12">
+                <div class="border-b border-outline-subtle p-5 sm:p-6 xl:col-span-5 xl:border-b-0 xl:border-r">
+                    <p class="text-xs font-semibold text-kaori-primary">Execution Boundary</p>
+                    <h3 class="mt-1 text-lg font-semibold text-content-primary">{{ posture.title }}</h3>
+                    <p class="mt-2 text-sm leading-6 text-content-muted">{{ posture.description }}</p>
+                    <div class="mt-5 divide-y divide-outline-subtle rounded-xl border border-outline-subtle bg-surface-subtle">
+                        <div class="flex items-center justify-between gap-4 px-4 py-3">
+                            <div>
+                                <p class="text-sm font-semibold text-content-primary">Report Metadata</p>
+                                <p class="mt-0.5 text-xs text-content-muted">Registry and persisted report records</p>
+                            </div>
+                            {{ table_label.status_indicator_label(posture.metadata_label, posture.metadata_tone) }}
+                        </div>
+                        <div class="flex items-center justify-between gap-4 px-4 py-3">
+                            <div>
+                                <p class="text-sm font-semibold text-content-primary">Artifact Read</p>
+                                <p class="mt-0.5 text-xs text-content-muted">Download and integrity-read path</p>
+                            </div>
+                            {{ table_label.status_indicator_label(posture.read_label, posture.read_tone) }}
+                        </div>
+                        <div class="flex items-center justify-between gap-4 px-4 py-3">
+                            <div>
+                                <p class="text-sm font-semibold text-content-primary">Artifact Write</p>
+                                <p class="mt-0.5 text-xs text-content-muted">Generation and scheduled artifact path</p>
+                            </div>
+                            {{ table_label.status_indicator_label(posture.write_label, posture.write_tone) }}
+                        </div>
+                    </div>
+                </div>
+                <div class="xl:col-span-7">
+                    <div class="grid border-b border-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+                        <div class="border-b border-outline-subtle px-5 py-4 sm:border-r xl:border-b-0">
+                            <p class="text-xs font-medium text-content-muted">Active Backend</p>
+                            <p class="mt-1 text-xl font-semibold text-content-primary">{{ payload.active_backend|upper }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ posture.backend_label }}</p>
+                        </div>
+                        <div class="border-b border-outline-subtle px-5 py-4 xl:border-b-0 xl:border-r">
+                            <p class="text-xs font-medium text-content-muted">Tracked Artifacts</p>
+                            <p class="mt-1 text-xl font-semibold text-content-primary">{{ posture.tracked_artifacts }}</p>
+                            <p class="mt-1 text-xs text-content-muted">Canonical storage references</p>
+                        </div>
+                        <div class="border-b border-outline-subtle px-5 py-4 sm:border-b-0 sm:border-r">
+                            <p class="text-xs font-medium text-content-muted">Ready Reports</p>
+                            <p class="mt-1 text-xl font-semibold text-content-primary">{{ posture.ready_reports }}</p>
+                            <p class="mt-1 text-xs text-content-muted">Database lifecycle state</p>
+                        </div>
+                        <div class="px-5 py-4">
+                            <p class="text-xs font-medium text-content-muted">Tracked Size</p>
+                            <p class="mt-1 text-xl font-semibold text-content-primary">{{ posture.tracked_size }}</p>
+                            <p class="mt-1 text-xs text-content-muted">Recorded artifact size</p>
+                        </div>
+                    </div>
+                    <div class="p-5 sm:p-6">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-sm font-semibold text-content-primary">Automatic Storage Readiness</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Lightweight connectivity checks publish one shared readiness state for every Reports page.</p>
+                            </div>
+                            {{ table_label.status_indicator_label(posture.monitor_label, posture.monitor_tone) }}
+                        </div>
+                        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">
+                                <p class="text-xs font-medium text-content-muted">Interval</p>
+                                <p class="mt-1 text-sm font-semibold text-content-primary">Every {{ payload.readiness_monitor.interval_minutes }} Min</p>
+                            </div>
+                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">
+                                <p class="text-xs font-medium text-content-muted">Last Check</p>
+                                <p class="mt-1 text-sm font-semibold text-content-primary">{{ payload.readiness_monitor.checked_label }}</p>
+                            </div>
+                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">
+                                <p class="text-xs font-medium text-content-muted">Evidence Source</p>
+                                <p class="mt-1 text-sm font-semibold text-content-primary">{{ posture.source_label }}</p>
+                            </div>
+                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3">
+                                <p class="text-xs font-medium text-content-muted">Strong Verification</p>
+                                <div class="mt-1">{{ table_label.status_indicator_label(posture.verification_label, posture.verification_tone) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% if not backend_status.available %}
+                <div class="border-t border-outline-subtle bg-status-warning-soft px-5 py-4 sm:px-6">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <i data-lucide="triangle-alert" class="mt-0.5 h-4 w-4 shrink-0 text-status-warning" aria-hidden="true"></i>
+                            <div>
+                                <p class="text-sm font-semibold text-status-warning-text">{{ backend_status.title }}</p>
+                                <p class="mt-1 text-xs leading-5 text-status-warning-text">{{ backend_status.description }}</p>
+                            </div>
+                        </div>
+                        <a href="{{ url_for('reports.storage', verify='1', workspace='overview') }}"
+                           class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-md border border-status-warning-border bg-surface-card px-3 text-xs font-semibold text-status-warning-text transition hover:bg-surface-hover">
+                            <i data-lucide="refresh-cw" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                            Verify Storage
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </section>
+
+        <section id="report-storage-workspace"
+                 class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+                 data-storage-workspace="{{ payload.workspace }}">
+            <header class="px-5 py-4 sm:px-6">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                        <i data-lucide="database-cog" class="h-4 w-4"></i>
                     </span>
                     <div class="min-w-0">
-                        <p class="text-xs font-semibold text-content-primary">Automatic Storage Readiness</p>
-                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Lightweight connectivity checks publish one shared readiness state for every Reports page.</p>
+                        <h2 class="text-base font-semibold text-content-primary">Storage Operations</h2>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Inspect backend configuration, verify artifact integrity, and review retention controls without changing protected storage configuration.</p>
                     </div>
                 </div>
-                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-medium text-content-muted sm:justify-end">
-                    <span>{{ 'Enabled' if payload.readiness_monitor.enabled else 'Disabled' }}</span>
-                    <span>Every {{ payload.readiness_monitor.interval_minutes }} min</span>
-                    <span>{{ payload.readiness_monitor.checked_label }}</span>
-                    <span>{{ payload.readiness_monitor.source_label }}</span>
-                    <span>{{ 'Redis shared state' if payload.readiness_monitor.shared_state else 'Direct fallback' }}</span>
-                </div>
-            </div>
-        </section>
-        {% if not payload.backend_status.available %}
-            {% call operational_callout.render(
-                payload.backend_status.title,
-                payload.backend_status.description,
-                icon=payload.backend_status.icon,
-                tone='warning',
-                variant='semantic',
-                extra_classes='shadow-sm',
-                action_href=url_for('reports.storage', verify=1),
-                action_label=payload.backend_status.action_label,
-                action_icon='refresh-cw',
-                title_id='report-storage-connectivity-title'
-            ) %}
-                <p class="font-medium">Report registry and metadata remain readable. Storage-dependent actions are temporarily paused.</p>
-            {% endcall %}
-        {% endif %}
-        <section id="storage-lifecycle"
-                 class="rounded-2xl border border-outline-default bg-white p-5 shadow-sm dark:border-outline-default bg-surface-card">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div class="flex items-start gap-3">
-                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl {{ payload.lifecycle_summary.class }}">
-                        <i data-lucide="{{ payload.lifecycle_summary.icon }}" class="h-5 w-5"></i>
-                    </div>
-                    <div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <h2 class="text-lg font-semibold text-content-primary">Storage Lifecycle</h2>
-                            <span class="inline-flex rounded-md px-2.5 py-1 text-xs font-semibold {{ payload.lifecycle_summary.class }}">
-                                {{ payload.lifecycle_summary.level|title }}
-                            </span>
-                        </div>
-                        <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted dark:text-content-muted">{{ payload.lifecycle_summary.description }}</p>
-                    </div>
-                </div>
-                {% if payload.storage_actions_enabled %}
-                    <a href="{{ url_for('reports.storage', integrity='1') }}"
-                       class="inline-flex items-center justify-center gap-2 rounded-xl border border-brand-outline bg-kaori-soft px-4 py-2 text-sm font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft border-brand-outline bg-kaori-soft dark:text-kaori-primary hover:bg-kaori-soft">
-                        <i data-lucide="search-check" class="h-4 w-4"></i>
-                        Check Integrity
-                    </a>
-                {% else %}
-                    <span aria-disabled="true" class="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-4 py-2 text-sm font-semibold text-content-muted opacity-70">
-                        <i data-lucide="pause-circle" class="h-4 w-4"></i>
-                        Integrity Check Paused
-                    </span>
-                {% endif %}
-            </div>
-            <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                {% for check in payload.lifecycle_summary.checks %}
-                    <div class="rounded-2xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
-                        <div class="flex items-start justify-between gap-3">
-                            <div>
-                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">{{ check.label }}</p>
-                                <p class="mt-2 text-xl font-semibold text-content-primary text-content-primary">{{ check.value }}</p>
+            </header>
+            {{ framed_tabs.render_navigation([
+                ('overview', 'Storage Overview', 'hard-drive', overview_href),
+                ('integrity', 'Integrity & Verification', 'shield-check', integrity_href),
+                ('retention', 'Retention & Cleanup', 'archive', retention_href)
+            ], payload.workspace, prefix='report-storage', aria_label='Report Storage Sections') }}
+
+            {% if payload.workspace == 'overview' %}
+                <div class="p-5 sm:p-6">
+                    <div class="grid gap-5 xl:grid-cols-12">
+                        <section class="xl:col-span-8">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="text-xs font-semibold text-kaori-primary">Active Backend</p>
+                                    <h3 class="mt-1 text-base font-semibold text-content-primary">{{ posture.backend_label }}</h3>
+                                    <p class="mt-1 text-sm leading-6 text-content-muted">Configuration is read from environment or application settings and remains protected from UI mutation.</p>
+                                </div>
+                                {{ table_label.status_indicator_label(backend_status.status, backend_status.tone) }}
                             </div>
-                            {% if check.status == 'pass' %}
-                                <i data-lucide="check-circle-2" class="h-4 w-4 text-emerald-500"></i>
-                            {% elif check.status == 'warning' %}
-                                <i data-lucide="alert-triangle" class="h-4 w-4 text-amber-500"></i>
+                            {% if payload.active_backend == 's3' %}
+                                {% set active_items = [
+                                    ('Bucket', payload.s3.bucket),
+                                    ('Endpoint', payload.s3.endpoint_url),
+                                    ('Region', payload.s3.region),
+                                    ('Prefix', payload.s3.prefix),
+                                    ('Credential Mode', payload.s3.credential_mode),
+                                    ('Path Style', 'Enabled' if payload.s3.force_path_style else 'Disabled'),
+                                    ('boto3', 'Available' if payload.s3.boto3_available else 'Unavailable'),
+                                    ('Configuration', 'Complete' if payload.s3.configuration_complete else 'Needs Review')
+                                ] %}
                             {% else %}
-                                <i data-lucide="info" class="h-4 w-4 text-white/900"></i>
+                                {% set active_items = [
+                                    ('Root Path', payload.local.root_path),
+                                    ('Reports Path', payload.local.reports_path),
+                                    ('Root Writable', 'Yes' if payload.local.root_writable else 'No'),
+                                    ('Root Exists', 'Yes' if payload.local.root_exists else 'No'),
+                                    ('Reports Path State', 'Available' if payload.local.reports_path_exists else 'Missing'),
+                                    ('Local Files', payload.local.reports_file_count),
+                                    ('Local Size', payload.local.reports_total_size),
+                                    ('Render Staging', payload.local.render_staging_path)
+                                ] %}
                             {% endif %}
-                        </div>
-                        <p class="mt-2 text-xs leading-5 text-content-muted dark:text-content-muted">{{ check.description }}</p>
-                    </div>
-                {% endfor %}
-            </div>
-        </section>
-        <section class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-            <div class="space-y-5">
-                <section class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
-                    <div class="border-b border-outline-default px-5 py-4 dark:border-outline-default">
-                        <div class="flex items-center gap-3">
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
-                                <i data-lucide="server-cog" class="h-4 w-4"></i>
-                            </div>
-                            <div>
-                                <h2 class="text-base font-semibold text-content-primary">Backend Selection</h2>
-                                <p class="text-xs text-content-muted dark:text-content-muted">Active backend is resolved from ENV / config.py. UI mutation is deferred.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="grid gap-4 p-5 md:grid-cols-2">
-                        {% for backend in payload.supported_backends %}
-                            <div class="rounded-xl border {{ 'border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/30' if backend.is_active else 'border-outline-default bg-surface-subtle dark:border-outline-default bg-surface-subtle' }} p-4">
-                                <div class="flex items-start justify-between gap-3">
-                                    <div>
-                                        <p class="text-sm font-semibold {{ 'text-emerald-800 dark:text-emerald-200' if backend.is_active else 'text-content-primary dark:text-content-primary' }}">{{ backend.label }}</p>
-                                        <p class="mt-1 text-xs leading-5 {{ 'text-emerald-700 dark:text-emerald-300' if backend.is_active else 'text-content-muted dark:text-content-muted' }}">{{ backend.description }}</p>
+                            <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                                {% for label, value in active_items %}
+                                    <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3 {{ 'sm:col-span-2 xl:col-span-2' if label in ['Root Path', 'Reports Path', 'Endpoint', 'Render Staging'] else '' }}">
+                                        <p class="text-xs font-medium text-content-muted">{{ label }}</p>
+                                        <p class="mt-1 break-all text-sm font-semibold text-content-primary">{{ value }}</p>
                                     </div>
-                                    <span class="rounded-lg bg-white px-2 py-1 text-xs font-semibold shadow-sm bg-surface-card {{ 'text-emerald-700 dark:text-emerald-300' if backend.is_active else 'text-content-muted dark:text-content-muted' }}">
-                                        {{ 'Active' if backend.is_active else 'Available' }}
-                                    </span>
+                                {% endfor %}
+                            </div>
+                        </section>
+                        <aside class="xl:col-span-4">
+                            <p class="text-xs font-semibold text-kaori-primary">Backend Contract</p>
+                            <div class="mt-3 divide-y divide-outline-subtle rounded-xl border border-outline-subtle bg-surface-subtle">
+                                {% for backend in payload.supported_backends %}
+                                    <div class="px-4 py-3">
+                                        <div class="flex items-center justify-between gap-3">
+                                            <p class="text-sm font-semibold text-content-primary">{{ backend.label }}</p>
+                                            {{ table_label.status_indicator_label('Active' if backend.is_active else 'Available', 'normal' if backend.is_active else 'unknown') }}
+                                        </div>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ backend.description }}</p>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <div class="mt-4 rounded-xl border border-outline-subtle bg-surface-subtle p-4">
+                                <p class="text-xs font-semibold text-content-primary">Configuration Contract</p>
+                                <dl class="mt-3 space-y-3 text-xs">
+                                    <div class="flex items-start justify-between gap-4">
+                                        <dt class="text-content-muted">Source</dt>
+                                        <dd class="text-right font-semibold text-content-primary">{{ payload.configuration_source }}</dd>
+                                    </div>
+                                    <div class="flex items-start justify-between gap-4">
+                                        <dt class="text-content-muted">Mutable from UI</dt>
+                                        <dd class="text-right font-semibold text-content-primary">{{ 'Yes' if payload.is_mutable_from_ui else 'No' }}</dd>
+                                    </div>
+                                    <div>
+                                        <dt class="text-content-muted">Object Key Format</dt>
+                                        <dd class="mt-1 break-all font-mono text-[11px] leading-5 text-content-secondary">{{ payload.object_key_format }}</dd>
+                                    </div>
+                                </dl>
+                            </div>
+                        </aside>
+                    </div>
+                </div>
+            {% elif payload.workspace == 'integrity' %}
+                <div class="p-5 sm:p-6">
+                    <div class="grid gap-4 lg:grid-cols-2">
+                        <section class="rounded-xl border border-outline-subtle bg-surface-subtle p-5">
+                            <div class="flex items-start gap-3">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                    <i data-lucide="activity" class="h-4 w-4"></i>
+                                </span>
+                                <div>
+                                    <h3 class="text-sm font-semibold text-content-primary">Strong Backend Verification</h3>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ payload.verification.description }}</p>
                                 </div>
                             </div>
-                        {% endfor %}
-                    </div>
-                    <div class="border-t border-outline-default px-5 py-4 dark:border-outline-default">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Configuration Guide</p>
-                        <div class="mt-3 grid gap-3 text-sm md:grid-cols-2">
-                            <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
-                                <p class="font-semibold text-content-primary dark:text-content-primary">Local backend</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted dark:text-content-muted">Set <code>REPORT_STORAGE_BACKEND=local</code> and optionally <code>REPORT_LOCAL_STORAGE_DIR</code>. Best for local or single-node deployment. Artifact keys are namespaced by report family, for example <code>reports/kubernetes/kubernetes/...</code>.</p>
+                            <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-card px-4 py-3 text-xs leading-5 text-content-muted">Write small object → confirm existence → delete verification object.</div>
+                            <a href="{{ url_for('reports.storage', verify='1', workspace='integrity') }}"
+                               class="mt-4 inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-md bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark">
+                                <i data-lucide="play-circle" class="h-4 w-4" aria-hidden="true"></i>
+                                Verify Active Backend
+                            </a>
+                        </section>
+                        <section class="rounded-xl border border-outline-subtle bg-surface-subtle p-5">
+                            <div class="flex items-start gap-3">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                    <i data-lucide="search-check" class="h-4 w-4"></i>
+                                </span>
+                                <div>
+                                    <h3 class="text-sm font-semibold text-content-primary">Artifact Integrity Scan</h3>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ payload.integrity_check.description }}</p>
+                                </div>
                             </div>
-                            <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
-                                <p class="font-semibold text-content-primary dark:text-content-primary">S3-compatible backend</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted dark:text-content-muted">Set <code>REPORT_STORAGE_BACKEND=s3</code>, bucket, region, endpoint for MinIO if needed, and credentials through ENV or Kubernetes Secrets. The same bucket can later separate <code>kubernetes/kubernetes</code> from <code>server/vm</code> or <code>server/hci</code> prefixes.</p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-                <section id="local-storage"
-                         class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
-                    <div class="border-b border-outline-default px-5 py-4 dark:border-outline-default">
-                        <div class="flex items-center gap-3">
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
-                                <i data-lucide="folder" class="h-4 w-4"></i>
-                            </div>
-                            <div>
-                                <h2 class="text-base font-semibold text-content-primary">Local Filesystem Status</h2>
-                                <p class="text-xs text-content-muted dark:text-content-muted">Resolved local report storage paths and filesystem availability.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="grid gap-4 p-5 md:grid-cols-2">
-                        {% set local_items = [
-                                                    ('Root Writable', 'Yes' if payload.local.root_writable else 'No'),
-                                                    ('Root Exists', 'Yes' if payload.local.root_exists else 'No'),
-                                                    ('Reports Path Exists', 'Yes' if payload.local.reports_path_exists else 'No'),
-                                                    ('Local File Count', payload.local.reports_file_count),
-                                                    ('Local Total Size', payload.local.reports_total_size),
-                                                    ('Root Path', payload.local.root_path),
-                                                    ('Reports Path', payload.local.reports_path),
-                                                    ('Render Staging', payload.local.render_staging_path),
-                                                    ('Download Cache', payload.local.download_cache_path)
-                                                ] %}
-                        {% for label, value in local_items %}
-                            <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle {{ 'md:col-span-2' if 'Path' in label or label in ['Render Staging', 'Download Cache'] else '' }}">
-                                <p class="text-xs font-medium uppercase tracking-wide text-content-muted">{{ label }}</p>
-                                <p class="mt-1 break-all text-sm font-semibold text-content-primary dark:text-content-primary">{{ value }}</p>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </section>
-                <section id="s3-storage"
-                         class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
-                    <div class="border-b border-outline-default px-5 py-4 dark:border-outline-default">
-                        <div class="flex items-center gap-3">
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
-                                <i data-lucide="cloud" class="h-4 w-4"></i>
-                            </div>
-                            <div>
-                                <h2 class="text-base font-semibold text-content-primary">S3-compatible Status</h2>
-                                <p class="text-xs text-content-muted dark:text-content-muted">AWS S3 / MinIO configuration status. Secrets are masked.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="grid gap-4 p-5 md:grid-cols-2">
-                        {% set s3_items = [
-                                                    ('Bucket', payload.s3.bucket),
-                                                    ('Region', payload.s3.region),
-                                                    ('Endpoint', payload.s3.endpoint_url),
-                                                    ('Endpoint Mode', payload.s3.endpoint_mode),
-                                                    ('Prefix', payload.s3.prefix),
-                                                    ('Credential Mode', payload.s3.credential_mode),
-                                                    ('Force Path Style', 'Yes' if payload.s3.force_path_style else 'No'),
-                                                    ('boto3 Available', 'Yes' if payload.s3.boto3_available else 'No'),
-                                                    ('Access Key Configured', 'Yes' if payload.s3.access_key_configured else 'No'),
-                                                    ('Secret Key Configured', 'Yes' if payload.s3.secret_key_configured else 'No')
-                                                ] %}
-                        {% for label, value in s3_items %}
-                            <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
-                                <p class="text-xs font-medium uppercase tracking-wide text-content-muted">{{ label }}</p>
-                                <p class="mt-1 break-all text-sm font-semibold text-content-primary dark:text-content-primary">{{ value }}</p>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </section>
-                <section id="artifact-summary"
-                         class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
-                    <div class="border-b border-outline-default px-5 py-4 dark:border-outline-default">
-                        <div class="flex items-center gap-3">
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
-                                <i data-lucide="database" class="h-4 w-4"></i>
-                            </div>
-                            <div>
-                                <h2 class="text-base font-semibold text-content-primary">Artifact Summary</h2>
-                                <p class="text-xs text-content-muted dark:text-content-muted">Database-level summary of generated report artifacts and storage URI distribution.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="grid gap-4 p-5 md:grid-cols-3">
-                        {% set artifact_items = [
-                                                    ('Reports With Files', payload.artifact_summary.reports_with_files),
-                                                    ('Local Records', payload.artifact_summary.local_reports),
-                                                    ('S3 Records', payload.artifact_summary.s3_reports),
-                                                    ('Ready Reports', payload.artifact_summary.ready_reports),
-                                                    ('Tracked Size', payload.artifact_summary.total_size)
-                                                ] %}
-                        {% for label, value in artifact_items %}
-                            <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
-                                <p class="text-xs font-medium uppercase tracking-wide text-content-muted">{{ label }}</p>
-                                <p class="mt-1 text-sm font-semibold text-content-primary dark:text-content-primary">{{ value }}</p>
-                            </div>
-                        {% endfor %}
-                        <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
-                            <p class="text-xs font-medium uppercase tracking-wide text-amber-600 dark:text-amber-300">Cleanup Mode</p>
-                            <p class="mt-1 text-sm font-semibold text-amber-800 dark:text-amber-200">{{ payload.retention_policy.mode }}</p>
-                        </div>
-                    </div>
-                </section>
-                <section id="retention-policy"
-                         class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
-                    <div class="border-b border-outline-default px-5 py-4 dark:border-outline-default">
-                        <div class="flex items-center gap-3">
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300">
-                                <i data-lucide="shield-alert" class="h-4 w-4"></i>
-                            </div>
-                            <div>
-                                <h2 class="text-base font-semibold text-content-primary">Retention &amp; Cleanup Policy</h2>
-                                <p class="text-xs text-content-muted dark:text-content-muted">Review retention policy, cleanup preview, and guarded deletion behavior for generated report artifacts.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="grid gap-4 p-5 md:grid-cols-2">
-                        {% set retention_items = [
-                                                    ('Policy Status', payload.retention_policy.status),
-                                                    ('Cleanup Mode', payload.retention_policy.mode),
-                                                    ('Retention Days', payload.retention_policy.retention_days),
-                                                    ('Archive Retention', payload.retention_policy.archive_retention_days),
-                                                    ('Cleanup Scope', payload.retention_policy.cleanup_scope),
-                                                    ('Auto Cleanup', 'Enabled' if payload.retention_policy.auto_cleanup_enabled else 'Disabled'),
-                                                    ('Orphan Detection', 'Enabled' if payload.retention_policy.orphan_detection_enabled else 'Disabled')
-                                                ] %}
-                        {% for label, value in retention_items %}
-                            <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
-                                <p class="text-xs font-medium uppercase tracking-wide text-content-muted">{{ label }}</p>
-                                <p class="mt-1 text-sm font-semibold text-content-primary dark:text-content-primary">{{ value }}</p>
-                            </div>
-                        {% endfor %}
-                        <div class="md:col-span-2 rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
-                            <p class="text-xs font-medium uppercase tracking-wide text-content-muted">Defined Policy Rules</p>
-                            <div class="mt-3 grid gap-2">
-                                {% for rule in payload.retention_policy.policy_rules %}
-                                    <div class="flex items-start gap-2 text-sm leading-6 text-content-secondary dark:text-content-secondary">
-                                        <i data-lucide="shield-check"
-                                           class="mt-1 h-4 w-4 shrink-0 text-emerald-500"></i>
-                                        <span>{{ rule }}</span>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        <div class="md:col-span-2 rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
-                            <p class="text-xs font-medium uppercase tracking-wide text-content-muted">Safe Regenerate Behavior</p>
-                            <p class="mt-1 text-sm leading-6 text-content-secondary dark:text-content-secondary">{{ payload.retention_policy.safe_regenerate_behavior }}</p>
-                        </div>
-                        <div class="md:col-span-2 rounded-xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
-                            <p class="text-xs font-medium uppercase tracking-wide text-content-muted">Before Enabling Cleanup</p>
-                            <div class="mt-3 grid gap-2">
-                                {% for step in payload.retention_policy.next_steps %}
-                                    <div class="flex items-start gap-2 text-sm leading-6 text-content-secondary dark:text-content-secondary">
-                                        <i data-lucide="check-circle-2"
-                                           class="mt-1 h-4 w-4 shrink-0 text-white/900"></i>
-                                        <span>{{ step }}</span>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </div>
-            <aside class="space-y-5">
-                <section id="storage-verification"
-                         class="rounded-2xl border border-outline-default bg-white p-5 shadow-sm dark:border-outline-default bg-surface-card">
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
-                            <i data-lucide="activity" class="h-4 w-4"></i>
-                        </div>
-                        <h2 class="text-base font-semibold text-content-primary">Storage Verification</h2>
-                    </div>
-                    <p class="mt-3 text-sm leading-6 text-content-muted dark:text-content-muted">{{ payload.verification.description }}</p>
-                    <a href="{{ url_for('reports.storage', verify='1') }}"
-                       class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-kaori-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary bg-kaori-primary dark:hover:bg-kaori-primary">
-                        <i data-lucide="play-circle" class="h-4 w-4"></i>
-                        Test Active Backend
-                    </a>
-                    <div class="mt-4 rounded-xl bg-surface-subtle p-3 text-xs leading-5 text-content-muted bg-surface-subtle dark:text-content-muted">
-                        Test flow: write small object → verify exists → delete object.
-                    </div>
-                </section>
-                <section id="artifact-integrity"
-                         class="rounded-2xl border border-outline-default bg-white p-5 shadow-sm dark:border-outline-default bg-surface-card">
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
-                            <i data-lucide="shield-check" class="h-4 w-4"></i>
-                        </div>
-                        <h2 class="text-base font-semibold text-content-primary">Artifact Integrity Check</h2>
-                    </div>
-                    <p class="mt-3 text-sm leading-6 text-content-muted dark:text-content-muted">{{ payload.integrity_check.description }}</p>
-                    {% if payload.storage_actions_enabled %}
-                        <a href="{{ url_for('reports.storage', integrity='1') }}"
-                           class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-brand-outline bg-kaori-soft px-4 py-2 text-sm font-semibold text-kaori-primary shadow-sm transition hover:bg-kaori-soft border-brand-outline bg-kaori-soft dark:text-kaori-primary hover:bg-kaori-soft">
-                            <i data-lucide="search-check" class="h-4 w-4"></i>
-                            Check Artifact Integrity
-                        </a>
-                    {% else %}
-                        <span aria-disabled="true" class="mt-4 inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-4 py-2 text-sm font-semibold text-content-muted opacity-70">
-                            <i data-lucide="pause-circle" class="h-4 w-4"></i>
-                            Restore Storage to Run Check
-                        </span>
-                    {% endif %}
-                    <div class="mt-4 rounded-xl bg-surface-subtle p-3 text-xs leading-5 text-content-muted bg-surface-subtle dark:text-content-muted">
-                        Read-only scan. It checks database storage URIs against local/S3 backends and does not delete artifacts.
+                            <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-card px-4 py-3 text-xs leading-5 text-content-muted">Read-only scan · Maximum {{ payload.integrity_check.max_items }} records per run.</div>
+                            {% if payload.storage_actions_enabled %}
+                                <a href="{{ url_for('reports.storage', integrity='1', workspace='integrity') }}"
+                                   class="mt-4 inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-md border border-brand-outline bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:bg-surface-hover">
+                                    <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
+                                    Check Artifact Integrity
+                                </a>
+                            {% else %}
+                                <span aria-disabled="true" class="mt-4 inline-flex min-h-9 w-full cursor-not-allowed items-center justify-center gap-2 rounded-md border border-outline-subtle bg-surface-card px-4 text-sm font-semibold text-content-muted opacity-70">
+                                    <i data-lucide="pause-circle" class="h-4 w-4" aria-hidden="true"></i>
+                                    Integrity Check Paused
+                                </span>
+                            {% endif %}
+                        </section>
                     </div>
                     {% if payload.integrity_result %}
                         {% set integrity = payload.integrity_result %}
-                        <div class="mt-4 rounded-xl border {{ 'border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/30' if integrity.is_healthy else 'border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30' }} p-4">
-                            <p class="text-sm font-semibold {{ 'text-emerald-800 dark:text-emerald-200' if integrity.is_healthy else 'text-amber-800 dark:text-amber-200' }}">
-                                {{ 'Integrity check passed' if integrity.is_healthy else 'Integrity check needs review' }}
-                            </p>
-                            <p class="mt-1 text-xs leading-5 {{ 'text-emerald-700 dark:text-emerald-300' if integrity.is_healthy else 'text-amber-700 dark:text-amber-300' }}">
-                                Checked {{ integrity.checked_count }} record(s): {{ integrity.available_count }} available, {{ integrity.missing_count }} missing, {{ integrity.error_count }} errors.
-                            </p>
-                            {% if integrity.is_limited %}
-                                <p class="mt-2 text-xs leading-5 text-amber-700 dark:text-amber-300">Scan was limited to {{ integrity.max_items }} records.</p>
+                        <section class="mt-5 overflow-hidden rounded-xl border border-outline-subtle">
+                            <header class="border-b border-outline-subtle bg-surface-subtle px-5 py-4">
+                                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <h3 class="text-sm font-semibold text-content-primary">Integrity Result</h3>
+                                        <p class="mt-1 text-xs text-content-muted">Checked {{ integrity.checked_count }} records · {{ integrity.available_count }} available · {{ integrity.missing_count }} missing · {{ integrity.error_count }} errors.</p>
+                                    </div>
+                                    {{ table_label.status_indicator_label('Healthy' if integrity.is_healthy else 'Needs Review', 'normal' if integrity.is_healthy else 'warning') }}
+                                </div>
+                            </header>
+                            {% if integrity.review_samples %}
+                                <div class="overflow-x-auto">
+                                    <table class="{{ table_ui.table_classes('min-w-[880px]') }}">
+                                        <thead class="{{ table_ui.head_classes() }}">
+                                            <tr>
+                                                <th class="{{ table_ui.header_cell_classes() }}">Report</th>
+                                                <th class="{{ table_ui.header_cell_classes() }}">Backend</th>
+                                                <th class="{{ table_ui.header_cell_classes() }}">Reference</th>
+                                                <th class="{{ table_ui.header_cell_classes() }}">Issue</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="{{ table_ui.body_classes() }}">
+                                            {% for item in integrity.review_samples %}
+                                                <tr class="{{ table_ui.row_classes() }}">
+                                                    <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(item.name, 'Report #' ~ item.report_id, 'file-text') }}</td>
+                                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(item.backend|upper, 'database') }}</td>
+                                                    <td class="{{ table_ui.cell_classes() }}"><p class="max-w-[320px] truncate text-xs text-content-muted" title="{{ item.reference }}">{{ item.reference }}</p></td>
+                                                    <td class="{{ table_ui.cell_classes() }}">
+                                                        {{ table_label.status_indicator_label(item.status, item.tone) }}
+                                                        <p class="mt-1 max-w-[300px] text-xs leading-5 text-content-muted">{{ item.issue }}</p>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="px-5 py-6 text-sm text-content-muted">No missing or error samples were returned by this scan.</div>
                             {% endif %}
-                        </div>
-                        {% if integrity.missing_samples %}
-                            <div class="mt-4 space-y-2">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-rose-700 dark:text-rose-300">Missing Artifact Samples</p>
-                                {% for item in integrity.missing_samples %}
-                                    <div class="rounded-xl bg-rose-50 p-3 text-xs leading-5 text-rose-800 dark:bg-rose-950/30 dark:text-rose-200">
-                                        <p class="font-semibold">#{{ item.report_id }} • {{ item.name }}</p>
-                                        <p class="mt-1">{{ item.backend }}</p>
-                                        <p class="mt-1 break-all">{{ item.file_path }}</p>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                        {% if integrity.error_samples %}
-                            <div class="mt-4 space-y-2">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">Integrity Error Samples</p>
-                                {% for item in integrity.error_samples %}
-                                    <div class="rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
-                                        <p class="font-semibold">#{{ item.report_id }} • {{ item.name }}</p>
-                                        <p class="mt-1 break-all">{{ item.error }}</p>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
+                        </section>
                     {% endif %}
-                </section>
-                <section id="cleanup-dry-run"
-                         class="rounded-2xl border border-outline-default bg-white p-5 shadow-sm dark:border-outline-default bg-surface-card">
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300">
-                            <i data-lucide="eraser" class="h-4 w-4"></i>
+                </div>
+            {% else %}
+                <div class="p-5 sm:p-6">
+                    <section>
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-kaori-primary">Retention Governance</p>
+                                <h3 class="mt-1 text-base font-semibold text-content-primary">Artifact Retention & Cleanup Policy</h3>
+                                <p class="mt-1 text-sm leading-6 text-content-muted">Retention defines candidate scope only. Destructive deletion remains guarded and is not exposed as an uncontrolled UI action.</p>
+                            </div>
+                            {{ table_label.status_indicator_label(payload.retention_policy.status, 'normal' if payload.retention_policy.auto_cleanup_enabled else 'warning') }}
                         </div>
-                        <h2 class="text-base font-semibold text-content-primary">Cleanup Dry Run</h2>
-                    </div>
-                    <p class="mt-3 text-sm leading-6 text-content-muted dark:text-content-muted">{{ payload.cleanup_dry_run.description }}</p>
-                    {% if payload.storage_actions_enabled %}
-                        <a href="{{ url_for('reports.storage', cleanup_dry_run='1') }}"
-                           class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-700 shadow-sm transition hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300 dark:hover:bg-amber-900/50">
-                            <i data-lucide="scan-search" class="h-4 w-4"></i>
-                            Preview Cleanup Candidates
-                        </a>
-                    {% else %}
-                        <span aria-disabled="true" class="mt-4 inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-4 py-2 text-sm font-semibold text-content-muted opacity-70">
-                            <i data-lucide="pause-circle" class="h-4 w-4"></i>
-                            Cleanup Preview Paused
-                        </span>
-                    {% endif %}
+                        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3"><p class="text-xs text-content-muted">Cleanup Mode</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ payload.retention_policy.mode }}</p></div>
+                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3"><p class="text-xs text-content-muted">Retention</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ payload.retention_policy.retention_days }} Days</p></div>
+                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3"><p class="text-xs text-content-muted">Archive Retention</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ payload.retention_policy.archive_retention_days }} Days</p></div>
+                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3"><p class="text-xs text-content-muted">Orphan Detection</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ 'Enabled' if payload.retention_policy.orphan_detection_enabled else 'Disabled' }}</p></div>
+                        </div>
+                        <div class="mt-4 grid gap-4 lg:grid-cols-2">
+                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle p-4">
+                                <p class="text-xs font-semibold text-content-primary">Defined Policy Rules</p>
+                                <div class="mt-3 space-y-2">
+                                    {% for rule in payload.retention_policy.policy_rules %}
+                                        <div class="flex items-start gap-2 text-xs leading-5 text-content-muted"><i data-lucide="shield-check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i><span>{{ rule }}</span></div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="rounded-xl border border-outline-subtle bg-surface-subtle p-4">
+                                <p class="text-xs font-semibold text-content-primary">Safe Regenerate Boundary</p>
+                                <p class="mt-2 text-xs leading-5 text-content-muted">{{ payload.retention_policy.safe_regenerate_behavior }}</p>
+                                <p class="mt-4 text-xs font-semibold text-content-primary">Before Enabling Cleanup</p>
+                                <div class="mt-2 space-y-2">
+                                    {% for step in payload.retention_policy.next_steps %}
+                                        <div class="flex items-start gap-2 text-xs leading-5 text-content-muted"><i data-lucide="check-circle-2" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i><span>{{ step }}</span></div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="mt-5 rounded-xl border border-outline-subtle bg-surface-subtle p-5">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <h3 class="text-sm font-semibold text-content-primary">Cleanup Dry Run</h3>
+                                <p class="mt-1 max-w-3xl text-xs leading-5 text-content-muted">{{ payload.cleanup_dry_run.description }}</p>
+                            </div>
+                            {{ table_label.status_indicator_label('Read Only', 'info') }}
+                        </div>
+                        {% if payload.storage_actions_enabled %}
+                            <a href="{{ url_for('reports.storage', cleanup_dry_run='1', workspace='retention') }}"
+                               class="mt-4 inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-brand-outline bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:bg-surface-hover">
+                                <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
+                                Preview Cleanup Candidates
+                            </a>
+                        {% else %}
+                            <span aria-disabled="true" class="mt-4 inline-flex min-h-9 cursor-not-allowed items-center justify-center gap-2 rounded-md border border-outline-subtle bg-surface-card px-4 text-sm font-semibold text-content-muted opacity-70"><i data-lucide="pause-circle" class="h-4 w-4" aria-hidden="true"></i>Cleanup Preview Paused</span>
+                        {% endif %}
+                    </section>
                     {% if payload.cleanup_dry_run_result %}
                         {% set cleanup = payload.cleanup_dry_run_result %}
-                        <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
-                            <p class="text-sm font-semibold text-amber-800 dark:text-amber-200">Dry run completed</p>
-                            <p class="mt-1 text-xs leading-5 text-amber-700 dark:text-amber-300">
-                                {{ cleanup.candidate_count }} candidate(s), {{ cleanup.candidate_size }} total, {{ cleanup.missing_reference_count }} missing reference(s), {{ cleanup.error_count }} error(s).
-                            </p>
-                        </div>
-                        {% if cleanup.sample_candidates %}
-                            <div class="mt-4 space-y-2">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">Candidate Samples</p>
-                                {% for item in cleanup.sample_candidates %}
-                                    <div class="rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
-                                        <p class="font-semibold">#{{ item.report_id }} • {{ item.name }}</p>
-                                        <p class="mt-1">{{ item.status }} • {{ item.backend }} • {{ item.file_size }} • Updated {{ item.updated_at }}</p>
-                                        <p class="mt-1 break-all">{{ item.file_path }}</p>
+                        <section class="mt-5 overflow-hidden rounded-xl border border-outline-subtle">
+                            <header class="border-b border-outline-subtle bg-surface-subtle px-5 py-4">
+                                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <h3 class="text-sm font-semibold text-content-primary">Cleanup Preview Result</h3>
+                                        <p class="mt-1 text-xs text-content-muted">{{ cleanup.candidate_count }} candidates · {{ cleanup.candidate_size }} total · {{ cleanup.missing_reference_count }} missing references · {{ cleanup.error_count }} errors.</p>
                                     </div>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    {% endif %}
-                </section>
-                <section class="rounded-2xl border border-outline-default bg-white p-5 shadow-sm dark:border-outline-default bg-surface-card">
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
-                            <i data-lucide="settings-2" class="h-4 w-4"></i>
-                        </div>
-                        <h2 class="text-base font-semibold text-content-primary">Configuration Policy</h2>
-                    </div>
-                    <div class="mt-4 space-y-3">
-                        <div class="rounded-xl bg-surface-subtle px-3 py-3 bg-surface-subtle">
-                            <p class="text-sm font-semibold text-content-secondary dark:text-content-secondary">Source</p>
-                            <p class="mt-1 text-xs text-content-muted dark:text-content-muted">{{ payload.configuration_source }}</p>
-                        </div>
-                        <div class="rounded-xl bg-surface-subtle px-3 py-3 bg-surface-subtle">
-                            <p class="text-sm font-semibold text-content-secondary dark:text-content-secondary">Mutable from UI</p>
-                            <p class="mt-1 text-xs text-content-muted dark:text-content-muted">{{ 'Yes' if payload.is_mutable_from_ui else 'No' }}</p>
-                        </div>
-                    </div>
-                </section>
-                <section class="rounded-2xl border border-outline-default bg-white p-5 shadow-sm dark:border-outline-default bg-surface-card">
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
-                            <i data-lucide="route" class="h-4 w-4"></i>
-                        </div>
-                        <h2 class="text-base font-semibold text-content-primary">Object Key Format</h2>
-                    </div>
-                    <p class="mt-3 break-all rounded-xl bg-surface-subtle p-3 text-xs font-semibold leading-5 text-content-secondary bg-surface-subtle dark:text-content-secondary">{{ payload.object_key_format }}</p>
-                </section>
-                <section class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
-                    <div class="border-b border-outline-default px-5 py-4 dark:border-outline-default">
-                        <div class="flex items-center gap-3">
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
-                                <i data-lucide="list-checks" class="h-4 w-4"></i>
-                            </div>
-                            <div>
-                                <h2 class="text-base font-semibold text-content-primary">Recommended Actions</h2>
-                                <p class="text-xs text-content-muted dark:text-content-muted">Operational follow-up for report storage.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="divide-y divide-outline-default divide-outline-default">
-                        {% for action in payload.recommended_actions %}
-                            <a href="{{ action.href }}"
-                               class="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-surface-subtle hover:bg-kaori-soft">
-                                <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-content-primary dark:text-content-primary">{{ action.label }}</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted dark:text-content-muted">{{ action.description }}</p>
+                                    {{ table_label.status_indicator_label('Preview Complete', 'info') }}
                                 </div>
-                                <i data-lucide="chevron-right"
-                                   class="h-4 w-4 shrink-0 text-content-muted"></i>
-                            </a>
-                        {% endfor %}
-                    </div>
-                </section>
-                <section class="rounded-2xl border border-outline-default bg-white p-5 shadow-sm dark:border-outline-default bg-surface-card">
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
-                            <i data-lucide="info" class="h-4 w-4"></i>
-                        </div>
-                        <h2 class="text-base font-semibold text-content-primary">Notes</h2>
-                    </div>
-                    <div class="mt-4 space-y-3">
-                        {% for note in payload.notes %}
-                            <div class="rounded-xl bg-surface-subtle px-3 py-3 text-xs leading-5 text-content-muted bg-surface-subtle dark:text-content-muted">{{ note }}</div>
-                        {% endfor %}
-                    </div>
-                </section>
-            </aside>
+                            </header>
+                            {% if cleanup.sample_candidates %}
+                                <div class="overflow-x-auto">
+                                    <table class="{{ table_ui.table_classes('min-w-[900px]') }}">
+                                        <thead class="{{ table_ui.head_classes() }}">
+                                            <tr>
+                                                <th class="{{ table_ui.header_cell_classes() }}">Report</th>
+                                                <th class="{{ table_ui.header_cell_classes() }}">State</th>
+                                                <th class="{{ table_ui.header_cell_classes() }}">Backend</th>
+                                                <th class="{{ table_ui.header_cell_classes() }}">Size</th>
+                                                <th class="{{ table_ui.header_cell_classes() }}">Storage Reference</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="{{ table_ui.body_classes() }}">
+                                            {% for item in cleanup.sample_candidates %}
+                                                <tr class="{{ table_ui.row_classes() }}">
+                                                    <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(item.name, 'Report #' ~ item.report_id, 'file-archive') }}</td>
+                                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(item.status, item.status) }}</td>
+                                                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(item.backend|upper, 'database') }}</td>
+                                                    <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ item.file_size }}</span><p class="mt-0.5 text-xs text-content-muted">Updated {{ item.updated_at }}</p></td>
+                                                    <td class="{{ table_ui.cell_classes() }}"><p class="max-w-[360px] truncate text-xs text-content-muted" title="{{ item.file_path }}">{{ item.file_path }}</p></td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="px-5 py-6 text-sm text-content-muted">No cleanup candidates matched the current retention boundary.</div>
+                            {% endif %}
+                        </section>
+                    {% endif %}
+                </div>
+            {% endif %}
         </section>
     </div>
 {% endblock dashboard_content %}

@@ -35,6 +35,113 @@ SUPPORTED_REPORT_STORAGE_BACKENDS = {
     's3',
 }
 
+
+STORAGE_WORKSPACES = {
+    'overview',
+    'integrity',
+    'retention',
+}
+
+
+def normalize_storage_workspace(value: str | None) -> str:
+    normalized = str(value or 'overview').strip().lower()
+    return normalized if normalized in STORAGE_WORKSPACES else 'overview'
+
+
+def build_storage_operations_posture(
+    *,
+    backend_name: str,
+    backend_status: dict[str, Any],
+    artifact_summary: dict[str, Any],
+    readiness_monitor: dict[str, Any],
+) -> dict[str, Any]:
+    read_available = bool(backend_status.get('read_available', False))
+    write_available = bool(backend_status.get('write_available', False))
+    reachable = bool(backend_status.get('reachable', False))
+    verification_required = bool(backend_status.get('write_verification_required', False))
+
+    if write_available:
+        status_label = 'Storage Ready'
+        status_tone = 'normal'
+        title = 'Artifact Storage Ready'
+        description = (
+            'The active backend is readable and writable for report generation, downloads, '
+            'scheduled execution, and artifact verification.'
+        )
+    elif read_available and verification_required:
+        status_label = 'Verification Required'
+        status_tone = 'warning'
+        title = 'Write Verification Required'
+        description = (
+            'Existing artifacts remain readable, but new artifact writes stay paused until '
+            'strong storage verification succeeds.'
+        )
+    elif reachable:
+        status_label = 'Needs Review'
+        status_tone = 'warning'
+        title = 'Artifact Writes Paused'
+        description = (
+            'The active backend is reachable but not ready for the complete report artifact lifecycle.'
+        )
+    else:
+        status_label = 'Disconnected'
+        status_tone = 'warning'
+        title = 'Artifact Execution Paused'
+        description = (
+            'Report metadata remains available while storage-dependent generation, downloads, '
+            'verification, and scheduled artifact execution stay paused.'
+        )
+
+    return {
+        'status_label': status_label,
+        'status_tone': status_tone,
+        'title': title,
+        'description': description,
+        'backend_label': str(backend_status.get('label') or backend_name.upper()),
+        'read_label': 'Available' if read_available else 'Paused',
+        'read_tone': 'normal' if read_available else 'warning',
+        'write_label': 'Ready' if write_available else 'Paused',
+        'write_tone': 'normal' if write_available else 'warning',
+        'metadata_label': 'Available',
+        'metadata_tone': 'normal',
+        'verification_label': 'Required' if verification_required else 'Not Required',
+        'verification_tone': 'warning' if verification_required else 'normal',
+        'monitor_label': 'Automatic' if readiness_monitor.get('enabled') else 'Manual',
+        'monitor_tone': 'normal' if readiness_monitor.get('enabled') else 'unknown',
+        'ready_reports': int(artifact_summary.get('ready_reports', 0) or 0),
+        'tracked_artifacts': int(artifact_summary.get('reports_with_files', 0) or 0),
+        'tracked_size': str(artifact_summary.get('total_size') or '0 B'),
+        'checked_label': str(readiness_monitor.get('checked_label') or 'Not Checked'),
+        'source_label': str(readiness_monitor.get('source_label') or 'Unknown'),
+    }
+
+
+def build_storage_integrity_presentation(result: dict[str, Any]) -> dict[str, Any]:
+    presented = dict(result or {})
+    samples: list[dict[str, Any]] = []
+    for item in list(presented.get('missing_samples') or []):
+        samples.append({
+            'report_id': item.get('report_id'),
+            'name': item.get('name') or 'Generated Report',
+            'backend': item.get('backend') or 'Unknown',
+            'reference': item.get('file_path') or 'Not Available',
+            'issue': 'Artifact reference is missing from the configured backend.',
+            'tone': 'critical',
+            'status': 'Missing',
+        })
+    for item in list(presented.get('error_samples') or []):
+        samples.append({
+            'report_id': item.get('report_id'),
+            'name': item.get('name') or 'Generated Report',
+            'backend': item.get('backend') or 'Unknown',
+            'reference': item.get('file_path') or 'Not Available',
+            'issue': item.get('error') or 'Storage verification returned an error.',
+            'tone': 'warning',
+            'status': 'Error',
+        })
+    presented['review_samples'] = samples
+    return presented
+
 _STORAGE_STATUS_CACHE_KEY = '_kaori_report_storage_status'
 _PROCESS_STORAGE_STATUS_CACHE: dict[tuple[object, ...], tuple[float, dict[str, Any]]] = {}
 _PROCESS_STORAGE_STATUS_CACHE_LOCK = Lock()
@@ -596,7 +703,7 @@ def parse_report_storage_uri(
     return backend_name, object_key
 
 
-def get_report_storage_payload() -> dict[str, Any]:
+def get_report_storage_payload(*, workspace: str | None = None) -> dict[str, Any]:
     backend_name = get_configured_storage_backend_name()
     local_health = build_local_storage_health()
     s3_health = build_s3_storage_health()
@@ -620,22 +727,31 @@ def get_report_storage_payload() -> dict[str, Any]:
         retention_policy=retention_policy,
         backend_status=backend_status,
     )
+    readiness_monitor = {
+        'enabled': bool(current_app.config.get('REPORT_STORAGE_HEALTH_MONITOR_ENABLED', True)),
+        'interval_minutes': int(current_app.config.get('REPORT_STORAGE_HEALTH_INTERVAL_MINUTES', 1) or 1),
+        'stale_seconds': int(current_app.config.get('REPORT_STORAGE_HEALTH_STALE_SECONDS', 120) or 120),
+        'checked_label': format_storage_check_age(backend_status),
+        'source': str(backend_status.get('source') or 'direct'),
+        'source_label': format_storage_check_source(backend_status),
+        'shared_state': bool(current_app.config.get('REDIS_URL')),
+    }
+    storage_posture = build_storage_operations_posture(
+        backend_name=backend_name,
+        backend_status=backend_status,
+        artifact_summary=artifact_summary,
+        readiness_monitor=readiness_monitor,
+    )
 
     return {
         'page_title': 'Reports Storage',
         'page_subtitle': 'Review report artifact storage, integrity, and retention readiness.',
         'active_backend': backend_name,
+        'workspace': normalize_storage_workspace(workspace),
         'backend_status': backend_status,
         'storage_actions_enabled': bool(backend_status.get('reachable', False)),
-        'readiness_monitor': {
-            'enabled': bool(current_app.config.get('REPORT_STORAGE_HEALTH_MONITOR_ENABLED', True)),
-            'interval_minutes': int(current_app.config.get('REPORT_STORAGE_HEALTH_INTERVAL_MINUTES', 1) or 1),
-            'stale_seconds': int(current_app.config.get('REPORT_STORAGE_HEALTH_STALE_SECONDS', 120) or 120),
-            'checked_label': format_storage_check_age(backend_status),
-            'source': str(backend_status.get('source') or 'direct'),
-            'source_label': format_storage_check_source(backend_status),
-            'shared_state': bool(current_app.config.get('REDIS_URL')),
-        },
+        'readiness_monitor': readiness_monitor,
+        'storage_posture': storage_posture,
         'summary_cards': summary_cards,
         'supported_backends': [
             {
