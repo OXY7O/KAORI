@@ -41,6 +41,7 @@ def test_storage_page_uses_balanced_hero_and_one_state_aware_posture() -> None:
     assert 'Automatic Storage Readiness' in template
     assert 'data-report-storage-readiness-monitor="true"' in template
     assert 'data-storage-readiness-tip="true"' in template
+    assert 'data-storage-readiness-tip-layout="boxed"' in template
     assert 'Operational Tip' in template
     assert 'data-storage-decision-list="true"' in template
     assert 'data-storage-readiness-strip="true"' in template
@@ -211,3 +212,25 @@ def test_storage_integrity_and_retention_use_editorial_boundaries_not_card_grids
     assert '<div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">' not in retention
     assert '<div class="mt-4 grid gap-4 lg:grid-cols-2">' not in retention
     assert 'rounded-xl border border-outline-subtle bg-surface-subtle p-4' not in retention
+
+
+def test_storage_overview_uses_active_backend_connection_contract_not_field_cards() -> None:
+    template = read('app/templates/reports/storage/index.html')
+
+    assert 'data-storage-active-backend-layout="connection-contract"' in template
+    assert 'S3-compatible storage' not in template or '{{ posture.backend_label }}' in template
+    assert 'data-storage-backend-connection="s3"' in template
+    assert 'data-storage-backend-access="s3"' in template
+    assert 'Connection Target' in template
+    assert 'Access & Compatibility' in template
+    assert 'Object Prefix' in template
+    assert 'Credential Mode' in template
+    assert 'S3 Client' in template
+    assert 'data-storage-configuration-boundary="true"' in template
+    assert 'Configuration Source' in template
+    assert 'Object Key Contract' in template
+
+    overview = template.split("{% if payload.workspace == 'overview' %}", 1)[1].split("{% elif payload.workspace == 'integrity' %}", 1)[0]
+    assert "{% set active_items = [" not in overview
+    assert 'Backend Contract' not in overview
+    assert 'rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-3' not in overview
