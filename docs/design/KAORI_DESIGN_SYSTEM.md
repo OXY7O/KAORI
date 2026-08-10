@@ -188,14 +188,21 @@ Use a visible violet focus ring with a surface-colored offset. Functional transi
 
 Detailed component rules are maintained separately:
 
+- Engineering/final-recheck index: `docs/standards/KAORI_ENGINEERING_STANDARD_V1.md`
+- Color and semantic palette: `docs/design/components/COLOR_AND_SEMANTIC.md`
 - Dark mode: `docs/design/components/DARK_MODE.md`
 - Hero: `docs/design/components/HERO.md`
 - Tables and compact labels: `docs/design/components/TABLE_AND_LABEL.md`
+- Pagination: `docs/design/components/PAGINATION.md`
+- Tab registry: `docs/design/components/TAB_STYLES.md`
 - Related page relationships: `docs/design/components/RELATED_PAGE_CARD.md`
 - Right contextual rail: `docs/design/components/RIGHT_CONTEXT_RAIL.md`
 - View More Content: `docs/design/components/VIEW_MORE_CONTENT.md`
+- Modal and drawer selection: `docs/design/components/MODAL_DRAWER.md`
 - Form submission actions: `docs/design/components/FORM_ACTION_BAR.md`
 - Operational action feedback: `docs/design/components/OPERATIONAL_ACTION_FEEDBACK.md`
+- Navbar/application shell: `docs/design/components/NAVBAR.md`
+- Sidebar navigation: `docs/design/components/SIDEBAR_NAVIGATION.md`
 - Reusable page composition: `docs/design/patterns/`
 
 A page must consume shared components rather than recreate their utility strings.

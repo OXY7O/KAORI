@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Require permanent functional characterization evidence for reviewed KAORI domains."""
+"""Require permanent release evidence across reviewed KAORI test layers."""
 
 from __future__ import annotations
 
@@ -8,21 +8,17 @@ import ast
 from pathlib import Path
 
 _REQUIRED_TEST_FILES = {
+    'tests/unit/welcome/test_welcome_target_resolution.py': 3,
     'tests/welcome/test_welcome_characterization.py': 4,
-    'tests/analytics/test_alerts_characterization.py': 5,
-    'tests/analytics/test_capacity_logic_characterization.py': 2,
-    'tests/analytics/test_forecast_logic_characterization.py': 3,
-    'tests/analytics/test_storage_logic_characterization.py': 3,
-    'tests/analytics/test_top_consumers_logic_characterization.py': 4,
-    'tests/analytics/test_utilization_logic_characterization.py': 3,
-    'tests/analytics/test_workload_logic_characterization.py': 3,
-    'tests/inventory/test_inventory_presentation_characterization.py': 2,
-    'tests/inventory/test_topology_logic_characterization.py': 2,
-    'tests/kubernetes/test_fleet_inventory_snapshot.py': 2,
-    'tests/kubernetes/test_inventory_current_generation_filter.py': 1,
-    'tests/kubernetes/test_inventory_generation_consistency.py': 1,
-    'tests/kubernetes/test_inventory_persistence_atomicity.py': 2,
-    'tests/kubernetes/test_inventory_sync_canonical_resolution.py': 2,
+    'tests/security/welcome/test_welcome_security.py': 3,
+    'tests/rendering/welcome/test_welcome_rendering.py': 2,
+    'tests/e2e/welcome/test_welcome_smoke.py': 2,
+    'tests/dashboards/test_kubernetes_dashboard_characterization.py': 7,
+    'tests/unit/dashboards/test_kubernetes_dashboard_domain.py': 3,
+    'tests/security/dashboards/test_kubernetes_dashboard_security.py': 3,
+    'tests/rendering/dashboards/test_kubernetes_dashboard_rendering.py': 2,
+    'tests/integration/dashboards/test_kubernetes_dashboard_repository.py': 1,
+    'tests/e2e/dashboards/test_kubernetes_dashboard_smoke.py': 2,
 }
 
 
@@ -40,7 +36,7 @@ def validate(root: Path) -> list[str]:
     for relative_path, minimum_tests in _REQUIRED_TEST_FILES.items():
         path = root / relative_path
         if not path.exists():
-            errors.append(f'{relative_path}: required functional characterization file is missing')
+            errors.append(f'{relative_path}: required release-test module is missing')
             continue
         try:
             tests = _test_functions(path)
@@ -53,9 +49,7 @@ def validate(root: Path) -> list[str]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description='Validate permanent functional characterization coverage for reviewed KAORI domains.'
-    )
+    parser = argparse.ArgumentParser(description='Validate permanent release-test coverage for reviewed KAORI domains.')
     parser.add_argument('--root', type=Path, default=Path('.'))
     args = parser.parse_args()
 
@@ -65,9 +59,7 @@ def main() -> int:
             print(f'ERROR: {error}')
         return 1
 
-    print(
-        f'KAORI feature characterization coverage is present across {len(_REQUIRED_TEST_FILES)} required test modules.'
-    )
+    print(f'KAORI release-test coverage is present across {len(_REQUIRED_TEST_FILES)} required test modules.')
     return 0
 
 

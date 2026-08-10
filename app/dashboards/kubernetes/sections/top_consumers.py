@@ -130,8 +130,8 @@ def _build_top_consumers_insight(
     if not rows:
         return {
             'title': 'Consumer Insights',
-            'description': 'No top consumer rows were returned by Prometheus for this cluster.',
-            'items': ['Prometheus returned no CPU or memory consumer rows.'],
+            'description': 'The committed top consumer snapshot contains no CPU or memory rows for this cluster.',
+            'items': ['No CPU or memory consumer rows are present in the committed worker snapshot.'],
             'missing_request_limit_count': 0,
             'high_usage_count': 0,
         }

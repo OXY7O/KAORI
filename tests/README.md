@@ -1,31 +1,47 @@
 # KAORI Test Taxonomy
 
-KAORI separates evidence by purpose so behavior tests are not confused with migration, cleanup, architecture, UI, or temporary diagnostic checks.
+KAORI separates evidence by purpose so a green test count cannot hide a missing security, rendering, migration, or end-to-end boundary.
 
-| Location | Marker | Purpose | Release evidence |
-| --- | --- | --- | --- |
-| `tests/<domain>/` | `functional` | Permanent domain behavior, failure modes, security controls, and operational outcomes | Primary |
-| `tests/contracts/` | `contract` | Dependency direction, ownership, canonical paths, and retired boundaries | Supporting |
-| `tests/migrations/` | `migration` | Alembic upgrade/downgrade, data backfill, and migration graph behavior | Separate gate |
-| `tests/debug/` | `debug` | Temporary reproduction and diagnostics | Excluded |
+| Layer | Location | Marker | Purpose | Release role |
+| --- | --- | --- | --- | --- |
+| Static Quality | `scripts/quality_gate.sh --static` | n/a | Ruff, Ruff Format, djLint, Pyright, JavaScript syntax, Prettier, architecture, code health, migration graph, source hygiene | Mandatory |
+| Contract Test | `tests/contracts/` | `contract` | Durable architecture, ownership, canonical paths, UI invariants, retired boundaries | Mandatory supporting evidence |
+| Unit Test | `tests/unit/` | `unit` | Isolated deterministic logic without application infrastructure | Required when a page/domain owns independent logic |
+| Functional Test | `tests/<domain>/` | `functional` | User-visible/domain behavior, failure modes, application use cases | Primary behavior evidence |
+| Integration Test | `tests/integration/` | `integration` | Collaboration across application components or infrastructure/provider boundaries | Required where such a boundary exists |
+| Security Regression | `tests/security/` | `security` | Authentication, authorization, disclosure, input, secret, and privileged-operation regressions | Mandatory when a security boundary exists |
+| Rendering/UI Contract | `tests/rendering/` | `rendering` | Jinja compilation, frontend structure, document rendering, accessible UI composition | Mandatory for user-facing pages |
+| End-to-End Smoke | `tests/e2e/` | `e2e` | Critical application journeys through the real Flask/application stack; external infrastructure is isolated unless the smoke explicitly provisions it | Explicit deterministic release smoke gate |
+| Migration Test | `tests/migrations/` | `migration` | Upgrade/downgrade/data-transform behavior | Required for persistence/migration changes |
+| Debug | `tests/debug/` | `debug` | Temporary reproduction/diagnostics only | Excluded from release |
 
-`tests/conftest.py` is the only marker-assignment hook. It assigns markers from the first directory below `tests/`. Nested marker hooks are prohibited because they can silently change release selection.
+`tests/conftest.py` is the only path-based marker-assignment hook. Purpose buckets listed above receive their dedicated marker. Other first-level domain directories such as `tests/welcome/`, `tests/analytics/`, and `tests/inventory/` are functional behavior by default.
 
-A fixed defect must end with a permanent functional regression test in the owning domain. A debug test should then be removed or rewritten as that permanent test. UI or source-contract tests may supplement behavior evidence, but must never be the only validation for business, security, persistence, or worker logic.
+A fixed defect must finish with the smallest durable regression evidence that proves the behavior. Static/string contracts may supplement business or security behavior but must not be the only proof when executable behavior can be tested.
 
-Final-reviewed core domains have an explicit characterization gate; Welcome is included alongside the existing Inventory and Analytics foundations:
+A page may record Unit or Integration as `N/A` only when the product/architecture contract genuinely has no isolated domain calculation or external/component boundary. The reason must be written in the final-recheck record; `N/A` is not a way to skip difficult tests.
+
+End-to-End Smoke must be deterministic by default: exercise real Flask routing/session/template/application-shell composition, but do not require a developer workstation to run PostgreSQL, Redis, S3, Kubernetes, Prometheus, or Alertmanager unless that smoke test explicitly provisions the dependency. Infrastructure semantics belong in the Integration layer.
+
+Final-reviewed domains have permanent coverage requirements in `scripts/verify_feature_test_coverage.py`. The broad release test command runs all permanent non-E2E evidence, then E2E smoke is invoked explicitly:
 
 ```bash
-python scripts/verify_feature_test_coverage.py
-pytest -q tests/welcome tests/analytics tests/inventory tests/kubernetes -m functional
+pytest -q -m 'not debug and not e2e'
+pytest -q tests/e2e -m e2e
 ```
 
-Primary commands:
+Primary targeted commands:
 
 ```bash
-pytest -q tests/auth -m functional
+pytest -q tests/unit -m unit
+pytest -q tests/welcome -m functional
+pytest -q tests/dashboards -m functional
+pytest -q tests/integration -m integration
+pytest -q tests/security -m security
+pytest -q tests/rendering -m rendering
+pytest -q tests/e2e -m e2e
 pytest -q tests/contracts -m contract
 pytest -q tests/migrations -m migration
-pytest -q tests/debug -m debug
-pytest -q -m 'not debug'
 ```
+
+Do not keep a debug reproduction after its permanent regression test exists.

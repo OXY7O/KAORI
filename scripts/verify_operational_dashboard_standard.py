@@ -21,6 +21,17 @@ QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
 FEATURE_COVERAGE = ROOT / 'scripts' / 'verify_feature_test_coverage.py'
 CHARACTERIZATION = ROOT / 'tests' / 'dashboards' / 'test_kubernetes_dashboard_characterization.py'
 SNAPSHOT_FLOW_TEST = ROOT / 'tests' / 'dashboards' / 'test_kubernetes_dashboard_snapshot_flow.py'
+TOP_CONSUMERS_SOURCE = ROOT / 'app' / 'dashboards' / 'kubernetes' / 'sections' / 'top_consumers.py'
+SCHEMA = ROOT / 'app' / 'dashboards' / 'kubernetes' / 'schema.py'
+KPI_BUILDER = ROOT / 'app' / 'dashboards' / 'kubernetes' / 'sections' / 'kpis.py'
+UTILS = ROOT / 'app' / 'dashboards' / 'kubernetes' / 'utils.py'
+FRESHNESS = ROOT / 'app' / 'dashboards' / 'kubernetes' / 'sections' / 'freshness.py'
+SECTIONS_INIT = ROOT / 'app' / 'dashboards' / 'kubernetes' / 'sections' / '__init__.py'
+UNIT_TEST = ROOT / 'tests' / 'unit' / 'dashboards' / 'test_kubernetes_dashboard_domain.py'
+SECURITY_TEST = ROOT / 'tests' / 'security' / 'dashboards' / 'test_kubernetes_dashboard_security.py'
+RENDERING_TEST = ROOT / 'tests' / 'rendering' / 'dashboards' / 'test_kubernetes_dashboard_rendering.py'
+INTEGRATION_TEST = ROOT / 'tests' / 'integration' / 'dashboards' / 'test_kubernetes_dashboard_repository.py'
+E2E_TEST = ROOT / 'tests' / 'e2e' / 'dashboards' / 'test_kubernetes_dashboard_smoke.py'
 
 SECTION_PARTIALS = (
     '_signal_overview.html',
@@ -132,6 +143,17 @@ def verify() -> None:
     feature_coverage = _read(FEATURE_COVERAGE)
     characterization = _read(CHARACTERIZATION)
     snapshot_flow_test = _read(SNAPSHOT_FLOW_TEST)
+    top_consumers_source = _read(TOP_CONSUMERS_SOURCE)
+    schema = _read(SCHEMA)
+    kpi_builder = _read(KPI_BUILDER)
+    utils = _read(UTILS)
+    freshness = _read(FRESHNESS)
+    sections_init = _read(SECTIONS_INIT)
+    unit_test = _read(UNIT_TEST)
+    security_test = _read(SECURITY_TEST)
+    rendering_test = _read(RENDERING_TEST)
+    integration_test = _read(INTEGRATION_TEST)
+    e2e_test = _read(E2E_TEST)
 
     _require(
         content,
@@ -273,11 +295,25 @@ def verify() -> None:
         if token in service or token in routes:
             raise AssertionError(f'dashboard web boundary contains live provider access: {token}')
 
+    if '**_: Any' in service:
+        raise AssertionError('dashboard service still exposes a compatibility catch-all argument')
+    if 'live_cluster' in service or 'live_cluster' in schema or 'get_live_cluster' in utils:
+        raise AssertionError('dashboard internals still use misleading live-cluster naming for selected DB scope')
+    kpi_schema = schema.split('class DashboardKpi:', 1)[1].split('@dataclass', 1)[0]
+    if 'tone:' in kpi_schema or 'trend:' in kpi_schema or 'tone=' in kpi_builder:
+        raise AssertionError('dashboard KPI model/builder still carries retired unused presentation fields')
+    if 'build_hero_integration_meta' in freshness or 'build_hero_integration_meta' in sections_init:
+        raise AssertionError('dashboard still contains the orphan Hero integration metadata builder')
+    if 'def format_gib' in utils:
+        raise AssertionError('dashboard still contains the unused duplicate format_gib helper')
+    if 'returned by Prometheus' in top_consumers_source or 'Prometheus returned' in top_consumers_source:
+        raise AssertionError('dashboard presentation still implies request-time Prometheus access')
+
     _require(
         readme,
         (
             'read-only operational projection over committed KAORI data',
-            'OPERATIONAL_DASHBOARD.md` v1.2',
+            'OPERATIONAL_DASHBOARD.md` v1.3',
             'Arrow Left/Right, Home, and End keyboard navigation',
             'artifact-format neutral',
             'Web requests must not query Kubernetes, Prometheus, or Alertmanager directly',
@@ -288,7 +324,10 @@ def verify() -> None:
     _require(
         standard,
         (
-            '# KAORI Operational Dashboard Pattern v1.2',
+            '# KAORI Operational Dashboard Pattern v1.3',
+            'Context Icon Box',
+            'Maintainability and performance contract',
+            'Layered release evidence',
             '**Status:** Locked reference pattern',
             'Kubernetes Operations Dashboard',
             'Identity → Scope → Indicators → Peer analysis → Interpretation → Action',
@@ -310,6 +349,7 @@ def verify() -> None:
             'No visual redesign is required',
             'Corrections made without visual redesign',
             'Final Recheck v2',
+            'Final Recheck v3',
             'authorization ordering',
             'behavioral characterization',
         ),
@@ -322,6 +362,43 @@ def verify() -> None:
         raise AssertionError('scripts/quality_gate.sh does not explicitly execute Dashboard functional tests')
     if "'tests/dashboards/test_kubernetes_dashboard_characterization.py': 7" not in feature_coverage:
         raise AssertionError('Dashboard behavioral characterization is not protected by the feature coverage gate')
+
+    layered_requirements = (
+        "'tests/unit/dashboards/test_kubernetes_dashboard_domain.py': 3",
+        "'tests/security/dashboards/test_kubernetes_dashboard_security.py': 3",
+        "'tests/rendering/dashboards/test_kubernetes_dashboard_rendering.py': 2",
+        "'tests/integration/dashboards/test_kubernetes_dashboard_repository.py': 1",
+        "'tests/e2e/dashboards/test_kubernetes_dashboard_smoke.py': 2",
+    )
+    for requirement in layered_requirements:
+        if requirement not in feature_coverage:
+            raise AssertionError(f'Dashboard layered release evidence is not protected: {requirement}')
+
+    _require(
+        unit_test,
+        ('test_dashboard_pagination_is_bounded', 'committed_snapshot_not_live_provider_query'),
+        'dashboard unit evidence',
+    )
+    _require(
+        security_test,
+        ('authorization_boundary', 'no_direct_provider_client', 'no_blueprint_before_request'),
+        'dashboard security evidence',
+    )
+    _require(
+        rendering_test,
+        ('valid_jinja', 'canonical_hero_tabs_table_status_and_pagination'),
+        'dashboard rendering evidence',
+    )
+    _require(
+        integration_test,
+        ('sqlite+pysqlite:///:memory:', 'query_all', 'count_records', 'latest_record_timestamp'),
+        'dashboard integration evidence',
+    )
+    _require(
+        e2e_test,
+        ('/dashboards/kubernetes/', 'Quick Actions', 'Notifications', 'kaoriNavbar'),
+        'dashboard E2E evidence',
+    )
 
     _require(
         characterization,
@@ -348,7 +425,7 @@ def verify() -> None:
         'KAORI operational dashboard standard passed: canonical composition, snapshot-only web boundary, '
         'authorization-first lazy sections, URL-backed keyboard-accessible tabs, shared style ownership, '
         'format-neutral reporting guidance, top-consumer snapshot semantics, behavioral release evidence, '
-        'documentation, audit, and quality-gate enforcement match v1.2.'
+        'documentation, audit, and quality-gate enforcement match v1.3.'
     )
 
 

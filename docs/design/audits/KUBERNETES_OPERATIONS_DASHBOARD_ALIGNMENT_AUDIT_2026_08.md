@@ -40,10 +40,23 @@ Approved as the canonical KAORI operational dashboard reference. No visual redes
 6. Added a dedicated operational-dashboard verifier and registered it in the static quality gate.
 7. Expanded the canonical pattern document so future dashboards can reuse the design without copying page-local styles.
 
-## Technical risks retained for separate work
+## Final Recheck v2
 
-The repository helpers currently favor graceful rendering by returning empty collections or zero values when a database query raises an exception. This keeps the dashboard available, but a database failure can be visually similar to a legitimate empty dataset. That behavior is outside this visual-preservation change and should be handled later through an explicit repository result contract such as `available/data/error_code`, plus server-side logging and a non-technical unavailable state.
+The second release audit kept the visual baseline unchanged and tightened execution evidence:
+
+1. Fixed lazy-section authorization ordering so `dashboard.view` is enforced before clusterless onboarding can render. The protected section route now owns the clusterless blocker directly; Blueprint `before_request` no longer short-circuits the decorated view.
+2. Added behavioral characterization for unauthorized, clusterless, unknown-section, bounded-pagination, and valid-section request paths.
+3. Refreshed snapshot-flow tests that still targeted retired service helper signatures after the canonical model-ownership refactor.
+4. Added Dashboard functional tests to the explicit release characterization phase and feature-coverage verifier.
+5. Rechecked the repository implementation: query failures are not converted to synthetic empty datasets by Dashboard repository helpers, so the earlier retained-risk note about swallowed database errors is obsolete and has been removed.
+
+No visual redesign was introduced. The final recheck corrections are limited to authorization ordering, test accuracy, release evidence, and documentation.
 
 ## Final decision
 
 The existing visual design is approved and should be preserved. The Kubernetes Operations Dashboard is the reference implementation for `docs/design/patterns/OPERATIONAL_DASHBOARD.md`. Future operational dashboards should reuse its composition and shared components rather than restyling or duplicating the page.
+
+
+## Final Recheck v3 — layered release audit
+
+The locked visual baseline remains unchanged. The release audit removed residual internal compatibility/dead surface (`get_dashboard_overview(**_)`, unused KPI `tone`, orphan `build_hero_integration_meta()`, duplicate unused Dashboard `format_gib()`), renamed misleading internal `live_cluster` state to `selected_cluster`, and corrected Top Consumers empty-copy to committed-snapshot semantics. The Dashboard now carries explicit Unit, Functional, Integration, Security, Rendering/UI, and E2E smoke evidence in addition to static and contract gates. Cluster Health remains bounded by pagination before per-cluster snapshot reads.

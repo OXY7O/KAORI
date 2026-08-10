@@ -1,4 +1,4 @@
-# KAORI Hero Component Standard v1.3
+# KAORI Hero Component Standard v1.4
 
 This document is the authoritative implementation contract for authenticated KAORI page heroes.
 
@@ -47,15 +47,16 @@ A normal hero contains:
 - one optional right-side context panel;
 - one primary action in the context panel when the panel is interactive.
 
-The right-side context panel normally contains:
+The right-side context panel contains one posture eyebrow, one panel title, zero to two compact metrics, and at most one primary full-width bottom action. Its **top-right header accessory** uses exactly one of three approved variants:
 
-- one posture eyebrow;
-- one panel title;
-- one semantic status badge;
-- exactly two compact metrics;
-- one full-width bottom action.
+1. **Action Icon Box** — an interactive icon-only control for one immediate hero-context action. Use `context_action_icon_box(...)` or `context_header_action(...)`. It requires an accessible name and visible focus state.
+2. **Context Icon Box** — a non-interactive domain, identity, or scope marker. Use `context_icon_box(...)` or the standard `context_header(...)`. It shares the same 40 px square geometry as the Action Icon Box but is not focusable.
+3. **Status Badge Box** — a compact semantic operational/readiness state. Use `context_status_badge(...)` or `context_header_status(...)`. It is not an action.
 
-`context_card(...)` and `context_card_body(...)` enforce the two-metric limit by rendering `metrics[:2]`.
+Do not invent a fourth header-accessory geometry. A page must not make an icon box look like a status badge, make a status badge clickable, or use page-local size/radius/padding variations.
+
+`context_card(...)` and `context_card_body(...)` are the canonical status-oriented panel helper and enforce the two-metric limit by rendering `metrics[:2]`. Manual panels may use the Action or Context icon variants when status is not the header's semantic purpose.
+The status-oriented `context_card(...)` baseline therefore continues to present **exactly two compact metrics**; manual panels may legitimately use fewer when their semantic role does not require metrics.
 
 ## Theme and surface contract
 
@@ -132,7 +133,19 @@ Metadata rules:
 
 ## Context panel
 
-Preferred implementation:
+### Header accessory registry
+
+The three approved right-side header accessories are part of the global Hero contract, not page-specific decoration. Their purpose determines the variant:
+
+| Variant | Meaning | Canonical helper | Interactive | Geometry |
+|---|---|---|---|---|
+| Action Icon Box | Immediate context action | `context_action_icon_box(...)` / `context_header_action(...)` | Yes | 40 × 40 px rounded square |
+| Context Icon Box | Domain, identity, or scope cue | `context_icon_box(...)` / `context_header(...)` | No | 40 × 40 px rounded square |
+| Status Badge Box | Readiness, health, lifecycle, or decision state | `context_status_badge(...)` / `context_header_status(...)` | No | Compact rectangular semantic badge |
+
+The Action and Context icon boxes intentionally share visual geometry; accessibility and interaction semantics distinguish them. The Status Badge uses semantic color and text, and status must never rely on color alone.
+
+Preferred status-oriented implementation:
 
 ```jinja
 {{ page_hero.context_card(
@@ -325,6 +338,8 @@ python -m pytest -q \
 ```
 
 ## Review checklist
+
+Every final page recheck must explicitly classify the hero right-side header accessory as **Action Icon Box**, **Context Icon Box**, **Status Badge Box**, or **Not Applicable**. Visual similarity is not sufficient; semantics and accessibility must match the selected type.
 
 - shared component imported;
 - canonical shell/layout/content primitives used;

@@ -3,41 +3,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from app.dashboards.kubernetes.schema import AlertsSnapshot, CapacitySnapshot, FreshnessItem, ReportingSnapshot
+from app.dashboards.kubernetes.schema import FreshnessItem, ReportingSnapshot
 from app.dashboards.kubernetes.utils import human_time
-
-
-def build_hero_integration_meta(
-    *,
-    live_cluster: Any | None,
-    capacity_snapshot: CapacitySnapshot,
-    alerts_snapshot: AlertsSnapshot,
-) -> dict[str, str]:
-    if live_cluster is None:
-        return {
-            'prometheus_status_label': 'Per-cluster',
-            'prometheus_status_description': 'Committed snapshots shown by cluster',
-            'prometheus_status_tone': 'blue',
-            'alertmanager_status_label': 'Per-cluster',
-            'alertmanager_status_description': 'Committed snapshots shown by cluster',
-            'alertmanager_status_tone': 'blue',
-        }
-
-    prometheus_available = capacity_snapshot.source_status == 'Available'
-    alertmanager_available = alerts_snapshot.source_status == 'Available'
-
-    return {
-        'prometheus_status_label': 'Snapshot Ready' if prometheus_available else 'Unavailable',
-        'prometheus_status_description': (
-            'Worker snapshot available' if prometheus_available else 'Awaiting worker refresh'
-        ),
-        'prometheus_status_tone': 'green' if prometheus_available else 'slate',
-        'alertmanager_status_label': 'Snapshot Ready' if alertmanager_available else 'Unavailable',
-        'alertmanager_status_description': (
-            'Worker snapshot available' if alertmanager_available else 'Awaiting worker refresh'
-        ),
-        'alertmanager_status_tone': 'green' if alertmanager_available else 'slate',
-    }
 
 
 def build_data_freshness(
@@ -46,9 +13,9 @@ def build_data_freshness(
     has_prometheus_data: bool,
     has_alertmanager_data: bool,
     reporting_snapshot: ReportingSnapshot,
-    live_cluster: Any | None,
+    selected_cluster: Any | None,
 ) -> list[FreshnessItem]:
-    selected_cluster_mode = live_cluster is not None
+    selected_cluster_mode = selected_cluster is not None
 
     if selected_cluster_mode:
         prometheus_status = 'Ready' if has_prometheus_data else 'Unavailable'

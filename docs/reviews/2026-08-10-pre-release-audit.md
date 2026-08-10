@@ -5,7 +5,7 @@
 | Order | Area | Status |
 |---:|---|---|
 | 1 | Welcome | **LOCKED / PASS** |
-| 2 | Kubernetes Dashboard | **PASS after targeted hardening** |
+| 2 | Kubernetes Dashboard | **LOCKED / PASS — Final Recheck v2** |
 | 3 | Kubernetes Inventory | Pending |
 | 4 | Kubernetes Governance | Pending |
 | 5 | Kubernetes Operations | Pending |
@@ -57,4 +57,8 @@ Each reviewed area is checked for:
 - Runtime import graph, top-level architecture boundary, and module reachability are clean after the accompanying structural cleanup.
 - `scripts/verify_operational_dashboard_standard.py` owns Dashboard regression enforcement.
 - `scripts/verify_title_case_standard.py` enforces the English minor-word Title Case contract for reviewed/locked Welcome and Dashboard templates and will expand as each remaining area is approved.
-- Full Ruff/djLint/Pyright and runtime test claims remain pending until executed in the supported devcontainer/CI environment with development dependencies installed.
+- Lazy-section authorization now completes before clusterless onboarding or dashboard data access; Blueprint pre-view short-circuiting is prohibited.
+- Permanent Dashboard behavioral characterization covers denied access, clusterless rendering, unknown sections, bounded page sizes, and authorized section execution.
+- Snapshot-flow tests were refreshed to the current four-value scope contract and canonical model ownership.
+- `tests/dashboards` is part of the explicit functional release characterization phase.
+- Final recheck verdict: **PASS — LOCKED** with no visual redesign.

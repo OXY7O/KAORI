@@ -184,6 +184,11 @@ def _verify_presentation_contract(errors: list[str]) -> None:
 
     require('components/page_hero.html' in template, 'Welcome must use the shared page hero.', errors)
     require(
+        "page_hero.context_header('Access Scope', 'Role-Aware Workspace', 'key-round')" in template,
+        'Welcome Hero right header must use the canonical Context Icon Box variant.',
+        errors,
+    )
+    require(
         'components/welcome_capability_group.html' in template, 'Welcome must use shared capability groups.', errors
     )
     require('components/workspace_link_card.html' in template, 'Welcome must use shared workspace cards.', errors)

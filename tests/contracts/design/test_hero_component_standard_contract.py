@@ -25,8 +25,11 @@ def test_hero_documentation_has_one_global_contract_and_one_domain_extension() -
     global_standard = (components / 'HERO.md').read_text(encoding='utf-8')
     analytics_extension = (components / 'ANALYTICS_HERO.md').read_text(encoding='utf-8')
 
-    assert 'KAORI Hero Component Standard v1.3' in global_standard
+    assert 'KAORI Hero Component Standard v1.4' in global_standard
     assert '16 px, regular, 28 px line height' in global_standard
+    assert 'Action Icon Box' in global_standard
+    assert 'Context Icon Box' in global_standard
+    assert 'Status Badge Box' in global_standard
     assert 'exactly two compact metrics' in global_standard
     assert 'kaori-hero-shell' in global_standard
     assert 'components/DARK_MODE.md' in global_standard
@@ -47,3 +50,13 @@ def test_removed_hero_macros_are_absent_from_implementation() -> None:
         'supporting_strip',
     ):
         assert f'macro {macro}' not in source
+
+
+def test_hero_right_header_accessories_have_three_canonical_variants() -> None:
+    source = (ROOT / 'app' / 'templates' / 'components' / 'page_hero.html').read_text(encoding='utf-8')
+
+    assert 'macro context_action_icon_box(icon, href, aria_label, title=None)' in source
+    assert 'macro context_icon_box(icon)' in source
+    assert "macro context_header_status(eyebrow_label, title, status_label, status_tone='info')" in source
+    assert 'aria-label="{{ aria_label }}"' in source
+    assert 'context_status_badge(status_label, status_tone)' in source

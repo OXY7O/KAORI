@@ -24,7 +24,7 @@ def normalize_selected_cluster(selected_cluster_id: str | None, clusters: list[D
     return selected_cluster_id if selected_cluster_id in valid_ids else None
 
 
-def get_live_cluster(*, clusters_raw: list[Any], selected_cluster_id: str | None) -> Any | None:
+def get_selected_cluster(*, clusters_raw: list[Any], selected_cluster_id: str | None) -> Any | None:
     if not selected_cluster_id:
         return None
 
@@ -155,14 +155,6 @@ def forecast_insight(payload: dict[str, Any]) -> str:
         return f'{label} has the highest {horizon_days}-day projection at {float(percent):.0f}%.'
     except (TypeError, ValueError):
         return 'Forecast snapshot loaded from analytics forecast service.'
-
-
-def format_gib(value: Any) -> str:
-    number = safe_float(value)
-    gib = number / 1024**3
-    if gib >= 1024:
-        return f'{gib / 1024:.2f} TiB'
-    return f'{gib:.2f} GiB'
 
 
 def latest_timestamp(items: Iterable[Any]) -> datetime | None:

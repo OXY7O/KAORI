@@ -41,16 +41,6 @@ SECTION_TEMPLATES = {
 }
 
 
-@kubernetes_dashboard_bp.before_request
-def block_clusterless_sections():
-    """Keep lazy sections aligned with the full-page Kubernetes blocker."""
-    if request.endpoint != 'kubernetes_dashboard.section':
-        return None
-    if has_registered_clusters() is False:
-        return render_template('components/cluster/_onboarding_banner.html')
-    return None
-
-
 @kubernetes_dashboard_bp.route('')
 @kubernetes_dashboard_bp.route('/')
 @permission_required('dashboard.view')
@@ -77,6 +67,12 @@ def section(section: str):
     template_name = SECTION_TEMPLATES.get(section)
     if template_name is None:
         abort(404)
+
+    # This blocker must execute inside the permission-protected view. A
+    # blueprint ``before_request`` can short-circuit Flask before the view
+    # decorator runs and must never own authorization-sensitive responses.
+    if has_registered_clusters() is False:
+        return render_template('components/cluster/_onboarding_banner.html')
 
     dashboard = get_dashboard_section(
         section,

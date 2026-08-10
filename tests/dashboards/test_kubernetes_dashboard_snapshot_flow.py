@@ -20,13 +20,13 @@ from app.dashboards.kubernetes.sections.forecast import build_forecast_snapshot
 def _scope_with_selected():
     cluster = SimpleNamespace(id='cluster-1', name='Primary')
     option = SimpleNamespace(id='cluster-1', name='Primary')
-    return {}, [cluster], [option], 'cluster-1', cluster
+    return [cluster], [option], 'cluster-1', cluster
 
 
 def test_dashboard_shell_never_reads_analytics_snapshots(monkeypatch) -> None:
     monkeypatch.setattr(service, '_scope', lambda _selected: _scope_with_selected())
-    monkeypatch.setattr(service, '_inventory_snapshot', lambda _models, _selected: InventorySnapshot())
-    monkeypatch.setattr(service, '_latest_inventory_sync', lambda _models, _selected: None)
+    monkeypatch.setattr(service, '_inventory_snapshot', lambda _selected: InventorySnapshot())
+    monkeypatch.setattr(service, '_latest_inventory_sync', lambda _selected: None)
     monkeypatch.setattr(service, 'build_reporting_snapshot', lambda **_kwargs: SimpleNamespace())
 
     def unexpected_snapshot_read(*_args, **_kwargs):
@@ -310,11 +310,12 @@ def test_cluster_health_preloads_visible_inventory_with_two_set_queries(monkeypa
     options = [SimpleNamespace(id=cluster.id, name=cluster.name) for cluster in clusters]
     node_model = object()
     pod_model = object()
-    models = {'NodeInventory': node_model, 'PodInventory': pod_model}
+    monkeypatch.setattr(service, 'NodeInventory', node_model)
+    monkeypatch.setattr(service, 'PodInventory', pod_model)
     monkeypatch.setattr(
         service,
         '_scope',
-        lambda _selected: (models, clusters, options, None, None),
+        lambda _selected: (clusters, options, None, None),
     )
     monkeypatch.setattr(
         service,
@@ -346,6 +347,34 @@ def test_cluster_health_preloads_visible_inventory_with_two_set_queries(monkeypa
     ]
     assert list(captured['nodes_by_cluster']) == ['cluster-1']
     assert list(captured['pods_by_cluster']) == ['cluster-2']
+
+
+def test_cluster_health_snapshot_reads_are_bounded_to_visible_page(monkeypatch) -> None:
+    clusters = [SimpleNamespace(id=f'cluster-{index}', name=f'Cluster {index}') for index in range(12)]
+    options = [SimpleNamespace(id=cluster.id, name=cluster.name) for cluster in clusters]
+    monkeypatch.setattr(service, '_scope', lambda _selected: (clusters, options, None, None))
+    monkeypatch.setattr(service, 'query_for_clusters', lambda _model, _cluster_ids: [])
+    capacity_reads: list[str] = []
+    alert_reads: list[str] = []
+    monkeypatch.setattr(
+        service,
+        '_capacity_signal',
+        lambda cluster: (capacity_reads.append(cluster.id) or CapacitySnapshot(), SimpleNamespace(state='fresh')),
+    )
+    monkeypatch.setattr(
+        service,
+        '_alerts_signal',
+        lambda cluster: (alert_reads.append(cluster.id) or AlertsSnapshot(), SimpleNamespace(state='fresh')),
+    )
+    monkeypatch.setattr(service, 'build_cluster_health', lambda **_kwargs: [])
+
+    dashboard = service.get_dashboard_section('cluster_health', cluster_health_page=2, cluster_health_per_page=5)
+
+    expected = [f'cluster-{index}' for index in range(5, 10)]
+    assert capacity_reads == expected
+    assert alert_reads == expected
+    assert dashboard.cluster_health_pagination.page == 2
+    assert dashboard.cluster_health_pagination.per_page == 5
 
 
 def test_dashboard_forecast_snapshot_exposes_chart_values_and_horizon() -> None:
@@ -439,7 +468,7 @@ def test_dashboard_kpi_display_copy_uses_title_case() -> None:
             unhealthy_pods=24,
             capacity_snapshot=CapacitySnapshot(),
             alerts_snapshot=AlertsSnapshot(),
-            live_cluster=object(),
+            selected_cluster=object(),
             active_alerts_label='0',
             active_alerts_description='0 Critical • 0 Warning',
         )

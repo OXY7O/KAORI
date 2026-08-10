@@ -1,0 +1,106 @@
+from __future__ import annotations
+
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[3]
+
+
+def read(path: str) -> str:
+    return (ROOT / path).read_text(encoding='utf-8')
+
+
+def test_navbar_uses_named_alpine_component_instead_of_inline_program() -> None:
+    navbar = read('app/templates/components/navigation/navbar.html')
+    layout = read('app/templates/layouts/app.html')
+
+    assert 'x-data="kaoriNavbar"' in navbar
+    assert 'x-data="{' not in navbar
+    assert 'async refreshNotificationDeck()' not in navbar
+    assert "filename='js/navbar.js'" in layout
+    assert layout.index("filename='js/navbar.js'") < layout.index("filename='vendor/alpine/alpine.min.js'")
+
+
+def test_quick_notification_and_account_controls_share_one_controller() -> None:
+    navbar = read('app/templates/components/navigation/navbar.html')
+    notification_center = read('app/templates/components/navigation/_notification_center.html')
+    script = read('app/static/js/navbar.js')
+
+    assert navbar.count('@click="toggleQuickActions()"') == 2
+    assert '@click="toggleUserMenu()"' in navbar
+    assert '@keydown.escape.window="closeMenus()"' in navbar
+    assert 'openNotificationDeck(' in notification_center
+    assert 'toggleQuickActions()' in script
+    assert "openNotificationDeck(tab = 'notifications')" in script
+    assert 'toggleUserMenu()' in script
+    assert 'closeMenus()' in script
+
+
+def test_navbar_javascript_is_syntax_checked() -> None:
+    result = subprocess.run(
+        [sys.executable, 'scripts/verify_javascript_syntax.py'],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert 'KAORI first-party JavaScript syntax passed' in result.stdout
+
+
+def test_application_shell_standard_is_enforced() -> None:
+    result = subprocess.run(
+        [sys.executable, 'scripts/verify_application_shell_standard.py'],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert 'KAORI application shell standard passed' in result.stdout
+
+
+def test_navbar_controller_exclusively_opens_one_utility_surface() -> None:
+    harness = r"""
+const listeners = {}
+global.document = {
+    addEventListener(name, callback) { listeners[name] = callback },
+    getElementById() { return null },
+    querySelectorAll() { return [] },
+}
+let factory = null
+global.window = {
+    Alpine: { data(name, callback) { if (name === 'kaoriNavbar') factory = callback } },
+    setInterval() { return 1 },
+    clearInterval() {},
+    queueMicrotask(callback) { callback() },
+}
+require('./app/static/js/navbar.js')
+listeners['alpine:init']()
+const navbar = factory()
+navbar.toggleQuickActions()
+if (!navbar.quickOpen || navbar.notificationDeckOpen || navbar.userOpen) process.exit(10)
+navbar.openNotificationDeck('activity')
+if (
+    navbar.quickOpen ||
+    !navbar.notificationDeckOpen ||
+    navbar.userOpen ||
+    navbar.notificationDeckTab !== 'activity'
+) process.exit(11)
+navbar.toggleUserMenu()
+if (navbar.quickOpen || navbar.notificationDeckOpen || !navbar.userOpen) process.exit(12)
+navbar.closeMenus()
+if (navbar.quickOpen || navbar.notificationDeckOpen || navbar.userOpen) process.exit(13)
+"""
+    result = subprocess.run(
+        ['node', '-e', harness],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr

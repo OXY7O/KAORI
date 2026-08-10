@@ -45,7 +45,7 @@ from app.dashboards.kubernetes.snapshots import (
 from app.dashboards.kubernetes.utils import (
     coerce_datetime,
     get_attr,
-    get_live_cluster,
+    get_selected_cluster,
     human_time,
     normalize_selected_cluster,
 )
@@ -86,7 +86,7 @@ def _scope(
         for cluster in clusters_raw
     ]
     normalized = normalize_selected_cluster(selected_cluster_id, clusters)
-    selected = get_live_cluster(clusters_raw=clusters_raw, selected_cluster_id=normalized)
+    selected = get_selected_cluster(clusters_raw=clusters_raw, selected_cluster_id=normalized)
     return clusters_raw, clusters, normalized, selected
 
 
@@ -197,7 +197,6 @@ def get_dashboard_overview(
     cluster_health_page: str | int | None = 1,
     cluster_health_per_page: int = 5,
     active_tab: str = 'overview',
-    **_: Any,
 ) -> DashboardOverview:
     """Build the database-only dashboard shell; live integrations are never called here."""
     _clusters_raw, clusters, selected_cluster_id, _selected = _scope(selected_cluster_id)
@@ -293,7 +292,7 @@ def get_dashboard_section(
                 unhealthy_pods=inventory.unhealthy_pods,
                 capacity_snapshot=dashboard.capacity_snapshot,
                 alerts_snapshot=dashboard.alerts_snapshot,
-                live_cluster=selected,
+                selected_cluster=selected,
                 active_alerts_label=str(active_alerts) if selected is not None else 'N/A',
                 active_alerts_description=(
                     f'{dashboard.alerts_snapshot.critical} Critical • {dashboard.alerts_snapshot.warning} Warning'
@@ -346,7 +345,7 @@ def get_dashboard_section(
             has_prometheus_data=has_prometheus_data,
             has_alertmanager_data=dashboard.alerts_snapshot.source_status == 'Available',
             reporting_snapshot=dashboard.reporting_snapshot,
-            live_cluster=selected,
+            selected_cluster=selected,
         )
         dashboard.meta['snapshot_states'] = {
             'capacity': getattr(capacity_result, 'state', 'not_applicable'),

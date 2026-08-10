@@ -42,6 +42,8 @@ REQUIRED_MACROS = (
     'context_panel_eyebrow_classes',
     'context_panel_title_classes',
     'context_icon_classes',
+    'context_icon_box',
+    'context_action_icon_box',
     'context_metric_card_classes',
     'context_metric_label_classes',
     'context_metric_value_classes',
@@ -49,6 +51,8 @@ REQUIRED_MACROS = (
     'context_action_classes',
     'context_single_action_classes',
     'context_header',
+    'context_header_action',
+    'context_header_status',
     'context_actions_classes',
     'context_info',
     'context_panel_metrics_classes',
@@ -83,17 +87,25 @@ IMPLEMENTATION_TOKENS = (
     'text-lg font-semibold leading-6',
     'text-xs font-semibold leading-5',
     'h-10 cursor-pointer',
+    'macro context_icon_box(icon)',
+    'macro context_action_icon_box(icon, href, aria_label, title=None)',
+    'macro context_header_action(eyebrow_label, title, icon, href, aria_label)',
+    "macro context_header_status(eyebrow_label, title, status_label, status_tone='info')",
     'macro context_metric_value_classes()',
     'macro context_single_action_classes()',
 )
 
 DOCUMENTATION_TOKENS = (
-    '# KAORI Hero Component Standard v1.3',
+    '# KAORI Hero Component Standard v1.4',
     'app/templates/components/page_hero.html',
     'scripts/verify_hero_component_standard.py',
     'tests/contracts/design/test_hero_component_standard_contract.py',
     '248 px / 280 px minimum',
     '16 px, regular, 28 px line height',
+    'Action Icon Box',
+    'Context Icon Box',
+    'Status Badge Box',
+    'Do not invent a fourth header-accessory geometry.',
     'exactly two compact metrics',
     'metrics[:2]',
     'components/ANALYTICS_HERO.md',
@@ -243,7 +255,7 @@ def verify() -> None:
     print(
         'KAORI Hero component standard passed: '
         f'{len(shell_templates)} Hero shells, {context_card_templates} context-card consumers, '
-        f'and {lazy_context_templates} lazy context bodies match v1.3; implementation, documentation, '
+        f'and {lazy_context_templates} lazy context bodies match v1.4; implementation, documentation, '
         'domain extension, dark-mode ownership, removed APIs, and quality-gate ownership are synchronized.'
     )
 

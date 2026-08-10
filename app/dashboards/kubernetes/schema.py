@@ -16,8 +16,6 @@ class DashboardKpi:
     value: str
     description: str
     icon: str
-    tone: str = 'blue'
-    trend: str | None = None
 
 
 @dataclass(slots=True)
@@ -34,7 +32,7 @@ class DashboardKpiContext:
     unhealthy_pods: int
     capacity_snapshot: CapacitySnapshot
     alerts_snapshot: AlertsSnapshot
-    live_cluster: object | None
+    selected_cluster: object | None
     active_alerts_label: str
     active_alerts_description: str
 

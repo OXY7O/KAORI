@@ -17,6 +17,8 @@ The Kubernetes Operations Dashboard is a read-only operational projection over c
 
 ## Request boundary
 
+Protected lazy-section requests enforce `dashboard.view` before resolving the clusterless onboarding state. The clusterless blocker is owned by the permission-protected `section()` view, not a Blueprint `before_request`, because a pre-view response would bypass the view decorator. Unknown section keys return `404` before cluster readiness or dashboard data access.
+
 The initial page request builds only the dashboard shell, inventory aggregate, reporting summary, scope selector, and loading placeholders. Each HTMX section calls `get_dashboard_section()` and loads only the records and committed snapshots needed by that section.
 
 Examples:
@@ -56,7 +58,7 @@ The `analytics.materialize` policy includes both dashboard and full-page alert d
 
 ## Styling and workspace composition
 
-The Kubernetes Operations Dashboard is the reference implementation for `docs/design/patterns/OPERATIONAL_DASHBOARD.md` v1.1.
+The Kubernetes Operations Dashboard is the reference implementation for `docs/design/patterns/OPERATIONAL_DASHBOARD.md` v1.3.
 
 - Hero: `components/page_hero.html`.
 - KPI cards: `components/operational_metric_card.html`.
@@ -90,3 +92,19 @@ Dashboard alert snapshots never render raw provider exceptions, endpoint hostnam
 
 Celery Beat checks enabled Kubernetes, Prometheus, and Alertmanager integrations through the dedicated runtime queue. When an integration transitions from an unhealthy state back to healthy, KAORI queues focused recovery work: Kubernetes recovery triggers a single-cluster inventory sync, while Prometheus or Alertmanager recovery refreshes the dashboard alert snapshot and the Alerts & Anomalies snapshot for each bound cluster. Recovery dispatch is best-effort and cannot turn a successful runtime health observation into a failure.
 
+## Final recheck release evidence
+
+- Static Quality: `scripts/quality_gate.sh --static` plus Ruff, Ruff Format, djLint, Pyright, JavaScript syntax, and Prettier.
+- Contract Test: Kubernetes Dashboard contracts under `tests/contracts/kubernetes/`.
+- Unit Test: `tests/unit/dashboards/test_kubernetes_dashboard_domain.py`.
+- Functional Test: `tests/dashboards/test_kubernetes_dashboard_characterization.py` and snapshot-flow regressions.
+- Integration Test: `tests/integration/dashboards/test_kubernetes_dashboard_repository.py` validates the SQLAlchemy repository boundary independently of provider integrations.
+- Security Regression: `tests/security/dashboards/test_kubernetes_dashboard_security.py`; authorization-order behavior remains covered by the functional characterization suite.
+- Rendering/UI Contract: `tests/rendering/dashboards/test_kubernetes_dashboard_rendering.py` plus shared-component contracts.
+- End-to-End Smoke: `tests/e2e/dashboards/test_kubernetes_dashboard_smoke.py` exercises real Flask routing, session/RBAC, templates, and application shell with persistence/provider dependencies isolated.
+- Final invariant: `scripts/verify_operational_dashboard_standard.py`.
+- Release execution: `scripts/quality_gate.sh` runs all non-E2E layers and the E2E smoke layer explicitly.
+
+### Internal ownership cleanup
+
+The Dashboard owns no compatibility catch-all parameters, orphan Hero integration metadata builder, duplicate byte-format helper, or unused KPI tone API. Internal selected-cluster state is named `selected_cluster`; the term `live` is reserved for actual provider/runtime semantics. User-facing metric and alert copy describes committed worker snapshots rather than implying direct provider queries from the web request.

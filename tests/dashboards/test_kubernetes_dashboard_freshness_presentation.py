@@ -12,7 +12,7 @@ def test_selected_cluster_freshness_uses_specific_status_labels() -> None:
         has_prometheus_data=True,
         has_alertmanager_data=False,
         reporting_snapshot=ReportingSnapshot(generated_reports=3),
-        live_cluster=object(),
+        selected_cluster=object(),
     )
 
     assert [item.label for item in items] == [
@@ -41,7 +41,7 @@ def test_fleet_freshness_distinguishes_scope_from_missing_data() -> None:
         has_prometheus_data=False,
         has_alertmanager_data=False,
         reporting_snapshot=ReportingSnapshot(),
-        live_cluster=None,
+        selected_cluster=None,
     )
 
     assert [item.status for item in items] == [

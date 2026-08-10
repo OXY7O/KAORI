@@ -70,6 +70,19 @@
 {% macro context_icon_classes() -%}
     kaori-hero-tile flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border text-brand-foreground
 {%- endmacro %}
+{% macro context_icon_box(icon) -%}
+    <span class="{{ context_icon_classes() }}" aria-hidden="true">
+        <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
+    </span>
+{%- endmacro %}
+{% macro context_action_icon_box(icon, href, aria_label, title=None) -%}
+    <a href="{{ href }}"
+       class="{{ context_icon_classes() }} transition hover:border-white/50 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-kaori-primary"
+       aria-label="{{ aria_label }}"
+       title="{{ title or aria_label }}">
+        <i data-lucide="{{ icon }}" class="h-5 w-5" aria-hidden="true"></i>
+    </a>
+{%- endmacro %}
 {% macro context_metric_card_classes() -%}
     kaori-hero-tile rounded-lg border px-3 py-2.5
 {%- endmacro %}
@@ -94,9 +107,25 @@
             <p class="{{ context_panel_eyebrow_classes() }}">{{ eyebrow_label }}</p>
             <h2 class="{{ context_panel_title_classes() }}">{{ title }}</h2>
         </div>
-        <span class="{{ context_icon_classes() }}" aria-hidden="true">
-            <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
-        </span>
+        {{ context_icon_box(icon) }}
+    </div>
+{%- endmacro %}
+{% macro context_header_action(eyebrow_label, title, icon, href, aria_label) -%}
+    <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0">
+            <p class="{{ context_panel_eyebrow_classes() }}">{{ eyebrow_label }}</p>
+            <h2 class="{{ context_panel_title_classes() }}">{{ title }}</h2>
+        </div>
+        {{ context_action_icon_box(icon, href, aria_label) }}
+    </div>
+{%- endmacro %}
+{% macro context_header_status(eyebrow_label, title, status_label, status_tone='info') -%}
+    <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0">
+            <p class="{{ context_panel_eyebrow_classes() }}">{{ eyebrow_label }}</p>
+            <h2 class="{{ context_panel_title_classes() }}">{{ title }}</h2>
+        </div>
+        {{ context_status_badge(status_label, status_tone) }}
     </div>
 {%- endmacro %}
 {% macro context_actions_classes(columns=2) -%}

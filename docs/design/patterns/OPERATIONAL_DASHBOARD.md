@@ -1,4 +1,4 @@
-# KAORI Operational Dashboard Pattern v1.1
+# KAORI Operational Dashboard Pattern v1.3
 
 **Status:** Locked reference pattern
 **Reference implementation:** Kubernetes Operations Dashboard
@@ -34,7 +34,7 @@ Tab Style 1 — Integrated Workspace Tabs
 
 ## Visual contract
 
-- Use `components/page_hero.html` for the page Hero.
+- Use `components/page_hero.html` for the page Hero. The Kubernetes reference uses the canonical **Context Icon Box** in the Hero right-side context header; do not invent a fourth Hero accessory type.
 - Use `components/operational_metric_card.html` for the KPI grid.
 - Use `components/workspace_tabs.html` with semantic key `integrated-workspace`.
 - Use `components/operational_section_card.html` for repeated section shells.
@@ -65,6 +65,14 @@ The Hero establishes identity and readiness. The Operational Signal Overview own
 - Detailed capacity, forecast, consumer, and alert signals require a selected cluster.
 - UI copy must use `snapshot`, `committed`, `available`, or `detailed signals`; it must not imply that the page performs live provider queries.
 - Reporting guidance must remain format-neutral because Analytics supports PDF/CSV and Inventory supports XLSX/CSV.
+
+## Request authorization contract
+
+- Dashboard page and lazy-section views require `dashboard.view`.
+- Authorization must complete before clusterless onboarding, dependency blockers, or dashboard data access.
+- A protected lazy section must not return an authorization-sensitive response from Blueprint `before_request`; clusterless rendering belongs inside the decorated view.
+- Unknown section identifiers return `404` before cluster readiness checks or data reads.
+- Unauthorized requests must not probe cluster readiness, query dashboard repositories, or render onboarding state.
 
 ## Request and loading contract
 
@@ -115,6 +123,18 @@ Do not use:
 - `AlertManager`
 - generic reporting guidance that assumes every artifact is PDF
 
+## Maintainability and performance contract
+
+- Dashboard web code owns no provider clients, compatibility catch-all arguments, orphan public exports, or unused presentation fields.
+- Internal naming must distinguish selected database scope from actual live/provider state.
+- The overview shell does not read analytics snapshots; heavy evidence loads through lazy sections.
+- Cluster Health paginates before inventory and committed-snapshot reads, so work is bounded to the visible page (`5/10/25/50`) rather than the complete cluster fleet.
+- Empty snapshot messaging must describe committed worker evidence; wording such as `Prometheus returned ...` is prohibited in the web presentation because it implies a direct request-time provider call.
+
+## Layered release evidence
+
+The reference Dashboard must keep permanent evidence for Static Quality, Contract, Unit, Functional, Integration, Security Regression, Rendering/UI Contract, and End-to-End Smoke. `scripts/verify_feature_test_coverage.py` protects the committed modules, while `scripts/quality_gate.sh` executes the same gates locally and in CI.
+
 ## Change control
 
 The reference dashboard may evolve only when the change improves a reusable KAORI pattern. A visual change must update, in the same commit:
@@ -125,10 +145,13 @@ The reference dashboard may evolve only when the change improves a reusable KAOR
 4. `scripts/verify_operational_dashboard_standard.py`;
 5. dashboard contract tests;
 6. the latest alignment audit when the decision is material.
+7. behavioral characterization when authorization, request ordering, or failure isolation changes.
 
 Run:
 
 ```bash
 python3 scripts/verify_operational_dashboard_standard.py
+python3 -m pytest -q tests/dashboards/test_kubernetes_dashboard_characterization.py
+python3 -m pytest -q tests/dashboards/test_kubernetes_dashboard_snapshot_flow.py
 python3 -m pytest -q tests/contracts/kubernetes/test_operations_dashboard_styling_guide_contract.py
 ```

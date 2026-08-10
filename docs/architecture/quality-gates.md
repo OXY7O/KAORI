@@ -36,7 +36,7 @@ This gate performs, in order:
 12. Code-health debt-ceiling validation.
 13. Alembic revision-graph validation.
 14. Test location and marker-taxonomy validation.
-15. Inventory and Analytics characterization-test coverage validation.
+15. Reviewed-domain release-test coverage validation across Unit, Functional, Integration, Security, Rendering/UI, and E2E evidence.
 16. Jinja syntax, reusable UI boundary, and inline-debt validation.
 17. Architecture and migration contract tests.
 
@@ -46,19 +46,20 @@ This gate performs, in order:
 bash scripts/quality_gate.sh --tests
 ```
 
-The broad test run executes every permanent test except the temporary `debug` category:
+The broad test run executes every permanent non-E2E test except temporary diagnostics:
 
 ```bash
-pytest -q -m 'not debug'
+pytest -q -m 'not debug and not e2e'
 ```
 
-Inventory and Analytics foundations are then invoked explicitly:
+Reviewed domain characterization suites that actually exist are invoked explicitly, and the critical smoke layer runs separately:
 
 ```bash
-pytest -q tests/analytics tests/inventory tests/kubernetes -m functional
+pytest -q tests/welcome tests/dashboards tests/analytics tests/inventory tests/kubernetes -m functional
+pytest -q tests/e2e -m e2e
 ```
 
-The explicit invocation prevents environment-level marker configuration or `PYTEST_ADDOPTS` from silently deselecting behavior-preservation suites.
+Separating E2E keeps the smoke boundary visible in CI while avoiding duplicate execution in the broad test run. E2E smoke is deterministic by default: it exercises real Flask routing/session/template/application-shell composition while isolating external persistence/provider dependencies unless the test explicitly provisions them. PostgreSQL, Redis, S3, Kubernetes, Prometheus, and Alertmanager semantics belong to Integration tests. Explicit domain characterization protects core behavioral evidence from environment-level marker configuration or `PYTEST_ADDOPTS`. `scripts/verify_feature_test_coverage.py` must never list planned/nonexistent tests; add a domain requirement only when that evidence is committed during its final recheck.
 
 ### Frontend Gate
 
@@ -79,16 +80,22 @@ Runtime CDN dependencies remain prohibited.
 
 ## Test Taxonomy
 
-One hook in `tests/conftest.py` owns path-based marker assignment:
+One hook in `tests/conftest.py` owns path-based marker assignment. The release strategy is intentionally layered:
 
-| Location | Marker | Release role |
-| --- | --- | --- |
-| `tests/<domain>/` | `functional` | User-visible, operational, security, and failure behavior |
-| `tests/contracts/` | `contract` | Architecture ownership and retired boundaries |
-| `tests/migrations/` | `migration` | Upgrade, downgrade, data backfill, and graph behavior |
-| `tests/debug/` | `debug` | Temporary reproduction only; excluded from release |
+| Layer | Location / command | Marker | Release role |
+| --- | --- | --- | --- |
+| Static Quality | `quality_gate.sh --static` | n/a | Syntax, lint, format, type, architecture, migration graph, UI/source hygiene |
+| Contract Test | `tests/contracts/` | `contract` | Durable ownership and invariant evidence |
+| Unit Test | `tests/unit/` | `unit` | Isolated deterministic logic |
+| Functional Test | `tests/<domain>/` | `functional` | User-visible/domain behavior |
+| Integration Test | `tests/integration/` | `integration` | Component/provider/infrastructure collaboration |
+| Security Regression | `tests/security/` | `security` | AuthN/AuthZ/disclosure/input/privileged-operation regression |
+| Rendering/UI Contract | `tests/rendering/` | `rendering` | Jinja/frontend/document/UI composition |
+| End-to-End Smoke | `tests/e2e/` | `e2e` | Critical real-application smoke journeys |
+| Migration Test | `tests/migrations/` | `migration` | Upgrade/downgrade/data transformation |
+| Debug | `tests/debug/` | `debug` | Temporary reproduction only; excluded |
 
-Nested `conftest.py` marker hooks are prohibited. A defect may begin with a debug reproduction, but it must finish with a permanent regression test in the owning domain before the debug test is removed.
+Nested `conftest.py` marker hooks are prohibited. A defect may begin with a debug reproduction, but it must finish with permanent evidence in the correct layer before the debug test is removed. A final-recheck page may use `N/A` for Unit or Integration only with a written architecture justification.
 
 ## Import and Initialization Safety
 
@@ -197,10 +204,11 @@ Every logical change must finish with:
 
 ```text
 code
-→ permanent functional tests
-→ relevant contract or migration tests
-→ documentation
-→ static, functional, and frontend gates
+→ smallest applicable Unit/Functional/Integration/Security regression tests
+→ relevant Contract/Rendering/Migration evidence
+→ critical E2E smoke when the user journey or application shell changes
+→ documentation and changelog review
+→ static, test, and frontend gates
 → git diff review
 → dedicated Git commit
 ```
