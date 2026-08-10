@@ -588,9 +588,12 @@ def get_reveal_request_for_user(
     _expire_stale_requests()
     query = SecretRevealRequest.query.filter_by(id=request_id)
     if lock_for_update:
-        # Serialize one-time consumption in PostgreSQL. The row lock is held until
-        # the successful reveal marks the request as revealed and commits.
-        query = query.with_for_update()
+        # Serialize one-time consumption on the request row only. SecretRevealRequest
+        # owns joined relationships (including nullable approver/inventory joins); a
+        # broad FOR UPDATE over those OUTER JOINs is rejected by PostgreSQL. The reveal
+        # path only needs scalar request identity before loading its live Cluster
+        # explicitly, so suppress eager joins and lock the request table itself.
+        query = query.enable_eagerloads(False).with_for_update(of=SecretRevealRequest)
     record = query.first()
     if record is None:
         raise ValueError('Secret reveal request was not found.')

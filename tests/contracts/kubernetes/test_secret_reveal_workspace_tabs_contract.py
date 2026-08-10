@@ -48,10 +48,10 @@ def test_reveal_tabs_switch_client_side_with_server_navigation_fallback() -> Non
     assert 'data-kaori-tab-fallback="server-navigation"' in tabs
     assert "reveal_view='new'" in page
     assert "reveal_view='mine'" in page
-    assert "x-show=\"activeTab === 'new'\"" in page
-    assert "x-show=\"activeTab === 'mine'\"" in page
-    assert "x-bind:hidden=\"activeTab !== 'new'\"" in page
-    assert "x-bind:hidden=\"activeTab !== 'mine'\"" in page
+    assert 'x-show="activeTab === \'new\'"' in page
+    assert 'x-show="activeTab === \'mine\'"' in page
+    assert 'x-bind:hidden="activeTab !== \'new\'"' in page
+    assert 'x-bind:hidden="activeTab !== \'mine\'"' in page
 
 
 def test_reveal_safety_contract_is_collapsed_by_default() -> None:
@@ -75,11 +75,11 @@ def test_reveal_polling_only_runs_for_the_active_replaceable_panel() -> None:
     request_status = read('app/templates/kubernetes_operations/secrets/_reveal_request_status.html')
     approvals = read('app/templates/kubernetes_operations/secrets/_reveal_pending_approvals.html')
 
-    assert "const activePanel = (root) =>" in script
+    assert 'const activePanel = (root) =>' in script
     assert '!panel.hidden' in script
     assert "querySelector('[data-reveal-poll-owner]')" in script
     assert 'window.setInterval' in script
-    assert "secret-reveal:tab-changed" in script
+    assert 'secret-reveal:tab-changed' in script
     assert 'data-reveal-poll-owner' in request_status
     assert 'data-reveal-poll-owner' in approvals
     assert 'hx-trigger="every 4s"' not in request_status

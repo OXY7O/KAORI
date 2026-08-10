@@ -5,7 +5,6 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 ## [Unreleased]
 - Fixed Protected Reveal tabs so each peer workspace retains a server-navigation fallback while client-side switching remains progressively enhanced.
 ### Changed
-- Simplified Protected Secret Reveal tabs onto the canonical Alpine Integrated Workspace Tabs controller so normal tab changes remain instant without page reload; server links remain fallback-only, and Reveal Safety Contract now starts collapsed.
 - Standardized ConfigMap/Secret CRUD target-field vertical alignment through a shared form-field primitive, restored Secret Replace actions inside the HTMX-refreshed target content, and repaired the Design System final-recheck Engineering Standard index.
 
 - Standardized reviewed Kubernetes Operations task pages on the shared **Form + Right Context** pattern: ConfigMap Create/Update/Delete, Secret Create/Replace/Delete, and Protected Reveal `New Request` now reuse one 8/12 main-task + 4/12 contextual-guidance geometry derived from the proven Integration registration forms. TLS workflows and Reveal registries retain their dedicated reviewed layouts.
@@ -44,6 +43,9 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Removed unused Inventory `format_byte_count`, `format_gib`, and `_split_inventory_values` helpers plus the stale empty Inventory partial README; no compatibility wrapper is retained.
 
 ### Fixed
+- Harden Protected Secret Reveal cleanup by restoring shared Secret payload scrubbing imports, make form-field contracts formatter-neutral, and normalize Reveal templates against the canonical Ruff/djLint output.
+
+- Fixed Protected Reveal one-time consumption on PostgreSQL by suppressing joined eager relationships on the locking query and locking only the `secret_reveal_requests` row; aligned the My Requests step-up password and Verify Session action on the shared form-field baseline.
 
 - Stabilized Protected Secret Reveal refresh/tab ownership so the server-rendered active panel remains authoritative until the client validates a complete tab/panel pair; URL view state now outranks stale hash anchors, and the Platform Operations lock follows the current Form + Right Context contract instead of the retired generic context rail.
 - Restored authenticated top-navbar Quick Actions, Notification Deck, and Account interactions by moving the malformed inline Alpine state program into the syntax-checked `kaoriNavbar` static controller.

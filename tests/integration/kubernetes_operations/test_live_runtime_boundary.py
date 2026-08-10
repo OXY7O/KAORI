@@ -33,3 +33,26 @@ def test_configmap_runtime_wraps_registered_client_with_cluster_tls_policy(
 
     assert runtime._call(cluster, 'integration test', factory, callback) == 'ok'
     assert events == [('factory', 'cluster-a'), ('callback', True)]
+
+
+def test_secret_reveal_lock_query_targets_only_request_table() -> None:
+    from sqlalchemy.dialects import postgresql
+    from sqlalchemy.orm import Session
+
+    from app.models import SecretRevealRequest
+
+    session = Session()
+    try:
+        statement = (
+            session.query(SecretRevealRequest)
+            .filter_by(id='request-id')
+            .enable_eagerloads(False)
+            .with_for_update(of=SecretRevealRequest)
+            .statement
+        )
+        compiled = str(statement.compile(dialect=postgresql.dialect()))
+    finally:
+        session.close()
+
+    assert 'LEFT OUTER JOIN' not in compiled
+    assert 'FOR UPDATE OF secret_reveal_requests' in compiled

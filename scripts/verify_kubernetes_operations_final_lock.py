@@ -186,6 +186,7 @@ def main() -> int:
     reveal_tabs = read('app/templates/components/workspace_tabs.html')
     reveal_script = read('app/static/js/secret_reveal_workspace.js')
     reveal_routes = read('app/kubernetes_operations/secrets/reveal_routes.py')
+    reveal_service = read('app/kubernetes_operations/secrets/reveal_service.py')
     reveal_step_up = read('app/templates/kubernetes_operations/secrets/_reveal_step_up.html')
     for token in (
         'components/workspace_tabs.html',
@@ -209,10 +210,10 @@ def main() -> int:
         errors,
     )
     for token in (
-        "x-show=\"activeTab === 'new'\"",
-        "x-show=\"activeTab === 'mine'\"",
-        "x-bind:hidden=\"activeTab !== 'new'\"",
-        "x-bind:hidden=\"activeTab !== 'mine'\"",
+        'x-show="activeTab === \'new\'"',
+        'x-show="activeTab === \'mine\'"',
+        'x-bind:hidden="activeTab !== \'new\'"',
+        'x-bind:hidden="activeTab !== \'mine\'"',
         '#my-secret-reveal-requests',
         '#pending-secret-reveal-approvals',
     ):
@@ -232,7 +233,9 @@ def main() -> int:
     ):
         require(token in reveal_script, f'Protected Reveal active-panel polling contract missing: {token}', errors)
     require(
-        'viewState' not in reveal_script and 'selectTab' not in reveal_script and 'event.preventDefault' not in reveal_script,
+        'viewState' not in reveal_script
+        and 'selectTab' not in reveal_script
+        and 'event.preventDefault' not in reveal_script,
         'Protected Reveal polling script must not duplicate Integrated Workspace Tab navigation ownership.',
         errors,
     )
@@ -251,6 +254,21 @@ def main() -> int:
     require(
         'Reveal Session Step-Up' in reveal_step_up and 'approved request is ready to be consumed' in reveal_step_up,
         'Protected Reveal step-up must remain in the approved-request consumption flow.',
+        errors,
+    )
+    require(
+        'query.enable_eagerloads(False).with_for_update(of=SecretRevealRequest)' in reveal_service
+        and 'query = query.with_for_update()' not in reveal_service,
+        'Protected Reveal one-time consumption must lock only the SecretRevealRequest row without joined eager loads.',
+        errors,
+    )
+    require(
+        'components/form_field.html' in reveal_step_up
+        and 'sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end' in reveal_step_up
+        and 'form_field.label_row(' in reveal_step_up
+        and 'Current KAORI Password' in reveal_step_up
+        and 'class="{{ form_field.input_classes() }}"' in reveal_step_up,
+        'Protected Reveal step-up password and Verify Session action must share the canonical form-field baseline.',
         errors,
     )
     new_request_panel = reveal_page.split('data-secret-reveal-panel="new"', 1)[1].split(
