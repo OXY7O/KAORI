@@ -74,7 +74,9 @@
     const schedulePolling = (panel) => {
         if (pollTimer) window.clearInterval(pollTimer)
         pollTimer = null
-        if (!panel?.querySelector?.('[data-reveal-poll-owner]') && !panel?.matches?.('[data-reveal-poll-owner]')) return
+        if (!panel?.querySelector?.('[data-reveal-poll-owner]') && !panel?.matches?.('[data-reveal-poll-owner]')) {
+            return
+        }
         pollTimer = window.setInterval(() => pollActivePanel(panel), 4000)
     }
 
@@ -83,9 +85,6 @@
         const activeTab = state.tabByKey.get(key)
         const activePanel = state.panelByKey.get(key)
 
-        // Never hide the server-rendered panel unless the requested view has a
-        // complete tab + panel pair. This keeps refresh/deep-link rendering stable
-        // even when stale markup or a partial deployment temporarily drifts.
         if (!(activeTab instanceof HTMLElement) || !(activePanel instanceof HTMLElement)) {
             return false
         }
@@ -112,27 +111,46 @@
         return true
     }
 
+    const tabFromEvent = (root, event) => {
+        if (!(event.target instanceof Element)) return null
+        const tab = event.target.closest(tabSelector)
+        return tab && root.contains(tab) ? tab : null
+    }
+
     const initialise = (root) => {
         if (!(root instanceof HTMLElement) || root.dataset.revealTabsReady === 'true') return
-        root.dataset.revealTabsReady = 'true'
-        const state = viewState(root)
+        const initialState = viewState(root)
+        if (!initialState.keys.length) return
 
-        state.tabs.forEach((tab, index) => {
-            tab.addEventListener('click', () => {
-                const key = tab.dataset.secretRevealTab
-                if (key) selectTab(root, key, false, true)
-            })
-            tab.addEventListener('keydown', (event) => {
-                if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
-                event.preventDefault()
-                let nextIndex = index
-                if (event.key === 'ArrowRight') nextIndex = (index + 1) % state.tabs.length
-                if (event.key === 'ArrowLeft') nextIndex = (index - 1 + state.tabs.length) % state.tabs.length
-                if (event.key === 'Home') nextIndex = 0
-                if (event.key === 'End') nextIndex = state.tabs.length - 1
-                const key = state.tabs[nextIndex]?.dataset.secretRevealTab
-                if (key) selectTab(root, key, true, true)
-            })
+        root.dataset.revealTabsReady = 'true'
+        root.addEventListener('click', (event) => {
+            const tab = tabFromEvent(root, event)
+            if (!tab) return
+            const key = tab.dataset.secretRevealTab
+            if (!key) return
+
+            // Only suppress native navigation after the client controller proves
+            // that the requested tab/panel pair is complete. Otherwise the real
+            // href remains a safe server-rendered fallback instead of a dead tab.
+            if (selectTab(root, key, false, true)) event.preventDefault()
+        })
+
+        root.addEventListener('keydown', (event) => {
+            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+            const tab = tabFromEvent(root, event)
+            if (!tab) return
+            const state = viewState(root)
+            const index = state.tabs.indexOf(tab)
+            if (index < 0) return
+
+            event.preventDefault()
+            let nextIndex = index
+            if (event.key === 'ArrowRight') nextIndex = (index + 1) % state.tabs.length
+            if (event.key === 'ArrowLeft') nextIndex = (index - 1 + state.tabs.length) % state.tabs.length
+            if (event.key === 'Home') nextIndex = 0
+            if (event.key === 'End') nextIndex = state.tabs.length - 1
+            const key = state.tabs[nextIndex]?.dataset.secretRevealTab
+            if (key) selectTab(root, key, true, true)
         })
 
         const initialKey = resolveTabFromLocation(root)
@@ -150,6 +168,12 @@
             const key = resolveTabFromLocation(root)
             if (key) selectTab(root, key)
             revealDeepLink()
+        })
+    })
+    window.addEventListener('popstate', () => {
+        document.querySelectorAll(rootSelector).forEach((root) => {
+            const key = resolveTabFromLocation(root)
+            if (key) selectTab(root, key)
         })
     })
     document.addEventListener('htmx:load', (event) => boot(event.detail?.elt || document))

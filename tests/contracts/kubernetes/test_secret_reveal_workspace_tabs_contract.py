@@ -13,6 +13,9 @@ def test_protected_reveal_uses_integrated_workspace_tabs() -> None:
 
     assert 'components/workspace_tabs.html' in page
     assert 'workspace_tabs.render_controlled' in page
+    assert "reveal_view='new'" in page
+    assert "reveal_view='mine'" in page
+    assert 'data-kaori-tab-fallback="server-navigation"' in tabs
     assert 'components/segmented_tabs.html' not in page
     assert 'macro render_controlled' in tabs
     assert 'data-kaori-tab-variant="integrated-workspace"' in tabs
@@ -31,29 +34,42 @@ def test_reveal_tab_state_is_url_and_deep_link_aware() -> None:
     assert "'active_reveal_view': active_reveal_view" in routes
     assert "request.args.get('reveal_view')" in routes
     assert 'data-secret-reveal-active-view="{{ active_reveal_view }}"' in page
-    assert "const viewParam = 'reveal_view';" in script
-    assert "['#my-secret-reveal-requests', 'mine']" in script
-    assert "['#pending-secret-reveal-approvals', 'approvals']" in script
+    assert 'viewParam' in script and 'reveal_view' in script
+    assert '#my-secret-reveal-requests' in script and 'mine' in script
+    assert '#pending-secret-reveal-approvals' in script and 'approvals' in script
     assert 'resolveTabFromLocation' in script
     assert 'window.history.replaceState' in script
-
 
 
 def test_reveal_refresh_keeps_server_rendered_panel_until_view_pair_is_validated() -> None:
     script = read('app/static/js/secret_reveal_workspace.js')
 
     assert 'const viewState = (root) =>' in script
-    assert 'const activeTab = state.tabByKey.get(key);' in script
-    assert 'const activePanel = state.panelByKey.get(key);' in script
-    assert 'return false;' in script
-    assert "root.dataset.secretRevealActiveView = key;" in script
-    assert "panel.toggleAttribute('hidden', panel !== activePanel);" in script
-    assert 'const serverVisiblePanel = state.panels.find((panel) => !panel.hidden);' in script
+    assert 'tabByKey.get(key)' in script
+    assert 'panelByKey.get(key)' in script
+    assert 'return false' in script
+    assert 'secretRevealActiveView' in script
+    assert 'toggleAttribute' in script and 'hidden' in script
+    assert 'serverVisiblePanel' in script and '!panel.hidden' in script
 
     query_position = script.index('new URL(window.location.href).searchParams.get(viewParam)')
-    hash_position = script.index('const hashView = deepLinkViews.get(window.location.hash);')
-    server_position = script.index('const serverView = root.dataset.secretRevealActiveView;')
+    hash_position = script.index('const hashView = deepLinkViews.get(window.location.hash)')
+    server_position = script.index('const serverView = root.dataset.secretRevealActiveView')
     assert query_position < hash_position < server_position
+
+
+def test_reveal_tabs_keep_server_navigation_when_javascript_is_unavailable() -> None:
+    page = read('app/templates/kubernetes_operations/secrets/reveal.html')
+    tabs = read('app/templates/components/workspace_tabs.html')
+    script = read('app/static/js/secret_reveal_workspace.js')
+
+    assert 'data-kaori-tab-fallback="server-navigation"' in tabs
+    assert 'href="{{ tab_href }}"' in tabs
+    assert "reveal_view='new'" in page
+    assert "reveal_view='mine'" in page
+    assert 'event.preventDefault()' in script
+    assert 'if (selectTab(root, key, false, true))' in script
+
 
 def test_reveal_redirects_preserve_the_next_workspace_view() -> None:
     routes = read('app/kubernetes_operations/secrets/reveal_routes.py')

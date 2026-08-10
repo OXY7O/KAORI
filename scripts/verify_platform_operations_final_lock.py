@@ -40,11 +40,21 @@ AUDIT_V2_0_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK
 AUDIT_V2_1_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V2_1_AUDIT_2026_08_08.md'
 AUDIT_V2_2_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V2_2_AUDIT_2026_08_08.md'
 OVERVIEW_AUDIT_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_OVERVIEW_FINAL_LOCK_AUDIT_2026_08_08.md'
-OVERVIEW_AUDIT_V1_1_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_OVERVIEW_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md'
-DATA_LIFECYCLE_AUDIT_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_AUDIT_2026_08_08.md'
-DATA_LIFECYCLE_AUDIT_V1_1_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md'
-DATA_LIFECYCLE_AUDIT_V1_2_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_2_AUDIT_2026_08_08.md'
-DATA_LIFECYCLE_AUDIT_V1_3_DOC = ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_3_AUDIT_2026_08_08.md'
+OVERVIEW_AUDIT_V1_1_DOC = (
+    ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_OVERVIEW_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md'
+)
+DATA_LIFECYCLE_AUDIT_DOC = (
+    ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_AUDIT_2026_08_08.md'
+)
+DATA_LIFECYCLE_AUDIT_V1_1_DOC = (
+    ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md'
+)
+DATA_LIFECYCLE_AUDIT_V1_2_DOC = (
+    ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_2_AUDIT_2026_08_08.md'
+)
+DATA_LIFECYCLE_AUDIT_V1_3_DOC = (
+    ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_DATA_LIFECYCLE_FINAL_LOCK_V1_3_AUDIT_2026_08_08.md'
+)
 QUALITY_GATE = ROOT / 'scripts/quality_gate.sh'
 CLEANUP = ROOT / 'scripts/cleanup_obsolete_files.sh'
 CORE_UI_LOCK = ROOT / 'scripts/verify_core_workspace_ui_lock.py'
@@ -88,7 +98,46 @@ def template_files() -> list[Path]:
 def main() -> int:
     errors: list[str] = []
 
-    for doc in (LOCK_DOC, LOCK_V1_1_DOC, LOCK_V1_2_DOC, LOCK_V1_3_DOC, LOCK_V1_4_DOC, LOCK_V1_5_DOC, LOCK_V1_6_DOC, LOCK_V1_7_DOC, LOCK_V1_8_DOC, LOCK_V1_9_DOC, LOCK_V2_0_DOC, LOCK_V2_1_DOC, LOCK_V2_2_DOC, OVERVIEW_LOCK_DOC, OVERVIEW_LOCK_V1_1_DOC, DATA_LIFECYCLE_LOCK_DOC, DATA_LIFECYCLE_LOCK_V1_1_DOC, DATA_LIFECYCLE_LOCK_V1_2_DOC, DATA_LIFECYCLE_LOCK_V1_3_DOC, AUDIT_DOC, AUDIT_V1_1_DOC, AUDIT_V1_2_DOC, AUDIT_V1_3_DOC, AUDIT_V1_4_DOC, AUDIT_V1_5_DOC, AUDIT_V1_6_DOC, AUDIT_V1_7_DOC, AUDIT_V1_8_DOC, AUDIT_V1_9_DOC, AUDIT_V2_0_DOC, AUDIT_V2_1_DOC, AUDIT_V2_2_DOC, OVERVIEW_AUDIT_DOC, OVERVIEW_AUDIT_V1_1_DOC, DATA_LIFECYCLE_AUDIT_DOC, DATA_LIFECYCLE_AUDIT_V1_1_DOC, DATA_LIFECYCLE_AUDIT_V1_2_DOC, DATA_LIFECYCLE_AUDIT_V1_3_DOC):
+    for doc in (
+        LOCK_DOC,
+        LOCK_V1_1_DOC,
+        LOCK_V1_2_DOC,
+        LOCK_V1_3_DOC,
+        LOCK_V1_4_DOC,
+        LOCK_V1_5_DOC,
+        LOCK_V1_6_DOC,
+        LOCK_V1_7_DOC,
+        LOCK_V1_8_DOC,
+        LOCK_V1_9_DOC,
+        LOCK_V2_0_DOC,
+        LOCK_V2_1_DOC,
+        LOCK_V2_2_DOC,
+        OVERVIEW_LOCK_DOC,
+        OVERVIEW_LOCK_V1_1_DOC,
+        DATA_LIFECYCLE_LOCK_DOC,
+        DATA_LIFECYCLE_LOCK_V1_1_DOC,
+        DATA_LIFECYCLE_LOCK_V1_2_DOC,
+        DATA_LIFECYCLE_LOCK_V1_3_DOC,
+        AUDIT_DOC,
+        AUDIT_V1_1_DOC,
+        AUDIT_V1_2_DOC,
+        AUDIT_V1_3_DOC,
+        AUDIT_V1_4_DOC,
+        AUDIT_V1_5_DOC,
+        AUDIT_V1_6_DOC,
+        AUDIT_V1_7_DOC,
+        AUDIT_V1_8_DOC,
+        AUDIT_V1_9_DOC,
+        AUDIT_V2_0_DOC,
+        AUDIT_V2_1_DOC,
+        AUDIT_V2_2_DOC,
+        OVERVIEW_AUDIT_DOC,
+        OVERVIEW_AUDIT_V1_1_DOC,
+        DATA_LIFECYCLE_AUDIT_DOC,
+        DATA_LIFECYCLE_AUDIT_V1_1_DOC,
+        DATA_LIFECYCLE_AUDIT_V1_2_DOC,
+        DATA_LIFECYCLE_AUDIT_V1_3_DOC,
+    ):
         if not doc.exists():
             errors.append(f'missing lock artifact: {doc.relative_to(ROOT).as_posix()}')
 
@@ -131,7 +180,7 @@ def main() -> int:
         if forbidden in overview_index:
             errors.append(f'Platform Operations Overview must remain read-only and tab-free: {forbidden}')
     for required in (
-        "@any_permission_required(",
+        '@any_permission_required(',
         "'jobs.view'",
         "'platform_operations.view_data_lifecycle'",
         "'kubernetes_secrets.manage_reveal'",
@@ -146,15 +195,29 @@ def main() -> int:
     ):
         if required not in overview_presentation:
             errors.append(f'Platform Operations Overview domain projection missing: {required}')
-    for forbidden in ('inspect_celery_topology', 'get_queue_readiness', 'build_storage_profile', 'preview_retention', 'list_namespace', 'read_namespace'):
+    for forbidden in (
+        'inspect_celery_topology',
+        'get_queue_readiness',
+        'build_storage_profile',
+        'preview_retention',
+        'list_namespace',
+        'read_namespace',
+    ):
         if forbidden in overview_presentation:
             errors.append(f'Platform Operations Overview must not perform external/heavy probes: {forbidden}')
-    if "bp.register_blueprint(overview_bp)" not in platform_init:
+    if 'bp.register_blueprint(overview_bp)' not in platform_init:
         errors.append('Platform Operations Overview blueprint must own the /platform-operations/ landing route')
     if "url_for('platform_operations.overview.index')" not in platform_menu:
         errors.append('Platform Operations navigation must expose the Overview landing page')
-    if not (platform_menu.index('Overview') < platform_menu.index('Jobs &amp; Executions') < platform_menu.index('Data Lifecycle') < platform_menu.index('K8s Administration')):
-        errors.append('Platform Operations navigation order must be Overview → Jobs & Executions → Data Lifecycle → K8s Administration')
+    if not (
+        platform_menu.index('Overview')
+        < platform_menu.index('Jobs &amp; Executions')
+        < platform_menu.index('Data Lifecycle')
+        < platform_menu.index('K8s Administration')
+    ):
+        errors.append(
+            'Platform Operations navigation order must be Overview → Jobs & Executions → Data Lifecycle → K8s Administration'
+        )
 
     k8s_index = read('app/templates/platform_operations/kubernetes/index.html')
     if 'components/framed_workspace_tabs.html' not in k8s_index or 'framed_workspace_tabs.render(' not in k8s_index:
@@ -162,7 +225,12 @@ def main() -> int:
     for key in ('overview', 'secret-reveal'):
         if key not in k8s_index:
             errors.append(f'Kubernetes Administration tab missing: {key}')
-    for keyboard in ('@keydown.arrow-right.prevent', '@keydown.arrow-left.prevent', '@keydown.home.prevent', '@keydown.end.prevent'):
+    for keyboard in (
+        '@keydown.arrow-right.prevent',
+        '@keydown.arrow-left.prevent',
+        '@keydown.home.prevent',
+        '@keydown.end.prevent',
+    ):
         shared = read('app/templates/components/framed_workspace_tabs.html')
         if keyboard not in shared:
             errors.append(f'Framed Workspace Tabs lost keyboard contract: {keyboard}')
@@ -172,7 +240,10 @@ def main() -> int:
         errors.append('Jobs & Executions parent workspace must use shared Framed Workspace Tabs')
 
     data_lifecycle_index = read('app/templates/platform_operations/data_lifecycle/index.html')
-    if 'components/framed_workspace_tabs.html' not in data_lifecycle_index or 'framed_workspace_tabs.render(' not in data_lifecycle_index:
+    if (
+        'components/framed_workspace_tabs.html' not in data_lifecycle_index
+        or 'framed_workspace_tabs.render(' not in data_lifecycle_index
+    ):
         errors.append('Data Lifecycle must use shared Framed Workspace Tabs')
     if 'Planned Domains' in data_lifecycle_index:
         errors.append('Data Lifecycle must expose only registered archive adapters, not Planned Domains placeholders')
@@ -204,12 +275,18 @@ def main() -> int:
         source = analytics_registry if 'AnalyticsSnapshotArchiveDomain' in required else analytics_domain
         if required not in source:
             errors.append(f'Platform Operations Analytics Snapshot lifecycle lock missing: {required}')
-    if "'analytics_snapshot': 'Analytics Snapshots'" not in retention_presentation or 'Serve Window Protection' not in data_lifecycle_workspace:
+    if (
+        "'analytics_snapshot': 'Analytics Snapshots'" not in retention_presentation
+        or 'Serve Window Protection' not in data_lifecycle_workspace
+    ):
         errors.append('Platform Operations Data Lifecycle must expose Analytics Snapshots and Serve Window Protection')
 
     execution_workspace = read('app/templates/jobs/executions/_workspace.html')
     shared_tabs = read('app/templates/components/workspace_tabs.html')
-    if 'components/workspace_tabs.html' not in execution_workspace or 'workspace_tabs.render(' not in execution_workspace:
+    if (
+        'components/workspace_tabs.html' not in execution_workspace
+        or 'workspace_tabs.render(' not in execution_workspace
+    ):
         errors.append('Execution Workspace must use shared Integrated Workspace Tabs')
     if 'id="{{ prefix }}-tab-count-{{ tab_key }}"' not in shared_tabs:
         errors.append('Integrated Workspace Tabs must retain shared optional count badge ownership')
@@ -262,7 +339,13 @@ def main() -> int:
         errors.append('Execution Registry must not reintroduce unfiltered global metric strips')
 
     execution_detail = read('app/templates/jobs/executions/partials/_execution_details.html')
-    for required in ('Execution Identity', 'Scope & Ownership', 'Lifecycle', 'Result & Failure Evidence', 'Result Summary'):
+    for required in (
+        'Execution Identity',
+        'Scope & Ownership',
+        'Lifecycle',
+        'Result & Failure Evidence',
+        'Result Summary',
+    ):
         if required not in execution_detail:
             errors.append(f'Execution detail evidence contract missing: {required}')
     if 'payload_json' in execution_detail:
@@ -273,7 +356,10 @@ def main() -> int:
         if required not in queue_activity:
             errors.append(f'Queue Activity worker-readiness contract missing: {required}')
 
-    if 'Operational Attention' not in jobs_index or 'job_stats.attention + configuration_stats.attention' not in jobs_index:
+    if (
+        'Operational Attention' not in jobs_index
+        or 'job_stats.attention + configuration_stats.attention' not in jobs_index
+    ):
         errors.append('Jobs hero must present combined Operational Attention')
 
     job_routes = read('app/jobs/routes.py')
@@ -296,13 +382,18 @@ def main() -> int:
         'app/templates/jobs/configuration/definitions/_materialization_job.html',
     ):
         source = read(relative)
-        if 'Policy Timeline' not in source or 'overflow-hidden rounded-xl border border-outline-subtle bg-surface-card' not in source:
+        if (
+            'Policy Timeline' not in source
+            or 'overflow-hidden rounded-xl border border-outline-subtle bg-surface-card' not in source
+        ):
             errors.append(f'Job Configuration clear Policy Timeline surface missing: {relative}')
     report_schedule = read('app/templates/jobs/configuration/definitions/report_schedule.html')
     if 'article class="rounded-xl border border-outline-subtle bg-surface-card p-4"' not in report_schedule:
         errors.append('Report delivery-channel cards must use the clear KAORI card surface')
 
-    namespace_table = read('app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html')
+    namespace_table = read(
+        'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html'
+    )
     if 'min-w-[980px]' in namespace_table or '<div class="overflow-x-auto">' in namespace_table:
         errors.append('Namespace Policies must not force desktop horizontal scrolling')
     for width in ('w-[38%]', 'w-[16%]', 'w-[20%]', 'w-[26%]'):
@@ -312,7 +403,10 @@ def main() -> int:
         errors.append('Namespace Policies page-size control must retain shared auto-submit ownership')
 
     secret_workspace = read('app/templates/platform_operations/kubernetes/_secret_reveal_workspace.html')
-    if 'Global Reveal Remains Disabled' not in secret_workspace or 'KUBERNETES_SECRET_REVEAL_ENABLED=true' not in secret_workspace:
+    if (
+        'Global Reveal Remains Disabled' not in secret_workspace
+        or 'KUBERNETES_SECRET_REVEAL_ENABLED=true' not in secret_workspace
+    ):
         errors.append('Secret Reveal global guardrail guidance must remain visible when disabled')
 
     reveal_policy = read('app/kubernetes_operations/secrets/reveal_policy.py')
@@ -343,7 +437,9 @@ def main() -> int:
     if "refresh_namespace='1'" not in kubernetes_routes:
         errors.append('Secret Reveal initial lazy load must explicitly refresh the namespace source')
 
-    namespace_section = read('app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html')
+    namespace_section = read(
+        'app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html'
+    )
     for required in (
         'Live Namespace Source Unavailable',
         'Last Refreshed',
@@ -416,7 +512,11 @@ def main() -> int:
             errors.append(f'Secret Reveal v1.5 cross-workspace authority missing: {required}')
 
     protected_live_service = read('app/kubernetes_operations/secrets/live_service.py')
-    verified_namespace_block = protected_live_service.split('def list_verified_namespaces(', 1)[1].split('def list_live_secrets(', 1)[0] if 'def list_verified_namespaces(' in protected_live_service else ''
+    verified_namespace_block = (
+        protected_live_service.split('def list_verified_namespaces(', 1)[1].split('def list_live_secrets(', 1)[0]
+        if 'def list_verified_namespaces(' in protected_live_service
+        else ''
+    )
     for required in (
         'api.read_namespace(name=namespace)',
         'if status == 404:',
@@ -513,13 +613,21 @@ def main() -> int:
     ):
         if required not in cluster_workspace:
             errors.append(f'Secret Reveal v1.7 administration natural-height contract missing: {required}')
-    for forbidden in ('grid items-stretch gap-4', 'flex h-full flex-col overflow-hidden rounded-2xl', 'grid flex-1 gap-3'):
+    for forbidden in (
+        'grid items-stretch gap-4',
+        'flex h-full flex-col overflow-hidden rounded-2xl',
+        'grid flex-1 gap-3',
+    ):
         if forbidden in cluster_workspace:
             errors.append(f'Secret Reveal v1.7 administration panels must remain content-driven: {forbidden}')
 
     if 'bg-white/70' in secret_workspace:
         errors.append('Secret Reveal administration must not use hardcoded light-only callout surfaces')
-    if 'hover:bg-kaori-soft/40' in namespace_section or 'bg-kaori-soft/70' in namespace_table or 'hover:bg-kaori-soft/40' in namespace_table:
+    if (
+        'hover:bg-kaori-soft/40' in namespace_section
+        or 'bg-kaori-soft/70' in namespace_table
+        or 'hover:bg-kaori-soft/40' in namespace_table
+    ):
         errors.append('Secret Reveal administration tables and refresh controls must remain neutral-first in dark mode')
 
     for relative in OBSOLETE:
@@ -539,11 +647,15 @@ def main() -> int:
 
     style_baseline = json.loads(read('docs/architecture/ui-style-debt-baseline.json')).get('files', {})
     platform_debt = [
-        path for path in style_baseline
+        path
+        for path in style_baseline
         if path.startswith('app/templates/platform_operations/') or path.startswith('app/templates/jobs/')
     ]
     if platform_debt:
-        errors.append('Platform Operations must not carry accepted UI-style debt baseline entries: ' + ', '.join(sorted(platform_debt)))
+        errors.append(
+            'Platform Operations must not carry accepted UI-style debt baseline entries: '
+            + ', '.join(sorted(platform_debt))
+        )
 
     if errors:
         for error in errors:

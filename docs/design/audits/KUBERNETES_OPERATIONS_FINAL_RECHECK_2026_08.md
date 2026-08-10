@@ -164,3 +164,8 @@ The redesign becomes **PASS — LOCKED** only after authoritative devcontainer S
 - Explicit `reveal_view` query state wins over legacy hashes; hash-only deep links are honored only after a complete tab/panel pair is validated, otherwise the server-selected view remains visible.
 - Platform Operations' Secret Reveal v1.7 verifier now accepts the current `form_with_context_rail.html` ownership for the Protected Reveal `New Request` task while retaining the natural-height checks for Platform Operations administration surfaces.
 
+
+
+### Protected Reveal Navigation Resilience
+
+Protected Reveal peer tabs use progressive enhancement: each tab has a canonical `?reveal_view=` server-navigation fallback, and the client controller intercepts navigation only after validating the matching tab/panel pair. This prevents dead tabs when JavaScript is unavailable, stale, or partially deployed.

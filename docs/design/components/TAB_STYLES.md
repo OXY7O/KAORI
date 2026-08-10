@@ -63,3 +63,8 @@ Use Tab Style 3 for local view switching in a visualization, inspector, drawer, 
 Future styles must be added to this registry before implementation. Use a semantic name in addition to the next numeric review label. A vertical navigation model for a dense configuration workspace may justify another style when a real page requires it.
 
 Never name implementation files `tab_style_3.html` or similar. File and component names remain semantic; the numeric label is a review shorthand.
+
+
+### Progressive Enhancement Contract
+
+Controlled Integrated Workspace Tabs used for security-sensitive peer workspaces such as Protected Reveal must retain a server-navigation fallback. The rendered tab owns a real `href` to the same workspace with its server-owned view parameter, while JavaScript may intercept only after a valid tab/panel pair is confirmed. A controller failure must never leave a visible but inert tab.

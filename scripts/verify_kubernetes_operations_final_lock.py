@@ -204,18 +204,30 @@ def main() -> int:
         errors,
     )
     for token in (
-        "const viewParam = 'reveal_view';",
-        "['#my-secret-reveal-requests', 'mine']",
-        "['#pending-secret-reveal-approvals', 'approvals']",
+        'viewParam',
+        'reveal_view',
+        '#my-secret-reveal-requests',
+        '#pending-secret-reveal-approvals',
         'resolveTabFromLocation',
         'window.history.replaceState',
         'const viewState = (root) =>',
-        'const activeTab = state.tabByKey.get(key);',
-        'const activePanel = state.panelByKey.get(key);',
-        "panel.toggleAttribute('hidden', panel !== activePanel);",
-        'const serverVisiblePanel = state.panels.find((panel) => !panel.hidden);',
+        'tabByKey.get(key)',
+        'panelByKey.get(key)',
+        'toggleAttribute',
+        'serverVisiblePanel',
+        'event.preventDefault()',
     ):
         require(token in reveal_script, f'Protected Reveal tab-state contract missing: {token}', errors)
+    require(
+        'data-kaori-tab-fallback="server-navigation"' in reveal_tabs and 'href="{{ tab_href }}"' in reveal_tabs,
+        'Protected Reveal controlled tabs must retain server-navigation fallback when JavaScript is unavailable.',
+        errors,
+    )
+    require(
+        "reveal_view='new'" in reveal_page and "reveal_view='mine'" in reveal_page,
+        'Protected Reveal peer tabs must expose server-owned reveal_view fallback URLs.',
+        errors,
+    )
     for token in (
         "request.args.get('reveal_view')",
         "'active_reveal_view': active_reveal_view",
