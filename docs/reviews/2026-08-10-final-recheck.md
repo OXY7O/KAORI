@@ -183,12 +183,12 @@ Governance becomes **PASS — LOCKED** only after authoritative Static Quality, 
 
 Current verdict: **TARGETED FIX — AUTHORITATIVE VALIDATION PENDING**
 
-The final recheck intentionally reopens presentation composition because retiring the former content right rail left ConfigMap and Secret CRUD workspaces stretched across the available width. The product/security contracts remain stable; the UI is recomposed as **Full-Width Mutation Workspace v2** rather than restoring the rail.
+The final recheck intentionally reopens presentation composition because retiring the former content right rail left ConfigMap and Secret CRUD workspaces stretched across the available width. The first full-width pass proved too mechanical in browser review, so `Create Kubernetes ConfigMap` is now the reference **Guided Mutation Experience v3** while the no-rail `full-width-v2` shell remains the structural boundary. Other CRUD pages are migrated only after this reference is visually accepted.
 
 ### Findings and dispositions
 
 1. **AuthZ-before-readiness fixed.** The Kubernetes Operations Blueprint clusterless `before_request` is retired. `cluster_required()` executes only inside route RBAC for ConfigMap, Secret CRUD, Protected Reveal, and TLS operations.
-2. **CRUD composition rebuilt.** ConfigMap Create/Update/Delete and Secret Create/Replace/Delete use bounded full-width target/payload/impact sections plus one shared workflow/guardrail/action control.
+2. **Create ConfigMap reference rebuilt again.** The initial full-width treatment was still rail-era structure stretched across the viewport. Create ConfigMap now groups the user journey into `Define ConfigMap` → `Add ConfigMap Data` → `Review & Create`, with in-section safety guidance and one embedded validation/action surface. Update/Delete ConfigMap and Secret CRUD remain the next migration targets.
 3. **Protected Reveal and Bulk TLS aligned.** Both retire the content rail while preserving protected-value, approval, target-selection, and validation contracts.
 4. **Shared ownership increased.** `kubernetes_operation_ui.html` owns workspace sections and workflow controls; page-local rail/workflow variants are not retained.
 5. **L0–L7 evidence added.** Operations now has dedicated Contract, Unit, Functional, Integration, Security, Rendering/UI, E2E, and final-lock evidence.

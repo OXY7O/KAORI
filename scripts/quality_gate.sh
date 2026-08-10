@@ -81,7 +81,7 @@ run_tests() {
     # Domain characterization tests are explicit release gates. This protects
     # them from environment-level PYTEST_ADDOPTS or marker filtering that may
     # otherwise deselect unmarked behavioral tests.
-    pytest -q tests/welcome tests/dashboards tests/analytics tests/inventory tests/governance tests/kubernetes_operations tests/kubernetes -m functional
+    pytest -q tests/welcome tests/dashboards tests/analytics tests/inventory tests/governance tests/kubernetes_operations -m functional
     pytest -q tests/e2e -m e2e
 }
 

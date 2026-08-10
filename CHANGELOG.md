@@ -3,6 +3,7 @@
 All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for release identity.
 
 ## [Unreleased]
+
 ### Added
 
 - Added permanent Kubernetes Governance L0–L7 release evidence and `verify_governance_final_lock.py` for AuthZ-first readiness, TLS data minimization, canonical UI ownership, and dead-surface protection.
@@ -14,6 +15,8 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ### Changed
 
+- Rebuilt `Create Kubernetes ConfigMap` as the first guided mutation experience (`guided-v3`): target/identity, payload, and review/create are now three decision-oriented sections instead of a rail-era form stretched across the viewport.
+- Corrected Kubernetes Operations functional release wiring and test harness assumptions: the nonexistent `tests/kubernetes` path was removed, clusterless onboarding expectations now respect RBAC, standalone Secret template rendering provides CSRF context, Secret create tests isolate TLS policy resolution, and TLS persistence failure tests now emulate `SQLAlchemyError`.
 - Rebuilt Kubernetes Operations ConfigMap/Secret mutation workspaces as **Full-Width Mutation Workspace v2**, replacing the retired content right rail with bounded target/payload/impact sections plus shared workflow, guardrail, and embedded-action controls.
 - Rebuilt TLS Certificate Detail into the compact `evidence-workspace-v2` composition, grouping identity/validity, coverage/consumers, and collection/Governance evidence instead of nested detail-card stacks.
 - Refined `Target TLS Secret` into a three-column identity strip plus compact posture metrics and a dedicated Issuer/Fingerprint row, retiring the space-heavy target/posture split.

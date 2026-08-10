@@ -139,3 +139,7 @@ No internal compatibility aliases or session-stored delete tokens are retained.
 ## Operational feedback
 
 Every validation and mutation outcome uses `components/operational_toast.html` and the durable Activity Audit event created from the same normalized payload. Success, information, and warning toasts auto-dismiss according to the global policy; errors remain visible until dismissed. Hover or keyboard focus pauses the timer. At most four toasts remain visible.
+
+## Guided Create Reference
+
+`Create Kubernetes ConfigMap` is the first `guided-v3` mutation reference. It keeps the no-rail `full-width-v2` shell but does not stretch the previous rail-era form. The page is organized as `Define ConfigMap` → `Add ConfigMap Data` → `Review & Create`, with shared in-section safety guidance and one embedded validation/action surface. Update and Delete are migrated only after the reference layout is visually accepted.

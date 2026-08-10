@@ -6,6 +6,7 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 
 import pytest
+from sqlalchemy.exc import SQLAlchemyError
 
 pytestmark = pytest.mark.functional
 
@@ -51,7 +52,7 @@ def _load_updates(monkeypatch: pytest.MonkeyPatch, *, commit_error: bool = False
     def commit() -> None:
         commit_calls['count'] += 1
         if commit_error:
-            raise RuntimeError('database unavailable')
+            raise SQLAlchemyError('database unavailable')
 
     session.commit = commit
     sys.modules['app.extensions.db'].db = SimpleNamespace(session=session)

@@ -9,8 +9,8 @@
     text-xs font-semibold leading-5 text-content-primary{%- endmacro %}
     {% macro control_classes() -%}
         h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20{%- endmacro %}
-        {% macro textarea_classes() -%}
-            min-h-28 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm leading-5 text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20{%- endmacro %}
+        {% macro textarea_classes(compact=false) -%}
+            {{ 'min-h-20' if compact else 'min-h-28' }} w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm leading-5 text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20{%- endmacro %}
             {% macro remove_button_classes() -%}
                 inline-flex h-10 w-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition hover:border-outline-strong hover:bg-status-critical-soft hover:text-status-critical-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-critical disabled:cursor-not-allowed disabled:opacity-40{%- endmacro %}
                 {% macro add_button_classes() -%}

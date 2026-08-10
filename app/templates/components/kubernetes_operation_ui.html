@@ -50,6 +50,27 @@
 {% macro permission_label(allowed, protected=false) -%}
     {{ table_label.status_label('Available' if allowed else 'Restricted', 'normal' if allowed else 'disabled', 'check' if allowed else 'lock') }}
 {%- endmacro %}
+{% macro guidance_panel(icon, eyebrow, title, description, items, tone='brand') -%}
+    <aside class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-subtle"
+           data-kubernetes-operation-guidance>
+        <div class="border-b border-outline-subtle px-4 py-3.5">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ 'bg-status-critical-soft text-status-critical-text' if tone == 'critical' else 'bg-kaori-soft text-kaori-primary' }}"
+                      aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">{{ eyebrow }}</p>
+                    <h3 class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ title }}</h3>
+                    <p class="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ description }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="divide-y divide-outline-subtle">
+            {% for item in items %}
+                <div class="px-4 py-3.5">{{ guardrail(item[0], item[1], item[2], item[3] if item|length > 3 else 'brand') }}</div>
+            {% endfor %}
+        </div>
+    </aside>
+{%- endmacro %}
 {% macro workflow_header(icon, eyebrow, title, description, boundary_text) -%}
     <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div class="min-w-0">
@@ -64,27 +85,31 @@
         </div>
     </div>
 {%- endmacro %}
-
 {% macro workspace_section(icon, title, description, tone='brand', body_classes='p-5 sm:p-6', marker=None) -%}
-    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"{% if marker %} data-kubernetes-operation-section="{{ marker }}"{% endif %}>
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+             {% if marker %}data-kubernetes-operation-section="{{ marker }}"{% endif %}>
         {{ section_header(icon, title, description, tone) }}
         <div class="{{ body_classes }}">{{ caller() }}</div>
     </section>
 {%- endmacro %}
 {% macro workflow_control(title, description, steps, guardrails, note=None, tone='brand', action_title=None, action_description=None, aria_label='Operation Workflow') -%}
-    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm" data-kubernetes-operation-workflow>
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+             data-kubernetes-operation-workflow>
         {{ section_header('workflow', title, description, tone) }}
         <div class="space-y-5 p-5 sm:p-6">
             {{ point_flow.render(steps, aria_label=aria_label) }}
             {% if note %}
                 <div class="flex items-start gap-2.5 rounded-lg border {{ 'border-status-critical-border bg-status-critical-soft text-status-critical-text' if tone == 'critical' else 'border-status-warning-border bg-status-warning-soft text-status-warning-text' }} px-4 py-3">
-                    <i data-lucide="circle-alert" class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true"></i>
+                    <i data-lucide="circle-alert"
+                       class="mt-0.5 h-4 w-4 shrink-0"
+                       aria-hidden="true"></i>
                     <p class="text-xs leading-5">{{ note }}</p>
                 </div>
             {% endif %}
         </div>
         {% if guardrails %}
-            <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4" data-kubernetes-operation-guardrails>
+            <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4"
+                 data-kubernetes-operation-guardrails>
                 {% for item in guardrails %}
                     <div class="min-w-0 bg-surface-subtle px-4 py-3.5">
                         {{ guardrail(item[0], item[1], item[2], item[3] if item|length > 3 else 'brand') }}

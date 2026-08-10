@@ -113,6 +113,8 @@ def main() -> int:
 
     for token in (
         'macro workspace_section',
+        'macro guidance_panel',
+        'data-kubernetes-operation-guidance',
         'macro workflow_control',
         'data-kubernetes-operation-workflow',
         'data-kubernetes-operation-guardrails',
@@ -134,11 +136,23 @@ def main() -> int:
                 f'{relative} must not restore retired content rail token {retired}.',
                 errors,
             )
-        require(
-            'workflow_control(' in source,
-            f'{relative} must use the shared workflow/guardrail control.',
-            errors,
-        )
+        if relative == 'app/templates/kubernetes_operations/configmaps/create.html':
+            require(
+                'data-kubernetes-operation-experience="guided-v3"' in source,
+                'ConfigMap Create must retain the guided-v3 reference experience.',
+                errors,
+            )
+            require(
+                'guidance_panel(' in source and 'action_bar(' in source and 'workflow_control(' not in source,
+                'ConfigMap Create must use guided review/action composition instead of the oversized workflow block.',
+                errors,
+            )
+        else:
+            require(
+                'workflow_control(' in source,
+                f'{relative} must use the shared workflow/guardrail control.',
+                errors,
+            )
 
     single_tls = read('app/templates/kubernetes_operations/secrets/tls_rotate.html')
     require(

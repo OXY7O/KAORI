@@ -28,4 +28,9 @@ def test_secret_and_configmap_crud_pages_do_not_restore_right_rail_guidance() ->
         assert 'context_rail.html' not in template
         assert 'information_guide_card.html' not in template
         assert 'info_flow.html' not in template
-        assert 'workflow_control(' in template
+        if relative.endswith('configmaps/create.html'):
+            assert 'data-kubernetes-operation-experience="guided-v3"' in template
+            assert 'guidance_panel(' in template
+            assert 'workflow_control(' not in template
+        else:
+            assert 'workflow_control(' in template

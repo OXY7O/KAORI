@@ -192,6 +192,7 @@ def test_create_service_executes_exactly_one_provider_call_per_mode(monkeypatch:
     monkeypatch.setattr(service, 'get_cluster', lambda cluster_id: cluster)
     monkeypatch.setattr(service, 'verify_live_namespace', lambda selected, namespace: None)
     monkeypatch.setattr(service, 'core_api', lambda selected: api)
+    monkeypatch.setattr(service, 'tls_policy_for_cluster', lambda selected: (None, False))
 
     submitted = _Form(
         cluster_id='7',

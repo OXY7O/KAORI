@@ -127,3 +127,20 @@ Create and Update use one server-side dry-run for a validation request. A final 
 ## Operational toast
 
 Operational results use `components/operational_toast.html` and `#operational-toast-stack`. The toast and Activity Audit record originate from the same normalized event. The stack is limited to four visible items. Success, information, and warning results auto-dismiss; errors persist. Hover and keyboard focus pause auto-dismiss. Legacy quick-action toast templates, close handlers, and domain feedback wrappers are not retained.
+
+
+## Guided Mutation Experience v3
+
+**Reference implementation:** Create Kubernetes ConfigMap.
+
+`full-width-v2` remains the structural no-rail shell, while `guided-v3` defines the user-facing composition that will be migrated across ConfigMap and Secret CRUD after the reference page is visually accepted. The key rule is that removing a right rail must not simply stretch the old form. A guided mutation page should group the work into a small number of decisions:
+
+1. define the target and identity,
+2. enter or review the payload,
+3. review validation/readiness,
+4. apply the validated mutation.
+
+Supporting safety information belongs inside the relevant section through the shared `guidance_panel()` primitive. Validation and final actions belong in one `Review & Apply` section rather than a separate oversized workflow card. This keeps 14-inch layouts dense while preserving clear safety boundaries.
+
+The Create ConfigMap reference uses `data-kubernetes-operation-experience="guided-v3"`. Update/Delete ConfigMap and Secret CRUD remain migration targets until individually redesigned and browser-reviewed.
+

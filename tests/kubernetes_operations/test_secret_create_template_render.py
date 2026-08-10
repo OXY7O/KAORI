@@ -35,10 +35,11 @@ def _template_environment() -> Environment:
         autoescape=select_autoescape(['html', 'xml']),
     )
     environment.globals['url_for'] = lambda endpoint, **values: f'/{endpoint}'
+    environment.globals['csrf_token'] = lambda: 'test-csrf-token'
     return environment
 
 
-def test_create_secret_template_renders_shared_status_labels() -> None:
+def test_create_secret_template_renders_full_width_creation_controls() -> None:
     rendered = (
         _template_environment()
         .get_template('kubernetes_operations/secrets/create.html')
@@ -53,6 +54,7 @@ def test_create_secret_template_renders_shared_status_labels() -> None:
         )
     )
 
-    assert 'Disabled' in rendered
-    assert 'Dry-Run Required' in rendered
-    assert rendered.count('kaori-semantic-label') >= 2
+    assert 'Controlled Secret Creation' in rendered
+    assert 'No Persistence' in rendered
+    assert 'Create Only' in rendered
+    assert 'Validate Before Creation' in rendered

@@ -115,7 +115,9 @@ def test_authorized_clusterless_configmap_htmx_returns_blocker_before_live_workf
     response = client.get('/kubernetes-operations/configmaps/create', headers={'HX-Request': 'true'})
 
     assert response.status_code == 409
-    assert 'Add Kubernetes Cluster' in response.get_data(as_text=True)
+    body = response.get_data(as_text=True)
+    assert 'Connect Your First Kubernetes Cluster' in body
+    assert 'Admin Required' in body
 
 
 def test_unauthorized_secret_create_is_denied_before_cluster_probe(app, monkeypatch: pytest.MonkeyPatch) -> None:

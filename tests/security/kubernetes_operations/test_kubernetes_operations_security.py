@@ -40,9 +40,7 @@ def test_protected_operations_authorize_before_cluster_prerequisite() -> None:
                 continue
             protected_functions += 1
             permission_indexes = [
-                index
-                for index, name in enumerate(names)
-                if name in {'permission_required', 'any_permission_required'}
+                index for index, name in enumerate(names) if name in {'permission_required', 'any_permission_required'}
             ]
             assert permission_indexes, f'{path.name}:{node.name} has cluster_required without RBAC'
             assert min(permission_indexes) < names.index('cluster_required'), (
