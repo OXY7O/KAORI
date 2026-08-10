@@ -156,7 +156,7 @@ def main() -> int:
         errors,
     )
     require(
-        "xl:grid-cols-[minmax(0,1.45fr)_minmax(20rem,0.55fr)]" not in single_rotation,
+        'xl:grid-cols-[minmax(0,1.45fr)_minmax(20rem,0.55fr)]' not in single_rotation,
         'Single TLS rotation must not restore the oversized flow/posture side-panel split.',
         errors,
     )
