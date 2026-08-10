@@ -53,4 +53,3 @@ def test_reports_storage_surfaces_s3_disconnect_with_safe_retry_banner() -> None
     assert "url_for('reports.storage', verify='1', workspace=payload.workspace)" in source
     assert 'Retry Connection' in source
     assert 'backend_status.error' not in source
-

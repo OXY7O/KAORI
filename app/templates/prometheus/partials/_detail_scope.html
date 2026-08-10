@@ -431,7 +431,9 @@
                                 required
                                 class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                             <option value="">Select Managed Cluster</option>
-                            {% for cluster in clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}
+                            {% for cluster in clusters %}
+                                <option value="{{ cluster.id }}">{{ cluster.name }}</option>
+                            {% endfor %}
                         </select>
                     </div>
                     <div>

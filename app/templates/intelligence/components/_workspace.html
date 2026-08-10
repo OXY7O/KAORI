@@ -124,7 +124,9 @@
               aria-hidden="true"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
         <div class="min-w-0">
             <h3 class="text-sm font-semibold leading-5 text-content-primary">{{ title }}</h3>
-            {% if description %}<p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>{% endif %}
+            {% if description %}
+                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>
+            {% endif %}
         </div>
     </div>
 {%- endmacro %}
