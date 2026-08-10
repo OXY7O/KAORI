@@ -59,6 +59,21 @@ def main() -> None:
         'Reports Storage is missing the explicit reconnect action.',
     )
     require(
+        storage_template,
+        "backend_status.backend == 's3' and not backend_status.reachable",
+        'Reports Storage connectivity banner must be scoped to an unreachable S3 backend.',
+    )
+    require(
+        storage_template,
+        '{{ backend_status.title }}',
+        'Reports Storage connectivity banner must use the canonical sanitized storage title.',
+    )
+    require(
+        storage_template,
+        '{{ backend_status.description }}',
+        'Reports Storage connectivity banner must use the canonical sanitized storage description.',
+    )
+    require(
         generated_service,
         'backend_status = get_report_storage_backend_status()',
         'Generated Reports does not consume the canonical storage state.',

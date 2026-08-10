@@ -40,3 +40,16 @@ def test_reports_overview_surfaces_s3_disconnect_as_compact_operational_incident
     assert 'payload.storage_context.monitor_interval_minutes' in source
     assert 'Open Storage' in source
     assert 'Verify Now' in source
+
+def test_reports_storage_surfaces_s3_disconnect_with_safe_retry_banner() -> None:
+    source = read('app/templates/reports/storage/index.html')
+
+    assert "backend_status.backend == 's3' and not backend_status.reachable" in source
+    assert 'aria-labelledby="report-storage-connectivity-title"' in source
+    assert 'data-report-storage-connectivity="disconnected"' in source
+    assert '{{ backend_status.title }}' in source
+    assert '{{ backend_status.description }}' in source
+    assert "url_for('reports.storage', verify='1', workspace=payload.workspace)" in source
+    assert 'Retry Connection' in source
+    assert 'backend_status.error' not in source
+

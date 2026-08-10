@@ -18,14 +18,10 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ### Fixed
 
+- Restored the Reports Storage S3 connectivity banner with sanitized operator guidance and an explicit retry action when artifact storage is unreachable.
 - Added the Analytics compact-label verifier to the canonical static quality gate.
 - Removed runtime import cycles in Analytics, TLS Governance, and the Prometheus query-profile package.
-- Restored the shared Reports recent-report serializer and explicit Reports schedules package boundary required by internal import validation.
-
-### Removed
-
-- Unreachable `app/users/identity.py`; authentication provider-family ownership remains canonical in `app/auth/providers/catalog.py`.
-- Dormant `app/knowledge/remediation_workflow.py`; Intelligence remediation remains held for the next controlled redesign.
+- Removed unreachable current-release modules that had no runtime, test, script, or configured entrypoint consumer.
 
 ### Security
 
