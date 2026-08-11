@@ -17,9 +17,9 @@ def test_analysis_surface_owns_role_based_guidance_geometry_and_palette():
     assert 'macro interpretation_callout' in surface
     assert "role='brand'" in surface
     assert 'border-kaori-border bg-kaori-soft text-kaori-primary' in surface
-    assert "table_label.tone_border_classes('info')" in surface
-    assert "table_label.tone_surface_classes('info')" in surface
-    assert "table_label.tone_icon_classes('info')" in surface
+    assert re.search(r'table_label\.tone_border_classes\(["\']info["\']\)', surface)
+    assert re.search(r'table_label\.tone_surface_classes\(["\']info["\']\)', surface)
+    assert re.search(r'table_label\.tone_icon_classes\(["\']info["\']\)', surface)
     assert 'table_label.tone_surface_classes(resolved_tone)' in surface
     assert 'text-content-secondary' in surface
     assert 'semantic=false' not in surface

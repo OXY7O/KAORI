@@ -45,6 +45,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Removed unused Inventory `format_byte_count`, `format_gib`, and `_split_inventory_values` helpers plus the stale empty Inventory partial README; no compatibility wrapper is retained.
 
 ### Fixed
+- Normalized Kubernetes Analytics final-recheck contracts around semantic behavior instead of quote/whitespace fingerprints while preserving Watch posture, shared semantic tone ownership, null-safe Forecast thresholds, Prometheus timestamp fallback, Storage pressure fallbacks, Utilization legend roles, and Workload View More boundaries.
 - Made the Integrations latest-runtime-observation contract formatter-neutral by validating the ranked database query semantically within its owning function instead of matching one exact call layout.
 - Fixed Kubernetes Analytics tabs that could remain inert or visually desynchronized by removing dual Alpine/native state ownership; Overview now uses compact one-row labels and no longer renders internal snapshot identifiers as badges.
 - Harden Protected Secret Reveal cleanup by restoring shared Secret payload scrubbing imports, make form-field contracts formatter-neutral, and normalize Reveal templates against the canonical Ruff/djLint output.

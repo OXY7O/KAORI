@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -181,8 +182,8 @@ def test_storage_pvc_partial_coverage_is_visible_without_hiding_valid_totals() -
     assert 'pvc.used_coverage_display' in pvc
     assert 'pvc.evidence_gap_count' in pvc
     assert 'pvc.pressure_coverage_display' in hero
-    assert "pvc.get('pressure_used', 'N/A')" in presentation
-    assert "pvc.get('pressure_capacity', 'N/A')" in presentation
+    assert re.search(r'pvc\.get\(["\']pressure_used["\'],\s*["\']N/A["\']\)', presentation)
+    assert re.search(r'pvc\.get\(["\']pressure_capacity["\'],\s*["\']N/A["\']\)', presentation)
 
 
 def test_storage_pv_partial_usage_and_filesystem_context_are_visible() -> None:

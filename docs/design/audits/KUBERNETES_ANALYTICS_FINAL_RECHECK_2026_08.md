@@ -180,6 +180,22 @@ Source-level final-recheck evidence in the audit workspace:
 
 Authoritative Flask/SQLAlchemy Functional, Integration, E2E, Ruff, djLint, Pyright, Prettier, frontend build, and full release-gate results must come from the project devcontainer.
 
+## 2026-08-11 semantic contract normalization
+
+The final source review found eight Analytics contract failures caused by stale formatter or implementation fingerprints rather than runtime regressions. The contracts were normalized to preserve the same operational semantics while tolerating canonical Ruff/djLint quote and whitespace changes.
+
+The normalized guards now explicitly retain:
+
+- Alerts `Watch` / warning posture when warning, anomaly, or incomplete evidence is present;
+- shared `table_label` semantic tone ownership for Analytics guidance surfaces;
+- null-safe Forecast warning/critical threshold evaluation through `item.get(...)` and `_float(...)`;
+- the `Not Recorded` Prometheus checked-at fallback through `user_datetime`;
+- PVC pressure used/capacity `N/A` fallbacks under partial evidence;
+- CPU/Memory/Pods Utilization legend role and tone ownership independent of formatter spacing; and
+- Workload table boundaries that keep long recommendation/evidence descriptions in View More instead of dense record cells.
+
+After normalization, the full Analytics contract suite passes **271/271** and the dedicated Unit/Security/Rendering source evidence passes **8/8**. Functional, Integration, and E2E execution remains authoritative in the project devcontainer because the audit runtime does not include Flask/Flask-Login.
+
 ## Lock condition
 
 Analytics remains **TARGETED FIX — AUTHORITATIVE VALIDATION PENDING** until all L0–L7 suites, browser review (Light, Dark, 14-inch, narrow viewport), and `bash scripts/quality_gate.sh --all` are green. No version bump occurs during this domain review.

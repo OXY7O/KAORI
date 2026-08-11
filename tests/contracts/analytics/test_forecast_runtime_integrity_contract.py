@@ -122,7 +122,7 @@ def test_forecast_report_uses_canonical_thresholds_and_peak_projection() -> None
     assert "'setting': '75% / 90%'" in report
     assert "'warning': '75%'" in report
     assert "'critical': '90%'" in report
-    assert "item['peak_projected_percent'] >= _WARNING_THRESHOLD" in report
-    assert "item['peak_projected_percent'] >= _CRITICAL_THRESHOLD" in report
+    assert "_float(item.get('peak_projected_percent')) or 0.0) >= _WARNING_THRESHOLD" in report
+    assert "_float(item.get('peak_projected_percent')) or 0.0) >= _CRITICAL_THRESHOLD" in report
     assert "'freshness': '75% / 90%'" in payload
     assert payload.count("'has_data': False") == 1

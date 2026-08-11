@@ -1,6 +1,7 @@
 import re
 from pathlib import Path
 
+
 ANALYTICS_ROOT = Path('app/templates/analytics')
 SURFACE = ANALYTICS_ROOT / 'components/_analysis_surfaces.html'
 DOMAINS = (
@@ -40,7 +41,7 @@ def _iter_calls(source: str, name: str):
                 elif char == quote:
                     quote = None
             else:
-                if char in '\'"':
+                if char in "'\"":
                     quote = char
                 elif char == '(':
                     depth += 1
@@ -64,9 +65,9 @@ def test_visual_roles_are_owned_by_one_shared_analytics_component() -> None:
         assert macro in source
 
     assert 'border-kaori-border bg-kaori-soft text-kaori-primary' in source
-    assert "table_label.tone_border_classes('info')" in source
-    assert "table_label.tone_surface_classes('info')" in source
-    assert "table_label.tone_icon_classes('info')" in source
+    assert re.search(r'table_label\.tone_border_classes\(["\']info["\']\)', source)
+    assert re.search(r'table_label\.tone_surface_classes\(["\']info["\']\)', source)
+    assert re.search(r'table_label\.tone_icon_classes\(["\']info["\']\)', source)
     assert 'border-outline-subtle bg-surface-muted text-content-secondary' in source
     assert 'table_label.tone_surface_classes(resolved_tone)' in source
 
@@ -102,7 +103,11 @@ def test_every_interpretation_call_declares_a_visual_role() -> None:
 
 
 def test_visual_roles_are_used_for_their_intended_meaning() -> None:
-    all_templates = '\n'.join(read(path) for path in ANALYTICS_ROOT.rglob('*.html') if path != SURFACE)
+    all_templates = '\n'.join(
+        read(path)
+        for path in ANALYTICS_ROOT.rglob('*.html')
+        if path != SURFACE
+    )
 
     assert "role='insight'" in all_templates
     assert "role='brand'" in all_templates

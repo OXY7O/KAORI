@@ -7,7 +7,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ANALYTICS_TEMPLATES = ROOT / 'app/templates/analytics'
-ROUTE_FILES = tuple(sorted((ROOT / 'app/analytics').glob('*/routes.py'))) + (ROOT / 'app/analytics/routes.py',)
+ROUTE_FILES = tuple(sorted((ROOT / 'app/analytics').glob('*/routes.py'))) + (
+    ROOT / 'app/analytics/routes.py',
+)
 RELEASE_EVIDENCE = (
     'tests/contracts/analytics/test_analytics_final_release_contract.py',
     'tests/unit/analytics/test_materialization_identity.py',
@@ -56,7 +58,8 @@ def main() -> int:
         require(token in runtime, f'Analytics native tab runtime missing: {token}', errors)
 
     require(
-        'data-kaori-tab-active-classes' in shared_tabs and 'data-kaori-tab-inactive-classes' in shared_tabs,
+        'data-kaori-tab-active-classes' in shared_tabs
+        and 'data-kaori-tab-inactive-classes' in shared_tabs,
         'Shared Content Tabs must own active/inactive visual class contracts.',
         errors,
     )
@@ -85,7 +88,9 @@ def main() -> int:
             errors,
         )
 
-    combined_templates = '\n'.join(path.read_text(encoding='utf-8') for path in ANALYTICS_TEMPLATES.rglob('*.html'))
+    combined_templates = '\n'.join(
+        path.read_text(encoding='utf-8') for path in ANALYTICS_TEMPLATES.rglob('*.html')
+    )
     require(
         'x-show="activeTab' not in combined_templates,
         'Analytics templates must not duplicate native tab visibility through Alpine x-show.',
@@ -145,7 +150,8 @@ def main() -> int:
     )
 
     permission_guards = sum(
-        read(str(path.relative_to(ROOT))).count("@permission_required('analytics.view')") for path in ROUTE_FILES
+        read(str(path.relative_to(ROOT))).count("@permission_required('analytics.view')")
+        for path in ROUTE_FILES
     )
     require(
         permission_guards >= 19,
@@ -247,7 +253,8 @@ def main() -> int:
             print(f'ERROR: {error}')
         return 1
 
-    print('KAORI Kubernetes Analytics final-lock contracts passed.')
+    template_count = sum(1 for _ in ANALYTICS_TEMPLATES.rglob('*.html'))
+    print(f'PASS — KAORI Kubernetes Analytics Final Lock v1 · {template_count} templates')
     return 0
 
 

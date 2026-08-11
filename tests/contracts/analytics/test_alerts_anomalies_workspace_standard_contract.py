@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -34,7 +35,8 @@ def test_alerts_hero_uses_canonical_context_card_and_evidence_semantics() -> Non
     assert "('shield-alert', 'Critical Alerts'" in hero
     assert "('shield-check', 'Source Health'" in hero
     assert 'evidence_incomplete' in hero
-    assert "posture_status = 'Watch'" in hero
+    assert re.search(r'posture_status\s*=\s*["\']Watch["\']', hero)
+    assert re.search(r'posture_tone\s*=\s*["\']warning["\']', hero)
     assert "'Manage Clusters'" in hero
     assert 'context_posture_header' not in hero
     assert 'context_posture_note' not in hero

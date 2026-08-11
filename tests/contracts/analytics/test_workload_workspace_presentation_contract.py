@@ -85,13 +85,17 @@ def test_workload_sections_use_inventory_aligned_overview_and_record_cards() -> 
     assert 'Request Fit Interpretation' in mapping
     assert 'Demand basis in View More' in tenant
     assert 'Interpretation in View More' in mapping
+    normalized_tenant = tenant.replace('"', "'")
+    normalized_mapping = mapping.replace('"', "'")
     assert (
         '{{ row.recommendation }}</p>'
-        not in tenant.split("evidence_list.mobile_label('Risk')", 1)[1].split("evidence_list.cell(2, 'right')", 1)[0]
+        not in normalized_tenant.split("evidence_list.mobile_label('Risk')", 1)[1].split(
+            "evidence_list.cell(2, 'right')", 1
+        )[0]
     )
     assert (
         '{{ row.metrics_coverage.description }}</p>'
-        not in mapping.split("evidence_list.mobile_label('Evidence & QoS')", 1)[1].split(
+        not in normalized_mapping.split("evidence_list.mobile_label('Evidence & QoS')", 1)[1].split(
             "evidence_list.cell(2, 'right')", 1
         )[0]
     )

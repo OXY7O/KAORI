@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -35,10 +36,10 @@ def test_shared_prometheus_card_owns_canonical_data_and_geometry() -> None:
         'Response',
         'Checked At',
         'status.last_checked_at',
-        "user_datetime('Not Recorded')",
     ):
         assert marker in source
 
+    assert re.search(r'user_datetime\(["\']Not Recorded["\']\)', source)
     assert 'materialization' not in source
     assert 'last_analyzed_at' not in source
     assert 'flat=' not in source

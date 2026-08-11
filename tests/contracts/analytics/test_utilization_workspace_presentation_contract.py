@@ -89,7 +89,12 @@ def test_utilization_trend_is_bright_has_visible_legend_and_external_js() -> Non
     assert 'ResizeObserver' in script
     assert 'MAX_VISIBILITY_RETRIES' in script
     assert 'swatch_class' in legend
-    assert "[('CPU', 'bg-kaori-primary'), ('Memory', 'bg-status-normal'), ('Pods', 'bg-status-pending')]" in trend
+    for legend_item in (
+        "('CPU', 'bg-kaori-primary')",
+        "('Memory', 'bg-status-normal')",
+        "('Pods', 'bg-status-pending')",
+    ):
+        assert legend_item in trend
 
 
 def test_utilization_uses_canonical_analysis_surfaces_without_compatibility_file() -> None:
