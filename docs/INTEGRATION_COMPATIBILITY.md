@@ -9,10 +9,11 @@ KAORI treats reachability, product identity, runtime version, API compatibility,
 3. Detect the responding product and runtime version.
 4. Match a version-controlled compatibility profile.
 5. Validate required APIs and capabilities.
-6. Select the API or PromQL profile.
-7. Validate metrics, labels, query execution, and retention where applicable.
-8. Persist validation evidence.
-9. Allow each KAORI consumer only when its required capability is ready.
+6. Validate the provider-neutral API/core runtime profile.
+7. Resolve an asset-scoped consumer profile for each binding.
+8. Validate consumer metrics, labels, PromQL contracts, and retention where applicable.
+9. Persist provider evidence on the provider and consumer evidence on the binding.
+10. Allow each KAORI consumer only when its required binding capability is ready.
 
 ## Compatibility matrix
 
@@ -37,7 +38,7 @@ For Kubernetes assets, every cluster currently owns its own Prometheus and Alert
 - Thanos runtime/version and long-range query readiness;
 - Helm chart name/version as deployment evidence only.
 
-A future Server domain may bind multiple server assets to one centralized Prometheus and Alertmanager instance. Integration bindings must therefore remain asset-aware rather than hard-coded permanently to one cluster.
+A general Prometheus instance may serve Kubernetes, MinIO, and future consumers simultaneously. Integration bindings therefore remain asset-aware and own consumer-specific metric evidence instead of hard-coding the Prometheus provider to one cluster or exporter family.
 
 ## Deprecation behavior
 
@@ -76,7 +77,7 @@ Integration list pages never render passwords, bearer tokens, embedded URL crede
 - MinIO: `RELEASE.2024-08-03T04-33-23Z` under the initial strict `minio-release-2024-08-03` profile.
 - Thanos Query: `0.39`, `0.40`, and `0.41` profiles.
 
-A matching version profile does not itself make an integration ready. Required API endpoints, capabilities, metrics, labels, and query probes must also pass.
+A matching version profile does not itself make an integration ready. Provider-level API/core checks must pass, while exporter/domain metrics, labels, and query contracts are evaluated independently on each asset binding.
 
 
 ## Route ownership
@@ -95,11 +96,11 @@ bookmarks are intentionally not retained when a canonical route replaces them.
 
 ## Direct Prometheus and intermediary endpoints
 
-A direct Prometheus endpoint uses automatic runtime discovery. A Prometheus-compatible intermediary, including Thanos Query, must use manual compatibility selection because its build endpoint identifies the intermediary rather than the source Prometheus servers. Manual mode stores only a supported major compatibility profile and remains fail-closed until API, PromQL, metric, label-schema, and retention checks pass.
+A direct Prometheus endpoint uses automatic runtime discovery. A Prometheus-compatible intermediary, including Thanos Query, must use manual compatibility selection because its build endpoint identifies the intermediary rather than the source Prometheus servers. Manual mode stores a supported endpoint/source compatibility profile and remains fail-closed until the provider-neutral core API contract passes. Asset-specific metrics, label schemas, PromQL contracts, and retention requirements are validated through consumer bindings.
 
 ### Interactive Prometheus validation boundary
 
-Prometheus connection testing is intentionally split from full readiness validation. `Test Connection` is a short endpoint/API/profile check suitable for synchronous HTMX feedback. `Run Full Validation` owns metric discovery, required-label checks, versioned PromQL audit, and retention probes. This separation prevents Thanos-backed endpoints from appearing stuck while a large `/api/v1/series` audit is running and makes the cost of the operation explicit to the administrator.
+Prometheus connection testing is intentionally split from full readiness validation. `Test Connection` is a short endpoint/API/profile check suitable for synchronous HTMX feedback. Provider `Run Full Validation` owns endpoint compatibility and the `prometheus-core-v1` contract (instant query, range query, series discovery, and label discovery). Kubernetes, MinIO, and future exporter/domain contracts are validated by each `IntegrationBinding`; the generic validation worker refreshes those bindings after provider validation.
 
 ## Final compatibility-domain ownership
 
@@ -119,13 +120,13 @@ Evidence:
 
 ### Prometheus compatibility
 
-Consumers: Kubernetes Analytics, dashboard live metrics, Prometheus-backed reports, and Prometheus-backed intelligence.
+Prometheus is a general metrics provider. Provider compatibility is independent of Kubernetes, MinIO, or any other exporter family.
 
-Automatic mode contacts a direct Prometheus endpoint. `detected_version` and `compatibility_profile` therefore represent Prometheus.
+Automatic mode contacts a direct Prometheus endpoint. `detected_version` and `compatibility_profile` therefore represent Prometheus. Provider `query_profile` resolves to the consumer-neutral `prometheus-core-v1` contract.
 
-Manual mode contacts Thanos Query. `detected_version` and `compatibility_profile` therefore represent Thanos, while `source_prometheus_major` represents the administrator-selected Prometheus major contract used to select the PromQL profile. The Thanos endpoint version must never be treated as a Prometheus runtime version.
+Manual mode contacts Thanos Query. `detected_version` and `compatibility_profile` therefore represent Thanos, while `source_prometheus_major` records the administrator-selected Prometheus source-major compatibility contract. The Thanos endpoint version must never be treated as a Prometheus runtime version.
 
-Both modes require full validation of required metrics, label schemas, PromQL, and retention before Analytics readiness can become Ready.
+Consumer metric contracts are binding-scoped. `kubernetes_cluster` bindings use `kubernetes-metrics-v1`; `object_storage_system` bindings use `minio-metrics-2024-v1`. A missing Kubernetes metric can degrade the Kubernetes binding without degrading a healthy general Prometheus provider or an unrelated MinIO binding.
 
 ### Alertmanager compatibility
 
@@ -141,10 +142,10 @@ Alertmanager is detected automatically from its direct endpoint and validated th
 | `detected_version` | Prometheus runtime | Thanos runtime |
 | `compatibility_profile` | Prometheus endpoint profile | Thanos endpoint profile |
 | `source_prometheus_major` | detected Prometheus profile | selected Prometheus 2.x/3.x source profile |
-| `query_profile` | selected from detected source | selected from manual source profile |
-| `readiness_status` | Kubernetes Analytics readiness | Kubernetes Analytics readiness |
+| `query_profile` | `prometheus-core-v1` | `prometheus-core-v1` |
+| `readiness_status` | Provider core-runtime readiness | Provider core-runtime readiness |
 
-Configuration changes invalidate all compatibility evidence. Existing manual-mode records created before this split must be revalidated because earlier builds could store a synthetic Prometheus major or a Thanos version in the same field.
+Configuration changes invalidate provider compatibility evidence and all dependent binding evidence. Existing Prometheus records should be revalidated after this split so provider readiness is rebuilt from `prometheus-core-v1` and each asset binding receives its canonical consumer profile/evidence.
 
 ## Kubernetes live API adapters
 

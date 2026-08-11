@@ -58,11 +58,11 @@ def test_prometheus_validation_keeps_compact_contract_and_modal_detail() -> None
     registry = read('app/templates/prometheus/partials/_capability_registry.html')
 
     assert 'import "integrations/components/_record_detail_modal.html" as record_detail_modal' in registry
-    assert 'Prometheus Validation & PromQL' in source
+    assert 'Prometheus Core Validation' in source
     assert 'record_actions.view_more(' in registry
     assert 'provider_capability_detail.content(' in registry
     assert 'provider_capability_detail.content(' in registry
-    assert 'Runnable PromQL Query' in registry
+    assert 'Provider API Probe' in registry
     assert 'Hide Details' not in source
     assert 'x-show="open"' not in source
 

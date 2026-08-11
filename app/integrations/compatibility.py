@@ -62,7 +62,7 @@ PROFILES: dict[str, tuple[CompatibilityProfile, ...]] = {
             'legacy_supported',
             ('instant_query', 'range_query'),
             'Prometheus HTTP API profile for runtime major 2.',
-            'promql-kubernetes-v1',
+            'prometheus-core-v1',
         ),
         CompatibilityProfile(
             'prometheus-http-v3',
@@ -71,7 +71,7 @@ PROFILES: dict[str, tuple[CompatibilityProfile, ...]] = {
             'current',
             ('instant_query', 'range_query'),
             'Prometheus HTTP API profile for runtime major 3.',
-            'promql-kubernetes-v1',
+            'prometheus-core-v1',
         ),
     ),
     'alertmanager': (
@@ -100,6 +100,7 @@ PROFILES: dict[str, tuple[CompatibilityProfile, ...]] = {
             'supported',
             ('prometheus_api_v1', 'instant_query', 'range_query'),
             'Supported Thanos Query 0.39 profile.',
+            'prometheus-core-v1',
         ),
         CompatibilityProfile(
             'thanos-query-v0-40',
@@ -108,6 +109,7 @@ PROFILES: dict[str, tuple[CompatibilityProfile, ...]] = {
             'supported',
             ('prometheus_api_v1', 'instant_query', 'range_query'),
             'Supported Thanos Query 0.40 profile.',
+            'prometheus-core-v1',
         ),
         CompatibilityProfile(
             'thanos-query-v0-41',
@@ -116,6 +118,7 @@ PROFILES: dict[str, tuple[CompatibilityProfile, ...]] = {
             'current',
             ('prometheus_api_v1', 'instant_query', 'range_query'),
             'Current Thanos Query profile.',
+            'prometheus-core-v1',
         ),
     ),
 }

@@ -13,6 +13,8 @@ from app.integrations.compatibility import (
     get_profile,
 )
 from app.integrations.prometheus.client import PrometheusClient
+from app.integrations.prometheus.core_validation import PROFILE_KEY as CORE_PROFILE_KEY
+from app.integrations.prometheus.core_validation import validate_prometheus_core
 from app.integrations.prometheus.exceptions import PrometheusError
 from app.integrations.prometheus.query_profiles.audit import PromQLProfileAuditor
 from app.models.prometheus import PrometheusInstance
@@ -28,18 +30,15 @@ class PrometheusCompatibilityResolution:
 
     @property
     def query_profile(self) -> str:
-        if not self.source_profile.query_profile:
-            raise PrometheusError('The selected Prometheus source profile has no PromQL profile.')
-        return self.source_profile.query_profile
+        return self.source_profile.query_profile or CORE_PROFILE_KEY
 
 
 class PrometheusRuntimeService:
     """Canonical provider runtime workflow for Prometheus-compatible sources.
 
-    This service owns endpoint compatibility, full PromQL validation, lightweight
-    runtime health, and persistence of provider evidence. It intentionally has no
-    dependency on the Prometheus web/domain package, so registry adapters can call
-    it without creating a reciprocal package dependency.
+    Provider-level validation is intentionally consumer-neutral. Kubernetes, MinIO,
+    and future metric contracts are validated through asset-scoped bindings instead
+    of changing the readiness of the shared Prometheus runtime.
     """
 
     def __init__(
@@ -59,16 +58,10 @@ class PrometheusRuntimeService:
 
         resolution = self._resolve_compatibility()
         response_time = time.perf_counter() - started
+        readiness = self._connection_readiness(resolution)
+        message = self._connection_message(resolution, readiness)
+
         if not persist:
-            readiness = 'blocked' if resolution.endpoint_compatibility.readiness == 'blocked' else 'degraded'
-            message = (
-                resolution.endpoint_compatibility.message
-                if readiness == 'blocked'
-                else (
-                    'Endpoint identity and compatibility were verified. Run full validation '
-                    'before KAORI marks Kubernetes Analytics as ready.'
-                )
-            )
             return {
                 'success': readiness != 'blocked',
                 'endpoint_product': resolution.endpoint_product,
@@ -76,16 +69,12 @@ class PrometheusRuntimeService:
                 'version': resolution.endpoint_version,
                 'compatibility_status': resolution.endpoint_compatibility.status,
                 'readiness_status': readiness,
-                'query_profile': resolution.source_profile.query_profile,
+                'query_profile': resolution.query_profile,
                 'query_validation_status': 'validation_required',
                 'query_validation_summary': None,
                 'retention_validation_summary': None,
                 'compatibility_profile': resolution.endpoint_compatibility.profile_key,
-                'source_prometheus_major': (
-                    resolution.source_profile.key.rsplit('v', 1)[-1]
-                    if resolution.source_profile.key.startswith('prometheus-http-v')
-                    else None
-                ),
+                'source_prometheus_major': self._source_major(resolution.source_profile),
                 'capability_profile': None,
                 'capabilities': None,
                 'module_readiness': None,
@@ -98,27 +87,22 @@ class PrometheusRuntimeService:
         config.query_validation_status = 'validation_required'
         config.query_validation_summary = None
         config.retention_validation_summary = None
+        config.capability_profile = None
+        config.capabilities = None
+        config.module_readiness = None
         config.last_validated_at = datetime.now(UTC)
         config.last_checked_at = config.last_validated_at
         config.last_response_time_ms = round(response_time * 1000)
-        config.last_status = 'connected'
+        config.last_status = 'incompatible' if readiness == 'blocked' else 'connected'
         config.last_error = None
-
-        if resolution.endpoint_compatibility.readiness == 'blocked':
-            config.readiness_status = 'blocked'
-            config.validation_message = resolution.endpoint_compatibility.message
-        else:
-            config.readiness_status = 'degraded'
-            config.validation_message = (
-                'Endpoint identity and compatibility were verified. Run full validation '
-                'before KAORI marks Kubernetes Analytics as ready.'
-            )
+        config.readiness_status = readiness
+        config.validation_message = message
         db.session.commit()
 
         return self._result_payload(config, response_time=response_time)
 
     def refresh_health(self) -> dict[str, Any]:
-        """Refresh endpoint health without discarding capability evidence."""
+        """Refresh endpoint health without discarding validated core evidence."""
         started = time.perf_counter()
         config = self.instance
         try:
@@ -137,11 +121,11 @@ class PrometheusRuntimeService:
             if resolution.endpoint_compatibility.readiness == 'blocked':
                 config.readiness_status = 'blocked'
                 config.validation_message = resolution.endpoint_compatibility.message
-            elif not config.readiness_status:
-                config.readiness_status = 'validation_required'
-                config.validation_message = (
-                    'Runtime health is available. Run Full Validation to establish capability evidence.'
+            elif not config.last_validated_at or not config.capability_profile:
+                config.readiness_status = (
+                    'degraded' if resolution.endpoint_compatibility.readiness == 'degraded' else 'validation_required'
                 )
+                config.validation_message = 'Runtime health is available. Run Full Validation to establish the provider-level Prometheus core contract.'
             db.session.commit()
         except Exception as exc:
             db.session.rollback()
@@ -152,13 +136,10 @@ class PrometheusRuntimeService:
             db.session.commit()
             raise
 
-        return self._result_payload(
-            config,
-            response_time=time.perf_counter() - started,
-        )
+        return self._result_payload(config, response_time=time.perf_counter() - started)
 
     def validate(self) -> dict[str, Any]:
-        """Run complete PromQL, metric-schema, and retention validation."""
+        """Validate endpoint compatibility and provider-neutral Prometheus core APIs."""
         started = time.perf_counter()
         result = self.client.query('vector(1)')
         if result.get('status') != 'success':
@@ -168,41 +149,55 @@ class PrometheusRuntimeService:
         config = self.instance
         self._store_identity(config, resolution)
 
+        core_audit: dict[str, Any] | None = None
         if resolution.endpoint_compatibility.readiness == 'blocked':
-            query_audit = None
-            query_status = 'blocked'
+            core_status = 'blocked'
             readiness = 'blocked'
         else:
             validation_client = PrometheusClient(
                 config,
                 request_timeout_seconds=max(int(config.timeout or 5), 30),
             )
-            query_audit = PromQLProfileAuditor(validation_client).audit(execute_queries=True)
-            contract_summary = query_audit.get('feature_contract_summary') or {}
-            query_status = contract_summary.get('status', 'validation_required')
-            readiness = resolution.endpoint_compatibility.readiness
-            if readiness == 'ready' and query_status != 'ready':
-                readiness = 'degraded'
+            core_audit = validate_prometheus_core(validation_client)
+            core_status = str(core_audit.get('status') or 'blocked')
+            if core_status != 'ready':
+                readiness = 'blocked'
+            else:
+                readiness = resolution.endpoint_compatibility.readiness
 
         config.readiness_status = readiness
-        config.query_validation_status = query_status
+        config.query_validation_status = core_status
         config.query_validation_summary = (
-            {key: value for key, value in query_audit.items() if key not in {'results', 'retention'}}
-            if query_audit
+            {
+                'profile': core_audit.get('profile'),
+                'profile_version': core_audit.get('profile_version'),
+                'checked_at': core_audit.get('checked_at'),
+                'core_summary': core_audit.get('summary'),
+                'missing_capabilities': core_audit.get('missing_capabilities', []),
+            }
+            if core_audit
             else None
         )
-        config.retention_validation_summary = query_audit['retention'] if query_audit else None
-        config.capability_profile = query_audit.get('profile') if query_audit else None
+        config.retention_validation_summary = None
+        config.capability_profile = core_audit.get('profile') if core_audit else None
         config.capabilities = (
             {
-                'available': query_audit.get('available_capabilities', []),
-                'assessments': query_audit.get('capability_assessments', []),
+                'available': core_audit.get('available_capabilities', []),
+                'assessments': core_audit.get('capability_assessments', []),
             }
-            if query_audit
+            if core_audit
             else None
         )
-        config.module_readiness = query_audit.get('module_readiness') if query_audit else None
-        config.validation_message = self._validation_message(resolution, query_status)
+        config.module_readiness = {
+            'provider_core': {
+                'label': 'Prometheus Core Runtime',
+                'status': core_status,
+                'ready_count': (core_audit or {}).get('summary', {}).get('ready_count', 0),
+                'query_count': (core_audit or {}).get('summary', {}).get('total_count', 0),
+                'blocked_count': (core_audit or {}).get('summary', {}).get('failed_count', 0),
+            }
+        }
+        config.validation_message = self._validation_message(resolution, core_status)
         config.last_validated_at = datetime.now(UTC)
         config.last_checked_at = config.last_validated_at
         config.last_response_time_ms = round((time.perf_counter() - started) * 1000)
@@ -210,21 +205,16 @@ class PrometheusRuntimeService:
         config.last_error = None
         db.session.commit()
 
-        return self._result_payload(
-            config,
-            response_time=time.perf_counter() - started,
-        )
+        return self._result_payload(config, response_time=time.perf_counter() - started)
 
     def audit_query_profile(self, *, execute_queries: bool = True) -> dict[str, Any]:
-        audit = PromQLProfileAuditor(self.client).audit(execute_queries=execute_queries)
-        config = self.instance
-        config.query_validation_status = 'ready' if audit['blocked_count'] == 0 else 'degraded'
-        config.query_validation_summary = {
-            key: value for key, value in audit.items() if key not in {'results', 'retention'}
-        }
-        config.retention_validation_summary = audit['retention']
-        db.session.commit()
-        return audit
+        """Return the legacy Kubernetes PromQL audit without changing provider readiness.
+
+        This compatibility entry point remains available for callers that still need
+        the Kubernetes query contract during the migration to binding-owned consumer
+        validation. It must never downgrade a general Prometheus provider.
+        """
+        return PromQLProfileAuditor(self.client).audit(execute_queries=execute_queries)
 
     def _resolve_compatibility(self) -> PrometheusCompatibilityResolution:
         config = self.instance
@@ -233,22 +223,14 @@ class PrometheusRuntimeService:
         endpoint_version = build_info.get('data', {}).get('version', 'unknown')
 
         if detection_mode == 'manual':
-            source_profile = get_profile(
-                'prometheus',
-                f'prometheus-http-v{config.source_prometheus_major}',
-            )
+            source_profile = get_profile('prometheus', f'prometheus-http-v{config.source_prometheus_major}')
             if source_profile is None:
                 raise PrometheusError('Manual mode requires a supported Prometheus source version profile.')
             endpoint_product = 'thanos'
             endpoint_compatibility = evaluate_compatibility(
                 endpoint_product,
                 endpoint_version,
-                capabilities=(
-                    'prometheus_api_v1',
-                    'instant_query',
-                    'range_query',
-                    'long_term_history',
-                ),
+                capabilities=('prometheus_api_v1', 'instant_query', 'range_query', 'long_term_history'),
             )
         else:
             endpoint_product = 'prometheus'
@@ -266,7 +248,7 @@ class PrometheusRuntimeService:
                     support_level='blocked',
                     required_capabilities=(),
                     notes='No supported Prometheus source profile matched.',
-                    query_profile=None,
+                    query_profile=CORE_PROFILE_KEY,
                 )
 
         endpoint_profile = get_profile(endpoint_product, endpoint_compatibility.profile_key)
@@ -279,7 +261,14 @@ class PrometheusRuntimeService:
         )
 
     @staticmethod
+    def _source_major(profile: CompatibilityProfile) -> str | None:
+        if profile.key.startswith('prometheus-http-v'):
+            return profile.key.rsplit('v', 1)[-1]
+        return None
+
+    @classmethod
     def _store_identity(
+        cls,
         config: PrometheusInstance,
         resolution: PrometheusCompatibilityResolution,
     ) -> None:
@@ -287,28 +276,51 @@ class PrometheusRuntimeService:
         config.detected_version = resolution.endpoint_version
         config.compatibility_status = resolution.endpoint_compatibility.status
         config.compatibility_profile = resolution.endpoint_compatibility.profile_key
-        config.source_prometheus_major = (
-            resolution.source_profile.key.rsplit('v', 1)[-1]
-            if resolution.source_profile.key.startswith('prometheus-http-v')
-            else None
+        config.source_prometheus_major = cls._source_major(resolution.source_profile)
+        config.query_profile = resolution.query_profile
+
+    @staticmethod
+    def _connection_readiness(resolution: PrometheusCompatibilityResolution) -> str:
+        if resolution.endpoint_compatibility.readiness == 'blocked':
+            return 'blocked'
+        if resolution.endpoint_compatibility.readiness == 'degraded':
+            return 'degraded'
+        return 'validation_required'
+
+    @staticmethod
+    def _connection_message(resolution: PrometheusCompatibilityResolution, readiness: str) -> str:
+        if readiness == 'blocked':
+            return resolution.endpoint_compatibility.message
+        if readiness == 'degraded':
+            return (
+                f'{resolution.endpoint_compatibility.message} Endpoint identity is valid; '
+                'run Full Validation to establish the provider-level Prometheus core contract.'
+            )
+        return (
+            'Endpoint identity and compatibility were verified. Run Full Validation to establish '
+            'the provider-level Prometheus core contract. Kubernetes, MinIO, and other metrics are validated per binding.'
         )
-        config.query_profile = resolution.source_profile.query_profile
 
     @staticmethod
     def _validation_message(
         resolution: PrometheusCompatibilityResolution,
-        query_status: str,
+        core_status: str,
     ) -> str:
         if resolution.endpoint_compatibility.readiness == 'blocked':
             return resolution.endpoint_compatibility.message
-        if query_status == 'ready':
+        if core_status != 'ready':
             return (
-                'Endpoint compatibility and every registered Kubernetes Analytics query '
-                'contract passed against the configured runtime.'
+                'The Prometheus-compatible endpoint responded, but one or more provider-level HTTP/API capabilities failed. '
+                'Review the core validation evidence before using this runtime as a metrics source.'
+            )
+        if resolution.endpoint_compatibility.readiness == 'degraded':
+            return (
+                f'{resolution.endpoint_compatibility.message} Prometheus core APIs are ready. '
+                'Consumer metrics remain governed by asset-scoped bindings.'
             )
         return (
-            'The Prometheus runtime is connected, but one or more exact Kubernetes '
-            'Analytics query contracts require review. Open the observed technical evidence.'
+            'Prometheus core runtime is ready. Kubernetes, MinIO, and future metric contracts are validated independently '
+            'through their asset-scoped consumer bindings.'
         )
 
     @staticmethod

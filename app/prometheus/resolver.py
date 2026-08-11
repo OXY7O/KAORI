@@ -98,11 +98,11 @@ def _evaluate_binding(
 ) -> ResolvedPrometheusSource:
     readiness = (instance.readiness_status or '').strip().lower()
     health = (instance.last_status or '').strip().lower()
-    capability_payload = instance.capabilities or {}
-    observed: set[str] = {str(item) for item in (capability_payload.get('available') or ()) if item}
+    capability_payload = binding.validation_evidence or {}
+    observed: set[str] = {str(item) for item in (capability_payload.get('available_capabilities') or ()) if item}
     observed.update(
         str(item.get('key'))
-        for item in (capability_payload.get('assessments') or ())
+        for item in (capability_payload.get('capability_assessments') or ())
         if item.get('key') and str(item.get('status') or '').strip().lower() in {'available', 'ready'}
     )
     missing_technical = tuple(sorted(set(required_technical_capabilities) - observed))
@@ -205,11 +205,9 @@ def _decision_reason(
     if missing_binding:
         return f'Missing binding coverage: {", ".join(missing_binding)}.'
     if capability_state == 'validation_required':
-        return (
-            'Required technical capability evidence has not been recorded. Run Full Validation before operational use.'
-        )
+        return 'Required consumer capability evidence has not been recorded on this binding. Validate the consumer binding before operational use.'
     if capability_state == 'missing_required':
-        return f'Missing validated technical capabilities: {", ".join(missing_technical)}.'
+        return f'Missing validated consumer capabilities: {", ".join(missing_technical)}.'
     if readiness not in (_READY_READINESS | _DEGRADED_READINESS):
         return f'Readiness state {readiness or "validation_required"} blocks source selection. Run Full Validation.'
     if not eligible:

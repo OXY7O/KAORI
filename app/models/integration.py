@@ -89,6 +89,8 @@ class IntegrationBinding(db.Model):
     capability_scope: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     selector_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     validation_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    validation_profile: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    validation_evidence: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     validation_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     last_validated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(

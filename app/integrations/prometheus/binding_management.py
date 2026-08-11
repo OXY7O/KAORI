@@ -5,7 +5,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.extensions.db import db
 from app.integrations.binding_selectors import build_selector
 from app.integrations.binding_service import SourceBindingSpec
-from app.integrations.lifecycle import bind_instance, ensure_canonical_instance
+from app.integrations.lifecycle import BindingPersistenceSpec, bind_instance, ensure_canonical_instance
+from app.integrations.prometheus.binding_profiles import get_binding_validation_profile
 from app.integrations.prometheus.capabilities import BINDING_CAPABILITY_KEYS
 from app.integrations.prometheus.scope import KUBERNETES_CLUSTER_SCOPE
 from app.models.cluster import Cluster
@@ -74,17 +75,26 @@ def create_binding(
         if conflicting_primary is not None:
             raise ValueError('The selected operational scope already has an enabled primary Prometheus source.')
 
+    validation_profile = get_binding_validation_profile(normalized_scope_type)
+    if validation_profile is None:
+        raise ValueError(
+            f'No Prometheus consumer validation profile is registered for asset type {normalized_scope_type!r}.'
+        )
+
     binding = bind_instance(
         canonical,
-        asset_type=normalized_scope_type,
-        asset_key=normalized_scope_key,
-        role=normalized_role,
-        priority=spec.priority,
-        capability_scope=list(spec.capability_scope or BINDING_CAPABILITY_KEYS),
-        selector_json=selector_json,
-        validation_status='validation_required',
-        validation_message=(
-            'Binding saved. Validate the metrics identity selector and source runtime before operational use.'
+        spec=BindingPersistenceSpec(
+            asset_type=normalized_scope_type,
+            asset_key=normalized_scope_key,
+            role=normalized_role,
+            priority=spec.priority,
+            capability_scope=list(spec.capability_scope or BINDING_CAPABILITY_KEYS),
+            selector_json=selector_json,
+            validation_status='validation_required',
+            validation_profile=validation_profile.profile_key,
+            validation_message=(
+                'Binding saved. Validate the metrics identity selector and source runtime before operational use.'
+            ),
         ),
     )
     if commit:
@@ -118,6 +128,9 @@ def update_binding_selector(
         raise ValueError('Define a metrics identity selector before saving this binding.')
     binding.selector_json = selector_json
     binding.validation_status = 'validation_required'
+    profile = get_binding_validation_profile(binding.asset_type)
+    binding.validation_profile = profile.profile_key if profile is not None else None
+    binding.validation_evidence = None
     binding.validation_message = (
         'Metrics identity changed. Validate this binding before KAORI uses it for operational queries.'
     )

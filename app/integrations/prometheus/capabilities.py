@@ -34,6 +34,23 @@ CAPABILITIES: dict[str, CapabilityDefinition] = {
         'Expose /api/v1/query_range and confirm that the reverse proxy permits range queries.',
         validation_query='count(up)',
     ),
+    'series_discovery': CapabilityDefinition(
+        'series_discovery',
+        'Series Discovery API',
+        ('Consumer binding validation', 'Metrics inventory'),
+        'KAORI cannot inspect metric-series identity for bound consumers.',
+        'Prometheus or Thanos Query API',
+        'Expose the Prometheus-compatible /api/v1/series endpoint through the exact URL configured in KAORI.',
+        validation_query='up',
+    ),
+    'label_discovery': CapabilityDefinition(
+        'label_discovery',
+        'Label Discovery API',
+        ('Consumer binding validation', 'Metrics identity'),
+        'KAORI cannot discover metric names or labels used to validate consumer bindings.',
+        'Prometheus or Thanos Query API',
+        'Expose the Prometheus-compatible label-values API through the exact URL configured in KAORI.',
+    ),
     'kubernetes_identity': CapabilityDefinition(
         'kubernetes_identity',
         'Kubernetes Identity Metrics',
@@ -152,7 +169,17 @@ def definition(key: str) -> CapabilityDefinition | None:
     return CAPABILITIES.get(key)
 
 
-CAPABILITY_KEYS = tuple(CAPABILITIES)
+PROVIDER_CAPABILITY_KEYS = (
+    'instant_query',
+    'range_query',
+    'series_discovery',
+    'label_discovery',
+)
+
+# Provider registration exposes only generic Prometheus HTTP/API capabilities.
+# Kubernetes-specific capabilities remain in this module because the existing
+# Kubernetes consumer auditor still uses their definitions.
+CAPABILITY_KEYS = PROVIDER_CAPABILITY_KEYS
 COMPATIBILITY_PROFILES = ('prometheus-v2', 'prometheus-v3')
 
 

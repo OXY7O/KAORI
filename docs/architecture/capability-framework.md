@@ -7,14 +7,14 @@ KAORI consumers depend on capabilities, not provider version strings.
 Avoid:
 
 ```python
-if version >= "0.33":
+if version >= '0.33':
     ...
 ```
 
 Prefer:
 
 ```python
-if "silences_v2" in capabilities:
+if 'silences_v2' in capabilities:
     ...
 ```
 
@@ -123,23 +123,31 @@ A Prometheus aggregate vector with an empty label set, for example `{} 4` return
 
 Every Analytics contract exposes presentation-ready `Expected`, `Observed`, exact validation query, response-series count, numeric result evidence, and evidence-based remediation. Empty results are classified as `Not Observed` for contracts where absence of active objects or alerts is valid.
 
-## Cluster-bound Prometheus runtime
+## General Prometheus runtime and consumer bindings
 
-Prometheus is currently configured as a metrics runtime bound to one Kubernetes cluster. The runtime adapter follows the same shared Integration Runtime lifecycle used by Alertmanager, while its binding remains explicit:
+Prometheus is a reusable metrics runtime, not a Kubernetes-specific provider. One
+Prometheus or Thanos Query instance may serve multiple managed assets through
+explicit `IntegrationBinding` records:
 
 ```text
-Kubernetes cluster
+Prometheus / Thanos Query
         ↓
-Prometheus or Thanos Query configuration
+Provider core runtime (`prometheus-core-v1`)
         ↓
-Prometheus runtime observation
-        ↓
-Exact Kubernetes Analytics query contracts
+IntegrationBinding
+        ├── Kubernetes cluster → `kubernetes-metrics-v1`
+        └── Object storage system → `minio-metrics-2024-v1`
 ```
 
-Runtime presentation models must be self-contained. Templates render `refresh_url`, binding labels, health, readiness, and evidence supplied by Python; they must not construct URLs from a `cluster` object or infer provider binding.
+Runtime presentation models must be self-contained. Templates render `refresh_url`,
+binding labels, health, readiness, and evidence supplied by Python; they must not
+construct URLs from a cluster/object-storage object or infer provider binding.
 
-Endpoint runtime health and Analytics readiness are separate signals. A reachable endpoint may remain runtime-healthy while Analytics readiness is degraded because one or more exact registered feature queries failed. Capability and `/series` discovery are diagnostic evidence only and cannot override a successful feature-query contract.
+Provider runtime health and consumer readiness are separate signals. A reachable,
+core-ready Prometheus remains provider-ready when one Kubernetes or MinIO consumer
+contract has missing metric evidence. The affected binding/consumer is degraded or
+blocked independently. Kubernetes Analytics exact query contracts remain
+authoritative only for Kubernetes bindings.
 
 
 ## Per-query failure boundary

@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.extensions.db import db
-from app.integrations.lifecycle import bind_instance, ensure_canonical_instance
+from app.integrations.lifecycle import BindingPersistenceSpec, bind_instance, ensure_canonical_instance
 from app.integrations.minio.capabilities import CAPABILITY_KEYS, OBJECT_STORAGE_SYSTEM_SCOPE
 from app.models.integration import IntegrationBinding
 from app.models.minio import MinioInstance
@@ -14,13 +14,13 @@ def ensure_primary_asset_binding(instance: MinioInstance, *, commit: bool = True
     canonical = ensure_canonical_instance(instance, provider_type='minio')
     binding = bind_instance(
         canonical,
-        asset_type=OBJECT_STORAGE_SYSTEM_SCOPE,
-        asset_key=instance.object_storage_system_id,
-        role='primary',
-        priority=100,
-        capability_scope=list(CAPABILITY_KEYS),
-        validation_status='validation_required',
-        validation_message='Validate the MinIO API runtime before KAORI selects this provider for the object-storage asset.',
+        spec=BindingPersistenceSpec(
+            asset_type=OBJECT_STORAGE_SYSTEM_SCOPE,
+            asset_key=str(instance.object_storage_system_id),
+            capability_scope=list(CAPABILITY_KEYS),
+            validation_status='validation_required',
+            validation_message='Validate the MinIO API runtime before KAORI selects this provider for the object-storage asset.',
+        ),
     )
     if commit:
         db.session.commit()

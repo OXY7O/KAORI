@@ -145,8 +145,8 @@ _COMPATIBILITY_PRESENTATION: tuple[dict[str, Any], ...] = (
         'current_band': 'v3.x',
         'support_label': 'Prometheus 3 Current',
         'support_tone': 'normal',
-        'capability_summary': 'Prometheus HTTP API instant and range queries with Kubernetes metric contracts.',
-        'validation_basis': 'Required metrics, labels, query evidence, and retention capability must pass readiness validation.',
+        'capability_summary': 'Prometheus HTTP API core queries with asset-scoped consumer metric contracts.',
+        'validation_basis': 'Provider readiness validates endpoint compatibility and core Prometheus APIs; Kubernetes, MinIO, and future metric contracts are validated per asset binding.',
     },
     {
         'key': 'alertmanager',

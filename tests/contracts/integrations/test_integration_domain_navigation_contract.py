@@ -49,7 +49,6 @@ def test_builtin_providers_declare_domain_navigation_ownership() -> None:
 
 def test_domain_landing_routes_share_one_taxonomy_page_builder() -> None:
     routes = read('app/integrations/routes.py')
-    service = read('app/integrations/service.py')
     domain_service = read('app/integrations/domain_service.py')
 
     assert 'def _render_domain_page(domain_key: str)' in routes
@@ -59,7 +58,7 @@ def test_domain_landing_routes_share_one_taxonomy_page_builder() -> None:
     assert "'integrations/domain.html'" in routes
     assert 'build_integration_domain_page(domain_key)' in routes
 
-    assert 'from app.integrations.domain_service import build_integration_domain_page' in service
+    assert 'from app.integrations.domain_service import build_integration_domain_page' in routes
     assert 'get_domain_definition(domain_key)' in domain_service
     assert 'for module in registry.all() if module.domain_key == domain.key' in domain_service
     assert 'IntegrationInstance.query.options(selectinload(IntegrationInstance.bindings))' in domain_service

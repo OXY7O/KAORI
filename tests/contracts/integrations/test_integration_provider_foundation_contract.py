@@ -120,7 +120,7 @@ def test_prometheus_binding_validation_is_asset_profile_driven() -> None:
     assert 'asset_type=KUBERNETES_CLUSTER_SCOPE' in profiles
     assert 'get_binding_validation_profile(binding.asset_type)' in validation
     assert "('kube_node_info', 'Kubernetes node identity')" not in validation
-    assert 'No Prometheus binding validation profile is registered for asset type' in validation
+    assert 'No Prometheus consumer validation profile is registered for asset type' in validation
 
 
 def test_overview_catalog_is_registry_driven_and_storage_is_domain_not_fake_provider() -> None:

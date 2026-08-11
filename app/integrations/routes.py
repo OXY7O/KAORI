@@ -5,6 +5,7 @@ from flask_login import current_user
 from app.common.http import htmx_target, is_htmx_request
 from app.integrations.binding_service import create_cluster_source_binding
 from app.integrations.coverage import build_binding_workspace
+from app.integrations.domain_service import build_integration_domain_page
 from app.integrations.repository import get_kubernetes_connection_by_cluster_id
 from app.integrations.runtime.presentation import runtime_history_view
 from app.integrations.runtime.repository import paginate_runtime_history
@@ -51,6 +52,31 @@ def overview() -> ResponseReturnValue:
     if is_runtime_partial:
         return render_template('integrations/partials/_runtime_overview.html', **context)
     return render_template('integrations/overview.html', **context)
+
+
+def _render_domain_page(domain_key: str) -> ResponseReturnValue:
+    return render_template(
+        'integrations/domain.html',
+        **build_integration_domain_page(domain_key),
+    )
+
+
+@integrations_bp.get('/orchestration')
+@permission_required('settings.manage_integrations')
+def orchestration() -> ResponseReturnValue:
+    return _render_domain_page('orchestration')
+
+
+@integrations_bp.get('/observability')
+@permission_required('settings.manage_integrations')
+def observability() -> ResponseReturnValue:
+    return _render_domain_page('observability')
+
+
+@integrations_bp.get('/storage')
+@permission_required('settings.manage_integrations')
+def storage() -> ResponseReturnValue:
+    return _render_domain_page('storage')
 
 
 @integrations_bp.get('/runtime/<string:detail_key>/details')

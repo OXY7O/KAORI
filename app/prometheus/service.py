@@ -9,7 +9,13 @@ from app.common.integration_errors import describe_integration_failure
 from app.extensions.db import db
 from app.integrations.binding_selectors import build_selector
 from app.integrations.deletion import DeletionBlocked, provider_deletion_guard
-from app.integrations.lifecycle import bind_instance, ensure_canonical_instance, invalidate_bindings
+from app.integrations.lifecycle import (
+    BindingPersistenceSpec,
+    bind_instance,
+    ensure_canonical_instance,
+    invalidate_bindings,
+)
+from app.integrations.prometheus.binding_profiles import get_binding_validation_profile
 from app.integrations.prometheus.capabilities import BINDING_CAPABILITY_KEYS
 from app.integrations.prometheus.exceptions import PrometheusError
 from app.integrations.registry import get_integration
@@ -251,14 +257,18 @@ def save_prometheus_instance(
             ),
         )
     if initial_cluster is not None:
+        profile = get_binding_validation_profile(KUBERNETES_CLUSTER_SCOPE)
         bind_instance(
             canonical,
-            asset_type=KUBERNETES_CLUSTER_SCOPE,
-            asset_key=initial_cluster.id,
-            capability_scope=list(BINDING_CAPABILITY_KEYS),
-            selector_json=build_selector(label='cluster', value=initial_cluster.name),
-            validation_status='validation_required',
-            validation_message='Registration created a provisional cluster selector. Verify the actual source label value before operational use.',
+            spec=BindingPersistenceSpec(
+                asset_type=KUBERNETES_CLUSTER_SCOPE,
+                asset_key=str(initial_cluster.id),
+                capability_scope=list(BINDING_CAPABILITY_KEYS),
+                selector_json=build_selector(label='cluster', value=initial_cluster.name),
+                validation_status='validation_required',
+                validation_profile=profile.profile_key if profile is not None else None,
+                validation_message='Registration created a provisional cluster selector. Verify the actual source label value before operational use.',
+            ),
         )
     try:
         db.session.commit()

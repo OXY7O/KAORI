@@ -46,7 +46,7 @@ def test_provider_bound_scope_tables_are_full_width_before_decision_split() -> N
         marker = template.index('data-kaori-bound-scopes-full-width')
         decision = template.index('Binding Decision')
         assert marker < decision
-    assert 'Bound Kubernetes Scopes' in prometheus
+    assert 'Consumer Bindings' in prometheus
     assert 'Bound Operational Scopes' in alertmanager
 
 

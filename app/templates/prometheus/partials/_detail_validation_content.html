@@ -2,44 +2,34 @@
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "integrations/components/_capability_readiness.html" as capability_readiness %}
 {% set readiness = instance.readiness_status or 'validation_required' %}
-{% set retention = instance.retention_validation_summary or {} %}
-{% set retention_summary = namespace(ready=0) %}
-{% for horizon in ['24h', '7d', '30d', '60d'] %}
-    {% set horizon_state = retention.get(horizon, {}) if retention is mapping else {} %}
-    {% if horizon_state is mapping and horizon_state.get('available') %}
-        {% set retention_summary.ready = retention_summary.ready + 1 %}
-    {% endif %}
-{% endfor %}
 {% set readiness_percent = ((capability_summary.observed * 100 / capability_summary.total)|round|int) if capability_summary.total else 0 %}
 {% set required_ready = capability_summary.required_missing == 0 %}
 {% set capability_metrics = [
-    {'icon': 'layers-3', 'tone': 'normal', 'label': 'Validated Capabilities', 'value': capability_summary.observed, 'description': 'Usable PromQL, metric, label, and provider evidence.'},
-    {'icon': 'shield-x', 'tone': 'critical' if capability_summary.required_missing else 'normal', 'label': 'Required Blocks', 'value': capability_summary.required_missing, 'description': 'Core Analytics contracts blocked by missing evidence.'},
-    {'icon': 'history', 'tone': 'normal' if retention_summary.ready == 4 else 'warning', 'label': 'Retention Coverage', 'value': retention_summary.ready ~ '/4', 'description': 'Validated query horizons across 24h, 7d, 30d, and 60d.'}
+    {'icon': 'braces', 'tone': 'normal', 'label': 'Core Capabilities', 'value': capability_summary.observed ~ '/' ~ capability_summary.total, 'description': 'Provider-neutral Prometheus HTTP API and PromQL capabilities.'},
+    {'icon': 'shield-x', 'tone': 'critical' if capability_summary.required_missing else 'normal', 'label': 'Core Blocks', 'value': capability_summary.required_missing, 'description': 'Provider-level capabilities that block use as a metrics runtime.'},
+    {'icon': 'link-2', 'tone': 'normal', 'label': 'Consumer Bindings', 'value': binding_rows|length, 'description': 'Kubernetes, MinIO, and future consumers validated independently per binding.'}
 ] %}
 {% set capability_metadata = [
-    'Profile · ' ~ (instance.compatibility_profile or 'Validation Required'),
-    capability_summary.optional_missing ~ ' optional gap' ~ ('' if capability_summary.optional_missing == 1 else 's')
+    'Compatibility · ' ~ (instance.compatibility_profile or 'Validation Required'),
+    'Core Profile · ' ~ (instance.capability_profile or instance.query_profile or 'Validation Required')
 ] %}
 {% if capability_summary.required_missing %}
-    {% set next_action = "Resolve required PromQL, metric, label, or retention gaps, then rerun Full Validation before relying on downstream Analytics." %}
-{% elif capability_summary.optional_missing %}
-    {% set next_action = "Core Analytics is eligible. Review optional gaps only where deeper workload, storage, forecast, or long-history analysis is required." %}
+    {% set next_action = "Restore the blocked provider-level API capability, then rerun Full Validation." %}
 {% else %}
-    {% set next_action = "Capability evidence is complete. Refresh runtime health and confirm effective source resolution for governed Analytics scopes." %}
+    {% set next_action = "Provider core is ready. Validate each consumer binding to establish Kubernetes, MinIO, or future metric-contract evidence." %}
 {% endif %}
 <section id="prometheus-validation-workspace"
          class="relative overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm font-sans"
-         data-kaori-prometheus-validation-v3
+         data-kaori-prometheus-validation-v4
          data-kaori-provider-capability-matrix
          {% if validation_job and validation_job.is_active %}hx-get="{{ url_for('prometheus.instance_validation_status', instance_id=instance.id, task_id=validation_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML"{% endif %}>
     {% call connection_validation_header.render(
-        'Prometheus Validation & PromQL',
-        'Validate endpoint compatibility, PromQL contracts, retention coverage, and downstream Analytics eligibility using the same decision-first matrix pattern as Kubernetes.',
+        'Prometheus Core Validation',
+        'Validate endpoint compatibility and provider-neutral Prometheus APIs. Kubernetes, MinIO, and other metric contracts are validated through their asset-scoped bindings.',
         icon='scan-search',
         loading_id='prometheus-validation-loading',
         loading_active=validation_job and validation_job.is_active,
-        loading_label='Running Prometheus full validation'
+        loading_label='Running Prometheus core validation'
         ) %}
         <form method="post"
               action="{{ url_for('prometheus.instance_validate', instance_id=instance.id) }}"
@@ -68,21 +58,30 @@
         </div>
     {% endif %}
     <div class="space-y-4 p-4 sm:p-5">
-        {{ capability_readiness.render('Prometheus Capability Readiness',
-                'Required PromQL, metric, label, retention, and provider evidence used by Kubernetes Analytics and related consumers.',
+        {{ capability_readiness.render('Prometheus Provider Readiness',
+                'Provider readiness is based only on endpoint compatibility and generic Prometheus APIs. Consumer-specific metric coverage never degrades the shared provider runtime.',
                 readiness,
                 readiness|replace('_', ' ') |title,
-        'Validated capability coverage',
+        'Validated core capability coverage',
         capability_summary.observed ~ ' / ' ~ capability_summary.total,
         readiness_percent,
         capability_metadata,
         capability_metrics,
-        'Core Analytics Eligible' if required_ready else 'Remediation Required',
-        'Required capability contracts are usable; binding resolution remains an independent gate.' if required_ready else 'Restore required capability evidence before treating this source as Analytics-ready.',
+        'Provider Core Ready' if required_ready else 'Provider Remediation Required',
+        'This runtime can serve eligible consumer bindings.' if required_ready else 'Restore the provider-level API contract before validating consumer bindings.',
         'normal' if required_ready else 'critical',
-        'Full Validation owns PromQL, compatibility, retention, and capability eligibility. Runtime Refresh owns current endpoint reachability, latency, and provider health.',
+        'Full Validation owns provider compatibility and core API readiness. Consumer bindings own Kubernetes, MinIO, and future metric-contract validation.',
         next_action
         ) }}
+        <div class="rounded-xl border border-outline-subtle bg-surface-hover px-4 py-3.5 sm:px-5">
+            <div class="flex items-start gap-3">
+                <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"><i data-lucide="waypoints" class="h-4 w-4" aria-hidden="true"></i></span>
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-content-primary">Consumer Validation Boundary</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">A single Prometheus runtime may serve multiple domains. Each binding selects its consumer profile automatically from the asset type, such as Kubernetes Metrics v1 or MinIO Metrics 2024 v1.</p>
+                </div>
+            </div>
+        </div>
         {% include 'prometheus/partials/_capability_registry.html' %}
     </div>
 </section>

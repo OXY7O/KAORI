@@ -118,7 +118,7 @@ Resolution detail must show why a candidate was selected, eligible, or skipped. 
 Shared structure does not mean identical copy. Provider-specific technical contracts remain explicit:
 
 - Alertmanager: API availability, alerts, silences, status, routing-related evidence, and alert-source resolution.
-- Prometheus: instant/range query APIs, metrics and labels, PromQL contracts, retention, Kubernetes analytics capabilities, and metrics-source resolution.
+- Prometheus: provider-neutral instant/range query, series/label discovery, and compatibility at provider level; Kubernetes, MinIO, and future metrics/PromQL contracts plus source resolution are binding-scoped.
 
 The provider remains authoritative for execution. KAORI provides validation, governance, historical evidence, and controlled source resolution.
 

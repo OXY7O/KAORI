@@ -30,7 +30,7 @@ def test_prometheus_bindings_use_kaori_table_and_native_create_dialog() -> None:
     template = read('app/templates/prometheus/partials/_detail_scope.html')
 
     assert 'Bindings &amp; Consumers' in template
-    assert 'Bound Kubernetes Scopes' in template
+    assert 'Consumer Bindings' in template
     assert 'Effective Consumer Resolution' in template
     assert 'Binding Decision' in template
     assert 'table_ui.table_classes' in template

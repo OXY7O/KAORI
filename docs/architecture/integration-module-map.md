@@ -119,12 +119,25 @@ asset and does not store kubeconfig, endpoint, or TLS connection policy.
 Compatibility exists at two different layers and must not be confused:
 
 1. **Provider compatibility profiles** are supported runtime contracts such as
-   Kubernetes API lifecycle bands, Prometheus v2/v3 query contracts, and
-   Alertmanager v0.25/v0.33 API contracts.
+   Kubernetes API lifecycle bands, Prometheus/Thanos endpoint compatibility, and
+   Alertmanager v0.25/v0.33 API contracts. Prometheus provider readiness uses the
+   consumer-neutral `prometheus-core-v1` contract; exporter/domain metric contracts
+   are owned by asset-scoped bindings.
 2. **Application compatibility layers are not retained.** Replaced URLs return
    `404`, retired Python import paths are removed, and persisted transition fields
    are converted by an explicit Alembic migration. External runtime compatibility
    remains implemented only through provider profiles and capability evidence.
+
+### Prometheus consumer-profile boundary
+
+One Prometheus provider may serve multiple managed-asset types. Provider Full
+Validation establishes only endpoint compatibility and `prometheus-core-v1`.
+`IntegrationBinding.validation_profile` selects the asset contract and
+`IntegrationBinding.validation_evidence` stores its scoped metric/PromQL evidence.
+Current canonical profiles are `kubernetes-metrics-v1` for
+`kubernetes_cluster` and `minio-metrics-2024-v1` for `object_storage_system`.
+The Prometheus resolver evaluates consumer eligibility from binding evidence, not
+from provider-wide Kubernetes capability state.
 
 ## Worker ownership
 

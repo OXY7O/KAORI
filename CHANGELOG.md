@@ -1,17 +1,16 @@
 # Changelog
+- Refined Integration domain landing-page UX by removing duplicated KPI tiles, using compact capability/provider metadata, and replacing empty provider metrics with an explicit registration-validation-binding onboarding path.
 
 All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for release identity.
 
 ## [Unreleased]
 
-### Added
-- Added MinIO as the first `Storage → Object Storage` integration provider with a provider-neutral `ObjectStorageSystem` asset, encrypted S3 API credentials, strict `RELEASE.2024-08-03T04-33-23Z` compatibility profile, runtime validation, and asset-scoped Prometheus metrics binding.
+### Fixed
+- Repaired Integration domain route ownership so Flask application boot and `flask db upgrade` import `build_integration_domain_page` directly from `domain_service` instead of a removed `service.py` re-export.
 
 ### Changed
-- Refined Integration domain landing-page UX by removing duplicated KPI tiles, using compact capability/provider metadata, and replacing empty provider metrics with an explicit registration-validation-binding onboarding path.
-- Completed the provider-extension foundation for MinIO by moving domain composition out of the legacy Integration service, resolving provider breadcrumb ownership through the registry, dispatching extension runtime rows through provider registration hooks, and consolidating asset-binding inputs under a shared `SourceBindingSpec`.
-- Reduced the reviewed code-health debt ledger without changing canonical default ceilings; the current baseline remains capped at 198 broad exception handlers.
-- Generalized integration validation admission and scheduled runtime refresh dispatch so newly registered providers such as MinIO do not require central provider allow-lists.
+- Generalized Prometheus provider readiness around the consumer-neutral `prometheus-core-v1` contract and moved Kubernetes/MinIO metric, label, PromQL, and capability evidence to asset-scoped `IntegrationBinding` consumer profiles.
+- Added `kubernetes-metrics-v1` and `minio-metrics-2024-v1` binding profiles plus persisted binding validation profile/evidence so one Prometheus source can serve multiple managed-asset types without false provider degradation.
 
 ## [2.2.0] - 2026-08-11
 

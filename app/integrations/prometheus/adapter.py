@@ -16,7 +16,6 @@ from app.integrations.prometheus.runtime import (
     refresh_instance_health,
     validate_instance,
 )
-from app.integrations.prometheus.scope import primary_cluster_id_for_instance
 from app.integrations.runtime.scoring import calculate_health
 from app.models.prometheus import PrometheusInstance
 
@@ -113,9 +112,9 @@ class PrometheusRuntimeAdapter:
     ) -> RuntimeState:
         now = datetime.now(UTC)
         assessments = (instance.capabilities or {}).get('assessments') or []
-        contract_summary = (instance.query_validation_summary or {}).get('feature_contract_summary') or {}
+        core_summary = (instance.query_validation_summary or {}).get('core_summary') or {}
         diagnostics = self._diagnostics(instance, assessments)
-        health = calculate_health(self._factors(instance, assessments, contract_summary))
+        health = calculate_health(self._factors(instance, assessments, core_summary))
         available = tuple(sorted((instance.capabilities or {}).get('available') or ()))
         snapshot = CapabilitySnapshot(
             profile=instance.capability_profile or instance.query_profile,
@@ -128,15 +127,11 @@ class PrometheusRuntimeAdapter:
                 'source_prometheus_major': instance.source_prometheus_major,
                 'module_readiness': instance.module_readiness or {},
                 'capability_assessments': assessments,
-                'feature_contract_summary': contract_summary,
-                'binding_type': 'kubernetes_cluster',
-                'cluster_id': str(
-                    getattr(instance, 'cluster_id', '') or primary_cluster_id_for_instance(instance) or ''
-                ),
+                'core_validation_summary': core_summary,
+                'consumer_validation_owner': 'integration_binding',
             },
         )
-        cluster_id = primary_cluster_id_for_instance(instance)
-        fallback_name = f'Cluster {cluster_id} metrics' if cluster_id else 'Prometheus metrics source'
+        fallback_name = 'Prometheus metrics source'
         return RuntimeState(
             provider=self.provider,
             instance_id=str(instance.id),
@@ -198,11 +193,11 @@ class PrometheusRuntimeAdapter:
     def _factors(
         instance: PrometheusInstance,
         assessments: list[dict[str, Any]],
-        contract_summary: dict[str, Any],
+        core_summary: dict[str, Any],
     ) -> tuple[HealthFactor, ...]:
         missing = [item for item in assessments if item.get('status') in {'missing', 'misconfigured', 'unsupported'}]
         capability_score = max(0, round(100 - (len(missing) * 15))) if assessments else 50
-        contract_status = contract_summary.get('status') or instance.query_validation_status
+        core_status = core_summary.get('status') or instance.query_validation_status
         return (
             HealthFactor(
                 'connectivity',
@@ -214,7 +209,7 @@ class PrometheusRuntimeAdapter:
             ),
             HealthFactor(
                 'readiness',
-                'Analytics readiness',
+                'Provider readiness',
                 'success'
                 if instance.readiness_status == 'ready'
                 else ('failed' if instance.readiness_status == 'blocked' else 'warning'),
@@ -223,12 +218,12 @@ class PrometheusRuntimeAdapter:
                 instance.validation_message or '',
             ),
             HealthFactor(
-                'query_contract',
-                'Analytics query contracts',
-                'success' if contract_status == 'ready' else ('failed' if contract_status == 'blocked' else 'warning'),
+                'core_contract',
+                'Prometheus core APIs',
+                'success' if core_status == 'ready' else ('failed' if core_status == 'blocked' else 'warning'),
                 25,
-                100 if contract_status == 'ready' else (0 if contract_status == 'blocked' else 65),
-                f'{contract_summary.get("failed_count", 0)} of {contract_summary.get("total_count", 0)} feature contracts failed.',
+                100 if core_status == 'ready' else (0 if core_status == 'blocked' else 65),
+                f'{core_summary.get("failed_count", 0)} of {core_summary.get("total_count", 0)} core API checks failed.',
             ),
             HealthFactor(
                 'capability',

@@ -175,9 +175,7 @@ def test_integration_overview_uses_canonical_label_roles() -> None:
     assert 'components/table_label.html' in runtime
 
     # Context and count metadata use the shared metadata label. Only scope gets an icon.
-    assert (
-        "table_label.metadata_label(available_provider_count ~ ' Registered'" in overview
-    )
+    assert "table_label.metadata_label(available_provider_count ~ ' Registered'" in overview
     assert 'Planned Providers' not in overview
     assert "table_label.metadata_label(provider_name, size='compact')" in overview
     assert "table_label.metadata_label(runtime_scope_label, 'filter'" in runtime

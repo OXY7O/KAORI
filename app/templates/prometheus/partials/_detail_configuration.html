@@ -82,7 +82,7 @@
                                 <div>
                                     <h4 id="prometheus-endpoint-title"
                                         class="text-sm font-semibold text-content-primary">Endpoint &amp; Access</h4>
-                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Endpoint reachability does not imply PromQL or Analytics readiness.</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Endpoint reachability does not imply provider core readiness or consumer-binding readiness.</p>
                                 </div>
                             </div>
                             <button type="button"
@@ -224,7 +224,7 @@
                 [
                 ('Canonical Source', instance.name, 'Reusable provider identity') ,
         ('Endpoint Product', endpoint_product_label, instance.detected_version or 'Version not observed'),
-        ('Query Profile', instance.query_profile or 'Validation Required', 'PromQL contract selected by Full Validation'),
+        ('Core Profile', instance.query_profile or 'Validation Required', 'Provider-neutral Prometheus core contract selected by Full Validation'),
         ('Scope Bindings', bindings|length, 'Governed consumer contexts')
         ],
         'Saving endpoint, access, trust, or compatibility settings resets readiness. Test Connection proves transport only.',

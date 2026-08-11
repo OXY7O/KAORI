@@ -77,8 +77,10 @@ def main() -> int:
         if marker not in routes:
             errors.append(f'domain route contract missing: {marker}')
 
-    if 'from app.integrations.domain_service import build_integration_domain_page' not in service:
-        errors.append('integration service must re-export the dedicated domain page builder')
+    if 'from app.integrations.domain_service import build_integration_domain_page' not in routes:
+        errors.append('domain routes must import the dedicated domain page builder from its owning module')
+    if 'from app.integrations.domain_service import build_integration_domain_page' in service:
+        errors.append('integration service must not re-export the domain page builder')
     for marker in (
         'get_domain_definition(domain_key)',
         'for module in registry.all() if module.domain_key == domain.key',

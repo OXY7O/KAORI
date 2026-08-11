@@ -58,7 +58,7 @@
                  class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
             {{ framed_workspace_tabs.render([
                         ('configuration', 'Configuration', 'settings-2', instance.environment|default('') |title),
-            ('validation', 'Validation & PromQL', 'scan-search', (instance.readiness_status or 'validation_required')|replace('_', ' ')|title),
+            ('validation', 'Core Validation', 'scan-search', (instance.readiness_status or 'validation_required')|replace('_', ' ')|title),
             ('runtime', 'Runtime & History', 'activity', runtime_state.health_status_label|default('Not Observed')),
             ('scope', 'Bindings & Consumers', 'waypoints', (binding_rows|default([])|length|string) ~ ' Bindings'),
             ],

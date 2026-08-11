@@ -1,9 +1,24 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 from app.extensions.db import db
 from app.models.integration import IntegrationBinding, IntegrationInstance
+
+
+@dataclass(frozen=True, slots=True)
+class BindingPersistenceSpec:
+    asset_type: str
+    asset_key: str
+    role: str = 'primary'
+    priority: int = 100
+    capability_scope: list[str] | None = None
+    selector_json: dict | None = None
+    validation_status: str | None = None
+    validation_profile: str | None = None
+    validation_evidence: dict | None = None
+    validation_message: str | None = None
 
 
 def ensure_provider_operational(provider_record: Any, *, provider_type: str) -> IntegrationInstance:
@@ -81,6 +96,7 @@ def invalidate_bindings(
         enabled=True,
     ).all():
         binding.validation_status = 'validation_required'
+        binding.validation_evidence = None
         binding.validation_message = message
         binding.last_validated_at = None
         count += 1
@@ -90,35 +106,32 @@ def invalidate_bindings(
 def bind_instance(
     canonical: IntegrationInstance,
     *,
-    asset_type: str,
-    asset_key: str,
-    role: str = 'primary',
-    priority: int = 100,
-    capability_scope: list[str] | None = None,
-    selector_json: dict | None = None,
-    validation_status: str | None = None,
-    validation_message: str | None = None,
+    spec: BindingPersistenceSpec,
 ) -> IntegrationBinding:
     binding = IntegrationBinding.query.filter_by(
         integration_instance_id=canonical.id,
-        asset_type=asset_type,
-        asset_key=str(asset_key),
-        binding_role=role,
+        asset_type=spec.asset_type,
+        asset_key=str(spec.asset_key),
+        binding_role=spec.role,
     ).first()
     if binding is None:
         binding = IntegrationBinding()
         binding.integration_instance_id = canonical.id
-        binding.asset_type = asset_type
-        binding.asset_key = str(asset_key)
-        binding.binding_role = role
+        binding.asset_type = spec.asset_type
+        binding.asset_key = str(spec.asset_key)
+        binding.binding_role = spec.role
         db.session.add(binding)
-    binding.priority = priority
+    binding.priority = spec.priority
     binding.enabled = True
-    binding.capability_scope = capability_scope
-    if selector_json is not None:
-        binding.selector_json = selector_json
-    if validation_status is not None:
-        binding.validation_status = validation_status
-    if validation_message is not None:
-        binding.validation_message = validation_message
+    binding.capability_scope = spec.capability_scope
+    if spec.selector_json is not None:
+        binding.selector_json = spec.selector_json
+    if spec.validation_status is not None:
+        binding.validation_status = spec.validation_status
+    if spec.validation_profile is not None:
+        binding.validation_profile = spec.validation_profile
+    if spec.validation_evidence is not None:
+        binding.validation_evidence = spec.validation_evidence
+    if spec.validation_message is not None:
+        binding.validation_message = spec.validation_message
     return binding

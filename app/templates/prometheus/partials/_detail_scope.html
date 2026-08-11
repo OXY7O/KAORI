@@ -18,7 +18,7 @@
                     <div class="min-w-0">
                         <h2 id="prometheus-bindings-title"
                             class="text-base font-semibold text-content-primary">Bindings &amp; Consumers</h2>
-                        <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Review cluster-scoped source bindings, resolver preference, and the analytics consumers that can effectively select this Prometheus source.</p>
+                        <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Review asset-scoped consumer bindings, validation profiles, resolver preference, and the domains that can effectively select this Prometheus source.</p>
                     </div>
                 </div>
                 <button type="button"
@@ -26,7 +26,7 @@
                         data-dialog-target="prometheus-create-binding-dialog"
                         class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                     <i data-lucide="link" class="h-4 w-4" aria-hidden="true"></i>
-                    Add Binding
+                    Add Kubernetes Binding
                 </button>
             </div>
         </header>
@@ -43,7 +43,7 @@
         {% endif %}
         <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
             {% set binding_metrics = [
-                            ('link-2', 'Bound Scopes', binding_rows|length, 'Managed Kubernetes cluster mappings'),
+                            ('link-2', 'Consumer Bindings', binding_rows|length, 'Kubernetes, MinIO, and future asset mappings'),
                             ('shield-check', 'Validated Bindings', validated_binding_count, 'Binding validation currently Ready'),
                             ('route', 'Operational Bindings', ready_binding_count, 'Source + binding gates currently usable'),
                             ('layout-grid', 'Resolution Scopes', resolution_scope_count, 'Scopes with consumer resolution context')
@@ -70,8 +70,8 @@
                 {{ integration_ui.palette_icon('boxes', 'brand', size='md') }}
                 <div class="min-w-0">
                     <h3 id="prometheus-bound-scopes-title"
-                        class="text-sm font-semibold text-content-primary">Bound Kubernetes Scopes</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Each row represents one governed cluster binding and its independent validation state.</p>
+                        class="text-sm font-semibold text-content-primary">Consumer Bindings</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Each row represents one governed asset binding, its auto-selected consumer validation profile, and independent operational state.</p>
                 </div>
             </div>
             {{ table_label.metadata_label(binding_rows|length ~ (' binding' if binding_rows|length == 1 else ' bindings') ) }}
@@ -80,7 +80,7 @@
             <table class="{{ table_ui.table_classes('min-w-[72rem]') }}">
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
-                        <th class="{{ table_ui.header_cell_classes() }}">Cluster Scope</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Consumer Asset</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Metrics Identity</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Preference</th>
                         <th class="{{ table_ui.header_cell_classes() }}">Binding Validation</th>
@@ -96,6 +96,7 @@
                                     {{ integration_ui.palette_icon('boxes', 'brand', size='sm') }}
                                     <div class="min-w-0">
                                         <p class="text-sm font-semibold text-content-primary">{{ row.scope_label }}</p>
+                                        <p class="mt-0.5 text-xs font-medium text-content-secondary">{{ row.scope_type_label }} · {{ row.consumer_profile_label }}</p>
                                         <p class="mt-0.5 max-w-[18rem] truncate text-xs text-content-muted"
                                            title="{{ row.binding.asset_key }}">{{ row.binding.asset_key }}</p>
                                     </div>
@@ -191,7 +192,7 @@
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="6" class="px-5 py-10 text-center text-sm text-content-muted">No Kubernetes scope is bound to this Prometheus source yet.</td>
+                            <td colspan="6" class="px-5 py-10 text-center text-sm text-content-muted">No consumer binding is attached to this Prometheus source yet.</td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -407,8 +408,8 @@
                 <div class="flex min-w-0 items-start gap-3">
                     {{ integration_ui.palette_icon('link', 'brand', size='md') }}
                     <div class="min-w-0">
-                        <h3 class="text-base font-semibold text-content-primary">Create Prometheus Binding</h3>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">Authorize this source for one managed Kubernetes cluster and define resolver preference.</p>
+                        <h3 class="text-base font-semibold text-content-primary">Create Kubernetes Metrics Binding</h3>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Authorize this source for one managed Kubernetes cluster. KAORI automatically assigns the Kubernetes Metrics v1 consumer profile.</p>
                     </div>
                 </div>
                 <button type="button"
@@ -496,7 +497,7 @@
                 </section>
             </div>
             <footer class="flex items-center justify-between gap-3 border-t border-outline-subtle bg-surface-subtle px-5 py-3.5">
-                <p class="text-xs leading-5 text-content-muted">Saving creates the binding in Validation Required until technical validation completes.</p>
+                <p class="text-xs leading-5 text-content-muted">Saving creates the binding in Validation Required until the Kubernetes consumer profile completes validation.</p>
                 <div class="flex items-center gap-2">
                     <button type="button"
                             data-kaori-dialog-close

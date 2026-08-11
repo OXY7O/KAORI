@@ -25,13 +25,13 @@
                       aria-hidden="true"><i data-lucide="braces" class="h-4 w-4"></i></span>
                 <div class="min-w-0">
                     <h3 id="prometheus-capability-registry-title"
-                        class="text-sm font-semibold text-content-primary">PromQL Capability Registry</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Compare required provider capabilities and inspect exact query evidence only when needed.</p>
+                        class="text-sm font-semibold text-content-primary">Prometheus Core Capability Registry</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Validate the provider-neutral HTTP API capabilities required before any consumer binding can be used.</p>
                 </div>
             </div>
             {{ table_label.metadata_label(capability_summary.total ~ ' Capabilities') }}
         </div>
-        {{ loading_bar.render(loading_id, active=validation_job and validation_job.is_active, label='Refreshing PromQL Capability Registry') }}
+        {{ loading_bar.render(loading_id, active=validation_job and validation_job.is_active, label='Refreshing Prometheus Core Capability Registry') }}
     </header>
     <div class="{{ table_ui.inventory_filter_bar_classes() }}"
          data-kaori-promql-capability-filters>
@@ -42,7 +42,7 @@
               hx-swap="outerHTML"
               hx-trigger="keyup changed delay:300ms from:input[name='query'], change delay:100ms from:select"
               hx-indicator="#{{ loading_id }}"
-              aria-label="PromQL capability filters"
+              aria-label="Prometheus core capability filters"
               class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_13rem_13rem]">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
@@ -158,7 +158,7 @@
                         name="per_page"
                         data-kaori-auto-submit
                         class="{{ pagination_ui.page_size_classes() }}"
-                        aria-label="PromQL capabilities per page">
+                        aria-label="Prometheus core capabilities per page">
                     {% for option in pagination.allowed_per_page %}
                         <option value="{{ option }}"
                                 {% if option == pagination.per_page %}selected{% endif %}>{{ option }}</option>
@@ -167,7 +167,7 @@
             </form>
         </div>
         <nav class="{{ pagination_ui.navigation_group_classes() }}"
-             aria-label="PromQL Capability Registry pagination">
+             aria-label="Prometheus Core Capability Registry pagination">
             {% set query_params = {'query': filters.query, 'requirement': filters.requirement, 'status': filters.status, 'per_page': pagination.per_page} %}
             {% if pagination.has_prev %}
                 <a href="{{ url_for(detail_endpoint, instance_id=instance.id, tab='validation') }}"
@@ -198,7 +198,7 @@
         {% call record_detail_modal.render(
             'prometheus-capability-detail-' ~ loop.index,
             row.key,
-            'Prometheus Capability Evidence',
+            'Prometheus Core Capability Evidence',
             row.label,
             row.category ~ ' · ' ~ ('Required' if row.required else 'Optional') ~ ' capability',
             icon='scan-search',
@@ -208,8 +208,8 @@
             {{ provider_capability_detail.content(row,
                         'Prometheus',
                         row.source_owner,
-                        'Runnable PromQL Query',
-                        'Full Validation owns PromQL contract, metric and label evidence. Runtime Refresh owns current endpoint reachability and provider health; effective Analytics resolution remains a separate binding decision.') }}
+                        'Provider API Probe',
+                        'Full Validation owns provider compatibility and generic Prometheus API evidence. Consumer-specific Kubernetes, MinIO, and future metric contracts are validated on their bindings.') }}
         {% endcall %}
     {% endfor %}
 </section>

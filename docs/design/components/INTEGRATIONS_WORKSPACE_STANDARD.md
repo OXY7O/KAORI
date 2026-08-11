@@ -365,7 +365,7 @@ Prometheus `PromQL Capability Registry` and Alertmanager `Alert Management Capab
 
 ## Provider Capability Matrix Alignment
 
-Prometheus and Alertmanager validation workspaces follow the Kubernetes `Compatibility & Capability Matrix` composition:
+Prometheus and Alertmanager validation workspaces follow the Kubernetes `Compatibility & Capability Matrix` composition. For Prometheus, the provider-level matrix is intentionally consumer-neutral (`prometheus-core-v1`); Kubernetes, MinIO, and future exporter/domain evidence belongs to the corresponding asset binding rather than the shared provider state:
 
 - one validation header with the canonical shared loading bar;
 - one horizontal provider capability-readiness surface before the registry;

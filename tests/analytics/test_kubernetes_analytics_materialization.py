@@ -16,7 +16,7 @@ from app.analytics.materialization.requests import MaterializedRequest
 from app.analytics.materialization.service import SnapshotResult, store_snapshot
 from app.integrations.prometheus.query_profiles.audit import PromQLProfileAuditor
 from app.jobs.definitions.forecast_refresh import FORECAST_REFRESH_DEFINITION
-from app.prometheus.presentation import _MODULE_REQUIREMENTS, _RESOLUTION_CONSUMERS, _module_readiness_rows
+from app.prometheus.presentation import _RESOLUTION_CONSUMERS, _module_readiness_rows
 
 
 def test_snapshot_parameters_exclude_view_only_filters() -> None:
@@ -117,9 +117,6 @@ def test_storage_and_workload_capability_contracts_match_worker_services() -> No
         'resource_requests_limits',
     )
 
-    assert _MODULE_REQUIREMENTS['app.analytics.storage'] == storage.required_capabilities
-    assert _MODULE_REQUIREMENTS['app.analytics.workload'] == workload.required_capabilities
-
     consumers = {item['key']: item for item in _RESOLUTION_CONSUMERS}
     assert consumers['storage']['binding_capabilities'] == storage.required_binding_capabilities
     assert consumers['workload']['binding_capabilities'] == workload.required_binding_capabilities
@@ -127,7 +124,7 @@ def test_storage_and_workload_capability_contracts_match_worker_services() -> No
     assert consumers['workload']['technical_capabilities'] == workload.required_capabilities
 
 
-def test_ready_prometheus_reports_query_gaps_as_degraded_not_unavailable() -> None:
+def test_prometheus_provider_readiness_is_independent_from_kubernetes_query_gaps() -> None:
     persisted = PromQLProfileAuditor._module_readiness(
         {
             'app.analytics.storage': {
@@ -145,12 +142,31 @@ def test_ready_prometheus_reports_query_gaps_as_degraded_not_unavailable() -> No
     )
     rows = _module_readiness_rows(
         instance,
-        available_capabilities=set(_MODULE_REQUIREMENTS['app.analytics.storage']),
+        available_capabilities={'instant_query', 'range_query', 'series_discovery', 'label_discovery'},
     )
-    storage = next(item for item in rows if item['key'] == 'app.analytics.storage')
-    assert storage['status'] == 'degraded'
-    assert storage['missing_required_labels'] == []
-    assert storage['blocked_count'] == 4
+    assert rows == [
+        {
+            'key': 'prometheus_core',
+            'label': 'Prometheus Core Runtime',
+            'description': 'Provider-neutral HTTP API and PromQL capabilities required before any consumer binding is eligible.',
+            'status': 'ready',
+            'required_capability_labels': [
+                'Instant Query',
+                'Range Query',
+                'Series Discovery',
+                'Label Discovery',
+            ],
+            'optional_capability_labels': [],
+            'missing_required_labels': [],
+            'missing_optional_labels': [],
+            'operator_guidance': (
+                'No provider-level action is required. Validate each Kubernetes, MinIO, or future consumer through its binding.'
+            ),
+            'ready_count': 4,
+            'query_count': 4,
+            'blocked_count': 0,
+        }
+    ]
 
 
 def test_persisted_readiness_builds_query_service_without_live_health_probe(monkeypatch) -> None:

@@ -34,12 +34,12 @@ def test_configuration_keeps_endpoint_product_semantics_explicit():
 def test_validation_uses_kubernetes_style_capability_readiness_before_full_width_registry():
     text = VALIDATION.read_text()
     registry = PROMQL_REGISTRY.read_text()
-    assert 'Prometheus Validation & PromQL' in text
-    assert 'Prometheus Capability Readiness' in text
+    assert 'Prometheus Core Validation' in text
+    assert 'Prometheus Provider Readiness' in text
     assert 'integrations/components/_capability_readiness.html' in text
     assert 'capability_readiness.render(' in text
     assert "include 'prometheus/partials/_capability_registry.html'" in text
-    assert 'PromQL Capability Registry' in registry
+    assert 'Prometheus Core Capability Registry' in registry
     assert 'data-kaori-provider-capability-matrix' in text
     assert 'Validation Decision' not in text
     assert 'lg:sticky lg:top-4' not in text
@@ -94,7 +94,7 @@ def test_promql_view_more_matches_kubernetes_capability_evidence_concept():
     actions = (ROOT / 'app/templates/integrations/components/_record_actions.html').read_text()
     assert 'provider_capability_detail.content(' in registry
     assert 'record_actions.view_more(' in registry
-    assert "'Prometheus Capability Evidence'" in registry
+    assert "'Prometheus Core Capability Evidence'" in registry
     for token in (
         'Capability Contract',
         'Validation Evidence',

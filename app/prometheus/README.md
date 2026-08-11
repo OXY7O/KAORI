@@ -39,6 +39,20 @@ provider runtime and binding operations are dispatched through the Integration
 Registry. Provider compatibility, query validation, binding mutation, and scope
 probe logic must not be reimplemented in this package.
 
+
+## Provider readiness and consumer validation
+
+A Prometheus instance is a general metrics runtime provider. Provider readiness is
+consumer-neutral and validates endpoint identity, compatibility, instant/range
+query execution, series discovery, and label discovery through
+`prometheus-core-v1`. It must not require Kubernetes or MinIO metrics.
+
+Metric-family requirements belong to `IntegrationBinding`. A Kubernetes cluster
+uses the `kubernetes-metrics-v1` consumer profile; a MinIO object-storage asset
+uses `minio-metrics-2024-v1`. Binding validation persists profile-specific
+evidence on the binding, allowing one Prometheus source to serve multiple asset
+types without contaminating provider readiness.
+
 ## Analytics query runtime contract
 
 Kubernetes Analytics uses `PrometheusConsumer` as the canonical query boundary.

@@ -33,7 +33,8 @@ def _record_failure(instance: MinioInstance, error: Exception) -> None:
 register_binding_validation_profile(
     BindingValidationProfile(
         asset_type=OBJECT_STORAGE_SYSTEM_SCOPE,
-        label='MinIO Object Storage Metrics',
+        profile_key='minio-metrics-2024-v1',
+        label='MinIO Metrics 2024 v1',
         probes=(
             BindingProbe('minio_software_version_info', 'MinIO software identity'),
             BindingProbe('minio_cluster_usage_total_bytes', 'MinIO cluster usage'),

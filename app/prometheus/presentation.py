@@ -7,74 +7,19 @@ from flask import url_for
 from app.extensions.db import db
 from app.integrations.binding_selectors import selector_form_values, selector_is_configured, selector_summary
 from app.integrations.deletion import provider_deletion_guard
-from app.integrations.prometheus.capabilities import CAPABILITIES
+from app.integrations.prometheus.binding_profiles import get_binding_validation_profile
+from app.integrations.prometheus.capabilities import PROVIDER_CAPABILITY_KEYS
 from app.integrations.prometheus.capabilities import definition as capability_definition
-from app.integrations.prometheus.scope import KUBERNETES_CLUSTER_SCOPE, cluster_bindings_for_instance
+from app.integrations.prometheus.scope import KUBERNETES_CLUSTER_SCOPE, bindings_for_instance
 from app.integrations.readiness import resolve_binding_operational_status
 from app.integrations.registry import get_integration
 from app.integrations.runtime.presentation import runtime_history_view, runtime_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
-from app.models import Cluster, PrometheusInstance
+from app.models import Cluster, ObjectStorageSystem, PrometheusInstance
 from app.models.integration import IntegrationBinding
 from app.prometheus.resolver import PrometheusSourceResolution, resolve_prometheus_sources
 
-_CORE_CAPABILITIES = {
-    'instant_query',
-    'range_query',
-    'kubernetes_identity',
-    'utilization_metrics',
-    'capacity_metrics',
-}
-
-_MODULE_REQUIREMENTS: dict[str, tuple[str, ...]] = {
-    'app.prometheus': ('instant_query', 'kubernetes_identity'),
-    'app.analytics.utilization': (
-        'instant_query',
-        'range_query',
-        'kubernetes_identity',
-        'utilization_metrics',
-        'node_filesystem_identity',
-    ),
-    'app.analytics.capacity': (
-        'instant_query',
-        'range_query',
-        'kubernetes_identity',
-        'capacity_metrics',
-        'resource_requests_limits',
-    ),
-    'app.analytics.storage': (
-        'instant_query',
-        'kubernetes_identity',
-        'pvc_usage',
-        'node_filesystem_identity',
-    ),
-    'app.analytics.workload': (
-        'instant_query',
-        'range_query',
-        'kubernetes_identity',
-        'workload_metrics',
-        'resource_requests_limits',
-    ),
-    'app.analytics.forecast': ('range_query', 'long_term_history', 'capacity_metrics'),
-    'app.analytics.top_consumers': (
-        'instant_query',
-        'kubernetes_identity',
-        'workload_metrics',
-        'resource_requests_limits',
-        'capacity_metrics',
-        'pvc_usage',
-    ),
-}
-
-_MODULE_DESCRIPTIONS: dict[str, str] = {
-    'app.prometheus': 'Kubernetes overview and metric-source context.',
-    'app.analytics.utilization': 'Current and historical CPU, memory, pod, and pressure utilization.',
-    'app.analytics.capacity': 'Worker capacity, requests, limits, overcommit, and headroom.',
-    'app.analytics.storage': 'Current PVC usage and node filesystem capacity from committed worker snapshots.',
-    'app.analytics.workload': 'Workload ownership, quota, QoS, placement, and right-sizing.',
-    'app.analytics.forecast': 'Long-range trend windows and forecast inputs.',
-    'app.analytics.top_consumers': 'Ranked workload and namespace consumption analysis.',
-}
+_CORE_CAPABILITIES = set(PROVIDER_CAPABILITY_KEYS)
 
 _RESOLUTION_CONSUMERS: tuple[dict[str, Any], ...] = (
     {
@@ -168,7 +113,7 @@ def build_instance_context(
     history_health: str = '',
     history_readiness: str = '',
 ) -> dict[str, Any]:
-    bindings = cluster_bindings_for_instance(instance)
+    bindings = bindings_for_instance(instance)
     clusters = Cluster.query.order_by(Cluster.created_at.asc(), Cluster.id.asc()).all()
     available_capabilities: set[str] = {
         str(item) for item in ((instance.capabilities or {}).get('available') or ()) if item
@@ -197,7 +142,8 @@ def build_instance_context(
         readiness=history_readiness,
     )
     capability_rows: list[dict[str, Any]] = [
-        _capability_row(assessment_map.get(key, {'key': key, 'status': 'not_observed'})) for key in CAPABILITIES
+        _capability_row(assessment_map.get(key, {'key': key, 'status': 'not_observed'}))
+        for key in PROVIDER_CAPABILITY_KEYS
     ]
     observed_keys: set[str] = {str(row['key']) for row in capability_rows if row['available']}
 
@@ -386,50 +332,38 @@ def _module_readiness_rows(
     instance: PrometheusInstance,
     available_capabilities: set[str],
 ) -> list[dict[str, Any]]:
-    module_state = instance.module_readiness or {}
-    rows: list[dict[str, Any]] = []
-    for domain, required in _MODULE_REQUIREMENTS.items():
-        state = module_state.get(domain) or {}
-        missing = [key for key in required if key not in available_capabilities]
-        blocked_count = int(state.get('blocked_count') or 0)
-        if not instance.last_validated_at:
-            status = 'not_observed'
-        elif missing or blocked_count:
-            status = 'degraded'
-        else:
-            status = 'ready'
-        rows.append(
-            {
-                'key': domain,
-                'label': state.get('label')
-                or domain.replace('app.analytics.', '').replace('app.', '').replace('_', ' ').title(),
-                'description': _MODULE_DESCRIPTIONS.get(
-                    domain, 'Operational readiness derived from the latest query and capability evidence.'
-                ),
-                'status': status,
-                'required_capability_labels': [_capability_label(key) for key in required],
-                'optional_capability_labels': [],
-                'missing_required_labels': [_capability_label(key) for key in missing],
-                'missing_optional_labels': [],
-                'operator_guidance': (
-                    'Run Full Validation to establish the first module readiness contract.'
-                    if status == 'not_observed'
-                    else (
-                        'No action is required. Revalidate after metrics, labels, query rules, retention, or endpoint behavior changes.'
-                        if not missing and status == 'ready'
-                        else (
-                            f'Restore the missing capability evidence, then rerun Full Validation: {", ".join(_capability_label(key) for key in missing)}.'
-                            if missing
-                            else 'Review the blocked registered queries and rerun Full Validation after correcting the PromQL or metric-label contract.'
-                        )
-                    )
-                ),
-                'ready_count': state.get('ready_count', 0),
-                'query_count': state.get('query_count', 0),
-                'blocked_count': state.get('blocked_count', 0),
-            }
-        )
-    return rows
+    required = tuple(PROVIDER_CAPABILITY_KEYS)
+    missing = [key for key in required if key not in available_capabilities]
+    if not instance.last_validated_at:
+        status = 'not_observed'
+    elif missing:
+        status = 'degraded'
+    else:
+        status = 'ready'
+    return [
+        {
+            'key': 'prometheus_core',
+            'label': 'Prometheus Core Runtime',
+            'description': 'Provider-neutral HTTP API and PromQL capabilities required before any consumer binding is eligible.',
+            'status': status,
+            'required_capability_labels': [_capability_label(key) for key in required],
+            'optional_capability_labels': [],
+            'missing_required_labels': [_capability_label(key) for key in missing],
+            'missing_optional_labels': [],
+            'operator_guidance': (
+                'Run Full Validation to establish the provider-level core contract.'
+                if status == 'not_observed'
+                else (
+                    'No provider-level action is required. Validate each Kubernetes, MinIO, or future consumer through its binding.'
+                    if status == 'ready'
+                    else 'Restore the missing provider-level API capability, then rerun Full Validation.'
+                )
+            ),
+            'ready_count': len(required) - len(missing),
+            'query_count': len(required),
+            'blocked_count': len(missing),
+        }
+    ]
 
 
 def _capability_label(key: str) -> str:
@@ -439,6 +373,12 @@ def _capability_label(key: str) -> str:
 
 def _binding_row(binding: IntegrationBinding, source: PrometheusInstance) -> dict[str, Any]:
     cluster = db.session.get(Cluster, binding.asset_key) if binding.asset_type == KUBERNETES_CLUSTER_SCOPE else None
+    object_storage = (
+        db.session.get(ObjectStorageSystem, binding.asset_key)
+        if binding.asset_type == 'object_storage_system'
+        else None
+    )
+    profile = get_binding_validation_profile(binding.asset_type)
     selector_values = selector_form_values(binding.selector_json)
     source_readiness = source.readiness_status or 'validation_required'
     operational = resolve_binding_operational_status(
@@ -447,12 +387,26 @@ def _binding_row(binding: IntegrationBinding, source: PrometheusInstance) -> dic
         source_enabled=source.enabled,
         binding_enabled=binding.enabled,
     )
+    scope_label = (
+        cluster.name
+        if cluster is not None
+        else (object_storage.name if object_storage is not None else binding.asset_key)
+    )
+    scope_type_label = (
+        'Kubernetes Cluster'
+        if binding.asset_type == KUBERNETES_CLUSTER_SCOPE
+        else (
+            'Object Storage System'
+            if binding.asset_type == 'object_storage_system'
+            else binding.asset_type.replace('_', ' ').title()
+        )
+    )
     return {
         'binding': binding,
-        'scope_label': cluster.name if cluster is not None else binding.asset_key,
-        'scope_type_label': 'Managed Cluster'
-        if binding.asset_type == KUBERNETES_CLUSTER_SCOPE
-        else binding.asset_type.replace('_', ' ').title(),
+        'scope_label': scope_label,
+        'scope_type_label': scope_type_label,
+        'consumer_profile': binding.validation_profile or (profile.profile_key if profile else 'Not Registered'),
+        'consumer_profile_label': profile.label if profile else binding.validation_profile or 'Not Registered',
         'selector_summary': selector_summary(binding.selector_json),
         'selector_configured': selector_is_configured(binding.selector_json),
         'selector_label': selector_values['label'],

@@ -47,7 +47,7 @@
                         {% if instance %}
                             <div class="mt-4 grid grid-cols-2 gap-2">
                                 {{ page_hero.context_metric('shield-check', 'Readiness', hero_readiness|replace('_', ' ') |title, 'Established by Full Validation', value_classes='truncate text-sm font-semibold leading-5') }}
-                                {{ page_hero.context_metric('link-2', 'Scope Bindings', binding_count, 'Contexts eligible to use this source') }}
+                                {{ page_hero.context_metric('link-2', 'Consumer Bindings', binding_count, 'Assets eligible to use this source') }}
                             </div>
                             <a href="{{ url_for('prometheus.instance_detail', instance_id=instance.id) }}"
                                class="{{ page_hero.context_single_action_classes() }}">
@@ -243,7 +243,7 @@
             </section>
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
                 {% if instance %}
-                    {% set prometheus_flow_items = [('Save Changes', 'Update the reusable connection contract and return readiness to Validation Required.'), ('Test Connection', 'Confirm the saved endpoint remains reachable with the selected access settings.'), ('Run Full Validation', 'Rebuild API, query, metric, retention, and module readiness evidence.'), ('Review Scope Bindings', 'Confirm the connection remains eligible for its governed operational contexts.')] %}
+                    {% set prometheus_flow_items = [('Save Changes', 'Update the reusable connection contract and return readiness to Validation Required.'), ('Test Connection', 'Confirm the saved endpoint remains reachable with the selected access settings.'), ('Run Full Validation', 'Rebuild provider compatibility and generic Prometheus API readiness evidence.'), ('Review Consumer Bindings', 'Confirm Kubernetes, MinIO, and future consumers have independent validated bindings.')] %}
                     {{ info_flow.render('Prometheus Configuration Flow',
                                         'How saved connection changes return to governed operational use.',
                                         prometheus_flow_items,
@@ -258,13 +258,13 @@
                                         icon='workflow',
                                         note='Registration requires a successful Test Connection and creates the reusable source identity only.',
                                         open_by_default=true) }}
-                    {{ related_page_card.render('Kubernetes Analytics',
-                                        'This metrics connection supplies governed query data to KAORI Kubernetes Analytics.',
-                                        url_for('analytics.overview') ,
-                    'Open Kubernetes Analytics',
-                    icon='chart-no-axes-combined',
-                    eyebrow='Related Analytics Workspace',
-                    boundary='Prometheus remains authoritative for metric collection and query execution. KAORI applies governed source resolution and operational interpretation.'
+                    {{ related_page_card.render('Observability Consumers',
+                                        'A single Prometheus runtime can serve Kubernetes, MinIO, and future integrations through independent consumer bindings.',
+                                        url_for('integrations.observability') ,
+                    'Open Observability Integrations',
+                    icon='waypoints',
+                    eyebrow='Related Integration Workspace',
+                    boundary='Prometheus remains authoritative for metric collection and query execution. KAORI owns provider readiness, consumer binding validation, and governed source resolution.'
                     ) }}
                 {% endif %}
                 {% set compatibility_detection_items = [('scan-search', 'Automatic Detection', 'Use for a direct Prometheus endpoint. KAORI discovers the observed product and compatibility evidence.'), ('network', 'Manual Source Declaration', 'Use for Thanos Query or another Prometheus-compatible gateway that can hide the upstream major version.'), ('badge-check', 'Full Validation Still Applies', 'Detection identifies the compatibility contract; Full Validation establishes capabilities and readiness.')] %}
@@ -278,21 +278,21 @@
                                         'Complete these checks before relying on the updated source.',
                                         after_save_items,
                                         icon='list-checks') }}
-                    {{ related_page_card.render('Kubernetes Analytics',
-                                        'This metrics connection supplies governed query data to KAORI Kubernetes Analytics.',
-                                        url_for('analytics.overview') ,
-                    'Open Kubernetes Analytics',
-                    icon='chart-no-axes-combined',
-                    eyebrow='Related Analytics Workspace',
-                    boundary='Prometheus remains authoritative for metric collection and query execution. KAORI applies governed source resolution and operational interpretation.'
+                    {{ related_page_card.render('Observability Consumers',
+                                        'A single Prometheus runtime can serve Kubernetes, MinIO, and future integrations through independent consumer bindings.',
+                                        url_for('integrations.observability') ,
+                    'Open Observability Integrations',
+                    icon='waypoints',
+                    eyebrow='Related Integration Workspace',
+                    boundary='Prometheus remains authoritative for metric collection and query execution. KAORI owns provider readiness, consumer binding validation, and governed source resolution.'
                     ) }}
                 {% else %}
-                    {% set connection_contract_items = [('fingerprint', 'Connection Identity', 'The canonical KAORI record for this Prometheus-compatible source. Register it once and reference it through governed bindings.'), ('file-check-2', 'Connection Contract', 'The base URL, authentication, timeout, TLS verification, lifecycle state, and tested reachability used to access the source.'), ('badge-check', 'Compatibility Contract', 'Automatic or manual source detection identifies the supported Prometheus API and query profile before Full Validation.'), ('link-2', 'Scope Bindings', 'Determine which Kubernetes clusters or infrastructure scopes may use the source and which metric identity selector isolates each scope.')] %}
+                    {% set connection_contract_items = [('fingerprint', 'Connection Identity', 'The canonical KAORI record for this Prometheus-compatible source. Register it once and reference it through governed bindings.'), ('file-check-2', 'Connection Contract', 'The base URL, authentication, timeout, TLS verification, lifecycle state, and tested reachability used to access the source.'), ('badge-check', 'Compatibility Contract', 'Automatic or manual source detection identifies the supported Prometheus-compatible API before provider Full Validation.'), ('link-2', 'Consumer Bindings', 'Determine which Kubernetes, MinIO, or future assets may use the source; each binding owns its selector and consumer validation profile.')] %}
                     {{ information_guide_card.render('Connection Identity & Contract',
                                         'Reference the records that define source identity, compatibility, readiness, and eligibility.',
                                         connection_contract_items,
                                         icon='file-check-2') }}
-                    {% set after_registration_items = [('Open the Registered Connection', 'and review the saved connection identity and observed endpoint information.'), ('Run Full Validation', 'to establish query, metric, retention, capability, and readiness evidence.'), ('Review Diagnostics', 'when a required query or metric contract is degraded or blocked.'), ('Assign Scope Bindings', 'to make the validated source eligible for operational consumers without duplicating the connection.')] %}
+                    {% set after_registration_items = [('Open the Registered Connection', 'and review the saved connection identity and observed endpoint information.'), ('Run Full Validation', 'to establish provider compatibility and core API readiness evidence.'), ('Review Diagnostics', 'when a provider-level compatibility or core API contract is degraded or blocked.'), ('Assign Consumer Bindings', 'to make the validated source eligible for Kubernetes, MinIO, or future consumers without duplicating the connection.')] %}
                     {{ context_guidance_card.render('After Registration',
                                         'Complete these steps before the source is used operationally.',
                                         after_registration_items,
