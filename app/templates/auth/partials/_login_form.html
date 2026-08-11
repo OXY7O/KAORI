@@ -17,14 +17,14 @@
                      alt=""
                      class="h-6 w-6 brightness-0 invert" />
             </span>
-            <span class="text-lg font-extrabold tracking-widest text-content-primary">KAORI</span>
+            <span class="text-lg font-bold tracking-widest text-content-primary">KAORI</span>
         </div>
         <header class="kaori-login-form-header">
             <span class="inline-flex items-center gap-2 rounded-md border border-outline-default bg-surface-hover px-3 py-1 text-xs font-semibold text-content-secondary">
                 <i data-lucide="shield-check" class="h-3.5 w-3.5 text-kaori-primary"></i>
                 Secure Platform Access
             </span>
-            <h2 class="mt-4 text-2xl font-extrabold tracking-tight text-content-primary sm:text-3xl">Welcome Back</h2>
+            <h2 class="mt-4 text-2xl font-bold tracking-tight text-content-primary sm:text-3xl">Welcome Back</h2>
             <p class="mt-2 text-sm leading-5 text-content-muted">Sign in to continue to your permitted KAORI workspace.</p>
         </header>
         {% include "auth/partials/_login_alerts.html" %}
@@ -97,7 +97,7 @@
                     <a href="{{ provider_login_url }}"
                        class="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary shadow-sm transition hover:border-kaori-accent hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-outline-focus">
                         {% if provider.provider_type == 'google_oidc' %}
-                            <span class="flex h-5 w-5 items-center justify-center rounded-full border border-outline-subtle bg-white text-xs font-extrabold text-content-primary">G</span>
+                            <span class="flex h-5 w-5 items-center justify-center rounded-full border border-outline-subtle bg-white text-xs font-bold text-content-primary">G</span>
                         {% else %}
                             <i data-lucide="github" class="h-4 w-4"></i>
                         {% endif %}

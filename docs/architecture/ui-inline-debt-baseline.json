@@ -42,7 +42,7 @@
     },
     "app/templates/layouts/auth.html": {
       "inline_event_handlers": 0,
-      "inline_scripts": 2,
+      "inline_scripts": 1,
       "inline_styles": 0
     },
     "app/templates/prometheus/partials/_delete_confirmation_modal.html": {

@@ -155,3 +155,23 @@ For another browser SSO provider:
 5. add unit tests for authorization URL, callback validation, admission, and configuration validation.
 
 For another credential provider, implement `CredentialAuthProvider` and register it in the credential registry with an explicit authority and collision policy.
+
+
+## Authentication Surface Final Lock v1
+
+Authentication Surface v1 is final-locked for the unauthenticated **Login** and **Database Setup Required** presentation surfaces. The lock preserves the compact 14-inch presentation contract, KAORI Violet identity, light/dark mode, accessible password visibility and theme controls, generic failure copy, and provider-neutral pre-authentication messaging.
+
+Security ownership remains unchanged: `app/auth/routes.py` owns login/SSO/logout HTTP boundaries, `app/auth/session.py` owns safe redirect and session persistence policy, provider adapters own protocol validation, and Activity Audit owns authentication evidence. The final lock specifically preserves safe redirect handling, POST-only CSRF-protected logout, bounded remember-me persistence, default-deny super-admin remember-me, SSO state/nonce/TTL validation, and actor-versus-target audit semantics.
+
+The interactive password/theme runtime is owned by `app/static/js/auth_login.js`. Only the early pre-paint theme bootstrap remains inline in `layouts/auth.html`; this is intentional to prevent a light-theme flash before CSS is applied. Authentication templates may not reintroduce arbitrary text sizes, arbitrary tracking, `font-extrabold`, uppercase presentation utilities, or inline DOM handlers.
+
+Permanent release evidence:
+
+- Static Quality: `scripts/verify_authentication_surface_final_lock.py`, Ruff, djLint, Pyright, UI debt verifiers, and JavaScript syntax.
+- Contract Tests: `tests/contracts/auth/`.
+- Unit Tests: `tests/unit/auth/test_auth_session_policy.py`.
+- Functional Tests: `tests/auth/test_login_characterization.py`.
+- Security Regression: `tests/security/auth/test_authentication_security.py`.
+- Rendering/UI Contracts: `tests/rendering/auth/test_authentication_rendering.py`.
+- End-to-End Smoke: `tests/e2e/auth/test_authentication_smoke.py`.
+- Integration: N/A for this presentation lock. Provider/storage integrations are unchanged; this batch does not introduce a new persistence, LDAP, OAuth/OIDC, or external-runtime collaboration boundary.

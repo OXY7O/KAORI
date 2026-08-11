@@ -34,3 +34,7 @@ The SVG is static, contains no script or external resource references, and is pr
 ## Follow-Up
 
 After visual acceptance, audit the current Auth implementation before modifying security behavior. The next batch should cover safe redirect handling, authentication throttling, session fixation/rotation, cookie policy, inactive/deleted fail-closed behavior, external-provider callback controls, and password-reset session invalidation.
+
+## Follow-up Status — 2026-08-11
+
+The security/session follow-up identified in this visual audit is complete under `KAORI_AUTHENTICATION_SURFACE_LOCK_V1.md`. The Login/Auth surface is now final-locked with permanent security, rendering, functional, unit, and E2E release evidence.

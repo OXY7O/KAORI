@@ -36,14 +36,10 @@
       "copied_standard_surface_shells": 1
     },
     "app/templates/auth/partials/_brand_panel.html": {
-      "custom_hero_titles": 1,
-      "font_extrabold_utilities": 2
+      "custom_hero_titles": 1
     },
     "app/templates/auth/partials/_login_alerts.html": {
       "semantic_border_utilities": 2
-    },
-    "app/templates/auth/partials/_login_form.html": {
-      "font_extrabold_utilities": 3
     },
     "app/templates/auth/setup_required.html": {
       "custom_hero_titles": 1,

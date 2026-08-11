@@ -8,6 +8,8 @@ Kubernetes Operations adds `verify_kubernetes_operations_final_lock.py` to the s
 
 Access adds `verify_access_final_lock.py` to the same static phase. The verifier freezes the read-only Access overview, explicit user/role/provider permission boundaries, last-super-admin and stale-write protections, bounded remember-me persistence, authentication actor-versus-target audit semantics, Activity Audit ownership, shared modal/tab/table composition, and the reviewed Access UI debt ceiling.
 
+Authentication adds `verify_authentication_surface_final_lock.py` to the static phase. The verifier freezes the compact Login and Database Setup Required surfaces, safe redirect/session/cookie invariants, generic credential-failure semantics, SSO state/nonce/TTL ownership, accessible form controls, KAORI Violet compact-login geometry, external first-party interaction runtime, and the reviewed authentication UI debt burn-down.
+
 The canonical local entrypoint is:
 
 ```bash

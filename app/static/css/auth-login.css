@@ -33,7 +33,16 @@
 }
 
 .kaori-login-brand__eyebrow {
+    font-size: 11px;
     letter-spacing: 0.12em;
+}
+
+.kaori-login-brand__description {
+    font-size: 12px;
+}
+
+.kaori-login-brand__footer {
+    font-size: 10px;
 }
 
 .kaori-login-brand__clarity {
@@ -125,6 +134,10 @@
 @media (min-width: 1280px) {
     .kaori-login-shell {
         min-height: 610px;
+    }
+
+    .kaori-login-brand__description {
+        font-size: 13px;
     }
 }
 
