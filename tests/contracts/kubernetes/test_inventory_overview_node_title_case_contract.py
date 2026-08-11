@@ -41,5 +41,5 @@ def test_node_inventory_supporting_copy_uses_sentence_case_and_footer_resource_c
     for description in expected:
         assert description in summary
 
-    assert "pagination_ui.resource_name('Nodes', pagination.total_items)|trim" in table
-    assert "pagination_ui.resource_name('nodes', pagination.total_items)|trim" not in table
+    assert "pagination_ui.resource_name('Nodes', pagination.total_items)" in table
+    assert "pagination_ui.resource_name('nodes', pagination.total_items)" not in table

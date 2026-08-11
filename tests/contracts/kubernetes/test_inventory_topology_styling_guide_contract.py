@@ -56,8 +56,10 @@ def test_topology_registers_compact_segmented_tab_style() -> None:
     assert 'Tab Style 3 — Compact Segmented Tabs' in registry
     assert '`compact-segmented`' in registry
     assert 'data-kaori-tab-variant="compact-segmented"' in component
-    assert "[('graph', 'Graph', 'share-2'), ('list', 'Resource List', 'list-tree')]" in workspace
-    assert "[('details', 'Details', 'list-tree'), ('relationships', 'Relationships', 'git-branch')]" in inspector
+    assert "('graph', 'Graph', 'share-2')" in workspace
+    assert "('list', 'Resource List', 'list-tree')" in workspace
+    assert "('details', 'Details', 'list-tree')" in inspector
+    assert "('relationships', 'Relationships', 'git-branch')" in inspector
     assert 'role="tablist"' not in workspace
     assert 'role="tablist"' not in inspector
 

@@ -67,8 +67,8 @@ def test_pod_detail_uses_shared_runtime_references_and_metadata_components() -> 
     semantics = read('app/inventory/resources/pod_semantics.py')
 
     assert 'container_collection.render(pod.container_statuses)' in detail
-    assert "related_collection.render(\n                        'Configuration References'" in detail
-    assert "related_collection.render(\n                        'Storage References'" in detail
+    assert "related_collection.render('Configuration References'" in detail
+    assert "related_collection.render('Storage References'" in detail
     assert "metadata_collection.render('Pod Labels'" in detail
     assert "metadata_collection.render('Pod Annotations'" in detail
     assert "normalized_state == 'terminated'" in semantics

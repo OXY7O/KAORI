@@ -45,8 +45,11 @@ def test_semantic_attention_and_storage_states_use_operational_callout() -> None
         assert 'border-status-warning-border' not in source
 
     storage = read('app/templates/reports/storage/index.html')
-    assert "action_label='Retry Connection'" in storage
-    assert "title_id='report-storage-connectivity-title'" in storage
+    assert "operational_callout.semantic_border_classes('warning')" in storage
+    assert 'aria-labelledby="report-storage-connectivity-title"' in storage
+    assert 'id="report-storage-connectivity-title"' in storage
+    assert 'Retry Connection' in storage
+    assert "url_for('reports.storage', verify='1'" in storage
 
 
 def test_operational_callout_owns_semantic_action_and_supporting_content() -> None:

@@ -87,7 +87,10 @@ def test_node_inventory_registers_detail_and_technical_value_standards() -> None
     assert '{% if monospace %}' in component
     assert 'Detail Style 2 — Full Workspace Modal' in detail_styles
     assert '`full-workspace-modal`' in detail_styles
-    assert 'Kubernetes Node Inventory is the first canonical implementation' in pattern
+    assert '**Status:** Locked reference pattern' in pattern
+    assert '**Scope:** Kubernetes Inventory Overview, Nodes, Namespaces' in pattern
+    assert 'Nodes, Namespaces, Configuration, Workloads, Pods, Services, Ingresses, and Storage use' in pattern
+    assert '**Detail Style 2 — Full Workspace Modal**' in pattern
     assert 'Approved package' in audit
 
 

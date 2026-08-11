@@ -40,10 +40,13 @@
                 <div class="min-w-0 overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
                     {% set pairs = entries.items() if entries.items is defined else entries %}
                     {% for key, value in pairs %}
-                        <div class="grid min-w-0 gap-1 border-b border-outline-subtle px-3 py-2.5 last:border-b-0 {{ 'sm:grid-cols-[minmax(7rem,0.34fr) _minmax(0,1fr)] sm:gap-3' if compact_pairs else 'lg:grid-cols-[minmax(15rem,0.42fr)_minmax(0,1fr)] lg:gap-4' }}">
+                        {# Keep Tailwind arbitrary grid tracks token-contiguous; djLint otherwise inserts a breaking space. #}
+                        {# djlint:off #}
+                        <div class="grid min-w-0 gap-1 border-b border-outline-subtle px-3 py-2.5 last:border-b-0 {{ 'sm:grid-cols-[minmax(7rem,0.34fr)_minmax(0,1fr)] sm:gap-3' if compact_pairs else 'lg:grid-cols-[minmax(15rem,0.42fr)_minmax(0,1fr)] lg:gap-4' }}">
                             <span class="min-w-0 break-words text-xs font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ key }}</span>
                             <span class="min-w-0 whitespace-pre-wrap break-words text-sm leading-5 text-content-muted [overflow-wrap:anywhere]">{{ value if value not in [None, ''] else '-' }}</span>
                         </div>
+                        {# djlint:on #}
                     {% endfor %}
                 </div>
             {% endif %}

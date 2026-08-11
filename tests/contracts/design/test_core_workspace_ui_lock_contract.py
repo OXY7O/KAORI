@@ -20,14 +20,24 @@ def test_provider_details_use_shared_framed_tabs():
 
 
 def test_dynamic_progress_uses_shared_component_in_reviewed_integration_surfaces():
+    overview = read('app/templates/integrations/overview.html')
+    validation_header = read('app/templates/components/connection_validation_header.html')
+    loading_bar = read('app/templates/components/loading_bar.html')
+
+    assert 'components/progress_bar.html' in overview
+    assert 'progress_bar.bar(' in overview
+    assert 'components/loading_bar.html' in validation_header
+    assert 'loading_bar.render(' in validation_header
+    assert 'kaori-loading-bar-segment' in loading_bar
+
     for relative in (
-        'app/templates/integrations/overview.html',
         'app/templates/integrations/kubernetes/partials/_capability_workspace.html',
         'app/templates/prometheus/partials/_detail_validation_content.html',
         'app/templates/alertmanager/partials/_detail_validation_content.html',
     ):
         source = read(relative)
-        assert 'components/progress_bar.html' in source
+        assert 'components/connection_validation_header.html' in source
+        assert 'connection_validation_header.render(' in source
         assert 'style="width:' not in source
 
 

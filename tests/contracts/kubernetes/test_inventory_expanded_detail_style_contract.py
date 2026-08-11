@@ -25,10 +25,11 @@ def test_all_inventory_tables_use_full_workspace_modal_action() -> None:
     assert 'macro detail_button(' in component
     assert 'data-resource-detail-toggle' in component
     assert '>View Details<' in component
-    assert (
-        "macro host(resource_type, detail_url_template, footer_text='Details come from the latest committed inventory snapshot.')"
-        in component
-    )
+    assert 'macro host(resource_type, detail_url_template,' in component
+    assert "footer_text='Details come from the latest committed inventory snapshot.'" in component
+    assert "context_label='Inventory'" in component
+    assert "dialog_max_width='max-w-[100rem]'" in component
+    assert 'content_driven=false' in component
     assert 'role="dialog"' in component
     assert 'aria-modal="true"' in component
     assert 'max-w-[100rem]' in component

@@ -29,7 +29,8 @@ def test_secret_creation_uses_integrated_sensitive_data_guardrails_and_delete_ac
     create = read('app/templates/kubernetes_operations/secrets/create.html')
     delete_result = read('app/templates/kubernetes_operations/secrets/_delete_operation_result.html')
     assert 'Controlled Secret Creation' in create
-    assert 'No Persistence' in create
+    assert 'No KAORI Value Persistence' in create
+    assert 'Secret values stay in request memory and are not stored by KAORI.' in create
     assert 'Payload-Free Feedback' in create
     assert 'Metadata Audit' in create
     assert 'Creation Summary' not in create
