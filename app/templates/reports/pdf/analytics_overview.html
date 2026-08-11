@@ -157,7 +157,7 @@
                                             <div class="util-row">
                                                 <strong>{{ item.label }}</strong>
                                                 <div class="util-track">
-                                                    {{ ui.percent_fill(item.current|replace('%', '')) }}<b class="warn-line"></b><b class="crit-line"></b>
+                                                    {{ ui.percent_fill(item.current|replace('%', '') ) }}<b class="warn-line"></b><b class="crit-line"></b>
                                                 </div>
                                                 <span>{{ item.current }} used</span><em>{{ item.headroom }} headroom</em>
                                             </div>
@@ -269,9 +269,7 @@
                                             {% for item in p.top_consumers.primary[:3] %}
                                                 <div class="consumer-row">
                                                     <b>M{{ loop.index }}</b>
-                                                    <div class="consumer-track">
-                                                        {{ ui.percent_fill(item.bar_percent) }}
-                                                    </div>
+                                                    <div class="consumer-track">{{ ui.percent_fill(item.bar_percent) }}</div>
                                                     <strong>{{ item.value }}</strong>
                                                 </div>
                                             {% endfor %}
@@ -281,9 +279,7 @@
                                             {% for item in p.top_consumers.secondary[:3] %}
                                                 <div class="consumer-row">
                                                     <b>C{{ loop.index }}</b>
-                                                    <div class="consumer-track">
-                                                        {{ ui.percent_fill(item.bar_percent) }}
-                                                    </div>
+                                                    <div class="consumer-track">{{ ui.percent_fill(item.bar_percent) }}</div>
                                                     <strong>{{ item.value }}</strong>
                                                 </div>
                                             {% endfor %}
@@ -518,9 +514,7 @@
                                             {% for item in p.reporting.activity %}
                                                 <div class="activity-row">
                                                     <span>{{ item.label }}</span>
-                                                    <div class="activity-track">
-                                                        {{ ui.percent_fill(item.percent, item.tone) }}
-                                                    </div>
+                                                    <div class="activity-track">{{ ui.percent_fill(item.percent, item.tone) }}</div>
                                                     <strong>{{ item.value }}</strong>
                                                 </div>
                                             {% endfor %}
@@ -845,7 +839,9 @@
                                         <div>
                                             <h3>Not Included in This Report</h3>
                                             <ul>
-                                                {% for item in p.methodology.excluded[:2] %}<li>{{ item }}</li>{% endfor %}
+                                                {% for item in p.methodology.excluded[:2] %}
+                                                    <li>{{ item }}</li>
+                                                {% endfor %}
                                             </ul>
                                         </div>
                                     </div>
@@ -855,7 +851,9 @@
                                         <div class="limitations-copy">
                                             <h3>Known Limitations and Operational Use</h3>
                                             <ul>
-                                                {% for item in p.methodology.limitations[:2] %}<li>{{ item }}</li>{% endfor %}
+                                                {% for item in p.methodology.limitations[:2] %}
+                                                    <li>{{ item }}</li>
+                                                {% endfor %}
                                             </ul>
                                             <p>{{ p.methodology.guidance }}</p>
                                         </div>

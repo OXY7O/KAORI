@@ -38,9 +38,7 @@
                                     {% for item in allocation['items'] %}
                                         <div class="allocation-row">
                                             <div class="allocation-copy"><strong>{{ item.label }}</strong><span>{{ item.display }}</span></div>
-                                            <div class="allocation-track">
-                                                {{ ui.percent_fill(item.percent, item.tone) }}
-                                            </div>
+                                            <div class="allocation-track">{{ ui.percent_fill(item.percent, item.tone) }}</div>
                                         </div>
                                     {% endfor %}
                                 {% else %}
@@ -126,7 +124,9 @@
                                                         {% if item.evidence_available %}
                                                             {{ ui.percent_fill(item.used_percent, 'node-fill' if item.key == 'nodes' else '') }}
                                                         {% endif %}
-                                                        {% if item.key != 'nodes' %}<b class="warning-marker"></b><b class="critical-marker"></b>{% endif %}
+                                                        {% if item.key != 'nodes' %}
+                                                            <b class="warning-marker"></b><b class="critical-marker"></b>
+                                                        {% endif %}
                                                     </div>
                                                     <span>{{ item.used_display }}</span>
                                                 </div>

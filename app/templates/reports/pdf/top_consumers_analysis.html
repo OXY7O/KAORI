@@ -32,9 +32,7 @@
                         {% macro consumer_bar(item, tone='primary') -%}
                             <div class="consumer-bar-row">
                                 <strong>{{ item.ref }}</strong>
-                                <div class="consumer-track">
-                                    {{ ui.percent_fill(item.displayed_share_bar, 'consumer-fill ' ~ tone) }}
-                                </div>
+                                <div class="consumer-track">{{ ui.percent_fill(item.displayed_share_bar, 'consumer-fill ' ~ tone) }}</div>
                                 <span>{{ item.displayed_share_label }}</span>
                             </div>
                         {%- endmacro %}
@@ -232,9 +230,7 @@
                                             {% for item in p.namespace.cpu_rows %}
                                                 <div class="namespace-bar-row">
                                                     <strong>{{ item.namespace }}</strong>
-                                                    <div class="namespace-track">
-                                                        {{ ui.percent_fill(item.share, 'namespace-fill info') }}
-                                                    </div>
+                                                    <div class="namespace-track">{{ ui.percent_fill(item.share, 'namespace-fill info') }}</div>
                                                     <span>{{ item.share_label }}</span>
                                                 </div>
                                             {% else %}
@@ -247,9 +243,7 @@
                                             {% for item in p.namespace.memory_rows %}
                                                 <div class="namespace-bar-row">
                                                     <strong>{{ item.namespace }}</strong>
-                                                    <div class="namespace-track">
-                                                        {{ ui.percent_fill(item.share, 'namespace-fill primary') }}
-                                                    </div>
+                                                    <div class="namespace-track">{{ ui.percent_fill(item.share, 'namespace-fill primary') }}</div>
                                                     <span>{{ item.share_label }}</span>
                                                 </div>
                                             {% else %}

@@ -53,9 +53,9 @@ def test_generated_pages_use_safe_probe_and_pause_storage_actions() -> None:
 
     assert 'get_report_storage_backend_status' in service
     assert 'return probe_report_artifact(file_path)' in service
-    serialize_report = service.split('def _serialize_report(', 1)[1].split(
-        'def _summarize_report_file_reference(', 1
-    )[0]
+    serialize_report = service.split('def _serialize_report(', 1)[1].split('def _summarize_report_file_reference(', 1)[
+        0
+    ]
     assert 'can_generate_artifact = report.status' in serialize_report
     assert "active_backend_status.get('write_available', False)" in serialize_report
     assert 'Report records remain available; download actions stay paused' in service

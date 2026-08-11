@@ -101,3 +101,7 @@ def test_live_reports_worker_verifier_checks_queue_and_task_registration() -> No
     assert 'registered()' in verifier
     assert 'app.reports.jobs.tasks.generate_report_job' in verifier
     assert 'app.reports.schedules.tasks.run_report_schedule_job' in verifier
+    assert "import_module('celery_worker').celery_app" in verifier
+    assert 'sys.path.insert(0, root_text)' in verifier
+    assert 'from celery_worker import celery_app' not in verifier
+    assert 'PASS — KAORI Reports Worker Runtime' in verifier

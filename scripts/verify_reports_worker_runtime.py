@@ -4,14 +4,22 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+from importlib import import_module
+from pathlib import Path
 from typing import Any
-
-from celery_worker import celery_app
 
 _REQUIRED_TASKS = {
     'app.reports.jobs.tasks.generate_report_job',
     'app.reports.schedules.tasks.run_report_schedule_job',
 }
+
+
+def _load_celery_app() -> Any:
+    root = Path(__file__).resolve().parents[1]
+    root_text = str(root)
+    if root_text not in sys.path:
+        sys.path.insert(0, root_text)
+    return import_module('celery_worker').celery_app
 
 
 def _parse_args() -> argparse.Namespace:
@@ -45,6 +53,7 @@ def _registered_task_names(values: list[Any] | None) -> set[str]:
 def main() -> int:
     args = _parse_args()
     queue_name = str(args.queue).strip()
+    celery_app = _load_celery_app()
     inspector = celery_app.control.inspect(timeout=max(float(args.timeout), 0.1))
 
     queue_map = inspector.active_queues() or {}
@@ -83,12 +92,7 @@ def main() -> int:
             )
         return 1
 
-    print(
-        f'KAORI Reports worker is ready: {len(queue_workers)} worker(s) consume '
-        f'{queue_name!r} and register both report tasks.'
-    )
-    for worker_name in queue_workers:
-        print(f'  - {worker_name}')
+    print(f'PASS — KAORI Reports Worker Runtime · {len(queue_workers)} worker(s)')
     return 0
 
 

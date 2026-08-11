@@ -125,10 +125,9 @@
                             </div>
                             <p class="mt-2 text-xs leading-5 text-content-muted">Every canonical report type should have a protected system template before operators create reusable custom definitions.</p>
                             {{ progress_bar.bar(payload.posture.protected_coverage_percent,
-                                'mt-4 h-1.5 overflow-hidden rounded-full bg-surface-disabled',
-                                'h-full rounded-full bg-kaori-primary',
-                                'Protected report contract coverage'
-                            ) }}
+                                                        'mt-4 h-1.5 overflow-hidden rounded-full bg-surface-disabled',
+                                                        'h-full rounded-full bg-kaori-primary',
+                                                        'Protected report contract coverage') }}
                             <div class="mt-4 flex flex-wrap gap-2">
                                 {{ table_label.metadata_label(payload.posture.catalog_analytics_count ~ ' Analytics', 'chart-no-axes-combined') }}
                                 {{ table_label.metadata_label(payload.posture.catalog_inventory_count ~ ' Inventory', 'boxes') }}

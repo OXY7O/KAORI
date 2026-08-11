@@ -32,9 +32,7 @@
                         {% macro distribution_row(item, tone='primary') -%}
                             <div class="distribution-row">
                                 <strong>{{ item.label }}</strong>
-                                <div class="distribution-track">
-                                    {{ ui.percent_fill(item.bar, 'distribution-fill ' ~ tone) }}
-                                </div>
+                                <div class="distribution-track">{{ ui.percent_fill(item.bar, 'distribution-fill ' ~ tone) }}</div>
                                 <span>{{ item.count }}</span>
                             </div>
                         {%- endmacro %}
@@ -98,7 +96,7 @@
                                     {% call ui.section('Figure 1 - Alert Posture', 'Severity and displayed active-alert category distribution.') %}
                                         <h3>Severity Distribution</h3>
                                         <div class="distribution-list">
-                                            {% for item in p.executive.severity_rows %}{{ distribution_row(item, 'critical' if item.label == 'Critical' else ('warning' if item.label == 'Warning' else 'info')) }}{% endfor %}
+                                            {% for item in p.executive.severity_rows %}{{ distribution_row(item, 'critical' if item.label == 'Critical' else ('warning' if item.label == 'Warning' else 'info') ) }}{% endfor %}
                                         </div>
                                         <h3 class="subheading">Category Distribution</h3>
                                         <div class="distribution-list">
@@ -150,7 +148,7 @@
                                 <div class="two-column paired-sections severity-split">
                                     {% call ui.section('Severity Distribution', 'Active alerts by committed severity label.') %}
                                         <div class="distribution-list large-distribution">
-                                            {% for item in p.severity_category.severity_rows %}{{ distribution_row(item, 'critical' if item.label == 'Critical' else ('warning' if item.label == 'Warning' else 'info')) }}{% endfor %}
+                                            {% for item in p.severity_category.severity_rows %}{{ distribution_row(item, 'critical' if item.label == 'Critical' else ('warning' if item.label == 'Warning' else 'info') ) }}{% endfor %}
                                         </div>
                                         <div class="compact-callout">
                                             <strong>Severity boundary</strong>

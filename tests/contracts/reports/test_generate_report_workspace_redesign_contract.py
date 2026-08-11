@@ -61,10 +61,9 @@ def test_generate_report_uses_two_primary_configuration_zones_and_compact_review
     assert 'Review & Queue' in source
     assert 'Review the request summary before it is queued for artifact generation.' in source
     assert 'aria-label="Request readiness"' in source
-    review_header = (
-        source.split('data-generate-section-header="review-queue"', 1)[1]
-        .split('<div class="mt-3 grid', 1)[0]
-    )
+    review_header = source.split('data-generate-section-header="review-queue"', 1)[1].split('<div class="mt-3 grid', 1)[
+        0
+    ]
     assert 'preview-eligibility-status' not in review_header
     assert 'Create & Queue Report' in source
     assert 'xl:grid-cols-2 xl:divide-x xl:divide-outline-default' in source
@@ -127,8 +126,7 @@ def test_output_format_uses_compact_native_select_and_contract_filtering() -> No
     assert 'Supported Formats' in source
     assert 'id="output-format-contract"' in source
     format_mapping = (
-        'allowedFormats\n                            '
-        '.map(function (format) { return format.toUpperCase(); })'
+        'allowedFormats\n                            .map(function (format) { return format.toUpperCase(); })'
     )
     assert format_mapping in source
 

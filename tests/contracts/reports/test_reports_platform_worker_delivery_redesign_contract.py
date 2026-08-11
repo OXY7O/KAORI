@@ -71,10 +71,7 @@ def test_reports_pages_use_standard_heroes_and_compact_summary_strips() -> None:
     assert "'recommended_actions': _get_recommended_actions()" not in generate_service
     assert "'readiness': _get_generation_readiness(" not in generate_service
     assert "'namespace_options_by_cluster': namespace_options_by_cluster" in generate_service
-    preview_name_contract = (
-        "'preview_report_name': form_state['name'].strip() "
-        "or build_default_report_name(form_state)"
-    )
+    preview_name_contract = "'preview_report_name': form_state['name'].strip() or build_default_report_name(form_state)"
     assert preview_name_contract in generate_service
     assert 'def _get_namespace_options_by_cluster()' in generate_service
     assert 'NamespaceInventory.namespace == namespace' in generate_service

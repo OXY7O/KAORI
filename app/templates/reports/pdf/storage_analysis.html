@@ -106,9 +106,7 @@
                                             {{ capacity_bar(p.executive.capacity) }}
                                             <div class="capacity-row headroom-row">
                                                 <strong>Headroom</strong>
-                                                <div class="capacity-track">
-                                                    {{ ui.percent_fill(p.executive.capacity.headroom_percent, 'headroom-fill') }}
-                                                </div>
+                                                <div class="capacity-track">{{ ui.percent_fill(p.executive.capacity.headroom_percent, 'headroom-fill') }}</div>
                                                 <span>{{ p.executive.capacity.headroom_display }}</span>
                                             </div>
                                         </div>
