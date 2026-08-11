@@ -166,7 +166,9 @@ def main() -> int:
         require(required in provider_routes, f'Identity Provider route contract missing: {required}', errors)
     require('Provider Registry Overview' in provider_index, 'Identity Provider overview contract missing', errors)
     for forbidden in ('Client Secret Value', 'Bind Password Value', 'Last Validated'):
-        require(forbidden not in provider_detail, f'Identity Provider secret/durable-validation leak: {forbidden}', errors)
+        require(
+            forbidden not in provider_detail, f'Identity Provider secret/durable-validation leak: {forbidden}', errors
+        )
 
     # Authentication/session boundary: bounded remember-me and super-admin default deny.
     auth_config = read('app/config/default.py')
