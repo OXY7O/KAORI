@@ -1,4 +1,5 @@
 # Changelog
+- Fixed Integration domain rendering by invoking the shared `section_header` macro directly instead of using a Jinja caller block unsupported by that macro.
 - Refined Integration domain landing-page UX by removing duplicated KPI tiles, using compact capability/provider metadata, and replacing empty provider metrics with an explicit registration-validation-binding onboarding path.
 
 All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for release identity.

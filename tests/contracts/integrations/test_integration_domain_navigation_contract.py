@@ -87,6 +87,8 @@ def test_domain_template_uses_kaori_hero_capability_and_provider_boundaries() ->
     assert 'url_for(item.workspace_endpoint)' in template
     assert 'Domain Operating Boundary' in template
     assert 'data-kaori-integration-domain-workspace' in template
+    assert '{{ integration_ui.section_header(' in template
+    assert '{% call integration_ui.section_header(' not in template
     assert 'lg:grid-cols-2' not in template
     assert 'raw Tailwind' not in template
 

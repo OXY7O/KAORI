@@ -102,6 +102,11 @@ def main() -> int:
         if marker not in domain_template:
             errors.append(f'domain template missing KAORI boundary: {marker}')
 
+    if '{% call integration_ui.section_header(' in domain_template:
+        errors.append('domain template must render section_header directly; the macro does not accept a caller block')
+    if '{{ integration_ui.section_header(' not in domain_template:
+        errors.append('domain template is missing the direct section_header macro render')
+
     for marker in (
         "BreadcrumbItem('Orchestration')",
         "BreadcrumbItem('Observability')",

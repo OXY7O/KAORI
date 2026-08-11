@@ -2,9 +2,7 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-
 {% block title %}{{ domain.label }} Integrations · KAORI{% endblock title %}
-
 {% block dashboard_content %}
     {% set posture_label = "Ready" if posture_status == "ready" else ("Attention" if posture_status == "attention" else "Not Configured") %}
     <div class="kaori-integration-semantic space-y-6"
@@ -39,16 +37,12 @@
                         <div class="{{ page_hero.context_actions_classes() }}">
                             <a href="{{ url_for('integrations.overview') }}"
                                class="{{ page_hero.context_action_classes() }}">
-                                <i data-lucide="layout-grid"
-                                   class="h-4 w-4"
-                                   aria-hidden="true"></i>
+                                <i data-lucide="layout-grid" class="h-4 w-4" aria-hidden="true"></i>
                                 Integration Overview
                             </a>
                             <a href="{{ url_for('integrations.overview', tab='runtime') }}#integration-workspace"
                                class="{{ page_hero.context_action_classes() }}">
-                                <i data-lucide="activity"
-                                   class="h-4 w-4"
-                                   aria-hidden="true"></i>
+                                <i data-lucide="activity" class="h-4 w-4" aria-hidden="true"></i>
                                 Runtime Overview
                             </a>
                         </div>
@@ -56,16 +50,14 @@
                 </aside>
             </div>
         </section>
-
         <section class="{{ integration_ui.section_shell_classes() }}"
                  aria-labelledby="domain-capability-portfolio-title">
-            {% call integration_ui.section_header(
+            {{ integration_ui.section_header(
                 "layers-3",
                 "Capability Portfolio",
                 "Stable capability boundaries show provider ownership and operational coverage without duplicating product workspaces.",
                 eyebrow=domain.label ~ " Domain"
-            ) %}{% endcall %}
-
+            ) }}
             <div class="divide-y divide-outline-subtle">
                 {% for item in capabilities %}
                     <article class="px-5 py-4 sm:px-6">
@@ -75,12 +67,11 @@
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <h3 class="text-sm font-semibold text-content-primary">{{ item.label }}</h3>
-                                        {{ integration_status(item.status, "Ready" if item.status == "ready" else ("Attention" if item.status == "attention" else "No Provider"), display="indicator") }}
+                                        {{ integration_status(item.status, "Ready" if item.status == "ready" else ("Attention" if item.status == "attention" else "No Provider") , display="indicator") }}
                                     </div>
                                     <p class="mt-1 text-sm leading-6 text-content-secondary">{{ item.description }}</p>
                                 </div>
                             </div>
-
                             <div class="min-w-0 lg:border-l lg:border-outline-subtle lg:pl-5">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Provider Ownership</p>
                                 {% if item.provider_labels %}
@@ -93,7 +84,6 @@
                                     <p class="mt-1 text-xs leading-5 text-content-secondary">No provider is registered for this capability yet.</p>
                                 {% endif %}
                             </div>
-
                             {% if item.provider_labels %}
                                 <div class="flex flex-wrap items-center gap-x-4 gap-y-2 lg:justify-end">
                                     <div class="flex items-center gap-1.5 text-xs text-content-secondary">
@@ -111,9 +101,7 @@
                                 </div>
                             {% else %}
                                 <div class="flex items-center gap-2 text-xs text-content-muted lg:justify-end">
-                                    <i data-lucide="circle-dashed"
-                                       class="h-3.5 w-3.5"
-                                       aria-hidden="true"></i>
+                                    <i data-lucide="circle-dashed" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                     Ready for provider registration
                                 </div>
                             {% endif %}
@@ -122,7 +110,6 @@
                 {% endfor %}
             </div>
         </section>
-
         <section class="{{ integration_ui.section_shell_classes() }}"
                  aria-labelledby="domain-provider-workspaces-title">
             <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
@@ -143,7 +130,6 @@
                     {% endif %}
                 </div>
             </header>
-
             {% if providers %}
                 <div class="divide-y divide-outline-subtle">
                     {% for item in providers %}
@@ -154,40 +140,31 @@
                                     <div class="min-w-0">
                                         <div class="flex flex-wrap items-center gap-2">
                                             <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">{{ item.capability_label }}</p>
-                                            {{ integration_status(item.status, "Ready" if item.status == "ready" else ("Attention" if item.status == "attention" else "Not Configured"), display="indicator") }}
+                                            {{ integration_status(item.status, "Ready" if item.status == "ready" else ("Attention" if item.status == "attention" else "Not Configured") , display="indicator") }}
                                         </div>
                                         <h3 class="mt-1 text-base font-semibold text-content-primary">{{ item.runtime_label }}</h3>
                                         <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">{{ item.description }}</p>
                                         <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-content-muted">
                                             <span class="inline-flex items-center gap-1.5">
-                                                <i data-lucide="server-cog"
-                                                   class="h-3.5 w-3.5"
-                                                   aria-hidden="true"></i>
+                                                <i data-lucide="server-cog" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                 {{ item.registered }} Registered
                                             </span>
                                             <span class="inline-flex items-center gap-1.5">
-                                                <i data-lucide="badge-check"
-                                                   class="h-3.5 w-3.5"
-                                                   aria-hidden="true"></i>
+                                                <i data-lucide="badge-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                 {{ item.ready }} Ready
                                             </span>
                                             <span class="inline-flex items-center gap-1.5">
-                                                <i data-lucide="link-2"
-                                                   class="h-3.5 w-3.5"
-                                                   aria-hidden="true"></i>
+                                                <i data-lucide="link-2" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                                 {{ item.bindings }} Binding{{ "" if item.bindings == 1 else "s" }}
                                             </span>
                                         </div>
                                     </div>
                                 </div>
-
                                 <div class="flex shrink-0 items-center lg:justify-end">
                                     <a href="{{ url_for(item.workspace_endpoint) }}"
                                        class="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover">
                                         Open Workspace
-                                        <i data-lucide="arrow-right"
-                                           class="h-3.5 w-3.5"
-                                           aria-hidden="true"></i>
+                                        <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                     </a>
                                 </div>
                             </div>
@@ -230,7 +207,6 @@
                 </div>
             {% endif %}
         </section>
-
         <div class="rounded-xl border border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6"
              data-kaori-domain-operating-boundary>
             <div class="flex items-start gap-3">
