@@ -16,6 +16,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Pre-release type-safety guardrails for provider exceptions, Secret scrubbing, snapshot boundaries, recovery counters, ORM construction, and XLSX page setup.
 
 ### Changed
+- Hardened functional test isolation so standalone Dashboard/Topology loaders restore `sys.modules` through pytest monkeypatch ownership; the release prerequisite preflight now rejects unsafe direct module-registry mutations that can corrupt later application-factory characterization.
 - Standardized the general release console on short `PASS — KAORI <Area>` titles while preserving complete captured diagnostics on failed child verifiers; full static/test/frontend phases remain delegated to the canonical quality gate.
 - Closed the remaining Reports UI style/reuse gate debt by centralizing semantic borders, PDF dynamic fill styling, generated/template progress ownership, and Schedule form runtime while preserving the locked Reports presentation and delivery contracts.
 - Final-locked Settings across General Settings and Account & Authentication, retiring obsolete side-context partials and standardizing active preference/credential surfaces on shared KAORI semantic UI ownership.

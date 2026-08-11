@@ -5,22 +5,25 @@ import sys
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def _load_repository(filter_current_generation):
+def _load_repository(filter_current_generation, monkeypatch: pytest.MonkeyPatch):
     for package in ('app', 'app.common', 'app.extensions', 'app.dashboards', 'app.dashboards.kubernetes'):
-        module = sys.modules.setdefault(package, ModuleType(package))
+        module = ModuleType(package)
         module.__path__ = []
+        monkeypatch.setitem(sys.modules, package, module)
 
     generation = ModuleType('app.common.inventory_generation')
     generation.filter_current_generation = filter_current_generation
-    sys.modules['app.common.inventory_generation'] = generation
+    monkeypatch.setitem(sys.modules, 'app.common.inventory_generation', generation)
 
     raw_query = SimpleNamespace(name='raw-query')
     db_module = ModuleType('app.extensions.db')
     db_module.db = SimpleNamespace(session=SimpleNamespace(query=lambda model: raw_query))
-    sys.modules['app.extensions.db'] = db_module
+    monkeypatch.setitem(sys.modules, 'app.extensions.db', db_module)
 
     name = 'app.dashboards.kubernetes.repository'
     spec = importlib.util.spec_from_file_location(
@@ -29,12 +32,14 @@ def _load_repository(filter_current_generation):
     )
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
-    sys.modules[name] = module
+    monkeypatch.setitem(sys.modules, name, module)
     spec.loader.exec_module(module)
     return module, raw_query
 
 
-def test_dashboard_repository_applies_committed_generation_to_inventory_models() -> None:
+def test_dashboard_repository_applies_committed_generation_to_inventory_models(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     calls: list[tuple[object, object]] = []
     committed_query = SimpleNamespace(name='committed-query')
 
@@ -42,7 +47,7 @@ def test_dashboard_repository_applies_committed_generation_to_inventory_models()
         calls.append((query, model))
         return committed_query
 
-    repository, raw_query = _load_repository(committed)
+    repository, raw_query = _load_repository(committed, monkeypatch)
 
     class InventoryModel:
         cluster_id = object()
@@ -52,14 +57,16 @@ def test_dashboard_repository_applies_committed_generation_to_inventory_models()
     assert calls == [(raw_query, InventoryModel)]
 
 
-def test_dashboard_repository_does_not_apply_inventory_generation_to_platform_models() -> None:
+def test_dashboard_repository_does_not_apply_inventory_generation_to_platform_models(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     calls: list[tuple[object, object]] = []
 
     def committed(query, model):
         calls.append((query, model))
         return query
 
-    repository, raw_query = _load_repository(committed)
+    repository, raw_query = _load_repository(committed, monkeypatch)
 
     class PlatformModel:
         created_at = object()

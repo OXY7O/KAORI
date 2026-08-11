@@ -6,35 +6,42 @@ from datetime import UTC, datetime
 from pathlib import Path
 from types import ModuleType
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def _load_module(name: str, relative: str):
+def _load_module(name: str, relative: str, monkeypatch: pytest.MonkeyPatch):
     spec = importlib.util.spec_from_file_location(name, ROOT / relative)
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
-    sys.modules[name] = module
+    monkeypatch.setitem(sys.modules, name, module)
     spec.loader.exec_module(module)
     return module
 
 
-def _topology_modules():
+def _topology_modules(monkeypatch: pytest.MonkeyPatch):
     for package in ('app', 'app.inventory', 'app.inventory.topology'):
-        module = sys.modules.setdefault(package, ModuleType(package))
+        module = ModuleType(package)
         module.__path__ = []
+        monkeypatch.setitem(sys.modules, package, module)
     contracts = _load_module(
         'app.inventory.topology.contracts',
         'app/inventory/topology/contracts.py',
+        monkeypatch,
     )
     presentation = _load_module(
         'app.inventory.topology.presentation',
         'app/inventory/topology/presentation.py',
+        monkeypatch,
     )
     return contracts, presentation
 
 
-def test_topology_selection_is_derived_from_canonical_scope_and_depth() -> None:
-    contracts, _ = _topology_modules()
+def test_topology_selection_is_derived_from_canonical_scope_and_depth(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    contracts, _ = _topology_modules(monkeypatch)
     selection = contracts.TopologySelection.from_filters(scope='networking', depth='3')
 
     assert selection.include_level_1 is True
@@ -45,8 +52,10 @@ def test_topology_selection_is_derived_from_canonical_scope_and_depth() -> None:
     assert selection.show_compute is False
 
 
-def test_topology_elements_use_structured_specs_instead_of_argument_wrappers() -> None:
-    contracts, presentation = _topology_modules()
+def test_topology_elements_use_structured_specs_instead_of_argument_wrappers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    contracts, presentation = _topology_modules(monkeypatch)
     collected_at = datetime(2026, 8, 5, 7, 0, tzinfo=UTC)
     node = presentation.node_element(
         contracts.TopologyNodeSpec(
@@ -84,8 +93,10 @@ def test_topology_elements_use_structured_specs_instead_of_argument_wrappers() -
     assert edge['data']['relationship'] == 'owns'
 
 
-def test_topology_limit_keeps_parent_nodes_and_filters_dangling_edges() -> None:
-    _, presentation = _topology_modules()
+def test_topology_limit_keeps_parent_nodes_and_filters_dangling_edges(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _, presentation = _topology_modules(monkeypatch)
     nodes = [
         {'data': {'id': 'cluster:1', 'type': 'cluster'}},
         {'data': {'id': 'namespace:1', 'type': 'namespace'}},
@@ -105,14 +116,14 @@ def test_topology_limit_keeps_parent_nodes_and_filters_dangling_edges() -> None:
     assert omitted_by_type == {'pod': 1}
 
 
-def _topology_builder_modules():
-    contracts, presentation = _topology_modules()
+def _topology_builder_modules(monkeypatch: pytest.MonkeyPatch):
+    contracts, presentation = _topology_modules(monkeypatch)
 
     flask = ModuleType('flask')
     flask.url_for = lambda endpoint, **values: (
         f'/{endpoint}?' + '&'.join(f'{key}={value}' for key, value in sorted(values.items()))
     )
-    sys.modules['flask'] = flask
+    monkeypatch.setitem(sys.modules, 'flask', flask)
 
     for package in (
         'app.cluster',
@@ -120,49 +131,58 @@ def _topology_builder_modules():
         'app.integrations.kubernetes',
         'app.inventory.resources',
     ):
-        module = sys.modules.setdefault(package, ModuleType(package))
+        module = ModuleType(package)
         module.__path__ = []
+        monkeypatch.setitem(sys.modules, package, module)
 
     constants = ModuleType('app.cluster.constants')
     constants.get_environment_label = lambda value: str(value or 'Not Reported').title()
-    sys.modules['app.cluster.constants'] = constants
+    monkeypatch.setitem(sys.modules, 'app.cluster.constants', constants)
 
     resolver = ModuleType('app.integrations.kubernetes.resolver')
     resolver.server_for_cluster = lambda cluster: getattr(cluster, 'server', None)
-    sys.modules['app.integrations.kubernetes.resolver'] = resolver
+    monkeypatch.setitem(sys.modules, 'app.integrations.kubernetes.resolver', resolver)
 
     _load_module(
         'app.inventory.formatting',
         'app/inventory/formatting.py',
+        monkeypatch,
     )
     _load_module(
         'app.inventory.resources.ingress_semantics',
         'app/inventory/resources/ingress_semantics.py',
+        monkeypatch,
     )
     _load_module(
         'app.inventory.resources.storage_semantics',
         'app/inventory/resources/storage_semantics.py',
+        monkeypatch,
     )
 
     node_builder = _load_module(
         'app.inventory.topology.node_builder',
         'app/inventory/topology/node_builder.py',
+        monkeypatch,
     )
     edge_builder = _load_module(
         'app.inventory.topology.edge_builder',
         'app/inventory/topology/edge_builder.py',
+        monkeypatch,
     )
     graph_builder = _load_module(
         'app.inventory.topology.graph_builder',
         'app/inventory/topology/graph_builder.py',
+        monkeypatch,
     )
     return contracts, presentation, node_builder, edge_builder, graph_builder
 
 
-def test_topology_builder_preserves_canonical_nodes_and_relationships() -> None:
+def test_topology_builder_preserves_canonical_nodes_and_relationships(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from types import SimpleNamespace
 
-    contracts, _, _, _, graph_builder = _topology_builder_modules()
+    contracts, _, _, _, graph_builder = _topology_builder_modules(monkeypatch)
     collected = datetime(2026, 8, 5, 8, 0, tzinfo=UTC)
     cluster = SimpleNamespace(
         id='cluster-1',
@@ -369,8 +389,10 @@ def test_topology_builder_preserves_canonical_nodes_and_relationships() -> None:
     assert payload['summary']['last_collected_at'] == collected.isoformat()
 
 
-def test_topology_limit_never_exceeds_maximum_when_many_resource_groups_compete() -> None:
-    _, presentation = _topology_modules()
+def test_topology_limit_never_exceeds_maximum_when_many_resource_groups_compete(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _, presentation = _topology_modules(monkeypatch)
     nodes = [{'data': {'id': f'namespace:{index}', 'type': 'namespace'}} for index in range(349)]
     nodes.extend(
         {'data': {'id': f'{resource_type}:1', 'type': resource_type}}

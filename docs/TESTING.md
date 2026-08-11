@@ -28,3 +28,10 @@ python -m pip install -r requirements/dev.txt
 `python scripts/verify_test_prerequisites.py` runs before the full pytest phase. It fails fast when required development test modules are missing or when two `test_*.py` files share the same basename and would collide under pytest's default import behavior.
 
 Tests are organized under `tests/`; `tests/conftest.py` assigns the canonical purpose marker from the top-level test bucket. Debug tests are excluded from release gates, while E2E tests run in their dedicated release phase.
+
+
+## Functional test module isolation
+
+Functional characterization tests may load isolated application modules, but they must not leak replacements through `sys.modules` into later tests. Prefer `monkeypatch.setitem(sys.modules, name, module)` for every temporary package/module. Direct `sys.modules[...] = ...` or `sys.modules.setdefault(...)` is allowed only for a standalone loader that snapshots the prior registry state and restores it in `try/finally`.
+
+The release prerequisite verifier scans the functional test buckets (`welcome`, `dashboards`, `analytics`, `inventory`, `governance`, and `kubernetes_operations`) and fails fast when it finds a direct module-registry mutation without an explicit restore boundary. This protects application-factory characterization from order-dependent package stubs.
