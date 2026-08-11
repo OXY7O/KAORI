@@ -1,5 +1,7 @@
 # Settings Domain
 
+Settings v1 is final-locked. General Settings and Account & Authentication are release baselines; future changes require targeted regression evidence rather than presentation redesign.
+
 ## General Settings
 
 `/settings/general` is a per-user workspace available to every authenticated KAORI account. It uses query-backed HTMX tabs so Time Zone, Regional Format, System Information, and Compatibility Versions switch inside `#general-settings-page` without a full-page reload. Normal links remain the progressive-enhancement fallback.
@@ -62,7 +64,16 @@ The former standalone `/settings/time-locale` and `/settings/system-info` pages 
 
 ## Account & Authentication contract
 
-`/settings/account` is organized into `profile`, `activity`, and `credentials` query-backed HTMX tabs. Tab navigation replaces `#account-authentication-page` without a full-page reload, updates the browser URL, and preserves normal-link fallback. Information panels in the Activity and Credential tabs use native `<details>` elements and remain closed by default so the workspace can grow without creating a permanently long page.
+`/settings/account` is organized into `profile`, `activity`, and `credentials` query-backed HTMX tabs. Tab navigation replaces `#account-authentication-page` without a full-page reload, updates the browser URL, and preserves normal-link fallback.
+
+### Account & Authentication presentation contract
+
+- Use the same simple tab contract as General Settings; do not reintroduce page-local tab runtimes or count/status badges into the tab labels.
+- Keep the Hero focused on a compact posture summary: Account Posture, Authentication Evidence, and Credential Posture.
+- Profile stays full-width and read-only. Identity ownership, role/lifecycle posture, personal presentation, Last Verified Sign-In, and the access boundary belong in the active profile workspace.
+- Authentication Activity stays full-width and uses the shared KAORI table and status-label primitives with an inline Authentication Evidence boundary. Avoid hand-built status badges.
+- Credential Management keeps the action workspace on the left and one security context panel on the right at wide breakpoints; columns remain natural-height and top-aligned.
+- Do not restore the retired `_profile_information.html` or `_activity_information.html` side-context partials. Their canonical evidence now lives inline in the active Profile and Authentication Activity workspaces.
 
 Local Database password changes use HTMX and replace `#account-authentication-page` without a full-page reload. The canonical Local Database password policy is a unique passphrase of at least 12 characters (maximum 1024), with known default values rejected. A successful password change:
 

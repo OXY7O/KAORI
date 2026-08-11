@@ -39,6 +39,7 @@ def test_profile_workspace_is_full_width_without_right_information_column() -> N
     assert "active_tab == 'profile'" in page
     assert 'include "settings/account/partials/_profile_cards.html"' in page
     assert 'include "settings/account/partials/_profile_information.html"' not in page
+    assert not (ROOT / 'app/templates/settings/account/partials/_profile_information.html').exists()
 
     assert 'data-account-profile-workspace="full-width"' in profile
     assert 'Access Posture' in profile
@@ -74,6 +75,7 @@ def test_authentication_activity_is_full_width_with_inline_evidence_boundary() -
     assert 'data-account-activity-full-width="true"' in page
     assert 'include "settings/account/partials/_recent_login_activity.html"' in page
     assert 'include "settings/account/partials/_activity_information.html"' not in page
+    assert not (ROOT / 'app/templates/settings/account/partials/_activity_information.html').exists()
 
     assert 'data-authentication-activity-layout="full-width"' in activity
     assert 'Successful Sign-Ins' in activity

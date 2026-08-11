@@ -224,27 +224,8 @@
     "app/templates/reports/storage/index.html": {
       "raw_palette_utilities": 81
     },
-    "app/templates/settings/account/partials/_activity_information.html": {
-      "copied_standard_surface_shells": 2
-    },
     "app/templates/settings/account/partials/_change_password.html": {
-      "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 3
-    },
-    "app/templates/settings/account/partials/_credential_information.html": {
-      "copied_standard_surface_shells": 2
-    },
-    "app/templates/settings/account/partials/_profile_cards.html": {
-      "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 2
-    },
-    "app/templates/settings/account/partials/_profile_information.html": {
-      "copied_standard_surface_shells": 2,
-      "semantic_border_utilities": 2
-    },
-    "app/templates/settings/account/partials/_recent_login_activity.html": {
-      "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 2
+      "semantic_border_utilities": 1
     },
     "app/templates/settings/account/partials/_tabs.html": {
       "page_local_workspace_tablists": 1
@@ -254,9 +235,6 @@
     },
     "app/templates/settings/general/partials/_tabs.html": {
       "page_local_workspace_tablists": 1
-    },
-    "app/templates/settings/general/partials/_time_locale.html": {
-      "raw_palette_utilities": 3
     },
     "app/templates/users/external_identities.html": {
       "copied_standard_surface_shells": 2

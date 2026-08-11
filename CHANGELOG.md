@@ -13,6 +13,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Pre-release type-safety guardrails for provider exceptions, Secret scrubbing, snapshot boundaries, recovery counters, ORM construction, and XLSX page setup.
 
 ### Changed
+- Final-locked Settings across General Settings and Account & Authentication, retiring obsolete side-context partials and standardizing active preference/credential surfaces on shared KAORI semantic UI ownership.
 - Final-locked the Access control plane across Overview, User Management, Identity Providers, Roles & Access, Permission Catalog, and Activity Audit with a permanent release verifier and canonical short PASS output.
 - Standardized reviewed final-lock verifier success output to compact `PASS — KAORI …` lines while retaining detailed failure diagnostics and coverage assertions.
 - Hardened Kubernetes Analytics final-recheck contracts: shared Content Tabs now own visual state tokens, materialized snapshot identity has a dependency-light owner, canonical snapshot decode is ORM-free, Forecast reprojection builds only current payload fields, and explicit L0–L7 release evidence is registered.
@@ -36,6 +37,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Canonical job-operation display labels are shared through a domain-neutral execution presentation contract.
 
 ### Removed
+- Removed retired Settings side-context partials for General preference impact, Account profile information, and authentication activity information; canonical evidence remains inline in the active locked workspaces.
 - Retired the Analytics compatibility Content Tabs wrapper, orphan snapshot/freshness templates, and the unused Alerts Alpine-tab rehydration bridge; current pages consume canonical shared components directly.
 - Removed the orphan TLS Governance `get_active_tls_sync_job()` presentation helper; no compatibility wrapper is retained.
 - Removed unused Inventory `format_byte_count`, `format_gib`, and `_split_inventory_values` helpers plus the stale empty Inventory partial README; no compatibility wrapper is retained.

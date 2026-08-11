@@ -69,14 +69,17 @@ def test_regional_format_is_one_full_width_workspace_with_inline_boundary() -> N
     assert template.count('rounded-xl border border-outline-default bg-surface-subtle p-4') == 0
 
 
-def test_personal_preference_context_explains_scope_and_boundary() -> None:
-    template = read('app/templates/settings/general/partials/_impact_information.html')
-    assert 'Presentation Scope' in template
-    assert 'Data & Execution Boundary' in template
-    assert 'Canonical Storage' in template
-    assert 'Execution Schedules' in template
-    assert 'External Systems' in template
-    assert 'Presentation only.' in template
+def test_personal_preference_boundaries_live_in_active_workspaces() -> None:
+    timezone = read('app/templates/settings/general/partials/_time_locale.html')
+    regional = read('app/templates/settings/general/partials/_regional_format.html')
+    page = read('app/templates/settings/general/partials/_page_content.html')
+
+    assert not (ROOT / 'app/templates/settings/general/partials/_impact_information.html').exists()
+    assert 'settings/general/partials/_impact_information.html' not in page
+    for source in (timezone, regional):
+        assert 'Preference Scope &amp; Boundary' in source
+        assert 'Presentation Scope' in source
+        assert 'Display preference only.' in source
 
 
 def test_system_information_is_explicitly_read_only_and_traceable() -> None:

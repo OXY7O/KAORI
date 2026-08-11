@@ -44,13 +44,16 @@ def test_recent_authentication_activity_uses_shared_table_and_status_primitives(
     assert 'border-status-critical-border' not in activity
 
 
-def test_general_settings_expandable_context_hides_native_marker_and_has_collapse_state() -> None:
-    impact = _read('app/templates/settings/general/partials/_impact_information.html')
-    assert impact.count('class="group overflow-hidden') == 2
-    assert impact.count('[&::-webkit-details-marker]:hidden') == 2
-    assert impact.count('group-open:hidden') == 2
-    assert impact.count('group-open:inline') == 2
-    assert impact.count('group-open:rotate-180') == 2
+def test_general_settings_retired_side_context_is_not_reintroduced() -> None:
+    page = _read('app/templates/settings/general/partials/_page_content.html')
+    assert not (ROOT / 'app/templates/settings/general/partials/_impact_information.html').exists()
+    assert '_impact_information.html' not in page
+    assert 'data-timezone-preference-boundary="inline"' in _read(
+        'app/templates/settings/general/partials/_time_locale.html'
+    )
+    assert 'data-regional-preference-boundary="inline"' in _read(
+        'app/templates/settings/general/partials/_regional_format.html'
+    )
 
 
 def test_general_settings_feedback_contract_matches_audit_only_delivery() -> None:

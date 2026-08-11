@@ -1,4 +1,5 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/operational_callout.html" as operational_callout %}
 <form method="POST"
       action="{{ url_for('settings.general', tab='time-locale') }}"
       hx-post="{{ url_for('settings.general', tab='time-locale') }}"
@@ -119,7 +120,7 @@
                 </section>
             </div>
             {% for error in timezone_form.timezone.errors %}
-                <p class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{{ error }}</p>
+                <p class="rounded-xl border {{ operational_callout.semantic_surface_classes('critical') }} px-4 py-3 text-sm font-semibold text-status-critical-text">{{ error }}</p>
             {% endfor %}
             <section class="border-t border-outline-subtle pt-5"
                      aria-labelledby="timezone-preference-boundary-title"
