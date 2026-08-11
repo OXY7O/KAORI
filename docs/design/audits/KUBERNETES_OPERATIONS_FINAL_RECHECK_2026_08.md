@@ -135,7 +135,7 @@ Permanent reviewed-domain evidence is organized as:
 
 - L0 Static Quality — final-lock verifier, Ruff/Ruff Format, djLint, Pyright, Prettier, architecture/code-health/source hygiene;
 - L1 Contract — `tests/contracts/kubernetes_operations/test_kubernetes_operations_final_release_contract.py` plus existing ConfigMap/Secret contracts;
-- L2 Unit — `tests/unit/kubernetes_operations/test_operation_flow.py`;
+- L2 Unit — `tests/unit/kubernetes_operations/test_operation_flow_unit.py`;
 - L3 Functional — `tests/kubernetes_operations/test_route_authorization_characterization.py` plus existing operation behavior tests;
 - L4 Integration — `tests/integration/kubernetes_operations/test_live_runtime_boundary.py`;
 - L5 Security Regression — `tests/security/kubernetes_operations/test_kubernetes_operations_security.py`;

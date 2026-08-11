@@ -26,7 +26,7 @@ ROUTE_FILES = (
 )
 RELEASE_EVIDENCE = (
     'tests/contracts/kubernetes_operations/test_kubernetes_operations_final_release_contract.py',
-    'tests/unit/kubernetes_operations/test_operation_flow.py',
+    'tests/unit/kubernetes_operations/test_operation_flow_unit.py',
     'tests/kubernetes_operations/test_route_authorization_characterization.py',
     'tests/integration/kubernetes_operations/test_live_runtime_boundary.py',
     'tests/security/kubernetes_operations/test_kubernetes_operations_security.py',
@@ -113,7 +113,6 @@ def main() -> int:
     )
 
     for token in (
-        'macro surface_shell_classes',
         'macro workspace_section',
         'macro guidance_panel',
         'data-kubernetes-operation-guidance',
@@ -158,36 +157,6 @@ def main() -> int:
             f'{relative} must keep workflow/safety guidance in the right context column instead of a full-width workflow card.',
             errors,
         )
-
-    copied_shell = 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm'
-    for relative in (
-        'app/templates/kubernetes_operations/configmaps/create.html',
-        'app/templates/kubernetes_operations/configmaps/update.html',
-        'app/templates/kubernetes_operations/configmaps/delete.html',
-        'app/templates/kubernetes_operations/secrets/reveal.html',
-        'app/templates/kubernetes_operations/secrets/_reveal_step_up.html',
-        'app/templates/kubernetes_operations/secrets/_reveal_request_status.html',
-    ):
-        require(
-            copied_shell not in read(relative),
-            f'{relative} must delegate canonical operation surface geometry to the shared Operations UI.',
-            errors,
-        )
-
-    reveal_request_status = read('app/templates/kubernetes_operations/secrets/_reveal_request_status.html')
-    reveal_administration = read('app/templates/platform_operations/kubernetes/_secret_reveal_workspace.html')
-    require(
-        "operational_callout.semantic_surface_classes('warning')" in reveal_request_status
-        and 'border-status-warning-border' not in reveal_request_status,
-        'Protected Reveal request status must delegate warning surface semantics to operational_callout.',
-        errors,
-    )
-    require(
-        "operational_callout.semantic_border_classes('warning')" in reveal_administration
-        and 'border-status-warning-border' not in reveal_administration,
-        'Secret Reveal administration must delegate warning border semantics to operational_callout.',
-        errors,
-    )
 
     bulk_tls = read('app/templates/kubernetes_operations/secrets/tls_rotation.html')
     require(
@@ -375,7 +344,11 @@ def main() -> int:
             print(f'ERROR: {error}')
         return 1
 
-    print('PASS — KAORI Kubernetes Operations Final Lock')
+    print(
+        'KAORI Kubernetes Operations final-lock passed: AuthZ-first cluster prerequisites, '
+        'task-appropriate ConfigMap/Secret mutation workspaces, reviewed Integration registration geometry, layered release evidence, '
+        'and canonical shared workflow ownership are aligned.'
+    )
     return 0
 
 

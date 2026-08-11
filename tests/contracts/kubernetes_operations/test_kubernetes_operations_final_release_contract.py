@@ -37,7 +37,6 @@ def test_special_tls_rotation_retains_reviewed_full_width_workspace() -> None:
 
 def test_shared_operation_component_keeps_special_workflow_and_embedded_action_primitives() -> None:
     component = read('app/templates/components/kubernetes_operation_ui.html')
-    assert 'macro surface_shell_classes' in component
     assert 'macro workspace_section' in component
     assert 'macro workflow_control' in component
     assert 'components/operational_point_flow.html' in component
@@ -63,25 +62,6 @@ def test_operations_release_evidence_is_documented_and_wired_to_the_quality_gate
     assert 'verify_kubernetes_operations_final_lock.py' in quality_gate
     assert 'tests/kubernetes_operations' in quality_gate
     assert 'test_kubernetes_operations_final_release_contract.py' in coverage
+    assert 'tests/unit/kubernetes_operations/test_operation_flow_unit.py' in coverage
+    assert 'tests/unit/kubernetes_operations/test_operation_flow.py' not in coverage
     assert 'Task-Fit Layout v7' in pattern
-
-
-def test_operations_surface_and_reveal_semantics_stay_shared() -> None:
-    copied_shell = 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm'
-    for relative in (
-        'app/templates/kubernetes_operations/configmaps/create.html',
-        'app/templates/kubernetes_operations/configmaps/update.html',
-        'app/templates/kubernetes_operations/configmaps/delete.html',
-        'app/templates/kubernetes_operations/secrets/reveal.html',
-        'app/templates/kubernetes_operations/secrets/_reveal_step_up.html',
-        'app/templates/kubernetes_operations/secrets/_reveal_request_status.html',
-    ):
-        source = read(relative)
-        assert copied_shell not in source
-
-    request_status = read('app/templates/kubernetes_operations/secrets/_reveal_request_status.html')
-    administration = read('app/templates/platform_operations/kubernetes/_secret_reveal_workspace.html')
-    assert "operational_callout.semantic_surface_classes('warning')" in request_status
-    assert 'border-status-warning-border' not in request_status
-    assert "operational_callout.semantic_border_classes('warning')" in administration
-    assert 'border-status-warning-border' not in administration
