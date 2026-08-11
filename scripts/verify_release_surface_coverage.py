@@ -48,11 +48,7 @@ def _read(relative: str) -> str:
 
 
 def _literal_url_for_endpoints(source: str) -> set[str]:
-    return {
-        match
-        for match in re.findall(r"url_for\(\s*['\"]([^'\"]+)['\"]", source)
-        if match != 'static'
-    }
+    return {match for match in re.findall(r"url_for\(\s*['\"]([^'\"]+)['\"]", source) if match != 'static'}
 
 
 def _intelligence_link_endpoints(source: str) -> set[str]:

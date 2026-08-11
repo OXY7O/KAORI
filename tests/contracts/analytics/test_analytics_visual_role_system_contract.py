@@ -1,7 +1,6 @@
 import re
 from pathlib import Path
 
-
 ANALYTICS_ROOT = Path('app/templates/analytics')
 SURFACE = ANALYTICS_ROOT / 'components/_analysis_surfaces.html'
 DOMAINS = (

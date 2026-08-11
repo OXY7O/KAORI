@@ -136,9 +136,7 @@ def _run_surface_checks() -> bool:
 
     for surface in SURFACES:
         commands = tuple(
-            (PYTHON, verifier)
-            for verifier in surface.verifiers
-            if verifier not in QUICK_DEFERRED_VERIFIERS
+            (PYTHON, verifier) for verifier in surface.verifiers if verifier not in QUICK_DEFERRED_VERIFIERS
         )
         if not commands:
             continue

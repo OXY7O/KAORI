@@ -28,7 +28,6 @@ def test_release_registry_closes_navigation_and_blueprint_inventory() -> None:
     assert next(surface for surface in SURFACES if surface.key == 'health').lock_state == 'SYSTEM LOCKED'
 
 
-
 def test_general_release_titles_stay_short() -> None:
     assert set(SHORT_LABELS) == {surface.title for surface in SURFACES}
     assert all(len(label) <= 18 for label in SHORT_LABELS.values())
@@ -36,6 +35,7 @@ def test_general_release_titles_stay_short() -> None:
     assert SHORT_LABELS['Kubernetes Analytics'] == 'Analytics'
     assert SHORT_LABELS['Platform Operations'] == 'Platform Ops'
     assert SHORT_LABELS['Notification Center'] == 'Notifications'
+
 
 def test_general_release_runner_owns_short_pass_and_detailed_fail_contract() -> None:
     runner = read('scripts/verify_final_release.py')
