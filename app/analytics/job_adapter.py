@@ -114,7 +114,6 @@ def _alert_dataset_eligible(
     diagnostics: list[str] | None = None,
 ) -> bool:
     source = canonical_parameters(dataset_key, parameters).get('source', 'auto').lower()
-
     if source in {'auto', 'alertmanager'}:
         try:
             alertmanager = resolve_alertmanager_sources(

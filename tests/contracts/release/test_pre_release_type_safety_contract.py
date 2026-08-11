@@ -32,6 +32,11 @@ def test_general_release_runner_suppresses_success_chatter_on_failure() -> None:
     assert 'def _is_success_chatter(line: str) -> bool:' in runner
     assert "stripped.startswith('PASS — KAORI ')" in runner
     assert 'def _failure_output(stdout: str, stderr: str) -> str:' in runner
+    assert "stripped.startswith('[KAORI hygiene] tracked source is clean')" in runner
+    assert "stripped in {'All checks passed!', 'Checking formatting...'}" in runner
+    assert "' are valid'" in runner
+    assert "' is acyclic'" in runner
+    assert "' is closed'" in runner
     assert 'output = _failure_output(result.stdout, result.stderr)' in runner
     assert runner.index('from release_surface_registry import SURFACES') < runner.index(
         'sys.dont_write_bytecode = True'

@@ -37,6 +37,7 @@ SHORT_LABELS = {
 
 QUICK_DEFERRED_VERIFIERS = {'scripts/verify_report_runtime_imports.py'}
 
+
 def _purge_generated_python_cache() -> None:
     for cache_name in ('__pycache__', '.pytest_cache', '.ruff_cache', '.mypy_cache'):
         for path in ROOT.rglob(cache_name):
@@ -65,13 +66,26 @@ def _is_success_chatter(line: str) -> bool:
         return False
     if stripped.startswith('PASS — KAORI '):
         return True
+    if stripped.startswith('[KAORI hygiene] tracked source is clean'):
+        return True
+    if stripped in {'All checks passed!', 'Checking formatting...'}:
+        return True
+    if stripped.endswith(' files already formatted') or stripped == '0 files would be updated.':
+        return True
+    if stripped == '0 errors, 0 warnings, 0 informations':
+        return True
+    if stripped.startswith('Checking ') and ' files' in stripped:
+        return True
     if not stripped.startswith('KAORI '):
         return False
     success_markers = (
         ' passed',
-        ' audit passed',
+        ': PASS',
         ' is valid',
+        ' are valid',
         ' is bounded',
+        ' is acyclic',
+        ' is closed',
         ' coverage is present',
         ' syntax passed',
     )

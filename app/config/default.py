@@ -729,10 +729,7 @@ class Config:
         or 'Internal'
     )
 
-    # Reports storage.
-    # Supported values:
-    # - local: local filesystem in the application/instance folder
-    # - s3: S3-compatible object storage, including AWS S3 and MinIO
+    # Reports storage supports local filesystem and S3-compatible backends (AWS S3/MinIO).
     REPORT_STORAGE_BACKEND = _normalize_storage_backend(
         _env_str(
             'REPORT_STORAGE_BACKEND',
@@ -740,9 +737,7 @@ class Config:
         )
     )
 
-    # Local backend root directory. Object keys are stored under this root.
-    # With REPORT_LOCAL_STORAGE_DIR=instance and object key reports/YYYY/MM/...
-    # files are stored under: <project-root>/instance/reports/YYYY/MM/...
+    # Local backend root; report object keys are stored beneath this directory.
     REPORT_LOCAL_STORAGE_DIR = _resolve_path(
         _env_str(
             'REPORT_LOCAL_STORAGE_DIR',
@@ -751,8 +746,7 @@ class Config:
         BASE_DIR / 'instance',
     )
 
-    # Temporary staging directory used while rendering PDFs before they are
-    # copied/uploaded to the configured storage backend.
+    # Temporary staging directory used before rendered PDFs reach the storage backend.
     REPORT_RENDER_STAGING_DIR = _resolve_path(
         _env_str(
             'REPORT_RENDER_STAGING_DIR',
@@ -761,8 +755,7 @@ class Config:
         BASE_DIR / 'instance' / 'report-render-staging',
     )
 
-    # Download cache for object-storage backends. Local backend does not need
-    # this, but keeping it configurable helps later S3/MinIO testing.
+    # Download cache for object-storage backends; local storage does not require it.
     REPORT_DOWNLOAD_CACHE_DIR = _resolve_path(
         _env_str(
             'REPORT_DOWNLOAD_CACHE_DIR',
@@ -771,9 +764,7 @@ class Config:
         BASE_DIR / 'instance' / 'report-download-cache',
     )
 
-    # S3-compatible backend configuration.
-    # AWS S3: leave REPORT_S3_ENDPOINT_URL empty.
-    # MinIO: set REPORT_S3_ENDPOINT_URL, for example http://minio:9000.
+    # S3-compatible backend: leave endpoint empty for AWS S3; set it for MinIO.
     REPORT_S3_BUCKET = _env_str('REPORT_S3_BUCKET', '')
     REPORT_S3_REGION = _env_str('REPORT_S3_REGION', 'us-east-1')
     REPORT_S3_ACCESS_KEY_ID = _env_optional_str('REPORT_S3_ACCESS_KEY_ID')
