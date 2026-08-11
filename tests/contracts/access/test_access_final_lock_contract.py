@@ -44,8 +44,12 @@ def test_access_final_lock_protects_content_driven_modal_formatter_boundary() ->
 
     assert 'h-auto max-h-[calc(100dvh-1rem)]' in modal
     assert 'max-h-[calc(100dvh-1rem) ]' not in modal
-    assert '{# djlint:off #}' in modal
-    assert '{# djlint:on #}' in modal
+    djlint_off = modal.find('{# djlint:off #}')
+    dialog_open = modal.find('<section id="{{ dialog_id }}"')
+    dialog_close = modal.find('</section>', dialog_open)
+    djlint_on = modal.find('{# djlint:on #}')
+
+    assert 0 <= djlint_off < dialog_open < dialog_close < djlint_on
 
 
 def test_current_access_documents_do_not_reopen_the_locked_ui() -> None:

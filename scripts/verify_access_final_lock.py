@@ -206,16 +206,22 @@ def main() -> int:
         "Notification.status == 'success'",
     ):
         require(required in notification_queries, f'Activity actor contract missing: {required}', errors)
-    require('components/resource_detail_modal.html' in activity_page, 'Activity Audit must use shared detail modal', errors)
+    require(
+        'components/resource_detail_modal.html' in activity_page, 'Activity Audit must use shared detail modal', errors
+    )
     require('content_driven=true' in activity_page, 'Activity detail modal must remain content-driven', errors)
 
     # Shared modal must keep Tailwind arbitrary-value tokens contiguous and formatter-protected.
     modal = read('app/templates/components/resource_detail_modal.html')
     require('h-auto max-h-[calc(100dvh-1rem)]' in modal, 'content-driven modal height token is malformed', errors)
     require('max-h-[calc(100dvh-1rem) ]' not in modal, 'formatter whitespace broke modal Tailwind token', errors)
+    modal_djlint_off = modal.find('{# djlint:off #}')
+    modal_dialog_open = modal.find('<section id="{{ dialog_id }}"')
+    modal_dialog_close = modal.find('</section>', modal_dialog_open)
+    modal_djlint_on = modal.find('{# djlint:on #}')
     require(
-        '{# djlint:off #}' in modal and '{# djlint:on #}' in modal,
-        'modal formatter boundary missing',
+        0 <= modal_djlint_off < modal_dialog_open < modal_dialog_close < modal_djlint_on,
+        'modal formatter boundary must wrap the complete shared dialog section',
         errors,
     )
 
