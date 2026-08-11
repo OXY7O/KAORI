@@ -41,7 +41,7 @@ def _iter_calls(source: str, name: str):
                 elif char == quote:
                     quote = None
             else:
-                if char in "'\"":
+                if char == "'" or char == '"':
                     quote = char
                 elif char == '(':
                     depth += 1
