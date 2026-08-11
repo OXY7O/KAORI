@@ -6,6 +6,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Baseline-lock Intelligence read/evidence surfaces while preserving explicit Reserved Plan and fail-closed boundaries for unfinished Server/HCI and Automation Control capabilities; environment enablement for Automation mutations remains deliberately deferred.
 
 ### Added
+- Added a release-test prerequisite preflight that verifies required development test dependencies and unique pytest module basenames before the full suite starts.
 - Added a canonical 49-link / 21-blueprint release-surface registry, concise general final-release runner, static ownership verifier, and runtime endpoint-registry integration test so new menus/domains cannot bypass release ownership.
 - Added permanent Kubernetes Governance L0–L7 release evidence and `verify_governance_final_lock.py` for AuthZ-first readiness, TLS data minimization, canonical UI ownership, and dead-surface protection.
 - Added permanent Kubernetes Inventory L0–L7 release evidence and `verify_inventory_final_lock.py` for AuthZ ordering, committed-snapshot ownership, canonical UI composition, Topology database ownership, and residual-file protection.
@@ -48,6 +49,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Removed unused Inventory `format_byte_count`, `format_gib`, and `_split_inventory_values` helpers plus the stale empty Inventory partial README; no compatibility wrapper is retained.
 
 ### Fixed
+- Fixed full release-test collection by declaring `pypdf` as a development-only dependency and removing the duplicate `test_operation_flow.py` module basename collision.
 - Normalized Kubernetes Analytics final-recheck contracts around semantic behavior instead of quote/whitespace fingerprints while preserving Watch posture, shared semantic tone ownership, null-safe Forecast thresholds, Prometheus timestamp fallback, Storage pressure fallbacks, Utilization legend roles, and Workload View More boundaries.
 - Made the Integrations latest-runtime-observation contract formatter-neutral by validating the ranked database query semantically within its owning function instead of matching one exact call layout.
 - Fixed Kubernetes Analytics tabs that could remain inert or visually desynchronized by removing dual Alpine/native state ownership; Overview now uses compact one-row labels and no longer renders internal snapshot identifiers as badges.

@@ -1,7 +1,30 @@
 # KAORI Testing
 
-The previous automated test suite has intentionally been removed while the application structure is being stabilized.
+KAORI uses a layered release test strategy covering contracts, migrations, unit, functional, integration, security, rendering, and end-to-end evidence. The canonical release entry point is:
 
-Testing support remains available through `pytest`, `pytest-flask`, and `pytest-cov` in `requirements/dev.in`. New tests should be added under `tests/` when the test strategy is rebuilt.
+```bash
+python scripts/verify_final_release.py --all --runtime
+```
 
-A dedicated test database is not provisioned automatically by the current Dev Container. When automated tests are reintroduced, add an isolated test-database workflow rather than running tests against the development database.
+## Development test dependencies
+
+Development-only test tooling is declared in `requirements/dev.in` and locked in `requirements/dev.txt`. PDF rendering tests use `pypdf` to inspect generated artifacts; it is intentionally not a production/runtime dependency.
+
+After changing either `.in` dependency file, regenerate the lock files inside the Dev Container:
+
+```bash
+pip-compile requirements/base.in --output-file requirements/base.txt
+pip-compile requirements/dev.in --output-file requirements/dev.txt
+```
+
+Rebuild the Dev Container after dependency-lock changes. For an already-running container, install the updated development lock before rerunning the release suite:
+
+```bash
+python -m pip install -r requirements/dev.txt
+```
+
+## Collection prerequisites
+
+`python scripts/verify_test_prerequisites.py` runs before the full pytest phase. It fails fast when required development test modules are missing or when two `test_*.py` files share the same basename and would collide under pytest's default import behavior.
+
+Tests are organized under `tests/`; `tests/conftest.py` assigns the canonical purpose marker from the top-level test bucket. Debug tests are excluded from release gates, while E2E tests run in their dedicated release phase.

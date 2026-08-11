@@ -83,6 +83,7 @@ run_static() {
 }
 
 run_tests() {
+    python scripts/verify_test_prerequisites.py
     pytest -q -m 'not debug and not e2e'
 
     # Domain characterization tests are explicit release gates. This protects
