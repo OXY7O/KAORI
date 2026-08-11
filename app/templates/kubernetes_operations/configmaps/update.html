@@ -39,7 +39,7 @@
               hx-disabled-elt="find button"
               class="{{ form_context.layout_classes() }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ form_context.main_classes() }}"
+            <section class="{{ configmap_ui.surface_shell_classes(form_context.main_classes()) }}"
                      data-kubernetes-operation-form="configmap-update">
                 {{ configmap_ui.section_header('file-pen-line', 'ConfigMap Update', 'Select one live ConfigMap, edit the intended state, then validate the exact effective change before apply.') }}
                 <div class="divide-y divide-outline-subtle">

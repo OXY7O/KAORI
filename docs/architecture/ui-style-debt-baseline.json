@@ -156,9 +156,6 @@
     "app/templates/kubernetes_operations/secrets/_reveal_request_form.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/kubernetes_operations/secrets/_reveal_request_status.html": {
-      "copied_standard_surface_shells": 1
-    },
     "app/templates/kubernetes_operations/secrets/_reveal_value.html": {
       "semantic_border_utilities": 1
     },
@@ -168,9 +165,6 @@
     "app/templates/kubernetes_operations/secrets/create.html": {
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 2
-    },
-    "app/templates/kubernetes_operations/secrets/reveal.html": {
-      "copied_standard_surface_shells": 2
     },
     "app/templates/kubernetes_operations/secrets/tls_rotation.html": {
       "copied_standard_surface_shells": 1,

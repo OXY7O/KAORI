@@ -38,7 +38,7 @@
               hx-disabled-elt="find button"
               class="{{ form_context.layout_classes() }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ form_context.main_classes() }}"
+            <section class="{{ configmap_ui.surface_shell_classes(form_context.main_classes()) }}"
                      data-kubernetes-operation-form="configmap-delete">
                 {{ configmap_ui.section_header('trash-2', 'ConfigMap Deletion', 'Select one live ConfigMap, review the represented impact, then validate and confirm removal.', 'critical') }}
                 <div class="divide-y divide-outline-subtle">

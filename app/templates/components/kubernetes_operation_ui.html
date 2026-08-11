@@ -3,6 +3,9 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/operational_point_flow.html" as point_flow %}
 {# Canonical KAORI primitives for guarded Kubernetes mutation workflows. #}
+{% macro surface_shell_classes(extra_classes='') -%}
+    overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ extra_classes }}
+{%- endmacro %}
 {% macro section_header(icon, title, description, tone='brand') -%}
     <header class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-5 py-4 sm:px-6">
         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ 'bg-status-critical-soft text-status-critical-text' if tone == 'critical' else 'bg-kaori-soft text-kaori-primary' }}"
@@ -86,7 +89,7 @@
     </div>
 {%- endmacro %}
 {% macro workspace_section(icon, title, description, tone='brand', body_classes='p-5 sm:p-6', marker=None) -%}
-    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+    <section class="{{ surface_shell_classes() }}"
              {% if marker %}data-kubernetes-operation-section="{{ marker }}"{% endif %}>
         {{ section_header(icon, title, description, tone) }}
         <div class="{{ body_classes }}">{{ caller() }}</div>

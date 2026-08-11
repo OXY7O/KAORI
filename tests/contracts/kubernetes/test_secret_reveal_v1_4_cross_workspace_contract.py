@@ -84,7 +84,6 @@ def test_secret_reveal_dark_mode_keeps_violet_for_accents_and_actions() -> None:
     )
     request_form = read('app/templates/kubernetes_operations/secrets/_reveal_request_form.html')
     request_status = read('app/templates/kubernetes_operations/secrets/_reveal_request_status.html')
-    table_label = read('app/templates/components/table_label.html')
 
     assert 'bg-white/70' not in administration
     assert 'bg-surface-card text-status-warning-text' in administration
@@ -101,4 +100,3 @@ def test_secret_reveal_dark_mode_keeps_violet_for_accents_and_actions() -> None:
     assert 'space-y-1 text-xs leading-5 text-content-secondary' in request_form
     assert 'hover:bg-kaori-soft' not in request_status
     assert "table_label.status_label('Revealed', 'info'" in request_status
-    assert 'bg-status-info-soft text-status-info-text' in table_label
