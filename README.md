@@ -22,13 +22,19 @@ Initialize a fresh development database:
 bash scripts/init_db.sh
 ```
 
-Run the complete release gate:
+Run the concise general release audit first:
 
 ```bash
-bash scripts/quality_gate.sh --all
+python scripts/verify_final_release.py
 ```
 
-The gate validates source hygiene, Python and Jinja syntax, linting and formatting, types and imports, architecture boundaries, runtime import cycles, Celery topology, migrations, permanent tests, and frontend assets.
+Run the complete release gate before publishing:
+
+```bash
+python scripts/verify_final_release.py --all
+```
+
+Add `--runtime` when release workers/services are running and live readiness must be proven. The general runner keeps successful titles short (`PASS — KAORI <Area>`) and prints complete child diagnostics only on failure. It validates release-surface coverage before delegating to the canonical static, test, and frontend gates.
 
 ## Test Taxonomy
 
@@ -46,6 +52,7 @@ Start with:
 - [`docs/architecture/README.md`](docs/architecture/README.md)
 - [`docs/architecture/module-structure.md`](docs/architecture/module-structure.md)
 - [`docs/architecture/quality-gates.md`](docs/architecture/quality-gates.md)
+- [`docs/architecture/RELEASE_SURFACE_COVERAGE.md`](docs/architecture/RELEASE_SURFACE_COVERAGE.md)
 - [`docs/architecture/job-execution-foundation.md`](docs/architecture/job-execution-foundation.md)
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
 - [`docs/deployment/RELEASE_GOVERNANCE.md`](docs/deployment/RELEASE_GOVERNANCE.md)

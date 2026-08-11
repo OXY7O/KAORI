@@ -1,5 +1,4 @@
 {% set can_dashboard = current_user.is_authenticated and current_user.has_permission('dashboard.view') %}
-{% set can_clusters = current_user.is_authenticated and current_user.has_permission('clusters.view') %}
 {% set can_inventory = current_user.is_authenticated and current_user.has_permission('inventory.view') %}
 {% set can_analytics = current_user.is_authenticated and current_user.has_permission('analytics.view') %}
 {% set can_intelligence = current_user.is_authenticated and current_user.has_permission('intelligence.view') %}

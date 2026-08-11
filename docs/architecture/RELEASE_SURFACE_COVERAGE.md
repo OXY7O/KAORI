@@ -1,0 +1,85 @@
+# KAORI Release Surface Coverage v1
+
+Status: **Locked release-coverage contract**
+
+This registry answers one release question: **is every operator-visible menu, nested web domain, and non-navigation system surface explicitly owned by a release verifier or test boundary?**
+
+The current baseline contains **49 navigation links** across the authenticated application shell and **21 registered blueprints**. A new menu link, menu template, or registered Blueprint must be added to the canonical registry in the same change or the general release audit fails closed.
+
+## Navigation and Surface Matrix
+
+| Surface | State | Navigation ownership | Release evidence |
+|---|---|---|---|
+| Welcome | LOCKED | Main → Welcome | `verify_welcome_final_lock.py` |
+| Kubernetes Dashboard | LOCKED | Main → Dashboards → Kubernetes | `verify_operational_dashboard_standard.py` |
+| Kubernetes Inventory | LOCKED | Kubernetes → Inventory | `verify_inventory_final_lock.py` |
+| Kubernetes Operations | LOCKED | Kubernetes → Operations | `verify_kubernetes_operations_final_lock.py` |
+| Kubernetes Governance | LOCKED | Kubernetes → Governance | `verify_governance_final_lock.py` |
+| Kubernetes Analytics | LOCKED | Insights & Reporting → K8s Analytics | `verify_analytics_final_lock.py` |
+| Intelligence | BASELINE LOCKED | Insights & Reporting → Intelligence | `verify_intelligence_baseline_lock.py` |
+| Reports | LOCKED | Insights & Reporting → Reports | Reports generation/job/storage/runtime verifiers + Reports contracts |
+| Integrations | LOCKED | Platform Extensions → Integrations | `verify_integrations_final_lock.py` |
+| Platform Operations | LOCKED | Platform Operations | `verify_platform_operations_final_lock.py` |
+| Access | LOCKED | Administration → Access | `verify_access_final_lock.py` |
+| Settings | LOCKED | Administration → Settings | `verify_settings_final_lock.py` |
+| Authentication | LOCKED | Non-navigation public/auth shell | `verify_authentication_surface_final_lock.py` |
+| Notification Center | LOCKED | Application shell; Activity Audit linked from Access | `verify_notification_center_final_lock.py` |
+| Runtime Health | SYSTEM LOCKED | Non-navigation `/health/live` and `/health/ready` | release endpoint registry integration test |
+
+## Nested Cluster Management Ownership
+
+**Cluster Management is intentionally not a separate sidebar menu.** The canonical list/lifecycle workspace moved under **Integrations → Kubernetes**. `cluster.*` Add/Edit/Delete/Sync routes remain active nested operations, and `integrations_menu.html` must keep `cluster.*` endpoints associated with the Kubernetes integration parent.
+
+The retired standalone Cluster Management listing chain must not return:
+
+- `app/templates/cluster/index.html`
+- standalone cluster table/pagination/status/inventory/delete-modal partials used only by that retired listing
+- `cluster.list_clusters`
+
+The active registration/edit surfaces remain:
+
+- `app/templates/cluster/add.html`
+- `app/templates/cluster/edit.html`
+- shared form/connection-test/page-header partials
+
+## General Release Commands
+
+Fast ownership and locked-surface review:
+
+```bash
+python scripts/verify_final_release.py
+```
+
+Full release gate with static quality, test suite, and frontend build:
+
+```bash
+python scripts/verify_final_release.py --all
+```
+
+Include live runtime checks when release services/workers are running:
+
+```bash
+python scripts/verify_final_release.py --all --runtime
+```
+
+The general runner intentionally keeps successful output short:
+
+```text
+PASS — KAORI Inventory
+PASS — KAORI Analytics
+PASS — KAORI Reports
+```
+
+A failed child verifier prints its complete captured diagnostics after a concise `FAIL — KAORI <Area>` header. This preserves the agreed rule: **PASS is short; FAIL is detailed.**
+
+## Change Control
+
+When adding or moving a menu/domain:
+
+1. Update `scripts/release_surface_registry.py` with ownership, endpoints, lock state, verifier, and release evidence.
+2. Update this matrix.
+3. Add/update the domain verifier and contract/runtime evidence.
+4. Run `python scripts/verify_release_surface_coverage.py`.
+5. Run `python scripts/verify_final_release.py --all` before release.
+
+Do not silence a new endpoint by increasing a baseline or by classifying an active surface as hidden without an explicit ownership decision.

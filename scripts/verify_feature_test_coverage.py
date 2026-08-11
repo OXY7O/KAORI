@@ -53,6 +53,8 @@ _REQUIRED_TEST_FILES = {
     'tests/rendering/kubernetes_operations/test_kubernetes_operations_rendering.py': 2,
     'tests/integration/kubernetes_operations/test_live_runtime_boundary.py': 1,
     'tests/e2e/kubernetes_operations/test_kubernetes_operations_smoke.py': 2,
+    'tests/contracts/release/test_release_surface_coverage_contract.py': 6,
+    'tests/integration/release/test_release_endpoint_registry.py': 1,
 }
 
 
@@ -93,7 +95,7 @@ def main() -> int:
             print(f'ERROR: {error}')
         return 1
 
-    print(f'KAORI release-test coverage is present across {len(_REQUIRED_TEST_FILES)} required test modules.')
+    print(f'PASS — KAORI Test Coverage · {len(_REQUIRED_TEST_FILES)} modules')
     return 0
 
 

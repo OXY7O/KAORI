@@ -6,6 +6,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Baseline-lock Intelligence read/evidence surfaces while preserving explicit Reserved Plan and fail-closed boundaries for unfinished Server/HCI and Automation Control capabilities; environment enablement for Automation mutations remains deliberately deferred.
 
 ### Added
+- Added a canonical 49-link / 21-blueprint release-surface registry, concise general final-release runner, static ownership verifier, and runtime endpoint-registry integration test so new menus/domains cannot bypass release ownership.
 - Added permanent Kubernetes Governance L0–L7 release evidence and `verify_governance_final_lock.py` for AuthZ-first readiness, TLS data minimization, canonical UI ownership, and dead-surface protection.
 - Added permanent Kubernetes Inventory L0–L7 release evidence and `verify_inventory_final_lock.py` for AuthZ ordering, committed-snapshot ownership, canonical UI composition, Topology database ownership, and residual-file protection.
 - Established `docs/standards/KAORI_ENGINEERING_STANDARD_V1.md` as the mandatory final-recheck index covering the shared Violet palette, Hero variants, tables/pagination/status, right context rails, tab families, progressive disclosure, feedback, notifications, shell navigation, accessibility, security, and test evidence.
@@ -14,6 +15,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Pre-release type-safety guardrails for provider exceptions, Secret scrubbing, snapshot boundaries, recovery counters, ORM construction, and XLSX page setup.
 
 ### Changed
+- Standardized the general release console on short `PASS — KAORI <Area>` titles while preserving complete captured diagnostics on failed child verifiers; full static/test/frontend phases remain delegated to the canonical quality gate.
 - Closed the remaining Reports UI style/reuse gate debt by centralizing semantic borders, PDF dynamic fill styling, generated/template progress ownership, and Schedule form runtime while preserving the locked Reports presentation and delivery contracts.
 - Final-locked Settings across General Settings and Account & Authentication, retiring obsolete side-context partials and standardizing active preference/credential surfaces on shared KAORI semantic UI ownership.
 - Final-locked the Access control plane across Overview, User Management, Identity Providers, Roles & Access, Permission Catalog, and Activity Audit with a permanent release verifier and canonical short PASS output.
@@ -39,6 +41,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Canonical job-operation display labels are shared through a domain-neutral execution presentation contract.
 
 ### Removed
+- Removed the orphan standalone Cluster Management listing template chain and stale `can_clusters` sidebar capability; active Cluster Add/Edit/Delete/Sync operations remain nested under Integrations → Kubernetes.
 - Removed retired Settings side-context partials for General preference impact, Account profile information, and authentication activity information; canonical evidence remains inline in the active locked workspaces.
 - Retired the Analytics compatibility Content Tabs wrapper, orphan snapshot/freshness templates, and the unused Alerts Alpine-tab rehydration bridge; current pages consume canonical shared components directly.
 - Removed the orphan TLS Governance `get_active_tls_sync_job()` presentation helper; no compatibility wrapper is retained.

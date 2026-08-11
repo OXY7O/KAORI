@@ -10,13 +10,23 @@ Access adds `verify_access_final_lock.py` to the same static phase. The verifier
 
 Authentication adds `verify_authentication_surface_final_lock.py` to the static phase. The verifier freezes the compact Login and Database Setup Required surfaces, safe redirect/session/cookie invariants, generic credential-failure semantics, SSO state/nonce/TTL ownership, accessible form controls, KAORI Violet compact-login geometry, external first-party interaction runtime, and the reviewed authentication UI debt burn-down.
 
-The canonical local entrypoint is:
+The concise general release entrypoint is:
 
 ```bash
-bash scripts/quality_gate.sh --all
+python scripts/verify_final_release.py
 ```
 
-The release workflow calls the same gate through `.github/workflows/quality.yml`. A production image must not be published until every phase succeeds.
+It first proves that all current sidebar/navigation surfaces and registered Flask blueprints have explicit release ownership. The canonical registry is `scripts/release_surface_registry.py`; `scripts/verify_release_surface_coverage.py` fails when a menu link, menu template, Blueprint, verifier, or evidence path is unowned. The current contract covers 49 navigation links and 21 registered blueprints, including non-navigation Authentication, Notification Center, Runtime Health, and nested Cluster Management ownership under Integrations → Kubernetes.
+
+For the complete release gate use:
+
+```bash
+python scripts/verify_final_release.py --all
+```
+
+Add `--runtime` when live worker/runtime readiness must also pass. Successful general-runner output is deliberately compact (`PASS — KAORI <Area>`); failed steps retain complete child diagnostics. `scripts/quality_gate.sh` remains the canonical phase implementation used by CI and is also callable directly.
+
+The release workflow calls the same gate through `.github/workflows/quality.yml`. A production image must not be published until every required phase succeeds.
 
 ## Gate Structure
 
@@ -29,22 +39,23 @@ bash scripts/quality_gate.sh --static
 This gate performs, in order:
 
 1. Source hygiene validation, including source archives that do not contain `.git` metadata.
-2. In-memory Python syntax compilation without generating `__pycache__` or `.pyc` files.
-3. Strict Ruff linting.
-4. Ruff formatting verification.
-5. djLint validation for Jinja templates.
-6. Pyright type and import analysis.
-7. Architecture dependency-boundary validation.
-8. Internal module and imported-symbol resolution.
-9. Runtime import-cycle detection, excluding imports guarded by `TYPE_CHECKING`.
-10. Application-module reachability validation.
-11. Celery task, route, queue, worker, and Beat topology validation.
-12. Code-health debt-ceiling validation.
-13. Alembic revision-graph validation.
-14. Test location and marker-taxonomy validation.
-15. Reviewed-domain release-test coverage validation across Unit, Functional, Integration, Security, Rendering/UI, and E2E evidence.
-16. Jinja syntax, reusable UI boundary, and inline-debt validation.
-17. Architecture and migration contract tests.
+2. Release-surface coverage validation: every navigation endpoint and registered Blueprint has an explicit owner, verifier/evidence boundary, and lock state.
+3. In-memory Python syntax compilation without generating `__pycache__` or `.pyc` files.
+4. Strict Ruff linting.
+5. Ruff formatting verification.
+6. djLint validation for Jinja templates.
+7. Pyright type and import analysis.
+8. Architecture dependency-boundary validation.
+9. Internal module and imported-symbol resolution.
+10. Runtime import-cycle detection, excluding imports guarded by `TYPE_CHECKING`.
+11. Application-module reachability validation.
+12. Celery task, route, queue, worker, and Beat topology validation.
+13. Code-health debt-ceiling validation.
+14. Alembic revision-graph validation.
+15. Test location and marker-taxonomy validation.
+16. Reviewed-domain release-test coverage validation across Unit, Functional, Integration, Security, Rendering/UI, and E2E evidence.
+17. Jinja syntax, reusable UI boundary, and inline-debt validation.
+18. Architecture and migration contract tests.
 
 ### Functional Gate
 

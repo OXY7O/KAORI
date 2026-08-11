@@ -18,6 +18,7 @@ Domain-specific rules live beside complex code in `app/<domain>/README.md`. Gene
 ## Quality and Refactor Governance
 
 - [Quality and Architecture Gates](quality-gates.md)
+- [Release Surface Coverage](RELEASE_SURFACE_COVERAGE.md)
 - [Controlled Refactor Roadmap](refactor-roadmap.md)
 - [`architecture-debt-baseline.json`](architecture-debt-baseline.json) — machine-readable temporary debt ledger
 

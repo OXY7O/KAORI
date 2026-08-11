@@ -45,25 +45,9 @@
       "custom_hero_titles": 1,
       "semantic_border_utilities": 3
     },
-    "app/templates/cluster/index.html": {
-      "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 1
-    },
-    "app/templates/cluster/partials/_delete_modal.html": {
-      "semantic_border_utilities": 2
-    },
     "app/templates/cluster/partials/_form.html": {
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 3
-    },
-    "app/templates/cluster/partials/_inventory_badge.html": {
-      "semantic_border_utilities": 2
-    },
-    "app/templates/cluster/partials/_status_badge.html": {
-      "semantic_border_utilities": 3
-    },
-    "app/templates/cluster/partials/_table.html": {
-      "semantic_border_utilities": 1
     },
     "app/templates/components/action_button.html": {
       "semantic_border_utilities": 2
