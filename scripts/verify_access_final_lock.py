@@ -149,7 +149,11 @@ def main() -> int:
         require(required in source, f'User lifecycle security contract missing: {required}', errors)
     require('auth_session_version' in user_model, 'User auth session generation contract missing', errors)
     require('components/page_hero.html' in users_hero, 'User Management must use shared Hero', errors)
-    require('destructive_confirmation_modal.js' in users_index, 'User Management must use shared destructive confirmation runtime', errors)
+    require(
+        'destructive_confirmation_modal.js' in users_index,
+        'User Management must use shared destructive confirmation runtime',
+        errors,
+    )
 
     # Identity Providers: administration-only, secrets external, live validation on demand.
     provider_index = read('app/templates/users/providers/index.html')
