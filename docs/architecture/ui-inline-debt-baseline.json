@@ -45,11 +45,6 @@
       "inline_scripts": 2,
       "inline_styles": 0
     },
-    "app/templates/notifications/partials/_activity_table_content.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 0,
-      "inline_styles": 0
-    },
     "app/templates/prometheus/partials/_delete_confirmation_modal.html": {
       "inline_event_handlers": 0,
       "inline_scripts": 1,
@@ -71,11 +66,6 @@
       "inline_styles": 0
     },
     "app/templates/settings/general/partials/_time_locale.html": {
-      "inline_event_handlers": 0,
-      "inline_scripts": 1,
-      "inline_styles": 0
-    },
-    "app/templates/users/partials/_delete_modal.html": {
       "inline_event_handlers": 0,
       "inline_scripts": 1,
       "inline_styles": 0

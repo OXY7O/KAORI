@@ -40,7 +40,7 @@ def test_access_overview_hero_summary_is_permission_aware() -> None:
     assert "'description': 'Domains needing review'" in presentation
 
 
-def test_access_overview_ui_remains_open_for_child_page_review() -> None:
+def test_access_overview_is_protected_by_access_final_lock() -> None:
     readme = read('app/access/README.md')
-    assert 'not the Access UI Final Lock' in readme
-    assert 'reviewed independently' in readme
+    assert 'Access v1 is final-locked' in readme
+    assert 'verify_access_final_lock.py' in readme

@@ -159,7 +159,7 @@ def main() -> int:
             print(f'- {error}')
         return 1
 
-    print('KAORI Notification Center Final Lock v1.2 passed.')
+    print('PASS — KAORI Notification Center Final Lock v1.2')
     return 0
 
 

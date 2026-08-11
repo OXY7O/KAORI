@@ -64,7 +64,7 @@ User Management must not call Flask `flash()`. Every create, update, activate, d
 
 Identity Providers uses the Access/Inventory visual grammar while `app/users` remains the provider-administration owner. The registry uses shared KAORI table, filter, loading, expandable-detail, and pagination components. Add/Edit provider forms use sticky right rails; LDAP setup is presented as an always-visible controlled flow, while SSO guidance remains collapsible. Draft provider configuration can be tested live before save without persisting validation as readiness evidence. Provider secret values remain runtime-owned and only environment-reference names may appear in UI evidence.
 
-This is not the Identity Providers Final Lock. Directory Provisioning and durable validation-evidence policy remain open for review.
+Identity Providers and Directory Provisioning are included in Access Final Lock v1. Runtime provider validation remains intentionally on-demand and is not persisted as durable readiness evidence.
 
 ## External-provider extension boundary
 
@@ -135,7 +135,7 @@ Full administrator configuration is documented in `docs/authentication/IDENTITY_
 
 ## Identity Providers refinement baseline
 
-The Identity Providers review keeps the page open for final Access UI lock while establishing the following presentation contract:
+Access Final Lock v1 freezes the following Identity Providers presentation contract:
 
 - the hero uses the shared Inventory-style KAORI `page_hero.context_card()` pattern;
 - Provider Registry Overview separates configuration completeness, enablement, provider family, and identity-link evidence;
@@ -146,7 +146,7 @@ The Identity Providers review keeps the page open for final Access UI lock while
 - the provider index is a full-width operational workspace: authentication/provider-family guidance is consolidated into Provider Registry Overview, while Directory Provisioning is a dedicated operational workflow above the registry;
 - LDAP, Google OIDC, and GitHub OAuth setup guidance use the same always-visible ordered flow grammar as Role Assignment Flow; the Technical Runbook is a compact non-expandable reference, while form right rails remain sticky at `xl:top-5`.
 
-This refinement is not the Identity Providers Final Lock. Directory Provisioning and remaining Access child pages are still reviewed independently before Access is final-locked.
+Identity Providers is final-locked as an Access child workspace under `docs/design/KAORI_ACCESS_LOCK_V1.md`.
 
 ## SSO provider administration
 
@@ -154,7 +154,7 @@ Google and GitHub provider configuration is managed by the Users domain, while b
 
 ## User Management refinement baseline
 
-The User Management review keeps the page open for final Access UI lock while tightening the operational contract:
+Access Final Lock v1 freezes the following User Management operational contract:
 
 - Restore and Activate are separate lifecycle decisions. Restore clears `deleted_at` but returns the account to **Inactive**.
 - Deactivate, delete, and super-admin demotion serialize the active-super-admin rows with a database `FOR UPDATE` boundary before the final last-super-admin check.
@@ -162,7 +162,7 @@ The User Management review keeps the page open for final Access UI lock while ti
 - Inactive roles remain visible in the directory filter so operators can locate users assigned to a fail-closed role.
 - User-directory mutations update the hero posture out-of-band so account counts do not remain stale after HTMX actions.
 
-This refinement is not the User Management Final Lock. The page remains open until Access child pages are reviewed independently.
+User Management is final-locked as an Access child workspace under `docs/design/KAORI_ACCESS_LOCK_V1.md`.
 
 ## Legacy AuditEvent Boundary
 

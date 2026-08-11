@@ -53,9 +53,9 @@ User and provider URLs remain canonical under `/users/` until their page-by-page
 
 Legacy Settings role/permission URLs are retired. Settings must not contain redirect shims, compatibility wrappers, or role/permission presentation/mutation logic; callers must use the canonical Access routes.
 
-## UI review boundary
+## Final lock boundary
 
-This ownership refactor is an architecture baseline, not the Access UI Final Lock. User Management, Identity Providers, Roles & Access, Permission Catalog, Activity Audit, and Access Overview will be reviewed independently before the Access domain is final-locked.
+Access v1 is final-locked across Access Overview, User Management, Identity Providers, Roles & Access, Permission Catalog, and Activity Audit. Runtime ownership remains distributed by domain, while the Access control-plane UI, security boundaries, canonical components, and legacy-cleanup rules are protected by `scripts/verify_access_final_lock.py`.
 
 ## Roles & Access review status
 
@@ -63,7 +63,7 @@ Roles & Access now uses the KAORI operational registry pattern: read-only postur
 
 Custom-role edit/delete mutations are serialized with a database row lock and protected by a role version token so stale administrative forms do not silently overwrite a newer role state. Delete blockers for user assignments and Identity Provider defaults are rechecked at mutation time.
 
-This remains a refinement baseline, not the Access Final Lock. RBAC seed/convergence ownership is intentionally deferred to Permission Catalog review.
+This Roles & Access presentation is part of Access Final Lock v1. RBAC seed/convergence remains an explicit deployment boundary owned by the Permission Catalog and `flask seed-rbac`.
 
 ## Permission Catalog review status
 
@@ -74,4 +74,4 @@ The catalog owns two views:
 - **Permission Registry** — code-owned contracts, dependencies, current role mapping count, registry drift, shared filters/loading, and standard pagination.
 - **Role Coverage** — cross-role effective permission comparison. Roles & Access intentionally keeps only role-specific permission coverage in its detail modal.
 
-This remains a refinement baseline, not the Access Final Lock.
+This Permission Catalog presentation is part of Access Final Lock v1.

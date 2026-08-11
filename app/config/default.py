@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from celery.schedules import crontab
@@ -540,6 +541,14 @@ class Config:
         60,
         1800,
     )
+
+    AUTH_REMEMBER_ME_DAYS = _bounded_env_int(
+        'AUTH_REMEMBER_ME_DAYS',
+        7,
+        1,
+        30,
+    )
+    REMEMBER_COOKIE_DURATION = timedelta(days=AUTH_REMEMBER_ME_DAYS)
 
     # Persistent sessions are disabled for local super administrators by default.
     # Enable only after the break-glass operating procedure explicitly permits it.

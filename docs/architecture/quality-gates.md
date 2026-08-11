@@ -6,6 +6,8 @@ KAORI uses mandatory release gates to prevent behavior regressions, import-cycle
 
 Kubernetes Operations adds `verify_kubernetes_operations_final_lock.py` to the static phase. The verifier freezes AuthZ-first cluster prerequisites, Full-Width Mutation Workspace v2 ownership, retired content-rail absence, and L0–L7 permanent evidence for ConfigMap/Secret CRUD.
 
+Access adds `verify_access_final_lock.py` to the same static phase. The verifier freezes the read-only Access overview, explicit user/role/provider permission boundaries, last-super-admin and stale-write protections, bounded remember-me persistence, authentication actor-versus-target audit semantics, Activity Audit ownership, shared modal/tab/table composition, and the reviewed Access UI debt ceiling.
+
 The canonical local entrypoint is:
 
 ```bash

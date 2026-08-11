@@ -87,9 +87,9 @@ def test_no_access_legacy_route_references_remain_in_runtime_code() -> None:
             assert token not in text, f'{target.relative_to(ROOT)} contains {token!r}'
 
 
-def test_access_ui_is_not_final_locked_by_this_refactor() -> None:
+def test_access_ui_is_final_locked_after_child_page_review() -> None:
     readme = read('app/access/README.md')
-    assert 'not the Access UI Final Lock' in readme
-    assert 'reviewed independently' in readme
+    assert 'Access v1 is final-locked' in readme
+    assert 'verify_access_final_lock.py' in readme
     assert 'redirect shims' in readme
     assert 'Legacy Settings role/permission URLs are retired' in readme

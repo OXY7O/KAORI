@@ -134,10 +134,10 @@ def test_identity_provider_form_uses_shared_hero_live_test_and_standard_guidance
     assert 'font-mono text-xs text-content-primary' not in ldap_config
 
 
-def test_identity_provider_refinement_remains_open_before_final_lock() -> None:
+def test_identity_provider_refinement_is_superseded_by_access_final_lock() -> None:
     readme = read('app/users/README.md')
     audit = read('docs/design/audits/KAORI_IDENTITY_PROVIDERS_REFINEMENT_AUDIT_2026_08_09.md')
     assert 'Identity Providers refinement baseline' in readme
-    assert 'not the Identity Providers Final Lock' in readme
+    assert 'Identity Providers is final-locked as an Access child workspace' in readme
     assert 'does not final-lock the Access domain' in audit
     assert 'Configured`, `Enabled`, and runtime validation' in audit

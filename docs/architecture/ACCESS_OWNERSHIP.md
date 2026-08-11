@@ -1,6 +1,6 @@
 # KAORI Access Ownership Baseline v1.1
 
-Status: **Architecture baseline — UI not final locked**
+Status: **Final Locked — Access v1**
 
 ## Objective
 
@@ -27,4 +27,4 @@ Access
 7. `app/notifications` remains the Activity Audit evidence owner.
 8. Old `/settings/roles*` and `/settings/permissions` URLs are retired; Access has no Settings compatibility shim.
 9. Access Overview is read-only and permission-aware.
-10. Child-page UI is intentionally not final-locked until page-by-page review is complete.
+10. Access child-page UI is final-locked under `docs/design/KAORI_ACCESS_LOCK_V1.md` and protected by `scripts/verify_access_final_lock.py`.

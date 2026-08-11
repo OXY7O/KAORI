@@ -40,21 +40,24 @@ def test_deck_and_page_tabs_use_quiet_kaori_surfaces() -> None:
 def test_deck_auto_refreshes_one_snapshot_every_15_seconds() -> None:
     shell = read('app/templates/components/navigation/_notification_center.html')
     navbar = read('app/templates/components/navigation/navbar.html')
+    navbar_js = read('app/static/js/navbar.js')
+    layout = read('app/templates/layouts/app.html')
     routes = read('app/notifications/routes.py')
 
     assert 'data-notification-deck-root' in shell
     assert "url_for('notifications.panel_snapshot')" in shell
-    assert 'queueNotificationDeckRefresh()"' in shell
-    assert 'window.setInterval(() =>' in navbar
-    assert '}, 15000)' in navbar
-    assert 'async refreshNotificationDeck()' in navbar
-    assert 'notificationDeckSnapshotQueued: false' in navbar
     assert 'queueNotificationDeckRefresh()' in navbar
-    assert 'if (this.notificationDeckSnapshotInFlight) {' in navbar
-    assert 'this.notificationDeckSnapshotQueued = true' in navbar
-    assert 'const response = await fetch(snapshotUrl' in navbar
-    assert "Accept: 'application/json'" in navbar
-    assert "cache: 'no-store'" in navbar
+    assert "filename='js/navbar.js'" in layout
+    assert 'window.setInterval(() =>' in navbar_js
+    assert '}, 15000)' in navbar_js
+    assert 'async refreshNotificationDeck()' in navbar_js
+    assert 'notificationDeckSnapshotQueued: false' in navbar_js
+    assert 'queueNotificationDeckRefresh()' in navbar_js
+    assert 'if (this.notificationDeckSnapshotInFlight) {' in navbar_js
+    assert 'this.notificationDeckSnapshotQueued = true' in navbar_js
+    assert 'const response = await fetch(snapshotUrl' in navbar_js
+    assert "Accept: 'application/json'" in navbar_js
+    assert "cache: 'no-store'" in navbar_js
     assert "@notifications_bp.get('/panel/snapshot')" in routes
     assert 'return _render_status_snapshot()' in routes
     assert shell.count('hx-trigger="every 15s') == 0
@@ -85,19 +88,19 @@ def test_manual_refresh_ui_and_state_are_removed() -> None:
 
 
 def test_auto_poll_is_bounded_and_never_overlaps() -> None:
-    navbar = read('app/templates/components/navigation/navbar.html')
+    navbar_js = read('app/static/js/navbar.js')
 
-    assert 'notificationDeckSnapshotInFlight: false' in navbar
-    assert 'notificationDeckSnapshotController: null' in navbar
-    assert 'notificationDeckSnapshotQueued: false' in navbar
-    assert 'queueNotificationDeckRefresh()' in navbar
-    assert 'if (this.notificationDeckSnapshotInFlight) {' in navbar
-    assert 'this.notificationDeckSnapshotQueued = true' in navbar
-    assert 'const controller = new AbortController()' in navbar
-    assert 'window.setTimeout(() => controller.abort(), 5000)' in navbar
-    assert 'finally {' in navbar
-    assert 'this.notificationDeckSnapshotInFlight = false' in navbar
-    assert 'this.notificationDeckSnapshotController?.abort()' in navbar
+    assert 'notificationDeckSnapshotInFlight: false' in navbar_js
+    assert 'notificationDeckSnapshotController: null' in navbar_js
+    assert 'notificationDeckSnapshotQueued: false' in navbar_js
+    assert 'queueNotificationDeckRefresh()' in navbar_js
+    assert 'if (this.notificationDeckSnapshotInFlight) {' in navbar_js
+    assert 'this.notificationDeckSnapshotQueued = true' in navbar_js
+    assert 'const controller = new AbortController()' in navbar_js
+    assert 'window.setTimeout(() => controller.abort(), 5000)' in navbar_js
+    assert 'finally {' in navbar_js
+    assert 'this.notificationDeckSnapshotInFlight = false' in navbar_js
+    assert 'this.notificationDeckSnapshotController?.abort()' in navbar_js
 
 
 def test_footer_exposes_quiet_auto_refresh_status() -> None:
@@ -111,7 +114,7 @@ def test_footer_exposes_quiet_auto_refresh_status() -> None:
 
 
 def test_snapshot_updates_stable_slots_without_replacing_deck() -> None:
-    navbar = read('app/templates/components/navigation/navbar.html')
+    navbar_js = read('app/static/js/navbar.js')
     routes = read('app/notifications/routes.py')
 
     for needle in (
@@ -122,13 +125,16 @@ def test_snapshot_updates_stable_slots_without_replacing_deck() -> None:
         'window.htmx?.process(notificationsTarget)',
         'window.renderLocalOperationalActivities?.()',
     ):
-        assert needle in navbar
+        assert needle in navbar_js
+
+    assert 'def _count_value(value: object) -> int:' in routes
 
     for needle in (
-        'from flask import Blueprint, jsonify,',
+        'Blueprint,',
+        'jsonify,',
         'def _render_status_snapshot()',
-        "'active_count': int(context.get('active_count', 0))",
-        "'unread_count': int(context.get('unread_count', 0))",
+        "'active_count': _count_value(context.get('active_count', 0))",
+        "'unread_count': _count_value(context.get('unread_count', 0))",
         "'activity_html': render_template(",
         "'notifications_html': render_template(",
         "response.headers['Cache-Control'] = 'no-store, max-age=0'",

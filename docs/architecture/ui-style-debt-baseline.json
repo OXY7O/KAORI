@@ -1,11 +1,14 @@
 {
   "description": "Per-template ceiling for style-drift review candidates. Counts are not all defects; they must not increase and should fall during page-by-page standardization.",
   "files": {
-    "app/templates/access/roles/form.html": {
-      "semantic_border_utilities": 5
-    },
-    "app/templates/access/roles/index.html": {
+    "app/templates/access/permissions/index.html": {
       "semantic_border_utilities": 1
+    },
+    "app/templates/access/roles/form.html": {
+      "semantic_border_utilities": 3
+    },
+    "app/templates/access/roles/partials/_role_detail.html": {
+      "semantic_border_utilities": 2
     },
     "app/templates/alertmanager/instance_form.html": {
       "copied_standard_surface_shells": 1,
@@ -177,6 +180,9 @@
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 1
     },
+    "app/templates/notifications/components/_activity_center_items.html": {
+      "semantic_border_utilities": 1
+    },
     "app/templates/prometheus/instance_form.html": {
       "copied_standard_surface_shells": 1
     },
@@ -262,27 +268,18 @@
     "app/templates/users/partials/_content.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/users/partials/_delete_modal.html": {
-      "raw_palette_utilities": 14
-    },
-    "app/templates/users/partials/_summary_cards.html": {
-      "raw_palette_utilities": 16
-    },
-    "app/templates/users/partials/_table.html": {
-      "font_extrabold_utilities": 3,
-      "raw_palette_utilities": 52
-    },
     "app/templates/users/providers/form.html": {
-      "copied_standard_surface_shells": 1
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 2
     },
-    "app/templates/users/providers/index.html": {
-      "copied_standard_surface_shells": 3
+    "app/templates/users/providers/partials/_directory_provisioning_strip.html": {
+      "copied_standard_surface_shells": 1
     },
     "app/templates/users/providers/partials/_ldap_configuration.html": {
       "copied_standard_surface_shells": 2
     },
     "app/templates/users/providers/partials/_provider_guidance.html": {
-      "copied_standard_surface_shells": 5
+      "copied_standard_surface_shells": 2
     },
     "app/templates/users/providers/partials/_provider_selector.html": {
       "copied_standard_surface_shells": 1
@@ -293,7 +290,7 @@
     },
     "app/templates/users/reset_password.html": {
       "copied_standard_surface_shells": 2,
-      "semantic_border_utilities": 12
+      "semantic_border_utilities": 7
     }
   },
   "version": 3
