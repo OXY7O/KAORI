@@ -138,7 +138,9 @@
 {% macro section(title, subtitle='', extra_class='') -%}
     <section class="content-section {{ extra_class }}">
         <h2>{{ title }}</h2>
-        {% if subtitle %}<p class="section-subtitle">{{ subtitle }}</p>{% endif %}
+        {% if subtitle %}
+            <p class="section-subtitle">{{ subtitle }}</p>
+        {% endif %}
         <div class="section-rule" aria-hidden="true">
             <span></span>
         </div>
@@ -149,9 +151,7 @@
     <table class="report-table {{ extra_class }}">
         <thead>
             <tr>
-                {% for column in columns %}
-                    <th>{{ column }}</th>
-                {% endfor %}
+                {% for column in columns %}<th>{{ column }}</th>{% endfor %}
             </tr>
         </thead>
         <tbody>
@@ -293,9 +293,7 @@
                     <div class="identity-copy">
                         <strong class="identity-title technical-identity">{{ item.identity|default(item.title|default(item.name) ) }}</strong>
                         {% set identity_meta = item.meta|default(item.metadata|default('')) %}
-                        {% if identity_meta %}
-                            <p class="identity-meta">{{ identity_meta }}</p>
-                        {% endif %}
+                        {% if identity_meta %}<p class="identity-meta">{{ identity_meta }}</p>{% endif %}
                     </div>
                 </div>
             {% endfor %}
