@@ -19,8 +19,8 @@ def read(relative: str) -> str:
 def test_release_registry_closes_navigation_and_blueprint_inventory() -> None:
     assert len(navigation_endpoints()) == 49
     assert len(set(navigation_endpoints())) == 49
-    assert len(blueprint_vars()) == 21
-    assert len(set(blueprint_vars())) == 21
+    assert len(blueprint_vars()) == 22
+    assert len(set(blueprint_vars())) == 22
     assert len(SURFACES) == 15
 
     assert {surface.lock_state for surface in SURFACES} == {'LOCKED', 'BASELINE LOCKED', 'SYSTEM LOCKED'}
@@ -59,10 +59,10 @@ def test_quality_gate_cannot_skip_surface_coverage() -> None:
 def test_cluster_listing_legacy_chain_is_retired_and_guarded() -> None:
     coverage = read('scripts/verify_release_surface_coverage.py')
     sidebar = read('app/templates/components/navigation/sidebar.html')
-    integrations = read('app/templates/components/navigation/integrations_menu.html')
+    kubernetes_registration = read('app/integrations/kubernetes/__init__.py')
 
     assert 'can_clusters' not in sidebar
-    assert "request.endpoint.startswith('cluster.')" in integrations
+    assert "navigation_endpoint_prefixes=('integrations.kubernetes', 'cluster.')" in kubernetes_registration
     assert 'cluster.list_clusters' not in ''.join(
         path.read_text(encoding='utf-8') for path in (ROOT / 'app/templates').rglob('*.html')
     )
@@ -84,7 +84,7 @@ def test_release_coverage_documentation_keeps_explicit_incomplete_feature_state(
     documentation = read('docs/architecture/RELEASE_SURFACE_COVERAGE.md')
     for token in (
         '49 navigation links',
-        '21 registered blueprints',
+        '22 registered blueprints',
         'Intelligence | BASELINE LOCKED',
         'Runtime Health | SYSTEM LOCKED',
         'Cluster Management is intentionally not a separate sidebar menu',

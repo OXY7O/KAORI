@@ -10,6 +10,7 @@ from app.extensions.db import db
 
 if TYPE_CHECKING:
     from app.models.alertmanager import AlertmanagerInstance
+    from app.models.minio import MinioInstance
     from app.models.prometheus import PrometheusInstance
 
 
@@ -53,6 +54,12 @@ class IntegrationInstance(db.Model):
     )
     alertmanager_record: Mapped[AlertmanagerInstance | None] = relationship(
         'AlertmanagerInstance',
+        back_populates='integration_instance',
+        uselist=False,
+        passive_deletes=True,
+    )
+    minio_record: Mapped[MinioInstance | None] = relationship(
+        'MinioInstance',
         back_populates='integration_instance',
         uselist=False,
         passive_deletes=True,

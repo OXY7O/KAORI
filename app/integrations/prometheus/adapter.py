@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
+from app.integrations.binding_service import SourceBindingSpec
 from app.integrations.contracts import CapabilitySnapshot, DiagnosticResult, HealthFactor, RuntimeState
 from app.integrations.prometheus.binding_management import (
     create_binding,
@@ -71,14 +72,17 @@ class PrometheusRuntimeAdapter:
             return create_binding(
                 instance=instance,
                 cluster=kwargs.get('cluster'),
-                scope_type=kwargs.get('scope_type'),
-                scope_key=kwargs.get('scope_key'),
-                role=str(kwargs.get('role') or 'primary'),
-                priority=int(kwargs.get('priority', 100)),
-                selector_label=kwargs.get('selector_label'),
-                selector_value=kwargs.get('selector_value'),
-                selector_operator=str(kwargs.get('selector_operator') or '='),
-                capability_scope=kwargs.get('capability_scope'),
+                spec=SourceBindingSpec(
+                    asset_type=str(kwargs.get('scope_type') or ''),
+                    asset_key=str(kwargs.get('scope_key') or ''),
+                    role=str(kwargs.get('role') or 'primary'),
+                    priority=int(kwargs.get('priority', 100)),
+                    selector_label=kwargs.get('selector_label'),
+                    selector_value=kwargs.get('selector_value'),
+                    selector_operator=str(kwargs.get('selector_operator') or '='),
+                    capability_scope=kwargs.get('capability_scope'),
+                    enabled=bool(kwargs.get('enabled', True)),
+                ),
                 commit=bool(kwargs.get('commit', True)),
             )
         if operation == 'binding.selector.update':

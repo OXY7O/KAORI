@@ -26,6 +26,7 @@ def test_sidebar_navigation_is_domain_driven_not_product_driven() -> None:
     assert "provider_type == 'kubernetes'" not in navigation
     assert "provider_type == 'prometheus'" not in navigation
     assert "provider_type == 'alertmanager'" not in navigation
+    assert "provider_type == 'minio'" not in navigation
 
     assert 'integration_navigation.domains' in sidebar
     assert 'url_for(domain.workspace_endpoint)' in sidebar
@@ -40,6 +41,7 @@ def test_builtin_providers_declare_domain_navigation_ownership() -> None:
         'app/integrations/kubernetes/__init__.py': "navigation_endpoint_prefixes=('integrations.kubernetes', 'cluster.')",
         'app/integrations/prometheus/__init__.py': "navigation_endpoint_prefixes=('integrations.prometheus', 'prometheus.')",
         'app/integrations/alertmanager/__init__.py': "navigation_endpoint_prefixes=('integrations.alertmanager', 'alertmanager.')",
+        'app/integrations/minio/__init__.py': "navigation_endpoint_prefixes=('minio.',)",
     }
     for relative, marker in expected.items():
         assert marker in read(relative)
@@ -48,6 +50,7 @@ def test_builtin_providers_declare_domain_navigation_ownership() -> None:
 def test_domain_landing_routes_share_one_taxonomy_page_builder() -> None:
     routes = read('app/integrations/routes.py')
     service = read('app/integrations/service.py')
+    domain_service = read('app/integrations/domain_service.py')
 
     assert 'def _render_domain_page(domain_key: str)' in routes
     assert "@integrations_bp.get('/orchestration')" in routes
@@ -56,19 +59,17 @@ def test_domain_landing_routes_share_one_taxonomy_page_builder() -> None:
     assert "'integrations/domain.html'" in routes
     assert 'build_integration_domain_page(domain_key)' in routes
 
-    builder = service.split('def build_integration_domain_page', 1)[1].split(
-        'def _kubernetes_readiness', 1
-    )[0]
-    assert 'get_domain_definition(domain_key)' in builder
-    assert 'for module in registry.all() if module.domain_key == domain.key' in builder
-    assert 'IntegrationInstance.query.options(selectinload(IntegrationInstance.bindings))' in builder
-    assert 'IntegrationInstance.provider_type.in_(provider_types)' in builder
-    assert 'capability_definitions_for_domain(domain.key)' in builder
-    assert "'bindings': bindings" in builder
-    assert "'status': status" in builder
-    assert 'KubernetesConnection.query' not in builder
-    assert 'PrometheusInstance.query' not in builder
-    assert 'AlertmanagerInstance.query' not in builder
+    assert 'from app.integrations.domain_service import build_integration_domain_page' in service
+    assert 'get_domain_definition(domain_key)' in domain_service
+    assert 'for module in registry.all() if module.domain_key == domain.key' in domain_service
+    assert 'IntegrationInstance.query.options(selectinload(IntegrationInstance.bindings))' in domain_service
+    assert 'IntegrationInstance.provider_type.in_(provider_types)' in domain_service
+    assert 'capability_definitions_for_domain(domain_key)' in domain_service
+    assert "'bindings': _enabled_binding_count(enabled_targets)" in domain_service
+    assert "'status': _readiness_posture" in domain_service
+    assert 'KubernetesConnection.query' not in domain_service
+    assert 'PrometheusInstance.query' not in domain_service
+    assert 'AlertmanagerInstance.query' not in domain_service
 
 
 def test_domain_template_uses_kaori_hero_capability_and_provider_boundaries() -> None:
@@ -87,17 +88,23 @@ def test_domain_template_uses_kaori_hero_capability_and_provider_boundaries() ->
     assert 'url_for(item.workspace_endpoint)' in template
     assert 'Domain Operating Boundary' in template
     assert 'data-kaori-integration-domain-workspace' in template
-    assert '{{ integration_ui.section_header(' in template
-    assert '{% call integration_ui.section_header(' not in template
     assert 'lg:grid-cols-2' not in template
     assert 'raw Tailwind' not in template
+    assert '{% call integration_ui.section_header(' not in template
+    assert '{{ integration_ui.section_header(' in template
 
 
 def test_breadcrumbs_insert_domain_between_integrations_and_provider() -> None:
     navigation = read('app/common/navigation.py')
+    integration_navigation = read('app/integrations/navigation.py')
+    presentation = read('app/bootstrap/presentation.py')
 
-    assert "BreadcrumbItem('Orchestration')" in navigation
-    assert "BreadcrumbItem('Observability')" in navigation
+    assert 'integration_endpoint_owner(request.endpoint)' in presentation
+    assert 'integration_owner=integration_owner' in presentation
+    assert 'integration_owner: Mapping[str, str] | None = None' in navigation
+    assert "BreadcrumbItem(integration_owner['domain_label'])" in navigation
+    assert "BreadcrumbItem(integration_owner['provider_label'])" in navigation
     assert "'integrations.orchestration': 'Orchestration'" in navigation
     assert "'integrations.observability': 'Observability'" in navigation
     assert "'integrations.storage': 'Storage'" in navigation
+    assert "'domain_label': module.domain.label" in integration_navigation

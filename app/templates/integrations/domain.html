@@ -52,12 +52,10 @@
         </section>
         <section class="{{ integration_ui.section_shell_classes() }}"
                  aria-labelledby="domain-capability-portfolio-title">
-            {{ integration_ui.section_header(
-                "layers-3",
-                "Capability Portfolio",
-                "Stable capability boundaries show provider ownership and operational coverage without duplicating product workspaces.",
-                eyebrow=domain.label ~ " Domain"
-            ) }}
+            {{ integration_ui.section_header("layers-3",
+                        "Capability Portfolio",
+                        "Stable capability boundaries show provider ownership and operational coverage without duplicating product workspaces.",
+                        eyebrow=domain.label ~ " Domain") }}
             <div class="divide-y divide-outline-subtle">
                 {% for item in capabilities %}
                     <article class="px-5 py-4 sm:px-6">
@@ -67,7 +65,7 @@
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <h3 class="text-sm font-semibold text-content-primary">{{ item.label }}</h3>
-                                        {{ integration_status(item.status, "Ready" if item.status == "ready" else ("Attention" if item.status == "attention" else "No Provider") , display="indicator") }}
+                                        {{ integration_status(item.status, "Ready" if item.status == "ready" else ("Attention" if item.status == "attention" else ("Not Configured" if item.provider_labels else "No Provider") ), display="indicator") }}
                                     </div>
                                     <p class="mt-1 text-sm leading-6 text-content-secondary">{{ item.description }}</p>
                                 </div>

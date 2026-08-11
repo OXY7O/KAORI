@@ -1,0 +1,159 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import ast
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+PYTHON_FILES = (
+    'app/models/object_storage.py',
+    'app/models/minio.py',
+    'app/integrations/minio/__init__.py',
+    'app/integrations/minio/adapter.py',
+    'app/integrations/minio/binding.py',
+    'app/integrations/minio/capabilities.py',
+    'app/integrations/minio/client.py',
+    'app/integrations/minio/compatibility.py',
+    'app/minio/contracts.py',
+    'app/minio/forms.py',
+    'app/minio/presentation.py',
+    'app/minio/registration.py',
+    'app/minio/routes.py',
+    'app/minio/service.py',
+    'migrations/versions/20260812_minio_object_storage_provider.py',
+)
+
+
+def read(relative: str) -> str:
+    return (ROOT / relative).read_text(encoding='utf-8')
+
+
+def require(condition: bool, message: str) -> None:
+    if not condition:
+        raise SystemExit(f'FAIL: {message}')
+
+
+def main() -> None:
+    for relative in PYTHON_FILES:
+        source = read(relative)
+        ast.parse(source, filename=relative)
+
+    object_storage = read('app/models/object_storage.py')
+    minio_model = read('app/models/minio.py')
+    migration = read('migrations/versions/20260812_minio_object_storage_provider.py')
+    registration = read('app/integrations/minio/__init__.py')
+    capabilities = read('app/integrations/minio/capabilities.py')
+    compatibility = read('app/integrations/minio/compatibility.py')
+    client = read('app/integrations/minio/client.py')
+    service = read('app/minio/service.py')
+    registration_service = read('app/minio/registration.py')
+    validation_web = read('app/integrations/validation/web.py')
+    monitoring = read('app/integrations/runtime/monitoring.py')
+    blueprints = read('app/bootstrap/blueprints.py')
+    breadcrumbs = read('app/common/navigation.py')
+    integration_navigation = read('app/integrations/navigation.py')
+    presentation = read('app/bootstrap/presentation.py')
+    domain_template = read('app/templates/integrations/domain.html')
+
+    require(
+        "__tablename__ = 'object_storage_systems'" in object_storage, 'provider-neutral object storage asset missing'
+    )
+    require("__tablename__ = 'minio_instances'" in minio_model, 'MinIO provider model missing')
+    require('integration_instance_id' in minio_model, 'MinIO must use canonical IntegrationInstance identity')
+    require('object_storage_system_id' in minio_model, 'MinIO must own an ObjectStorageSystem asset')
+    require('EncryptedText()' in minio_model, 'MinIO secret key must use canonical encrypted credential storage')
+
+    require(
+        "down_revision = '20260810_retire_welcome_view'" in migration,
+        'MinIO migration must extend current migration head',
+    )
+    require("op.create_table(\n        'object_storage_systems'" in migration, 'object storage asset migration missing')
+    require("op.create_table(\n        'minio_instances'" in migration, 'MinIO provider migration missing')
+    require('minio_prometheus' not in migration.lower(), 'MinIO must not add a provider-pair binding table')
+
+    require("provider_type='minio'" in registration, 'MinIO provider is not registered')
+    require("domain_key='storage'" in registration, 'MinIO must belong to Storage')
+    require("capability_key='object_storage'" in registration, 'MinIO must belong to Object Storage')
+    require("navigation_endpoint_prefixes=('minio.',)" in registration, 'MinIO navigation ownership is missing')
+    require('asset_type=OBJECT_STORAGE_SYSTEM_SCOPE' in registration, 'MinIO Prometheus profile must be asset-scoped')
+    for metric in (
+        'minio_software_version_info',
+        'minio_cluster_usage_total_bytes',
+        'minio_bucket_usage_total_bytes',
+    ):
+        require(metric in registration, f'MinIO Prometheus probe missing: {metric}')
+
+    require(
+        "SUPPORTED_RELEASE = 'RELEASE.2024-08-03T04-33-23Z'" in compatibility,
+        'supported MinIO release contract drifted',
+    )
+    require("PROFILE_KEY = 'minio-release-2024-08-03'" in compatibility, 'MinIO compatibility profile missing')
+    require(
+        "CAPABILITY_PROFILE = 'minio-object-storage-api-v1'" in capabilities, 'MinIO API capability profile missing'
+    )
+
+    require("boto3.client(\n        's3'" in client, 'MinIO API client must use the existing S3 SDK boundary')
+    require("signature_version='s3v4'" in client, 'MinIO S3 client must use SigV4')
+    require('client.list_buckets()' in client, 'MinIO registration validation must prove bucket discovery access')
+
+    require(
+        "create_source_binding(\n        'prometheus'" in service, 'MinIO metrics must use canonical source binding'
+    )
+    require(
+        'asset_type=OBJECT_STORAGE_SYSTEM_SCOPE' in service,
+        'MinIO Prometheus binding must target object_storage_system',
+    )
+    require('prometheus_id' not in minio_model, 'MinIO model must not own a direct Prometheus foreign key')
+    require('app.minio.forms' not in service, 'MinIO service layer must not depend on WTForms')
+    require('app.minio.forms' not in registration_service, 'MinIO registration proof must not depend on WTForms')
+    require('MinioRegistrationInput' in service, 'MinIO service must consume the registration input contract')
+    require('MinioMetricsBindingInput' in service, 'MinIO metrics binding must consume the binding input contract')
+
+    require(
+        'get_integration(provider_type).get_instance(instance_id)' in validation_web,
+        'validation admission must be registry-driven',
+    )
+    for legacy in ('PrometheusInstance', 'AlertmanagerInstance', 'KubernetesConnection'):
+        require(legacy not in validation_web, f'validation admission still hard-codes {legacy}')
+
+    require(
+        'IntegrationInstance.query.filter(' in monitoring, 'runtime monitoring must dispatch from canonical identities'
+    )
+    for legacy in ('PrometheusInstance', 'AlertmanagerInstance', 'KubernetesConnection', 'MinioInstance'):
+        require(legacy not in monitoring, f'runtime monitoring hard-codes provider model {legacy}')
+
+    require('from app.minio.routes import minio_bp' in blueprints, 'MinIO blueprint import missing')
+    require('        minio_bp,' in blueprints, 'MinIO blueprint registration missing')
+    require(
+        'integration_endpoint_owner(request.endpoint)' in presentation,
+        'bootstrap must resolve Integration breadcrumb ownership generically',
+    )
+    require(
+        'integration_owner=integration_owner' in presentation,
+        'breadcrumb owner must be passed into common presentation',
+    )
+    require(
+        'integration_owner: Mapping[str, str] | None = None' in breadcrumbs,
+        'common breadcrumb must accept resolved Integration ownership',
+    )
+    require(
+        'def integration_endpoint_owner(' in integration_navigation,
+        'generic Integration endpoint owner resolver missing',
+    )
+    require(
+        "'domain_label': module.domain.label" in integration_navigation,
+        'breadcrumb domain must come from provider taxonomy',
+    )
+
+    require(
+        '{% call integration_ui.section_header(' not in domain_template,
+        'domain section_header caller regression returned',
+    )
+    require('{{ integration_ui.section_header(' in domain_template, 'domain section_header direct render missing')
+
+    print('PASS — KAORI MinIO Object Storage Provider Foundation')
+
+
+if __name__ == '__main__':
+    main()

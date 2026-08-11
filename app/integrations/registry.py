@@ -24,6 +24,7 @@ InstanceLoader = Callable[[int], Any | None]
 CanonicalRecordLoader = Callable[[int], Any | None]
 DetailUrlBuilder = Callable[[Any, str], str]
 FailureRecorder = Callable[[Any, Exception], None]
+RuntimeOverviewBuilder = Callable[[Mapping[tuple[str, str], Any], int | None], list[dict[str, Any]]]
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,8 +49,10 @@ class IntegrationModule:
     capability_keys: tuple[str, ...] = ()
     compatibility_profiles: tuple[str, ...] = ()
     runtime_label: str | None = None
+    navigation_endpoint_prefixes: tuple[str, ...] = ()
     detail_url_builder: DetailUrlBuilder | None = None
     failure_recorder: FailureRecorder | None = None
+    runtime_overview_builder: RuntimeOverviewBuilder | None = None
 
     @property
     def domain(self) -> IntegrationDomainDefinition:
@@ -131,6 +134,7 @@ class IntegrationRegistry:
                 'app.integrations.kubernetes',
                 'app.integrations.prometheus',
                 'app.integrations.alertmanager',
+                'app.integrations.minio',
             ):
                 import_module(module_path)
             self._builtins_loaded = True

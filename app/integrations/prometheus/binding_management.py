@@ -4,6 +4,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
 from app.integrations.binding_selectors import build_selector
+from app.integrations.binding_service import SourceBindingSpec
 from app.integrations.lifecycle import bind_instance, ensure_canonical_instance
 from app.integrations.prometheus.capabilities import BINDING_CAPABILITY_KEYS
 from app.integrations.prometheus.scope import KUBERNETES_CLUSTER_SCOPE
@@ -15,25 +16,18 @@ from app.models.prometheus import PrometheusInstance
 def create_binding(
     *,
     instance: PrometheusInstance,
+    spec: SourceBindingSpec,
     cluster: Cluster | None = None,
-    scope_type: str | None = None,
-    scope_key: str | None = None,
-    role: str = 'primary',
-    priority: int = 100,
-    selector_label: str | None = None,
-    selector_value: str | None = None,
-    selector_operator: str = '=',
-    capability_scope: list[str] | tuple[str, ...] | None = None,
     commit: bool = True,
 ) -> IntegrationBinding:
-    normalized_role = str(role or 'primary').strip().lower()
+    normalized_role = str(spec.role or 'primary').strip().lower()
     if normalized_role not in {'primary', 'secondary', 'fallback'}:
         raise ValueError('Select a supported source role.')
-    if priority < 1 or priority > 1000:
+    if spec.priority < 1 or spec.priority > 1000:
         raise ValueError('Priority must be between 1 and 1000.')
 
-    normalized_scope_type = str(scope_type or '').strip()
-    normalized_scope_key = str(scope_key or '').strip()
+    normalized_scope_type = str(spec.asset_type or '').strip()
+    normalized_scope_key = str(spec.asset_key or '').strip()
     if cluster is not None:
         normalized_scope_type = normalized_scope_type or KUBERNETES_CLUSTER_SCOPE
         normalized_scope_key = normalized_scope_key or str(cluster.id)
@@ -45,9 +39,9 @@ def create_binding(
         raise ValueError('The operational scope key must be 255 characters or fewer.')
 
     selector_json = build_selector(
-        label=selector_label,
-        value=selector_value,
-        operator=selector_operator,
+        label=spec.selector_label,
+        value=spec.selector_value,
+        operator=spec.selector_operator,
     )
     if selector_json is None:
         raise ValueError('Define a metrics identity selector before binding this Prometheus source.')
@@ -85,8 +79,8 @@ def create_binding(
         asset_type=normalized_scope_type,
         asset_key=normalized_scope_key,
         role=normalized_role,
-        priority=priority,
-        capability_scope=list(capability_scope or BINDING_CAPABILITY_KEYS),
+        priority=spec.priority,
+        capability_scope=list(spec.capability_scope or BINDING_CAPABILITY_KEYS),
         selector_json=selector_json,
         validation_status='validation_required',
         validation_message=(

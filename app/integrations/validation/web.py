@@ -6,7 +6,8 @@ from typing import Any
 
 from flask import current_app
 
-from app.extensions.db import db
+from app.integrations.contracts import IntegrationInstanceNotFound, IntegrationNotRegistered
+from app.integrations.registry import get_integration
 from app.integrations.validation.state import (
     build_validation_snapshot,
     claim_validation_job,
@@ -26,10 +27,7 @@ from app.jobs.service import (
     find_active_job,
     mark_job_failed,
 )
-from app.models.alertmanager import AlertmanagerInstance
 from app.models.job import JobExecutionSubscriber
-from app.models.kubernetes import KubernetesConnection
-from app.models.prometheus import PrometheusInstance
 
 
 def _now_iso() -> str:
@@ -90,16 +88,12 @@ def _metadata(
 
 
 def _assert_provider_target_exists(*, provider_type: str, instance_id: int) -> None:
-    model_by_provider = {
-        'prometheus': PrometheusInstance,
-        'alertmanager': AlertmanagerInstance,
-        'kubernetes': KubernetesConnection,
-    }
-    model = model_by_provider.get(provider_type)
-    if model is None:
-        raise ValueError(f'Unsupported integration provider: {provider_type}.')
-    if db.session.get(model, instance_id) is None:
-        raise RuntimeError('The integration connection was deleted before KAORI could admit the job.')
+    try:
+        get_integration(provider_type).get_instance(instance_id)
+    except IntegrationNotRegistered as exc:
+        raise ValueError(f'Unsupported integration provider: {provider_type}.') from exc
+    except IntegrationInstanceNotFound as exc:
+        raise RuntimeError('The integration connection was deleted before KAORI could admit the job.') from exc
 
 
 def _enqueue_job(

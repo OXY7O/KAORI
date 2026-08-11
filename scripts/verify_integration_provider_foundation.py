@@ -21,6 +21,8 @@ FILES = (
     'app/integrations/alertmanager/__init__.py',
     'app/integrations/alertmanager/adapter.py',
     'app/integrations/alertmanager/binding_management.py',
+    'app/integrations/minio/__init__.py',
+    'app/integrations/minio/adapter.py',
     'app/integrations/service.py',
 )
 
@@ -63,10 +65,8 @@ def main() -> None:
     require("asset_type='kubernetes_cluster'" in binding_service, 'Kubernetes compatibility wrapper must remain')
 
     validation = read('app/integrations/validation/tasks.py')
-    full_validation = validation.split('def validate_integration_instance', 1)[1].split(
-        'def _as_result_payload', 1
-    )[0]
-    for provider in ('prometheus', 'alertmanager', 'kubernetes'):
+    full_validation = validation.split('def validate_integration_instance', 1)[1].split('def _as_result_payload', 1)[0]
+    for provider in ('prometheus', 'alertmanager', 'kubernetes', 'minio'):
         require(
             f"provider_type == '{provider}'" not in full_validation,
             f'full validation must not branch on {provider}',

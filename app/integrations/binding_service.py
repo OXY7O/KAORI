@@ -9,6 +9,19 @@ from app.integrations.repository import get_cluster, get_provider_record
 
 
 @dataclass(frozen=True, slots=True)
+class SourceBindingSpec:
+    asset_type: str
+    asset_key: str
+    role: str = 'primary'
+    priority: int = 100
+    selector_label: str | None = None
+    selector_value: str | None = None
+    selector_operator: str = '='
+    capability_scope: tuple[str, ...] | list[str] | None = None
+    enabled: bool = True
+
+
+@dataclass(frozen=True, slots=True)
 class CreatedSourceBinding:
     source: Any
     asset: Any | None
@@ -24,14 +37,7 @@ def create_source_binding(
     provider_type: str,
     *,
     source_id: int,
-    asset_type: str,
-    asset_key: str,
-    role: str,
-    priority: int,
-    selector_label: str,
-    selector_value: str,
-    selector_operator: str,
-    capability_scope: list[str] | tuple[str, ...] | None = None,
+    spec: SourceBindingSpec,
     asset: Any | None = None,
 ) -> CreatedSourceBinding:
     """Create one provider-to-asset binding through the registered provider adapter.
@@ -42,8 +48,8 @@ def create_source_binding(
     table or a provider-to-provider foreign key.
     """
     provider = str(provider_type or '').strip().lower()
-    normalized_asset_type = str(asset_type or '').strip()
-    normalized_asset_key = str(asset_key or '').strip()
+    normalized_asset_type = str(spec.asset_type or '').strip()
+    normalized_asset_key = str(spec.asset_key or '').strip()
     if not normalized_asset_type:
         raise ValueError('Select an operational asset type before saving the binding.')
     if not normalized_asset_key:
@@ -64,12 +70,13 @@ def create_source_binding(
             source,
             scope_type=normalized_asset_type,
             scope_key=normalized_asset_key,
-            role=role,
-            priority=priority,
-            selector_label=selector_label,
-            selector_value=selector_value,
-            selector_operator=selector_operator,
-            capability_scope=capability_scope,
+            role=spec.role,
+            priority=spec.priority,
+            enabled=spec.enabled,
+            selector_label=spec.selector_label,
+            selector_value=spec.selector_value,
+            selector_operator=spec.selector_operator,
+            capability_scope=spec.capability_scope,
         )
     except Exception:
         db.session.rollback()
@@ -97,12 +104,14 @@ def create_cluster_source_binding(
     return create_source_binding(
         provider_type,
         source_id=source_id,
-        asset_type='kubernetes_cluster',
-        asset_key=str(cluster.id),
-        role=role,
-        priority=priority,
-        selector_label=selector_label,
-        selector_value=selector_value,
-        selector_operator=selector_operator,
+        spec=SourceBindingSpec(
+            asset_type='kubernetes_cluster',
+            asset_key=str(cluster.id),
+            role=role,
+            priority=priority,
+            selector_label=selector_label,
+            selector_value=selector_value,
+            selector_operator=selector_operator,
+        ),
         asset=cluster,
     )

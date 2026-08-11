@@ -1,0 +1,162 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "components/operational_callout.html" as operational_callout %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% block title %}Register MinIO Provider · KAORI{% endblock title %}
+{% block dashboard_content %}
+    <div class="kaori-integration-semantic space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('database', 'Storage · Object Storage', 'database-zap') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Register MinIO Provider</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Register the S3 API plane first. Prometheus metrics are bound separately after the object-storage asset exists.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('shield-check', 'Read-Only Integration Phase') }}
+                            {{ page_hero.meta_label('box', 'Object Storage Asset') }}
+                            {{ page_hero.meta_label('scan-search', 'Test Before Save') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="MinIO registration contract">
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        {{ page_hero.context_header('Registration Contract', 'MinIO 2024 Compatibility', 'badge-check') }}
+                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                            {{ page_hero.context_metric('code-xml', 'Protocol', 'S3 API', 'AWS Signature Version 4') }}
+                            {{ page_hero.context_metric('calendar-check', 'Release', '2024-08-03', 'Locked compatibility profile') }}
+                        </div>
+                        <a href="{{ url_for('minio.index') }}"
+                           class="{{ page_hero.context_single_action_classes() }}">
+                            <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
+                            Back to MinIO Providers
+                        </a>
+                    </div>
+                </aside>
+            </div>
+        </section>
+        <form method="post" id="minio-registration-form" class="space-y-6">
+            {{ form.hidden_tag() }}
+            <input type="hidden"
+                   name="connection_test_proof"
+                   value="{{ registration_proof or '' }}">
+            <section class="{{ integration_ui.section_shell_classes() }}">
+                {{ integration_ui.section_header("fingerprint", "Provider Identity", "Create the canonical Integration identity and provider-neutral object-storage asset.", eyebrow="Registration") }}
+                <div class="grid gap-4 p-5 md:grid-cols-2 sm:p-6">
+                    <label class="block">
+                        <span class="{{ integration_ui.control_label_classes() }}">{{ form.name.label.text }}</span>
+                        {{ form.name(class_=integration_ui.control_classes() , placeholder='MinIO Production') }}
+                        {% for error in form.name.errors %}
+                            <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
+                        {% endfor %}
+                    </label>
+                    <label class="block">
+                        <span class="{{ integration_ui.control_label_classes() }}">{{ form.environment.label.text }}</span>
+                        {{ form.environment(class_=integration_ui.control_classes() ) }}
+                    </label>
+                    <label class="block md:col-span-2">
+                        <span class="{{ integration_ui.control_label_classes() }}">{{ form.description.label.text }}</span>
+                        {{ form.description(class_='min-h-24 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', placeholder='Operational purpose, ownership, and storage role') }}
+                    </label>
+                </div>
+            </section>
+            <section class="{{ integration_ui.section_shell_classes() }}">
+                {{ integration_ui.section_header("plug-zap", "S3 API Connection", "KAORI uses this credential for MinIO API inventory and configuration reads. Prometheus credentials are not stored here.", eyebrow="API Plane") }}
+                <div class="space-y-4 p-5 sm:p-6">
+                    <label class="block">
+                        <span class="{{ integration_ui.control_label_classes() }}">{{ form.endpoint.label.text }}</span>
+                        {{ form.endpoint(class_=integration_ui.control_classes() ) }}
+                        {% for error in form.endpoint.errors %}
+                            <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
+                        {% endfor %}
+                        <p class="mt-1.5 text-xs leading-5 text-content-muted">Use the S3 API endpoint reachable from KAORI. Do not use the MinIO Console URL.</p>
+                    </label>
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <label class="block">
+                            <span class="{{ integration_ui.control_label_classes() }}">{{ form.access_key.label.text }}</span>
+                            {{ form.access_key(class_=integration_ui.control_classes() , autocomplete='off') }}
+                        </label>
+                        <label class="block">
+                            <span class="{{ integration_ui.control_label_classes() }}">{{ form.secret_key.label.text }}</span>
+                            {{ form.secret_key(class_=integration_ui.control_classes() , autocomplete='new-password') }}
+                        </label>
+                        <label class="block">
+                            <span class="{{ integration_ui.control_label_classes() }}">{{ form.region.label.text }}</span>
+                            {{ form.region(class_=integration_ui.control_classes() ) }}
+                        </label>
+                        <label class="block">
+                            <span class="{{ integration_ui.control_label_classes() }}">{{ form.addressing_style.label.text }}</span>
+                            {{ form.addressing_style(class_=integration_ui.control_classes() ) }}
+                        </label>
+                        <label class="block">
+                            <span class="{{ integration_ui.control_label_classes() }}">{{ form.timeout.label.text }}</span>
+                            {{ form.timeout(class_=integration_ui.control_classes() ) }}
+                        </label>
+                        <label class="block">
+                            <span class="{{ integration_ui.control_label_classes() }}">{{ form.declared_release.label.text }}</span>
+                            {{ form.declared_release(class_=integration_ui.control_classes() ~ ' cursor-not-allowed bg-surface-hover') }}
+                        </label>
+                    </div>
+                    <div class="grid gap-3 md:grid-cols-2">
+                        <label class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-hover p-4">
+                            {{ form.verify_ssl(class_='mt-0.5 h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-outline-focus') }}
+                            <span>
+                                <span class="block text-sm font-semibold text-content-primary">Verify TLS Certificate</span>
+                                <span class="mt-1 block text-xs leading-5 text-content-secondary">Reject untrusted or mismatched MinIO certificates.</span>
+                            </span>
+                        </label>
+                        <label class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-hover p-4">
+                            {{ form.enabled(class_='mt-0.5 h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-outline-focus') }}
+                            <span>
+                                <span class="block text-sm font-semibold text-content-primary">Allow KAORI to Use This Provider</span>
+                                <span class="mt-1 block text-xs leading-5 text-content-secondary">Disabled providers remain registered but are excluded from runtime resolution.</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+            </section>
+            <section class="{{ integration_ui.section_shell_classes() }}">
+                {{ integration_ui.section_header("scan-search", "Connection Test", "A successful S3 ListBuckets request is required before registration. The signed proof expires after ten minutes.", eyebrow="Validation") }}
+                <div class="p-5 sm:p-6">
+                    {% if connection_result %}
+                        {% call operational_callout.render(
+                            "S3 API Connection Verified",
+                            connection_result.bucket_count ~ " bucket(s) are visible. Response time: " ~ connection_result.latency_ms ~ " ms.",
+                            icon="circle-check",
+                            tone="normal",
+                            variant="semantic"
+                            ) %}
+                            Observed product: {{ connection_result.product|replace('_', ' ') |title }}
+                            {% if connection_result.server_header %}· Server: {{ connection_result.server_header }}{% endif %}
+                        {% endcall %}
+                    {% elif connection_error %}
+                        {{ operational_callout.render("Connection Test Failed",
+                                                connection_error,
+                                                icon="circle-x",
+                                                tone="critical",
+                                                variant="semantic") }}
+                    {% else %}
+                        {{ integration_ui.interpretation_panel('Test the exact registration payload', 'KAORI does not store the provider until the S3 API test succeeds. Changing any field invalidates the signed registration proof.', 'shield-check') }}
+                    {% endif %}
+                    <div class="mt-4 flex flex-wrap justify-end gap-2">
+                        <button type="submit"
+                                name="action"
+                                value="test"
+                                class="inline-flex h-10 items-center gap-2 rounded-lg border border-brand-outline bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-primary hover:text-white dark:text-kaori-accent">
+                            <i data-lucide="plug-zap" class="h-4 w-4" aria-hidden="true"></i>
+                            Test Connection
+                        </button>
+                        <button type="submit"
+                                name="action"
+                                value="save"
+                                class="inline-flex h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover">
+                            <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
+                            Register Provider
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </form>
+    </div>
+{% endblock dashboard_content %}

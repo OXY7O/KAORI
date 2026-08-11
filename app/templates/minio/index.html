@@ -1,0 +1,126 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% block title %}MinIO Providers · KAORI{% endblock title %}
+{% block dashboard_content %}
+    {% set posture = 'ready' if stats.total > 0 and stats.ready == stats.total else ('attention' if stats.total > 0 else 'not_configured') %}
+    {% set posture_label = 'Ready' if posture == 'ready' else ('Attention' if posture == 'attention' else 'Not Configured') %}
+    <div class="kaori-integration-semantic space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('database', 'Storage · Object Storage', 'database-zap') %}
+                        <h1 class="{{ page_hero.title_classes() }}">MinIO Providers</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Register MinIO S3 API connections and bind each object-storage asset to an independent Prometheus metrics source.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('server-cog', stats.total ~ ' Registered') }}
+                            {{ page_hero.meta_label('badge-check', stats.ready ~ ' API Ready') }}
+                            {{ page_hero.meta_label('link-2', stats.metrics_bound ~ ' Metrics Bound') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="MinIO provider posture">
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        {{ page_hero.context_header_status('Object Storage Provider', 'API and Metrics Planes', posture_label, 'normal' if posture == 'ready' else ('warning' if posture == 'attention' else 'unknown') ) }}
+                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                            {{ page_hero.context_metric('plug-zap', 'S3 API', stats.ready ~ ' / ' ~ stats.total, 'Provider-owned API readiness') }}
+                            {{ page_hero.context_metric('activity', 'Prometheus', stats.metrics_bound, 'Asset-scoped metrics bindings') }}
+                        </div>
+                        <a href="{{ url_for('minio.new_instance') }}"
+                           class="{{ page_hero.context_single_action_classes() }}">
+                            <i data-lucide="plus" class="h-4 w-4" aria-hidden="true"></i>
+                            Register MinIO Provider
+                        </a>
+                    </div>
+                </aside>
+            </div>
+        </section>
+        <section class="{{ integration_ui.section_shell_classes() }}">
+            {{ integration_ui.section_header("waypoints", "Provider Contract", "MinIO owns the S3 API plane. Prometheus stays independently configured and is bound to the same object-storage asset for metrics.", eyebrow="Source Separation") }}
+            <div class="grid gap-px bg-outline-subtle md:grid-cols-2">
+                <article class="bg-surface-card p-5 sm:p-6">
+                    <div class="flex items-start gap-3">
+                        {{ integration_ui.palette_icon('database', 'brand', size='lg') }}
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">API Plane</p>
+                            <h3 class="mt-1 text-base font-semibold text-content-primary">KAORI → MinIO S3 API</h3>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">Credential validation, bucket discovery, and future bucket configuration inventory are owned by the MinIO provider adapter.</p>
+                        </div>
+                    </div>
+                </article>
+                <article class="bg-surface-card p-5 sm:p-6">
+                    <div class="flex items-start gap-3">
+                        {{ integration_ui.palette_icon('activity', 'brand', size='lg') }}
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">Metrics Plane</p>
+                            <h3 class="mt-1 text-base font-semibold text-content-primary">KAORI → Prometheus → MinIO Metrics</h3>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">Prometheus authentication remains owned by the Observability provider. KAORI stores only an asset binding and metrics identity selector here.</p>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </section>
+        <section class="{{ integration_ui.section_shell_classes() }}">
+            {{ integration_ui.section_header("database-zap", "Registered MinIO Providers", "Each row represents one provider-neutral object-storage asset with a MinIO API connection.", eyebrow="Object Storage") }}
+            {% if rows %}
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="border-b border-outline-subtle bg-surface-hover text-xs uppercase tracking-wide text-content-muted">
+                            <tr>
+                                <th class="px-5 py-3 font-semibold sm:px-6">Provider</th>
+                                <th class="px-4 py-3 font-semibold">Environment</th>
+                                <th class="px-4 py-3 font-semibold">API</th>
+                                <th class="px-4 py-3 font-semibold">Metrics</th>
+                                <th class="px-4 py-3 font-semibold">Compatibility</th>
+                                <th class="px-5 py-3 text-right font-semibold sm:px-6">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-outline-subtle">
+                            {% for row in rows %}
+                                <tr class="bg-surface-card">
+                                    <td class="px-5 py-4 sm:px-6">
+                                        <p class="font-semibold text-content-primary">{{ row.name }}</p>
+                                        <p class="mt-1 text-xs text-content-muted">{{ row.asset_name }}</p>
+                                    </td>
+                                    <td class="px-4 py-4 text-content-secondary">{{ row.environment|replace('_', ' ') |title }}</td>
+                                    <td class="px-4 py-4">{{ integration_status(row.readiness_status or 'validation_required', 'Ready' if row.readiness_status == 'ready' else 'Validation Required', display='indicator') }}</td>
+                                    <td class="px-4 py-4">{{ integration_status(row.metrics_status.status, row.metrics_status.label, display='indicator') }}</td>
+                                    <td class="px-4 py-4">
+                                        <p class="font-medium text-content-primary">{{ row.compatibility_profile or 'Not Validated' }}</p>
+                                        <p class="mt-1 text-xs text-content-muted">{{ row.declared_release }}</p>
+                                    </td>
+                                    <td class="px-5 py-4 text-right sm:px-6">
+                                        <a href="{{ url_for('minio.instance_detail', instance_id=row.id) }}"
+                                           class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-kaori-soft px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-primary hover:text-white dark:text-kaori-accent">
+                                            View Details
+                                            <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="p-5 sm:p-6">
+                    <div class="rounded-xl border border-brand-outline bg-kaori-soft p-5">
+                        <div class="flex items-start gap-3">
+                            {{ integration_ui.palette_icon('database', 'brand', size='lg') }}
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">No MinIO Provider Registered</p>
+                                <p class="mt-1 text-sm leading-6 text-content-secondary">Register the MinIO S3 API first. After API validation, bind the same object-storage asset to an existing Prometheus provider for MinIO v2 metrics.</p>
+                                <a href="{{ url_for('minio.new_instance') }}"
+                                   class="mt-4 inline-flex h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover">
+                                    <i data-lucide="plus" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                    Register MinIO Provider
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </section>
+    </div>
+{% endblock dashboard_content %}

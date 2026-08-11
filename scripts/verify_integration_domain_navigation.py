@@ -19,8 +19,10 @@ def main() -> int:
     sidebar = read('app/templates/components/navigation/integrations_menu.html')
     routes = read('app/integrations/routes.py')
     service = read('app/integrations/service.py')
+    domain_service = read('app/integrations/domain_service.py')
     domain_template = read('app/templates/integrations/domain.html')
     breadcrumbs = read('app/common/navigation.py')
+    presentation = read('app/bootstrap/presentation.py')
 
     for endpoint in (
         "workspace_endpoint='integrations.orchestration'",
@@ -45,6 +47,7 @@ def main() -> int:
         "provider_type == 'kubernetes'",
         "provider_type == 'prometheus'",
         "provider_type == 'alertmanager'",
+        "provider_type == 'minio'",
     ):
         if forbidden in navigation:
             errors.append(f'provider-specific navigation branching returned: {forbidden}')
@@ -74,20 +77,21 @@ def main() -> int:
         if marker not in routes:
             errors.append(f'domain route contract missing: {marker}')
 
-    builder = service.split('def build_integration_domain_page', 1)[1].split(
-        'def _kubernetes_readiness', 1
-    )[0]
+    if 'from app.integrations.domain_service import build_integration_domain_page' not in service:
+        errors.append('integration service must re-export the dedicated domain page builder')
     for marker in (
+        'get_domain_definition(domain_key)',
+        'for module in registry.all() if module.domain_key == domain.key',
         'IntegrationInstance.query.options(selectinload(IntegrationInstance.bindings))',
         'IntegrationInstance.provider_type.in_(provider_types)',
-        'capability_definitions_for_domain(domain.key)',
-        "'bindings': bindings",
-        "'status': status",
+        'capability_definitions_for_domain(domain_key)',
+        "'bindings': _enabled_binding_count(enabled_targets)",
+        "'status': _readiness_posture",
     ):
-        if marker not in builder:
+        if marker not in domain_service:
             errors.append(f'domain page is not canonical-identity driven: {marker}')
     for forbidden in ('KubernetesConnection.query', 'PrometheusInstance.query', 'AlertmanagerInstance.query'):
-        if forbidden in builder:
+        if forbidden in domain_service:
             errors.append(f'domain page contains provider-specific query: {forbidden}')
 
     for marker in (
@@ -102,27 +106,32 @@ def main() -> int:
         if marker not in domain_template:
             errors.append(f'domain template missing KAORI boundary: {marker}')
 
-    if '{% call integration_ui.section_header(' in domain_template:
-        errors.append('domain template must render section_header directly; the macro does not accept a caller block')
-    if '{{ integration_ui.section_header(' not in domain_template:
-        errors.append('domain template is missing the direct section_header macro render')
-
     for marker in (
-        "BreadcrumbItem('Orchestration')",
-        "BreadcrumbItem('Observability')",
+        "BreadcrumbItem(integration_owner['domain_label'])",
+        "BreadcrumbItem(integration_owner['provider_label'])",
         "'integrations.storage': 'Storage'",
+        'integration_owner: Mapping[str, str] | None = None',
     ):
         if marker not in breadcrumbs:
             errors.append(f'breadcrumb taxonomy missing: {marker}')
+    for marker in ('integration_endpoint_owner(request.endpoint)', 'integration_owner=integration_owner'):
+        if marker not in presentation:
+            errors.append(f'bootstrap breadcrumb ownership missing: {marker}')
 
     registrations = {
         'app/integrations/kubernetes/__init__.py': "navigation_endpoint_prefixes=('integrations.kubernetes', 'cluster.')",
         'app/integrations/prometheus/__init__.py': "navigation_endpoint_prefixes=('integrations.prometheus', 'prometheus.')",
         'app/integrations/alertmanager/__init__.py': "navigation_endpoint_prefixes=('integrations.alertmanager', 'alertmanager.')",
+        'app/integrations/minio/__init__.py': "navigation_endpoint_prefixes=('minio.',)",
     }
     for relative, marker in registrations.items():
         if marker not in read(relative):
             errors.append(f'{relative}: navigation ownership missing')
+
+    if '{% call integration_ui.section_header(' in domain_template:
+        errors.append('domain template must render section_header directly; it is not a caller macro')
+    if '{{ integration_ui.section_header(' not in domain_template:
+        errors.append('domain template is missing direct section_header macro rendering')
 
     if errors:
         print('FAIL — KAORI Integration Domain Navigation')

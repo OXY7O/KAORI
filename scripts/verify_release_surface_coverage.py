@@ -14,6 +14,7 @@ NAVIGATION_DIR = ROOT / 'app/templates/components/navigation'
 BLUEPRINTS = ROOT / 'app/bootstrap/blueprints.py'
 QUALITY_GATE = ROOT / 'scripts/quality_gate.sh'
 COVERAGE_DOC = ROOT / 'docs/architecture/RELEASE_SURFACE_COVERAGE.md'
+INTEGRATION_TAXONOMY = ROOT / 'app/integrations/taxonomy.py'
 
 EXPECTED_MENU_TEMPLATES = {
     'access_management_menu.html',
@@ -51,6 +52,11 @@ def _literal_url_for_endpoints(source: str) -> set[str]:
     return {match for match in re.findall(r"url_for\(\s*['\"]([^'\"]+)['\"]", source) if match != 'static'}
 
 
+def _integration_domain_endpoints() -> set[str]:
+    source = INTEGRATION_TAXONOMY.read_text(encoding='utf-8')
+    return set(re.findall(r"workspace_endpoint=['\"]([^'\"]+)['\"]", source))
+
+
 def _intelligence_link_endpoints(source: str) -> set[str]:
     match = re.search(r'{% set intelligence_links = \[(.*?)\] %}', source, re.S)
     if not match:
@@ -63,6 +69,8 @@ def _navigation_source_endpoints(relative: str) -> set[str]:
     endpoints = _literal_url_for_endpoints(source)
     if relative.endswith('intelligence_menu.html'):
         endpoints.update(_intelligence_link_endpoints(source))
+    if relative.endswith('integrations_menu.html') and 'integration_navigation.domains' in source:
+        endpoints.update(_integration_domain_endpoints())
     return endpoints
 
 
@@ -141,11 +149,13 @@ def verify() -> None:
             errors.append(f'Registered blueprint lacks release-surface owner: {", ".join(extra)}')
 
     sidebar = _read('app/templates/components/navigation/sidebar.html')
-    integrations_menu = _read('app/templates/components/navigation/integrations_menu.html')
     if 'can_clusters' in sidebar:
         errors.append('sidebar.html: stale can_clusters capability remains without a direct menu owner')
-    if "request.endpoint.startswith('cluster.')" not in integrations_menu:
-        errors.append('Integrations → Kubernetes must remain the navigation owner for cluster.* routes')
+    kubernetes_registration = _read('app/integrations/kubernetes/__init__.py')
+    if "navigation_endpoint_prefixes=('integrations.kubernetes', 'cluster.')" not in kubernetes_registration:
+        errors.append(
+            'Integrations → Orchestration must remain the navigation owner for Kubernetes and cluster.* routes'
+        )
 
     for relative in LEGACY_CLUSTER_TEMPLATES:
         if (ROOT / relative).exists():
@@ -172,9 +182,9 @@ def verify() -> None:
                 errors.append(f'{surface.title}: release coverage documentation is incomplete')
         for token in (
             '49 navigation links',
-            '21 registered blueprints',
+            '22 registered blueprints',
             'Cluster Management',
-            'Integrations → Kubernetes',
+            'Integrations → Orchestration → Kubernetes',
         ):
             if token not in documentation:
                 errors.append(f'Release coverage documentation missing: {token}')
@@ -185,7 +195,7 @@ def verify() -> None:
             print(f'- {error}')
         raise SystemExit(1)
 
-    print('PASS — KAORI Release Coverage · 49 links / 21 blueprints')
+    print('PASS — KAORI Release Coverage · 49 links / 22 blueprints')
 
 
 if __name__ == '__main__':

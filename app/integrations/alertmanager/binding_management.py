@@ -5,6 +5,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.extensions.db import db
 from app.integrations.alertmanager.capabilities import BINDING_CAPABILITY_KEYS
 from app.integrations.binding_selectors import build_selector
+from app.integrations.binding_service import SourceBindingSpec
 from app.integrations.lifecycle import ensure_canonical_instance
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance
@@ -13,20 +14,12 @@ from app.models.integration import IntegrationBinding, IntegrationInstance
 def create_binding(
     *,
     instance: AlertmanagerInstance,
-    scope_type: str,
-    scope_key: str,
-    role: str,
-    priority: int,
-    enabled: bool = True,
-    selector_label: str | None = None,
-    selector_value: str | None = None,
-    selector_operator: str = '=',
-    capability_scope: list[str] | tuple[str, ...] | None = None,
+    spec: SourceBindingSpec,
     commit: bool = True,
 ) -> IntegrationBinding:
-    normalized_scope_type = str(scope_type or '').strip()
-    normalized_scope_key = str(scope_key or '').strip()
-    normalized_role = str(role or 'primary').strip().lower()
+    normalized_scope_type = str(spec.asset_type or '').strip()
+    normalized_scope_key = str(spec.asset_key or '').strip()
+    normalized_role = str(spec.role or 'primary').strip().lower()
 
     if not normalized_scope_type:
         raise ValueError('Select an operational scope type before saving the binding.')
@@ -36,7 +29,7 @@ def create_binding(
         raise ValueError('The operational scope key must be 255 characters or fewer.')
     if normalized_role not in {'primary', 'secondary', 'fallback'}:
         raise ValueError('Select a supported source role.')
-    if priority < 1 or priority > 1000:
+    if spec.priority < 1 or spec.priority > 1000:
         raise ValueError('Priority must be between 1 and 1000.')
 
     canonical = ensure_canonical_instance(instance, provider_type='alertmanager')
@@ -83,9 +76,9 @@ def create_binding(
             )
 
     selector_json = build_selector(
-        label=selector_label,
-        value=selector_value,
-        operator=selector_operator,
+        label=spec.selector_label,
+        value=spec.selector_value,
+        operator=spec.selector_operator,
     )
     if normalized_scope_type != 'global' and selector_json is None:
         raise ValueError('Define an alert identity selector before binding this Alertmanager source.')
@@ -95,9 +88,9 @@ def create_binding(
     binding.asset_type = normalized_scope_type
     binding.asset_key = normalized_scope_key
     binding.binding_role = normalized_role
-    binding.priority = priority
-    binding.enabled = enabled
-    binding.capability_scope = list(capability_scope or BINDING_CAPABILITY_KEYS)
+    binding.priority = spec.priority
+    binding.enabled = spec.enabled
+    binding.capability_scope = list(spec.capability_scope or BINDING_CAPABILITY_KEYS)
     binding.selector_json = selector_json
     binding.validation_status = 'validation_required'
     binding.validation_message = (

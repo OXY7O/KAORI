@@ -4,11 +4,12 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import contains_eager, selectinload
+from sqlalchemy.orm import contains_eager
 
 from app.cluster.constants import get_environment_label
 from app.common.presentation import present_key_label, present_user_datetime
 from app.extensions.db import db
+from app.integrations.contracts import IntegrationNotRegistered
 from app.integrations.coverage import (
     bound_source_for_scope,
     bound_sources_for_scopes,
@@ -16,12 +17,17 @@ from app.integrations.coverage import (
 )
 from app.integrations.deletion import kubernetes_deletion_guard
 from app.integrations.kubernetes.compatibility import FEATURE_CONTRACTS
+from app.integrations.overview_extensions import (
+    build_extension_runtime_rows,
+    build_overview_stats,
+    load_extension_integration_instances,
+    sort_runtime_rows,
+)
 from app.integrations.prometheus.scope import cluster_bindings_for_instance
 from app.integrations.readiness import resolve_binding_operational_status, resolve_cluster_coverage
 from app.integrations.registry import get_integration, registry
 from app.integrations.taxonomy import (
     capability_definitions_for_domain,
-    get_domain_definition,
     ordered_domain_definitions,
 )
 from app.models import (
@@ -75,17 +81,21 @@ def build_integrations_overview(
         .order_by(IntegrationInstance.name.asc())
         .all()
     )
+    extension_instances = load_extension_integration_instances()
 
-    stats = _overview_stats(
+    stats = build_overview_stats(
         kubernetes_connections=kubernetes_connections,
         prometheus_instances=prometheus_instances,
         alertmanager_instances=alertmanager_instances,
+        extension_instances=extension_instances,
     )
     runtime_rows = _runtime_overview_rows(
         kubernetes_connections=kubernetes_connections,
         prometheus_instances=prometheus_instances,
         alertmanager_instances=alertmanager_instances,
     )
+    runtime_rows.extend(build_extension_runtime_rows(_latest_runtime_observations()))
+    sort_runtime_rows(runtime_rows)
     filtered_runtime_rows = runtime_rows
     if provider:
         filtered_runtime_rows = [row for row in filtered_runtime_rows if row['provider'] == provider]
@@ -106,11 +116,13 @@ def build_integrations_overview(
         kubernetes_connections=kubernetes_connections,
         prometheus_instances=prometheus_instances,
         alertmanager_instances=alertmanager_instances,
+        extension_instances=extension_instances,
     )
     coverage = _coverage(
         kubernetes_connections=kubernetes_connections,
         prometheus_instances=prometheus_instances,
         alertmanager_instances=alertmanager_instances,
+        extension_instances=extension_instances,
     )
     return {
         'stats': stats,
@@ -147,152 +159,8 @@ def build_integrations_overview(
     }
 
 
-def build_integration_domain_page(domain_key: str) -> dict[str, Any]:
-    """Build one taxonomy-owned Integration domain landing page from canonical identities."""
-
-    domain = get_domain_definition(domain_key)
-    modules = tuple(module for module in registry.all() if module.domain_key == domain.key)
-    provider_types = tuple(module.provider_type for module in modules)
-
-    instances: list[IntegrationInstance] = []
-    if provider_types:
-        instances = (
-            IntegrationInstance.query.options(selectinload(IntegrationInstance.bindings))
-            .filter(IntegrationInstance.provider_type.in_(provider_types))
-            .order_by(IntegrationInstance.provider_type.asc(), IntegrationInstance.name.asc())
-            .all()
-        )
-
-    instances_by_provider: dict[str, list[IntegrationInstance]] = {}
-    for instance in instances:
-        instances_by_provider.setdefault(instance.provider_type, []).append(instance)
-
-    provider_rows: list[dict[str, Any]] = []
-    for module in modules:
-        targets = instances_by_provider.get(module.provider_type, [])
-        enabled_targets = [item for item in targets if item.enabled and item.lifecycle_status == 'active']
-        ready = sum(1 for item in enabled_targets if item.readiness_status == 'ready')
-        attention = sum(1 for item in enabled_targets if item.readiness_status != 'ready')
-        bindings = sum(sum(1 for binding in item.bindings if binding.enabled) for item in enabled_targets)
-        status = (
-            'ready'
-            if enabled_targets and ready == len(enabled_targets)
-            else ('attention' if enabled_targets else 'not_configured')
-        )
-        provider_rows.append(
-            {
-                'key': module.provider_type,
-                'label': module.label,
-                'runtime_label': module.runtime_label or module.label,
-                'icon': module.icon,
-                'description': module.description,
-                'capability_key': module.capability_key,
-                'capability_label': module.capability.label,
-                'workspace_endpoint': module.workspace_endpoint,
-                'registered': len(targets),
-                'enabled': len(enabled_targets),
-                'ready': ready,
-                'attention': attention,
-                'bindings': bindings,
-                'status': status,
-            }
-        )
-
-    capability_rows: list[dict[str, Any]] = []
-    for capability in capability_definitions_for_domain(domain.key):
-        capability_modules = [module for module in modules if module.capability_key == capability.key]
-        capability_providers = [row for row in provider_rows if row['capability_key'] == capability.key]
-        registered = sum(int(row['registered']) for row in capability_providers)
-        enabled = sum(int(row['enabled']) for row in capability_providers)
-        ready = sum(int(row['ready']) for row in capability_providers)
-        attention = sum(int(row['attention']) for row in capability_providers)
-        bindings = sum(int(row['bindings']) for row in capability_providers)
-        status = (
-            'ready'
-            if capability_providers and enabled > 0 and ready == enabled
-            else ('attention' if capability_providers else 'not_configured')
-        )
-        capability_rows.append(
-            {
-                'key': capability.key,
-                'label': capability.label,
-                'description': capability.description,
-                'provider_count': len(capability_modules),
-                'provider_labels': [module.runtime_label or module.label for module in capability_modules],
-                'registered': registered,
-                'enabled': enabled,
-                'ready': ready,
-                'attention': attention,
-                'bindings': bindings,
-                'availability': 'available' if capability_modules else 'not_registered',
-                'status': status,
-            }
-        )
-
-    registered_targets = len(instances)
-    enabled_targets = [item for item in instances if item.enabled and item.lifecycle_status == 'active']
-    ready_targets = sum(1 for item in enabled_targets if item.readiness_status == 'ready')
-    attention_targets = sum(1 for item in enabled_targets if item.readiness_status != 'ready')
-    binding_count = sum(sum(1 for binding in item.bindings if binding.enabled) for item in enabled_targets)
-    posture_status = (
-        'ready'
-        if enabled_targets and ready_targets == len(enabled_targets)
-        else ('attention' if enabled_targets else 'not_configured')
-    )
-
-    return {
-        'domain': domain,
-        'providers': provider_rows,
-        'capabilities': capability_rows,
-        'stats': {
-            'provider_types': len(modules),
-            'capability_types': len(capability_rows),
-            'registered_targets': registered_targets,
-            'enabled_targets': len(enabled_targets),
-            'ready_targets': ready_targets,
-            'attention_targets': attention_targets,
-            'bindings': binding_count,
-        },
-        'posture_status': posture_status,
-    }
-
-
 def _kubernetes_readiness(connection: KubernetesConnection) -> str:
     return connection.readiness_status or 'validation_required'
-
-
-def _overview_stats(
-    *,
-    kubernetes_connections: list[KubernetesConnection],
-    prometheus_instances: list[PrometheusInstance],
-    alertmanager_instances: list[AlertmanagerInstance],
-) -> dict[str, int]:
-    target_states = [
-        *((True, _kubernetes_readiness(connection)) for connection in kubernetes_connections),
-        *(
-            (bool(instance.endpoint), instance.readiness_status or 'validation_required')
-            for instance in prometheus_instances
-        ),
-        *(
-            (bool(instance.endpoint), instance.readiness_status or 'validation_required')
-            for instance in alertmanager_instances
-        ),
-    ]
-    total = len(target_states)
-    configured = sum(1 for is_configured, _ in target_states if is_configured)
-    ready = sum(1 for is_configured, readiness in target_states if is_configured and readiness == 'ready')
-    validation_required = sum(1 for is_configured, readiness in target_states if is_configured and readiness != 'ready')
-    blocked = sum(1 for is_configured, readiness in target_states if is_configured and readiness == 'blocked')
-    not_configured = max(total - configured, 0)
-    return {
-        'total': total,
-        'configured': configured,
-        'ready': ready,
-        'validation_required': validation_required,
-        'not_configured': not_configured,
-        'attention': validation_required + not_configured,
-        'blocked': blocked,
-    }
 
 
 def _build_kubernetes_registry_row(
@@ -919,8 +787,9 @@ def _provider_portfolio_counts(
     kubernetes_connections: list[KubernetesConnection],
     prometheus_instances: list[PrometheusInstance],
     alertmanager_instances: list[AlertmanagerInstance],
+    extension_instances: list[IntegrationInstance],
 ) -> dict[str, dict[str, int]]:
-    return {
+    counts = {
         'kubernetes': {
             'configured': len(kubernetes_connections),
             'ready': sum(1 for item in kubernetes_connections if _kubernetes_readiness(item) == 'ready'),
@@ -937,6 +806,14 @@ def _provider_portfolio_counts(
             'total': len(alertmanager_instances),
         },
     }
+    for provider_type in {item.provider_type for item in extension_instances}:
+        targets = [item for item in extension_instances if item.provider_type == provider_type]
+        counts[provider_type] = {
+            'configured': len(targets),
+            'ready': sum(1 for item in targets if item.readiness_status == 'ready'),
+            'total': len(targets),
+        }
+    return counts
 
 
 def _coverage(
@@ -944,11 +821,13 @@ def _coverage(
     kubernetes_connections: list[KubernetesConnection],
     prometheus_instances: list[PrometheusInstance],
     alertmanager_instances: list[AlertmanagerInstance],
+    extension_instances: list[IntegrationInstance],
 ) -> list[dict[str, Any]]:
     provider_counts = _provider_portfolio_counts(
         kubernetes_connections=kubernetes_connections,
         prometheus_instances=prometheus_instances,
         alertmanager_instances=alertmanager_instances,
+        extension_instances=extension_instances,
     )
     modules = registry.all()
     rows: list[dict[str, Any]] = []
@@ -997,11 +876,13 @@ def _catalog(
     kubernetes_connections: list[KubernetesConnection],
     prometheus_instances: list[PrometheusInstance],
     alertmanager_instances: list[AlertmanagerInstance],
+    extension_instances: list[IntegrationInstance],
 ) -> list[dict[str, Any]]:
     provider_counts = _provider_portfolio_counts(
         kubernetes_connections=kubernetes_connections,
         prometheus_instances=prometheus_instances,
         alertmanager_instances=alertmanager_instances,
+        extension_instances=extension_instances,
     )
     rows: list[dict[str, Any]] = []
     for module in registry.all():
@@ -1074,7 +955,7 @@ def _runtime_scope_label(*, provider: str, health: str, readiness: str) -> str:
         try:
             module = get_integration(provider)
             parts.append(module.runtime_label or module.label)
-        except Exception:
+        except IntegrationNotRegistered:
             parts.append(provider.replace('_', ' ').title())
     if health:
         parts.append(health.replace('_', ' ').title())
@@ -1241,14 +1122,7 @@ def _runtime_overview_rows(
             }
         )
 
-    health_order = {'unhealthy': 0, 'degraded': 1, 'not_observed': 2, 'healthy': 3}
-    rows.sort(
-        key=lambda row: (
-            health_order.get(row['health_status'], 2),
-            row['provider_label'],
-            row['instance_name'].lower(),
-        )
-    )
+    sort_runtime_rows(rows)
     return rows
 
 
@@ -1293,5 +1167,12 @@ def build_integration_runtime_detail(provider: str, instance_id: str) -> dict[st
             alertmanager_instances=[instance],
         )
     else:
-        return None
+        try:
+            target_id = int(instance_id)
+            module = get_integration(provider)
+        except (TypeError, ValueError, IntegrationNotRegistered):
+            return None
+        if module.runtime_overview_builder is None:
+            return None
+        rows = module.runtime_overview_builder(_latest_runtime_observations(), target_id)
     return rows[0] if rows else None

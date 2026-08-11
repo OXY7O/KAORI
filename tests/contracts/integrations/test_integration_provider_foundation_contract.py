@@ -15,6 +15,7 @@ def test_registry_owns_domain_capability_and_provider_extension_metadata() -> No
         'domain_key: str',
         'capability_key: str',
         'workspace_endpoint: str',
+        'navigation_endpoint_prefixes: tuple[str, ...]',
         'canonical_record_loader: CanonicalRecordLoader',
         'detail_url_builder: DetailUrlBuilder | None',
         'failure_recorder: FailureRecorder | None',
@@ -48,6 +49,10 @@ def test_builtin_provider_registration_uses_canonical_taxonomy() -> None:
             "domain_key='observability'",
             "capability_key='alerting'",
         ),
+        'app/integrations/minio/__init__.py': (
+            "domain_key='storage'",
+            "capability_key='object_storage'",
+        ),
     }
     for path, expected in registrations.items():
         source = read(path)
@@ -65,16 +70,16 @@ def test_binding_service_is_asset_centric_and_keeps_kubernetes_wrapper() -> None
     assert 'def create_source_binding(' in binding_service
     assert 'asset_type: str' in binding_service
     assert 'asset_key: str' in binding_service
-    assert "scope_type=normalized_asset_type" in binding_service
-    assert "scope_key=normalized_asset_key" in binding_service
+    assert 'scope_type=normalized_asset_type' in binding_service
+    assert 'scope_key=normalized_asset_key' in binding_service
     assert "if provider not in {'prometheus', 'alertmanager'}" not in binding_service
     assert 'def create_cluster_source_binding(' in binding_service
     assert "asset_type='kubernetes_cluster'" in binding_service
 
-    assert "scope_type=kwargs.get('scope_type')" in prometheus_adapter
-    assert "scope_key=kwargs.get('scope_key')" in prometheus_adapter
-    assert 'scope_type: str | None = None' in prometheus_binding
-    assert 'scope_key: str | None = None' in prometheus_binding
+    assert 'spec=SourceBindingSpec(' in prometheus_adapter
+    assert "asset_type=str(kwargs.get('scope_type') or '')" in prometheus_adapter
+    assert "asset_key=str(kwargs.get('scope_key') or '')" in prometheus_adapter
+    assert 'spec: SourceBindingSpec' in prometheus_binding
     assert 'asset_type=normalized_scope_type' in prometheus_binding
     assert 'asset_key=normalized_scope_key' in prometheus_binding
 
@@ -88,13 +93,12 @@ def test_provider_record_resolution_no_longer_branches_on_provider_names() -> No
     assert "instance.provider_type == 'prometheus'" not in provider_record
     assert "instance.provider_type == 'alertmanager'" not in provider_record
     assert "instance.provider_type == 'kubernetes'" not in provider_record
+    assert "instance.provider_type == 'minio'" not in provider_record
 
 
 def test_validation_worker_dispatches_full_validation_through_registry() -> None:
     tasks = read('app/integrations/validation/tasks.py')
-    full_validation = tasks.split('def validate_integration_instance', 1)[1].split(
-        'def _as_result_payload', 1
-    )[0]
+    full_validation = tasks.split('def validate_integration_instance', 1)[1].split('def _as_result_payload', 1)[0]
 
     assert 'module = get_integration(provider_type)' in full_validation
     assert 'instance = module.get_instance(instance_id)' in full_validation
@@ -104,6 +108,7 @@ def test_validation_worker_dispatches_full_validation_through_registry() -> None
     assert "provider_type == 'prometheus'" not in full_validation
     assert "provider_type == 'alertmanager'" not in full_validation
     assert "provider_type == 'kubernetes'" not in full_validation
+    assert "provider_type == 'minio'" not in full_validation
 
 
 def test_prometheus_binding_validation_is_asset_profile_driven() -> None:
@@ -112,7 +117,7 @@ def test_prometheus_binding_validation_is_asset_profile_driven() -> None:
 
     assert 'class BindingValidationProfile' in profiles
     assert 'def register_binding_validation_profile(' in profiles
-    assert "asset_type=KUBERNETES_CLUSTER_SCOPE" in profiles
+    assert 'asset_type=KUBERNETES_CLUSTER_SCOPE' in profiles
     assert 'get_binding_validation_profile(binding.asset_type)' in validation
     assert "('kube_node_info', 'Kubernetes node identity')" not in validation
     assert 'No Prometheus binding validation profile is registered for asset type' in validation

@@ -24,6 +24,7 @@ KAORI treats reachability, product identity, runtime version, API compatibility,
 | Prometheus | Runtime still must be detected | `kube-prometheus-stack-87.10.1`, chart app `v0.92.1` | `prometheus-http-api-v1` when runtime is `>=2,<3` | Block until `/api/v1/status/buildinfo` confirms the server version. |
 | Thanos | `0.39.2` application family | Helm chart `17.3.1` | `thanos-query-prometheus-api-v1` | Supported initial query-backend profile after API and history probes. |
 | Alertmanager | `0.25.0`, `0.33.1` | Per-cluster | `alertmanager-api-v2` | Supported after status, alerts, and silences probes. |
+| MinIO | `RELEASE.2024-08-03T04-33-23Z` | Object-storage provider | `minio-release-2024-08-03` | Supported after MinIO S3 API identity, bucket discovery, and asset-scoped Prometheus metrics validation. |
 
 The previous classification of `0.39.2` as a Prometheus version was incorrect. It belongs to the Thanos chart application version.
 
@@ -56,6 +57,8 @@ Integration inventory and configuration are owned by the top-level `Integrations
 - `/integrations/` — cross-cluster integration overview.
 - `/integrations/prometheus` — Prometheus inventory.
 - `/integrations/alertmanager` — Alertmanager inventory.
+- `/integrations/storage` — Storage domain portfolio.
+- `/integrations/minio/` — MinIO Object Storage provider inventory and registration.
 - `/prometheus/instances/<instance_id>` — Prometheus manage workspace and operations.
 - `/alertmanager/instances/<instance_id>` — Alertmanager manage workspace and operations.
 
@@ -70,6 +73,7 @@ Integration list pages never render passwords, bearer tokens, embedded URL crede
 - Kubernetes: `1.20–1.23` legacy, `1.24–1.29` standard, `1.30–1.33` modern, and `1.34–1.36` current.
 - Prometheus: `2.40–2.x` legacy-supported and `3.x` current.
 - Alertmanager: `0.25–0.26` legacy API-v2 and `0.27–0.33` current API-v2.
+- MinIO: `RELEASE.2024-08-03T04-33-23Z` under the initial strict `minio-release-2024-08-03` profile.
 - Thanos Query: `0.39`, `0.40`, and `0.41` profiles.
 
 A matching version profile does not itself make an integration ready. Required API endpoints, capabilities, metrics, labels, and query probes must also pass.
@@ -82,6 +86,8 @@ KAORI exposes one canonical management route per integration domain:
 - `/integrations/kubernetes`
 - `/integrations/prometheus`
 - `/integrations/alertmanager`
+- `/integrations/storage`
+- `/integrations/minio/`
 
 Provider blueprints may expose domain detail and operation endpoints, but KAORI does
 not register legacy compatibility blueprints or active shim routes. Development

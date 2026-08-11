@@ -6,7 +6,7 @@ KAORI's sidebar. Child labels describe the selected submenu or workflow page.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 
 
@@ -86,6 +86,8 @@ _WORKFLOW_LABELS: tuple[tuple[str, str], ...] = (
     ('prometheus.instance_detail', 'Connection Details'),
     ('alertmanager.new_instance', 'Register Connection'),
     ('alertmanager.instance_detail', 'Connection Details'),
+    ('minio.new_instance', 'Register Provider'),
+    ('minio.instance_detail', 'Provider Details'),
     ('integrations.bind_prometheus_source', 'Scope Binding'),
     ('integrations.bind_alertmanager_source', 'Scope Binding'),
     ('users.create', 'Add User'),
@@ -125,7 +127,12 @@ def _deduplicate(items: Iterable[BreadcrumbItem]) -> list[BreadcrumbItem]:
     return result
 
 
-def build_navigation_breadcrumb(endpoint: str | None, path: str = '') -> list[dict[str, str | None]]:
+def build_navigation_breadcrumb(
+    endpoint: str | None,
+    path: str = '',
+    *,
+    integration_owner: Mapping[str, str] | None = None,
+) -> list[dict[str, str | None]]:
     """Return breadcrumb items whose root matches the KAORI sidebar main menu."""
 
     endpoint = endpoint or ''
@@ -137,8 +144,12 @@ def build_navigation_breadcrumb(endpoint: str | None, path: str = '') -> list[di
             BreadcrumbItem('Dashboards', 'layout-dashboard'),
             BreadcrumbItem('Kubernetes Operations'),
         ]
-    elif endpoint.startswith('cluster.') or endpoint.startswith('integrations.kubernetes'):
-        items = [BreadcrumbItem('Integrations', 'plug'), BreadcrumbItem('Kubernetes')]
+    elif integration_owner is not None:
+        items = [
+            BreadcrumbItem('Integrations', 'plug'),
+            BreadcrumbItem(integration_owner['domain_label']),
+            BreadcrumbItem(integration_owner['provider_label']),
+        ]
         items = _append_workflow(items, endpoint)
     elif endpoint.startswith('inventory.'):
         items = [
@@ -190,18 +201,12 @@ def build_navigation_breadcrumb(endpoint: str | None, path: str = '') -> list[di
         ]
         if endpoint != 'platform_operations.kubernetes.index':
             items.append(BreadcrumbItem(_leaf(endpoint, 'Secret Reveal')))
-    elif endpoint.startswith('prometheus.') or 'prometheus' in endpoint:
-        items = [BreadcrumbItem('Integrations', 'plug'), BreadcrumbItem('Prometheus')]
-        items = _append_workflow(items, endpoint)
-    elif endpoint.startswith('alertmanager.') or 'alertmanager' in endpoint:
-        items = [BreadcrumbItem('Integrations', 'plug'), BreadcrumbItem('Alertmanager')]
-        items = _append_workflow(items, endpoint)
     elif endpoint.startswith('integrations.'):
         leaf = {
             'integrations.overview': 'Overview',
-            'integrations.kubernetes': 'Kubernetes',
-            'integrations.prometheus': 'Prometheus',
-            'integrations.alertmanager': 'Alertmanager',
+            'integrations.orchestration': 'Orchestration',
+            'integrations.observability': 'Observability',
+            'integrations.storage': 'Storage',
         }.get(endpoint, 'Overview')
         items = [BreadcrumbItem('Integrations', 'plug'), BreadcrumbItem(leaf)]
     elif endpoint.startswith('access.overview.'):

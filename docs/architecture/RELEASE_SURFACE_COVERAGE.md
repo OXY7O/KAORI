@@ -4,7 +4,7 @@ Status: **Locked release-coverage contract**
 
 This registry answers one release question: **is every operator-visible menu, nested web domain, and non-navigation system surface explicitly owned by a release verifier or test boundary?**
 
-The current baseline contains **49 navigation links** across the authenticated application shell and **21 registered blueprints**. A new menu link, menu template, or registered Blueprint must be added to the canonical registry in the same change or the general release audit fails closed.
+The current baseline contains **49 navigation links** across the authenticated application shell and **22 registered blueprints**. A new menu link, menu template, or registered Blueprint must be added to the canonical registry in the same change or the general release audit fails closed.
 
 ## Navigation and Surface Matrix
 
@@ -28,7 +28,7 @@ The current baseline contains **49 navigation links** across the authenticated a
 
 ## Nested Cluster Management Ownership
 
-**Cluster Management is intentionally not a separate sidebar menu.** The canonical list/lifecycle workspace moved under **Integrations → Kubernetes**. `cluster.*` Add/Edit/Delete/Sync routes remain active nested operations, and `integrations_menu.html` must keep `cluster.*` endpoints associated with the Kubernetes integration parent.
+**Cluster Management is intentionally not a separate sidebar menu.** The canonical list/lifecycle workspace remains the Kubernetes provider workspace under **Integrations → Orchestration → Kubernetes**. `cluster.*` Add/Edit/Delete/Sync routes remain active nested operations, and the Kubernetes provider registration must keep `cluster.*` associated with the Orchestration domain through navigation metadata.
 
 The retired standalone Cluster Management listing chain must not return:
 
@@ -83,3 +83,7 @@ When adding or moving a menu/domain:
 5. Run `python scripts/verify_final_release.py --all` before release.
 
 Do not silence a new endpoint by increasing a baseline or by classifying an active surface as hidden without an explicit ownership decision.
+
+## Storage Integration Expansion
+
+`Integrations → Storage → Object Storage` now owns the MinIO provider workspace. MinIO is registered as an additional Blueprint under the existing Integrations release surface; it does not add a new sidebar navigation link.

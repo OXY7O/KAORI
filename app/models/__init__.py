@@ -28,7 +28,9 @@ from app.models.job import JobExecution, JobExecutionSubscriber, JobPolicy
 from app.models.knowledge import KnowledgeRunbook, KnowledgeRunbookAlertBinding, KnowledgeRunbookRevision
 from app.models.kubernetes import KubernetesConnection
 from app.models.lifecycle import DataLifecyclePolicy
+from app.models.minio import MinioInstance
 from app.models.notification import Notification
+from app.models.object_storage import ObjectStorageSystem
 from app.models.prometheus import PrometheusInstance
 from app.models.rbac import Permission, Role, RolePermission
 from app.models.report import Report, ReportSchedule, ReportScheduleRun, ReportTemplate
@@ -61,6 +63,8 @@ __all__ = [
     'KnowledgeRunbookRevision',
     'KnowledgeRunbookAlertBinding',
     'KubernetesConnection',
+    'MinioInstance',
+    'ObjectStorageSystem',
     'ExternalIdentityLink',
     'ClusterStatus',
     'Cluster',

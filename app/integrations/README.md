@@ -24,13 +24,31 @@ Integrations
 │       └── Alertmanager
 └── Storage
     ├── Object Storage
-    │   └── provider modules such as MinIO
+    │   └── MinIO
     ├── File Storage
     └── Block Storage
 ```
 
 `worker_domain` remains execution metadata and must not be reused as the UI or
 architecture taxonomy. `taxonomy.py` is the canonical domain/capability map.
+
+
+## Navigation projection
+
+The sidebar renders domain workspaces from the canonical taxonomy:
+
+```text
+Integrations
+├── Overview
+├── Orchestration
+├── Observability
+└── Storage
+```
+
+Product-specific pages remain provider workspaces beneath those domains. Each registered
+`IntegrationModule` declares `navigation_endpoint_prefixes`, allowing deep routes such as
+`cluster.*`, `prometheus.*`, and `alertmanager.*` to retain the correct domain active state
+without provider-name branching in the sidebar template.
 
 ## Binding model
 
@@ -105,9 +123,9 @@ in binding refresh. Provider-specific failure persistence is exposed through a
 registered hook.
 
 Prometheus binding validation is selected by asset type through
-`prometheus/binding_profiles.py`. Kubernetes registers the initial
-`kubernetes_cluster` profile; object-storage providers add their own identity
-probe profile without modifying the shared validator.
+`prometheus/binding_profiles.py`. Kubernetes registers the `kubernetes_cluster` profile; MinIO registers the
+`object_storage_system` profile with MinIO software, cluster-usage, and bucket-usage
+identity probes without modifying the shared validator.
 
 See `docs/architecture/integration-module-map.md` and the README inside each
 provider module.

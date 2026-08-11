@@ -1,9 +1,9 @@
 from types import SimpleNamespace
 
+from app.integrations.overview_extensions import build_overview_stats
 from app.integrations.service import (
     _capability_attention_display,
     _coverage_stats,
-    _overview_stats,
     _runtime_scope_label,
     _runtime_stats,
 )
@@ -52,10 +52,11 @@ def test_portfolio_stats_separate_validation_and_missing_configuration() -> None
         SimpleNamespace(endpoint='https://alertmanager.example', readiness_status='blocked'),
     ]
 
-    result = _overview_stats(
+    result = build_overview_stats(
         kubernetes_connections=kubernetes,
         prometheus_instances=prometheus,
         alertmanager_instances=alertmanager,
+        extension_instances=[],
     )
 
     assert result == {

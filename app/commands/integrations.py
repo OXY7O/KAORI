@@ -21,7 +21,7 @@ import app.integrations.runtime.monitoring as runtime_monitoring
 @click.option('--json-output', is_flag=True, help='Print the refresh result as JSON.')
 @with_appcontext
 def refresh_integration_runtime_command(json_output: bool) -> None:
-    """Queue Kubernetes, Prometheus, and Alertmanager runtime health refreshes."""
+    """Queue runtime health refreshes for all enabled registered integration providers."""
     result = runtime_monitoring.dispatch_integration_runtime_refresh()
     if json_output:
         click.echo(json.dumps(result, indent=2, sort_keys=True, default=str))

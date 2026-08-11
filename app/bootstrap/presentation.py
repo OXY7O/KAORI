@@ -20,6 +20,7 @@ from app.common.timezone import (
     normalize_timezone_mode,
     normalize_timezone_name,
 )
+from app.integrations.navigation import build_integration_navigation_context, integration_endpoint_owner
 from app.notifications.feedback import pop_operational_feedback
 from app.notifications.service import get_navigation_notification_context
 
@@ -79,6 +80,8 @@ def register_presentation(app: Flask) -> None:
             if current_user.is_authenticated
             else 'manual'
         )
+        integration_navigation = build_integration_navigation_context(request.endpoint)
+        integration_owner = integration_endpoint_owner(request.endpoint)
         return {
             'app_version': app.config['APP_VERSION'],
             'current_year': datetime.now().year,
@@ -91,7 +94,12 @@ def register_presentation(app: Flask) -> None:
             'load_navigation_notification_context': _navigation_notifications,
             'load_operational_feedback': _operational_feedback,
             'cluster_onboarding': build_cluster_onboarding_context(),
-            'navigation_breadcrumb': build_navigation_breadcrumb(request.endpoint, request.path),
+            'navigation_breadcrumb': build_navigation_breadcrumb(
+                request.endpoint,
+                request.path,
+                integration_owner=integration_owner,
+            ),
+            'integration_navigation': integration_navigation,
         }
 
     @app.template_filter('environment_name')

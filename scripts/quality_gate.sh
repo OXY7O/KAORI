@@ -50,6 +50,9 @@ run_static() {
     python scripts/verify_platform_operations_overview_final_lock.py
     python scripts/verify_data_lifecycle_final_lock.py
     python scripts/verify_notification_center_final_lock.py
+    python scripts/verify_integration_provider_foundation.py
+    python scripts/verify_integration_domain_navigation.py
+    python scripts/verify_minio_object_storage_provider.py
     python scripts/verify_integrations_final_lock.py
     python scripts/verify_hero_component_standard.py
     python scripts/verify_form_with_context_standard.py
