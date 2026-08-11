@@ -213,7 +213,11 @@ def main() -> int:
     modal = read('app/templates/components/resource_detail_modal.html')
     require('h-auto max-h-[calc(100dvh-1rem)]' in modal, 'content-driven modal height token is malformed', errors)
     require('max-h-[calc(100dvh-1rem) ]' not in modal, 'formatter whitespace broke modal Tailwind token', errors)
-    require('djlint:off -- dynamic Tailwind arbitrary-value class must remain token-contiguous.' in modal, 'modal formatter boundary missing', errors)
+    require(
+        '{# djlint:off #}' in modal and '{# djlint:on #}' in modal,
+        'modal formatter boundary missing',
+        errors,
+    )
 
     if errors:
         print('FAIL — KAORI Access Final Lock v1')

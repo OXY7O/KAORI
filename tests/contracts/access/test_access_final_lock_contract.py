@@ -44,7 +44,8 @@ def test_access_final_lock_protects_content_driven_modal_formatter_boundary() ->
 
     assert 'h-auto max-h-[calc(100dvh-1rem)]' in modal
     assert 'max-h-[calc(100dvh-1rem) ]' not in modal
-    assert 'djlint:off -- dynamic Tailwind arbitrary-value class must remain token-contiguous.' in modal
+    assert '{# djlint:off #}' in modal
+    assert '{# djlint:on #}' in modal
 
 
 def test_current_access_documents_do_not_reopen_the_locked_ui() -> None:
