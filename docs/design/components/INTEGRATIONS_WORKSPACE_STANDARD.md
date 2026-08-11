@@ -39,6 +39,32 @@ Responsibilities:
 
 Provider templates supply factual labels, icons, endpoint data, compatibility evidence, and actions. They do not copy shared geometry or semantic colors.
 
+## Domain Landing Workspace Contract
+
+`Orchestration`, `Observability`, and `Storage` use one shared domain landing pattern. Domain pages do not invent provider-specific cards or a Storage-only composition.
+
+```text
+Hero / Domain Posture
+Capability Registry
+Domain Workspace
+├── Provider Registry
+└── Bindings
+Domain Operating Boundary
+```
+
+The **Provider Registry** lists canonical `IntegrationInstance` targets owned by the domain. It uses the global five-row default and `5 / 10 / 25 / 50` page sizes, provider readiness, capability ownership, binding count, and one route back to the product-specific workspace. An empty registry names the provider implementations already registered in the Integration kernel and directs the operator to register the first runtime.
+
+The **Bindings** tab is asset-centric rather than provider-to-provider. It includes:
+
+- bindings whose source provider belongs to the current domain; and
+- cross-domain sources whose `asset_type` is owned by the current domain.
+
+This means Orchestration can show Kubernetes API plus Prometheus/Alertmanager bindings that target a Kubernetes cluster, while Storage can show MinIO plus Prometheus bindings that target the same `object_storage_system`. Observability shows Prometheus/Alertmanager bindings across their consumers because those providers own the source side.
+
+Managed asset ownership is declared by Integration taxonomy capability metadata (`asset_types`). Domain landing services must remain provider-neutral and must not query `KubernetesConnection`, `PrometheusInstance`, `AlertmanagerInstance`, `MinioInstance`, or future provider-specific models directly.
+
+Provider Core Validation and Binding Validation remain separate evidence boundaries on the domain page. Provider Registry readiness reflects provider Core Validation; the Bindings tab shows the selected consumer profile, selector, and binding validation status.
+
 ## Provider Registry Contract
 
 Prometheus and Alertmanager registries share:

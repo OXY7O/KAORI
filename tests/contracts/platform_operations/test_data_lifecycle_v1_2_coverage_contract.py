@@ -22,9 +22,8 @@ def test_runtime_observations_share_one_provider_neutral_lifecycle() -> None:
     assert "'label': 'Prometheus'" in presentation
     assert "'label': 'Alertmanager'" in presentation
     assert "domain='runtime_observation'" in shared_history
-    assert "include 'integrations/partials/_runtime_history.html'" in prometheus
-    assert "include 'integrations/partials/_runtime_history.html'" in alertmanager
-    assert "include 'integrations/partials/_runtime_history.html'" in kubernetes
+    for rendered in (prometheus, alertmanager, kubernetes):
+        assert 'integrations/partials/_runtime_history.html' in rendered
 
 
 def test_activity_audit_and_user_notifications_share_one_lifecycle_source() -> None:

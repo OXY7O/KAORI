@@ -6,10 +6,12 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 ## [Unreleased]
 
 ### Fixed
+- Aligned Prometheus Integration contract assertions with canonical djLint double-quote Jinja tags and Ruff-formatted the consumer-profile verifier so quality gates no longer fail on formatting-only drift.
 - Normalized the MinIO provider detail template to the canonical djLint format so the global template-format gate no longer stops on `app/templates/minio/instance_detail.html`.
 - Repaired Integration domain route ownership so Flask application boot and `flask db upgrade` import `build_integration_domain_page` directly from `domain_service` instead of a removed `service.py` re-export.
 
 ### Changed
+- Unified Orchestration, Observability, and Storage domain landing pages on one Capability Registry + Provider Registry + Bindings workspace, including asset-owned cross-domain binding visibility and canonical five-row pagination.
 - Locked the canonical Integration lifecycle in architecture/workspace documentation: Provider → Compatibility Profile → Provider Capability Set → Core Validation → Binding → Consumer Profile → Binding Validation → Consumer Eligibility.
 - Generalized Prometheus provider readiness around the consumer-neutral `prometheus-core-v1` contract and moved Kubernetes/MinIO metric, label, PromQL, and capability evidence to asset-scoped `IntegrationBinding` consumer profiles.
 - Added `kubernetes-metrics-v1` and `minio-metrics-2024-v1` binding profiles plus persisted binding validation profile/evidence so one Prometheus source can serve multiple managed-asset types without false provider degradation.

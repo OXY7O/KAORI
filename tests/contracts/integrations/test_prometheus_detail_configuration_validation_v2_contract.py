@@ -38,7 +38,7 @@ def test_validation_uses_kubernetes_style_capability_readiness_before_full_width
     assert 'Prometheus Provider Readiness' in text
     assert 'integrations/components/_capability_readiness.html' in text
     assert 'capability_readiness.render(' in text
-    assert "include 'prometheus/partials/_capability_registry.html'" in text
+    assert 'include "prometheus/partials/_capability_registry.html"' in text
     assert 'Prometheus Core Capability Registry' in registry
     assert 'data-kaori-provider-capability-matrix' in text
     assert 'Validation Decision' not in text

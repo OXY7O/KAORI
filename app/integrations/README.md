@@ -164,3 +164,16 @@ provider module.
 The implemented Integrations presentation and interaction contract is `docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md`. The original findings and implementation disposition are recorded in `docs/design/audits/INTEGRATIONS_FULL_AUDIT_20260731.md`.
 
 Shared Integrations templates own semantic status adaptation, registry controls, loading, pagination, and bright-evidence hierarchy. Provider packages retain factual compatibility, capability, binding, runtime, and lifecycle data. Provider-local runtime-history presentation wrappers and secondary semantic palettes are not allowed.
+
+### Domain landing projection
+
+`/integrations/orchestration`, `/integrations/observability`, and `/integrations/storage` share the same taxonomy-driven landing workspace:
+
+```text
+Capability Registry
+Provider Registry
+Bindings
+```
+
+The Provider Registry is built from canonical `IntegrationInstance` rows. The Bindings view is asset-centric and includes both domain-owned provider bindings and cross-domain sources targeting asset types owned by the domain taxonomy. Provider-specific ORM queries are not allowed in the shared domain service.
+

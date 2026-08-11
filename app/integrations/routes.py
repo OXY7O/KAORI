@@ -57,7 +57,14 @@ def overview() -> ResponseReturnValue:
 def _render_domain_page(domain_key: str) -> ResponseReturnValue:
     return render_template(
         'integrations/domain.html',
-        **build_integration_domain_page(domain_key),
+        **build_integration_domain_page(
+            domain_key,
+            active_tab=request.args.get('tab', 'registry').strip(),
+            provider_page=request.args.get('provider_page', 1, type=int) or 1,
+            provider_per_page=request.args.get('provider_per_page', 5, type=int) or 5,
+            binding_page=request.args.get('binding_page', 1, type=int) or 1,
+            binding_per_page=request.args.get('binding_per_page', 5, type=int) or 5,
+        ),
     )
 
 

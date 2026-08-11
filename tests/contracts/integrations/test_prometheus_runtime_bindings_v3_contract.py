@@ -12,7 +12,7 @@ def test_prometheus_runtime_matches_kubernetes_layout_and_filtered_history() -> 
     runtime = read('app/templates/prometheus/partials/_runtime_panel.html')
 
     assert 'runtime_history_filters_enabled=true' in detail
-    assert "runtime_history_endpoint='prometheus.instance_runtime_history'" in detail
+    assert 'runtime_history_endpoint="prometheus.instance_runtime_history"' in detail
     assert 'data-kaori-provider-runtime-kubernetes-pattern' in runtime
     assert 'integrations/components/_runtime_decision.html' in runtime
     assert 'runtime_decision.render(' in runtime

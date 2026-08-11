@@ -9,6 +9,7 @@ class IntegrationDomainDefinition:
     label: str
     description: str
     icon: str
+    workspace_endpoint: str
     order: int
 
 
@@ -19,6 +20,7 @@ class IntegrationCapabilityDefinition:
     label: str
     description: str
     order: int
+    asset_types: tuple[str, ...] = ()
 
 
 _DOMAIN_DEFINITIONS = (
@@ -27,6 +29,7 @@ _DOMAIN_DEFINITIONS = (
         label='Orchestration',
         description='Cluster orchestration providers, control-plane connectivity, discovery, and runtime access.',
         icon='boxes',
+        workspace_endpoint='integrations.orchestration',
         order=10,
     ),
     IntegrationDomainDefinition(
@@ -34,6 +37,7 @@ _DOMAIN_DEFINITIONS = (
         label='Observability',
         description='Metrics, alerting, runtime validation, and operational telemetry providers.',
         icon='activity',
+        workspace_endpoint='integrations.observability',
         order=20,
     ),
     IntegrationDomainDefinition(
@@ -41,6 +45,7 @@ _DOMAIN_DEFINITIONS = (
         label='Storage',
         description='Object, file, and block storage providers used for operational visibility and data services.',
         icon='database',
+        workspace_endpoint='integrations.storage',
         order=30,
     ),
 )
@@ -52,6 +57,7 @@ _CAPABILITY_DEFINITIONS = (
         label='Cluster Orchestration',
         description='Cluster API connectivity, inventory discovery, and control-plane operations.',
         order=10,
+        asset_types=('kubernetes_cluster',),
     ),
     IntegrationCapabilityDefinition(
         key='metrics',
@@ -73,6 +79,7 @@ _CAPABILITY_DEFINITIONS = (
         label='Object Storage',
         description='S3 and object-storage provider connectivity, inventory, analytics, and governance.',
         order=10,
+        asset_types=('object_storage_system',),
     ),
     IntegrationCapabilityDefinition(
         key='file_storage',
@@ -111,9 +118,7 @@ def get_capability_definition(
     try:
         return CAPABILITIES[(domain, capability)]
     except KeyError as exc:
-        raise ValueError(
-            f'Unknown integration capability {capability_key!r} for domain {domain_key!r}.'
-        ) from exc
+        raise ValueError(f'Unknown integration capability {capability_key!r} for domain {domain_key!r}.') from exc
 
 
 def ordered_domain_definitions() -> tuple[IntegrationDomainDefinition, ...]:
@@ -128,3 +133,23 @@ def capability_definitions_for_domain(domain_key: str) -> tuple[IntegrationCapab
             key=lambda item: (item.order, item.key),
         )
     )
+
+
+def asset_types_for_domain(domain_key: str) -> tuple[str, ...]:
+    """Return managed asset types owned by one Integration domain."""
+    return tuple(
+        asset_type
+        for capability in capability_definitions_for_domain(domain_key)
+        for asset_type in capability.asset_types
+    )
+
+
+def domain_key_for_asset_type(asset_type: str) -> str | None:
+    """Resolve the domain that owns a managed asset type, if registered."""
+    normalized = str(asset_type or '').strip().lower()
+    if not normalized:
+        return None
+    for capability in CAPABILITIES.values():
+        if normalized in capability.asset_types:
+            return capability.domain_key
+    return None

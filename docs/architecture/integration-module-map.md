@@ -215,3 +215,23 @@ assigns those endpoints to their owning domain, so Kubernetes and `cluster.*` re
 Orchestration while Prometheus and Alertmanager remain active under Observability. The sidebar
 does not branch on provider names. Domain landing pages are taxonomy-driven projections over
 canonical `IntegrationInstance` identities and active `IntegrationBinding` evidence.
+
+## Domain Landing Registry and Binding Projection
+
+Integration domain landing pages are one shared projection for Orchestration, Observability, and Storage:
+
+```text
+Integration taxonomy
+  ├── domain
+  ├── capability
+  └── owned asset_types
+          │
+          ▼
+IntegrationInstance + IntegrationBinding
+          │
+          ├── Provider Registry
+          └── Binding Registry
+```
+
+A binding is included when its source provider belongs to the selected domain **or** when its target `asset_type` is owned by that domain. This keeps cross-domain observability visible from the consumer domain without introducing provider-to-provider foreign keys. For example, `Prometheus → object_storage_system` is visible from both Observability (source ownership) and Storage (asset ownership), while the persisted relation remains the canonical `IntegrationBinding`.
+

@@ -32,6 +32,16 @@ def main() -> int:
         if endpoint not in taxonomy:
             errors.append(f'taxonomy missing domain workspace endpoint: {endpoint}')
 
+    for marker in (
+        'asset_types: tuple[str, ...] = ()',
+        "asset_types=('kubernetes_cluster',)",
+        "asset_types=('object_storage_system',)",
+        'def asset_types_for_domain(domain_key: str)',
+        'def domain_key_for_asset_type(asset_type: str)',
+    ):
+        if marker not in taxonomy:
+            errors.append(f'taxonomy missing asset-ownership contract: {marker}')
+
     if 'navigation_endpoint_prefixes: tuple[str, ...]' not in registry:
         errors.append('IntegrationModule is missing navigation endpoint ownership metadata')
 
@@ -73,6 +83,9 @@ def main() -> int:
         "@integrations_bp.get('/observability')",
         "@integrations_bp.get('/storage')",
         "'integrations/domain.html'",
+        "active_tab=request.args.get('tab', 'registry').strip()",
+        "provider_per_page=request.args.get('provider_per_page', 5, type=int) or 5",
+        "binding_per_page=request.args.get('binding_per_page', 5, type=int) or 5",
     ):
         if marker not in routes:
             errors.append(f'domain route contract missing: {marker}')
@@ -81,32 +94,55 @@ def main() -> int:
         errors.append('domain routes must import the dedicated domain page builder from its owning module')
     if 'from app.integrations.domain_service import build_integration_domain_page' in service:
         errors.append('integration service must not re-export the domain page builder')
+
     for marker in (
         'get_domain_definition(domain_key)',
         'for module in registry.all() if module.domain_key == domain.key',
         'IntegrationInstance.query.options(selectinload(IntegrationInstance.bindings))',
         'IntegrationInstance.provider_type.in_(provider_types)',
-        'capability_definitions_for_domain(domain_key)',
-        "'bindings': _enabled_binding_count(enabled_targets)",
-        "'status': _readiness_posture",
+        'asset_types_for_domain(domain_key)',
+        'IntegrationBinding.asset_type.in_(owned_asset_types)',
+        'domain_key_for_asset_type(binding.asset_type)',
+        'selector_summary(binding.selector_json',
+        'paginate_sequence(',
+        "'bindings': sum(1 for binding in related_bindings if binding.enabled)",
     ):
         if marker not in domain_service:
-            errors.append(f'domain page is not canonical-identity driven: {marker}')
-    for forbidden in ('KubernetesConnection.query', 'PrometheusInstance.query', 'AlertmanagerInstance.query'):
+            errors.append(f'domain page is not canonical asset/binding driven: {marker}')
+
+    for forbidden in (
+        'KubernetesConnection.query',
+        'PrometheusInstance.query',
+        'AlertmanagerInstance.query',
+        'MinioInstance.query',
+    ):
         if forbidden in domain_service:
             errors.append(f'domain page contains provider-specific query: {forbidden}')
 
     for marker in (
-        'Capability Portfolio',
-        'Provider Workspaces',
+        'Capability Registry',
+        'Provider Registry',
+        'Bindings',
+        'Registry and Bindings',
+        'data-kaori-domain-provider-registry',
+        'data-kaori-domain-binding-registry',
+        'No {{ domain.label }} Provider Registered',
+        'No {{ domain.label }} Bindings Yet',
+        'Core Validation',
+        'Create Binding',
+        'Consumer Contract',
         'Domain Operating Boundary',
-        'Ready for provider registration',
-        'Register Provider',
-        'Validate Runtime',
-        'Bind Assets',
+        'provider_registry_pagination.allowed_per_page',
+        'binding_registry_pagination.allowed_per_page',
     ):
         if marker not in domain_template:
-            errors.append(f'domain template missing KAORI boundary: {marker}')
+            errors.append(f'domain template missing canonical registry/binding boundary: {marker}')
+
+    if (
+        'Cross-domain sources are included when they target an asset owned by {{ domain.label }}.'
+        not in domain_template
+    ):
+        errors.append('domain binding empty state does not explain cross-domain asset-centric coverage')
 
     for marker in (
         "BreadcrumbItem(integration_owner['domain_label'])",
