@@ -179,7 +179,11 @@ def main() -> int:
         'AUTH_ALLOW_SUPER_ADMIN_REMEMBER_ME = _env_bool(',
     ):
         require(required in auth_config, f'Authentication persistence contract missing: {required}', errors)
-    require("current_app.config.get('AUTH_ALLOW_SUPER_ADMIN_REMEMBER_ME', False)" in auth_session, 'Super-admin remember-me must be default deny', errors)
+    require(
+        "current_app.config.get('AUTH_ALLOW_SUPER_ADMIN_REMEMBER_ME', False)" in auth_session,
+        'Super-admin remember-me must be default deny',
+        errors,
+    )
     for required in (
         "AUTHENTICATION_AUDIT_SCHEMA = 'authentication.v2'",
         "'target_user_id': user.id if user is not None else None",
