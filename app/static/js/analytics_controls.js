@@ -1,4 +1,4 @@
-(() => {
+;(() => {
     const clampPercent = (value) => Math.max(0, Math.min(Number(value) || 0, 100))
 
     function analyticsTabStorageKey(tabsetId = 'default') {
@@ -49,8 +49,7 @@
     }
 
     function tabStateClasses(button, state) {
-        const value =
-            state === 'active' ? button.dataset.kaoriTabActiveClasses : button.dataset.kaoriTabInactiveClasses
+        const value = state === 'active' ? button.dataset.kaoriTabActiveClasses : button.dataset.kaoriTabInactiveClasses
         return String(value || '')
             .trim()
             .split(/\s+/)
