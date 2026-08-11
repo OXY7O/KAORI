@@ -34,11 +34,13 @@ def test_storage_page_stays_available_and_shows_reconnect_guidance() -> None:
     route_source = read(STORAGE_ROUTES)
     template = read(STORAGE_TEMPLATE)
 
-    assert 'payload = get_report_storage_payload()' in route_source
+    assert 'payload = get_report_storage_payload(workspace=workspace)' in route_source
     assert "if payload['storage_actions_enabled']" in route_source
     assert 'report-storage-connectivity-title' in template
-    assert 'Report registry and metadata remain readable.' in template
-    assert 'action_label=payload.backend_status.action_label' in template
+    assert 'Storage Operations Posture' in template
+    assert 'data-report-storage-readiness-monitor="true"' in template
+    assert 'Retry Connection' in template
+    assert "url_for('reports.storage', verify='1', workspace=payload.workspace)" in template
     assert 'Integrity Check Paused' in template
     assert 'Cleanup Preview Paused' in template
     assert 'Traceback' not in template
@@ -51,7 +53,11 @@ def test_generated_pages_use_safe_probe_and_pause_storage_actions() -> None:
 
     assert 'get_report_storage_backend_status' in service
     assert 'return probe_report_artifact(file_path)' in service
-    assert "and bool(active_backend_status.get('write_available', False))" in service
+    serialize_report = service.split('def _serialize_report(', 1)[1].split(
+        'def _summarize_report_file_reference(', 1
+    )[0]
+    assert 'can_generate_artifact = report.status' in serialize_report
+    assert "active_backend_status.get('write_available', False)" in serialize_report
     assert 'Report records remain available; download actions stay paused' in service
     assert 'data-generated-storage-degraded="true"' in template
     assert 'payload.backend_status.title' in template

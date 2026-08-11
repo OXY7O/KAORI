@@ -13,7 +13,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Pre-release type-safety guardrails for provider exceptions, Secret scrubbing, snapshot boundaries, recovery counters, ORM construction, and XLSX page setup.
 
 ### Changed
-- Final-locked the unauthenticated Authentication Surface across Login and Database Setup Required, preserving security/session boundaries while removing arbitrary typography and moving password/theme interaction runtime into syntax-checked first-party JavaScript.
+- Closed the remaining Reports UI style/reuse gate debt by centralizing semantic borders, PDF dynamic fill styling, generated/template progress ownership, and Schedule form runtime while preserving the locked Reports presentation and delivery contracts.
 - Final-locked Settings across General Settings and Account & Authentication, retiring obsolete side-context partials and standardizing active preference/credential surfaces on shared KAORI semantic UI ownership.
 - Final-locked the Access control plane across Overview, User Management, Identity Providers, Roles & Access, Permission Catalog, and Activity Audit with a permanent release verifier and canonical short PASS output.
 - Standardized reviewed final-lock verifier success output to compact `PASS — KAORI …` lines while retaining detailed failure diagnostics and coverage assertions.
@@ -60,7 +60,6 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Removed unreachable current-release modules that had no runtime, test, script, or configured entrypoint consumer.
 
 ### Security
-- Locked Login/Auth redirect, CSRF/logout, cookie, bounded remember-me, SSO state/nonce/TTL, and authentication actor-versus-target invariants behind a permanent Authentication Surface release verifier and layered regression evidence.
 - Restored Access security invariants: failed authentication targets no longer count as authenticated actors, remember-me persistence is bounded to a 7-day default within 1–30 days, and the shared content-driven modal keeps its Tailwind viewport-height token formatter-safe.
 - Analytics refresh-failure surfaces now render parsed operator-safe detail/remediation fields instead of the raw stored worker error string.
 - Closed a Kubernetes Operations authorization-order regression by retiring the Blueprint clusterless `before_request`; ConfigMap, Secret, Protected Reveal, and TLS cluster prerequisites now execute only after route RBAC.

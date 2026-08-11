@@ -25,7 +25,7 @@
                                 <strong>{{ label }}</strong>
                                 <div class="capacity-track">
                                     {% if item.evidence_available %}
-                                        <i style="width: {{ item.used_percent }}%"></i>
+                                        {{ ui.percent_fill(item.used_percent) }}
                                     {% endif %}
                                     <b class="warning-marker"></b><b class="critical-marker"></b>
                                 </div>
@@ -107,8 +107,7 @@
                                             <div class="capacity-row headroom-row">
                                                 <strong>Headroom</strong>
                                                 <div class="capacity-track">
-                                                    <i class="headroom-fill"
-                                                       style="width: {{ p.executive.capacity.headroom_percent }}%"></i>
+                                                    {{ ui.percent_fill(p.executive.capacity.headroom_percent, 'headroom-fill') }}
                                                 </div>
                                                 <span>{{ p.executive.capacity.headroom_display }}</span>
                                             </div>
@@ -167,7 +166,7 @@
                                             <div class="aggregate-capacity-card">
                                                 {{ capacity_bar(p.capacity.resource) }}
                                                 <div class="stacked-capacity">
-                                                    <i style="width: {{ p.capacity.resource.used_percent }}%"></i><b style="width: {{ p.capacity.resource.headroom_percent }}%"></b>
+                                                    {{ ui.percent_fill(p.capacity.resource.used_percent, 'used-segment') }}{{ ui.percent_fill(p.capacity.resource.headroom_percent, 'headroom-segment') }}
                                                 </div>
                                                 <div class="stacked-labels"><span>{{ p.capacity.resource.used_display }} used</span><strong>{{ p.capacity.resource.available_display }} available</strong></div>
                                                 <div class="storage-value-grid">

@@ -189,30 +189,14 @@
     "app/templates/prometheus/partials/_runtime_panel.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/reports/_unavailable.html": {
-      "semantic_border_utilities": 1
-    },
     "app/templates/reports/generate/index.html": {
-      "raw_palette_utilities": 18,
       "semantic_border_utilities": 16
     },
     "app/templates/reports/generated/detail.html": {
-      "copied_standard_surface_shells": 1,
-      "raw_palette_utilities": 74,
       "semantic_border_utilities": 4
     },
     "app/templates/reports/generated/index.html": {
-      "raw_palette_utilities": 63,
-      "semantic_border_utilities": 2
-    },
-    "app/templates/reports/report_templates/index.html": {
-      "raw_palette_utilities": 34
-    },
-    "app/templates/reports/schedules/index.html": {
-      "raw_palette_utilities": 36
-    },
-    "app/templates/reports/storage/index.html": {
-      "raw_palette_utilities": 81
+      "semantic_border_utilities": 1
     },
     "app/templates/settings/account/partials/_change_password.html": {
       "semantic_border_utilities": 1

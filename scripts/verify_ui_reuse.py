@@ -14,11 +14,19 @@ _EVENT_HANDLER = re.compile(
     re.IGNORECASE,
 )
 _SCRIPT_TAG = re.compile(r'<script\b(?P<attrs>[^>]*)>', re.IGNORECASE | re.DOTALL)
+_APPROVED_INLINE_STYLE_COMPONENTS = {
+    'app/templates/components/progress_bar.html',
+    'app/templates/reports/pdf/components/analytics_publication.html',
+}
 
 
-def _metrics(source: str) -> dict[str, int]:
+def _metrics(relative: str, source: str) -> dict[str, int]:
     return {
-        'inline_styles': len(re.findall(r'\bstyle\s*=', source, re.IGNORECASE)),
+        'inline_styles': (
+            0
+            if relative in _APPROVED_INLINE_STYLE_COMPONENTS
+            else len(re.findall(r'\bstyle\s*=', source, re.IGNORECASE))
+        ),
         'inline_scripts': sum(
             1
             for match in _SCRIPT_TAG.finditer(source)
@@ -32,7 +40,8 @@ def scan(root: Path) -> dict[str, dict[str, int]]:
     result: dict[str, dict[str, int]] = {}
     for path in sorted((root / 'app' / 'templates').rglob('*.html')):
         source = path.read_text(encoding='utf-8')
-        metrics = _metrics(source)
+        relative = path.relative_to(root).as_posix()
+        metrics = _metrics(relative, source)
         if any(metrics.values()):
             result[path.relative_to(root).as_posix()] = metrics
     return result
@@ -67,8 +76,10 @@ def validate(root: Path, baseline_path: Path) -> list[str]:
             errors.append(f'{relative}:{exc.lineno}: invalid Jinja template: {exc.message}')
         if re.search(r'<style\b', source, re.IGNORECASE):
             errors.append(f'{relative}: template-local <style> blocks are forbidden')
-        if 'style=' in source and relative != 'app/templates/components/progress_bar.html':
-            errors.append(f'{relative}: inline style must be represented by a shared component or static utility class')
+        if 'style=' in source and relative not in _APPROVED_INLINE_STYLE_COMPONENTS:
+            errors.append(
+                f'{relative}: inline style must be represented by a shared component or static utility class'
+            )
 
     progress_component = root / 'app' / 'templates' / 'components' / 'progress_bar.html'
     if not progress_component.exists():

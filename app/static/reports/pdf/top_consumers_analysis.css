@@ -16,6 +16,10 @@
 .namespace-track { position: relative; height: 5.4mm; background: #E5E7EB; overflow: hidden; }
 .consumer-track i,
 .namespace-track i { display: block; height: 100%; }
+.consumer-fill.primary,
+.namespace-fill.primary { background: #7C3AED; }
+.consumer-fill.info,
+.namespace-fill.info { background: #2563EB; }
 .consumer-bar-row span,
 .namespace-bar-row span { text-align: right; font-size: 6.5pt; font-weight: 700; white-space: nowrap; }
 .large-bars .consumer-bar-row { grid-template-columns: 12mm minmax(0, 1fr) 22mm; }

@@ -157,7 +157,7 @@
                                             <div class="util-row">
                                                 <strong>{{ item.label }}</strong>
                                                 <div class="util-track">
-                                                    <i style="width:{{ item.current|replace('%', '') }}%"></i><b class="warn-line"></b><b class="crit-line"></b>
+                                                    {{ ui.percent_fill(item.current|replace('%', '')) }}<b class="warn-line"></b><b class="crit-line"></b>
                                                 </div>
                                                 <span>{{ item.current }} used</span><em>{{ item.headroom }} headroom</em>
                                             </div>
@@ -166,7 +166,7 @@
                                             <div class="util-row">
                                                 <strong>{{ row.resource }}</strong>
                                                 <div class="util-track">
-                                                    <i style="width:{{ row.chart_percent }}%"></i><b class="warn-line"></b><b class="crit-line"></b>
+                                                    {{ ui.percent_fill(row.chart_percent) }}<b class="warn-line"></b><b class="crit-line"></b>
                                                 </div>
                                                 <span>{{ row.chart_value }}</span><em>{{ row.chart_headroom }}</em>
                                             </div>
@@ -270,7 +270,7 @@
                                                 <div class="consumer-row">
                                                     <b>M{{ loop.index }}</b>
                                                     <div class="consumer-track">
-                                                        <i style="width:{{ item.bar_percent }}%"></i>
+                                                        {{ ui.percent_fill(item.bar_percent) }}
                                                     </div>
                                                     <strong>{{ item.value }}</strong>
                                                 </div>
@@ -282,7 +282,7 @@
                                                 <div class="consumer-row">
                                                     <b>C{{ loop.index }}</b>
                                                     <div class="consumer-track">
-                                                        <i style="width:{{ item.bar_percent }}%"></i>
+                                                        {{ ui.percent_fill(item.bar_percent) }}
                                                     </div>
                                                     <strong>{{ item.value }}</strong>
                                                 </div>
@@ -519,7 +519,7 @@
                                                 <div class="activity-row">
                                                     <span>{{ item.label }}</span>
                                                     <div class="activity-track">
-                                                        <i class="{{ item.tone }}" style="width:{{ item.percent }}%"></i>
+                                                        {{ ui.percent_fill(item.percent, item.tone) }}
                                                     </div>
                                                     <strong>{{ item.value }}</strong>
                                                 </div>

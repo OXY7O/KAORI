@@ -82,7 +82,8 @@ def test_template_service_is_catalog_driven_and_filterable() -> None:
 
     assert 'for spec in REPORT_TYPE_SPECS' in service
     assert "'family': spec.family" in service
-    assert 'template.source_template_key = f"system:{form_state[\'report_type\']}"' in service
+    apply_state = service.split('def apply_template_state(', 1)[1].split('def apply_template_owner_snapshot(', 1)[0]
+    assert 'template.source_template_key = f\'system:{form_state["report_type"]}\'' in apply_state
     assert "'families': [" in service
     assert "'ownership': [" in service
     assert "'formats': [" in service

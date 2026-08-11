@@ -15,24 +15,9 @@
       "inline_scripts": 1,
       "inline_styles": 0
     },
-    "app/templates/intelligence/automation_control.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 0,
-      "inline_styles": 0
-    },
-    "app/templates/intelligence/recommendations.html": {
-      "inline_event_handlers": 0,
-      "inline_scripts": 1,
-      "inline_styles": 0
-    },
     "app/templates/inventory/topology/index.html": {
       "inline_event_handlers": 0,
       "inline_scripts": 1,
-      "inline_styles": 0
-    },
-    "app/templates/jobs/executions/partials/_registry.html": {
-      "inline_event_handlers": 4,
-      "inline_scripts": 0,
       "inline_styles": 0
     },
     "app/templates/layouts/app.html": {
@@ -56,14 +41,7 @@
       "inline_styles": 0
     },
     "app/templates/reports/report_templates/index.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 1,
-      "inline_styles": 0
-    },
-    "app/templates/reports/schedules/index.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 0,
-      "inline_styles": 0
+      "inline_scripts": 1
     },
     "app/templates/settings/general/partials/_time_locale.html": {
       "inline_event_handlers": 0,

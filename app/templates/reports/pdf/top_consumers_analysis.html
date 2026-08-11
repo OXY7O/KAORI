@@ -29,12 +29,11 @@
                                 </div>
                             </div>
                         {%- endmacro %}
-                        {% macro consumer_bar(item, color='#7C3AED') -%}
+                        {% macro consumer_bar(item, tone='primary') -%}
                             <div class="consumer-bar-row">
                                 <strong>{{ item.ref }}</strong>
                                 <div class="consumer-track">
-                                    <i style="width: {{ item.displayed_share_bar }}%;
-                                              background: {{ color }}"></i>
+                                    {{ ui.percent_fill(item.displayed_share_bar, 'consumer-fill ' ~ tone) }}
                                 </div>
                                 <span>{{ item.displayed_share_label }}</span>
                             </div>
@@ -102,7 +101,7 @@
                                         <h3>CPU</h3>
                                         <div class="consumer-bars">
                                             {% for item in p.executive.cpu_rows %}
-                                                {{ consumer_bar(item, '#2563EB') }}
+                                                {{ consumer_bar(item, 'info') }}
                                             {% else %}
                                                 <p class="empty-state">CPU consumer evidence is Not Available.</p>
                                             {% endfor %}
@@ -110,7 +109,7 @@
                                         <h3 class="subheading">Memory</h3>
                                         <div class="consumer-bars">
                                             {% for item in p.executive.memory_rows %}
-                                                {{ consumer_bar(item, '#7C3AED') }}
+                                                {{ consumer_bar(item, 'primary') }}
                                             {% else %}
                                                 <p class="empty-state">Memory consumer evidence is Not Available.</p>
                                             {% endfor %}
@@ -234,7 +233,7 @@
                                                 <div class="namespace-bar-row">
                                                     <strong>{{ item.namespace }}</strong>
                                                     <div class="namespace-track">
-                                                        <i style="width: {{ item.share }}%; background:#2563EB"></i>
+                                                        {{ ui.percent_fill(item.share, 'namespace-fill info') }}
                                                     </div>
                                                     <span>{{ item.share_label }}</span>
                                                 </div>
@@ -249,7 +248,7 @@
                                                 <div class="namespace-bar-row">
                                                     <strong>{{ item.namespace }}</strong>
                                                     <div class="namespace-track">
-                                                        <i style="width: {{ item.share }}%; background:#7C3AED"></i>
+                                                        {{ ui.percent_fill(item.share, 'namespace-fill primary') }}
                                                     </div>
                                                     <span>{{ item.share_label }}</span>
                                                 </div>

@@ -35,7 +35,7 @@
 .aggregate-capacity-card { min-height: 51mm; border: .3mm solid #E2E8F0; padding: 5mm; }
 .stacked-capacity { display: flex; width: 100%; height: 7mm; margin-top: 6mm; overflow: hidden; background: #E5E7EB; }
 .stacked-capacity i { display: block; height: 100%; background: #7C3AED; }
-.stacked-capacity b { display: block; height: 100%; background: #DCFCE7; }
+.stacked-capacity .headroom-segment { display: block; height: 100%; background: #DCFCE7; }
 .stacked-labels { display: flex; justify-content: space-between; margin-top: 2mm; font-size: 6.35pt; }
 .stacked-labels span { color: #7C3AED; font-weight: 650; }
 .stacked-labels strong { color: #15803D; font-weight: 650; }

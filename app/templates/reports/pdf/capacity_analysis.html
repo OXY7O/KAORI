@@ -25,7 +25,7 @@
                                 <strong>{{ label }}</strong>
                                 <div class="capacity-track">
                                     {% if item.evidence_available %}
-                                        <i style="width: {{ item.used_percent }}%"></i>
+                                        {{ ui.percent_fill(item.used_percent) }}
                                     {% endif %}
                                     <b class="warning-marker"></b><b class="critical-marker"></b>
                                 </div>
@@ -39,7 +39,7 @@
                                         <div class="allocation-row">
                                             <div class="allocation-copy"><strong>{{ item.label }}</strong><span>{{ item.display }}</span></div>
                                             <div class="allocation-track">
-                                                <i class="{{ item.tone }}" style="width: {{ item.percent }}%"></i>
+                                                {{ ui.percent_fill(item.percent, item.tone) }}
                                             </div>
                                         </div>
                                     {% endfor %}
@@ -124,8 +124,7 @@
                                                     <strong>{{ item.label }}</strong>
                                                     <div class="capacity-track">
                                                         {% if item.evidence_available %}
-                                                            <i class="{% if item.key == 'nodes' %}node-fill{% endif %}"
-                                                               style="width: {{ item.used_percent }}%"></i>
+                                                            {{ ui.percent_fill(item.used_percent, 'node-fill' if item.key == 'nodes' else '') }}
                                                         {% endif %}
                                                         {% if item.key != 'nodes' %}<b class="warning-marker"></b><b class="critical-marker"></b>{% endif %}
                                                     </div>

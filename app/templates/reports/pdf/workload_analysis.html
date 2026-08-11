@@ -25,7 +25,7 @@
                                 <strong>{{ item.label }}</strong>
                                 <div class="governance-track {% if not item.available %}unavailable{% endif %}">
                                     {% if item.available %}
-                                        <i style="width: {{ item.value }}%"></i>
+                                        {{ ui.percent_fill(item.value) }}
                                     {% endif %}
                                 </div>
                                 <span>{{ item.display }}</span>

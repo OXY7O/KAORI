@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -60,9 +61,10 @@ def test_generate_report_uses_two_primary_configuration_zones_and_compact_review
     assert 'Review & Queue' in source
     assert 'Review the request summary before it is queued for artifact generation.' in source
     assert 'aria-label="Request readiness"' in source
-    review_header = source.split('data-generate-section-header="review-queue"', 1)[1].split('<div class="mt-3 grid', 1)[
-        0
-    ]
+    review_header = (
+        source.split('data-generate-section-header="review-queue"', 1)[1]
+        .split('<div class="mt-3 grid', 1)[0]
+    )
     assert 'preview-eligibility-status' not in review_header
     assert 'Create & Queue Report' in source
     assert 'xl:grid-cols-2 xl:divide-x xl:divide-outline-default' in source
@@ -124,9 +126,11 @@ def test_output_format_uses_compact_native_select_and_contract_filtering() -> No
     assert "option.value === 'snapshot'" in source
     assert 'Supported Formats' in source
     assert 'id="output-format-contract"' in source
-    assert (
-        'allowedFormats\n                            .map(function (format) { return format.toUpperCase(); })' in source
+    format_mapping = (
+        'allowedFormats\n                            '
+        '.map(function (format) { return format.toUpperCase(); })'
     )
+    assert format_mapping in source
 
 
 def test_generate_report_uses_semantic_status_tokens_and_preserves_storage_guard() -> None:
@@ -233,10 +237,10 @@ def test_generate_report_uses_numbered_workflow_hierarchy_without_progress_rail(
     }
     for section, number in expected.items():
         assert f'data-generate-section-header="{section}"' in source
-        assert f"workflow_number('{number}')" in source
+        assert re.search(rf"workflow_number\(['\"]{number}['\"]\)", source)
 
     assert 'data-selected-report-summary="true"' in source
-    assert "context_icon_marker('file-check-2')" in source
+    assert re.search(r"context_icon_marker\(['\"]file-check-2['\"]\)", source)
     assert 'data-generate-context-marker="{{ icon_name }}"' in source
     assert "workflow_number('01', true)" not in source
     assert 'Selected Report' in source

@@ -21,9 +21,14 @@ def test_reports_pages_use_standard_heroes_and_compact_summary_strips() -> None:
     assert 'data-generated-report-registry="true"' in generated
     assert 'Generation Posture' in generated
 
-    for page in ('report_templates', 'storage', 'schedules'):
-        source = read(REPORT_TEMPLATES / page / 'index.html')
-        assert 'reports/components/_summary_strip.html' in source
+    report_templates = read(REPORT_TEMPLATES / 'report_templates' / 'index.html')
+    storage = read(REPORT_TEMPLATES / 'storage' / 'index.html')
+    schedules = read(REPORT_TEMPLATES / 'schedules' / 'index.html')
+    for source in (report_templates, storage, schedules):
+        assert 'reports/components/_summary_strip.html' not in source
+    assert 'payload.summary_cards[0]' in report_templates
+    assert 'data-report-storage-readiness-monitor="true"' in storage
+    assert '{% for card in payload.summary_cards %}' in schedules
 
     generate = read(REPORT_TEMPLATES / 'generate' / 'index.html')
     generate_service = read(ROOT / 'app' / 'reports' / 'generate' / 'service.py')
@@ -66,9 +71,11 @@ def test_reports_pages_use_standard_heroes_and_compact_summary_strips() -> None:
     assert "'recommended_actions': _get_recommended_actions()" not in generate_service
     assert "'readiness': _get_generation_readiness(" not in generate_service
     assert "'namespace_options_by_cluster': namespace_options_by_cluster" in generate_service
-    assert (
-        "'preview_report_name': form_state['name'].strip() or build_default_report_name(form_state)" in generate_service
+    preview_name_contract = (
+        "'preview_report_name': form_state['name'].strip() "
+        "or build_default_report_name(form_state)"
     )
+    assert preview_name_contract in generate_service
     assert 'def _get_namespace_options_by_cluster()' in generate_service
     assert 'NamespaceInventory.namespace == namespace' in generate_service
     assert 'MVP2' not in generate
@@ -180,9 +187,10 @@ def test_report_delivery_is_telegram_first_and_channel_extensible() -> None:
     assert "_CHANNELS: dict[str, ReportDeliveryChannel] = {'telegram': TelegramReportDelivery()}" in delivery
     assert 'api.telegram.org' in telegram
     assert 'deliver_generated_report(' in report_worker
-    assert 'Delivery Channels' in schedule_template
+    assert 'Delivery & State' in schedule_template
+    assert 'payload.delivery_channel_options' in schedule_template
     assert 'notification_channels' in schedule_template
-    assert 'Delivery:' in schedule_template
+    assert 'run.delivery_label' in schedule_template
 
     overview_service = read(ROOT / 'app' / 'reports' / 'overview' / 'service.py')
     assert "'name': 'Telegram'" in overview_service

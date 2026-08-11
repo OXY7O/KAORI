@@ -63,10 +63,9 @@ def test_report_registry_backends_use_canonical_pagination_module() -> None:
     assert 'def paginate_select(' in canonical
     assert 'statement.order_by(None).subquery()' in canonical
 
-    assert (
-        'from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window, normalize_per_page, positive_int'
-        in generated
-    )
+    assert 'from app.common.pagination import (' in generated
+    for symbol in ('PER_PAGE_OPTIONS', 'build_pagination_window', 'normalize_per_page', 'positive_int'):
+        assert f'    {symbol},' in generated
     assert 'GENERATED_PER_PAGE_OPTIONS' not in generated
     assert 'def normalize_generated_per_page' not in generated
     assert 'def normalize_generated_page' not in generated

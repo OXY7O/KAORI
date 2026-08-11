@@ -66,6 +66,10 @@ _APPROVED_ARBITRARY_TEXT_COMPONENTS = {
     'app/templates/components/table.html',
     'app/templates/components/table_label.html',
 }
+_APPROVED_CUSTOM_HERO_COMPONENTS = {
+    'app/templates/components/page_hero.html',
+    'app/templates/reports/pdf/components/analytics_publication.html',
+}
 
 
 def _count_page_local_compact_status_labels(relative: str, source: str) -> int:
@@ -107,7 +111,7 @@ def _count_page_local_compact_pill_labels(relative: str, source: str) -> int:
 
 
 def _count_custom_hero_titles(relative: str, source: str) -> int:
-    if relative == 'app/templates/components/page_hero.html':
+    if relative in _APPROVED_CUSTOM_HERO_COMPONENTS:
         return 0
     return sum(1 for match in _H1_TAG.finditer(source) if 'page_hero.title_classes()' not in match.group(0))
 

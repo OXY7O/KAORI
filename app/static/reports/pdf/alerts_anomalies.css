@@ -11,6 +11,10 @@
 .distribution-row strong { font-size: 6.7pt; }
 .distribution-track { height: 5.5mm; background: #E5E7EB; overflow: hidden; }
 .distribution-track i { display: block; height: 100%; }
+.distribution-fill.primary { background: #7C3AED; }
+.distribution-fill.info { background: #2563EB; }
+.distribution-fill.warning { background: #D97706; }
+.distribution-fill.critical { background: #DC2626; }
 .distribution-row span { text-align: right; font-weight: 700; white-space: nowrap; }
 .large-distribution { gap: 4mm; }
 .subheading { margin: 4.5mm 0 0 !important; }

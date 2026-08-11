@@ -102,10 +102,9 @@ def test_generated_registry_is_compact_focused_and_auto_refreshes_pending_work()
     assert 'hx-trigger="change, input delay:450ms"' not in template
     assert 'from:select' not in template
     assert 'from:input' not in template
-    assert (
-        'from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window, normalize_per_page, positive_int'
-        in service
-    )
+    assert 'from app.common.pagination import (' in service
+    for symbol in ('PER_PAGE_OPTIONS', 'build_pagination_window', 'normalize_per_page', 'positive_int'):
+        assert f'    {symbol},' in service
     assert 'GENERATED_PER_PAGE_OPTIONS' not in service
     assert 'def normalize_generated_per_page' not in service
     assert 'def normalize_generated_page' not in service

@@ -7,6 +7,16 @@
 {% macro status_label(label, tone='muted') -%}
     <span class="status {{ 'normal' if tone in ['good', 'green', 'success'] else tone }}">{{ label }}</span>
 {%- endmacro %}
+{% macro percent_fill(value, extra_class='', background='') -%}
+    {% set safe_value = value | default(0, true) | float %}
+    {% if safe_value < 0 %}
+        {% set safe_value = 0 %}
+    {% elif safe_value > 100 %}
+        {% set safe_value = 100 %}
+    {% endif %}
+    <i class="{{ extra_class }}"
+       style="width: {{ safe_value }}%;{% if background %} background: {{ background }};{% endif %}"></i>
+{%- endmacro %}
 {% macro report_header(report_title, report_subtitle='Kubernetes Operational Intelligence Report') -%}
     <div class="report-header">
         <div class="brand">

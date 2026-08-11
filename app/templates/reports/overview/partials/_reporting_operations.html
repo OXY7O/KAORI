@@ -1,4 +1,5 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/operational_callout.html" as operational_callout %}
 <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
          aria-labelledby="reporting-operations-title">
     <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
@@ -15,7 +16,7 @@
         </div>
         {% if payload.storage_context.degraded %}
             <a href="{{ url_for('reports.storage') }}"
-               class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-status-warning-border bg-status-warning-soft px-3 text-xs font-semibold text-status-warning-text transition hover:bg-surface-card">
+               class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border {{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft px-3 text-xs font-semibold text-status-warning-text transition hover:bg-surface-card">
                 <i data-lucide="hard-drive" class="h-4 w-4" aria-hidden="true"></i>
                 Review Storage
             </a>
@@ -53,7 +54,7 @@
         {% endfor %}
     </div>
     {% if payload.storage_context.backend == 's3' and payload.storage_context.degraded %}
-        <div class="border-t border-status-warning-border/60 bg-status-warning-soft/45 px-5 py-4 sm:px-6"
+        <div class="border-t {{ operational_callout.semantic_border_classes('warning') }} bg-status-warning-soft/45 px-5 py-4 sm:px-6"
              data-report-storage-incident="overview">
             <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                 <div class="flex min-w-0 items-start gap-3">
@@ -83,7 +84,7 @@
                                 Report metadata, templates, schedules, and history remain available. New artifact generation and S3-backed downloads stay paused until storage recovers.
                             {% endif %}
                         </p>
-                        <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-medium text-content-muted">
+                        <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-content-muted">
                             <span class="inline-flex items-center gap-1.5">
                                 <i data-lucide="clock-3"
                                    class="h-3.5 w-3.5 text-kaori-primary"
@@ -108,7 +109,7 @@
                     </a>
                     {% if current_user.has_permission('reports.manage_storage') %}
                         <a href="{{ url_for('reports.storage', verify=1) }}"
-                           class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-status-warning-border bg-surface-card px-3.5 text-xs font-semibold text-content-primary transition hover:border-brand-outline hover:text-kaori-primary">
+                           class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border {{ operational_callout.semantic_border_classes('warning') }} bg-surface-card px-3.5 text-xs font-semibold text-content-primary transition hover:border-brand-outline hover:text-kaori-primary">
                             <i data-lucide="shield-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
                             Verify Now
                         </a>

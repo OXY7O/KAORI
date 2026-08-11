@@ -34,8 +34,7 @@
                                 <strong>{{ item.label }}</strong>
                                 <div class="forecast-track {% if not item.available %}unavailable{% endif %}">
                                     {% if item.available %}
-                                        <i style="width: {{ item.projected_percent }}%;
-                                                  background: {{ item.color }}"></i><b class="warning-marker"></b><b class="critical-marker"></b>
+                                        {{ ui.percent_fill(item.projected_percent, '', item.color) }}<b class="warning-marker"></b><b class="critical-marker"></b>
                                     {% endif %}
                                 </div>
                                 <span>{{ item.current_display }} &rarr; {{ item.projected_display }}</span>

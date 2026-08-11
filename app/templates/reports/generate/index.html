@@ -1,8 +1,9 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/operational_callout.html" as operational_callout %}
 {% macro workflow_number(number, compact=false) -%}
-    <span class="inline-flex shrink-0 items-center justify-center rounded-lg border border-kaori-primary/20 bg-kaori-soft font-extrabold tracking-wide text-kaori-primary {% if compact %}h-7 min-w-7 px-1.5 text-xs{% else %}h-8 min-w-8 px-2 text-xs{% endif %}"
+    <span class="inline-flex shrink-0 items-center justify-center rounded-lg border border-kaori-primary/20 bg-kaori-soft font-bold tracking-wide text-kaori-primary {% if compact %}h-7 min-w-7 px-1.5 text-xs{% else %}h-8 min-w-8 px-2 text-xs{% endif %}"
           data-generate-section-number="{{ number }}"
           aria-hidden="true">{{ number }}</span>
 {%- endmacro %}
@@ -50,12 +51,12 @@
             </div>
         </section>
         {% if payload.worker_context.show_warning %}
-            <section class="rounded-xl border p-4 {% if payload.worker_context.tone == 'critical' %}border-status-critical-border bg-status-critical-soft{% else %}border-status-warning-border bg-status-warning-soft{% endif %}"
+            <section class="rounded-xl border p-4 {{ operational_callout.semantic_surface_classes(payload.worker_context.tone) }}"
                      role="status"
                      aria-label="Reports worker queue state">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border bg-surface-card {% if payload.worker_context.tone == 'critical' %}border-status-critical-border text-status-critical-text{% else %}border-status-warning-border text-status-warning-text{% endif %}">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border bg-surface-card {{ operational_callout.semantic_border_classes(payload.worker_context.tone) }} {% if payload.worker_context.tone == 'critical' %}text-status-critical-text{% else %}text-status-warning-text{% endif %}">
                             <i data-lucide="{{ payload.worker_context.icon }}"
                                class="h-4 w-4"
                                aria-hidden="true"></i>

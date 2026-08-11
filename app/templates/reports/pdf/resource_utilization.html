@@ -95,8 +95,7 @@
                                                 <div class="utilization-row">
                                                     <strong>{{ item.label }}</strong>
                                                     <div class="utilization-track">
-                                                        <i class="{% if item.label == 'Nodes' %}normal-fill{% endif %}"
-                                                           style="width:{{ item.percent }}%"></i>
+                                                        {{ ui.percent_fill(item.percent, 'normal-fill' if item.label == 'Nodes' else '') }}
                                                         <b class="warning-marker"></b><b class="critical-marker"></b>
                                                     </div>
                                                     <span>{{ item.value }}</span>
@@ -289,14 +288,14 @@
                                             <div class="pod-row">
                                                 <strong>Pods Used</strong>
                                                 <div class="pod-track">
-                                                    <i style="width:{{ p.pod_node.pods_used }}%"></i><b class="warning-marker"></b><b class="critical-marker"></b>
+                                                    {{ ui.percent_fill(p.pod_node.pods_used) }}<b class="warning-marker"></b><b class="critical-marker"></b>
                                                 </div>
                                                 <span>{{ '%.1f'|format(p.pod_node.pods_used) }}%</span>
                                             </div>
                                             <div class="pod-row">
                                                 <strong>Remaining</strong>
                                                 <div class="pod-track">
-                                                    <i class="remaining-fill" style="width:{{ p.pod_node.pods_headroom }}%"></i><b class="warning-marker"></b><b class="critical-marker"></b>
+                                                    {{ ui.percent_fill(p.pod_node.pods_headroom, 'remaining-fill') }}<b class="warning-marker"></b><b class="critical-marker"></b>
                                                 </div>
                                                 <span>{{ '%.1f'|format(p.pod_node.pods_headroom) }}%</span>
                                             </div>
@@ -375,7 +374,7 @@
                                                 <div class="concentration-row">
                                                     <strong>{{ item.namespace }}</strong>
                                                     <div class="concentration-track">
-                                                        <i style="width:{{ item.share_percent }}%"></i><b class="warning-marker"></b><b class="critical-marker"></b>
+                                                        {{ ui.percent_fill(item.share_percent) }}<b class="warning-marker"></b><b class="critical-marker"></b>
                                                     </div>
                                                     <span>{{ '%.1f'|format(item.share_percent) }}%</span>
                                                 </div>
