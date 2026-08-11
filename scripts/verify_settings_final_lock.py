@@ -73,7 +73,7 @@ def main() -> int:
         '@login_required',
         "user.has_permission('system.view')",
         "allowed_tabs = {'time-locale', 'regional-format'}",
-        "OperationalDeliveryPolicy.AUDIT_ONLY",
+        'OperationalDeliveryPolicy.AUDIT_ONLY',
         "'kaori:general-settings-saved'",
         "@bp.post('/general/browser-timezone')",
     ):
@@ -82,7 +82,7 @@ def main() -> int:
     for required in (
         "'X-CSRFToken': csrfToken",
         "credentials: 'same-origin'",
-        "Intl.DateTimeFormat().resolvedOptions().timeZone",
+        'Intl.DateTimeFormat().resolvedOptions().timeZone',
     ):
         require(required in timezone_js, f'Browser timezone security contract missing: {required}', errors)
 
@@ -114,8 +114,11 @@ def main() -> int:
     for source, label in ((timezone, 'Time Zone'), (regional, 'Regional Format')):
         require('Preference Scope &amp; Boundary' in source, f'{label} preference boundary missing', errors)
         require('Display preference only.' in source, f'{label} data/execution boundary missing', errors)
-        require('components/operational_callout.html' in source if label == 'Time Zone' else True,
-                f'{label} semantic feedback must use shared callout ownership', errors)
+        require(
+            'components/operational_callout.html' in source if label == 'Time Zone' else True,
+            f'{label} semantic feedback must use shared callout ownership',
+            errors,
+        )
     require('flex gap-2 overflow-x-auto' in general_tabs, 'General Settings tab contract drifted', errors)
 
     account_page = read('app/templates/settings/account/partials/_page_content.html')
