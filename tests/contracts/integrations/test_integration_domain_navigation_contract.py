@@ -56,7 +56,9 @@ def test_domain_landing_routes_share_one_taxonomy_page_builder() -> None:
     assert "'integrations/domain.html'" in routes
     assert 'build_integration_domain_page(domain_key)' in routes
 
-    builder = service.split('def build_integration_domain_page', 1)[1].split('def _kubernetes_readiness', 1)[0]
+    builder = service.split('def build_integration_domain_page', 1)[1].split(
+        'def _kubernetes_readiness', 1
+    )[0]
     assert 'get_domain_definition(domain_key)' in builder
     assert 'for module in registry.all() if module.domain_key == domain.key' in builder
     assert 'IntegrationInstance.query.options(selectinload(IntegrationInstance.bindings))' in builder
@@ -77,6 +79,11 @@ def test_domain_template_uses_kaori_hero_capability_and_provider_boundaries() ->
     assert 'Capability Portfolio' in template
     assert 'Provider Workspaces' in template
     assert 'No {{ domain.label }} Provider Registered' in template
+    assert 'Ready for provider registration' in template
+    assert 'Register Provider' in template
+    assert 'Validate Runtime' in template
+    assert 'Bind Assets' in template
+    assert 'rounded-lg border border-outline-subtle bg-surface-hover px-3 py-3' not in template
     assert 'url_for(item.workspace_endpoint)' in template
     assert 'Domain Operating Boundary' in template
     assert 'data-kaori-integration-domain-workspace' in template

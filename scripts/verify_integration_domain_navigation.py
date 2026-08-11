@@ -74,7 +74,9 @@ def main() -> int:
         if marker not in routes:
             errors.append(f'domain route contract missing: {marker}')
 
-    builder = service.split('def build_integration_domain_page', 1)[1].split('def _kubernetes_readiness', 1)[0]
+    builder = service.split('def build_integration_domain_page', 1)[1].split(
+        'def _kubernetes_readiness', 1
+    )[0]
     for marker in (
         'IntegrationInstance.query.options(selectinload(IntegrationInstance.bindings))',
         'IntegrationInstance.provider_type.in_(provider_types)',
@@ -88,7 +90,15 @@ def main() -> int:
         if forbidden in builder:
             errors.append(f'domain page contains provider-specific query: {forbidden}')
 
-    for marker in ('Capability Portfolio', 'Provider Workspaces', 'Domain Operating Boundary'):
+    for marker in (
+        'Capability Portfolio',
+        'Provider Workspaces',
+        'Domain Operating Boundary',
+        'Ready for provider registration',
+        'Register Provider',
+        'Validate Runtime',
+        'Bind Assets',
+    ):
         if marker not in domain_template:
             errors.append(f'domain template missing KAORI boundary: {marker}')
 

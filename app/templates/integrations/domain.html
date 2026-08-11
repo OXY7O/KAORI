@@ -2,46 +2,53 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
+
 {% block title %}{{ domain.label }} Integrations · KAORI{% endblock title %}
+
 {% block dashboard_content %}
-    {% set posture_label = 'Ready' if posture_status == 'ready' else ('Attention' if posture_status == 'attention' else 'Not Configured') %}
+    {% set posture_label = "Ready" if posture_status == "ready" else ("Attention" if posture_status == "attention" else "Not Configured") %}
     <div class="kaori-integration-semantic space-y-6"
          data-kaori-integration-domain-workspace>
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro(domain.icon, 'Integrations · ' ~ domain.label, domain.icon) %}
+                    {% call page_hero.intro(domain.icon, "Integrations · " ~ domain.label, domain.icon) %}
                         <h1 class="{{ page_hero.title_classes() }}">{{ domain.label }} Integrations</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">{{ domain.description }}</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('package-search', stats.provider_types ~ ' Provider Types') }}
-                            {{ page_hero.meta_label('server-cog', stats.registered_targets ~ ' Registered Targets') }}
-                            {{ page_hero.meta_label('badge-check', stats.ready_targets ~ ' Ready') }}
+                            {{ page_hero.meta_label("layers-3", stats.capability_types ~ " Capabilities") }}
+                            {{ page_hero.meta_label("package-search", stats.provider_types ~ " Provider Types") }}
+                            {{ page_hero.meta_label("link-2", stats.bindings ~ " Bindings") }}
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="{{ page_hero.aside_classes() }}" aria-label="{{ domain.label }} integration posture">
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="{{ domain.label }} integration posture">
                     <div class="{{ page_hero.context_panel_classes() }}">
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Domain Posture</p>
-                                <p class="{{ page_hero.context_panel_title_classes() }}">Provider Readiness and Capability Coverage</p>
+                                <p class="{{ page_hero.context_panel_title_classes() }}">Provider Readiness</p>
                             </div>
-                            {{ integration_status(posture_status, posture_label, display='text') }}
+                            {{ integration_status(posture_status, posture_label, display="text") }}
                         </div>
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                            {{ page_hero.context_metric('badge-check', 'Ready', stats.ready_targets ~ ' / ' ~ stats.enabled_targets, 'Enabled targets validated for use') }}
-                            {{ page_hero.context_metric('link-2', 'Bindings', stats.bindings, 'Active asset associations') }}
+                            {{ page_hero.context_metric("server-cog", "Registered", stats.registered_targets, "Configured provider targets") }}
+                            {{ page_hero.context_metric("badge-check", "Ready", stats.ready_targets ~ " / " ~ stats.enabled_targets, "Eligible enabled targets") }}
                         </div>
                         <div class="{{ page_hero.context_actions_classes() }}">
                             <a href="{{ url_for('integrations.overview') }}"
                                class="{{ page_hero.context_action_classes() }}">
-                                <i data-lucide="layout-grid" class="h-4 w-4" aria-hidden="true"></i>
+                                <i data-lucide="layout-grid"
+                                   class="h-4 w-4"
+                                   aria-hidden="true"></i>
                                 Integration Overview
                             </a>
                             <a href="{{ url_for('integrations.overview', tab='runtime') }}#integration-workspace"
                                class="{{ page_hero.context_action_classes() }}">
-                                <i data-lucide="activity" class="h-4 w-4" aria-hidden="true"></i>
+                                <i data-lucide="activity"
+                                   class="h-4 w-4"
+                                   aria-hidden="true"></i>
                                 Runtime Overview
                             </a>
                         </div>
@@ -52,33 +59,23 @@
 
         <section class="{{ integration_ui.section_shell_classes() }}"
                  aria-labelledby="domain-capability-portfolio-title">
-            <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div class="flex min-w-0 items-start gap-3">
-                        {{ integration_ui.palette_icon('layers-3', 'brand', size='lg') }}
-                        <div class="min-w-0">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">{{ domain.label }} Domain</p>
-                            <h2 id="domain-capability-portfolio-title"
-                                class="mt-0.5 text-base font-semibold text-content-primary">Capability Portfolio</h2>
-                            <p class="mt-1 text-sm leading-6 text-content-secondary">Stable capability boundaries organize provider ownership without coupling domain pages to individual products.</p>
-                        </div>
-                    </div>
-                    <div class="flex shrink-0 items-center gap-2">
-                        {{ integration_status(posture_status, posture_label, display='indicator') }}
-                    </div>
-                </div>
-            </header>
+            {% call integration_ui.section_header(
+                "layers-3",
+                "Capability Portfolio",
+                "Stable capability boundaries show provider ownership and operational coverage without duplicating product workspaces.",
+                eyebrow=domain.label ~ " Domain"
+            ) %}{% endcall %}
 
             <div class="divide-y divide-outline-subtle">
                 {% for item in capabilities %}
                     <article class="px-5 py-4 sm:px-6">
-                        <div class="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] lg:items-center">
+                        <div class="grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(260px,0.85fr)_auto] lg:items-center">
                             <div class="flex min-w-0 items-start gap-3">
-                                {{ integration_ui.palette_icon('box', 'brand', size='sm') }}
+                                {{ integration_ui.palette_icon("box", "brand", size="sm") }}
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <h3 class="text-sm font-semibold text-content-primary">{{ item.label }}</h3>
-                                        {{ integration_status(item.status, 'Ready' if item.status == 'ready' else ('Attention' if item.status == 'attention' else 'No Provider'), display='indicator') }}
+                                        {{ integration_status(item.status, "Ready" if item.status == "ready" else ("Attention" if item.status == "attention" else "No Provider"), display="indicator") }}
                                     </div>
                                     <p class="mt-1 text-sm leading-6 text-content-secondary">{{ item.description }}</p>
                                 </div>
@@ -93,37 +90,36 @@
                                         {% endfor %}
                                     </div>
                                 {% else %}
-                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Reserved capability boundary. No provider is registered yet.</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">No provider is registered for this capability yet.</p>
                                 {% endif %}
                             </div>
 
-                            <div class="grid grid-cols-3 gap-2 lg:min-w-72">
-                                <div class="rounded-lg border border-outline-subtle bg-surface-hover px-3 py-2">
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Targets</p>
-                                    <p class="mt-1 text-base font-semibold tabular-nums text-content-primary">{{ item.registered }}</p>
+                            {% if item.provider_labels %}
+                                <div class="flex flex-wrap items-center gap-x-4 gap-y-2 lg:justify-end">
+                                    <div class="flex items-center gap-1.5 text-xs text-content-secondary">
+                                        <i data-lucide="server-cog"
+                                           class="h-3.5 w-3.5 text-content-muted"
+                                           aria-hidden="true"></i>
+                                        <span><strong class="font-semibold text-content-primary">{{ item.registered }}</strong> Target{{ "" if item.registered == 1 else "s" }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 text-xs text-content-secondary">
+                                        <i data-lucide="link-2"
+                                           class="h-3.5 w-3.5 text-content-muted"
+                                           aria-hidden="true"></i>
+                                        <span><strong class="font-semibold text-content-primary">{{ item.bindings }}</strong> Binding{{ "" if item.bindings == 1 else "s" }}</span>
+                                    </div>
                                 </div>
-                                <div class="rounded-lg border border-outline-subtle bg-surface-hover px-3 py-2">
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Ready</p>
-                                    <p class="mt-1 text-base font-semibold tabular-nums text-content-primary">{{ item.ready }}</p>
+                            {% else %}
+                                <div class="flex items-center gap-2 text-xs text-content-muted lg:justify-end">
+                                    <i data-lucide="circle-dashed"
+                                       class="h-3.5 w-3.5"
+                                       aria-hidden="true"></i>
+                                    Ready for provider registration
                                 </div>
-                                <div class="rounded-lg border border-outline-subtle bg-surface-hover px-3 py-2">
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Bindings</p>
-                                    <p class="mt-1 text-base font-semibold tabular-nums text-content-primary">{{ item.bindings }}</p>
-                                </div>
-                            </div>
+                            {% endif %}
                         </div>
                     </article>
                 {% endfor %}
-            </div>
-
-            <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6">
-                <div class="flex items-start gap-3">
-                    {{ integration_ui.palette_icon('shield-check', 'brand', size='sm') }}
-                    <div class="min-w-0">
-                        <p class="text-sm font-semibold text-content-primary">Domain Operating Boundary</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">External systems remain authoritative for native configuration and runtime state. KAORI owns provider registration, compatibility and capability validation, asset bindings, persisted runtime evidence, and consumer eligibility.</p>
-                    </div>
-                </div>
             </div>
         </section>
 
@@ -132,63 +128,67 @@
             <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
-                        {{ integration_ui.palette_icon('waypoints', 'brand', size='lg') }}
+                        {{ integration_ui.palette_icon("waypoints", "brand", size="lg") }}
                         <div class="min-w-0">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">Registered Provider Types</p>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">Provider Runtime</p>
                             <h2 id="domain-provider-workspaces-title"
                                 class="mt-0.5 text-base font-semibold text-content-primary">Provider Workspaces</h2>
-                            <p class="mt-1 text-sm leading-6 text-content-secondary">Product-specific configuration, validation, bindings, compatibility evidence, and diagnostics stay in their dedicated provider workspace.</p>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">Open product-specific configuration and diagnostics without duplicating those controls on the domain page.</p>
                         </div>
                     </div>
-                    <span class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-hover px-2 py-1 text-xs font-semibold text-content-secondary">
-                        {{ providers|length }} Registered Type{{ '' if providers|length == 1 else 's' }}
-                    </span>
+                    {% if providers %}
+                        <span class="inline-flex min-h-6 items-center rounded-md border border-outline-subtle bg-surface-hover px-2 py-1 text-xs font-semibold text-content-secondary">
+                            {{ providers|length }} Provider Type{{ "" if providers|length == 1 else "s" }}
+                        </span>
+                    {% endif %}
                 </div>
             </header>
 
             {% if providers %}
                 <div class="divide-y divide-outline-subtle">
                     {% for item in providers %}
-                        <article class="px-5 py-5 sm:px-6">
-                            <div class="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.9fr)] xl:items-center">
-                                <div class="min-w-0">
-                                    <div class="flex min-w-0 items-start gap-3">
-                                        {{ integration_ui.palette_icon(item.icon, 'brand', size='lg') }}
-                                        <div class="min-w-0 flex-1">
-                                            <div class="flex flex-wrap items-center gap-2">
-                                                <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">{{ item.capability_label }}</p>
-                                                {{ integration_status(item.status, 'Ready' if item.status == 'ready' else ('Attention' if item.status == 'attention' else 'Not Configured'), display='indicator') }}
-                                            </div>
-                                            <h3 class="mt-1 text-base font-semibold text-content-primary">{{ item.runtime_label }}</h3>
-                                            <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">{{ item.description }}</p>
+                        <article class="px-5 py-4 sm:px-6">
+                            <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    {{ integration_ui.palette_icon(item.icon, "brand", size="lg") }}
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">{{ item.capability_label }}</p>
+                                            {{ integration_status(item.status, "Ready" if item.status == "ready" else ("Attention" if item.status == "attention" else "Not Configured"), display="indicator") }}
                                         </div>
-                                    </div>
-                                    <div class="mt-4 flex flex-col gap-3 border-t border-outline-subtle pt-4 sm:flex-row sm:items-center sm:justify-between">
-                                        <p class="text-xs leading-5 text-content-muted">Configuration and provider-specific validation remain isolated here while bound consumers resolve the provider through canonical Integration bindings.</p>
-                                        <a href="{{ url_for(item.workspace_endpoint) }}"
-                                           class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover">
-                                            Open Workspace
-                                            <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                        </a>
+                                        <h3 class="mt-1 text-base font-semibold text-content-primary">{{ item.runtime_label }}</h3>
+                                        <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">{{ item.description }}</p>
+                                        <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-content-muted">
+                                            <span class="inline-flex items-center gap-1.5">
+                                                <i data-lucide="server-cog"
+                                                   class="h-3.5 w-3.5"
+                                                   aria-hidden="true"></i>
+                                                {{ item.registered }} Registered
+                                            </span>
+                                            <span class="inline-flex items-center gap-1.5">
+                                                <i data-lucide="badge-check"
+                                                   class="h-3.5 w-3.5"
+                                                   aria-hidden="true"></i>
+                                                {{ item.ready }} Ready
+                                            </span>
+                                            <span class="inline-flex items-center gap-1.5">
+                                                <i data-lucide="link-2"
+                                                   class="h-3.5 w-3.5"
+                                                   aria-hidden="true"></i>
+                                                {{ item.bindings }} Binding{{ "" if item.bindings == 1 else "s" }}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div class="grid grid-cols-3 gap-2">
-                                    <div class="rounded-lg border border-outline-subtle bg-surface-hover px-3 py-3">
-                                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Registered</p>
-                                        <p class="mt-1 text-xl font-semibold tabular-nums text-content-primary">{{ item.registered }}</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">Provider targets</p>
-                                    </div>
-                                    <div class="rounded-lg border border-outline-subtle bg-surface-hover px-3 py-3">
-                                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Ready</p>
-                                        <p class="mt-1 text-xl font-semibold tabular-nums text-content-primary">{{ item.ready }}</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">Eligible targets</p>
-                                    </div>
-                                    <div class="rounded-lg border border-outline-subtle bg-surface-hover px-3 py-3">
-                                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Bindings</p>
-                                        <p class="mt-1 text-xl font-semibold tabular-nums text-content-primary">{{ item.bindings }}</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">Asset links</p>
-                                    </div>
+                                <div class="flex shrink-0 items-center lg:justify-end">
+                                    <a href="{{ url_for(item.workspace_endpoint) }}"
+                                       class="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover">
+                                        Open Workspace
+                                        <i data-lucide="arrow-right"
+                                           class="h-3.5 w-3.5"
+                                           aria-hidden="true"></i>
+                                    </a>
                                 </div>
                             </div>
                         </article>
@@ -196,27 +196,50 @@
                 </div>
             {% else %}
                 <div class="p-5 sm:p-6">
-                    <div class="grid gap-4 rounded-xl border border-brand-outline bg-kaori-soft p-4 sm:p-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(280px,0.75fr)] lg:items-center">
-                        <div class="flex min-w-0 items-start gap-3">
-                            {{ integration_ui.palette_icon(domain.icon, 'brand', size='lg') }}
-                            <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">No {{ domain.label }} Provider Registered</p>
-                                <p class="mt-1 text-sm leading-6 text-content-secondary">The taxonomy and domain workspace are ready. Provider-specific configuration appears here only after the adapter, compatibility profile, capability contract, validation workflow, and workspace are registered with the Integration kernel.</p>
+                    <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4 sm:p-5">
+                        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                            <div class="flex min-w-0 items-start gap-3">
+                                {{ integration_ui.palette_icon(domain.icon, "brand", size="lg") }}
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">No {{ domain.label }} Provider Registered</p>
+                                    <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">The domain is ready for onboarding. Register a provider adapter, validate its runtime connection, then bind it to the assets that should consume its capabilities.</p>
+                                </div>
                             </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div class="rounded-lg border border-brand-outline bg-surface-card/70 px-3 py-2.5">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Domain Model</p>
-                                <p class="mt-1 text-sm font-semibold text-content-primary">Ready</p>
-                            </div>
-                            <div class="rounded-lg border border-brand-outline bg-surface-card/70 px-3 py-2.5">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Provider Runtime</p>
-                                <p class="mt-1 text-sm font-semibold text-content-primary">Not Registered</p>
+                            <div class="flex flex-wrap items-center gap-2 text-xs font-semibold text-content-secondary">
+                                <span class="inline-flex min-h-7 items-center gap-1.5 rounded-md border border-brand-outline bg-surface-card/70 px-2.5">
+                                    <span class="text-kaori-primary dark:text-kaori-accent">1</span>
+                                    Register Provider
+                                </span>
+                                <i data-lucide="arrow-right"
+                                   class="h-3.5 w-3.5 text-content-muted"
+                                   aria-hidden="true"></i>
+                                <span class="inline-flex min-h-7 items-center gap-1.5 rounded-md border border-brand-outline bg-surface-card/70 px-2.5">
+                                    <span class="text-kaori-primary dark:text-kaori-accent">2</span>
+                                    Validate Runtime
+                                </span>
+                                <i data-lucide="arrow-right"
+                                   class="h-3.5 w-3.5 text-content-muted"
+                                   aria-hidden="true"></i>
+                                <span class="inline-flex min-h-7 items-center gap-1.5 rounded-md border border-brand-outline bg-surface-card/70 px-2.5">
+                                    <span class="text-kaori-primary dark:text-kaori-accent">3</span>
+                                    Bind Assets
+                                </span>
                             </div>
                         </div>
                     </div>
                 </div>
             {% endif %}
         </section>
+
+        <div class="rounded-xl border border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6"
+             data-kaori-domain-operating-boundary>
+            <div class="flex items-start gap-3">
+                {{ integration_ui.palette_icon("shield-check", "brand", size="sm") }}
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-content-primary">Domain Operating Boundary</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">External systems remain authoritative for native configuration and runtime state. KAORI owns provider registration, compatibility and capability validation, asset bindings, persisted runtime evidence, and consumer eligibility.</p>
+                </div>
+            </div>
+        </div>
     </div>
 {% endblock dashboard_content %}
