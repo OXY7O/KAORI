@@ -21,6 +21,7 @@ def create_binding(
     selector_label: str | None = None,
     selector_value: str | None = None,
     selector_operator: str = '=',
+    capability_scope: list[str] | tuple[str, ...] | None = None,
     commit: bool = True,
 ) -> IntegrationBinding:
     normalized_scope_type = str(scope_type or '').strip()
@@ -96,7 +97,7 @@ def create_binding(
     binding.binding_role = normalized_role
     binding.priority = priority
     binding.enabled = enabled
-    binding.capability_scope = list(BINDING_CAPABILITY_KEYS)
+    binding.capability_scope = list(capability_scope or BINDING_CAPABILITY_KEYS)
     binding.selector_json = selector_json
     binding.validation_status = 'validation_required'
     binding.validation_message = (

@@ -30,10 +30,7 @@ from app.jobs.service import (
     subscriber_user_ids,
     update_job_progress,
 )
-from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationBinding
-from app.models.kubernetes import KubernetesConnection
-from app.models.prometheus import PrometheusInstance
 from app.notifications.service import record_operational_activity
 
 logger = logging.getLogger(__name__)
@@ -63,15 +60,10 @@ def _runtime_queue_name() -> str:
 
 
 def _action_url(provider_type: str, instance_id: int, *, section: str) -> str:
-    if provider_type == 'prometheus':
-        return f'/integrations/prometheus/instances/{instance_id}#{section}'
-    if provider_type == 'alertmanager':
-        return f'/integrations/alertmanager/instances/{instance_id}#{section}'
-    if provider_type == 'kubernetes':
-        connection = db.session.get(KubernetesConnection, instance_id)
-        cluster_id = connection.cluster_id if connection is not None else str(instance_id)
-        return f'/integrations/kubernetes/{cluster_id}#{section}'
-    return '/integrations/'
+    try:
+        return get_integration(provider_type).detail_url(instance_id, section=section)
+    except Exception:
+        return '/integrations/'
 
 
 def _store_metadata_safely(*, task_id: str, metadata: dict[str, Any]) -> None:
@@ -167,32 +159,14 @@ def _persist_failure_observation(
 ) -> None:
     """Best-effort persistence for failed runtime or validation attempts."""
     try:
-        if provider_type == 'prometheus':
-            instance = db.session.get(PrometheusInstance, instance_id)
-            if instance is None:
-                return
-            instance.last_checked_at = datetime.now(UTC)
-            instance.last_status = 'disconnected'
-            instance.last_error = str(error)[:1000]
-            instance.last_response_time_ms = None
-            db.session.commit()
-            state = get_integration('prometheus').adapter.get_state(instance)
-        elif provider_type == 'alertmanager':
-            instance = db.session.get(AlertmanagerInstance, instance_id)
-            if instance is None:
-                return
-            state = get_integration('alertmanager').adapter.get_state(instance)
-        elif provider_type == 'kubernetes':
-            instance = db.session.get(KubernetesConnection, instance_id)
-            if instance is None:
-                return
-            state = get_integration('kubernetes').adapter.get_state(instance)
-        else:
-            return
+        module = get_integration(provider_type)
+        instance = module.get_instance(instance_id)
+        module.record_failure(instance, error)
+        state = module.adapter.get_state(instance)
         persist_runtime_state(
             state,
             trigger_type=trigger_type,
-            integration_instance_id=instance.integration_instance_id,
+            integration_instance_id=getattr(instance, 'integration_instance_id', None),
         )
     except Exception:
         db.session.rollback()
@@ -347,101 +321,54 @@ def validate_integration_instance(
         _update_worker_phase(
             self, current=1, total=4, message='Connecting to the provider and loading the full validation contract.'
         )
-        if provider_type == 'prometheus':
-            instance = db.session.get(PrometheusInstance, instance_id)
-            if instance is None:
-                raise LookupError('Prometheus instance no longer exists.')
-            ensure_provider_operational(instance, provider_type='prometheus')
-            validation_result, state, _ = runtime_refresh.refresh_and_record(
-                get_integration('prometheus').adapter,
-                instance,
-                trigger_type=trigger_type,
-            )
+        module = get_integration(provider_type)
+        instance = module.get_instance(instance_id)
+        ensure_provider_operational(instance, provider_type=provider_type)
+        validation_result, state, _ = runtime_refresh.refresh_and_record(
+            module.adapter,
+            instance,
+            trigger_type=trigger_type,
+        )
+        result_payload = _as_result_payload(validation_result)
+
+        if 'binding.validate' in module.operations:
             _update_worker_phase(
                 self,
                 current=2,
                 total=4,
-                message='Prometheus capability evidence was collected; refreshing scope bindings.',
+                message=f'{module.label} capability evidence was collected; refreshing asset bindings.',
             )
-            ensure_canonical_instance(instance, provider_type='prometheus')
-            binding_summary = _refresh_prometheus_bindings(instance)
-            _update_worker_phase(
-                self, current=3, total=4, message='Prometheus scope bindings were refreshed; finalizing evidence.'
-            )
-            db.session.commit()
-            result_payload = dict(validation_result or {})
-            result_payload['binding_validation_summary'] = binding_summary
-            readiness = str(result_payload.get('readiness_status') or state.readiness or 'validation_required')
-            status = 'success' if readiness == 'ready' else ('error' if readiness == 'blocked' else 'warning')
-            title = (
-                'Prometheus validation completed' if status != 'error' else 'Prometheus validation requires attention'
-            )
-            message = f'Full Validation completed for {instance.name}.'
-            detail = str(result_payload.get('message') or state.message)
-            instance_name = instance.name
-        elif provider_type == 'alertmanager':
-            instance = db.session.get(AlertmanagerInstance, instance_id)
-            if instance is None:
-                raise LookupError('Alertmanager instance no longer exists.')
-            ensure_provider_operational(instance, provider_type='alertmanager')
-            validation_result, state, _ = runtime_refresh.refresh_and_record(
-                get_integration('alertmanager').adapter,
-                instance,
-                trigger_type=trigger_type,
-            )
-            _update_worker_phase(
-                self,
-                current=2,
-                total=4,
-                message='Alertmanager capability evidence was collected; refreshing scope bindings.',
-            )
-            ensure_canonical_instance(instance, provider_type='alertmanager')
-            binding_summary = _refresh_alertmanager_bindings(instance)
-            _update_worker_phase(
-                self, current=3, total=4, message='Alertmanager scope bindings were refreshed; finalizing evidence.'
+            ensure_canonical_instance(instance, provider_type=provider_type)
+            result_payload['binding_validation_summary'] = _refresh_provider_bindings(
+                provider_type=provider_type,
+                instance=instance,
             )
             db.session.commit()
-            result_payload = (
-                validation_result.to_dict() if hasattr(validation_result, 'to_dict') else dict(validation_result or {})
-            )
-            result_payload['binding_validation_summary'] = binding_summary
-            readiness = str(result_payload.get('readiness_status') or state.readiness or 'validation_required')
-            connected = bool(result_payload.get('connected'))
-            status = 'success' if connected and readiness == 'ready' else ('warning' if connected else 'error')
-            title = 'Alertmanager validation completed' if connected else 'Alertmanager validation failed'
-            message = (
-                f'{instance.name} capability evidence was rebuilt.'
-                if connected
-                else f'KAORI could not validate {instance.name}.'
-            )
-            detail = str(result_payload.get('reason') or result_payload.get('error') or state.message)
-            instance_name = instance.name
-        elif provider_type == 'kubernetes':
-            connection = db.session.get(KubernetesConnection, instance_id)
-            if connection is None:
-                raise LookupError('Kubernetes connection no longer exists.')
-            validation_result, state, _ = runtime_refresh.refresh_and_record(
-                get_integration('kubernetes').adapter,
-                connection,
-                trigger_type=trigger_type,
-            )
-            _update_worker_phase(
-                self,
-                current=3,
-                total=4,
-                message='Kubernetes compatibility, capability, and RBAC evidence was collected; finalizing the result.',
-            )
-            result_payload = dict(validation_result or {})
-            success = bool(result_payload.get('success'))
-            status = 'success' if success and state.readiness == 'ready' else ('warning' if success else 'error')
-            title = (
-                'Kubernetes capability validation completed' if success else 'Kubernetes capability validation failed'
-            )
-            message = f'Compatibility, capability, and RBAC evidence was rebuilt for {connection.cluster.name}.'
-            detail = str(result_payload.get('validation_message') or result_payload.get('message') or state.message)
-            instance_name = connection.cluster.name
+            finalizing_phase = 3
         else:
-            raise ValueError(f'Unsupported integration provider: {provider_type}')
+            finalizing_phase = 2
+
+        _update_worker_phase(
+            self,
+            current=finalizing_phase,
+            total=4,
+            message=f'{module.label} capability evidence was collected; finalizing the validation result.',
+        )
+        status = _validation_completion_status(result_payload, state)
+        title = (
+            f'{module.label} validation completed'
+            if status != 'error'
+            else f'{module.label} validation requires attention'
+        )
+        instance_name = state.instance_name or str(getattr(instance, 'name', '') or module.label)
+        message = f'Full Validation completed for {instance_name}.'
+        detail = str(
+            result_payload.get('validation_message')
+            or result_payload.get('message')
+            or result_payload.get('reason')
+            or result_payload.get('error')
+            or state.message
+        )
 
         completion_metadata = {
             'task_id': task_id,
@@ -521,12 +448,34 @@ def validate_integration_instance(
         )
 
 
-def _refresh_prometheus_bindings(instance: PrometheusInstance) -> dict[str, Any]:
-    if instance.integration_instance_id is None:
-        return {'total': 0, 'ready': 0, 'attention': 0}
+def _as_result_payload(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return dict(value)
+    to_dict = getattr(value, 'to_dict', None)
+    if callable(to_dict):
+        payload = to_dict()
+        return dict(payload) if isinstance(payload, dict) else {}
+    return {}
+
+
+def _validation_completion_status(result_payload: dict[str, Any], state: Any) -> str:
+    readiness = str(result_payload.get('readiness_status') or state.readiness or 'validation_required').lower()
+    if result_payload.get('success') is False or result_payload.get('connected') is False:
+        return 'error'
+    if readiness in {'blocked', 'unavailable', 'disabled', 'incompatible'}:
+        return 'error'
+    if readiness == 'ready':
+        return 'success'
+    return 'warning'
+
+
+def _refresh_provider_bindings(*, provider_type: str, instance: Any) -> dict[str, Any]:
+    integration_instance_id = getattr(instance, 'integration_instance_id', None)
+    if integration_instance_id is None:
+        return {'total': 0, 'ready': 0, 'attention': 0, 'results': []}
     bindings = (
         IntegrationBinding.query.filter_by(
-            integration_instance_id=instance.integration_instance_id,
+            integration_instance_id=integration_instance_id,
             enabled=True,
         )
         .order_by(IntegrationBinding.id.asc())
@@ -536,58 +485,21 @@ def _refresh_prometheus_bindings(instance: PrometheusInstance) -> dict[str, Any]
     results: list[dict[str, Any]] = []
     for binding in bindings:
         result = execute_integration_operation(
-            'prometheus',
+            provider_type,
             'binding.validate',
             instance=instance,
             binding=binding,
             commit=False,
         )
-        if result.get('status') == 'ready':
+        payload = _as_result_payload(result)
+        if payload.get('status') == 'ready':
             ready += 1
         results.append(
             {
                 'binding_id': binding.id,
-                'status': result.get('status'),
-                'matched_signal': result.get('matched_signal'),
-                'matched_series': result.get('matched_series'),
-            }
-        )
-    return {
-        'total': len(bindings),
-        'ready': ready,
-        'attention': len(bindings) - ready,
-        'results': results,
-    }
-
-
-def _refresh_alertmanager_bindings(instance: AlertmanagerInstance) -> dict[str, Any]:
-    if instance.integration_instance_id is None:
-        return {'total': 0, 'ready': 0, 'attention': 0}
-    bindings = (
-        IntegrationBinding.query.filter_by(
-            integration_instance_id=instance.integration_instance_id,
-            enabled=True,
-        )
-        .order_by(IntegrationBinding.id.asc())
-        .all()
-    )
-    ready = 0
-    results: list[dict[str, Any]] = []
-    for binding in bindings:
-        result = execute_integration_operation(
-            'alertmanager',
-            'binding.validate',
-            instance=instance,
-            binding=binding,
-            commit=False,
-        )
-        if result.get('status') == 'ready':
-            ready += 1
-        results.append(
-            {
-                'binding_id': binding.id,
-                'status': result.get('status'),
-                'matched_alerts': result.get('matched_alerts'),
+                'asset_type': binding.asset_type,
+                'asset_key': binding.asset_key,
+                **payload,
             }
         )
     return {

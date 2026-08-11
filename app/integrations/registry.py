@@ -13,8 +13,17 @@ from app.integrations.contracts import (
     IntegrationOperationNotSupported,
     OperationAdapter,
 )
+from app.integrations.taxonomy import (
+    IntegrationCapabilityDefinition,
+    IntegrationDomainDefinition,
+    get_capability_definition,
+    get_domain_definition,
+)
 
 InstanceLoader = Callable[[int], Any | None]
+CanonicalRecordLoader = Callable[[int], Any | None]
+DetailUrlBuilder = Callable[[Any, str], str]
+FailureRecorder = Callable[[Any, Exception], None]
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,8 +32,14 @@ class IntegrationModule:
 
     provider_type: str
     label: str
+    domain_key: str
+    capability_key: str
+    icon: str
+    description: str
+    workspace_endpoint: str
     adapter: OperationAdapter
     instance_loader: InstanceLoader
+    canonical_record_loader: CanonicalRecordLoader
     module_path: str
     worker_queue: str
     worker_domain: str
@@ -32,6 +47,17 @@ class IntegrationModule:
     operation_queues: Mapping[str, str]
     capability_keys: tuple[str, ...] = ()
     compatibility_profiles: tuple[str, ...] = ()
+    runtime_label: str | None = None
+    detail_url_builder: DetailUrlBuilder | None = None
+    failure_recorder: FailureRecorder | None = None
+
+    @property
+    def domain(self) -> IntegrationDomainDefinition:
+        return get_domain_definition(self.domain_key)
+
+    @property
+    def capability(self) -> IntegrationCapabilityDefinition:
+        return get_capability_definition(self.domain_key, self.capability_key)
 
     def queue_for(self, operation: str) -> str:
         if operation not in self.operations:
@@ -45,6 +71,19 @@ class IntegrationModule:
         if instance is None:
             raise IntegrationInstanceNotFound(f'{self.label} instance {instance_id} no longer exists.')
         return instance
+
+    def get_record_for_canonical(self, integration_instance_id: int) -> Any | None:
+        return self.canonical_record_loader(int(integration_instance_id))
+
+    def detail_url(self, instance_id: int, *, section: str) -> str:
+        if self.detail_url_builder is None:
+            return '/integrations/'
+        instance = self.get_instance(instance_id)
+        return self.detail_url_builder(instance, section)
+
+    def record_failure(self, instance: Any, error: Exception) -> None:
+        if self.failure_recorder is not None:
+            self.failure_recorder(instance, error)
 
     def execute(self, operation: str, instance: Any, **kwargs: Any) -> Any:
         if operation not in self.operations:
@@ -70,6 +109,8 @@ class IntegrationRegistry:
             raise ValueError(
                 f'Adapter provider {module.adapter.provider!r} does not match registry key {provider_type!r}.'
             )
+        get_domain_definition(module.domain_key)
+        get_capability_definition(module.domain_key, module.capability_key)
         missing_queues = sorted(
             operation for operation in module.operations if not module.operation_queues.get(operation)
         )
@@ -104,7 +145,17 @@ class IntegrationRegistry:
 
     def all(self) -> tuple[IntegrationModule, ...]:
         self._load_builtins()
-        return tuple(self._modules[key] for key in sorted(self._modules))
+        return tuple(
+            sorted(
+                self._modules.values(),
+                key=lambda module: (
+                    module.domain.order,
+                    module.capability.order,
+                    module.label.casefold(),
+                    module.provider_type,
+                ),
+            )
+        )
 
     def execute(
         self,
@@ -132,6 +183,15 @@ def model_loader(model: type[Any]) -> InstanceLoader:
 
     def load(instance_id: int) -> Any | None:
         return db.session.get(model, int(instance_id))
+
+    return load
+
+
+def canonical_model_loader(model: type[Any]) -> CanonicalRecordLoader:
+    """Build a reverse loader from canonical IntegrationInstance id to provider record."""
+
+    def load(integration_instance_id: int) -> Any | None:
+        return model.query.filter_by(integration_instance_id=int(integration_instance_id)).first()
 
     return load
 

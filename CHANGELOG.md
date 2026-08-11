@@ -4,6 +4,9 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ## [Unreleased]
 
+### Changed
+- Generalized the Integrations foundation around registry-owned Orchestration, Observability, and Storage taxonomy; asset-centric provider bindings; registry-driven provider catalog metadata; provider-neutral full-validation dispatch; and asset-specific Prometheus binding probe profiles so future Object Storage providers such as MinIO can reuse the existing runtime/binding kernel without pair-specific tables.
+
 ## [2.2.0] - 2026-08-11
 
 ### Added

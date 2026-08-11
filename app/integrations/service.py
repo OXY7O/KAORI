@@ -18,6 +18,8 @@ from app.integrations.deletion import kubernetes_deletion_guard
 from app.integrations.kubernetes.compatibility import FEATURE_CONTRACTS
 from app.integrations.prometheus.scope import cluster_bindings_for_instance
 from app.integrations.readiness import resolve_binding_operational_status, resolve_cluster_coverage
+from app.integrations.registry import get_integration, registry
+from app.integrations.taxonomy import capability_definitions_for_domain, ordered_domain_definitions
 from app.models import (
     AlertmanagerInstance,
     Cluster,
@@ -110,7 +112,6 @@ def build_integrations_overview(
         'stats': stats,
         'catalog': catalog,
         'available_provider_count': sum(1 for item in catalog if item['availability'] == 'available'),
-        'planned_provider_count': sum(1 for item in catalog if item['availability'] != 'available'),
         'active_tab': tab if tab in {'catalog', 'runtime', 'coverage'} else 'catalog',
         'coverage': coverage,
         'coverage_stats': _coverage_stats(coverage),
@@ -125,9 +126,8 @@ def build_integrations_overview(
         'selected_health': health,
         'selected_readiness': readiness,
         'provider_options': [
-            {'value': 'kubernetes', 'label': 'Kubernetes'},
-            {'value': 'prometheus', 'label': 'Prometheus / Thanos'},
-            {'value': 'alertmanager', 'label': 'Alertmanager'},
+            {'value': module.provider_type, 'label': module.runtime_label or module.label}
+            for module in registry.all()
         ],
         'health_options': [
             {'value': 'healthy', 'label': 'Healthy'},
@@ -801,66 +801,72 @@ def build_alertmanager_page(
     )
 
 
+def _provider_portfolio_counts(
+    *,
+    kubernetes_connections: list[KubernetesConnection],
+    prometheus_instances: list[PrometheusInstance],
+    alertmanager_instances: list[AlertmanagerInstance],
+) -> dict[str, dict[str, int]]:
+    return {
+        'kubernetes': {
+            'configured': len(kubernetes_connections),
+            'ready': sum(1 for item in kubernetes_connections if _kubernetes_readiness(item) == 'ready'),
+            'total': len(kubernetes_connections),
+        },
+        'prometheus': {
+            'configured': sum(1 for item in prometheus_instances if item.endpoint),
+            'ready': sum(1 for item in prometheus_instances if item.readiness_status == 'ready'),
+            'total': len(prometheus_instances),
+        },
+        'alertmanager': {
+            'configured': sum(1 for item in alertmanager_instances if item.endpoint),
+            'ready': sum(1 for item in alertmanager_instances if item.readiness_status == 'ready'),
+            'total': len(alertmanager_instances),
+        },
+    }
+
+
 def _coverage(
     *,
     kubernetes_connections: list[KubernetesConnection],
     prometheus_instances: list[PrometheusInstance],
     alertmanager_instances: list[AlertmanagerInstance],
 ) -> list[dict[str, Any]]:
-    observability_instances = [*prometheus_instances, *alertmanager_instances]
-    rows = [
-        {
-            'key': 'compute',
-            'label': 'Compute & Infrastructure',
-            'description': 'Kubernetes cluster connectivity, inventory, and control-plane integration.',
-            'icon': 'boxes',
-            'providers': 'Kubernetes',
-            'configured': len(kubernetes_connections),
-            'ready': sum(1 for item in kubernetes_connections if _kubernetes_readiness(item) == 'ready'),
-            'total': len(kubernetes_connections),
-            'lifecycle': 'available',
-        },
-        {
-            'key': 'observability',
-            'label': 'Observability',
-            'description': 'Metrics, alert routing, runtime validation, and capability evidence.',
-            'icon': 'activity',
-            'providers': 'Prometheus · Alertmanager',
-            'configured': sum(1 for item in observability_instances if item.endpoint),
-            'ready': sum(1 for item in observability_instances if item.readiness_status == 'ready'),
-            'total': len(observability_instances),
-            'lifecycle': 'available',
-        },
-        {
-            'key': 'storage',
-            'label': 'Storage',
-            'description': 'Object storage destinations for reports, archives, and evidence retention.',
-            'icon': 'database',
-            'providers': 'S3-compatible Storage',
-            'configured': 0,
-            'ready': 0,
-            'total': 0,
-            'lifecycle': 'planned',
-        },
-        {
-            'key': 'security',
-            'label': 'Security',
-            'description': 'External secrets authority and controlled credential consumption.',
-            'icon': 'shield-check',
-            'providers': 'Vault · OpenBao',
-            'configured': 0,
-            'ready': 0,
-            'total': 0,
-            'lifecycle': 'planned',
-        },
-    ]
-    for row in rows:
-        if row['lifecycle'] == 'available':
-            row['attention'] = max(row['total'] - row['ready'], 0)
-            row['readiness_percent'] = round((row['ready'] / row['total']) * 100, 1) if row['total'] else 0.0
+    provider_counts = _provider_portfolio_counts(
+        kubernetes_connections=kubernetes_connections,
+        prometheus_instances=prometheus_instances,
+        alertmanager_instances=alertmanager_instances,
+    )
+    modules = registry.all()
+    rows: list[dict[str, Any]] = []
+    for domain in ordered_domain_definitions():
+        domain_modules = [module for module in modules if module.domain_key == domain.key]
+        lifecycle = 'available' if domain_modules else 'planned'
+        counts = [provider_counts.get(module.provider_type, {}) for module in domain_modules]
+        configured = sum(int(item.get('configured') or 0) for item in counts)
+        ready = sum(int(item.get('ready') or 0) for item in counts)
+        total = sum(int(item.get('total') or 0) for item in counts)
+        if domain_modules:
+            providers = ' · '.join(module.label for module in domain_modules)
         else:
-            row['attention'] = 0
-            row['readiness_percent'] = 0.0
+            providers = ' · '.join(
+                capability.label for capability in capability_definitions_for_domain(domain.key)
+            )
+        rows.append(
+            {
+                'key': domain.key,
+                'label': domain.label,
+                'description': domain.description,
+                'icon': domain.icon,
+                'providers': providers or 'No Providers Registered',
+                'configured': configured,
+                'ready': ready,
+                'total': total,
+                'lifecycle': lifecycle,
+                'attention': max(total - ready, 0) if lifecycle == 'available' else 0,
+                'readiness_percent': round((ready / total) * 100, 1) if total else 0.0,
+            }
+        )
     return rows
 
 
@@ -881,53 +887,28 @@ def _catalog(
     prometheus_instances: list[PrometheusInstance],
     alertmanager_instances: list[AlertmanagerInstance],
 ) -> list[dict[str, Any]]:
-    return [
-        {
-            'key': 'kubernetes',
-            'name': 'Kubernetes',
-            'category': 'Compute & Infrastructure',
-            'icon': 'boxes',
-            'availability': 'available',
-            'configured': len(kubernetes_connections),
-            'description': 'Canonical Kubernetes API connections, asset identity, discovery, readiness, and operational access.',
-        },
-        {
-            'key': 'prometheus',
-            'name': 'Prometheus',
-            'category': 'Observability',
-            'icon': 'activity',
-            'availability': 'available',
-            'configured': sum(1 for instance in prometheus_instances if instance.endpoint),
-            'description': 'Metrics collection and versioned PromQL validation for connected infrastructure assets.',
-        },
-        {
-            'key': 'alertmanager',
-            'name': 'Alertmanager',
-            'category': 'Observability',
-            'icon': 'siren',
-            'availability': 'available',
-            'configured': sum(1 for instance in alertmanager_instances if instance.endpoint),
-            'description': 'Shared Alertmanager instances, asset bindings, alert retrieval, silence capability, and API compatibility validation.',
-        },
-        {
-            'key': 's3',
-            'name': 'S3-compatible Storage',
-            'category': 'Storage',
-            'icon': 'database',
-            'availability': 'planned',
-            'configured': 0,
-            'description': 'Reusable object storage for reports, archives, and long-term operational evidence.',
-        },
-        {
-            'key': 'vault',
-            'name': 'Vault',
-            'category': 'Security',
-            'icon': 'key-round',
-            'availability': 'planned',
-            'configured': 0,
-            'description': 'External secret and credential management with controlled access and auditability.',
-        },
-    ]
+    provider_counts = _provider_portfolio_counts(
+        kubernetes_connections=kubernetes_connections,
+        prometheus_instances=prometheus_instances,
+        alertmanager_instances=alertmanager_instances,
+    )
+    rows: list[dict[str, Any]] = []
+    for module in registry.all():
+        counts = provider_counts.get(module.provider_type, {})
+        rows.append(
+            {
+                'key': module.provider_type,
+                'name': module.label,
+                'category': module.domain.label,
+                'capability': module.capability.label,
+                'icon': module.icon,
+                'availability': 'available',
+                'configured': int(counts.get('configured') or 0),
+                'description': module.description,
+                'workspace_endpoint': module.workspace_endpoint,
+            }
+        )
+    return rows
 
 
 def _ordered_status_options(rows: list[dict[str, Any]], field: str, order: list[str]) -> list[str]:
@@ -979,13 +960,11 @@ def _runtime_stats(rows: list[dict[str, Any]]) -> dict[str, int]:
 def _runtime_scope_label(*, provider: str, health: str, readiness: str) -> str:
     parts: list[str] = []
     if provider:
-        parts.append(
-            {
-                'kubernetes': 'Kubernetes',
-                'prometheus': 'Prometheus / Thanos',
-                'alertmanager': 'Alertmanager',
-            }.get(provider, provider.replace('_', ' ').title())
-        )
+        try:
+            module = get_integration(provider)
+            parts.append(module.runtime_label or module.label)
+        except Exception:
+            parts.append(provider.replace('_', ' ').title())
     if health:
         parts.append(health.replace('_', ' ').title())
     if readiness:

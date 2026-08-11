@@ -15,12 +15,15 @@ from app.models.prometheus import PrometheusInstance
 def create_binding(
     *,
     instance: PrometheusInstance,
-    cluster: Cluster,
+    cluster: Cluster | None = None,
+    scope_type: str | None = None,
+    scope_key: str | None = None,
     role: str = 'primary',
     priority: int = 100,
     selector_label: str | None = None,
     selector_value: str | None = None,
     selector_operator: str = '=',
+    capability_scope: list[str] | tuple[str, ...] | None = None,
     commit: bool = True,
 ) -> IntegrationBinding:
     normalized_role = str(role or 'primary').strip().lower()
@@ -28,6 +31,18 @@ def create_binding(
         raise ValueError('Select a supported source role.')
     if priority < 1 or priority > 1000:
         raise ValueError('Priority must be between 1 and 1000.')
+
+    normalized_scope_type = str(scope_type or '').strip()
+    normalized_scope_key = str(scope_key or '').strip()
+    if cluster is not None:
+        normalized_scope_type = normalized_scope_type or KUBERNETES_CLUSTER_SCOPE
+        normalized_scope_key = normalized_scope_key or str(cluster.id)
+    if not normalized_scope_type:
+        raise ValueError('Select an operational scope type before saving the Prometheus binding.')
+    if not normalized_scope_key:
+        raise ValueError('Select or enter an operational scope before saving the Prometheus binding.')
+    if len(normalized_scope_key) > 255:
+        raise ValueError('The operational scope key must be 255 characters or fewer.')
 
     selector_json = build_selector(
         label=selector_label,
@@ -40,11 +55,11 @@ def create_binding(
     canonical = ensure_canonical_instance(instance, provider_type='prometheus')
     existing = IntegrationBinding.query.filter_by(
         integration_instance_id=canonical.id,
-        asset_type=KUBERNETES_CLUSTER_SCOPE,
-        asset_key=cluster.id,
+        asset_type=normalized_scope_type,
+        asset_key=normalized_scope_key,
     ).first()
     if existing is not None:
-        raise ValueError('This Prometheus connection is already bound to the selected managed cluster.')
+        raise ValueError('This Prometheus connection is already bound to the selected operational scope.')
 
     if normalized_role == 'primary':
         conflicting_primary = (
@@ -55,23 +70,23 @@ def create_binding(
             .filter(
                 IntegrationInstance.provider_type == 'prometheus',
                 IntegrationInstance.enabled.is_(True),
-                IntegrationBinding.asset_type == KUBERNETES_CLUSTER_SCOPE,
-                IntegrationBinding.asset_key == cluster.id,
+                IntegrationBinding.asset_type == normalized_scope_type,
+                IntegrationBinding.asset_key == normalized_scope_key,
                 IntegrationBinding.binding_role == 'primary',
                 IntegrationBinding.enabled.is_(True),
             )
             .first()
         )
         if conflicting_primary is not None:
-            raise ValueError('The selected managed cluster already has an enabled primary Prometheus source.')
+            raise ValueError('The selected operational scope already has an enabled primary Prometheus source.')
 
     binding = bind_instance(
         canonical,
-        asset_type=KUBERNETES_CLUSTER_SCOPE,
-        asset_key=cluster.id,
+        asset_type=normalized_scope_type,
+        asset_key=normalized_scope_key,
         role=normalized_role,
         priority=priority,
-        capability_scope=list(BINDING_CAPABILITY_KEYS),
+        capability_scope=list(capability_scope or BINDING_CAPABILITY_KEYS),
         selector_json=selector_json,
         validation_status='validation_required',
         validation_message=(

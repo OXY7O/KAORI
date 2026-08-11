@@ -68,17 +68,17 @@ class PrometheusRuntimeAdapter:
         if operation == 'runtime.state':
             return self.get_state(instance, validation_result=kwargs.get('validation_result'))
         if operation == 'binding.create':
-            cluster = kwargs.get('cluster')
-            if cluster is None:
-                raise ValueError('Prometheus binding.create requires a cluster.')
             return create_binding(
                 instance=instance,
-                cluster=cluster,
+                cluster=kwargs.get('cluster'),
+                scope_type=kwargs.get('scope_type'),
+                scope_key=kwargs.get('scope_key'),
                 role=str(kwargs.get('role') or 'primary'),
                 priority=int(kwargs.get('priority', 100)),
                 selector_label=kwargs.get('selector_label'),
                 selector_value=kwargs.get('selector_value'),
                 selector_operator=str(kwargs.get('selector_operator') or '='),
+                capability_scope=kwargs.get('capability_scope'),
                 commit=bool(kwargs.get('commit', True)),
             )
         if operation == 'binding.selector.update':

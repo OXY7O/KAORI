@@ -11,8 +11,71 @@ from app.integrations.repository import get_cluster, get_provider_record
 @dataclass(frozen=True, slots=True)
 class CreatedSourceBinding:
     source: Any
-    cluster: Any
+    asset: Any | None
     binding: Any
+
+    @property
+    def cluster(self) -> Any | None:
+        """Compatibility alias retained for the Kubernetes binding workspace."""
+        return self.asset
+
+
+def create_source_binding(
+    provider_type: str,
+    *,
+    source_id: int,
+    asset_type: str,
+    asset_key: str,
+    role: str,
+    priority: int,
+    selector_label: str,
+    selector_value: str,
+    selector_operator: str,
+    capability_scope: list[str] | tuple[str, ...] | None = None,
+    asset: Any | None = None,
+) -> CreatedSourceBinding:
+    """Create one provider-to-asset binding through the registered provider adapter.
+
+    The canonical binding remains asset-centric. Domain helpers may load a richer
+    asset object for their UI, but the persisted contract is always asset_type +
+    asset_key so new consumers such as object storage do not need a second binding
+    table or a provider-to-provider foreign key.
+    """
+    provider = str(provider_type or '').strip().lower()
+    normalized_asset_type = str(asset_type or '').strip()
+    normalized_asset_key = str(asset_key or '').strip()
+    if not normalized_asset_type:
+        raise ValueError('Select an operational asset type before saving the binding.')
+    if not normalized_asset_key:
+        raise ValueError('Select or enter an operational asset before saving the binding.')
+
+    source = get_provider_record(provider, source_id)
+    if source is None:
+        module = get_integration(provider)
+        raise ValueError(f'The selected {module.label} source no longer exists.')
+
+    module = get_integration(provider)
+    if 'binding.create' not in module.operations:
+        raise ValueError(f'{module.label} does not support source bindings.')
+
+    try:
+        binding = module.execute(
+            'binding.create',
+            source,
+            scope_type=normalized_asset_type,
+            scope_key=normalized_asset_key,
+            role=role,
+            priority=priority,
+            selector_label=selector_label,
+            selector_value=selector_value,
+            selector_operator=selector_operator,
+            capability_scope=capability_scope,
+        )
+    except Exception:
+        db.session.rollback()
+        raise
+
+    return CreatedSourceBinding(source=source, asset=asset, binding=binding)
 
 
 def create_cluster_source_binding(
@@ -26,44 +89,20 @@ def create_cluster_source_binding(
     selector_value: str,
     selector_operator: str,
 ) -> CreatedSourceBinding:
-    provider = str(provider_type or '').strip().lower()
-    if provider not in {'prometheus', 'alertmanager'}:
-        raise ValueError(f'Unsupported source provider: {provider_type}')
-
+    """Compatibility wrapper for existing Kubernetes source-binding workflows."""
     cluster = get_cluster(cluster_id)
     if cluster is None:
         raise ValueError('The selected Kubernetes scope no longer exists.')
 
-    source = get_provider_record(provider, source_id)
-    if source is None:
-        raise ValueError(f'The selected {provider.title()} source no longer exists.')
-
-    try:
-        module = get_integration(provider)
-        binding_arguments: dict[str, Any] = {
-            'role': role,
-            'priority': priority,
-            'selector_label': selector_label,
-            'selector_value': selector_value,
-            'selector_operator': selector_operator,
-        }
-        if provider == 'prometheus':
-            binding_arguments['cluster'] = cluster
-        else:
-            binding_arguments.update(
-                {
-                    'scope_type': 'kubernetes_cluster',
-                    'scope_key': cluster.id,
-                    'enabled': True,
-                }
-            )
-        binding = module.execute(
-            'binding.create',
-            source,
-            **binding_arguments,
-        )
-    except Exception:
-        db.session.rollback()
-        raise
-
-    return CreatedSourceBinding(source=source, cluster=cluster, binding=binding)
+    return create_source_binding(
+        provider_type,
+        source_id=source_id,
+        asset_type='kubernetes_cluster',
+        asset_key=str(cluster.id),
+        role=role,
+        priority=priority,
+        selector_label=selector_label,
+        selector_value=selector_value,
+        selector_operator=selector_operator,
+        asset=cluster,
+    )

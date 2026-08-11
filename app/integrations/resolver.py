@@ -94,17 +94,8 @@ def resolve_integration(
 
 
 def provider_record(instance: IntegrationInstance) -> Any | None:
-    """Resolve the provider-specific connection record without coupling consumers to its table."""
-    if instance.provider_type == 'prometheus':
-        from app.models.prometheus import PrometheusInstance
+    """Resolve the provider-specific record through the integration registry."""
+    from app.integrations.registry import get_integration
 
-        return PrometheusInstance.query.filter_by(integration_instance_id=instance.id).first()
-    if instance.provider_type == 'alertmanager':
-        from app.models.alertmanager import AlertmanagerInstance
-
-        return AlertmanagerInstance.query.filter_by(integration_instance_id=instance.id).first()
-    if instance.provider_type == 'kubernetes':
-        from app.models.kubernetes import KubernetesConnection
-
-        return KubernetesConnection.query.filter_by(integration_instance_id=instance.id).first()
-    return None
+    module = get_integration(instance.provider_type)
+    return module.get_record_for_canonical(instance.id)

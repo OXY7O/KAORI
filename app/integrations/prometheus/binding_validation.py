@@ -7,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
 from app.integrations.binding_selectors import selector_is_configured
+from app.integrations.prometheus.binding_profiles import get_binding_validation_profile
 from app.integrations.prometheus.client import PrometheusClient
 from app.integrations.prometheus.exceptions import PrometheusError
 from app.models.integration import IntegrationBinding
@@ -19,7 +20,7 @@ def validate_binding(
     binding: IntegrationBinding,
     commit: bool = True,
 ) -> dict[str, Any]:
-    """Validate one Prometheus scope selector with low-cost identity probes."""
+    """Validate one Prometheus asset selector through its registered probe profile."""
     if instance.integration_instance_id != binding.integration_instance_id:
         raise ValueError('The selected binding does not belong to this Prometheus source.')
     if not selector_is_configured(binding.selector_json):
@@ -33,14 +34,28 @@ def validate_binding(
             'message': binding.validation_message,
             'matched_series': 0,
             'matched_signal': None,
+            'probe_profile': None,
             'probe_results': [],
         }
 
-    probes = (
-        ('kube_node_info', 'Kubernetes node identity'),
-        ('kube_namespace_status_phase', 'Kubernetes namespace identity'),
-        ('kube_pod_info', 'Kubernetes pod identity'),
-    )
+    profile = get_binding_validation_profile(binding.asset_type)
+    if profile is None:
+        binding.validation_status = 'blocked'
+        binding.validation_message = (
+            f'No Prometheus binding validation profile is registered for asset type {binding.asset_type!r}.'
+        )
+        binding.last_validated_at = datetime.now(UTC)
+        if commit:
+            db.session.commit()
+        return {
+            'status': binding.validation_status,
+            'message': binding.validation_message,
+            'matched_series': 0,
+            'matched_signal': None,
+            'probe_profile': None,
+            'probe_results': [],
+        }
+
     probe_results: list[dict[str, Any]] = []
     matched_signal: str | None = None
     matched = 0.0
@@ -50,8 +65,8 @@ def validate_binding(
             scope_selector=binding.selector_json,
             request_timeout_seconds=max(int(instance.timeout or 5), 15),
         )
-        for metric, label in probes:
-            payload = client.query(f'count({metric})')
+        for probe in profile.probes:
+            payload = client.query(f'count({probe.metric})')
             if not isinstance(payload, dict) or payload.get('status') != 'success':
                 detail = (
                     str((payload or {}).get('error') or 'Prometheus returned an unsuccessful query response.')
@@ -67,26 +82,23 @@ def validate_binding(
                     value = float(sample[1])
             probe_results.append(
                 {
-                    'metric': metric,
-                    'label': label,
+                    'metric': probe.metric,
+                    'label': probe.label,
                     'matched_series': int(value),
                 }
             )
             if value > 0 and matched_signal is None:
-                matched_signal = metric
+                matched_signal = probe.metric
                 matched = value
 
         if matched_signal is not None:
             binding.validation_status = 'ready'
             binding.validation_message = (
-                f'Metrics identity matched {int(matched)} scoped series through {matched_signal}.'
+                f'{profile.label} matched {int(matched)} scoped series through {matched_signal}.'
             )
         else:
             binding.validation_status = 'degraded'
-            binding.validation_message = (
-                'The selector was accepted, but no scoped kube-state-metrics identity series matched. '
-                'Verify the selector label/value on kube_node_info, kube_namespace_status_phase, or kube_pod_info.'
-            )
+            binding.validation_message = profile.no_match_message
     except Exception as exc:
         binding.validation_status = 'blocked'
         binding.validation_message = f'Binding validation failed: {exc}'
@@ -105,5 +117,6 @@ def validate_binding(
         'message': binding.validation_message,
         'matched_series': int(matched),
         'matched_signal': matched_signal,
+        'probe_profile': binding.asset_type,
         'probe_results': probe_results,
     }

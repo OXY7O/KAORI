@@ -28,7 +28,9 @@ wire protocol.
 | Module | Ownership |
 |---|---|
 | `app/integrations/contracts/` | Provider-neutral adapter, capability, result, and exception contracts. |
-| `app/integrations/registry.py` | Provider registration, operation dispatch, instance loading, and operation-to-queue mapping. |
+| `app/integrations/taxonomy.py` | Canonical integration domain and capability taxonomy used by registry and presentation. |
+| `app/integrations/registry.py` | Provider registration, taxonomy ownership, operation dispatch, provider/canonical record loading, workspace routing, failure hooks, and operation-to-queue mapping. |
+| `app/integrations/binding_service.py` | Provider-neutral source-to-asset binding entrypoint with domain compatibility wrappers. |
 | `app/integrations/runtime/` | Shared runtime observation, scoring, monitoring, persistence, and presentation. |
 | `app/integrations/validation/` | Canonical asynchronous validation and runtime-refresh orchestration. |
 | `app/integrations/lifecycle.py` | Canonical `IntegrationInstance` and `IntegrationBinding` lifecycle. |
@@ -36,15 +38,40 @@ wire protocol.
 
 ## Provider modules
 
-| Provider | Module | Primary worker domain | Operations |
-|---|---|---|---|
-| Kubernetes | `app/integrations/kubernetes/` | `kubernetes` | `client.build`, `runtime.validate`, `runtime.health`, `runtime.state`, `inventory.sync` |
-| Prometheus | `app/integrations/prometheus/` | `observability-metrics` | `client.build`, `runtime.validate`, `runtime.health`, `runtime.state` |
-| Alertmanager | `app/integrations/alertmanager/` | `observability-alerts` | `client.build`, `runtime.validate`, `runtime.health`, `runtime.state` |
+| Domain | Capability | Provider | Module | Primary worker domain |
+|---|---|---|---|---|
+| Orchestration | Cluster Orchestration | Kubernetes | `app/integrations/kubernetes/` | `kubernetes` |
+| Observability | Metrics | Prometheus | `app/integrations/prometheus/` | `observability-metrics` |
+| Observability | Alerting | Alertmanager | `app/integrations/alertmanager/` | `observability-alerts` |
+| Storage | Object Storage | MinIO | future `app/integrations/minio/` | future provider registration |
 
 Every registered operation has an explicit execution queue. Inline operations
 are construction or state-translation operations that perform no asynchronous
 work.
+
+`worker_domain` is execution routing metadata. The architecture and UI taxonomy
+comes from `domain_key` and `capability_key` registered on `IntegrationModule`.
+
+## Provider and asset binding architecture
+
+`IntegrationBinding` remains the only canonical provider binding persistence.
+The relation is provider-to-asset, not provider-to-provider:
+
+```text
+IntegrationInstance
+        │
+        └── IntegrationBinding(asset_type, asset_key)
+                              │
+                              ▼
+                         Managed Asset
+```
+
+This lets different provider types serve one managed asset without pair-specific
+foreign keys. Existing Kubernetes clusters bind Kubernetes API, Prometheus, and
+Alertmanager providers to `kubernetes_cluster:<cluster-id>`. Object storage will
+follow the same pattern: MinIO API and Prometheus metrics providers bind to the
+same `object_storage_system:<asset-id>` scope.
+
 
 ## Domain boundaries
 
@@ -117,12 +144,11 @@ fall into an unconsumed default queue.
 1. Add `app/integrations/<provider>/` with adapter, client, capabilities,
    validation, schemas, and README.
 2. Implement `RuntimeAdapter` and stable operation keys.
-3. Register one `IntegrationModule` with explicit queue mapping, capability
-   keys, and compatibility profiles.
+3. Register one `IntegrationModule` with `domain_key`, `capability_key`, catalog/workspace metadata, reverse canonical-record loading, explicit queue mapping, capability keys, and compatibility profiles.
 4. Add provider-specific mapped model under `app/models/` only when required.
 5. Add domain service and route that call the registry rather than the client.
 6. Add canonical `JobExecution` orchestration for asynchronous operations.
 7. Add deletion dependencies, audit events, and permission coverage.
-8. Add contract, migration, registry, and route tests.
-9. Do not add a second binding table, credential column, runtime table, or full
-   legacy blueprint.
+8. If the provider is consumed through Prometheus, register an asset-specific Prometheus binding validation profile instead of adding probes to the shared validator.
+9. Add contract, migration (only when persistence changes), registry, and route tests.
+10. Do not add a second binding table, provider-to-provider foreign key, credential column, runtime table, or full legacy blueprint.

@@ -50,6 +50,7 @@ class AlertmanagerRuntimeAdapter:
                 selector_label=kwargs.get('selector_label'),
                 selector_value=kwargs.get('selector_value'),
                 selector_operator=str(kwargs.get('selector_operator') or '='),
+                capability_scope=kwargs.get('capability_scope'),
                 commit=bool(kwargs.get('commit', True)),
             )
         if operation == 'binding.selector.update':

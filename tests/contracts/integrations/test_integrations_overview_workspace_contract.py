@@ -113,9 +113,13 @@ def test_portfolio_and_domain_coverage_use_neutral_card_semantics() -> None:
     assert "coverage|rejectattr('lifecycle', 'equalto', 'available')|list" in overview
     assert 'coverage_stats.available_domains' in overview
     assert "table_ui.table_classes('min-w-[56rem]')" not in overview
-    assert "'description': 'Metrics, alert routing, runtime validation, and capability evidence.'" in service
-    assert "'providers': 'Prometheus · Alertmanager'" in service
-    assert "'providers': 'Vault · OpenBao'" in service
+    assert 'for domain in ordered_domain_definitions()' in service
+    assert 'for module in registry.all()' in service
+    assert "'category': module.domain.label" in service
+    assert "'capability': module.capability.label" in service
+    assert 'capability_definitions_for_domain(domain.key)' in service
+    assert 'Compute & Infrastructure' not in service
+    assert 'Vault · OpenBao' not in service
     assert "'readiness_percent'" in service
     assert "'attention_targets'" in service
 
@@ -172,10 +176,9 @@ def test_integration_overview_uses_canonical_label_roles() -> None:
 
     # Context and count metadata use the shared metadata label. Only scope gets an icon.
     assert (
-        "table_label.metadata_label(available_provider_count ~ ' Available · ' ~ planned_provider_count ~ ' Planned'"
-        in overview
+        "table_label.metadata_label(available_provider_count ~ ' Registered'" in overview
     )
-    assert "table_label.metadata_label(planned_provider_count ~ ' Planned'" in overview
+    assert 'Planned Providers' not in overview
     assert "table_label.metadata_label(provider_name, size='compact')" in overview
     assert "table_label.metadata_label(runtime_scope_label, 'filter'" in runtime
     assert (
