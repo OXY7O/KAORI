@@ -22,6 +22,10 @@ def main() -> int:
     model = read('app/models/integration.py')
     migration = read('migrations/versions/20260812_prometheus_consumer_validation_profiles.py')
     validation_template = read('app/templates/prometheus/partials/_detail_validation_content.html')
+    kernel_readme = read('app/integrations/README.md')
+    compatibility_doc = read('docs/INTEGRATION_COMPATIBILITY.md')
+    module_map = read('docs/architecture/integration-module-map.md')
+    workspace_standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
 
     assert 'from app.integrations.domain_service import build_integration_domain_page' in routes
     assert 'prometheus-core-v1' in compatibility
@@ -43,10 +47,7 @@ def main() -> int:
     assert 'validation_profile:' in model
     assert 'validation_evidence:' in model
     assert 'binding.validation_evidence or {}' in resolver
-    assert (
-        'instance.capabilities or {}'
-        not in resolver.split('def _evaluate_binding', 1)[1].split('def _operational_rank', 1)[0]
-    )
+    assert 'instance.capabilities or {}' not in resolver.split('def _evaluate_binding', 1)[1].split('def _operational_rank', 1)[0]
 
     assert "revision = '20260812_prom_consumer_profiles'" in migration
     assert "down_revision = '20260812_minio_object_storage'" in migration
@@ -56,10 +57,24 @@ def main() -> int:
 
     assert 'Prometheus Core Validation' in validation_template
     assert 'Consumer Validation Boundary' in validation_template
-    assert (
-        'Kubernetes, MinIO, and other metric contracts are validated through their asset-scoped bindings.'
-        in validation_template
+    assert 'Kubernetes, MinIO, and other metric contracts are validated through their asset-scoped bindings.' in validation_template
+
+    canonical_flow = (
+        'Provider\n'
+        '  → Compatibility Profile\n'
+        '  → Provider Capability Set\n'
+        '  → Core Validation\n'
+        '  → Provider Ready\n'
+        '  → Asset Binding\n'
+        '  → Consumer Profile\n'
+        '  → Binding Validation\n'
+        '  → Consumer Eligibility'
     )
+    assert canonical_flow in kernel_readme
+    assert '## Canonical provider-to-consumer contract' in compatibility_doc
+    assert 'Provider Core Validation is product/version/API scoped.' in module_map
+    assert 'Provider Core Validation is asynchronous and authoritative only for' in workspace_standard
+    assert 'Consumer eligibility is derived from Binding Validation evidence' in workspace_standard
 
     print('PASS — Prometheus provider readiness is consumer-neutral and consumer metrics are binding-scoped.')
     return 0

@@ -15,6 +15,53 @@ KAORI treats reachability, product identity, runtime version, API compatibility,
 9. Persist provider evidence on the provider and consumer evidence on the binding.
 10. Allow each KAORI consumer only when its required binding capability is ready.
 
+## Canonical provider-to-consumer contract
+
+The supported flow is intentionally two-stage:
+
+```text
+Register Provider
+    ↓
+Detect Product / Version
+    ↓
+Compatibility Profile
+    ↓
+Provider Capability Set
+    ↓
+Provider Core Validation
+    ↓
+Provider Ready
+    ↓
+Create Asset Binding
+    ↓
+Resolve Consumer Profile
+    ↓
+Binding Validation
+    ↓
+Consumer Eligibility
+```
+
+The **compatibility profile** belongs to the provider. It maps detected
+product/version/API behavior to the provider capabilities KAORI knows how to
+validate. It must not encode one downstream consumer.
+
+The **consumer profile** belongs to an `IntegrationBinding`. It defines the
+asset-specific metrics, labels, queries, retention, or other functional evidence
+required by that consumer. Provider readiness and binding readiness are
+independent states.
+
+For Prometheus this means:
+
+```text
+Prometheus General
+  ├── Core: prometheus-core-v1
+  ├── Kubernetes binding: kubernetes-metrics-v1
+  └── MinIO binding: minio-metrics-2024-v1
+```
+
+A missing Kubernetes metric may degrade only the Kubernetes binding while the
+Prometheus provider and unrelated MinIO binding remain Ready.
+
 ## Compatibility matrix
 
 | Product | Supplied/runtime version | Deployment metadata | KAORI profile | Initial behavior |

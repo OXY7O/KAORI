@@ -116,6 +116,32 @@ asset and does not store kubeconfig, endpoint, or TLS connection policy.
 
 ## Compatibility policy
 
+Canonical validation flow:
+
+```text
+IntegrationModule / Provider
+        ↓
+Compatibility Profile
+        ↓
+Provider Capability Set
+        ↓
+Provider Core Validation
+        ↓
+IntegrationInstance Ready
+        ↓
+IntegrationBinding
+        ↓
+Consumer Profile
+        ↓
+Binding Validation Evidence
+        ↓
+Effective Consumer Eligibility
+```
+
+Provider Core Validation is product/version/API scoped. Consumer Profile
+validation is asset/binding scoped. A provider may have many bindings, and each
+binding may have a different consumer profile and readiness state.
+
 Compatibility exists at two different layers and must not be confused:
 
 1. **Provider compatibility profiles** are supported runtime contracts such as

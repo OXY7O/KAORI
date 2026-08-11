@@ -74,7 +74,7 @@ Bright Runtime Records
 Shared Pagination
 ```
 
-Health, Validation Readiness, and Capability Attention are separate signals. A healthy runtime observation does not imply Full Validation readiness.
+Health, Provider Core Validation readiness, and consumer Binding Validation are separate signals. A healthy runtime observation does not imply provider Core Validation or consumer eligibility.
 
 ## Semantic Status Contract
 
@@ -187,9 +187,14 @@ Kubernetes connection detail pages return to the canonical Kubernetes Integratio
 ## Action Contract
 
 - Test Connection is synchronous and verifies submitted draft settings.
-- Full Validation is asynchronous and authoritative for capability/readiness evidence.
+- Provider Core Validation is asynchronous and authoritative only for
+  provider-owned compatibility/capability evidence; it must remain
+  consumer-neutral.
+- Binding Validation is asynchronous and asset-specific. It resolves the
+  consumer profile, selector, and functional evidence required by that binding.
+- Consumer eligibility is derived from Binding Validation evidence and must not
+  be inferred from provider readiness alone.
 - Runtime Refresh is asynchronous and lightweight.
-- Binding Validation is asynchronous and scope-specific.
 - Save, remove, and delete operations repeat guardrails in the service boundary.
 - Every outcome records durable Activity Audit evidence and persistent feedback.
 

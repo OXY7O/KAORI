@@ -67,3 +67,18 @@ def test_domain_route_does_not_depend_on_service_reexport() -> None:
 
     assert 'from app.integrations.domain_service import build_integration_domain_page' in routes
     assert 'from app.integrations.domain_service import build_integration_domain_page' not in service
+
+
+def test_integration_docs_lock_provider_core_and_consumer_profile_boundary() -> None:
+    kernel_readme = read('app/integrations/README.md')
+    compatibility = read('docs/INTEGRATION_COMPATIBILITY.md')
+    module_map = read('docs/architecture/integration-module-map.md')
+    workspace_standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
+
+    assert 'Provider\n  → Compatibility Profile' in kernel_readme
+    assert '→ Consumer Profile\n  → Binding Validation\n  → Consumer Eligibility' in kernel_readme
+    assert '## Canonical provider-to-consumer contract' in compatibility
+    assert 'A missing Kubernetes metric may degrade only the Kubernetes binding' in compatibility
+    assert 'Provider Core Validation is product/version/API scoped.' in module_map
+    assert 'Provider Core Validation is asynchronous and authoritative only for' in workspace_standard
+    assert 'Consumer eligibility is derived from Binding Validation evidence' in workspace_standard

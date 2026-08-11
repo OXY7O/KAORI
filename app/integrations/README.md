@@ -109,23 +109,52 @@ binding tables such as `minio_prometheus_bindings`.
 
 ## Validation levels
 
+KAORI separates provider validity from consumer eligibility. Provider readiness
+must never depend on one downstream domain/exporter family.
+
+```text
+Provider
+  → Compatibility Profile
+  → Provider Capability Set
+  → Core Validation
+  → Provider Ready
+  → Asset Binding
+  → Consumer Profile
+  → Binding Validation
+  → Consumer Eligibility
+```
+
 1. **Test Connection** verifies submitted endpoint identity and reachability.
-2. **Full Capability Validation** rebuilds compatibility, capabilities, and
-   technical evidence using `integration-validation` workers.
-3. **Scope Binding Validation** proves that a registered source can serve the
-   selected operational scope and persists selector/evidence state.
-4. **Runtime Refresh** performs lightweight health observation using
-   `integration-runtime` workers.
+2. **Provider Core Validation** resolves the provider compatibility profile,
+   validates provider-owned capabilities, and persists provider evidence through
+   `integration-validation` workers. It is consumer-neutral.
+3. **Binding Validation** proves that one ready provider can serve one managed
+   asset. The asset binding selects a consumer profile, selector, and validation
+   evidence without changing provider readiness.
+4. **Consumer Eligibility** is derived from the validated binding evidence and
+   the capabilities required by the Inventory, Analytics, Governance, or
+   Operations consumer.
+5. **Runtime Refresh** performs lightweight provider health observation using
+   `integration-runtime` workers and does not replace Core or Binding Validation.
 
 The full-validation worker dispatches through the registry and does not branch
 on provider names. Providers with `binding.validate` automatically participate
 in binding refresh. Provider-specific failure persistence is exposed through a
 registered hook.
 
-Prometheus binding validation is selected by asset type through
-`prometheus/binding_profiles.py`. Kubernetes registers the `kubernetes_cluster` profile; MinIO registers the
-`object_storage_system` profile with MinIO software, cluster-usage, and bucket-usage
-identity probes without modifying the shared validator.
+Compatibility profile and consumer profile are different contracts:
+
+- **Compatibility profile** answers whether the detected product/version/API
+  contract is supported by KAORI and which provider capabilities can be
+  validated.
+- **Consumer profile** answers what asset-specific evidence is required after a
+  binding exists.
+
+Prometheus is the canonical example. `prometheus-core-v1` owns provider Core
+Validation. `prometheus/binding_profiles.py` selects the consumer profile by
+asset type: Kubernetes registers `kubernetes-metrics-v1`; MinIO registers
+`minio-metrics-2024-v1`. One Prometheus provider can therefore serve both assets
+with independent selectors, evidence, and binding readiness.
 
 See `docs/architecture/integration-module-map.md` and the README inside each
 provider module.

@@ -46,8 +46,10 @@ cluster-owned configuration.
 
 Endpoint product/version detection and the declared Prometheus source profile
 are separate. Thanos may expose Prometheus-compatible query APIs without a
-Prometheus `/version` identity. Provider Full Validation establishes endpoint
-compatibility and the `prometheus-core-v1` API contract only. Exporter/domain
+Prometheus `/version` identity. Provider Core Validation establishes endpoint compatibility and the
+`prometheus-core-v1` API contract only. The UI action `Run Full Validation`
+orchestrates this provider-core check and may refresh existing bindings, but
+provider readiness is derived only from provider-core evidence. Exporter/domain
 metrics, labels, and consumer PromQL contracts are validated through each
 `IntegrationBinding` and stored as binding evidence.
 
