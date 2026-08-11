@@ -12,8 +12,9 @@ def test_top_consumers_uses_canonical_tabs_and_native_hidden_fallback() -> None:
 
     for tab in ('rankings', 'records', 'recommendations'):
         assert f'data-analytics-tab-panel="{tab}"' in section
-        assert f'x-bind:hidden="activeTab !== \'{tab}\'"' in section
     assert 'data-analytics-tabset-id="top-consumers-content"' in section
+    assert 'x-show="activeTab' not in section
+    assert 'x-bind:hidden="activeTab' not in section
 
 
 def test_top_consumers_controls_own_only_snapshot_scope() -> None:
