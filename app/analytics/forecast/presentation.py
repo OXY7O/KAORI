@@ -278,6 +278,7 @@ def _resolve_forecast_risk(
 
     return 'Low' if has_forecast_evidence else 'Unknown'
 
+
 def _build_forecast_snapshot_series(items: list[Any]) -> list[dict[str, Any]]:
     item_map = _build_forecast_item_map(items)
     resources = (('cpu', 'CPU'), ('memory', 'Memory'), ('storage', 'Storage'), ('pods', 'Pods'))
