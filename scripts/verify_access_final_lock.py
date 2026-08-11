@@ -138,7 +138,11 @@ def main() -> int:
     users_index = read('app/templates/users/index.html')
     users_hero = read('app/templates/users/partials/_hero.html')
     for permission in ('users.view', 'users.manage', 'users.activate', 'users.reset_password', 'users.delete'):
-        require(f"@permission_required('{permission}')" in users_routes, f'User permission boundary missing: {permission}', errors)
+        require(
+            f"@permission_required('{permission}')" in users_routes,
+            f'User permission boundary missing: {permission}',
+            errors,
+        )
     for required in (
         'lock_active_super_admin_boundary(user)',
         'def is_last_active_super_admin',
