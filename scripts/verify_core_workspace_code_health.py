@@ -102,7 +102,7 @@ def main() -> int:
         for error in errors:
             print(f'ERROR: {error}')
         return 1
-    print(f'KAORI reviewed core workspace code health passed across {checked} canonical Python modules.')
+    print(f'PASS — KAORI Core Code Health · {checked} modules')
     return 0
 
 

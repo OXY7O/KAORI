@@ -209,11 +209,7 @@ def main() -> int:
             print(f'ERROR: {error}')
         return 1
 
-    print(
-        'KAORI Ingress Inventory Standard audit passed: collection evidence, canonical persistence, '
-        'publication semantics, route and TLS references, workspace boundaries, export, topology, '
-        'accessibility, and documentation are aligned.'
-    )
+    print('PASS — KAORI Ingress Inventory')
     return 0
 
 

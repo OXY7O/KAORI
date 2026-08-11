@@ -76,3 +76,18 @@ pytest -q tests/contracts/kubernetes_operations -m contract
 
 Kubernetes Operations E2E smoke exercises real Flask routing/session/application-shell rendering with Kubernetes infrastructure isolated. Live-provider semantics are covered in Integration and domain Functional tests. The final-lock security contract requires RBAC to execute before the cluster prerequisite on every ConfigMap, Secret, Protected Reveal, and TLS operation route.
 
+
+
+### Kubernetes Analytics final-recheck evidence
+
+```bash
+pytest -q tests/unit/analytics -m unit
+pytest -q tests/analytics -m functional
+pytest -q tests/integration/analytics -m integration
+pytest -q tests/security/analytics -m security
+pytest -q tests/rendering/analytics -m rendering
+pytest -q tests/e2e/analytics -m e2e
+pytest -q tests/contracts/analytics -m contract
+```
+
+Analytics uses the same release taxonomy as the previously reviewed domains. The canonical modules are registered in `scripts/verify_feature_test_coverage.py`; additional Analytics domain tests remain valid supporting evidence. Integration owns materialized snapshot persistence/read-model collaboration, while E2E uses the real Flask/session/template shell with external monitoring infrastructure isolated.

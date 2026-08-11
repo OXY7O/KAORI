@@ -200,9 +200,19 @@ The final recheck intentionally reopens presentation composition because retirin
 
 Operations becomes **PASS — LOCKED** only after authoritative Static Quality, all L0–L7 evidence, browser regression across ConfigMap/Secret workflows, and the full release gate pass.
 
+## 06 — Kubernetes Analytics
+
+Current verdict: **TARGETED FIX — AUTHORITATIVE VALIDATION PENDING**
+
+Final recheck covers Overview, Utilization, Capacity, Storage, Workload, Forecast, Top Consumers, and Alerts & Anomalies. Review proceeded by explicit user direction while the remaining Kubernetes Operations release-gate confirmation is still pending. Analytics removes dual tab ownership, stops internal snapshot identifiers leaking into Overview navigation, formalizes shared Content Tabs, retires dead compatibility surfaces, makes materialized decode ORM-free, and adds permanent L0–L7 release evidence.
+
+### Lock condition
+
+Analytics becomes **PASS — LOCKED** only after authoritative Static Quality, Contract, Unit, Functional, Integration, Security, Rendering/UI, E2E, browser regression, and the full release gate pass.
+
 ## Next review
 
-`06 — Kubernetes Analytics` starts only after Kubernetes Operations reaches `PASS — LOCKED`.
+`07 — Reports` is next only after the outstanding Kubernetes Operations confirmation and Kubernetes Analytics final gate are both green.
 
 ### CRUD Form Alignment and Secret Replace Action Follow-Up
 

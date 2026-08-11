@@ -210,11 +210,7 @@ def main() -> int:
         for error in errors:
             print(f'ERROR: {error}')
         return 1
-    print(
-        'KAORI Storage Inventory Standard audit passed: collection evidence, lifecycle semantics, '
-        'capacity and access evidence, relationship boundaries, canonical workspace, export, topology, '
-        'accessibility, legacy cleanup, and documentation are aligned.'
-    )
+    print('PASS — KAORI Storage Inventory')
     return 0
 
 

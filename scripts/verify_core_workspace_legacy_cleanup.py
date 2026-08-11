@@ -389,10 +389,7 @@ def main() -> int:
             print(f'ERROR: {error}')
         return 1
 
-    print(
-        'KAORI core workspace legacy cleanup passed: Welcome, Kubernetes Dashboard, Inventory Overview, '
-        'Topology, Node, Namespace, Configuration, Workload, Pod, Service, Ingress, and Storage use canonical paths without internal wrappers.'
-    )
+    print('PASS — KAORI Core Workspace Cleanup')
     return 0
 
 

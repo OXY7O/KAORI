@@ -64,6 +64,7 @@ The application must never:
 - return a Secret payload from a list/read helper except through the protected one-time Reveal response.
 
 Protected Reveal is the only plaintext-read workflow. It decodes one approved key, returns a no-store one-time response, clears in-memory buffers, and marks the request consumed.
+The one-time consumption path serializes the `SecretRevealRequest` row with a PostgreSQL `FOR UPDATE OF secret_reveal_requests` boundary while suppressing model-level joined eager relationships. This prevents nullable requester/approver/inventory joins from entering the locking SELECT and keeps the lock scoped to the request row that owns the one-time state transition.
 
 ## Workflow contracts
 

@@ -37,27 +37,6 @@ def cluster_reference_from_model(cluster: Cluster) -> ClusterReference:
     )
 
 
-def load_cluster_reference(cluster_id: str) -> ClusterReference | None:
-    row = (
-        Cluster.query.with_entities(
-            Cluster.id,
-            Cluster.name,
-            Cluster.environment,
-            Cluster.status,
-        )
-        .filter(Cluster.id == str(cluster_id))
-        .first()
-    )
-    if row is None:
-        return None
-    return ClusterReference(
-        id=str(row.id),
-        name=str(row.name),
-        environment=str(row.environment),
-        status=str(row.status or 'unknown'),
-    )
-
-
 def encode_value(value: Any) -> Any:
     if value is None or isinstance(value, (bool, int, float, str)):
         return value
@@ -111,17 +90,13 @@ def decode_value(value: Any) -> Any:
         return Decimal(str(value['value']))
     if value_type == 'cluster':
         cluster_id = str(value.get('id') or '')
-        if not cluster_id:
+        cluster_name = str(value.get('name') or '')
+        if not cluster_id or not cluster_name:
             return None
-        if value.get('name') is not None:
-            return ClusterReference(
-                id=cluster_id,
-                name=str(value.get('name') or 'Unknown Cluster'),
-                environment=str(value.get('environment') or ''),
-                status=str(value.get('status') or 'unknown'),
-            )
-        # Backward compatibility for snapshots generated before cluster metadata
-        # was embedded in the payload. Load scalar columns only; never return an
-        # ORM model to the read-only presentation context.
-        return load_cluster_reference(cluster_id)
+        return ClusterReference(
+            id=cluster_id,
+            name=cluster_name,
+            environment=str(value.get('environment') or ''),
+            status=str(value.get('status') or 'unknown'),
+        )
     return {key: decode_value(item) for key, item in value.items()}

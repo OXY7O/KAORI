@@ -226,11 +226,7 @@ def verify() -> None:
     if 'python scripts/verify_dark_mode_standard.py' not in quality_gate:
         raise AssertionError('scripts/quality_gate.sh does not execute the dark-mode verifier')
 
-    print(
-        'KAORI dark mode standard passed: neutral surface hierarchy, controlled Violet allocation, '
-        'deep-Violet contextual workspace surfaces, Hero/sidebar/application-shell ownership, compiled CSS, '
-        'documentation, and dead-code cleanup match v1.0.'
-    )
+    print('PASS — KAORI Dark Mode Standard')
 
 
 if __name__ == '__main__':

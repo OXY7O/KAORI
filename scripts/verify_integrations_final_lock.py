@@ -432,12 +432,7 @@ def main() -> int:
             print(f'ERROR: {error}')
         return 1
 
-    print(
-        'KAORI Integrations final lock v1.1 passed across '
-        f'{checked_templates} provider templates: shared capability/readiness, HTMX registry loading, '
-        'runtime decision/evidence, modal detail, dense configuration side decisions, registered binding counts, '
-        'RBAC separation, responsive registries, operational feedback, and obsolete-template cleanup are frozen.'
-    )
+    print(f'PASS — KAORI Integrations Final Lock v1.1 · {checked_templates} templates')
     return 0
 
 

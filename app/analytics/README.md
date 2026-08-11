@@ -20,53 +20,18 @@ data sources, models, query catalog, templates, and routes are Kubernetes
 specific. It must not become a mixed folder containing Kubernetes, HCI, Server,
 and Storage code separated only by conditionals.
 
-## Naming and package decision
+## Package ownership for the current release
 
-### Recommended target: `app/kubernetes/analytics`
+`app/analytics` is the canonical Kubernetes Analytics package for the current
+release. Final recheck does not introduce a compatibility package, import shim,
+or parallel `app/kubernetes/analytics` tree. Any future asset-first package move
+must be an explicit direct-cutover architecture change with its own ADR and
+migration plan; it is not an active release dependency.
 
-The cleanest long-term structure is asset-first:
-
-```text
-app/
-├── kubernetes/
-│   └── analytics/
-├── hci/
-│   └── analytics/
-├── server/
-│   └── analytics/
-└── <future-storage-asset-domain>/
-    └── analytics/
-```
-
-This is preferred over `app/analytics/kubernetes` because:
-
-1. Kubernetes is the bounded context and analytics is one capability inside it.
-2. All Kubernetes concepts become discoverable under one package instead of
-   being distributed across generic capability folders.
-3. New asset domains can implement their own analytics without adding
-   `asset_type` branching throughout shared services.
-4. Kubernetes dashboards, inventory, operations, governance, and analytics can
-   evolve together while retaining clear dependency direction.
-5. Provider-neutral integration adapters such as `app/prometheus` and
-   `app/alertmanager` remain separate from asset-specific interpretation.
-
-Reserve a top-level `app/analytics` package only for future analytics that are
-truly cross-asset, such as portfolio capacity, service-level correlation, or
-cross-domain cost intelligence. Do not create a generic abstraction until at
-least two asset implementations prove that the abstraction is genuinely shared.
-
-### Why the package is not moved in this patch
-
-The current package name is referenced broadly by application registration,
-dashboards, reports, Prometheus query-profile domain keys, templates, tests, and
-lazy module imports. A search currently finds hundreds of references. Renaming
-it together with service decomposition would create a large, difficult-to-review
-change.
-
-The rename should be a coordinated direct cutover that updates imports, blueprint
-registration, templates, tests, and persisted references in one controlled release.
-Do not create an intermediate compatibility package. This README establishes the
-target boundary now; it does not perform the move.
+The current boundary remains strict: this package owns Kubernetes-specific
+analytics interpretation, while provider-neutral Prometheus and Alertmanager
+adapters remain outside it. Cross-asset analytics must not be added here by
+`asset_type` branching.
 
 ## Source-of-truth rules
 
@@ -204,7 +169,9 @@ Storage Analysis uses mixed but explicit scope ownership: Cluster and Namespace 
 
 ## Analytics presentation contract
 
-- Use the shared Analytics content-tab component and `kaoriAnalyticsTabs`; do not maintain a separate Overview-only tab implementation.
+- Use the shared KAORI `components/content_tabs.html` component and the native `analytics_controls.js` tab controller. Analytics must not keep an Alpine tab-state duplicate or a compatibility wrapper.
+- Materialized snapshot decode is read-only and ORM-free: canonical cluster references carry id/name/environment/status in the committed payload; old payload shapes are refreshed rather than repaired through a database fallback.
+- Forecast reprojection returns a freshly built canonical resource payload and does not preserve/remove obsolete derived keys from historical payloads.
 - Capacity is the analytics snapshot-style baseline. Analytics Overview tabs and domain workspaces use the shared snapshot shell, header, metric strip, evidence surface, and interpretation primitives from `analytics/components/_analysis_surfaces.html`. Domain layouts may differ, but they must not fork the geometry or visual-role contract.
 - Every requested Overview section declares its tracked load state. The compact progress strip counts only sections actually requested; composite OOB targets are marked loaded by the Health Summary response. The tracker runtime lives in `app/static/js/analytics_overview.js`, not an inline script.
 - Snapshot section headers, actions, metric labels, status text, and empty-state titles use Title Case. Descriptive sentences and technical identifiers retain their natural casing.

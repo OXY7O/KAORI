@@ -4,9 +4,7 @@
 {% import "components/loading_bar.html" as loading_bar %}
 {% block title %}Workload Analysis{% endblock title %}
 {% block dashboard_content %}
-    <div id="workload-page"
-         class="kaori-analytics-page space-y-6"
-         data-analytics-page-request-tracking="false">
+    <div id="workload-page" class="kaori-analytics-page space-y-6" data-analytics-page-request-tracking="false">
         {% include "analytics/workload/partials/_hero.html" %}
         {% if dependency_blocker %}
             {% include "components/dependencies/_blocker.html" %}
@@ -15,7 +13,11 @@
             {% include "analytics/workload/partials/_controls_readiness.html" %}
             {% include "analytics/workload/partials/_overview.html" %}
             {% if cluster %}
-                {% set workload_tabs = [('quotas', 'Tenant Quota Analysis', 'badge-gauge'), ('mapping', 'Workload Resource Mapping', 'network'), ('recommendations', 'Workload Recommendations', 'list-checks')] %}
+                {% set workload_tabs = [
+                    ('quotas', 'Tenant Quota Analysis', 'badge-gauge'),
+                    ('mapping', 'Workload Resource Mapping', 'network'),
+                    ('recommendations', 'Workload Recommendations', 'list-checks')
+                ] %}
                 {% set active_tab = initial_tab|default('quotas') %}
                 {% call analytics_workspace.tabbed(
                     'workload-content',
@@ -26,14 +28,12 @@
                     'boxes',
                     active_tab,
                     ['quotas', 'mapping', 'recommendations']
-                    ) %}
+                ) %}
                     <div id="workload-content-panel-quotas"
                          role="tabpanel"
                          aria-labelledby="workload-content-tab-quotas"
                          data-analytics-tab-panel="quotas"
-                         x-show="activeTab === 'quotas'"
-                         x-bind:hidden="activeTab !== 'quotas'"
-                         {% if active_tab != 'quotas' %}hidden x-cloak{% endif %}>
+                         {% if active_tab != 'quotas' %}hidden{% endif %}>
                         {% if active_tab == 'quotas' %}
                             {% include "analytics/workload/partials/_tenant_quota_section.html" %}
                         {% else %}
@@ -48,13 +48,12 @@
                             </div>
                         {% endif %}
                     </div>
+
                     <div id="workload-content-panel-mapping"
                          role="tabpanel"
                          aria-labelledby="workload-content-tab-mapping"
                          data-analytics-tab-panel="mapping"
-                         x-show="activeTab === 'mapping'"
-                         x-bind:hidden="activeTab !== 'mapping'"
-                         {% if active_tab != 'mapping' %}hidden x-cloak{% endif %}>
+                         {% if active_tab != 'mapping' %}hidden{% endif %}>
                         {% if active_tab == 'mapping' %}
                             {% include "analytics/workload/partials/_workload_mapping_section.html" %}
                         {% else %}
@@ -73,13 +72,12 @@
                             </div>
                         {% endif %}
                     </div>
+
                     <div id="workload-content-panel-recommendations"
                          role="tabpanel"
                          aria-labelledby="workload-content-tab-recommendations"
                          data-analytics-tab-panel="recommendations"
-                         x-show="activeTab === 'recommendations'"
-                         x-bind:hidden="activeTab !== 'recommendations'"
-                         {% if active_tab != 'recommendations' %}hidden x-cloak{% endif %}>
+                         {% if active_tab != 'recommendations' %}hidden{% endif %}>
                         {% include "analytics/workload/partials/_recommendations.html" %}
                     </div>
                 {% endcall %}

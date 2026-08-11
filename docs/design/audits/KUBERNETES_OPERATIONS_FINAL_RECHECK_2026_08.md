@@ -169,3 +169,8 @@ The redesign becomes **PASS — LOCKED** only after authoritative devcontainer S
 ### Protected Reveal Navigation Resilience
 
 Protected Reveal peer tabs use progressive enhancement: each tab has a canonical `?reveal_view=` server-navigation fallback, and the client controller intercepts navigation only after validating the matching tab/panel pair. This prevents dead tabs when JavaScript is unavailable, stale, or partially deployed.
+
+### Protected Reveal PostgreSQL Locking Follow-Up
+
+The one-time Reveal action now suppresses `SecretRevealRequest` joined eager relationships before acquiring its row lock and emits a table-scoped `FOR UPDATE OF secret_reveal_requests` lock. The request model owns joined requester/approver/cluster/inventory relationships, including nullable relationships; those joins must not be part of the critical one-time-consumption locking query. The Reveal path reads only scalar request identity while locked and resolves the live Cluster explicitly afterward. My Requests step-up also reuses the canonical Form Field baseline so the password control and `Verify Session` action align horizontally before the helper copy.
+

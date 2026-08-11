@@ -51,6 +51,7 @@ run_static() {
     python scripts/verify_title_case_standard.py
     python scripts/verify_operational_dashboard_standard.py
     python scripts/verify_analytics_compact_label_standard.py
+    python scripts/verify_analytics_final_lock.py
     python scripts/verify_sidebar_navigation_standard.py
     python scripts/verify_application_shell_standard.py
     python scripts/verify_javascript_syntax.py

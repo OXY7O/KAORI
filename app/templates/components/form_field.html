@@ -11,15 +11,12 @@ label and control.
         {% if status_text %}{{ table_label.status_label(status_text, status_tone, status_icon) }}{% endif %}
     </span>
 {%- endmacro %}
-
 {% macro help(text) -%}
     {% if text %}<span class="mt-1.5 block text-xs leading-5 text-content-muted">{{ text }}</span>{% endif %}
 {%- endmacro %}
-
 {% macro select_classes() -%}
     mt-2 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20 disabled:cursor-not-allowed disabled:bg-surface-disabled disabled:text-content-muted
 {%- endmacro %}
-
 {% macro input_classes() -%}
     mt-2 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary shadow-sm outline-none transition placeholder:text-content-muted focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20 disabled:cursor-not-allowed disabled:bg-surface-disabled disabled:text-content-muted
 {%- endmacro %}

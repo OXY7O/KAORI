@@ -4,12 +4,20 @@
 {% block dashboard_content %}
     {% set selected_cluster_name = selected_cluster.name if selected_cluster else 'No Cluster Selected' %}
     {% set active_tab = selected_tab|default('alerts', true) %}
-    {% set alert_tabs = [('alerts', 'Alerts', 'bell-ring'), ('anomalies', 'Anomalies', 'radar'), ('routing', 'Routing & Suppression', 'route'), ('ownership', 'Ownership & Runbooks', 'book-open-check'), ('readiness', 'Incident Readiness', 'siren'), ('recommendations', 'Recommendations', 'list-checks'), ('resources', 'Operational Resources', 'external-link')] %}
-    {% set allowed_tabs = ["alerts", "anomalies", "routing", "ownership", "readiness", "recommendations", "resources"] %}
+    {% set alert_tabs = [
+        ('alerts', 'Alerts', 'bell-ring'),
+        ('anomalies', 'Anomalies', 'radar'),
+        ('routing', 'Routing & Suppression', 'route'),
+        ('ownership', 'Ownership & Runbooks', 'book-open-check'),
+        ('readiness', 'Incident Readiness', 'siren'),
+        ('recommendations', 'Recommendations', 'list-checks'),
+        ('resources', 'Operational Resources', 'external-link')
+    ] %}
+    {% set allowed_tabs = ['alerts', 'anomalies', 'routing', 'ownership', 'readiness', 'recommendations', 'resources'] %}
+
     <div id="alerts-page-content"
          class="kaori-analytics-page space-y-6"
-         data-analytics-page-request-tracking="false"
-         data-alerts-swap-boundary>
+         data-analytics-page-request-tracking="false">
         <form id="alerts-control-form"
               method="GET"
               action="{{ url_for('analytics.alerts') }}"
@@ -32,8 +40,10 @@
                 {% include "analytics/alerts/partials/_filters.html" %}
             {% endif %}
         </form>
+
         {% if not dependency_blocker %}
             {% include "analytics/alerts/partials/_cluster_signal_overview.html" %}
+
             {% call analytics_workspace.tabbed(
                 'alerts-content',
                 alert_tabs,
@@ -43,67 +53,71 @@
                 'layout-dashboard',
                 active_tab,
                 allowed_tabs
-                ) %}
+            ) %}
                 <div id="alerts-content-panel-alerts"
                      role="tabpanel"
                      data-analytics-tab-panel="alerts"
                      aria-labelledby="alerts-content-tab-alerts"
-                     x-show="activeTab === 'alerts'"
-                     x-bind:hidden="activeTab !== 'alerts'"
-                     x-cloak>{% include "analytics/alerts/partials/_alerts_table.html" %}</div>
+                    >
+                    {% include "analytics/alerts/partials/_alerts_table.html" %}
+                </div>
+
                 <div id="alerts-content-panel-anomalies"
                      role="tabpanel"
                      data-analytics-tab-panel="anomalies"
                      aria-labelledby="alerts-content-tab-anomalies"
-                     x-show="activeTab === 'anomalies'"
-                     x-bind:hidden="activeTab !== 'anomalies'"
                      hidden
-                     x-cloak>{% include "analytics/alerts/partials/_anomalies_table.html" %}</div>
+                    >
+                    {% include "analytics/alerts/partials/_anomalies_table.html" %}
+                </div>
+
                 <div id="alerts-content-panel-routing"
                      role="tabpanel"
                      data-analytics-tab-panel="routing"
                      aria-labelledby="alerts-content-tab-routing"
-                     x-show="activeTab === 'routing'"
-                     x-bind:hidden="activeTab !== 'routing'"
                      hidden
-                     x-cloak>
+                    >
                     <div class="space-y-5">
                         {% include "analytics/alerts/partials/_routing_summary.html" %}
                         {% include "analytics/alerts/partials/_silence_inhibition_summary.html" %}
                     </div>
                 </div>
+
                 <div id="alerts-content-panel-ownership"
                      role="tabpanel"
                      data-analytics-tab-panel="ownership"
                      aria-labelledby="alerts-content-tab-ownership"
-                     x-show="activeTab === 'ownership'"
-                     x-bind:hidden="activeTab !== 'ownership'"
                      hidden
-                     x-cloak>{% include "analytics/alerts/partials/_ownership_summary.html" %}</div>
+                    >
+                    {% include "analytics/alerts/partials/_ownership_summary.html" %}
+                </div>
+
                 <div id="alerts-content-panel-readiness"
                      role="tabpanel"
                      data-analytics-tab-panel="readiness"
                      aria-labelledby="alerts-content-tab-readiness"
-                     x-show="activeTab === 'readiness'"
-                     x-bind:hidden="activeTab !== 'readiness'"
                      hidden
-                     x-cloak>{% include "analytics/alerts/partials/_incident_readiness.html" %}</div>
+                    >
+                    {% include "analytics/alerts/partials/_incident_readiness.html" %}
+                </div>
+
                 <div id="alerts-content-panel-recommendations"
                      role="tabpanel"
                      data-analytics-tab-panel="recommendations"
                      aria-labelledby="alerts-content-tab-recommendations"
-                     x-show="activeTab === 'recommendations'"
-                     x-bind:hidden="activeTab !== 'recommendations'"
                      hidden
-                     x-cloak>{% include "analytics/alerts/partials/_recommendations.html" %}</div>
+                    >
+                    {% include "analytics/alerts/partials/_recommendations.html" %}
+                </div>
+
                 <div id="alerts-content-panel-resources"
                      role="tabpanel"
                      data-analytics-tab-panel="resources"
                      aria-labelledby="alerts-content-tab-resources"
-                     x-show="activeTab === 'resources'"
-                     x-bind:hidden="activeTab !== 'resources'"
                      hidden
-                     x-cloak>{% include "analytics/alerts/partials/_operational_resources.html" %}</div>
+                    >
+                    {% include "analytics/alerts/partials/_operational_resources.html" %}
+                </div>
             {% endcall %}
         {% endif %}
     </div>

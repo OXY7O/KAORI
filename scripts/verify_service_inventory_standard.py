@@ -167,11 +167,7 @@ def main() -> int:
             print(f'ERROR: {error}')
         return 1
 
-    print(
-        'KAORI Service Inventory Standard audit passed: collector evidence, '
-        'backend semantics, committed scope, detail evidence, export fields, '
-        'accessibility, and documentation are aligned.'
-    )
+    print('PASS — KAORI Service Inventory')
     return 0
 
 

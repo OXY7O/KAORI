@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from copy import deepcopy
 from datetime import UTC, datetime
 from math import isfinite
-from typing import Any, cast
+from typing import Any
 
 from app.analytics.common.coercion import as_dict as _as_dict
 from app.analytics.common.coercion import as_list as _as_list
@@ -36,7 +36,6 @@ from app.intelligence.recommendation_engine import (
     count_actionable_recommendations,
     format_recommendation_cards,
 )
-
 
 def _empty_payload(
     *,
@@ -92,7 +91,6 @@ def _empty_payload(
         'recommendation_count': 0,
     }
 
-
 def get_forecast_snapshot(
     cluster_id: str,
     time_range: str = '30d',
@@ -120,7 +118,6 @@ def get_forecast_snapshot(
     storage_item = item_map.get('storage', {})
     pod_item = item_map.get('pods', {})
     forecast_risk = _resolve_forecast_risk(summary=summary, items=items)
-    actionable_recommendations = forecast_payload.get('actionable_recommendations')
     risk_count = _safe_int(summary.get('warning_count', 0)) + _safe_int(summary.get('critical_count', 0))
     return {
         'cpu_trend': _get_forecast_trend_label(cpu_item),
@@ -153,12 +150,11 @@ def get_forecast_snapshot(
         'nearest_critical': summary.get('nearest_critical', {}),
         'series': _build_forecast_snapshot_series(items),
         'recommendation_count': count_actionable_recommendations(
-            cast(list[dict[str, Any]], actionable_recommendations)
-            if isinstance(actionable_recommendations, list)
+            forecast_payload.get('actionable_recommendations')
+            if isinstance(forecast_payload.get('actionable_recommendations'), list)
             else []
         ),
     }
-
 
 def _normalize_forecast_history_window(
     time_range: str,
@@ -171,7 +167,6 @@ def _normalize_forecast_history_window(
         return time_range
 
     return '30d'
-
 
 def _build_forecast_item_map(
     items: list[Any],
@@ -197,7 +192,6 @@ def _build_forecast_item_map(
 
     return item_map
 
-
 def _get_forecast_trend_value(
     item: dict[str, Any],
 ) -> int | None:
@@ -210,7 +204,6 @@ def _get_forecast_trend_value(
     return _safe_int(
         _safe_float(projected_raw) - _safe_float(latest_raw),
     )
-
 
 def _get_forecast_trend_label(
     item: dict[str, Any],
@@ -229,7 +222,6 @@ def _get_forecast_trend_label(
         return 'Decreasing'
 
     return 'Stable'
-
 
 def _resolve_forecast_risk(
     *,
@@ -280,7 +272,6 @@ def _resolve_forecast_risk(
 
     return 'Low' if has_forecast_evidence else 'Unknown'
 
-
 def _build_forecast_snapshot_series(items: list[Any]) -> list[dict[str, Any]]:
     item_map = _build_forecast_item_map(items)
     resources = (('cpu', 'CPU'), ('memory', 'Memory'), ('storage', 'Storage'), ('pods', 'Pods'))
@@ -322,7 +313,9 @@ def _snapshot_series_item(
     return {
         'key': key,
         'label': label,
-        'historical_points': _build_svg_polyline_points(values=historical, total_points=total_points, start_index=0),
+        'historical_points': _build_svg_polyline_points(
+            values=historical, total_points=total_points, start_index=0
+        ),
         'forecast_points': _build_svg_polyline_points(
             values=forecast_line,
             total_points=total_points,
@@ -332,7 +325,6 @@ def _snapshot_series_item(
         'projected_percent': _safe_int(projected),
         'trend': _get_forecast_trend_label(item),
     }
-
 
 def _extract_percent_values(
     points: Any,
@@ -385,7 +377,6 @@ def _sample_forecast_values(
 
     return [values[index] for index in indexes]
 
-
 def _build_svg_polyline_points(
     *,
     values: list[float],
@@ -418,7 +409,6 @@ def _build_svg_polyline_points(
         points,
     )
 
-
 def _clamp_percent(
     value: float,
 ) -> float:
@@ -429,7 +419,6 @@ def _clamp_percent(
             100.0,
         ),
     )
-
 
 def _present_forecast_item(
     item: dict[str, Any],
@@ -455,21 +444,15 @@ def _present_forecast_item(
         usage_query='',
         capacity_query='',
     )
-    updated = deepcopy(item)
-    updated.update(
-        build_resource_forecast_payload(
-            definition=definition,
-            daily_points=historical_points,
-            capacity=_safe_float(item.get('capacity')),
-            forecast_result=result,
-            horizon_days=horizon_days,
-            method=method,
-            fallback_time=historical_points[-1].timestamp if historical_points else datetime.now(UTC),
-        )
+    return build_resource_forecast_payload(
+        definition=definition,
+        daily_points=historical_points,
+        capacity=_safe_float(item.get('capacity')),
+        forecast_result=result,
+        horizon_days=horizon_days,
+        method=method,
+        fallback_time=historical_points[-1].timestamp if historical_points else datetime.now(UTC),
     )
-    for legacy_key in _FORECAST_LEGACY_KEYS:
-        updated.pop(legacy_key, None)
-    return updated
 
 
 def _parse_historical_points(value: Any) -> list[ForecastPoint]:
@@ -486,16 +469,6 @@ def _parse_historical_points(value: Any) -> list[ForecastPoint]:
     return points
 
 
-_FORECAST_LEGACY_KEYS = (
-    'current_value',
-    'current_display',
-    'current_percent',
-    'growth_per_day',
-    'growth_per_week',
-    'growth_display',
-    'confidence',
-    'confidence_reason',
-)
 
 
 def present_forecast_materialized_context(
@@ -523,6 +496,7 @@ def present_forecast_materialized_context(
         set(FORECAST_TABS),
     )
     selected_method = _normalize_option(
+
         get_query_value(query_args=query_args, name='method', default='holt_winters'),
         'holt_winters',
         {item['value'] for item in FORECAST_METHOD_OPTIONS},
@@ -536,7 +510,10 @@ def present_forecast_materialized_context(
 
     payload = deepcopy(presented.get('forecast_payload') or {})
     source_items = list(payload.get('items') or [])
-    items = [_present_forecast_item(item, horizon_days=horizon_days, method=selected_method) for item in source_items]
+    items = [
+        _present_forecast_item(item, horizon_days=horizon_days, method=selected_method)
+        for item in source_items
+    ]
     summary = _build_summary(items)
     recommendation_payload = {
         'namespace': selected_namespace,

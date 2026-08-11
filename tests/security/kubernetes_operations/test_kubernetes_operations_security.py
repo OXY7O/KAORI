@@ -60,3 +60,5 @@ def test_secret_security_boundaries_keep_sensitive_values_out_of_persistence_and
     assert "BLOCKED_KEY_NAMES = {'tls.key', 'ssh-privatekey'}" in reveal_service
     assert 'scrub_mapping_values(secret_data)' in reveal_service
     assert 'scrub_secret_payload(secret_object)' in reveal_service
+    assert 'query.enable_eagerloads(False).with_for_update(of=SecretRevealRequest)' in reveal_service
+    assert 'query = query.with_for_update()' not in reveal_service

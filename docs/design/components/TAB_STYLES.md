@@ -58,6 +58,20 @@ Use Tab Style 2 when the parent workspace shell is part of the information archi
 
 Use Tab Style 3 for local view switching in a visualization, inspector, drawer, or compact component. Do not use it for top-level workspace domains or four-plus peer sections. The detailed contract lives in `SEGMENTED_TABS.md`.
 
+## Tab Style 4 — Content Tabs
+
+| Property | Contract |
+|---|---|
+| Semantic key | `content-tabs` |
+| Component | `components/content_tabs.html` |
+| References | Kubernetes Analytics Overview and domain analysis workspaces |
+| Content relationship | Several closely related content views inside one established workspace |
+| Surface | Compact rounded controls within or directly under the workspace header |
+| State | Consumer-owned; Analytics uses the native `analytics_controls.js` controller |
+| Layout | Wrap by default; approved one-row overflow mode for dense compact navigation |
+
+Use Tab Style 4 for compact intra-workspace analysis navigation. The component owns visual active/inactive class tokens; the controller owns state. Internal dataset, snapshot, DOM-target, or loader identifiers must never be passed through as visible badges. Dense Overview navigation may use the documented no-wrap mode only with concise user-facing labels. The detailed contract lives in `CONTENT_TABS.md`.
+
 ## Future Styles
 
 Future styles must be added to this registry before implementation. Use a semantic name in addition to the next numeric review label. A vertical navigation model for a dense configuration workspace may justify another style when a real page requires it.

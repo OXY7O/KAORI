@@ -146,12 +146,7 @@ def main() -> int:
             print(f'ERROR: {error}')
         return 1
 
-    print(
-        'KAORI core workspace UI lock passed across '
-        f'{checked} templates: Welcome, Kubernetes Dashboard, Kubernetes Inventory, Analytics, Operations, Governance, '
-        'Integrations, and Platform Operations are protected against raw palette drift, arbitrary typography, inline UI debt, '
-        'page-local tablists, compact pill labels, known compatibility wrappers, and RBAC regression.'
-    )
+    print(f'PASS — KAORI Core UI Lock · {checked} templates')
     return 0
 
 

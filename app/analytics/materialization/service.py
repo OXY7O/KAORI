@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from hashlib import sha256
 from typing import Any
 
 from flask import current_app
 from sqlalchemy.exc import IntegrityError
 
 from app.analytics.materialization.catalog import canonical_parameters, get_dataset
+from app.analytics.materialization.identity import parameter_fingerprint
 from app.analytics.materialization.serialization import decode_value, encode_value
 from app.extensions.db import db
 from app.models import AnalyticsSnapshot
@@ -20,20 +20,6 @@ def utcnow() -> datetime:
 
 def _as_utc(value: datetime) -> datetime:
     return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
-
-
-def normalize_parameters(parameters: dict[str, Any] | None) -> dict[str, str]:
-    return {
-        str(key): str(value)
-        for key, value in sorted((parameters or {}).items())
-        if value is not None and str(value).strip() != ''
-    }
-
-
-def parameter_fingerprint(parameters: dict[str, Any] | None) -> str:
-    normalized = normalize_parameters(parameters)
-    payload = '&'.join(f'{key}={value}' for key, value in normalized.items())
-    return sha256(payload.encode('utf-8')).hexdigest()
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,12 +65,12 @@ def read_snapshot(
     dataset = get_dataset(dataset_key)
     now = utcnow()
     generated_at = _as_utc(snapshot.generated_at)
-    expires_at = (
-        _as_utc(snapshot.expires_at)
-        if snapshot.expires_at
-        else generated_at + timedelta(minutes=dataset.freshness_minutes)
+    expires_at = _as_utc(snapshot.expires_at) if snapshot.expires_at else generated_at + timedelta(
+        minutes=dataset.freshness_minutes
     )
-    stale_deadline = expires_at + timedelta(minutes=snapshot.stale_grace_minutes or dataset.stale_grace_minutes)
+    stale_deadline = expires_at + timedelta(
+        minutes=snapshot.stale_grace_minutes or dataset.stale_grace_minutes
+    )
     if now > stale_deadline:
         return SnapshotResult(None, snapshot, 'expired', True)
 
@@ -149,7 +135,9 @@ def store_snapshot(
     stale_grace_minutes: int | None = None,
 ) -> AnalyticsSnapshot:
     if context.get('dependency_blocker'):
-        raise ValueError(f'Analytics snapshot {dataset_key} contains a dependency blocker and cannot be committed.')
+        raise ValueError(
+            f'Analytics snapshot {dataset_key} contains a dependency blocker and cannot be committed.'
+        )
     dataset = get_dataset(dataset_key)
     now = utcnow()
     snapshot = mark_snapshot_pending(

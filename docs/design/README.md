@@ -21,6 +21,7 @@ Authoritative shell standards include the locked application-shell navigation co
 - `components/TECHNICAL_VALUE.md`
 - `components/PAGINATION.md`
 - `components/TAB_STYLES.md`
+- `components/CONTENT_TABS.md`
 - `components/WORKSPACE_TABS.md`
 - `components/FRAMED_WORKSPACE_TABS.md`
 - `components/SEGMENTED_TABS.md`

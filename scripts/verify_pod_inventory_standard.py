@@ -220,11 +220,7 @@ def main() -> int:
             print(f'ERROR: {error}')
         return 1
 
-    print(
-        'KAORI Pod Inventory Standard audit passed: lifecycle, runtime, owner '
-        'resolution, committed scope, detail evidence, export fields, '
-        'accessibility, and documentation are aligned.'
-    )
+    print('PASS — KAORI Pod Inventory')
     return 0
 
 

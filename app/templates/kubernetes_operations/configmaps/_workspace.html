@@ -6,7 +6,7 @@
        value="{{ workspace_mode|default('update') }}">
 <div class="grid gap-4 md:grid-cols-3">
     <label class="block min-w-0" for="configmap-cluster">
-        {{ form_field.label_row('Cluster') }}
+        {{ form_field.label_row("Cluster") }}
         <select id="configmap-cluster"
                 name="cluster_id"
                 hx-get="{{ url_for('kubernetes_operations.configmap_workspace') }}"
@@ -22,7 +22,7 @@
         </select>
     </label>
     <label class="block min-w-0" for="configmap-namespace">
-        {{ form_field.label_row('Namespace') }}
+        {{ form_field.label_row("Namespace") }}
         <select id="configmap-namespace"
                 name="namespace"
                 hx-get="{{ url_for('kubernetes_operations.configmap_workspace') }}"
@@ -46,7 +46,7 @@
             {% endfor %}
         </select>
         {% if selected_cluster_id and not selection_error and not namespaces %}
-            {{ form_field.help('No live namespace is available for the selected cluster.') }}
+            {{ form_field.help("No live namespace is available for the selected cluster.") }}
         {% endif %}
     </label>
     <label class="block min-w-0" for="configmap-name">
@@ -74,7 +74,7 @@
             {% endfor %}
         </select>
         {% if selected_namespace and not configmaps and not selection_error %}
-            {{ form_field.help('No ConfigMap currently exists in this live namespace.') }}
+            {{ form_field.help("No ConfigMap currently exists in this live namespace.") }}
         {% endif %}
     </label>
 </div>

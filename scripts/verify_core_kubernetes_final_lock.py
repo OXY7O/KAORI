@@ -182,10 +182,7 @@ def main() -> int:
             print(f'ERROR: {error}')
         return 1
 
-    print(
-        'KAORI Core Kubernetes Final Lock v1 passed: Welcome, Kubernetes Dashboard, Inventory, Analytics, '
-        'Operations, and Governance are documented, verifier-protected, and legacy cleanup guardrails are active.'
-    )
+    print('PASS — KAORI Kubernetes Final Lock v1')
     return 0
 
 

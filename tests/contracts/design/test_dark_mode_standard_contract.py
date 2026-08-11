@@ -17,7 +17,7 @@ def test_dark_mode_standard_is_enforced() -> None:
     )
 
     assert result.returncode == 0, result.stdout + result.stderr
-    assert 'KAORI dark mode standard passed' in result.stdout
+    assert 'PASS — KAORI Dark Mode Standard' in result.stdout
 
 
 def test_dark_mode_document_is_registered_as_authoritative() -> None:

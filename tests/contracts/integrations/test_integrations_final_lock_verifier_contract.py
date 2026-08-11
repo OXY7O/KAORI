@@ -17,7 +17,7 @@ def test_final_lock_verifier_is_wired_into_static_quality_gate() -> None:
     verifier = read(VERIFIER)
     quality_gate = read(QUALITY_GATE)
 
-    assert 'KAORI Integrations final lock v1.1 passed' in verifier
+    assert 'PASS — KAORI Integrations Final Lock v1.1' in verifier
     assert 'verify_integrations_final_lock.py' in quality_gate
     assert 'data-kaori-capability-readiness' in verifier
     assert 'runtime_decision.render(' in verifier

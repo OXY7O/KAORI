@@ -9,24 +9,27 @@ def read(path: str) -> str:
 
 def test_shared_content_tabs_preserve_analytics_geometry_and_offer_server_owned_links() -> None:
     shared = read('app/templates/components/content_tabs.html')
-    analytics = read('app/templates/analytics/components/_content_tabs.html')
+    analytics_workspace = read('app/templates/analytics/components/_analysis_workspace.html')
+    analytics_overview = read('app/templates/analytics/overview/index.html')
     storage = read('app/templates/reports/storage/index.html')
 
     # Geometry is the Analytics compact-tab treatment: soft embedded strip,
     # rounded bordered items, KAORI violet active state, and compact spacing.
-    assert 'border-b border-outline-subtle bg-surface-hover px-5 py-2 sm:px-6' in shared
-    assert 'flex flex-wrap gap-2' in shared
+    assert "border-b border-outline-subtle bg-surface-hover px-5 py-2 sm:px-6" in shared
+    assert "'min-w-max flex-nowrap' if nowrap else 'flex-wrap'" in shared
     assert 'rounded-lg border px-3.5 text-sm font-semibold' in shared
     assert 'border-kaori-primary bg-kaori-soft text-kaori-primary-dark dark:text-kaori-accent' in shared
     assert 'render_buttons' in shared
     assert 'render_links' in shared
     assert 'data-kaori-tab-variant="content-tabs-server"' in shared
 
-    # Analytics keeps its existing public macro but delegates the geometry to
-    # the shared component, avoiding a Reports-vs-Analytics style fork.
-    assert 'components/content_tabs.html' in analytics
-    assert 'content_tabs.render_buttons' in analytics
-    assert "data_namespace='analytics'" in analytics
+    # Analytics now consumes the shared component directly; the former
+    # compatibility wrapper is retired instead of preserved as duplicate ownership.
+    assert 'components/content_tabs.html' in analytics_workspace
+    assert 'content_tabs.render_buttons' in analytics_workspace
+    assert "data_namespace='analytics'" in analytics_workspace
+    assert 'components/content_tabs.html' in analytics_overview
+    assert not (ROOT / 'app/templates/analytics/components/_content_tabs.html').exists()
 
     # Storage consumes the same global component with server-owned URL state.
     assert 'components/content_tabs.html' in storage

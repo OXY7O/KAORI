@@ -1,5 +1,6 @@
 from pathlib import Path
 
+
 OVERVIEW_ROOT = Path('app/templates/analytics/overview')
 
 
@@ -58,17 +59,19 @@ def test_overview_workspace_splits_long_domains_into_dedicated_tabs() -> None:
     assert 'id="analytics-overview-workspace"' in source
     assert 'embedded=true' in source
     assert 'class="p-4 sm:p-5"' in source
+    assert 'show_badges=false' in source
+    assert 'nowrap=true' in source
 
     for tab_id, label in (
-        ('utilization', 'Utilization'),
+        ('utilization', 'Usage'),
         ('capacity', 'Capacity'),
-        ('workloads', 'Workloads'),
+        ('workloads', 'Workload'),
         ('storage', 'Storage'),
         ('consumers', 'Consumers'),
         ('forecast', 'Forecast'),
         ('alerts', 'Alerts'),
-        ('action-summary', 'Action Summary'),
-        ('recommendations', 'Recommendations'),
+        ('action-summary', 'Actions'),
+        ('recommendations', 'Guidance'),
     ):
         assert f"('{tab_id}', '{label}'" in source
 
@@ -148,7 +151,9 @@ def test_utilization_pressure_visual_is_not_compressed_into_small_cards() -> Non
 
 def test_forecast_snapshot_uses_one_chart_and_one_resource_outlook() -> None:
     source = read('partials/_forecast_snapshot.html')
-    shared_chart = (OVERVIEW_ROOT.parents[1] / 'components/forecast_projection_chart.html').read_text(encoding='utf-8')
+    shared_chart = (
+        OVERVIEW_ROOT.parents[1] / 'components/forecast_projection_chart.html'
+    ).read_text(encoding='utf-8')
 
     assert 'Combined Forecast Projection' in source
     assert 'Resource Outlook' in source
@@ -229,6 +234,7 @@ def test_overview_recommendations_are_always_visible_and_paginated() -> None:
     assert "recommendation_pager.controls(recommendations|length, 'Actions', 3)" in recommendations
 
 
+
 def test_overview_hero_uses_canonical_lazy_context_card_body() -> None:
     source = read('partials/_hero_posture.html')
     loading = read('partials/_hero_posture_loading.html')
@@ -260,10 +266,7 @@ def test_overview_readiness_and_interpretation_surface_hierarchy_is_canonical() 
     assert 'overview_surface.interpretation_grid_classes()' in health
     assert 'bg-surface-card' in surfaces
     assert 'bg-surface-muted' in surfaces
-    assert (
-        "overview_surface.context_panel_classes('border-t border-outline-subtle px-4 py-4 sm:px-5 xl:col-span-4"
-        in resource
-    )
+    assert "overview_surface.context_panel_classes('border-t border-outline-subtle px-4 py-4 sm:px-5 xl:col-span-4" in resource
     assert 'overview_surface.interpretation_grid_classes()' in resource
     assert 'overview_surface.interpretation_grid_classes()' in capacity
     assert 'overview_surface.interpretation_callout' in workload
@@ -290,6 +293,7 @@ def test_overview_status_tones_use_shared_semantic_normalization() -> None:
     assert 'table_label.semantic_tone(recommendation.severity_tone or recommendation.severity)|trim' in recommendations
     for alias in ('green', 'amber', 'red', 'gray', 'blue', 'purple'):
         assert alias in table_label
+
 
 
 def test_overview_loading_tracker_reports_real_lazy_section_progress() -> None:

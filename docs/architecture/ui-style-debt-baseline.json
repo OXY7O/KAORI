@@ -14,17 +14,8 @@
     "app/templates/alertmanager/partials/_delete_confirmation_modal.html": {
       "semantic_border_utilities": 2
     },
-    "app/templates/analytics/components/_content_tabs.html": {
-      "page_local_workspace_tablists": 1
-    },
-    "app/templates/analytics/components/_snapshot_panel.html": {
-      "copied_standard_surface_shells": 1
-    },
     "app/templates/analytics/components/_status_notice.html": {
       "semantic_border_utilities": 3
-    },
-    "app/templates/analytics/materialization/_freshness.html": {
-      "semantic_border_utilities": 4
     },
     "app/templates/analytics/materialization/_pending.html": {
       "semantic_border_utilities": 2
