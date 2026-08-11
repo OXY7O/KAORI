@@ -66,8 +66,8 @@ def test_rule_catalog_uses_adjacent_inline_rule_definition_instead_of_modal():
     assert Path('app/templates/intelligence/partials/_catalog_results.html').exists()
     workspace = read('app/templates/intelligence/partials/_catalog_workspace.html')
     results = read('app/templates/intelligence/partials/_catalog_results.html')
-    assert "filter_results_target = '#catalog-results-content'" in workspace
-    assert "filter_workspace_target = '#catalog-workspace-content'" in workspace
+    assert 'filter_results_target = "#catalog-results-content"' in workspace
+    assert 'filter_workspace_target = "#catalog-workspace-content"' in workspace
     assert "target='#catalog-results-content'" in results
     assert "target == 'catalog-results-content'" in routes
 

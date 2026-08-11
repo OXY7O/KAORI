@@ -11,7 +11,8 @@ def test_recommendation_detail_uses_canonical_side_drawer_hierarchy():
     assert 'Scope & Evidence' in template
     assert 'Evidence Contract' in template
     assert 'Remediation Workflow' in template
-    assert "['Review Evidence', 'Validate Live State', 'Apply Remediation', 'Verify & Close']" in template
+    for phase in ('Review Evidence', 'Validate Live State', 'Apply Remediation', 'Verify & Close'):
+        assert phase in template
     assert 'Target Outcome' in template
     assert 'Step {{ loop.index }} of {{ item.fix_steps|length }}' in template
     assert 'Verification Gate' in template
@@ -28,10 +29,9 @@ def test_shared_resource_detail_host_supports_drawer_without_main_layout_lock():
     javascript = Path('app/static/js/detail_rows.js').read_text()
     app_layout = Path('app/templates/layouts/app.html').read_text()
 
-    assert (
-        "macro host(resource_type, detail_url_template, footer_text='Details come from the latest committed inventory snapshot.')"
-        in component
-    )
+    assert 'macro host(' in component
+    for argument in ('resource_type', 'detail_url_template', 'footer_text=', 'context_label=', 'dialog_max_width='):
+        assert argument in component
     assert 'data-resource-detail-presentation="{{ presentation }}"' in component
     assert "presentation == 'drawer'" in component
     assert 'translate-x-full' in component

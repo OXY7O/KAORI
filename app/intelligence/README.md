@@ -44,4 +44,29 @@ be reintroduced.
 
 Recommendations, Rule Catalog, Alert Intelligence, and Automation Control use the canonical Intelligence workspace contract documented in `docs/design/components/INTELLIGENCE_WORKSPACE_STANDARD.md`.
 
-Automation Control mutations are disabled by default. Set `AUTOMATION_CONTROL_MUTATIONS_ENABLED=true` only after validation gates and behavioral tests are complete. The disabled UI state is named **Reserved Plan**; MVP, placeholder, preview-only, and coming-soon labels are not used.
+Automation Control mutations are disabled by default. The guard key `AUTOMATION_CONTROL_MUTATIONS_ENABLED` is intentionally not exposed as an environment-configured release toggle in this baseline; enabling it requires a later feature-complete review with validation and behavioral evidence. The disabled UI state is named **Reserved Plan**; MVP, placeholder, preview-only, and coming-soon labels are not used.
+
+## Intelligence baseline lock v1
+
+The current Intelligence surface is **baseline-locked**, not declared feature-complete.
+The lock protects the implemented evidence/read paths and the fail-closed boundary for
+capabilities that are still being built. It must not be interpreted as approval to enable
+reserved mutations or unfinished provider paths.
+
+Locked current-state contracts:
+
+- **Recommendations** is an active, read-only evidence review surface backed by the
+  central Intelligence evaluator.
+- **Rule Catalog** exposes canonical definitions. Rules that do not yet have a validated
+  provider/evaluator path remain **Reserved Plan**.
+- **Alert Intelligence** exposes the validated Kubernetes evidence/enrichment boundary;
+  Server and HCI enrichment remain **Reserved Plan**.
+- **Automation Control** is an application-layer orchestration surface. Its mutation
+  routes remain fail-closed behind `AUTOMATION_CONTROL_MUTATIONS_ENABLED`, which must
+  remain unset/default-false in this baseline. The approved pre-feature-completion posture
+  remains **Read-Only Governance / Reserved Plan**.
+
+Deferred work is allowed to evolve behind those boundaries. A future feature-complete
+review must add the applicable Functional, Integration, Security, Rendering, and E2E
+evidence before reserved capabilities are promoted to Available or mutation execution is
+enabled.

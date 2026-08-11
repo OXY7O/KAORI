@@ -27,4 +27,18 @@ MVP, placeholder, preview-only, and coming-soon labels are prohibited.
 
 ## Automation Control
 
-Automation Control is presentation-complete but mutation-disabled by default. The configuration flag is `AUTOMATION_CONTROL_MUTATIONS_ENABLED`, defaulting to false. Direct POST requests are rejected with a Reserved Plan notification while disabled.
+Automation Control is presentation-complete but mutation-disabled by default. The runtime guard key is `AUTOMATION_CONTROL_MUTATIONS_ENABLED`; missing configuration resolves to false. Environment-level enablement is intentionally outside the current baseline lock. Direct POST requests are rejected with a Reserved Plan notification while disabled.
+
+## Baseline lock semantics
+
+The Intelligence surface may be baseline-locked while feature delivery is still in
+progress. Baseline lock means the currently implemented read/evidence contracts, security
+boundaries, shared UI ownership, and explicit Reserved Plan states are stable. It does
+**not** mean every planned evaluator, provider integration, or automation mutation is
+feature-complete.
+
+A capability must remain `Reserved Plan` until its provider, validation, behavioral, and
+release-test contracts are complete. In particular, Automation Control must remain
+fail-closed by default, must not gain an environment-configured enablement switch during
+this baseline lock, and must not be re-labelled as Available solely because route or model
+scaffolding exists.
