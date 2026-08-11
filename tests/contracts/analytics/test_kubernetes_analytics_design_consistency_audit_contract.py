@@ -91,12 +91,12 @@ def test_analytics_templates_do_not_use_nonstandard_layout_patterns() -> None:
 def test_analytics_filter_forms_have_loading_and_request_synchronization() -> None:
     for path in ANALYTICS_TEMPLATES.rglob('*.html'):
         content = path.read_text(encoding='utf-8')
-        for match in re.finditer(r"<form\b[^>]*>", content, re.DOTALL):
+        for match in re.finditer(r'<form\b[^>]*>', content, re.DOTALL):
             tag = match.group(0)
             if 'hx-get=' not in tag:
                 continue
-            assert 'hx-indicator=' in tag, f"Missing hx-indicator in {path}"
-            assert 'hx-sync=' in tag, f"Missing hx-sync in {path}"
+            assert 'hx-indicator=' in tag, f'Missing hx-indicator in {path}'
+            assert 'hx-sync=' in tag, f'Missing hx-sync in {path}'
 
 
 def test_large_analytics_record_sections_use_responsive_rows() -> None:

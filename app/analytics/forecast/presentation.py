@@ -382,6 +382,7 @@ def _sample_forecast_values(
 
     return [values[index] for index in indexes]
 
+
 def _build_svg_polyline_points(
     *,
     values: list[float],

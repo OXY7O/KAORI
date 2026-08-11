@@ -294,7 +294,6 @@ def test_overview_status_tones_use_shared_semantic_normalization() -> None:
         assert alias in table_label
 
 
-
 def test_overview_loading_tracker_reports_real_lazy_section_progress() -> None:
     index = read('index.html')
     hero = read('partials/_hero.html')
