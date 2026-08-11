@@ -1546,7 +1546,7 @@ def _normalize_consumer_items(items: Any) -> list[dict[str, Any]]:
         if isinstance(item, dict):
             name = item.get('name') or item.get('workload') or item.get('namespace') or '-'
             namespace = item.get('namespace', '')
-            value = item.get('value') or item.get('usage') or item.get('percent') or 0
+            value = item.get('value') or item.get('usage') or 0
             raw_percent = item.get('percent') or item.get('usage_percent') or value
             percent = _safe_float(_as_float_like(raw_percent))
             display_value = item.get('display_value') or item.get('value_label') or str(value)

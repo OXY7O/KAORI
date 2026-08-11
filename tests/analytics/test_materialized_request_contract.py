@@ -108,7 +108,7 @@ def test_available_snapshot_survives_current_source_blocker(monkeypatch) -> None
         parameters={'history_window': '30d'},
     )
 
-    assert resolved.result.payload == snapshot
+    assert resolved.result.context == snapshot
     assert resolved.dependency_blocker is None
     assert resolved.source_warning is blocker
     assert resolved.dispatched is False

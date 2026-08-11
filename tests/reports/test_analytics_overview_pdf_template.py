@@ -333,7 +333,12 @@ def test_v27_table_reference_contract_keeps_description_out_of_registers() -> No
     assert 'register_title' in document.presentation['recommendations']['items'][0]
     assert 'recommendation-register' in template_source
     assert 'recommendation-references' in template_source
-    assert '<th>Recommendation</th><th>Owner</th>' in template_source
+    register = template_source.split('recommendation-register', 1)[1].split('</table>', 1)[0]
+    recommendation_header = '<th>Recommendation</th>'
+    owner_header = '<th>Owner</th>'
+    assert recommendation_header in register
+    assert owner_header in register
+    assert register.index(recommendation_header) < register.index(owner_header)
     assert '<th>Interpretation</th>' not in template_source
     assert 'Status Register' not in rendered_html
     assert 'status-legend-grid' in template_source

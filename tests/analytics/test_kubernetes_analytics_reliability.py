@@ -108,12 +108,18 @@ def test_non_live_context_still_returns_utilization_service(monkeypatch) -> None
             last_status='connected',
             last_response_time_ms=12,
             last_error=None,
+            last_checked_at=None,
         ),
     )
     resolution = SimpleNamespace(selected=selected_source, candidates=(selected_source,))
     utilization_marker = object()
 
-    monkeypatch.setattr(analytics_context.Cluster, 'query', ClusterQuery())
+    ordered_field = SimpleNamespace(asc=lambda: object())
+    monkeypatch.setattr(
+        analytics_context,
+        'Cluster',
+        SimpleNamespace(query=ClusterQuery(), created_at=ordered_field, id=ordered_field),
+    )
     monkeypatch.setattr(
         analytics_context,
         'get_selected_cluster',

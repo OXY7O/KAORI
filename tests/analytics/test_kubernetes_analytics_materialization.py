@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import nullcontext
 from types import SimpleNamespace
 
 import pytest
@@ -152,13 +153,14 @@ def test_ready_prometheus_reports_query_gaps_as_degraded_not_unavailable() -> No
     assert storage['blocked_count'] == 4
 
 
-def test_overview_persisted_readiness_does_not_build_prometheus_client(monkeypatch) -> None:
+def test_persisted_readiness_builds_query_service_without_live_health_probe(monkeypatch) -> None:
     cluster = SimpleNamespace(id='cluster-1', name='Primary')
     instance = SimpleNamespace(
         endpoint='http://prometheus:9090',
         last_status='connected',
         last_response_time_ms=18,
         last_error=None,
+        last_checked_at=None,
     )
     selected = SimpleNamespace(
         instance=instance,
@@ -184,12 +186,13 @@ def test_overview_persisted_readiness_does_not_build_prometheus_client(monkeypat
         'resolve_prometheus_sources',
         lambda **_kwargs: SimpleNamespace(selected=selected, candidates=(selected,)),
     )
+    prometheus_marker = object()
+    utilization_marker = object()
+    monkeypatch.setattr(common_context, 'PrometheusService', lambda *_args, **_kwargs: prometheus_marker)
     monkeypatch.setattr(
         common_context,
-        'PrometheusService',
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(
-            AssertionError('Overview request must not build a Prometheus client.')
-        ),
+        'UtilizationService',
+        lambda prometheus: utilization_marker if prometheus is prometheus_marker else None,
     )
 
     _clusters, selected_cluster, utilization, context = common_context.build_analysis_utilization_context(
@@ -198,7 +201,7 @@ def test_overview_persisted_readiness_does_not_build_prometheus_client(monkeypat
     )
 
     assert selected_cluster is cluster
-    assert utilization is None
+    assert utilization is utilization_marker
     assert context['dependency_blocker'] is None
     assert context['prometheus_connected'] is True
     assert context['prometheus_status']['response_time_ms'] == 18
@@ -246,18 +249,27 @@ def test_forecast_selectors_reproject_committed_history_locally(monkeypatch) -> 
     assert result['forecast_payload']['items'][0]['forecast_method'] == 'conservative'
 
 
-def test_prometheus_dataset_binding_gap_is_capability_incomplete(monkeypatch) -> None:
+def test_prometheus_dataset_binding_gap_is_advisory_after_query_transport_is_ready(monkeypatch) -> None:
     cluster = SimpleNamespace(id='cluster-1', name='Primary')
-    candidate = SimpleNamespace(
+    ready = SimpleNamespace(
+        missing_binding_capabilities=(),
+        missing_technical_capabilities=(),
+        operational_state='healthy',
+        decision_reason='Query transport is ready.',
+    )
+    strict_candidate = SimpleNamespace(
         missing_binding_capabilities=('storage',),
         missing_technical_capabilities=(),
+        operational_state='healthy',
         decision_reason='Missing binding coverage: storage.',
     )
-    monkeypatch.setattr(
-        materialization_requests,
-        'resolve_prometheus_sources',
-        lambda **_kwargs: SimpleNamespace(selected=None, candidates=(candidate,)),
-    )
+
+    def resolve_sources(**kwargs):
+        if kwargs['required_binding_capabilities'] == ('metrics',):
+            return SimpleNamespace(selected=ready, candidates=(ready,))
+        return SimpleNamespace(selected=None, candidates=(strict_candidate,))
+
+    monkeypatch.setattr(materialization_requests, 'resolve_prometheus_sources', resolve_sources)
     monkeypatch.setattr(
         materialization_requests,
         'prometheus_capability_blocker',
@@ -268,12 +280,13 @@ def test_prometheus_dataset_binding_gap_is_capability_incomplete(monkeypatch) ->
         },
     )
 
-    blocker = materialization_requests._prometheus_dependency_blocker(
+    blocker, warning = materialization_requests._prometheus_dependency_state(
         dataset_key='analytics.storage',
         cluster=cluster,
     )
 
-    assert blocker == {
+    assert blocker is None
+    assert warning == {
         'kind': 'prometheus_capability',
         'labels': ['Storage'],
         'feature': 'Storage Analysis',
@@ -316,7 +329,7 @@ def test_prometheus_alert_fallback_reports_capability_gap_not_connection_failure
 
     assert blocker == {
         'kind': 'prometheus_capability',
-        'labels': ['Alert Metrics', 'Kubernetes Identity'],
+        'labels': ['Alert Metrics', 'Kubernetes Identity Metrics'],
         'feature': 'Alerts & Anomalies',
     }
 
@@ -369,6 +382,9 @@ def test_dependency_blocker_is_failed_instead_of_committed(monkeypatch) -> None:
         lambda **kwargs: failed.append((kwargs['dataset_key'], str(kwargs['error']))),
     )
     monkeypatch.setattr(tasks, 'store_snapshot', lambda **_kwargs: stored.append(True))
+    monkeypatch.setattr(tasks, 'mark_snapshot_pending', lambda **_kwargs: None)
+    monkeypatch.setattr(tasks, 'analytics_source_lock', lambda **_kwargs: nullcontext(0))
+    monkeypatch.setattr(tasks.db, 'session', SimpleNamespace(rollback=lambda: None))
 
     app = Flask(__name__)
     with app.app_context():

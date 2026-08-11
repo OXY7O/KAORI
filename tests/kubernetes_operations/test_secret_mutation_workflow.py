@@ -173,6 +173,7 @@ class _Form(dict):
 
 
 def test_create_service_executes_exactly_one_provider_call_per_mode(monkeypatch: pytest.MonkeyPatch) -> None:
+    _install_base_modules(monkeypatch)
     service = _load_file('secret_create_under_test', SECRET_ROOT / 'create_service.py', monkeypatch)
     calls: list[dict[str, object]] = []
     cluster = SimpleNamespace(id=7, name='Development')

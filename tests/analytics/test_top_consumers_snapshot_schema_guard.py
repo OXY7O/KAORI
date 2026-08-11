@@ -17,7 +17,7 @@ def test_top_consumers_payload_declares_and_checks_schema_version() -> None:
 
     assert 'TOP_CONSUMERS_PAYLOAD_SCHEMA_VERSION = 3' in contracts
     assert "'schema_version': TOP_CONSUMERS_PAYLOAD_SCHEMA_VERSION" in domain
-    assert 'def is_current_payload(payload: Any) -> bool:' in domain
+    assert 'def is_current_payload(payload: Any) -> TypeGuard[dict[str, Any]]:' in domain
     assert 'if not is_current_payload(payload):' in presentation
     assert 'Run Refresh/Materialize Top Consumers' in presentation
 
@@ -51,6 +51,6 @@ def test_top_consumers_summary_handles_missing_nested_payload_fields() -> None:
 
     rendered = template.render(payload={})
 
-    assert 'Top Consumer Summary' in rendered
+    assert 'Top Consumer Snapshot' in rendered
     assert 'N/A' in rendered
     assert 'Unknown' in rendered

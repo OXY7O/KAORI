@@ -174,6 +174,8 @@ ANALYTICS_DATASETS: tuple[AnalyticsDataset, ...] = (
         required_capabilities=(
             'instant_query',
             'kubernetes_identity',
+            'pvc_usage',
+            'node_filesystem_identity',
         ),
         execution_priority=50,
         task_budget_seconds=180,
