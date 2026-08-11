@@ -79,10 +79,18 @@ def main() -> int:
         'scripts/verify_access_final_lock.py',
     ):
         require(required in access_readme, f'Access README final-lock contract missing: {required}', errors)
-    require('Status: **Final Locked — Access v1**' in ownership_doc, 'Access ownership status is not final locked', errors)
+    require(
+        'Status: **Final Locked — Access v1**' in ownership_doc,
+        'Access ownership status is not final locked',
+        errors,
+    )
     require('Status: **FINAL LOCKED**' in lock_doc, 'Access lock document is not marked FINAL LOCKED', errors)
     require('verify_access_final_lock.py' in quality_gate, 'Access Final Lock verifier is not release-gated', errors)
-    require('PASS — KAORI Access Ownership v1.1' in ownership, 'Access ownership verifier output is not canonical', errors)
+    require(
+        'PASS — KAORI Access Ownership v1.1' in ownership,
+        'Access ownership verifier output is not canonical',
+        errors,
+    )
 
     # Access overview is read-only and permission scoped.
     overview_routes = read('app/access/overview/routes.py')
@@ -115,7 +123,11 @@ def main() -> int:
     for required in ('components/table.html', 'components/loading_bar.html', 'components/pagination.html'):
         require(required in roles_registry, f'Role Registry shared UI contract missing: {required}', errors)
     require('xl:sticky xl:top-5' in roles_form, 'Role form sticky context rail contract drifted', errors)
-    require(not (ROOT / 'app/static/js/role_access_tabs.js').exists(), 'obsolete role_access_tabs.js reintroduced', errors)
+    require(
+        not (ROOT / 'app/static/js/role_access_tabs.js').exists(),
+        'obsolete role_access_tabs.js reintroduced',
+        errors,
+    )
 
     # Permission Catalog is read-only; convergence stays command/deployment owned.
     permission_routes = read('app/access/permissions/routes.py')
@@ -125,11 +137,23 @@ def main() -> int:
     for required in ("@permission_required('roles.view')", "@bp.get('/<string:permission_key>/details')"):
         require(required in permission_routes, f'Permission Catalog route contract missing: {required}', errors)
     for forbidden in ('seed_default_rbac', 'db.session.commit', '@bp.post'):
-        require(forbidden not in permission_routes, f'Permission Catalog GET boundary must remain read-only: {forbidden}', errors)
-    require('DEFAULT_PERMISSIONS' in permission_service, 'Permission Catalog must compare code-owned permissions', errors)
-    require('components/resource_detail_modal.html' in permission_index, 'Permission detail must use shared modal', errors)
+        require(
+            forbidden not in permission_routes,
+            f'Permission Catalog GET boundary must remain read-only: {forbidden}',
+            errors,
+        )
+    require(
+        'DEFAULT_PERMISSIONS' in permission_service, 'Permission Catalog must compare code-owned permissions', errors
+    )
+    require(
+        'components/resource_detail_modal.html' in permission_index, 'Permission detail must use shared modal', errors
+    )
     require('content_driven=true' in permission_index, 'Permission detail modal must remain content-driven', errors)
-    require('components/framed_workspace_tabs.html' in permission_workspace, 'Permission Catalog must use shared framed tabs', errors)
+    require(
+        'components/framed_workspace_tabs.html' in permission_workspace,
+        'Permission Catalog must use shared framed tabs',
+        errors,
+    )
 
     # User lifecycle and last-super-admin protections.
     users_routes = read('app/users/routes.py')
