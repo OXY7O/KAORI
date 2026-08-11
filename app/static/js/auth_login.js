@@ -15,10 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
         passwordToggle.addEventListener('click', () => {
             const showingPassword = passwordInput.type === 'text'
             passwordInput.type = showingPassword ? 'password' : 'text'
-            passwordToggle.setAttribute(
-                'aria-label',
-                showingPassword ? 'Show password' : 'Hide password'
-            )
+            passwordToggle.setAttribute('aria-label', showingPassword ? 'Show password' : 'Hide password')
 
             if (passwordIcon) {
                 passwordIcon.setAttribute('data-lucide', showingPassword ? 'eye' : 'eye-off')
