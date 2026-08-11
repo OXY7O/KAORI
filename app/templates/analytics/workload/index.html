@@ -4,7 +4,9 @@
 {% import "components/loading_bar.html" as loading_bar %}
 {% block title %}Workload Analysis{% endblock title %}
 {% block dashboard_content %}
-    <div id="workload-page" class="kaori-analytics-page space-y-6" data-analytics-page-request-tracking="false">
+    <div id="workload-page"
+         class="kaori-analytics-page space-y-6"
+         data-analytics-page-request-tracking="false">
         {% include "analytics/workload/partials/_hero.html" %}
         {% if dependency_blocker %}
             {% include "components/dependencies/_blocker.html" %}

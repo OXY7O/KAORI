@@ -12,6 +12,7 @@ def test_data_lifecycle_tab_order_and_copy_are_compact_and_operational() -> None
     presentation = read('app/retention/presentation.py')
 
     assert 'framed_workspace_tabs.render([' in index
+    assert '{# djlint:off #}' in index and '{# djlint:on #}' in index
     tab_tokens = (
         "('policies', 'Retention Policies', 'sliders-horizontal')",
         "('history', 'Archive History', 'history')",

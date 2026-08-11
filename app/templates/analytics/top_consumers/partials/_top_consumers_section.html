@@ -11,7 +11,6 @@
 {% set overview = payload.overview|default({}, true) %}
 {% set recommendation_cards = payload.recommendation_cards|default([], true) %}
 {% set rankings = overview.rankings|default([], true) %}
-
 {% if render_dependency_blocker|default(false) and dependency_blocker %}
     {% include "components/dependencies/_blocker.html" %}
 {% elif not dependency_blocker %}

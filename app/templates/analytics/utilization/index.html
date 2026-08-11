@@ -4,7 +4,9 @@
 {% import "analytics/components/_status_notice.html" as status_notice %}
 {% block title %}Resource Utilization{% endblock title %}
 {% block dashboard_content %}
-    <div id="utilization-page" class="kaori-analytics-page space-y-6" data-analytics-page-request-tracking="false">
+    <div id="utilization-page"
+         class="kaori-analytics-page space-y-6"
+         data-analytics-page-request-tracking="false">
         {% include "analytics/utilization/partials/_hero.html" %}
         {% if dependency_blocker %}
             {% include "components/dependencies/_blocker.html" %}

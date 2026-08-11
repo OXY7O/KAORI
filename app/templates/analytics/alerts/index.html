@@ -4,17 +4,8 @@
 {% block dashboard_content %}
     {% set selected_cluster_name = selected_cluster.name if selected_cluster else 'No Cluster Selected' %}
     {% set active_tab = selected_tab|default('alerts', true) %}
-    {% set alert_tabs = [
-        ('alerts', 'Alerts', 'bell-ring'),
-        ('anomalies', 'Anomalies', 'radar'),
-        ('routing', 'Routing & Suppression', 'route'),
-        ('ownership', 'Ownership & Runbooks', 'book-open-check'),
-        ('readiness', 'Incident Readiness', 'siren'),
-        ('recommendations', 'Recommendations', 'list-checks'),
-        ('resources', 'Operational Resources', 'external-link')
-    ] %}
-    {% set allowed_tabs = ['alerts', 'anomalies', 'routing', 'ownership', 'readiness', 'recommendations', 'resources'] %}
-
+    {% set alert_tabs = [('alerts', 'Alerts', 'bell-ring'), ('anomalies', 'Anomalies', 'radar'), ('routing', 'Routing & Suppression', 'route'), ('ownership', 'Ownership & Runbooks', 'book-open-check'), ('readiness', 'Incident Readiness', 'siren'), ('recommendations', 'Recommendations', 'list-checks'), ('resources', 'Operational Resources', 'external-link')] %}
+    {% set allowed_tabs = ["alerts", "anomalies", "routing", "ownership", "readiness", "recommendations", "resources"] %}
     <div id="alerts-page-content"
          class="kaori-analytics-page space-y-6"
          data-analytics-page-request-tracking="false">

@@ -33,7 +33,9 @@
             </div>
         </section>
         <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+            {# djlint:off #}
             {{ framed_workspace_tabs.render([('policies', 'Retention Policies', 'sliders-horizontal'), ('history', 'Archive History', 'history'), ('storage', 'Archive Storage', 'hard-drive')], prefix='data-lifecycle', aria_label='Data Lifecycle Workspaces') }}
+            {# djlint:on #}
             <div class="p-5 lg:p-6">
                 <div id="data-lifecycle-panel-policies"
                      role="tabpanel"

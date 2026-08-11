@@ -8,7 +8,7 @@
   render_buttons(): client-owned tab state; the consumer supplies the controller.
   render_links(): server/URL-owned workspace state.
 #}
-
+{# djlint:off #}
 {% macro shell_classes(embedded=false, nowrap=false) -%}
     {{ ('overflow-x-auto ' if nowrap else '') ~ ('border-b border-outline-subtle bg-surface-hover px-5 py-2 sm:px-6' if embedded else 'rounded-xl border border-outline-default bg-surface-card p-2 shadow-sm') }}
 {%- endmacro %}
@@ -85,3 +85,4 @@
         </div>
     </nav>
 {%- endmacro %}
+{# djlint:on #}

@@ -5,18 +5,10 @@
 {% block title %}Analytics Overview{% endblock title %}
 {% block dashboard_content %}
     {% set overview_query = 'cluster_id=' ~ payload.selected_cluster_id ~ '&time_range=' ~ payload.selected_time_range %}
-    {% set overview_tabs = [
-        ('utilization', 'Usage', 'gauge', 'resource-snapshot', 'overview-resource-snapshot', 'section'),
-        ('capacity', 'Capacity', 'server-cog', 'capacity-snapshot', 'overview-capacity-snapshot', 'section'),
-        ('workloads', 'Workload', 'boxes', 'workload-snapshot', 'overview-workload-snapshot', 'section'),
-        ('storage', 'Storage', 'database', 'storage-snapshot', 'overview-storage-snapshot', 'section'),
-        ('consumers', 'Consumers', 'chart-no-axes-column-increasing', 'top-consumers', 'overview-top-consumers', 'section'),
-        ('forecast', 'Forecast', 'chart-spline', 'forecast-snapshot', 'overview-forecast-snapshot', 'section'),
-        ('alerts', 'Alerts', 'bell-ring', 'alerts-snapshot', 'overview-alerts-snapshot', 'section'),
-        ('action-summary', 'Actions', 'list-checks', '', 'overview-actionable-recommendations', 'composite'),
-        ('recommendations', 'Guidance', 'clipboard-check', '', 'overview-recommendations', 'composite')
-    ] %}
-    <div id="analytics-overview-page" class="kaori-analytics-page space-y-6" data-analytics-page-request-tracking="false">
+    {% set overview_tabs = [('utilization', 'Usage', 'gauge', 'resource-snapshot', 'overview-resource-snapshot', 'section'), ('capacity', 'Capacity', 'server-cog', 'capacity-snapshot', 'overview-capacity-snapshot', 'section'), ('workloads', 'Workload', 'boxes', 'workload-snapshot', 'overview-workload-snapshot', 'section'), ('storage', 'Storage', 'database', 'storage-snapshot', 'overview-storage-snapshot', 'section'), ('consumers', 'Consumers', 'chart-no-axes-column-increasing', 'top-consumers', 'overview-top-consumers', 'section'), ('forecast', 'Forecast', 'chart-spline', 'forecast-snapshot', 'overview-forecast-snapshot', 'section'), ('alerts', 'Alerts', 'bell-ring', 'alerts-snapshot', 'overview-alerts-snapshot', 'section'), ('action-summary', 'Actions', 'list-checks', '', 'overview-actionable-recommendations', 'composite'), ('recommendations', 'Guidance', 'clipboard-check', '', 'overview-recommendations', 'composite')] %}
+    <div id="analytics-overview-page"
+         class="kaori-analytics-page space-y-6"
+         data-analytics-page-request-tracking="false">
         {% include "analytics/overview/partials/_hero.html" %}
         {% if not dependency_blocker %}
             {% include "analytics/overview/partials/_load_tracker.html" %}

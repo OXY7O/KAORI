@@ -6,21 +6,14 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% set forecast_items = forecast_payload['items'] %}
-{% set resource_tabs = [
-    ('cpu', 'CPU Forecast', 'cpu'),
-    ('memory', 'Memory Forecast', 'memory-stick'),
-    ('storage', 'Storage Forecast', 'database'),
-    ('pods', 'Pod Forecast', 'boxes'),
-    ('trend', 'Trend Analysis', 'line-chart'),
-    ('recommendations', 'Recommendations', 'list-checks')
-] %}
-{% set allowed_tabs = ['cpu', 'memory', 'storage', 'pods', 'trend', 'recommendations'] %}
+{% set resource_tabs = [('cpu', 'CPU Forecast', 'cpu'), ('memory', 'Memory Forecast', 'memory-stick'), ('storage', 'Storage Forecast', 'database'), ('pods', 'Pod Forecast', 'boxes'), ('trend', 'Trend Analysis', 'line-chart'), ('recommendations', 'Recommendations', 'list-checks')] %}
+{% set allowed_tabs = ["cpu", "memory", "storage", "pods", "trend", "recommendations"] %}
 {% set initial_tab = selected_tab if selected_tab in allowed_tabs else 'cpu' %}
-
 {% macro resource_item(resource_key) -%}
-    {% for candidate in forecast_items %}{% if candidate.key == resource_key %}{{ loop.index0 }}{% endif %}{% endfor %}
+    {% for candidate in forecast_items %}
+        {% if candidate.key == resource_key %}{{ loop.index0 }}{% endif %}
+    {% endfor %}
 {%- endmacro %}
-
 {% if not dependency_blocker %}
     {% call analytics_workspace.tabbed(
         'forecast-content',

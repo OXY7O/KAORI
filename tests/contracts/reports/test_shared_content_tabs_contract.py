@@ -22,6 +22,10 @@ def test_shared_content_tabs_preserve_analytics_geometry_and_offer_server_owned_
     assert 'render_buttons' in shared
     assert 'render_links' in shared
     assert 'data-kaori-tab-variant="content-tabs-server"' in shared
+    assert '{# djlint:off #}' in shared
+    assert '{# djlint:on #}' in shared
+    assert 'data-{{ data_namespace }}-tab-button="{{ tab_id }}"' in shared
+    assert 'data-{{ data_namespace }}-tab-link="{{ tab_id }}"' in shared
 
     # Analytics now consumes the shared component directly; the former
     # compatibility wrapper is retired instead of preserved as duplicate ownership.
