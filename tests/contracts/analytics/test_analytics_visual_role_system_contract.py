@@ -103,11 +103,7 @@ def test_every_interpretation_call_declares_a_visual_role() -> None:
 
 
 def test_visual_roles_are_used_for_their_intended_meaning() -> None:
-    all_templates = '\n'.join(
-        read(path)
-        for path in ANALYTICS_ROOT.rglob('*.html')
-        if path != SURFACE
-    )
+    all_templates = '\n'.join(read(path) for path in ANALYTICS_ROOT.rglob('*.html') if path != SURFACE)
 
     assert "role='insight'" in all_templates
     assert "role='brand'" in all_templates

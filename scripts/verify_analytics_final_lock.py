@@ -150,8 +150,7 @@ def main() -> int:
     )
 
     permission_guards = sum(
-        read(str(path.relative_to(ROOT))).count("@permission_required('analytics.view')")
-        for path in ROUTE_FILES
+        read(str(path.relative_to(ROOT))).count("@permission_required('analytics.view')") for path in ROUTE_FILES
     )
     require(
         permission_guards >= 19,
