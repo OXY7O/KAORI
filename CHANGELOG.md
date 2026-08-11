@@ -4,8 +4,13 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 
 ## [Unreleased]
 
+### Added
+- Added taxonomy-driven Integration domain landing pages for Orchestration, Observability, and Storage, with registry-owned provider navigation and canonical runtime/binding summaries.
+
 ### Changed
-- Generalized the Integrations foundation around registry-owned Orchestration, Observability, and Storage taxonomy; asset-centric provider bindings; registry-driven provider catalog metadata; provider-neutral full-validation dispatch; and asset-specific Prometheus binding probe profiles so future Object Storage providers such as MinIO can reuse the existing runtime/binding kernel without pair-specific tables.
+- Redesigned taxonomy-owned Integration domain landing pages around a scalable Capability Portfolio and full-width Provider Workspace records, removing awkward half-empty layouts while preserving provider-specific workspaces and canonical binding ownership.
+- Replaced product-specific Integration sidebar links with `Overview / Orchestration / Observability / Storage`; Kubernetes, Prometheus, Alertmanager, and nested `cluster.*` routes retain domain active-state through provider registration metadata.
+- Updated Integration breadcrumbs and release-surface ownership so provider workspaces remain canonical deep links beneath their owning domain without changing provider routes or persistence.
 
 ## [2.2.0] - 2026-08-11
 

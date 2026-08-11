@@ -4,7 +4,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import contains_eager
+from sqlalchemy.orm import contains_eager, selectinload
 
 from app.cluster.constants import get_environment_label
 from app.common.presentation import present_key_label, present_user_datetime
@@ -19,7 +19,11 @@ from app.integrations.kubernetes.compatibility import FEATURE_CONTRACTS
 from app.integrations.prometheus.scope import cluster_bindings_for_instance
 from app.integrations.readiness import resolve_binding_operational_status, resolve_cluster_coverage
 from app.integrations.registry import get_integration, registry
-from app.integrations.taxonomy import capability_definitions_for_domain, ordered_domain_definitions
+from app.integrations.taxonomy import (
+    capability_definitions_for_domain,
+    get_domain_definition,
+    ordered_domain_definitions,
+)
 from app.models import (
     AlertmanagerInstance,
     Cluster,
@@ -126,8 +130,7 @@ def build_integrations_overview(
         'selected_health': health,
         'selected_readiness': readiness,
         'provider_options': [
-            {'value': module.provider_type, 'label': module.runtime_label or module.label}
-            for module in registry.all()
+            {'value': module.provider_type, 'label': module.runtime_label or module.label} for module in registry.all()
         ],
         'health_options': [
             {'value': 'healthy', 'label': 'Healthy'},
@@ -141,6 +144,116 @@ def build_integrations_overview(
             {'value': 'blocked', 'label': 'Blocked'},
             {'value': 'validation_required', 'label': 'Validation Required'},
         ],
+    }
+
+
+def build_integration_domain_page(domain_key: str) -> dict[str, Any]:
+    """Build one taxonomy-owned Integration domain landing page from canonical identities."""
+
+    domain = get_domain_definition(domain_key)
+    modules = tuple(module for module in registry.all() if module.domain_key == domain.key)
+    provider_types = tuple(module.provider_type for module in modules)
+
+    instances: list[IntegrationInstance] = []
+    if provider_types:
+        instances = (
+            IntegrationInstance.query.options(selectinload(IntegrationInstance.bindings))
+            .filter(IntegrationInstance.provider_type.in_(provider_types))
+            .order_by(IntegrationInstance.provider_type.asc(), IntegrationInstance.name.asc())
+            .all()
+        )
+
+    instances_by_provider: dict[str, list[IntegrationInstance]] = {}
+    for instance in instances:
+        instances_by_provider.setdefault(instance.provider_type, []).append(instance)
+
+    provider_rows: list[dict[str, Any]] = []
+    for module in modules:
+        targets = instances_by_provider.get(module.provider_type, [])
+        enabled_targets = [item for item in targets if item.enabled and item.lifecycle_status == 'active']
+        ready = sum(1 for item in enabled_targets if item.readiness_status == 'ready')
+        attention = sum(1 for item in enabled_targets if item.readiness_status != 'ready')
+        bindings = sum(sum(1 for binding in item.bindings if binding.enabled) for item in enabled_targets)
+        status = (
+            'ready'
+            if enabled_targets and ready == len(enabled_targets)
+            else ('attention' if enabled_targets else 'not_configured')
+        )
+        provider_rows.append(
+            {
+                'key': module.provider_type,
+                'label': module.label,
+                'runtime_label': module.runtime_label or module.label,
+                'icon': module.icon,
+                'description': module.description,
+                'capability_key': module.capability_key,
+                'capability_label': module.capability.label,
+                'workspace_endpoint': module.workspace_endpoint,
+                'registered': len(targets),
+                'enabled': len(enabled_targets),
+                'ready': ready,
+                'attention': attention,
+                'bindings': bindings,
+                'status': status,
+            }
+        )
+
+    capability_rows: list[dict[str, Any]] = []
+    for capability in capability_definitions_for_domain(domain.key):
+        capability_modules = [module for module in modules if module.capability_key == capability.key]
+        capability_providers = [row for row in provider_rows if row['capability_key'] == capability.key]
+        registered = sum(int(row['registered']) for row in capability_providers)
+        enabled = sum(int(row['enabled']) for row in capability_providers)
+        ready = sum(int(row['ready']) for row in capability_providers)
+        attention = sum(int(row['attention']) for row in capability_providers)
+        bindings = sum(int(row['bindings']) for row in capability_providers)
+        status = (
+            'ready'
+            if capability_providers and enabled > 0 and ready == enabled
+            else ('attention' if capability_providers else 'not_configured')
+        )
+        capability_rows.append(
+            {
+                'key': capability.key,
+                'label': capability.label,
+                'description': capability.description,
+                'provider_count': len(capability_modules),
+                'provider_labels': [module.runtime_label or module.label for module in capability_modules],
+                'registered': registered,
+                'enabled': enabled,
+                'ready': ready,
+                'attention': attention,
+                'bindings': bindings,
+                'availability': 'available' if capability_modules else 'not_registered',
+                'status': status,
+            }
+        )
+
+    registered_targets = len(instances)
+    enabled_targets = [item for item in instances if item.enabled and item.lifecycle_status == 'active']
+    ready_targets = sum(1 for item in enabled_targets if item.readiness_status == 'ready')
+    attention_targets = sum(1 for item in enabled_targets if item.readiness_status != 'ready')
+    binding_count = sum(sum(1 for binding in item.bindings if binding.enabled) for item in enabled_targets)
+    posture_status = (
+        'ready'
+        if enabled_targets and ready_targets == len(enabled_targets)
+        else ('attention' if enabled_targets else 'not_configured')
+    )
+
+    return {
+        'domain': domain,
+        'providers': provider_rows,
+        'capabilities': capability_rows,
+        'stats': {
+            'provider_types': len(modules),
+            'capability_types': len(capability_rows),
+            'registered_targets': registered_targets,
+            'enabled_targets': len(enabled_targets),
+            'ready_targets': ready_targets,
+            'attention_targets': attention_targets,
+            'bindings': binding_count,
+        },
+        'posture_status': posture_status,
     }
 
 
@@ -849,9 +962,7 @@ def _coverage(
         if domain_modules:
             providers = ' · '.join(module.label for module in domain_modules)
         else:
-            providers = ' · '.join(
-                capability.label for capability in capability_definitions_for_domain(domain.key)
-            )
+            providers = ' · '.join(capability.label for capability in capability_definitions_for_domain(domain.key))
         rows.append(
             {
                 'key': domain.key,
