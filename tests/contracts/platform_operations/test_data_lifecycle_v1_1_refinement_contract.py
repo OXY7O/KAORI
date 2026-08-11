@@ -11,8 +11,15 @@ def test_data_lifecycle_tab_order_and_copy_are_compact_and_operational() -> None
     index = read('app/templates/platform_operations/data_lifecycle/index.html')
     presentation = read('app/retention/presentation.py')
 
-    tabs = "[('policies', 'Retention Policies', 'sliders-horizontal'), ('history', 'Archive History', 'history'), ('storage', 'Archive Storage', 'hard-drive')]"
-    assert tabs in index
+    assert 'framed_workspace_tabs.render([' in index
+    tab_tokens = (
+        "('policies', 'Retention Policies', 'sliders-horizontal')",
+        "('history', 'Archive History', 'history')",
+        "('storage', 'Archive Storage', 'hard-drive')",
+    )
+    for token in tab_tokens:
+        assert token in index
+    assert index.index(tab_tokens[0]) < index.index(tab_tokens[1]) < index.index(tab_tokens[2])
     assert "tabs: ['policies', 'history', 'storage']" in index
     assert (
         index.index('data-lifecycle-panel-policies')

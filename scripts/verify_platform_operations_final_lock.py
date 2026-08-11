@@ -141,7 +141,8 @@ def main() -> int:
         if not doc.exists():
             errors.append(f'missing lock artifact: {doc.relative_to(ROOT).as_posix()}')
 
-    for path in template_files():
+    templates = template_files()
+    for path in templates:
         relative = path.relative_to(ROOT).as_posix()
         source = path.read_text(encoding='utf-8')
         if RAW_HEX.search(source):
@@ -662,14 +663,7 @@ def main() -> int:
             print(f'ERROR: {error}')
         return 1
 
-    print(
-        'KAORI Platform Operations Final Lock v2.2 passed: Kubernetes Administration and Jobs & Executions '
-        'use shared tabs, Title Case, bounded execution attention, expandable execution evidence, worker readiness, '
-        'activity-center background feedback, lean Job Configuration rendering, clear configuration surfaces, '
-        'tri-state Secret Reveal live evidence, snapshot-backed namespace filtering, explicit credential readiness, '
-        'read-only permission-scoped Platform Operations Overview, shared domain posture projections, HTMX-owned registry controls, shared Secret Reveal policy authority, neutral-first protected-reveal dark surfaces, '
-        'Title Case reveal pagination with Rows labels, immediate HTMX mutation feedback, configured-only live namespace verification, explicit global kill-switch diagnostics with compact activation tips, natural-height Secret Reveal side panels, protected Secret Reveal guardrails, Platform Operations-owned Data Lifecycle routing/RBAC/shared tabs/archive evidence, explicit lifecycle coverage and stale-serve-protected Analytics Snapshots, personal Notification Center boundaries, canonical Jobs execution boundaries, and permanent legacy cleanup.'
-    )
+    print(f'PASS — KAORI Platform Operations Final Lock v2.2 · {len(templates)} templates')
     return 0
 
 

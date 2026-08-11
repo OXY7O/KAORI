@@ -53,6 +53,9 @@ def test_platform_operations_final_lock_is_documented_and_release_gated() -> Non
     assert 'verify_platform_operations_final_lock.py' in read('scripts/quality_gate.sh')
     assert 'verify_platform_operations_overview_final_lock.py' in read('scripts/quality_gate.sh')
     assert 'verify_notification_center_final_lock.py' in read('scripts/quality_gate.sh')
+    assert 'PASS — KAORI Platform Operations Final Lock v2.2' in read(
+        'scripts/verify_platform_operations_final_lock.py'
+    )
 
 
 def test_platform_operations_is_inside_generic_locked_template_scope() -> None:

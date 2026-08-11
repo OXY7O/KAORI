@@ -116,7 +116,7 @@ def main() -> int:
             print(f'ERROR: {error}')
         return 1
 
-    print('KAORI Platform Operations Overview Final Lock v1.1 passed.')
+    print('PASS — KAORI Platform Operations Overview Final Lock v1.1')
     return 0
 
 

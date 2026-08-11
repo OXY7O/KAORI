@@ -124,3 +124,6 @@ def test_platform_operations_overview_final_lock_is_release_gated() -> None:
     assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_OVERVIEW_FINAL_LOCK_V1_1_AUDIT_2026_08_08.md').exists()
     assert (ROOT / 'docs/design/audits/KAORI_PLATFORM_OPERATIONS_FINAL_LOCK_V2_0_AUDIT_2026_08_08.md').exists()
     assert 'verify_platform_operations_overview_final_lock.py' in read('scripts/quality_gate.sh')
+    assert 'PASS — KAORI Platform Operations Overview Final Lock v1.1' in read(
+        'scripts/verify_platform_operations_overview_final_lock.py'
+    )
