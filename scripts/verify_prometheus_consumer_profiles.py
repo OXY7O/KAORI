@@ -47,7 +47,10 @@ def main() -> int:
     assert 'validation_profile:' in model
     assert 'validation_evidence:' in model
     assert 'binding.validation_evidence or {}' in resolver
-    assert 'instance.capabilities or {}' not in resolver.split('def _evaluate_binding', 1)[1].split('def _operational_rank', 1)[0]
+    assert (
+        'instance.capabilities or {}'
+        not in resolver.split('def _evaluate_binding', 1)[1].split('def _operational_rank', 1)[0]
+    )
 
     assert "revision = '20260812_prom_consumer_profiles'" in migration
     assert "down_revision = '20260812_minio_object_storage'" in migration
@@ -57,7 +60,10 @@ def main() -> int:
 
     assert 'Prometheus Core Validation' in validation_template
     assert 'Consumer Validation Boundary' in validation_template
-    assert 'Kubernetes, MinIO, and other metric contracts are validated through their asset-scoped bindings.' in validation_template
+    assert (
+        'Kubernetes, MinIO, and other metric contracts are validated through their asset-scoped bindings.'
+        in validation_template
+    )
 
     canonical_flow = (
         'Provider\n'
