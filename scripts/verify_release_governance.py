@@ -58,11 +58,15 @@ def verify() -> None:
     )
     if not release_heading:
         raise AssertionError('CHANGELOG.md must contain a dated heading for the current APP_VERSION')
-    release_notes_path = ROOT / 'docs/releases' / f"KAORI_{version_example.replace('.', '_')}.md"
+    release_notes_path = ROOT / 'docs/releases' / f'KAORI_{version_example.replace(".", "_")}.md'
     if not release_notes_path.exists():
         raise AssertionError(f'Missing release notes for APP_VERSION: {release_notes_path.relative_to(ROOT)}')
     release_notes = release_notes_path.read_text(encoding='utf-8')
-    for token in (f'# KAORI {version_example} Release Notes', f'`v{version_example}`', 'verify_final_release.py --all --runtime'):
+    for token in (
+        f'# KAORI {version_example} Release Notes',
+        f'`v{version_example}`',
+        'verify_final_release.py --all --runtime',
+    ):
         if token not in release_notes:
             raise AssertionError(f'Release notes are missing required token: {token}')
     allowed_sections = {'Added', 'Changed', 'Fixed', 'Security', 'Removed'}
