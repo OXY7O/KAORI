@@ -403,7 +403,19 @@ def test_dependency_blocker_is_failed_instead_of_committed(monkeypatch) -> None:
     assert result['succeeded'] == 0
     assert result['failed'] == 1
     assert stored == []
-    assert failed == [('analytics.storage', 'Storage capability incomplete: PVC evidence is unavailable.')]
+    assert len(failed) == 1
+    dataset_key, persisted_error = failed[0]
+    assert dataset_key == 'analytics.storage'
+    assert '[analytics_dependency_unavailable]' in persisted_error
+    assert 'Storage capability incomplete: PVC evidence is unavailable.' in persisted_error
+    assert 'Recommended action:' in persisted_error
+
+    failure = result['failures'][0]
+    assert failure['code'] == 'analytics_dependency_unavailable'
+    assert 'Storage Analysis for Primary could not satisfy its source dependency.' in failure['error']
+    assert 'Storage capability incomplete: PVC evidence is unavailable.' in failure['error']
+    assert failure['retryable'] == 'true'
+    assert 'Review Integrations readiness' in failure['remediation']
 
 
 def test_pending_page_context_preserves_forecast_htmx_replacement_id() -> None:
