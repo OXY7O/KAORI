@@ -48,10 +48,23 @@ def main() -> None:
         'def name(self) -> object: ...',
         'ORM-compatible cluster display-name protocol',
     )
-    _require(
+    for needle, description in (
+        ('actionable_recommendations = [', 'forecast recommendation normalization'),
+        (
+            "_as_list(forecast_payload.get('actionable_recommendations'))",
+            'forecast recommendation list boundary',
+        ),
+        ('if isinstance(item, dict)', 'forecast recommendation mapping guard'),
+        (
+            "'recommendation_count': count_actionable_recommendations(actionable_recommendations)",
+            'forecast normalized recommendation consumption',
+        ),
+    ):
+        _require('app/analytics/forecast/presentation.py', needle, description)
+    _forbid(
         'app/analytics/forecast/presentation.py',
-        "actionable_recommendations = forecast_payload.get('actionable_recommendations')",
-        'forecast snapshot recommendation boundary',
+        "count_actionable_recommendations(\n            forecast_payload.get('actionable_recommendations')",
+        'forecast snapshot recommendation count bypasses normalized boundary',
     )
     _require(
         'app/analytics/overview/snapshot_summary.py',
@@ -99,7 +112,7 @@ def main() -> None:
         'explicit OpenPyXL page setup construction',
     )
 
-    print('KAORI pre-release type-safety contract passed.')
+    print('PASS — KAORI Type Safety')
 
 
 if __name__ == '__main__':

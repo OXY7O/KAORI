@@ -59,6 +59,34 @@ SHARED_CHECKS: tuple[tuple[str, tuple[str, ...]], ...] = (
 )
 
 
+def _is_success_chatter(line: str) -> bool:
+    stripped = line.strip()
+    if not stripped:
+        return False
+    if stripped.startswith('PASS — KAORI '):
+        return True
+    if not stripped.startswith('KAORI '):
+        return False
+    success_markers = (
+        ' passed',
+        ' audit passed',
+        ' is valid',
+        ' is bounded',
+        ' coverage is present',
+        ' syntax passed',
+    )
+    return any(marker in stripped for marker in success_markers)
+
+
+def _failure_output(stdout: str, stderr: str) -> str:
+    lines: list[str] = []
+    for part in (stdout, stderr):
+        if not part.strip():
+            continue
+        lines.extend(line.rstrip() for line in part.splitlines())
+    return '\n'.join(line for line in lines if not _is_success_chatter(line)).strip()
+
+
 def _run(label: str, command: tuple[str, ...], *, env: dict[str, str] | None = None) -> bool:
     result = subprocess.run(
         command,
@@ -73,7 +101,7 @@ def _run(label: str, command: tuple[str, ...], *, env: dict[str, str] | None = N
         return True
 
     print(f'FAIL — KAORI {label}')
-    output = '\n'.join(part.rstrip() for part in (result.stdout, result.stderr) if part.strip())
+    output = _failure_output(result.stdout, result.stderr)
     if output:
         print(output)
     else:
@@ -92,7 +120,7 @@ def _run_group(label: str, commands: tuple[tuple[str, ...], ...]) -> bool:
         )
         if result.returncode != 0:
             print(f'FAIL — KAORI {label}')
-            output = '\n'.join(part.rstrip() for part in (result.stdout, result.stderr) if part.strip())
+            output = _failure_output(result.stdout, result.stderr)
             if output:
                 print(output)
             else:
