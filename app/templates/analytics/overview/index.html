@@ -25,7 +25,6 @@
                  hx-trigger="load delay:150ms once"
                  hx-swap="innerHTML"
                  hx-sync="this:replace">{% include "analytics/overview/partials/_section_loading.html" %}</div>
-
             <section id="analytics-overview-workspace"
                      data-analytics-tabset
                      data-analytics-tabset-id="overview-content"
@@ -43,14 +42,12 @@
                             </div>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
-                            {{ table_label.metadata_label(payload.selected_cluster.name|default('Selected Cluster'), 'server', size='compact') }}
+                            {{ table_label.metadata_label(payload.selected_cluster.name|default('Selected Cluster') , 'server', size='compact') }}
                             {{ table_label.metadata_label(payload.selected_time_range|upper ~ ' Window', 'clock-3', size='compact') }}
                         </div>
                     </div>
                 </header>
-
                 {{ content_tabs.render_buttons('overview-content', overview_tabs, 'Analytics Overview Workspace', embedded=true, data_namespace='analytics', active_key='utilization', show_badges=false, nowrap=true) }}
-
                 <div class="p-4 sm:p-5">
                     {% for tab in overview_tabs %}
                         {% set tab_id = tab[0] %}
@@ -67,15 +64,9 @@
                                  data-overview-lazy-section="true"
                                  data-overview-section-label="{{ tab[1] }}"
                                  data-overview-load-state="idle"
-                                 {% if load_mode == 'section' %}
-                                     hx-target="this"
-                                     hx-get="{{ url_for('analytics.overview_section', section=section) }}?{{ overview_query }}"
-                                     hx-trigger="kaori:analytics-tab-activated once"
-                                     hx-swap="innerHTML"
-                                     hx-sync="this:replace"
-                                 {% else %}
-                                     data-overview-composite-dependent="true"
-                                 {% endif %}>{% include "analytics/overview/partials/_section_loading.html" %}</div>
+                                 {% if load_mode == 'section' %} hx-target="this" hx-get="{{ url_for('analytics.overview_section', section=section) }}?{{ overview_query }}" hx-trigger="kaori:analytics-tab-activated once" hx-swap="innerHTML" hx-sync="this:replace" {% else %} data-overview-composite-dependent="true" {% endif %}>
+                                {% include "analytics/overview/partials/_section_loading.html" %}
+                            </div>
                         </div>
                     {% endfor %}
                 </div>

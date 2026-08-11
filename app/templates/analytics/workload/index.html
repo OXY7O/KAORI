@@ -15,11 +15,7 @@
             {% include "analytics/workload/partials/_controls_readiness.html" %}
             {% include "analytics/workload/partials/_overview.html" %}
             {% if cluster %}
-                {% set workload_tabs = [
-                    ('quotas', 'Tenant Quota Analysis', 'badge-gauge'),
-                    ('mapping', 'Workload Resource Mapping', 'network'),
-                    ('recommendations', 'Workload Recommendations', 'list-checks')
-                ] %}
+                {% set workload_tabs = [('quotas', 'Tenant Quota Analysis', 'badge-gauge'), ('mapping', 'Workload Resource Mapping', 'network'), ('recommendations', 'Workload Recommendations', 'list-checks')] %}
                 {% set active_tab = initial_tab|default('quotas') %}
                 {% call analytics_workspace.tabbed(
                     'workload-content',
@@ -30,7 +26,7 @@
                     'boxes',
                     active_tab,
                     ['quotas', 'mapping', 'recommendations']
-                ) %}
+                    ) %}
                     <div id="workload-content-panel-quotas"
                          role="tabpanel"
                          aria-labelledby="workload-content-tab-quotas"
@@ -50,7 +46,6 @@
                             </div>
                         {% endif %}
                     </div>
-
                     <div id="workload-content-panel-mapping"
                          role="tabpanel"
                          aria-labelledby="workload-content-tab-mapping"
@@ -74,7 +69,6 @@
                             </div>
                         {% endif %}
                     </div>
-
                     <div id="workload-content-panel-recommendations"
                          role="tabpanel"
                          aria-labelledby="workload-content-tab-recommendations"

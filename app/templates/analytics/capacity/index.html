@@ -14,12 +14,7 @@
             {% include "analytics/capacity/partials/_controls_readiness.html" %}
             {% if cluster %}
                 {% include "analytics/capacity/partials/_overview.html" %}
-                {% set capacity_tabs = [
-                    ('summary', 'Worker Capacity Summary', 'server-cog'),
-                    ('allocation', 'Allocation & Headroom', 'chart-pie'),
-                    ('risk', 'Capacity Risk Summary', 'shield-alert'),
-                    ('recommendations', 'Capacity Recommendations', 'list-checks')
-                ] %}
+                {% set capacity_tabs = [('summary', 'Worker Capacity Summary', 'server-cog'), ('allocation', 'Allocation & Headroom', 'chart-pie'), ('risk', 'Capacity Risk Summary', 'shield-alert'), ('recommendations', 'Capacity Recommendations', 'list-checks')] %}
                 {% call analytics_workspace.tabbed(
                     'capacity-content',
                     capacity_tabs,
@@ -29,11 +24,35 @@
                     'server-cog',
                     initial_tab|default('summary'),
                     ['summary', 'allocation', 'risk', 'recommendations']
-                ) %}
-                    <div id="capacity-content-panel-summary" role="tabpanel" aria-labelledby="capacity-content-tab-summary" data-analytics-tab-panel="summary" {% if initial_tab|default('summary') != 'summary' %}hidden{% endif %}>{% include "analytics/capacity/partials/_worker_summary.html" %}</div>
-                    <div id="capacity-content-panel-allocation" role="tabpanel" aria-labelledby="capacity-content-tab-allocation" data-analytics-tab-panel="allocation" {% if initial_tab|default('summary') != 'allocation' %}hidden{% endif %}>{% include "analytics/capacity/partials/_allocation.html" %}</div>
-                    <div id="capacity-content-panel-risk" role="tabpanel" aria-labelledby="capacity-content-tab-risk" data-analytics-tab-panel="risk" {% if initial_tab|default('summary') != 'risk' %}hidden{% endif %}>{% include "analytics/capacity/partials/_risk.html" %}</div>
-                    <div id="capacity-content-panel-recommendations" role="tabpanel" aria-labelledby="capacity-content-tab-recommendations" data-analytics-tab-panel="recommendations" {% if initial_tab|default('summary') != 'recommendations' %}hidden{% endif %}>{% include "analytics/capacity/partials/_recommendations.html" %}</div>
+                    ) %}
+                    <div id="capacity-content-panel-summary"
+                         role="tabpanel"
+                         aria-labelledby="capacity-content-tab-summary"
+                         data-analytics-tab-panel="summary"
+                         {% if initial_tab|default('summary') != 'summary' %}hidden{% endif %}>
+                        {% include "analytics/capacity/partials/_worker_summary.html" %}
+                    </div>
+                    <div id="capacity-content-panel-allocation"
+                         role="tabpanel"
+                         aria-labelledby="capacity-content-tab-allocation"
+                         data-analytics-tab-panel="allocation"
+                         {% if initial_tab|default('summary') != 'allocation' %}hidden{% endif %}>
+                        {% include "analytics/capacity/partials/_allocation.html" %}
+                    </div>
+                    <div id="capacity-content-panel-risk"
+                         role="tabpanel"
+                         aria-labelledby="capacity-content-tab-risk"
+                         data-analytics-tab-panel="risk"
+                         {% if initial_tab|default('summary') != 'risk' %}hidden{% endif %}>
+                        {% include "analytics/capacity/partials/_risk.html" %}
+                    </div>
+                    <div id="capacity-content-panel-recommendations"
+                         role="tabpanel"
+                         aria-labelledby="capacity-content-tab-recommendations"
+                         data-analytics-tab-panel="recommendations"
+                         {% if initial_tab|default('summary') != 'recommendations' %}hidden{% endif %}>
+                        {% include "analytics/capacity/partials/_recommendations.html" %}
+                    </div>
                 {% endcall %}
             {% endif %}
         {% endif %}

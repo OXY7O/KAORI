@@ -23,28 +23,29 @@
             {{ evidence_list.header_cell('Signal', 2) }}
             {{ evidence_list.header_cell('Action', 2, 'right') }}
         {% endcall %}
-
         <div class="divide-y divide-outline-subtle">
             {% if anomalies %}
-                {% for anomaly in anomalies %}{% set row_key = 'anomaly-' ~ anomalies_pagination.page ~ '-' ~ loop.index0 %}{% include "analytics/alerts/partials/_anomalies_table_row.html" %}{% endfor %}
+                {% for anomaly in anomalies %}
+                    {% set row_key = 'anomaly-' ~ anomalies_pagination.page ~ '-' ~ loop.index0 %}
+                    {% include "analytics/alerts/partials/_anomalies_table_row.html" %}
+                {% endfor %}
             {% else %}
                 {{ evidence_list.empty('No Anomalies Detected', 'No anomaly candidate matches the current source and local filters.', 'radar') }}
             {% endif %}
         </div>
-
         {% set pagination_query = {
-            'cluster_id': selected_cluster_id,
-            'source': selected_source,
-            'severity': selected_severity,
-            'status': selected_status,
-            'namespace': selected_namespace,
-            'search': selected_search,
-            'tab': 'anomalies',
-            'alerts_page': selected_alerts_page,
-            'anomalies_page': selected_anomalies_page,
-            'alerts_per_page': selected_alerts_per_page,
-            'anomalies_per_page': selected_anomalies_per_page
-        } %}
+                    'cluster_id': selected_cluster_id,
+                    'source': selected_source,
+                    'severity': selected_severity,
+                    'status': selected_status,
+                    'namespace': selected_namespace,
+                    'search': selected_search,
+                    'tab': 'anomalies',
+                    'alerts_page': selected_alerts_page,
+                    'anomalies_page': selected_anomalies_page,
+                    'alerts_per_page': selected_alerts_per_page,
+                    'anomalies_per_page': selected_anomalies_per_page
+                } %}
         {{ record_pagination.render(anomalies_pagination, 'anomalies_page', 'anomalies_per_page', 'anomalies-table-container', 'anomalies-table-filter-form', 'anomalies-table-loading-indicator', 'analytics.alerts_anomalies_table', 'analytics.alerts', pagination_query, 'Anomalies', embedded=true) }}
     </div>
 {% endcall %}

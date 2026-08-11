@@ -31,10 +31,8 @@
                 {% include "analytics/alerts/partials/_filters.html" %}
             {% endif %}
         </form>
-
         {% if not dependency_blocker %}
             {% include "analytics/alerts/partials/_cluster_signal_overview.html" %}
-
             {% call analytics_workspace.tabbed(
                 'alerts-content',
                 alert_tabs,
@@ -44,71 +42,48 @@
                 'layout-dashboard',
                 active_tab,
                 allowed_tabs
-            ) %}
+                ) %}
                 <div id="alerts-content-panel-alerts"
                      role="tabpanel"
                      data-analytics-tab-panel="alerts"
-                     aria-labelledby="alerts-content-tab-alerts"
-                    >
+                     aria-labelledby="alerts-content-tab-alerts">
                     {% include "analytics/alerts/partials/_alerts_table.html" %}
                 </div>
-
                 <div id="alerts-content-panel-anomalies"
                      role="tabpanel"
                      data-analytics-tab-panel="anomalies"
                      aria-labelledby="alerts-content-tab-anomalies"
-                     hidden
-                    >
-                    {% include "analytics/alerts/partials/_anomalies_table.html" %}
-                </div>
-
+                     hidden>{% include "analytics/alerts/partials/_anomalies_table.html" %}</div>
                 <div id="alerts-content-panel-routing"
                      role="tabpanel"
                      data-analytics-tab-panel="routing"
                      aria-labelledby="alerts-content-tab-routing"
-                     hidden
-                    >
+                     hidden>
                     <div class="space-y-5">
                         {% include "analytics/alerts/partials/_routing_summary.html" %}
                         {% include "analytics/alerts/partials/_silence_inhibition_summary.html" %}
                     </div>
                 </div>
-
                 <div id="alerts-content-panel-ownership"
                      role="tabpanel"
                      data-analytics-tab-panel="ownership"
                      aria-labelledby="alerts-content-tab-ownership"
-                     hidden
-                    >
-                    {% include "analytics/alerts/partials/_ownership_summary.html" %}
-                </div>
-
+                     hidden>{% include "analytics/alerts/partials/_ownership_summary.html" %}</div>
                 <div id="alerts-content-panel-readiness"
                      role="tabpanel"
                      data-analytics-tab-panel="readiness"
                      aria-labelledby="alerts-content-tab-readiness"
-                     hidden
-                    >
-                    {% include "analytics/alerts/partials/_incident_readiness.html" %}
-                </div>
-
+                     hidden>{% include "analytics/alerts/partials/_incident_readiness.html" %}</div>
                 <div id="alerts-content-panel-recommendations"
                      role="tabpanel"
                      data-analytics-tab-panel="recommendations"
                      aria-labelledby="alerts-content-tab-recommendations"
-                     hidden
-                    >
-                    {% include "analytics/alerts/partials/_recommendations.html" %}
-                </div>
-
+                     hidden>{% include "analytics/alerts/partials/_recommendations.html" %}</div>
                 <div id="alerts-content-panel-resources"
                      role="tabpanel"
                      data-analytics-tab-panel="resources"
                      aria-labelledby="alerts-content-tab-resources"
-                     hidden
-                    >
-                    {% include "analytics/alerts/partials/_operational_resources.html" %}
-                </div>
+                     hidden>{% include "analytics/alerts/partials/_operational_resources.html" %}</div>
             {% endcall %}
         {% endif %}
     </div>
