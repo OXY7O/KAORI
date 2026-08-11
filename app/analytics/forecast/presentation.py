@@ -120,6 +120,11 @@ def get_forecast_snapshot(
     pod_item = item_map.get('pods', {})
     forecast_risk = _resolve_forecast_risk(summary=summary, items=items)
     risk_count = _safe_int(summary.get('warning_count', 0)) + _safe_int(summary.get('critical_count', 0))
+    actionable_recommendations = [
+        _as_dict(item)
+        for item in _as_list(forecast_payload.get('actionable_recommendations'))
+        if isinstance(item, dict)
+    ]
     return {
         'cpu_trend': _get_forecast_trend_label(cpu_item),
         'cpu_trend_value': _get_forecast_trend_value(cpu_item),
@@ -150,11 +155,7 @@ def get_forecast_snapshot(
         'nearest_warning': summary.get('nearest_warning', {}),
         'nearest_critical': summary.get('nearest_critical', {}),
         'series': _build_forecast_snapshot_series(items),
-        'recommendation_count': count_actionable_recommendations(
-            forecast_payload.get('actionable_recommendations')
-            if isinstance(forecast_payload.get('actionable_recommendations'), list)
-            else []
-        ),
+        'recommendation_count': count_actionable_recommendations(actionable_recommendations),
     }
 
 
