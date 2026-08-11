@@ -12,8 +12,7 @@ def read(relative: str) -> str:
 def test_analytics_tabs_have_one_native_runtime_owner() -> None:
     runtime = read('app/static/js/analytics_controls.js')
     templates = '\n'.join(
-        path.read_text(encoding='utf-8')
-        for path in (ROOT / 'app/templates/analytics').rglob('*.html')
+        path.read_text(encoding='utf-8') for path in (ROOT / 'app/templates/analytics').rglob('*.html')
     )
 
     assert 'function setAnalyticsTab(tabset, tabId' in runtime

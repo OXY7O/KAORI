@@ -35,9 +35,7 @@ def test_runtime_summary_uses_filtered_scope_and_runtime_health_is_not_inferred(
 
 def test_runtime_observation_lookup_is_latest_per_target_in_database() -> None:
     service = read('app/integrations/service.py')
-    lookup = service.split('def _latest_runtime_observations', 1)[1].split(
-        'def _runtime_overview_rows', 1
-    )[0]
+    lookup = service.split('def _latest_runtime_observations', 1)[1].split('def _runtime_overview_rows', 1)[0]
 
     assert 'func.row_number()' in lookup
     assert '.over(' in lookup

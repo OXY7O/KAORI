@@ -1,5 +1,5 @@
-from pathlib import Path
 import re
+from pathlib import Path
 
 
 ANALYTICS_ROOT = Path('app/templates/analytics')
@@ -41,7 +41,7 @@ def _iter_calls(source: str, name: str):
                 elif char == quote:
                     quote = None
             else:
-                if char in "'\"":
+                if char in '\'"':
                     quote = char
                 elif char == '(':
                     depth += 1
@@ -103,11 +103,7 @@ def test_every_interpretation_call_declares_a_visual_role() -> None:
 
 
 def test_visual_roles_are_used_for_their_intended_meaning() -> None:
-    all_templates = '\n'.join(
-        read(path)
-        for path in ANALYTICS_ROOT.rglob('*.html')
-        if path != SURFACE
-    )
+    all_templates = '\n'.join(read(path) for path in ANALYTICS_ROOT.rglob('*.html') if path != SURFACE)
 
     assert "role='insight'" in all_templates
     assert "role='brand'" in all_templates

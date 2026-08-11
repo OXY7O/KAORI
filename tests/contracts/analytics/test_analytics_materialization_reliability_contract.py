@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -16,7 +15,7 @@ def test_analytics_status_does_not_run_duplicate_health_query() -> None:
     presentation = _read('app/analytics/common/presentation.py')
 
     assert 'def analytics_status' in consumer
-    assert "vector(1)" not in consumer
+    assert 'vector(1)' not in consumer
     assert 'consumer.analytics_status()' in utilization
     assert 'consumer.analytics_status()' in base
     assert 'analytics.utilization.queries.PROMETHEUS_HEALTH' not in profile
@@ -106,16 +105,14 @@ def test_forecast_and_top_consumers_do_not_hide_provider_failures_as_empty_data(
     assert 'except Exception' not in base_query
     assert 'raise PrometheusError' in base_query
 
-    forecast_range = forecast.split('def _query_range', 1)[1].split(
-        'def get_forecast_analysis_context', 1
-    )[0]
+    forecast_range = forecast.split('def _query_range', 1)[1].split('def get_forecast_analysis_context', 1)[0]
     assert 'except Exception' not in forecast_range
     assert 'return []' not in forecast_range
     assert 'return 0.0' not in forecast_range
 
-    materialization_context = top_consumers.split(
-        'def get_top_consumers_context', 1
-    )[1].split('def render_namespace_query', 1)[0]
+    materialization_context = top_consumers.split('def get_top_consumers_context', 1)[1].split(
+        'def render_namespace_query', 1
+    )[0]
     assert 'Top consumers query failed' not in materialization_context
     assert 'consumer_payload = top_consumers_service.get_top_consumers_payload' in materialization_context
 
@@ -160,9 +157,7 @@ def test_persisted_runtime_health_is_advisory_for_worker_and_page_dispatch() -> 
     assert "'label': 'Prometheus Query Ready'" in common_context
     assert "base_context['prometheus_connected'] = True" in common_context
     assert 'previous runtime observation' in common_context
-    candidate_function = requests.split('def _candidate_is_usable', 1)[1].split(
-        'def _prometheus_resolution', 1
-    )[0]
+    candidate_function = requests.split('def _candidate_is_usable', 1)[1].split('def _prometheus_resolution', 1)[0]
     assert 'candidate is not None' in candidate_function
     assert 'operational_state not in' not in candidate_function
     assert 'runtime_warning' in requests
@@ -174,7 +169,7 @@ def test_optional_alert_anomaly_failures_are_visible_as_partial_data() -> None:
     filters = _read('app/templates/analytics/alerts/partials/_filters.html')
 
     assert '-> tuple[list[dict[str, Any]], dict[str, Any]]' in anomalies
-    assert "partial = bool(errors)" in anomalies
+    assert 'partial = bool(errors)' in anomalies
     assert "'available_queries': available_queries" in anomalies
     assert "'failed_queries': sorted(errors)" in anomalies
     assert 'collection_warnings' in application

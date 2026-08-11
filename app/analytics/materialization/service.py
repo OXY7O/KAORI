@@ -65,12 +65,12 @@ def read_snapshot(
     dataset = get_dataset(dataset_key)
     now = utcnow()
     generated_at = _as_utc(snapshot.generated_at)
-    expires_at = _as_utc(snapshot.expires_at) if snapshot.expires_at else generated_at + timedelta(
-        minutes=dataset.freshness_minutes
+    expires_at = (
+        _as_utc(snapshot.expires_at)
+        if snapshot.expires_at
+        else generated_at + timedelta(minutes=dataset.freshness_minutes)
     )
-    stale_deadline = expires_at + timedelta(
-        minutes=snapshot.stale_grace_minutes or dataset.stale_grace_minutes
-    )
+    stale_deadline = expires_at + timedelta(minutes=snapshot.stale_grace_minutes or dataset.stale_grace_minutes)
     if now > stale_deadline:
         return SnapshotResult(None, snapshot, 'expired', True)
 
@@ -135,9 +135,7 @@ def store_snapshot(
     stale_grace_minutes: int | None = None,
 ) -> AnalyticsSnapshot:
     if context.get('dependency_blocker'):
-        raise ValueError(
-            f'Analytics snapshot {dataset_key} contains a dependency blocker and cannot be committed.'
-        )
+        raise ValueError(f'Analytics snapshot {dataset_key} contains a dependency blocker and cannot be committed.')
     dataset = get_dataset(dataset_key)
     now = utcnow()
     snapshot = mark_snapshot_pending(
