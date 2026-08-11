@@ -57,6 +57,7 @@ Start with:
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
 - [`docs/deployment/RELEASE_GOVERNANCE.md`](docs/deployment/RELEASE_GOVERNANCE.md)
 - [`CHANGELOG.md`](CHANGELOG.md)
+- [`KAORI 2.2.0 Release Notes`](docs/releases/KAORI_2_2_0.md)
 
 ## Source Archives
 

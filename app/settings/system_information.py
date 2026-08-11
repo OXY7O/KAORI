@@ -12,24 +12,24 @@ from app.integrations.compatibility import (
 
 _RELEASE_HIGHLIGHTS: tuple[dict[str, str], ...] = (
     {
-        'title': 'Self-Healing Integration Runtime',
-        'icon': 'refresh-cw',
+        'title': 'Deterministic Final Release Gate',
+        'icon': 'badge-check',
         'description': (
-            'Kubernetes, Prometheus, and Alertmanager runtime monitoring can recover automatically and trigger targeted data refreshes after connectivity returns.'
+            'One general release command now verifies navigation and Blueprint ownership, static quality, the full test suite, frontend formatting, endpoint registration, and worker runtime readiness.'
         ),
     },
     {
-        'title': 'Worker-Based Kubernetes Operations',
-        'icon': 'workflow',
+        'title': 'Locked Operational Surfaces',
+        'icon': 'lock-keyhole',
         'description': (
-            'Inventory, analytics materialization, and TLS certificate synchronization use registered background jobs with manual and scheduled execution paths.'
+            'Core Kubernetes, Analytics, Reports, Integrations, Platform Operations, Access, Settings, and Authentication surfaces are protected by permanent release contracts while Intelligence remains baseline-locked for controlled follow-on development.'
         ),
     },
     {
-        'title': 'Template-Driven PDF Reporting',
-        'icon': 'file-chart-column',
+        'title': 'Hardening & Test Reliability',
+        'icon': 'shield-check',
         'description': (
-            'Existing report templates render through the canonical WeasyPrint HTML/PDF engine with governed sections, storage, and lifecycle controls.'
+            'Authorization ordering, Secret handling, storage resilience, type safety, test prerequisites, module isolation, and runtime characterization were tightened so future defects can be handled inside smaller controlled scopes.'
         ),
     },
 )

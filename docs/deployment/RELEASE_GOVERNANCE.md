@@ -39,19 +39,20 @@ Before a release, move approved entries from `[Unreleased]` to `## [X.Y.Z] - YYY
 ## Release Procedure
 
 1. Complete the ordered pre-release audit and close all release blockers.
-2. Run `bash scripts/quality_gate.sh --all` in the supported KAORI devcontainer/CI environment.
+2. Run `python scripts/verify_final_release.py --all --runtime` in the supported KAORI Dev Container/CI environment; this is the canonical final approval entry point and delegates to the underlying quality gates.
 3. Confirm the Alembic migration graph has one head and test the production upgrade path against a staging PostgreSQL database.
 4. Select the Semantic Versioning increment from the approved changelog.
 5. Update `APP_VERSION` defaults and examples together.
 6. Move `[Unreleased]` changelog entries into the dated release section.
-7. Commit the release metadata change.
-8. Create an annotated Git tag `vX.Y.Z` from the approved commit.
-9. Build one immutable image from that tag and inject `APP_BUILD_SHA` and `APP_BUILD_DATE`.
-10. Verify System Information shows the same version/build identity as the deployed image.
-11. Preserve the image digest and deployment manifest so rollback points remain unambiguous.
+7. Create or update `docs/releases/KAORI_X_Y_Z.md` with the approved release scope, deferred work, verification command, and Git tag.
+8. Commit the release metadata change.
+9. Create an annotated Git tag `vX.Y.Z` from the approved commit.
+10. Build one immutable image from that tag and inject `APP_BUILD_SHA` and `APP_BUILD_DATE`.
+11. Verify System Information shows the same version/build identity as the deployed image.
+12. Preserve the image digest and deployment manifest so rollback points remain unambiguous.
 
 ## Release Gate
 
-The static quality gate runs `scripts/verify_release_governance.py`. The verifier rejects malformed or divergent version defaults, missing changelog structure, missing build-traceability variables, or a release process that is no longer documented. The full `scripts/quality_gate.sh --all` gate additionally owns layered behavioral/security/rendering evidence, explicit E2E smoke, frontend reproducibility, migration integrity, and production-image prerequisites. CI must provision the PostgreSQL/Redis services required by those release tests rather than skipping them.
+The static quality gate runs `scripts/verify_release_governance.py`. The verifier rejects malformed or divergent version defaults, a production image example that does not match `APP_VERSION`, missing dated changelog/release-note structure, missing build-traceability variables, or a release process that is no longer documented. The master `python scripts/verify_final_release.py --all --runtime` gate additionally owns layered behavioral/security/rendering evidence, explicit E2E smoke, frontend reproducibility, migration integrity, endpoint registration, and production worker readiness; it delegates static/test/frontend work to `scripts/quality_gate.sh --all`. CI must provision the PostgreSQL/Redis services required by those release tests rather than skipping them.
 
 Do not loosen a verifier, delete a required test, or mark a failing layer as optional to approve a release. Fix the implementation, evidence, metadata, or documentation instead.

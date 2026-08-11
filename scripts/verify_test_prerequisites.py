@@ -50,7 +50,6 @@ def _duplicate_test_basenames() -> dict[str, list[str]]:
     return {name: paths for name, paths in matches.items() if len(paths) > 1}
 
 
-
 def _unsafe_module_registry_mutations() -> dict[str, list[str]]:
     unsafe: dict[str, list[str]] = {}
     for bucket in FUNCTIONAL_TEST_BUCKETS:

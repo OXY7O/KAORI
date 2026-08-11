@@ -3,7 +3,8 @@
 All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for release identity.
 
 ## [Unreleased]
-- Baseline-lock Intelligence read/evidence surfaces while preserving explicit Reserved Plan and fail-closed boundaries for unfinished Server/HCI and Automation Control capabilities; environment enablement for Automation mutations remains deliberately deferred.
+
+## [2.2.0] - 2026-08-11
 
 ### Added
 - Added a release-test prerequisite preflight that verifies required development test dependencies and unique pytest module basenames before the full suite starts.
@@ -16,7 +17,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Pre-release type-safety guardrails for provider exceptions, Secret scrubbing, snapshot boundaries, recovery counters, ORM construction, and XLSX page setup.
 
 ### Changed
-- Hardened functional test isolation so standalone Dashboard/Topology loaders restore `sys.modules` through pytest monkeypatch ownership; the release prerequisite preflight now rejects unsafe direct module-registry mutations that can corrupt later application-factory characterization.
+- Baseline-lock Intelligence read/evidence surfaces while preserving explicit Reserved Plan and fail-closed boundaries for unfinished Server/HCI and Automation Control capabilities; environment enablement for Automation mutations remains deliberately deferred.
 - Standardized the general release console on short `PASS — KAORI <Area>` titles while preserving complete captured diagnostics on failed child verifiers; full static/test/frontend phases remain delegated to the canonical quality gate.
 - Closed the remaining Reports UI style/reuse gate debt by centralizing semantic borders, PDF dynamic fill styling, generated/template progress ownership, and Schedule form runtime while preserving the locked Reports presentation and delivery contracts.
 - Final-locked Settings across General Settings and Account & Authentication, retiring obsolete side-context partials and standardizing active preference/credential surfaces on shared KAORI semantic UI ownership.
@@ -50,6 +51,9 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Removed unused Inventory `format_byte_count`, `format_gib`, and `_split_inventory_values` helpers plus the stale empty Inventory partial README; no compatibility wrapper is retained.
 
 ### Fixed
+- Hardened functional-test module isolation so temporary `sys.modules` stubs are restore-safe and cannot corrupt later Flask application characterization tests.
+- Aligned Analytics runtime characterization with the canonical dependency-failure envelope, Storage capability evidence, and absolute-versus-percent Top Consumer semantics.
+- Restored release code-health line budgets without increasing debt ceilings and made failed general release phases suppress unrelated success chatter.
 - Fixed full release-test collection by declaring `pypdf` as a development-only dependency and removing the duplicate `test_operation_flow.py` module basename collision.
 - Normalized Kubernetes Analytics final-recheck contracts around semantic behavior instead of quote/whitespace fingerprints while preserving Watch posture, shared semantic tone ownership, null-safe Forecast thresholds, Prometheus timestamp fallback, Storage pressure fallbacks, Utilization legend roles, and Workload View More boundaries.
 - Made the Integrations latest-runtime-observation contract formatter-neutral by validating the ranked database query semantically within its owning function instead of matching one exact call layout.
