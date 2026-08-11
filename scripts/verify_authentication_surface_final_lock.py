@@ -27,11 +27,7 @@ def require(condition: bool, message: str, errors: list[str]) -> None:
 
 
 def _inline_script_count(source: str) -> int:
-    return sum(
-        1
-        for match in SCRIPT_TAG.finditer(source)
-        if not re.search(r'\bsrc\s*=', match.group('attrs'), re.I)
-    )
+    return sum(1 for match in SCRIPT_TAG.finditer(source) if not re.search(r'\bsrc\s*=', match.group('attrs'), re.I))
 
 
 def main() -> int:
@@ -69,7 +65,7 @@ def main() -> int:
 
     for required in (
         "@auth_bp.route('/login', methods=['GET', 'POST'])",
-        "AUTH_LOGIN_RATE_LIMIT",
+        'AUTH_LOGIN_RATE_LIMIT',
         "form.next.data = safe_next_url(request.args.get('next')) or ''",
         'message = credential_failure_message(result)',
         "@auth_bp.route('/logout', methods=['POST'])",
@@ -88,7 +84,7 @@ def main() -> int:
         "candidate.startswith('//')",
         "if '\\\\' in candidate",
         'parsed.scheme or parsed.netloc',
-        "session.clear()",
+        'session.clear()',
         "current_app.config.get('AUTH_ALLOW_SUPER_ADMIN_REMEMBER_ME', False)",
         "session['_remember'] = 'clear'",
     ):
