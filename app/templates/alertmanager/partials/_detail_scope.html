@@ -19,7 +19,7 @@
                     {{ integration_ui.palette_icon('route', 'brand', size='lg') }}
                     <div>
                         <h2 class="text-base font-semibold text-content-primary">Bindings &amp; Consumers</h2>
-                        <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Review governed scope bindings, alert identity selectors, effective consumer resolution, and lifecycle guardrails.</p>
+                        <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Review governed consumer bindings, alert identity selectors, consumer profiles, effective source resolution, and lifecycle guardrails.</p>
                     </div>
                 </div>
                 <button type="button"
@@ -36,9 +36,9 @@
         {% endif %}
         <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
             <div class="px-5 py-4 sm:px-6">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Bound Scopes</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Consumer Bindings</p>
                 <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ binding_rows|length }}</p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Governed operational contexts</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Managed assets using this source</p>
             </div>
             <div class="px-5 py-4 sm:px-6">
                 <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Validated Bindings</p>
@@ -53,7 +53,7 @@
             <div class="px-5 py-4 sm:px-6">
                 <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Resolution Scopes</p>
                 <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ source_resolution_rows|length }}</p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Consumer scopes evaluated</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Consumer assets evaluated</p>
             </div>
         </div>
     </section>
@@ -63,30 +63,32 @@
         <header class="border-b border-outline-subtle px-5 py-4">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div class="flex items-start gap-3">
-                    {{ integration_ui.palette_icon('link-2', 'brand', size='md') }}
+                    {{ integration_ui.palette_icon("link-2", "brand", size="md") }}
                     <div>
                         <h3 id="alertmanager-bound-scopes-title"
-                            class="text-sm font-semibold text-content-primary">Bound Operational Scopes</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Source readiness, selector validation, and effective resolution remain independent evidence.</p>
+                            class="text-sm font-semibold text-content-primary">Consumer Binding Registry</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Bound Operational Scopes remain asset-centric; each binding owns its consumer profile, alert identity selector, validation evidence, and effective resolution.</p>
                     </div>
                 </div>
-                {{ table_label.metadata_label(binding_rows|length ~ ' Binding' ~ ('' if binding_rows|length == 1 else 's') ) }}
+                {{ table_label.metadata_label(binding_rows|length ~ " Binding" ~ ("" if binding_rows|length == 1 else "s") ) }}
             </div>
         </header>
-        <div class="overflow-hidden" x-data="{ selectorEditor: null }">
-            <table class="{{ table_ui.table_classes() }} table-fixed">
+        <div class="overflow-x-auto" x-data="{ selectorEditor: null }">
+            <table class="{{ table_ui.table_classes() }} min-w-[1180px] table-fixed">
                 <colgroup>
+                    <col class="w-[16%]">
+                    <col class="w-[17%]">
                     <col class="w-[18%]">
-                    <col class="w-[22%]">
-                    <col class="w-[11%]">
-                    <col class="w-[14%]">
-                    <col class="w-[14%]">
-                    <col class="w-[21%]">
+                    <col class="w-[10%]">
+                    <col class="w-[12%]">
+                    <col class="w-[12%]">
+                    <col class="w-[15%]">
                 </colgroup>
                 <thead class="{{ table_ui.head_classes() }}">
                     <tr>
-                        <th class="px-4 py-3 text-left">Scope</th>
+                        <th class="px-4 py-3 text-left">Consumer Asset</th>
                         <th class="px-3 py-3 text-left">Alert Identity</th>
+                        <th class="px-3 py-3 text-left">Consumer Profile</th>
                         <th class="px-3 py-3 text-left">Preference</th>
                         <th class="px-3 py-3 text-left">Binding Validation</th>
                         <th class="px-3 py-3 text-left">Effective Resolution</th>
@@ -98,7 +100,7 @@
                         <tr class="{{ table_ui.row_classes() }}">
                             <td class="px-4 py-3 align-middle">
                                 <div class="flex min-w-0 items-start gap-3">
-                                    {{ integration_ui.palette_icon('route', 'brand', size='sm') }}
+                                    {{ integration_ui.palette_icon("route", "brand", size="sm") }}
                                     <div class="min-w-0">
                                         <p class="truncate text-sm font-semibold text-content-primary"
                                            title="{{ row.scope_label }}">{{ row.scope_label }}</p>
@@ -110,17 +112,26 @@
                             <td class="px-3 py-3 align-middle">
                                 <p class="truncate text-xs font-semibold text-content-primary"
                                    title="{{ row.selector_summary }}">{{ row.selector_summary }}</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ 'Configured' if row.selector_configured else 'Selector Required' }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ "Configured" if row.selector_configured else "Selector Required" }}</p>
+                            </td>
+                            <td class="px-3 py-3 align-middle">
+                                <p class="truncate text-xs font-semibold text-content-primary"
+                                   title="{{ row.consumer_profile_label }}">{{ row.consumer_profile_label }}</p>
+                                <p class="mt-1 truncate text-xs text-content-muted"
+                                   title="{{ row.consumer_profile_key or 'Validation Required' }}">{{ row.consumer_profile_key or "Validation Required" }}</p>
+                                {% if row.matched_alerts %}
+                                    <p class="mt-1 text-xs text-content-muted">{{ row.matched_alerts }} matching active alert{{ "" if row.matched_alerts == 1 else "s" }}</p>
+                                {% endif %}
                             </td>
                             <td class="px-3 py-3 align-middle">
                                 <p class="text-xs font-semibold text-content-primary">{{ row.binding.binding_role|title }}</p>
                                 <p class="mt-1 text-xs text-content-muted">Priority {{ row.binding.priority }}</p>
                             </td>
-                            <td class="px-3 py-3 align-middle whitespace-nowrap">{{ integration_status(row.validation_status, row.validation_status|replace('_', ' ') |title, display='indicator') }}</td>
-                            <td class="px-3 py-3 align-middle whitespace-nowrap">{{ integration_status(row.operational_status, row.operational_label, display='indicator') }}</td>
+                            <td class="px-3 py-3 align-middle whitespace-nowrap">{{ integration_status(row.validation_status, row.validation_status|replace("_", " ") |title, display="indicator") }}</td>
+                            <td class="px-3 py-3 align-middle whitespace-nowrap">{{ integration_status(row.operational_status, row.operational_label, display="indicator") }}</td>
                             <td class="px-3 py-3 align-middle">
                                 <div class="flex flex-wrap justify-end gap-1.5">
-                                    {% if row.binding.asset_type != 'global' %}
+                                    {% if row.binding.asset_type != "global" %}
                                         <button type="button"
                                                 @click="selectorEditor = selectorEditor === {{ row.binding.id }} ? null : {{ row.binding.id }}"
                                                 class="{{ table_ui.action_classes() }}">Configure</button>
@@ -139,17 +150,17 @@
                                     <button type="button"
                                             data-alertmanager-delete-button
                                             data-delete-url="{{ url_for('alertmanager.remove_binding', instance_id=instance.id, binding_id=row.binding.id) }}"
-                                            data-delete-title="Remove Scope Binding?"
+                                            data-delete-title="Remove Consumer Binding?"
                                             data-delete-name="{{ row.scope_label }}"
-                                            data-delete-detail="This connection will no longer be eligible for the selected operational scope."
+                                            data-delete-detail="This connection will no longer be eligible for the selected consumer asset."
                                             data-delete-action-label="Remove Binding"
                                             class="{{ table_ui.action_classes(true) }}">Remove</button>
                                 </div>
                             </td>
                         </tr>
-                        {% if row.binding.asset_type != 'global' %}
+                        {% if row.binding.asset_type != "global" %}
                             <tr x-show="selectorEditor === {{ row.binding.id }}" x-cloak>
-                                <td colspan="6"
+                                <td colspan="7"
                                     class="border-t border-outline-subtle bg-surface-subtle px-5 py-4">
                                     <form method="post"
                                           action="{{ url_for('alertmanager.update_binding_selector', instance_id=instance.id, binding_id=row.binding.id) }}"
@@ -170,10 +181,10 @@
                                             <label class="{{ table_ui.filter_label_classes() }}">Operator</label>
                                             <select name="selector_operator"
                                                     class="{{ table_ui.filter_select_classes() }}">
-                                                <option value="=" {% if row.selector_operator == '=' %}selected{% endif %}>=</option>
-                                                <option value="=~" {% if row.selector_operator == '=~' %}selected{% endif %}>=~</option>
-                                                <option value="!=" {% if row.selector_operator == '!=' %}selected{% endif %}>!=</option>
-                                                <option value="!~" {% if row.selector_operator == '!~' %}selected{% endif %}>!~</option>
+                                                <option value="=" {% if row.selector_operator == "=" %}selected{% endif %}>=</option>
+                                                <option value="=~" {% if row.selector_operator == "=~" %}selected{% endif %}>=~</option>
+                                                <option value="!=" {% if row.selector_operator == "!=" %}selected{% endif %}>!=</option>
+                                                <option value="!~" {% if row.selector_operator == "!~" %}selected{% endif %}>!~</option>
                                             </select>
                                         </div>
                                         <div>
@@ -189,9 +200,9 @@
                         {% endif %}
                     {% else %}
                         <tr>
-                            <td colspan="6" class="px-5 py-10 text-center">
-                                <p class="text-sm font-semibold text-content-primary">No Scope Bindings</p>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Create a binding to authorize this Alertmanager source for an operational context.</p>
+                            <td colspan="7" class="px-5 py-10 text-center">
+                                <p class="text-sm font-semibold text-content-primary">No Consumer Bindings</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">Create a binding to authorize this reusable Alertmanager source for one managed consumer asset.</p>
                             </td>
                         </tr>
                     {% endfor %}
@@ -221,7 +232,7 @@
                 <div class="mt-2">{{ integration_status(instance.readiness_status or 'validation_required', (instance.readiness_status or 'validation_required') |replace('_',' ')|title, display='indicator') }}</div>
             </div>
             <div class="px-5 py-4">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Bound Scopes</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Consumer Bindings</p>
                 <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ binding_rows|length }}</p>
             </div>
             <div class="px-5 py-4">
@@ -239,7 +250,7 @@
                     {{ integration_ui.palette_icon('route', 'brand', size='sm') }}
                     <div>
                         <p class="text-xs font-semibold text-content-primary">Resolver Contract</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Primary, secondary, and fallback roles establish preference. Source readiness, binding validation, capability coverage, and current health remain independent gates.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Primary, secondary, and fallback roles establish preference. Provider Core Readiness, consumer-profile validation, selector identity, and current health remain independent gates.</p>
                     </div>
                 </div>
             </div>
@@ -248,7 +259,7 @@
                     {{ integration_ui.palette_icon('scan-line', 'brand', size='sm') }}
                     <div>
                         <p class="text-xs font-semibold text-content-primary">Alert Identity Boundary</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Non-global bindings require a stable selector so shared Alertmanager sources do not mix evidence across governed scopes.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Non-global bindings require a stable selector so one shared Alertmanager can segregate Kubernetes, MinIO, infrastructure, and future consumer alert streams.</p>
                     </div>
                 </div>
             </div>
@@ -259,11 +270,11 @@
                         <p class="text-xs font-semibold text-content-primary">Next Operational Action</p>
                         <p class="mt-1 text-xs leading-5 text-content-secondary">
                             {% if not binding_rows %}
-                                Create the first scope binding, configure its alert identity selector, then run binding validation.
+                                Create the first consumer binding, confirm its profile and alert identity selector, then run Binding Validation.
                             {% elif operational_binding_count < binding_rows|length %}
-                                Resolve selector, source-readiness, validation, or capability gaps on bindings that are not operational.
+                                Resolve selector, provider-readiness, consumer-profile, or validation gaps on bindings that are not operational.
                             {% else %}
-                                All registered bindings are operational. Revalidate after selector, role, priority, or Alertmanager API changes.
+                                All registered consumer bindings are operational. Revalidate after selector, role, priority, consumer-profile, or Alertmanager API changes.
                             {% endif %}
                         </p>
                     </div>
@@ -389,7 +400,7 @@
               hx-swap="outerHTML"
               hx-disabled-elt="button, select, input"
               hx-indicator="#alertmanager-binding-loading"
-              x-data="{ scopeType: 'kubernetes_cluster' }"
+              x-data="{ scopeType: 'kubernetes_cluster', profiles: { kubernetes_cluster: 'kubernetes-alerts-v1', object_storage_system: 'minio-alerts-v1', server: 'infrastructure-alerts-v1', server_group: 'infrastructure-group-alerts-v1', hci_environment: 'platform-alerts-v1', storage_service: 'storage-alerts-v1', global: 'global-alerts-v1' } }"
               class="relative flex max-h-[calc(100vh-2rem)] flex-col">
             {% if csrf_token is defined %}
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -399,7 +410,7 @@
                     <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"><i data-lucide="link" class="h-5 w-5"></i></span>
                     <div>
                         <h3 class="text-base font-semibold text-content-primary">Create Alertmanager Binding</h3>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">Authorize this reusable alert source for one operational scope and define resolver preference.</p>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Authorize this reusable alert source for one consumer asset and define resolver preference.</p>
                     </div>
                 </div>
                 <button type="button"
@@ -411,7 +422,7 @@
             <div class="min-h-0 flex-1 overflow-y-auto p-5">
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
-                        <label class="mb-1.5 block text-sm font-semibold text-content-primary">Scope Type</label>
+                        <label class="mb-1.5 block text-sm font-semibold text-content-primary">Consumer Type</label>
                         <select name="scope_type"
                                 x-model="scopeType"
                                 required
@@ -421,6 +432,7 @@
                             <option value="server_group">Infrastructure asset group</option>
                             <option value="hci_environment">Platform environment</option>
                             <option value="storage_service">Infrastructure service</option>
+                            <option value="object_storage_system">Object storage system</option>
                             <option value="global">Global operational scope</option>
                         </select>
                     </div>
@@ -434,12 +446,24 @@
                             {% for cluster in clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}
                         </select>
                     </div>
-                    <div x-show="scopeType !== 'kubernetes_cluster' && scopeType !== 'global'"
+                    <div x-show="scopeType === 'object_storage_system'" x-cloak>
+                        <label class="mb-1.5 block text-sm font-semibold text-content-primary">Object Storage System</label>
+                        <select name="object_storage_scope_key"
+                                :disabled="scopeType !== 'object_storage_system'"
+                                :required="scopeType === 'object_storage_system'"
+                                class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
+                            <option value="">Select object storage system</option>
+                            {% for asset in object_storage_systems %}
+                                <option value="{{ asset.id }}">{{ asset.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div x-show="scopeType !== 'kubernetes_cluster' && scopeType !== 'object_storage_system' && scopeType !== 'global'"
                          x-cloak>
-                        <label class="mb-1.5 block text-sm font-semibold text-content-primary">Scope Key</label>
+                        <label class="mb-1.5 block text-sm font-semibold text-content-primary">Consumer Key</label>
                         <input name="generic_scope_key"
-                               :disabled="scopeType === 'kubernetes_cluster' || scopeType === 'global'"
-                               :required="scopeType !== 'kubernetes_cluster' && scopeType !== 'global'"
+                               :disabled="scopeType === 'kubernetes_cluster' || scopeType === 'object_storage_system' || scopeType === 'global'"
+                               :required="scopeType !== 'kubernetes_cluster' && scopeType !== 'object_storage_system' && scopeType !== 'global'"
                                class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
                     </div>
                     <div>
@@ -463,13 +487,19 @@
                                class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary">
                     </div>
                 </div>
+                <div class="mt-5 rounded-xl border border-brand-outline bg-kaori-soft px-4 py-3">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">Resolved Consumer Profile</p>
+                    <p class="mt-1 font-mono text-sm font-semibold text-content-primary"
+                       x-text="profiles[scopeType] || 'Unregistered profile'"></p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">The profile is derived from the consumer asset type; the selector defines the identity used to segregate this alert stream inside the shared Alertmanager.</p>
+                </div>
                 <section class="mt-5 rounded-xl border border-outline-subtle bg-surface-subtle p-4"
                          x-show="scopeType !== 'global'">
                     <div class="flex items-start gap-3">
                         <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"><i data-lucide="scan-line" class="h-4 w-4"></i></span>
                         <div>
                             <p class="text-sm font-semibold text-content-primary">Alert Identity Selector</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Use a stable label selector that identifies alerts for this scope.</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Use a stable label selector that identifies alerts for this consumer asset. The selected asset type resolves the Consumer Profile automatically.</p>
                         </div>
                     </div>
                     <div class="mt-4 grid gap-3 sm:grid-cols-[1fr_7rem_1fr]">
@@ -506,7 +536,7 @@
                 <input type="hidden" name="enabled" value="1">
             </div>
             <footer class="flex items-center justify-between gap-3 border-t border-outline-subtle bg-surface-subtle px-5 py-3.5">
-                <p class="text-xs leading-5 text-content-muted">Saving creates the binding in Validation Required until technical validation completes.</p>
+                <p class="text-xs leading-5 text-content-muted">Saving resolves the Consumer Profile from the asset type and keeps the binding in Validation Required until selector and payload evidence are validated.</p>
                 <div class="flex items-center gap-2">
                     <button type="button"
                             data-kaori-dialog-close

@@ -1,228 +1,90 @@
 {% extends "layouts/app.html" %}
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "components/page_hero.html" as page_hero %}
-{% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-{% block title %}{{ instance.name }} · MinIO · KAORI{% endblock title %}
+{% block title %}{{ instance.name }} · MinIO Integration · KAORI{% endblock title %}
 {% block dashboard_content %}
-    {% set api_status = instance.readiness_status or 'validation_required' %}
-    {% set api_label = 'Ready' if api_status == 'ready' else ('Blocked' if api_status == 'blocked' else 'Validation Required') %}
-    <div class="kaori-integration-semantic space-y-6">
+    {% set readiness = instance.readiness_status or "validation_required" %}
+    {% set source_posture = "Ready" if readiness == "ready" else ("Attention" if readiness in ["degraded", "blocked"] else "Configured") %}
+    <div class="kaori-integration-semantic space-y-6"
+         x-data="integrationWorkspaceTabs(['configuration', 'validation', 'runtime', 'scope'], 'configuration', 'minio-detail-tabs')"
+         x-on:hashchange.window="syncTab()"
+         x-on:popstate.window="syncTab()">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro('database', 'Storage · Object Storage · MinIO', 'database-zap') %}
+                    {% call page_hero.intro("database", "MinIO Integration", "database-zap") %}
                         <h1 class="{{ page_hero.title_classes() }}">{{ instance.name }}</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">API and metrics evidence are intentionally separated and converge on the same object-storage asset.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Manage the connection contract, core validation evidence, runtime health, and independent object-storage consumer bindings.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('box', asset.name) }}
-                            {{ page_hero.meta_label('layers-3', (instance.environment or 'Not specified') |replace('_', ' ')|title) }}
-                            {{ page_hero.meta_label('calendar-check', instance.declared_release) }}
+                            {{ page_hero.meta_label("shield-check", readiness|replace("_", " ") |title) }}
+                            {{ page_hero.meta_label("link-2", (binding_rows|length|string) ~ " Consumer Bindings") }}
+                            {{ page_hero.meta_label("layers-3", (capability_count|string) ~ " Capabilities") }}
                         </div>
                     {% endcall %}
                 </div>
                 <aside class="{{ page_hero.aside_classes() }}"
-                       aria-label="MinIO operational posture">
+                       aria-label="MinIO connection posture">
                     <div class="{{ page_hero.context_panel_classes() }}">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="min-w-0">
-                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Operational Coverage</p>
-                                <p class="{{ page_hero.context_panel_title_classes() }}">API and Metrics Planes</p>
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Posture</p>
+                                <h2 class="{{ page_hero.context_panel_title_classes() }}">Readiness &amp; Consumer Coverage</h2>
                             </div>
-                            {{ integration_status(api_status, api_label, display='text') }}
+                            {{ integration_status("ready" if source_posture == "Ready" else ("degraded" if source_posture == "Attention" else "validation_required") , source_posture) }}
                         </div>
-                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                            {{ page_hero.context_metric('plug-zap', 'S3 API', api_label, checked_at_display) }}
-                            {{ page_hero.context_metric('activity', 'Metrics', metrics_status.label, metrics_source.name if metrics_source else 'No Prometheus source') }}
+                        <div class="mt-4 grid grid-cols-2 gap-2">
+                            {{ page_hero.context_metric("shield-check", "Readiness", readiness|replace("_", " ") |title, "Produced by Core Validation", value_classes="truncate text-sm font-semibold leading-5") }}
+                            {{ page_hero.context_metric("link-2", "Bindings", binding_rows|length, "API, metrics, and alert associations") }}
                         </div>
-                        <a href="{{ url_for('minio.index') }}"
-                           class="{{ page_hero.context_single_action_classes() }}">
-                            <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
-                            Back to MinIO Providers
-                        </a>
+                        <div class="{{ page_hero.context_actions_classes() }}">
+                            <button type="button"
+                                    @click="setTab('validation', true)"
+                                    class="{{ page_hero.context_action_classes() }}">
+                                <i data-lucide="scan-line" class="h-4 w-4" aria-hidden="true"></i>
+                                Review Validation
+                            </button>
+                            <a href="{{ url_for('minio.index') }}"
+                               class="{{ page_hero.context_action_classes() }}">
+                                <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
+                                Back to Registry
+                            </a>
+                        </div>
                     </div>
                 </aside>
             </div>
         </section>
-        <section class="{{ integration_ui.section_shell_classes() }}" id="validation">
-            {{ integration_ui.section_header("scan-search", "Provider Validation", "Validate the MinIO S3 API and declared release independently from Prometheus metrics coverage.", eyebrow="API Plane") }}
-            <div class="grid gap-px bg-outline-subtle md:grid-cols-3">
-                <article class="bg-surface-card p-5">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">S3 API Readiness</p>
-                    <div class="mt-2">{{ integration_status(api_status, api_label, display='indicator') }}</div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ instance.validation_message or 'Run Full Validation to observe the MinIO API.' }}</p>
-                </article>
-                <article class="bg-surface-card p-5">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Compatibility</p>
-                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ instance.compatibility_profile or 'Not Validated' }}</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Declared release: {{ instance.declared_release }}</p>
-                </article>
-                <article class="bg-surface-card p-5">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Observed Inventory</p>
-                    <p class="mt-2 text-2xl font-semibold text-content-primary">{{ bucket_count }}</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Buckets visible to the registered credential during the latest validation.</p>
-                </article>
-            </div>
-            <div class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-                <div>
-                    <p class="text-sm font-semibold text-content-primary">Full Validation</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Refresh connection, compatibility, capabilities, runtime evidence, and the canonical MinIO-to-asset binding.</p>
+        <section id="minio-detail-tabs"
+                 class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
+            {{ framed_workspace_tabs.render([
+                        ("configuration", "Configuration", "settings-2", instance.environment|default("") |title),
+            ("validation", "Core Validation", "scan-search", readiness|replace("_", " ")|title),
+            ("runtime", "Runtime & History", "activity", runtime_state.health_status_label|default("Not Observed")),
+            ("scope", "Bindings & Consumers", "waypoints", (binding_rows|length|string) ~ " Bindings")
+            ], prefix="minio", aria_label="MinIO Connection Domains") }}
+            <div class="p-4 sm:p-5 lg:p-6">
+                <div id="minio-panel-configuration"
+                     role="tabpanel"
+                     aria-labelledby="minio-tab-configuration"
+                     x-show="activeTab === 'configuration'">
+                    {% include "minio/partials/_detail_configuration.html" %}
                 </div>
-                <form method="post"
-                      action="{{ url_for('minio.validate_instance', instance_id=instance.id) }}">
-                    {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                    <button type="submit"
-                            class="inline-flex h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover">
-                        <i data-lucide="scan-search" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                        Run Full Validation
-                    </button>
-                </form>
-            </div>
-            {% if validation_job %}
-                <div class="border-t border-outline-subtle px-5 py-3 text-xs text-content-secondary sm:px-6">
-                    Validation job: <span class="font-semibold text-content-primary">{{ validation_job.status|default("queued") |replace('_', ' ')|title }}</span>
-                </div>
-            {% endif %}
-        </section>
-        <section class="{{ integration_ui.section_shell_classes() }}">
-            {{ integration_ui.section_header("fingerprint", "Connection Contract", "Provider-specific API configuration remains isolated from Prometheus and future Object Storage consumers.", eyebrow="MinIO Provider") }}
-            <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
-                {% for label, value, helper in [
-                    ('Endpoint', instance.endpoint, 'S3 API base URL'),
-                    ('Access Key', instance.access_key, 'Credential identity; secret remains encrypted'),
-                    ('S3 Region', instance.region, 'Signing and request region'),
-                    ('Addressing Style', instance.addressing_style|title, 'Bucket URL construction')
-                    ] %}
-                    <article class="bg-surface-card p-5">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
-                        <p class="mt-2 break-words text-sm font-semibold text-content-primary">{{ value }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</p>
-                    </article>
-                {% endfor %}
-            </div>
-            <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle md:grid-cols-3">
-                <article class="bg-surface-card p-5">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Observed Product</p>
-                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ (instance.detected_product or 'Not Observed')|replace('_', ' ') |title }}</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ instance.observed_server_header or 'Server header not observed' }}</p>
-                </article>
-                <article class="bg-surface-card p-5">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Deployment Identity</p>
-                    <p class="mt-2 break-all text-sm font-semibold text-content-primary">{{ instance.deployment_id or 'Not Observed' }}</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">MinIO deployment header when available through the endpoint.</p>
-                </article>
-                <article class="bg-surface-card p-5">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">API Latency</p>
-                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ instance.last_response_time_ms ~ ' ms' if instance.last_response_time_ms is not none else 'Not Observed' }}</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Latest S3 API validation response time.</p>
-                </article>
+                <div id="minio-panel-validation"
+                     role="tabpanel"
+                     aria-labelledby="minio-tab-validation"
+                     x-show="activeTab === 'validation'"
+                     x-cloak>{% include "minio/partials/_detail_validation.html" %}</div>
+                <div id="minio-panel-runtime"
+                     role="tabpanel"
+                     aria-labelledby="minio-tab-runtime"
+                     x-show="activeTab === 'runtime'"
+                     x-cloak>{% include "minio/partials/_detail_runtime.html" %}</div>
+                <div id="minio-panel-scope"
+                     role="tabpanel"
+                     aria-labelledby="minio-tab-scope"
+                     x-show="activeTab === 'scope'"
+                     x-cloak>{% include "minio/partials/_detail_scope.html" %}</div>
             </div>
         </section>
-        <section class="{{ integration_ui.section_shell_classes() }}"
-                 id="metrics-binding">
-            {{ integration_ui.section_header("activity", "Prometheus Metrics Binding", "Bind an independently managed Prometheus provider to the same object-storage asset. KAORI never copies Prometheus credentials into MinIO configuration.", eyebrow="Metrics Plane") }}
-            {% if metrics_binding and metrics_source %}
-                <div class="grid gap-px bg-outline-subtle md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-stretch">
-                    <article class="bg-surface-card p-5">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Prometheus Source</p>
-                        <p class="mt-2 text-sm font-semibold text-content-primary">{{ metrics_source.name }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ metrics_source.endpoint }}</p>
-                    </article>
-                    <article class="bg-surface-card p-5">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Asset Selector</p>
-                        <p class="mt-2 text-sm font-semibold text-content-primary">{{ metrics_binding.selector_json.label if metrics_binding.selector_json else 'Not Configured' }} {{ metrics_binding.selector_json.operator if metrics_binding.selector_json else '' }} {{ metrics_binding.selector_json.value if metrics_binding.selector_json else '' }}</p>
-                        <div class="mt-2">{{ integration_status(metrics_status.status, metrics_status.label, display='indicator') }}</div>
-                        <p class="mt-2 text-xs leading-5 text-content-secondary">{{ metrics_binding.validation_message or 'Run metrics validation.' }}</p>
-                    </article>
-                    <article class="flex min-w-56 flex-col justify-center gap-2 bg-surface-card p-5">
-                        <form method="post"
-                              action="{{ url_for('minio.validate_metrics_binding', instance_id=instance.id) }}">
-                            {% if csrf_token is defined %}
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            {% endif %}
-                            <button type="submit"
-                                    class="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover">
-                                <i data-lucide="scan-search" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                Validate Metrics
-                            </button>
-                        </form>
-                        <form method="post"
-                              action="{{ url_for('minio.delete_metrics_binding', instance_id=instance.id) }}">
-                            {% if csrf_token is defined %}
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            {% endif %}
-                            <button type="submit"
-                                    class="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:border-outline-strong hover:text-status-critical-text">
-                                <i data-lucide="unlink" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                Remove Binding
-                            </button>
-                        </form>
-                    </article>
-                </div>
-                {% if binding_validation_job %}
-                    <div class="border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs text-content-secondary sm:px-6">
-                        Metrics validation job: <span class="font-semibold text-content-primary">{{ binding_validation_job.status|default("queued") |replace('_', ' ')|title }}</span>
-                    </div>
-                {% endif %}
-            {% else %}
-                <form method="post"
-                      action="{{ url_for('minio.create_metrics_binding', instance_id=instance.id) }}"
-                      class="p-5 sm:p-6">
-                    {{ binding_form.hidden_tag() }}
-                    {% if binding_form.prometheus_instance_id.choices %}
-                        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                            <label class="block md:col-span-2">
-                                <span class="{{ integration_ui.control_label_classes() }}">{{ binding_form.prometheus_instance_id.label.text }}</span>
-                                {{ binding_form.prometheus_instance_id(class_=integration_ui.control_classes() ) }}
-                                <p class="mt-1.5 text-xs leading-5 text-content-muted">Prometheus authentication and endpoint configuration remain owned by Observability.</p>
-                            </label>
-                            <label class="block">
-                                <span class="{{ integration_ui.control_label_classes() }}">{{ binding_form.selector_label.label.text }}</span>
-                                {{ binding_form.selector_label(class_=integration_ui.control_classes() ) }}
-                            </label>
-                            <label class="block">
-                                <span class="{{ integration_ui.control_label_classes() }}">{{ binding_form.selector_operator.label.text }}</span>
-                                {{ binding_form.selector_operator(class_=integration_ui.control_classes() ) }}
-                            </label>
-                            <label class="block md:col-span-2 xl:col-span-4">
-                                <span class="{{ integration_ui.control_label_classes() }}">{{ binding_form.selector_value.label.text }}</span>
-                                {{ binding_form.selector_value(class_=integration_ui.control_classes() ) }}
-                                <p class="mt-1.5 text-xs leading-5 text-content-muted">Use the label/value that uniquely scopes the MinIO scrape target in Prometheus, for example <code class="font-mono">job=minio-production</code>.</p>
-                            </label>
-                        </div>
-                        <div class="mt-4 flex justify-end">
-                            <button type="submit"
-                                    class="inline-flex h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover">
-                                <i data-lucide="link-2" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                Bind Prometheus Metrics
-                            </button>
-                        </div>
-                    {% else %}
-                        <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4">
-                            <div class="flex items-start gap-3">
-                                {{ integration_ui.palette_icon('activity', 'brand', size='lg') }}
-                                <div>
-                                    <p class="text-sm font-semibold text-content-primary">No Prometheus Provider Available</p>
-                                    <p class="mt-1 text-sm leading-6 text-content-secondary">Register and validate a Prometheus provider under Observability before binding MinIO metrics.</p>
-                                    <a href="{{ url_for('prometheus.new_instance') }}"
-                                       class="mt-3 inline-flex h-9 items-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-3 text-xs font-semibold text-kaori-primary dark:text-kaori-accent">
-                                        Open Prometheus Registration
-                                        <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    {% endif %}
-                </form>
-            {% endif %}
-        </section>
-        <div class="rounded-xl border border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6">
-            <div class="flex items-start gap-3">
-                {{ integration_ui.palette_icon('shield-check', 'brand', size='sm') }}
-                <div>
-                    <p class="text-sm font-semibold text-content-primary">Authority Boundary</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">MinIO remains authoritative for storage configuration and Prometheus remains authoritative for scrape/runtime metrics. KAORI owns registration, compatibility evidence, canonical asset binding, validation state, and future Inventory/Analytics consumption.</p>
-                </div>
-            </div>
-        </div>
     </div>
 {% endblock dashboard_content %}

@@ -72,7 +72,8 @@ Kubernetes Cluster
 
 Object Storage System
 ├── MinIO API provider
-└── Prometheus metrics provider
+├── Prometheus metrics provider
+└── Alertmanager alerting provider
 ```
 
 New domains must reuse `IntegrationBinding`; do not introduce pair-specific
@@ -155,6 +156,12 @@ Validation. `prometheus/binding_profiles.py` selects the consumer profile by
 asset type: Kubernetes registers `kubernetes-metrics-v1`; MinIO registers
 `minio-metrics-2024-v1`. One Prometheus provider can therefore serve both assets
 with independent selectors, evidence, and binding readiness.
+
+Alertmanager follows the same boundary. Provider Core Validation proves only the
+Alertmanager API contract. `alertmanager/binding_profiles.py` resolves
+`kubernetes-alerts-v1`, `minio-alerts-v1`, and future alert consumer profiles by
+asset type. Non-global bindings own their alert identity selector and validation
+evidence, allowing one shared Alertmanager to safely serve multiple alert families.
 
 See `docs/architecture/integration-module-map.md` and the README inside each
 provider module.

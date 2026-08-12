@@ -13,10 +13,12 @@ def test_alertmanager_validation_matches_kubernetes_capability_matrix_and_regist
     content = read('app/templates/alertmanager/partials/_detail_validation_content.html')
     registry = ALERT_REGISTRY.read_text()
     routes = ALERT_ROUTES.read_text()
-    assert 'Alertmanager Capability Readiness' in content
+    assert 'Alertmanager Core Validation' in content
+    assert 'Alertmanager Provider Readiness' in content
+    assert 'data-kaori-alertmanager-consumer-validation-boundary' in content
     assert 'data-kaori-provider-capability-matrix' in content
     assert 'capability_readiness.render(' in content
-    assert "include 'alertmanager/partials/_capability_registry.html'" in content
+    assert 'include "alertmanager/partials/_capability_registry.html"' in content
     assert 'Validation Decision' not in content
     assert 'alertmanager-capability-loading' in registry
     assert 'hx-indicator="#{{ loading_id }}"' in registry

@@ -72,7 +72,8 @@ def test_alertmanager_capability_matrix_uses_modal_detail() -> None:
     registry = read('app/templates/alertmanager/partials/_capability_registry.html')
 
     assert 'import "integrations/components/_record_detail_modal.html" as record_detail_modal' in registry
-    assert 'Alertmanager Validation & Capability Matrix' in source
+    assert 'Alertmanager Core Validation' in source
+    assert 'Consumer Validation Boundary' in source
     assert 'record_actions.view_more(' in registry
     assert 'provider_capability_detail.content(' in registry
     assert 'Runnable API Request' in registry

@@ -1,5 +1,5 @@
 from app.integrations.alertmanager.adapter import runtime_adapter
-from app.integrations.alertmanager.capabilities import CAPABILITY_KEYS, COMPATIBILITY_PROFILES
+from app.integrations.alertmanager.capabilities import COMPATIBILITY_PROFILES, CORE_CAPABILITY_KEYS
 from app.integrations.registry import (
     IntegrationModule,
     canonical_model_loader,
@@ -50,8 +50,9 @@ integration_module = IntegrationModule(
             'binding.validate',
         }
     ),
-    capability_keys=CAPABILITY_KEYS,
+    capability_keys=CORE_CAPABILITY_KEYS,
     compatibility_profiles=COMPATIBILITY_PROFILES,
+    navigation_endpoint_prefixes=('integrations.alertmanager', 'alertmanager.'),
     detail_url_builder=_detail_url,
 )
 

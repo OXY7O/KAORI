@@ -8,7 +8,8 @@ from app.alertmanager.resolver import AlertmanagerSourceResolution, resolve_aler
 from app.alertmanager.sanitization import safe_endpoint
 from app.common.presentation import present_user_datetime
 from app.extensions.db import db
-from app.integrations.alertmanager.capabilities import CAPABILITIES, CAPABILITY_BY_KEY
+from app.integrations.alertmanager.binding_profiles import get_alert_consumer_profile
+from app.integrations.alertmanager.capabilities import CAPABILITY_BY_KEY, CORE_CAPABILITIES
 from app.integrations.alertmanager.requirements import evaluate_module_readiness
 from app.integrations.binding_selectors import selector_form_values, selector_is_configured, selector_summary
 from app.integrations.coverage import build_provider_coverage
@@ -20,6 +21,7 @@ from app.integrations.runtime.repository import paginate_runtime_history
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationBinding
+from app.models.object_storage import ObjectStorageSystem
 
 
 def build_inventory_context(
@@ -92,12 +94,28 @@ def _alertmanager_request_target(endpoint: str, probe: str) -> str:
     return f'GET {base}{path}' if base else f'GET {path}'
 
 
+def _core_capability_summary(observed_capabilities: set[str]) -> dict[str, int]:
+    return {
+        'total': len(CORE_CAPABILITIES),
+        'observed': sum(1 for capability in CORE_CAPABILITIES if capability.key in observed_capabilities),
+        'required_missing': sum(
+            1 for capability in CORE_CAPABILITIES if capability.required and capability.key not in observed_capabilities
+        ),
+        'optional_missing': sum(
+            1
+            for capability in CORE_CAPABILITIES
+            if not capability.required and capability.key not in observed_capabilities
+        ),
+    }
+
+
 def build_instance_context(instance: AlertmanagerInstance | None = None) -> dict[str, Any]:
     clusters = Cluster.query.order_by(Cluster.created_at.asc(), Cluster.id.asc()).all()
+    object_storage_systems = ObjectStorageSystem.query.order_by(ObjectStorageSystem.name.asc()).all()
     bindings = list_bindings_for_instance(instance.id) if instance else []
     observed_capabilities = set(instance.capabilities or []) if instance else set()
     capability_rows = []
-    for capability in CAPABILITIES:
+    for capability in CORE_CAPABILITIES:
         available = capability.key in observed_capabilities
         evidence = (
             'Observed during the latest Full Validation.'
@@ -164,20 +182,10 @@ def build_instance_context(instance: AlertmanagerInstance | None = None) -> dict
         'deletion_guard': deletion_guard,
         'binding_rows': [_binding_row(binding, instance) for binding in bindings] if instance is not None else [],
         'clusters': clusters,
+        'object_storage_systems': object_storage_systems,
         'capability_rows': capability_rows,
         'module_readiness_rows': evaluate_module_readiness(observed_capabilities),
-        'capability_summary': {
-            'total': len(CAPABILITIES),
-            'observed': len(observed_capabilities.intersection(CAPABILITY_BY_KEY)),
-            'required_missing': sum(
-                1 for capability in CAPABILITIES if capability.required and capability.key not in observed_capabilities
-            ),
-            'optional_missing': sum(
-                1
-                for capability in CAPABILITIES
-                if not capability.required and capability.key not in observed_capabilities
-            ),
-        },
+        'capability_summary': _core_capability_summary(observed_capabilities),
         'source_resolution_rows': _source_resolution_rows(instance) if instance else [],
         'runtime_state': runtime_state_view(get_integration('alertmanager').adapter.get_state(instance))
         if instance
@@ -189,6 +197,7 @@ def build_instance_context(instance: AlertmanagerInstance | None = None) -> dict
             'server_group': 'Infrastructure asset group',
             'hci_environment': 'Platform environment',
             'storage_service': 'Infrastructure service',
+            'object_storage_system': 'Object storage system',
             'global': 'Global operational scope',
         },
         'stats': {
@@ -237,7 +246,13 @@ def _binding_row(binding: IntegrationBinding, source: AlertmanagerInstance) -> d
         cluster = db.session.get(Cluster, binding.asset_key)
         if cluster is not None:
             label = cluster.name
+    elif binding.asset_type == 'object_storage_system':
+        asset = db.session.get(ObjectStorageSystem, binding.asset_key)
+        if asset is not None:
+            label = asset.name
     selector_values = selector_form_values(binding.selector_json)
+    consumer_profile = get_alert_consumer_profile(binding.asset_type)
+    validation_evidence = binding.validation_evidence or {}
     source_readiness = source.readiness_status or 'validation_required'
     operational = resolve_binding_operational_status(
         source_readiness=source_readiness,
@@ -255,6 +270,11 @@ def _binding_row(binding: IntegrationBinding, source: AlertmanagerInstance) -> d
         'selector_operator': selector_values['operator'],
         'selector_value': selector_values['value'],
         'validation_status': binding.validation_status or 'validation_required',
+        'consumer_profile_key': binding.validation_profile
+        or (consumer_profile.profile_key if consumer_profile else None),
+        'consumer_profile_label': validation_evidence.get('profile_label')
+        or (consumer_profile.label if consumer_profile else 'Unregistered Profile'),
+        'matched_alerts': int(validation_evidence.get('matched_alerts') or 0),
         'source_readiness': source_readiness,
         'operational_status': operational['status'],
         'operational_label': operational['label'],
@@ -308,6 +328,8 @@ def _source_resolution_rows(instance: AlertmanagerInstance) -> list[dict[str, An
             scope_key=binding.asset_key,
             required_capabilities=('silences_v2',),
         )
+        consumer_profile = get_alert_consumer_profile(binding.asset_type)
+        validation_evidence = binding.validation_evidence or {}
         rows.append(
             {
                 'scope_type': binding.asset_type,
@@ -315,6 +337,11 @@ def _source_resolution_rows(instance: AlertmanagerInstance) -> list[dict[str, An
                 'selector_summary': selector_summary(binding.selector_json),
                 'selector_configured': selector_is_configured(binding.selector_json),
                 'validation_status': binding.validation_status or 'validation_required',
+                'consumer_profile_key': binding.validation_profile
+                or (consumer_profile.profile_key if consumer_profile else None),
+                'consumer_profile_label': validation_evidence.get('profile_label')
+                or (consumer_profile.label if consumer_profile else 'Unregistered Profile'),
+                'matched_alerts': int(validation_evidence.get('matched_alerts') or 0),
                 'scope_key': binding.asset_key,
                 'scope_label': _scope_label(binding.asset_type, binding.asset_key),
                 'alerts': _resolution_view(alerts_resolution, current_instance_id=instance.id),
@@ -360,6 +387,10 @@ def _scope_label(scope_type: str, scope_key: str) -> str:
         cluster = db.session.get(Cluster, scope_key)
         if cluster is not None:
             return cluster.name
+    if scope_type == 'object_storage_system':
+        asset = db.session.get(ObjectStorageSystem, scope_key)
+        if asset is not None:
+            return asset.name
     return scope_key
 
 

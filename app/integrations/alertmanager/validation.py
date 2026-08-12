@@ -2,14 +2,12 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime
-from typing import Any
 
 from app.common.integration_errors import describe_integration_failure
 from app.extensions.db import db
 from app.integrations.alertmanager.client_factory import build_client
 from app.integrations.alertmanager.contracts import ValidationResult, ValidationStep
 from app.integrations.alertmanager.exceptions import AlertmanagerError
-from app.integrations.alertmanager.probes import discover_payload_capabilities
 from app.integrations.alertmanager.profiles import resolve_profile
 from app.integrations.alertmanager.requirements import evaluate_module_readiness
 from app.integrations.alertmanager.status import mark_status
@@ -48,19 +46,13 @@ def validate_source(source: AlertmanagerInstance, *, source_label: str) -> Valid
         return _failure(source, exc, source_label=source_label, unexpected=True)
 
     capabilities = {'status_v2'}
-    alerts: list[dict[str, Any]] = []
-    silences: list[dict[str, Any]] = []
     capability_errors: list[str] = []
     for capability, label, operation in (
         ('alerts_v2', 'Alerts API', client.get_alerts),
         ('silences_v2', 'Silences API', client.get_silences),
     ):
         try:
-            payload = operation()
-            if capability == 'alerts_v2':
-                alerts = payload if isinstance(payload, list) else []
-            else:
-                silences = payload if isinstance(payload, list) else []
+            operation()
             capabilities.add(capability)
             steps.append(ValidationStep(capability, label, 'success', f'{label} is readable.'))
         except AlertmanagerError as exc:
@@ -68,7 +60,6 @@ def validate_source(source: AlertmanagerInstance, *, source_label: str) -> Valid
             steps.append(ValidationStep(capability, label, 'failed', str(exc)))
             logger.warning('%s capability probe failed for %s: %s', capability, source_label, exc)
 
-    capabilities.update(discover_payload_capabilities(alerts, silences))
     version = str(connection.get('version') or 'unknown')
     compatibility = evaluate_compatibility('alertmanager', version, capabilities=capabilities)
     profile = resolve_profile(version)

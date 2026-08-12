@@ -35,10 +35,19 @@ from app.jobs.service import acquire_resource_admission_locks
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationBinding, IntegrationInstance
+from app.models.object_storage import ObjectStorageSystem
 
 
 def get_cluster_by_id(cluster_id: str) -> Cluster | None:
     return db.session.get(Cluster, cluster_id)
+
+
+def binding_scope_validation_error(scope_type: str, scope_key: str) -> str | None:
+    if scope_type == KUBERNETES_CLUSTER_SCOPE and get_cluster_by_id(scope_key) is None:
+        return 'Select a managed cluster that still exists in KAORI inventory.'
+    if scope_type == 'object_storage_system' and db.session.get(ObjectStorageSystem, scope_key) is None:
+        return 'Select an object-storage system that still exists in KAORI inventory.'
+    return None
 
 
 def get_alertmanager_instance(instance_id: int) -> AlertmanagerInstance | None:

@@ -1,0 +1,46 @@
+{% import "integrations/components/_workspace.html" as integration_ui %}
+<div class="space-y-4 font-sans">
+    <section class="{{ integration_ui.section_shell_classes() }}">
+        {{ integration_ui.section_header("fingerprint", "Connection Contract", "Review the saved MinIO API connection identity separately from metrics and alert consumers.", eyebrow="Configuration") }}
+        <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
+            {% for label, value, helper in [
+                ("Endpoint", instance.endpoint, "S3 API base URL"),
+                ("Access Key", instance.access_key, "Credential identity; secret remains encrypted"),
+                ("S3 Region", instance.region, "Signing and request region"),
+                ("Addressing Style", instance.addressing_style|title, "Bucket URL construction")
+                ] %}
+                <article class="bg-surface-card p-5">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
+                    <p class="mt-2 break-words text-sm font-semibold text-content-primary">{{ value }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</p>
+                </article>
+            {% endfor %}
+        </div>
+        <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle md:grid-cols-3">
+            <article class="bg-surface-card p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Compatibility Contract</p>
+                <p class="mt-2 text-sm font-semibold text-content-primary">{{ instance.compatibility_profile or "Validation Required" }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Declared release: {{ instance.declared_release }}</p>
+            </article>
+            <article class="bg-surface-card p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">TLS Verification</p>
+                <p class="mt-2 text-sm font-semibold text-content-primary">{{ "Enabled" if instance.verify_ssl else "Disabled" }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Certificate validation policy for the MinIO API endpoint.</p>
+            </article>
+            <article class="bg-surface-card p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Request Timeout</p>
+                <p class="mt-2 text-sm font-semibold text-content-primary">{{ instance.timeout }} seconds</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Provider API request boundary used by KAORI.</p>
+            </article>
+        </div>
+    </section>
+    <div class="rounded-xl border border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6">
+        <div class="flex items-start gap-3">
+            {{ integration_ui.palette_icon("shield-check", "brand", size="sm") }}
+            <div>
+                <p class="text-sm font-semibold text-content-primary">Connection Authority Boundary</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">MinIO remains authoritative for object-storage state and configuration. Prometheus and Alertmanager maintain independent endpoints and credentials; this connection stores neither observability provider credential.</p>
+            </div>
+        </div>
+    </div>
+</div>

@@ -123,7 +123,8 @@ def _evaluate_binding(
     lifecycle = str(getattr(canonical, 'lifecycle_status', '') or '').strip().lower()
     canonical_enabled = bool(getattr(canonical, 'enabled', False))
     lifecycle_eligible = canonical_enabled and lifecycle == 'active'
-    observed_capabilities = set(instance.capabilities or ())
+    capability_payload = binding.validation_evidence or {}
+    observed_capabilities = {str(item) for item in (capability_payload.get('available_capabilities') or ()) if item}
     missing = tuple(sorted(set(required_capabilities) - observed_capabilities))
 
     if not required_capabilities:
@@ -251,10 +252,4 @@ def _decision_reason(
 
 
 def _selector_required(binding: IntegrationBinding) -> bool:
-    return (
-        IntegrationBinding.query.filter_by(
-            integration_instance_id=binding.integration_instance_id,
-            enabled=True,
-        ).count()
-        > 1
-    )
+    return binding.asset_type != 'global'

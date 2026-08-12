@@ -62,6 +62,20 @@ Prometheus General
 A missing Kubernetes metric may degrade only the Kubernetes binding while the
 Prometheus provider and unrelated MinIO binding remain Ready.
 
+For Alertmanager the same boundary applies:
+
+```text
+Alertmanager General
+  ├── Core: Status / Alerts / Silences API v2
+  ├── Kubernetes binding: kubernetes-alerts-v1
+  └── MinIO binding: minio-alerts-v1
+```
+
+The provider does not become degraded because a Kubernetes or MinIO alert stream
+is absent. Non-global bindings own the alert identity selector and consumer
+payload evidence. When the shared Alertmanager contains many alert families, the
+selector is the segregation boundary used by KAORI for that managed asset.
+
 ## Compatibility matrix
 
 | Product | Supplied/runtime version | Deployment metadata | KAORI profile | Initial behavior |
@@ -71,8 +85,8 @@ Prometheus provider and unrelated MinIO binding remain Ready.
 | Kubernetes | `1.29.4`, `1.29.5` | Per-cluster | `kubernetes-standard-v1` | Supported, subject to API and RBAC probes. |
 | Prometheus | Runtime still must be detected | `kube-prometheus-stack-87.10.1`, chart app `v0.92.1` | `prometheus-http-api-v1` when runtime is `>=2,<3` | Block until `/api/v1/status/buildinfo` confirms the server version. |
 | Thanos | `0.39.2` application family | Helm chart `17.3.1` | `thanos-query-prometheus-api-v1` | Supported initial query-backend profile after API and history probes. |
-| Alertmanager | `0.25.0`, `0.33.1` | Per-cluster | `alertmanager-api-v2` | Supported after status, alerts, and silences probes. |
-| MinIO | `RELEASE.2024-08-03T04-33-23Z` | Object-storage provider | `minio-release-2024-08-03` | Supported after MinIO S3 API identity, bucket discovery, and asset-scoped Prometheus metrics validation. |
+| Alertmanager | `0.25.0`, `0.33.1` | Shared or asset-associated alerting provider | `alertmanager-api-v2` | Supported after consumer-neutral status, alerts, and silences API probes; asset alert contracts are binding-scoped. |
+| MinIO | `RELEASE.2024-08-03T04-33-23Z` | Object-storage provider | `minio-release-2024-08-03` | Supported after MinIO S3 API identity and core API validation; Prometheus metrics and Alertmanager alerts are independent asset bindings. |
 
 The previous classification of `0.39.2` as a Prometheus version was incorrect. It belongs to the Thanos chart application version.
 
@@ -177,9 +191,26 @@ Consumer metric contracts are binding-scoped. `kubernetes_cluster` bindings use 
 
 ### Alertmanager compatibility
 
-Consumers: Alerts & Anomalies, Alert Intelligence, silence workflows, and routing posture.
+Alertmanager is a general alerting provider. Provider compatibility is independent
+of Kubernetes, MinIO, Prometheus rule families, or any other consumer domain.
+Provider Full Validation establishes product/version compatibility and the core
+Status, Alerts, and Silences API v2 contract only.
 
-Alertmanager is detected automatically from its direct endpoint and validated through API v2 capabilities. Alertmanager compatibility is not inferred from Prometheus, Thanos, or Kubernetes versions.
+Consumer alert contracts are binding-scoped. `kubernetes_cluster` bindings use
+`kubernetes-alerts-v1`; `object_storage_system` bindings use `minio-alerts-v1`;
+infrastructure asset types resolve their registered infrastructure profiles.
+Every non-global binding requires a stable alert identity selector.
+`IntegrationBinding.validation_evidence` stores scoped alert evidence and the
+resolver evaluates eligibility from that binding evidence rather than from
+provider-wide payload capabilities.
+
+Prometheus or another upstream rule engine may evaluate many rule families and
+send all resulting alerts to the same Alertmanager. KAORI therefore never treats
+upstream rule presence as Alertmanager provider readiness. A failed MinIO or
+Kubernetes alert contract affects only that binding.
+
+Alertmanager is detected automatically from its direct endpoint. Alertmanager
+compatibility is not inferred from Prometheus, Thanos, or Kubernetes versions.
 
 ## Prometheus persisted identity
 

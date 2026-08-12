@@ -244,3 +244,7 @@ BINDING_CAPABILITY_KEYS = (
     'receivers',
     'status_v2',
 )
+
+CORE_CAPABILITY_KEYS = ('status_v2', 'alerts_v2', 'silences_v2')
+CORE_CAPABILITIES = tuple(item for item in CAPABILITIES if item.key in CORE_CAPABILITY_KEYS)
+CONSUMER_PAYLOAD_CAPABILITY_KEYS = tuple(item.key for item in CAPABILITIES if item.key not in CORE_CAPABILITY_KEYS)

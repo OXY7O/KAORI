@@ -18,6 +18,7 @@ from app.alertmanager.presentation import build_instance_context, build_runtime_
 from app.alertmanager.registration import issue_registration_proof, verify_registration_proof
 from app.alertmanager.service import (
     add_alertmanager_binding,
+    binding_scope_validation_error,
     create_alertmanager_instance,
     get_alertmanager_binding,
     get_alertmanager_instance,
@@ -648,10 +649,7 @@ def create_binding(instance_id: int) -> ResponseReturnValue:
         abort(404)
     form = parse_alertmanager_binding_form(request.form)
     is_htmx = is_htmx_request()
-    if form.scope_type == 'kubernetes_cluster' and get_cluster_by_id(form.scope_key) is None:
-        error = 'Select a managed cluster that still exists in KAORI inventory.'
-    else:
-        error = None
+    error = binding_scope_validation_error(form.scope_type, form.scope_key)
     try:
         if error:
             raise ValueError(error)

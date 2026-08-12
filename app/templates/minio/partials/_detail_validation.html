@@ -1,0 +1,67 @@
+{% import "components/action_button.html" as action_button %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% set readiness = instance.readiness_status or "validation_required" %}
+{% set readiness_label = "Ready" if readiness == "ready" else ("Blocked" if readiness == "blocked" else "Validation Required") %}
+<div class="space-y-4 font-sans" id="minio-core-validation">
+    <section class="{{ integration_ui.section_shell_classes() }}">
+        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div class="flex min-w-0 items-start gap-3">
+                    {{ integration_ui.palette_icon("scan-search", "brand", size="lg") }}
+                    <div>
+                        <h2 class="text-base font-semibold text-content-primary">MinIO Core Validation</h2>
+                        <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary">Validate the MinIO product identity, supported release, S3 API access, and provider-owned capability set without depending on Prometheus or Alertmanager data.</p>
+                    </div>
+                </div>
+                <form method="post"
+                      action="{{ url_for('minio.validate_instance', instance_id=instance.id) }}">
+                    {% if csrf_token is defined %}
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    {% endif %}
+                    <button type="submit" class="{{ action_button.classes('primary') }}">
+                        <i data-lucide="scan-line" class="h-4 w-4" aria-hidden="true"></i>
+                        Run Full Validation
+                    </button>
+                </form>
+            </div>
+        </header>
+        <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
+            <article class="bg-surface-card p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Provider Readiness</p>
+                <div class="mt-2">{{ integration_status(readiness, readiness_label, display="indicator") }}</div>
+                <p class="mt-2 text-xs leading-5 text-content-secondary">{{ instance.validation_message or "Run Full Validation to establish provider evidence." }}</p>
+            </article>
+            <article class="bg-surface-card p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Compatibility</p>
+                <p class="mt-2 text-sm font-semibold text-content-primary">{{ instance.compatibility_profile or "Not Validated" }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Declared release: {{ instance.declared_release }}</p>
+            </article>
+            <article class="bg-surface-card p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Core Capabilities</p>
+                <p class="mt-2 text-2xl font-semibold tabular-nums text-content-primary">{{ capability_count }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Provider capabilities observed by the latest MinIO validation.</p>
+            </article>
+            <article class="bg-surface-card p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Observed Buckets</p>
+                <p class="mt-2 text-2xl font-semibold tabular-nums text-content-primary">{{ bucket_count }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Buckets visible to the registered read-only credential.</p>
+            </article>
+        </div>
+        {% if validation_job %}
+            <div class="border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs text-content-secondary sm:px-6">
+                Validation job: <span class="font-semibold text-content-primary">{{ validation_job.status|default("queued") |replace("_", " ")|title }}</span>
+            </div>
+        {% endif %}
+    </section>
+    <div class="rounded-xl border border-brand-outline bg-kaori-soft px-5 py-4 sm:px-6"
+         data-kaori-consumer-validation-boundary>
+        <div class="flex items-start gap-3">
+            {{ integration_ui.palette_icon("waypoints", "brand", size="sm") }}
+            <div>
+                <p class="text-sm font-semibold text-content-primary">Consumer Validation Boundary</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Prometheus metrics and Alertmanager alert contracts are not MinIO core capabilities. They are validated after binding through <strong>minio-metrics-2024-v1</strong> and <strong>minio-alerts-v1</strong>, so a missing consumer stream cannot degrade MinIO provider readiness.</p>
+            </div>
+        </div>
+    </div>
+</div>

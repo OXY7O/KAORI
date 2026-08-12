@@ -25,3 +25,11 @@ class MinioMetricsBindingInput:
     selector_label: str
     selector_value: str
     selector_operator: str
+
+
+@dataclass(frozen=True, slots=True)
+class MinioAlertBindingInput:
+    alertmanager_instance_id: int
+    selector_label: str
+    selector_value: str
+    selector_operator: str

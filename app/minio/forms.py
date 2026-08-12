@@ -8,11 +8,11 @@ from wtforms.validators import DataRequired, Length, NumberRange, Optional, Vali
 
 from app.cluster.constants import ENVIRONMENTS
 from app.integrations.minio.compatibility import SUPPORTED_RELEASE
-from app.minio.contracts import MinioMetricsBindingInput, MinioRegistrationInput
+from app.minio.contracts import MinioAlertBindingInput, MinioMetricsBindingInput, MinioRegistrationInput
 
 
 class MinioInstanceForm(FlaskForm):
-    name = StringField('Provider Name', validators=[DataRequired(), Length(min=2, max=160)])
+    name = StringField('Connection Name', validators=[DataRequired(), Length(min=2, max=160)])
     environment = SelectField('Environment', choices=ENVIRONMENTS, validators=[DataRequired()])
     description = TextAreaField('Description', validators=[Optional(), Length(max=2000)])
     endpoint = StringField(
@@ -41,7 +41,7 @@ class MinioInstanceForm(FlaskForm):
         default=SUPPORTED_RELEASE,
         render_kw={'readonly': True},
     )
-    enabled = BooleanField('Allow KAORI to Use This Provider', default=True)
+    enabled = BooleanField('Allow KAORI to Use This Connection', default=True)
 
     def validate_endpoint(self, field: StringField) -> None:
         endpoint = str(field.data or '').strip().rstrip('/')
@@ -103,6 +103,40 @@ class MinioMetricsBindingForm(FlaskForm):
     def to_input(self) -> MinioMetricsBindingInput:
         return MinioMetricsBindingInput(
             prometheus_instance_id=int(self.prometheus_instance_id.data),
+            selector_label=str(self.selector_label.data or '').strip(),
+            selector_value=str(self.selector_value.data or '').strip(),
+            selector_operator=str(self.selector_operator.data or '=').strip(),
+        )
+
+
+class MinioAlertBindingForm(FlaskForm):
+    alertmanager_instance_id = SelectField(
+        'Alertmanager Source',
+        coerce=int,
+        validators=[DataRequired()],
+        choices=[],
+    )
+    selector_label = StringField(
+        'Alert Selector Label',
+        validators=[DataRequired(), Length(max=120)],
+        default='job',
+        render_kw={'placeholder': 'job'},
+    )
+    selector_value = StringField(
+        'Alert Selector Value',
+        validators=[DataRequired(), Length(max=255)],
+        render_kw={'placeholder': 'minio-production'},
+    )
+    selector_operator = SelectField(
+        'Selector Operator',
+        choices=[('=', 'Equals (=)'), ('=~', 'Regex (=~)')],
+        default='=',
+        validators=[DataRequired()],
+    )
+
+    def to_input(self) -> MinioAlertBindingInput:
+        return MinioAlertBindingInput(
+            alertmanager_instance_id=int(self.alertmanager_instance_id.data),
             selector_label=str(self.selector_label.data or '').strip(),
             selector_value=str(self.selector_value.data or '').strip(),
             selector_operator=str(self.selector_operator.data or '=').strip(),

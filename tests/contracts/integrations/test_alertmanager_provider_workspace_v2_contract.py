@@ -34,7 +34,9 @@ def test_alertmanager_configuration_uses_shared_side_decision_and_primary_form_w
 def test_alertmanager_validation_uses_kubernetes_style_capability_readiness_and_registry():
     content = read('app/templates/alertmanager/partials/_detail_validation_content.html')
     registry = read('app/templates/alertmanager/partials/_capability_registry.html')
-    assert 'Alertmanager Capability Readiness' in content
+    assert 'Alertmanager Core Validation' in content
+    assert 'Alertmanager Provider Readiness' in content
+    assert 'data-kaori-alertmanager-consumer-validation-boundary' in content
     assert 'integrations/components/_capability_readiness.html' in content
     assert 'data-kaori-provider-capability-matrix' in content
     assert 'Validation Decision' not in content
@@ -59,6 +61,8 @@ def test_alertmanager_runtime_uses_kubernetes_layout_and_history_filters():
 def test_alertmanager_bindings_use_standard_table_and_native_dialog():
     content = read('app/templates/alertmanager/partials/_detail_scope.html')
     assert 'Bindings &amp; Consumers' in content
+    assert 'Consumer Binding Registry' in content
+    assert 'Consumer Profile' in content
     assert 'Bound Operational Scopes' in content
     assert 'Effective Consumer Resolution' in content
     assert 'Binding Decision' in content

@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
+from app.integrations.alertmanager.binding_profiles import get_alert_consumer_profile
 from app.integrations.alertmanager.capabilities import BINDING_CAPABILITY_KEYS
 from app.integrations.binding_selectors import build_selector
 from app.integrations.binding_service import SourceBindingSpec
@@ -29,6 +30,9 @@ def create_binding(
         raise ValueError('The operational scope key must be 255 characters or fewer.')
     if normalized_role not in {'primary', 'secondary', 'fallback'}:
         raise ValueError('Select a supported source role.')
+    consumer_profile = get_alert_consumer_profile(normalized_scope_type)
+    if consumer_profile is None:
+        raise ValueError(f'No Alertmanager consumer profile is registered for scope type {normalized_scope_type!r}.')
     if spec.priority < 1 or spec.priority > 1000:
         raise ValueError('Priority must be between 1 and 1000.')
 
@@ -92,6 +96,8 @@ def create_binding(
     binding.enabled = spec.enabled
     binding.capability_scope = list(spec.capability_scope or BINDING_CAPABILITY_KEYS)
     binding.selector_json = selector_json
+    binding.validation_profile = consumer_profile.profile_key
+    binding.validation_evidence = None
     binding.validation_status = 'validation_required'
     binding.validation_message = (
         'Binding saved. Validate source labels and runtime evidence before relying on this shared scope.'
@@ -129,6 +135,9 @@ def update_binding_selector(
     if selector_json is None:
         raise ValueError('Define an alert identity selector before saving this binding.')
     binding.selector_json = selector_json
+    profile = get_alert_consumer_profile(binding.asset_type)
+    binding.validation_profile = profile.profile_key if profile is not None else None
+    binding.validation_evidence = None
     binding.validation_status = 'validation_required'
     binding.validation_message = (
         'Alert identity changed. Validate this binding before KAORI uses it for operational requests.'

@@ -110,10 +110,13 @@ def test_minio_workspace_is_nested_under_integrations_storage() -> None:
     assert 'integration_owner: Mapping[str, str] | None = None' in navigation
     assert 'def integration_endpoint_owner(' in integration_navigation
     assert "'domain_label': module.domain.label" in integration_navigation
-    assert 'API Plane' in index
-    assert 'Metrics Plane' in index
-    assert 'Prometheus Metrics Binding' in detail
-    assert 'KAORI never copies Prometheus credentials into MinIO configuration.' in detail
+    assert 'MinIO Integrations' in index
+    assert 'Register Connection' in index
+    assert 'Integration Coverage' in index
+    assert 'Connection Registry' in index
+    assert 'framed_workspace_tabs.render' in detail
+    assert 'Core Validation' in detail
+    assert 'Bindings & Consumers' in detail
 
 
 def test_minio_service_boundary_uses_input_contracts_not_forms() -> None:
@@ -121,12 +124,15 @@ def test_minio_service_boundary_uses_input_contracts_not_forms() -> None:
     registration = read('app/minio/registration.py')
     forms = read('app/minio/forms.py')
 
-    assert 'from app.minio.contracts import MinioMetricsBindingInput, MinioRegistrationInput' in service
+    assert 'MinioRegistrationInput' in service
+    assert 'MinioMetricsBindingInput' in service
+    assert 'MinioAlertBindingInput' in service
     assert 'from app.minio.contracts import MinioRegistrationInput' in registration
     assert 'app.minio.forms' not in service
     assert 'app.minio.forms' not in registration
     assert 'def to_input(self) -> MinioRegistrationInput:' in forms
     assert 'def to_input(self) -> MinioMetricsBindingInput:' in forms
+    assert 'def to_input(self) -> MinioAlertBindingInput:' in forms
 
 
 def test_domain_section_header_runtime_regression_is_closed() -> None:

@@ -1,5 +1,5 @@
 {
-  "broad_exception_limit": 198,
+  "broad_exception_limit": 197,
   "defaults": {
     "arguments": 8,
     "branch_points": 30,
@@ -55,7 +55,6 @@
   "function_branch_limits": {
     "app/access/permissions/service.py::build_permission_registry_snapshot": 37,
     "app/access/roles/presentation.py::build_roles_index_context": 41,
-    "app/alertmanager/presentation.py::build_instance_context": 32,
     "app/analytics/alerts/silences.py::build_silence_summary": 35,
     "app/analytics/job_adapter.py::_analytics_work_items": 32,
     "app/analytics/storage/domain.py::summarize_pv": 39,
@@ -133,7 +132,7 @@
     "app/retention/service.py::_execute_archive": 166
   },
   "module_line_limits": {
-    "app/alertmanager/routes.py": 1009,
+    "app/alertmanager/routes.py": 1007,
     "app/analytics/job_adapter.py": 824,
     "app/analytics/overview/service.py": 1715,
     "app/analytics/utilization/service.py": 1177,

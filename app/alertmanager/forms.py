@@ -19,6 +19,7 @@ SUPPORTED_SCOPE_TYPES = {
     'server_group',
     'hci_environment',
     'storage_service',
+    'object_storage_system',
     'global',
 }
 
@@ -85,6 +86,8 @@ def parse_alertmanager_binding_form(form_data: Mapping[str, Any]) -> Alertmanage
 
     if scope_type == 'kubernetes_cluster':
         scope_key = str(form_data.get('cluster_scope_key') or form_data.get('scope_key') or '').strip()
+    elif scope_type == 'object_storage_system':
+        scope_key = str(form_data.get('object_storage_scope_key') or form_data.get('scope_key') or '').strip()
     else:
         scope_key = str(form_data.get('generic_scope_key') or form_data.get('scope_key') or '').strip()
 

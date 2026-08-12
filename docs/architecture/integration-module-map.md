@@ -165,6 +165,32 @@ Current canonical profiles are `kubernetes-metrics-v1` for
 The Prometheus resolver evaluates consumer eligibility from binding evidence, not
 from provider-wide Kubernetes capability state.
 
+### Alertmanager consumer-profile boundary
+
+One Alertmanager provider may receive alerts for many managed-asset types.
+Provider Full Validation establishes only endpoint compatibility and the core
+Status, Alerts, and Silences API v2 contract. `IntegrationBinding.validation_profile`
+selects the alert consumer contract and `IntegrationBinding.validation_evidence`
+stores selector-scoped payload evidence. Current canonical profiles include
+`kubernetes-alerts-v1` for `kubernetes_cluster` and `minio-alerts-v1` for
+`object_storage_system`. Non-global bindings require a stable alert identity
+selector so a shared Alertmanager can segregate Kubernetes, MinIO, infrastructure,
+and future alert streams. The resolver evaluates eligibility from binding evidence,
+not provider-wide active-alert payload state.
+
+Alert rules are evaluated upstream, typically by Prometheus. Their presence or
+absence is not Alertmanager provider-readiness evidence. A consumer-profile failure
+changes only the affected binding.
+
+### Provider workspace alignment
+
+Kubernetes, Prometheus, Alertmanager, and MinIO follow the same provider interaction
+model: Integration overview, Connection Registry, Register Connection, Connection
+Configuration, Core Validation, Runtime & History, and Bindings & Consumers.
+Provider-specific API fields, compatibility evidence, and consumer contracts may
+differ, but the Hero semantics, connection terminology, readiness boundaries, tab
+hierarchy, and empty/populated registry states must not drift per provider.
+
 ## Worker ownership
 
 | Queue | Workload |

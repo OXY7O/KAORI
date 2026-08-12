@@ -11,6 +11,8 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Repaired Integration domain route ownership so Flask application boot and `flask db upgrade` import `build_integration_domain_page` directly from `domain_service` instead of a removed `service.py` re-export.
 
 ### Changed
+- Generalized Alertmanager around consumer-neutral Core Validation and asset-scoped alert Consumer Profiles, including `kubernetes-alerts-v1` and `minio-alerts-v1`, so shared Alertmanager instances can segregate Kubernetes, MinIO, and future alert streams by binding selector without false provider degradation.
+- Aligned MinIO provider pages with the canonical Kubernetes/Prometheus/Alertmanager Integration workspace: `MinIO Integrations` + `Register Connection`, Integration Coverage/Connection Registry, shared registration workflow, and Configuration/Core Validation/Runtime & History/Bindings & Consumers detail tabs.
 - Unified Orchestration, Observability, and Storage domain landing pages on one Capability Registry + Provider Registry + Bindings workspace, including asset-owned cross-domain binding visibility and canonical five-row pagination.
 - Locked the canonical Integration lifecycle in architecture/workspace documentation: Provider → Compatibility Profile → Provider Capability Set → Core Validation → Binding → Consumer Profile → Binding Validation → Consumer Eligibility.
 - Generalized Prometheus provider readiness around the consumer-neutral `prometheus-core-v1` contract and moved Kubernetes/MinIO metric, label, PromQL, and capability evidence to asset-scoped `IntegrationBinding` consumer profiles.

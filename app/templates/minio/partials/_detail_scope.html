@@ -1,0 +1,230 @@
+{% import "components/action_button.html" as action_button %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+<div id="bindings" class="space-y-4 font-sans">
+    <section class="{{ integration_ui.section_shell_classes() }}">
+        {{ integration_ui.section_header("waypoints", "Consumer Binding Registry", "Review all provider-to-asset associations first, then configure metrics and alert consumers independently.", eyebrow="Consumer Resolution") }}
+        {% if binding_rows %}
+            <div class="overflow-x-auto">
+                <table class="min-w-[980px] w-full text-left text-sm">
+                    <thead class="border-b border-outline-subtle bg-surface-hover text-xs uppercase tracking-wide text-content-muted">
+                        <tr>
+                            <th class="px-5 py-3 font-semibold sm:px-6">Provider Source</th>
+                            <th class="px-4 py-3 font-semibold">Provider Role</th>
+                            <th class="px-4 py-3 font-semibold">Consumer Profile</th>
+                            <th class="px-4 py-3 font-semibold">Validation</th>
+                            <th class="px-5 py-3 font-semibold sm:px-6">Evidence</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-outline-subtle">
+                        {% for row in binding_rows %}
+                            <tr class="bg-surface-card">
+                                <td class="px-5 py-4 sm:px-6">
+                                    <p class="font-semibold text-content-primary">{{ row.source_name }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ row.provider_label }}</p>
+                                </td>
+                                <td class="px-4 py-4 text-content-secondary">{{ row.binding.binding_role|title }} · Priority {{ row.binding.priority }}</td>
+                                <td class="px-4 py-4">
+                                    <p class="font-semibold text-content-primary">{{ row.profile_label }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ row.binding.validation_profile or "Provider-native contract" }}</p>
+                                </td>
+                                <td class="px-4 py-4">{{ integration_status(row.validation_status, row.validation_status|replace("_", " ") |title, display="indicator") }}</td>
+                                <td class="px-5 py-4 text-xs leading-5 text-content-secondary sm:px-6">{{ row.validation_message }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="p-5 sm:p-6">
+                <div class="rounded-xl border border-outline-subtle bg-surface-hover p-5">
+                    <p class="text-sm font-semibold text-content-primary">No Consumer Bindings Yet</p>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">The MinIO API connection may be validated independently. Add metrics or alert consumer sources only when this object-storage asset requires them.</p>
+                </div>
+            </div>
+        {% endif %}
+    </section>
+    <section id="metrics-binding"
+             class="{{ integration_ui.section_shell_classes() }}">
+        {{ integration_ui.section_header("activity", "Prometheus Metrics Consumer", "Bind a reusable Prometheus connection and validate the object-storage metric stream with minio-metrics-2024-v1.", eyebrow="Metrics Binding") }}
+        {% if metrics_binding and metrics_source %}
+            <div class="grid gap-px bg-outline-subtle md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-stretch">
+                <article class="bg-surface-card p-5">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Prometheus Source</p>
+                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ metrics_source.name }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ metrics_source.endpoint }}</p>
+                </article>
+                <article class="bg-surface-card p-5">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Consumer Contract</p>
+                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ metrics_binding.validation_profile or "minio-metrics-2024-v1" }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Selector: {{ metrics_binding.selector_json.label if metrics_binding.selector_json else "Not Configured" }} {{ metrics_binding.selector_json.operator if metrics_binding.selector_json else "" }} {{ metrics_binding.selector_json.value if metrics_binding.selector_json else "" }}</p>
+                    <div class="mt-2">{{ integration_status(metrics_status.status, metrics_status.label, display="indicator") }}</div>
+                </article>
+                <article class="flex min-w-56 flex-col justify-center gap-2 bg-surface-card p-5">
+                    <form method="post"
+                          action="{{ url_for('minio.validate_metrics_binding', instance_id=instance.id) }}">
+                        {% if csrf_token is defined %}
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        {% endif %}
+                        <button type="submit"
+                                class="{{ action_button.classes('primary') }} w-full justify-center">
+                            <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
+                            Validate Metrics
+                        </button>
+                    </form>
+                    <form method="post"
+                          action="{{ url_for('minio.delete_metrics_binding', instance_id=instance.id) }}">
+                        {% if csrf_token is defined %}
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        {% endif %}
+                        <button type="submit"
+                                class="{{ action_button.classes('secondary') }} w-full justify-center">
+                            <i data-lucide="unlink" class="h-4 w-4" aria-hidden="true"></i>
+                            Remove Binding
+                        </button>
+                    </form>
+                </article>
+            </div>
+            {% if binding_validation_job %}
+                <div class="border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs text-content-secondary sm:px-6">Metrics validation job: <span class="font-semibold text-content-primary">{{ binding_validation_job.status|default("queued") |replace("_", " ")|title }}</span></div>
+            {% endif %}
+        {% else %}
+            <form method="post"
+                  action="{{ url_for('minio.create_metrics_binding', instance_id=instance.id) }}"
+                  class="p-5 sm:p-6">
+                {{ binding_form.hidden_tag() }}
+                {% if binding_form.prometheus_instance_id.choices %}
+                    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                        <label class="block md:col-span-2">
+                            <span class="{{ integration_ui.control_label_classes() }}">{{ binding_form.prometheus_instance_id.label.text }}</span>
+                            {{ binding_form.prometheus_instance_id(class_=integration_ui.control_classes() ) }}
+                            <p class="mt-1.5 text-xs leading-5 text-content-muted">Prometheus endpoint and authentication remain owned by Observability.</p>
+                        </label>
+                        <label class="block">
+                            <span class="{{ integration_ui.control_label_classes() }}">{{ binding_form.selector_label.label.text }}</span>
+                            {{ binding_form.selector_label(class_=integration_ui.control_classes() ) }}
+                        </label>
+                        <label class="block">
+                            <span class="{{ integration_ui.control_label_classes() }}">{{ binding_form.selector_operator.label.text }}</span>
+                            {{ binding_form.selector_operator(class_=integration_ui.control_classes() ) }}
+                        </label>
+                        <label class="block md:col-span-2 xl:col-span-4">
+                            <span class="{{ integration_ui.control_label_classes() }}">{{ binding_form.selector_value.label.text }}</span>
+                            {{ binding_form.selector_value(class_=integration_ui.control_classes() ) }}
+                            <p class="mt-1.5 text-xs leading-5 text-content-muted">Use a stable label/value that scopes the MinIO metric series, for example <code class="font-mono">job=minio-production</code>.</p>
+                        </label>
+                    </div>
+                    <div class="mt-4 flex justify-end">
+                        <button type="submit" class="{{ action_button.classes('primary') }}">
+                            <i data-lucide="link-2" class="h-4 w-4" aria-hidden="true"></i>
+                            Add Metrics Binding
+                        </button>
+                    </div>
+                {% else %}
+                    <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4">
+                        <p class="text-sm font-semibold text-content-primary">No Prometheus Connection Available</p>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Register and Core Validate a reusable Prometheus connection before binding MinIO metrics.</p>
+                        <a href="{{ url_for('prometheus.new_instance') }}"
+                           class="mt-3 inline-flex h-9 items-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-3 text-xs font-semibold text-kaori-primary dark:text-kaori-accent">Register Prometheus Connection<i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i></a>
+                    </div>
+                {% endif %}
+            </form>
+        {% endif %}
+    </section>
+    <section id="alert-binding"
+             class="{{ integration_ui.section_shell_classes() }}">
+        {{ integration_ui.section_header("siren", "Alertmanager Alert Consumer", "Bind a reusable Alertmanager connection and validate MinIO alert identity with the minio-alerts-v1 consumer profile.", eyebrow="Alert Binding") }}
+        {% if alert_binding and alert_source %}
+            <div class="grid gap-px bg-outline-subtle md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-stretch">
+                <article class="bg-surface-card p-5">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Alertmanager Source</p>
+                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ alert_source.name }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ alert_source.endpoint }}</p>
+                </article>
+                <article class="bg-surface-card p-5">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Consumer Contract</p>
+                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ alert_binding.validation_profile or "minio-alerts-v1" }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Selector: {{ alert_binding.selector_json.label if alert_binding.selector_json else "Not Configured" }} {{ alert_binding.selector_json.operator if alert_binding.selector_json else "" }} {{ alert_binding.selector_json.value if alert_binding.selector_json else "" }}</p>
+                    <div class="mt-2">{{ integration_status(alert_status.status, alert_status.label, display="indicator") }}</div>
+                </article>
+                <article class="flex min-w-56 flex-col justify-center gap-2 bg-surface-card p-5">
+                    <form method="post"
+                          action="{{ url_for('minio.validate_alert_binding', instance_id=instance.id) }}">
+                        {% if csrf_token is defined %}
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        {% endif %}
+                        <button type="submit"
+                                class="{{ action_button.classes('primary') }} w-full justify-center">
+                            <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
+                            Validate Alerts
+                        </button>
+                    </form>
+                    <form method="post"
+                          action="{{ url_for('minio.delete_alert_binding', instance_id=instance.id) }}">
+                        {% if csrf_token is defined %}
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        {% endif %}
+                        <button type="submit"
+                                class="{{ action_button.classes('secondary') }} w-full justify-center">
+                            <i data-lucide="unlink" class="h-4 w-4" aria-hidden="true"></i>
+                            Remove Binding
+                        </button>
+                    </form>
+                </article>
+            </div>
+            {% if alert_binding_validation_job %}
+                <div class="border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs text-content-secondary sm:px-6">Alert validation job: <span class="font-semibold text-content-primary">{{ alert_binding_validation_job.status|default("queued") |replace("_", " ")|title }}</span></div>
+            {% endif %}
+        {% else %}
+            <form method="post"
+                  action="{{ url_for('minio.create_alert_binding', instance_id=instance.id) }}"
+                  class="p-5 sm:p-6">
+                {{ alert_binding_form.hidden_tag() }}
+                {% if alert_binding_form.alertmanager_instance_id.choices %}
+                    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                        <label class="block md:col-span-2">
+                            <span class="{{ integration_ui.control_label_classes() }}">{{ alert_binding_form.alertmanager_instance_id.label.text }}</span>
+                            {{ alert_binding_form.alertmanager_instance_id(class_=integration_ui.control_classes() ) }}
+                            <p class="mt-1.5 text-xs leading-5 text-content-muted">Alertmanager endpoint and authentication remain owned by Observability.</p>
+                        </label>
+                        <label class="block">
+                            <span class="{{ integration_ui.control_label_classes() }}">{{ alert_binding_form.selector_label.label.text }}</span>
+                            {{ alert_binding_form.selector_label(class_=integration_ui.control_classes() ) }}
+                        </label>
+                        <label class="block">
+                            <span class="{{ integration_ui.control_label_classes() }}">{{ alert_binding_form.selector_operator.label.text }}</span>
+                            {{ alert_binding_form.selector_operator(class_=integration_ui.control_classes() ) }}
+                        </label>
+                        <label class="block md:col-span-2 xl:col-span-4">
+                            <span class="{{ integration_ui.control_label_classes() }}">{{ alert_binding_form.selector_value.label.text }}</span>
+                            {{ alert_binding_form.selector_value(class_=integration_ui.control_classes() ) }}
+                            <p class="mt-1.5 text-xs leading-5 text-content-muted">Use the stable identity propagated by MinIO alert rules, for example <code class="font-mono">job=minio-production</code>.</p>
+                        </label>
+                    </div>
+                    <div class="mt-4 flex justify-end">
+                        <button type="submit" class="{{ action_button.classes('primary') }}">
+                            <i data-lucide="link-2" class="h-4 w-4" aria-hidden="true"></i>
+                            Add Alert Binding
+                        </button>
+                    </div>
+                {% else %}
+                    <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4">
+                        <p class="text-sm font-semibold text-content-primary">No Alertmanager Connection Available</p>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Register and Core Validate a reusable Alertmanager connection before binding MinIO alerts.</p>
+                        <a href="{{ url_for('alertmanager.new_instance') }}"
+                           class="mt-3 inline-flex h-9 items-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-3 text-xs font-semibold text-kaori-primary dark:text-kaori-accent">Register Alertmanager Connection<i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i></a>
+                    </div>
+                {% endif %}
+            </form>
+        {% endif %}
+    </section>
+    <div class="rounded-xl border border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6">
+        <div class="flex items-start gap-3">
+            {{ integration_ui.palette_icon("shield-check", "brand", size="sm") }}
+            <div>
+                <p class="text-sm font-semibold text-content-primary">Consumer Authority Boundary</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">A failed MinIO metrics or alert binding affects only that consumer relationship. It does not change MinIO, Prometheus, or Alertmanager provider Core Readiness.</p>
+            </div>
+        </div>
+    </div>
+</div>

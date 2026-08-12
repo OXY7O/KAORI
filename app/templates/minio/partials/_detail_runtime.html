@@ -1,0 +1,65 @@
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+<div class="space-y-4 font-sans">
+    <section class="{{ integration_ui.section_shell_classes() }}">
+        {{ integration_ui.section_header("activity", "Runtime & History", "Review persisted MinIO runtime observations separately from provider Core Validation and consumer-binding evidence.", eyebrow="Runtime Evidence") }}
+        <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
+            <article class="bg-surface-card p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Runtime Health</p>
+                <div class="mt-2">{{ integration_status(runtime_state.health_status, runtime_state.health_status_label, display="indicator") }}</div>
+                <p class="mt-2 text-xs leading-5 text-content-secondary">{{ runtime_state.summary or runtime_state.message }}</p>
+            </article>
+            <article class="bg-surface-card p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Health Score</p>
+                <p class="mt-2 text-2xl font-semibold tabular-nums text-content-primary">{{ runtime_state.health_score_display }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Persisted provider-runtime observation only.</p>
+            </article>
+            <article class="bg-surface-card p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Observed At</p>
+                <p class="mt-2 text-sm font-semibold text-content-primary">{{ runtime_state.observed_at_display }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Latest stored runtime evidence.</p>
+            </article>
+            <article class="bg-surface-card p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Latency</p>
+                <p class="mt-2 text-sm font-semibold text-content-primary">{{ runtime_state.latency_display }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Latest observed MinIO API response latency.</p>
+            </article>
+        </div>
+    </section>
+    <section class="{{ integration_ui.section_shell_classes() }}">
+        {{ integration_ui.section_header("history", "Recent Runtime Observations", "Provider runtime history remains independent from metrics and alert consumer validation.", eyebrow="History") }}
+        {% if runtime_history %}
+            <div class="overflow-x-auto">
+                <table class="min-w-[840px] w-full text-left text-sm">
+                    <thead class="border-b border-outline-subtle bg-surface-hover text-xs uppercase tracking-wide text-content-muted">
+                        <tr>
+                            <th class="px-5 py-3 font-semibold sm:px-6">Observed</th>
+                            <th class="px-4 py-3 font-semibold">Readiness</th>
+                            <th class="px-4 py-3 font-semibold">Health</th>
+                            <th class="px-4 py-3 font-semibold">Score</th>
+                            <th class="px-5 py-3 font-semibold sm:px-6">Runtime Reading</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-outline-subtle">
+                        {% for row in runtime_history %}
+                            <tr class="bg-surface-card">
+                                <td class="px-5 py-4 font-medium text-content-primary sm:px-6">{{ row.observed_at_display }}</td>
+                                <td class="px-4 py-4">{{ integration_status(row.readiness, row.readiness|replace("_", " ") |title, display="indicator") }}</td>
+                                <td class="px-4 py-4">{{ integration_status(row.health_status, row.health_status|replace("_", " ") |title, display="indicator") }}</td>
+                                <td class="px-4 py-4 font-semibold tabular-nums text-content-primary">{{ row.health_score ~ "/100" if row.health_score is not none else "N/A" }}</td>
+                                <td class="px-5 py-4 text-xs leading-5 text-content-secondary sm:px-6">{{ row.message or "No additional runtime message." }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="p-5 sm:p-6">
+                <div class="rounded-xl border border-outline-subtle bg-surface-hover p-5">
+                    <p class="text-sm font-semibold text-content-primary">No Runtime Observation Yet</p>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Run provider validation or the scheduled runtime refresh before interpreting MinIO runtime health.</p>
+                </div>
+            </div>
+        {% endif %}
+    </section>
+</div>

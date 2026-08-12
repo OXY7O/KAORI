@@ -5,11 +5,13 @@ from datetime import UTC, datetime
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
+from app.integrations.alertmanager.capabilities import BINDING_CAPABILITY_KEYS as ALERTMANAGER_CAPABILITY_SCOPE
 from app.integrations.binding_service import SourceBindingSpec, create_source_binding
 from app.integrations.minio.binding import ensure_primary_asset_binding
 from app.integrations.minio.capabilities import OBJECT_STORAGE_SYSTEM_SCOPE, PROMETHEUS_CAPABILITY_SCOPE
 from app.integrations.minio.client import MinioConnectionResult, test_connection_values
-from app.minio.contracts import MinioMetricsBindingInput, MinioRegistrationInput
+from app.minio.contracts import MinioAlertBindingInput, MinioMetricsBindingInput, MinioRegistrationInput
+from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.minio import MinioInstance
 from app.models.object_storage import ObjectStorageSystem
@@ -36,7 +38,7 @@ def test_minio_connection(values: MinioRegistrationInput) -> MinioConnectionResu
 def create_minio_instance(values: MinioRegistrationInput) -> MinioInstance:
     name = values.name
     if IntegrationInstance.query.filter_by(provider_type='minio', name=name).first() is not None:
-        raise ValueError('A MinIO provider with this name already exists.')
+        raise ValueError('A MinIO connection with this name already exists.')
     if ObjectStorageSystem.query.filter_by(name=name).first() is not None:
         raise ValueError('An object-storage asset with this name already exists.')
 
@@ -146,6 +148,71 @@ def metrics_source_for_binding(binding: IntegrationBinding | None) -> Prometheus
 
 def remove_metrics_binding(instance: MinioInstance) -> bool:
     binding = current_metrics_binding(instance)
+    if binding is None:
+        return False
+    db.session.delete(binding)
+    db.session.commit()
+    return True
+
+
+def alertmanager_choices() -> list[tuple[int, str]]:
+    rows = (
+        AlertmanagerInstance.query.join(AlertmanagerInstance.integration_instance)
+        .filter(IntegrationInstance.enabled.is_(True), IntegrationInstance.lifecycle_status == 'active')
+        .order_by(IntegrationInstance.name.asc())
+        .all()
+    )
+    return [(row.id, row.name) for row in rows]
+
+
+def bind_alertmanager_alerts(instance: MinioInstance, values: MinioAlertBindingInput) -> IntegrationBinding:
+    if current_alert_binding(instance) is not None:
+        raise ValueError('This object-storage asset already has an enabled primary Alertmanager binding.')
+    result = create_source_binding(
+        'alertmanager',
+        source_id=values.alertmanager_instance_id,
+        spec=SourceBindingSpec(
+            asset_type=OBJECT_STORAGE_SYSTEM_SCOPE,
+            asset_key=instance.object_storage_system_id,
+            role='primary',
+            priority=100,
+            selector_label=values.selector_label,
+            selector_value=values.selector_value,
+            selector_operator=values.selector_operator,
+            capability_scope=list(ALERTMANAGER_CAPABILITY_SCOPE),
+        ),
+        asset=instance.object_storage_system,
+    )
+    return result.binding
+
+
+def current_alert_binding(instance: MinioInstance) -> IntegrationBinding | None:
+    return (
+        IntegrationBinding.query.join(IntegrationInstance)
+        .filter(
+            IntegrationInstance.provider_type == 'alertmanager',
+            IntegrationInstance.enabled.is_(True),
+            IntegrationBinding.asset_type == OBJECT_STORAGE_SYSTEM_SCOPE,
+            IntegrationBinding.asset_key == instance.object_storage_system_id,
+            IntegrationBinding.binding_role == 'primary',
+            IntegrationBinding.enabled.is_(True),
+        )
+        .order_by(IntegrationBinding.priority.asc(), IntegrationBinding.id.asc())
+        .first()
+    )
+
+
+def alert_source_for_binding(binding: IntegrationBinding | None) -> AlertmanagerInstance | None:
+    if binding is None:
+        return None
+    canonical = db.session.get(IntegrationInstance, binding.integration_instance_id)
+    if canonical is None or canonical.provider_type != 'alertmanager':
+        return None
+    return AlertmanagerInstance.query.filter_by(integration_instance_id=canonical.id).first()
+
+
+def remove_alert_binding(instance: MinioInstance) -> bool:
+    binding = current_alert_binding(instance)
     if binding is None:
         return False
     db.session.delete(binding)

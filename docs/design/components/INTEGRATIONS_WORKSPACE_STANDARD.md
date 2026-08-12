@@ -398,6 +398,10 @@ Prometheus `PromQL Capability Registry` and Alertmanager `Alert Management Capab
 
 Prometheus and Alertmanager validation workspaces follow the Kubernetes `Compatibility & Capability Matrix` composition. For Prometheus, the provider-level matrix is intentionally consumer-neutral (`prometheus-core-v1`); Kubernetes, MinIO, and future exporter/domain evidence belongs to the corresponding asset binding rather than the shared provider state:
 
+- **Alertmanager provider validation is consumer-neutral.** Provider Core Validation owns Alertmanager product/version compatibility plus Status, Alerts, and Silences API v2 evidence. Kubernetes, MinIO, infrastructure, and future alert payload semantics belong to `IntegrationBinding` consumer profiles such as `kubernetes-alerts-v1` and `minio-alerts-v1`. A non-global binding requires an alert identity selector; missing or malformed consumer evidence may affect that binding but must not mutate Alertmanager provider readiness.
+- **Alertmanager binding tables expose Consumer Profile explicitly.** The registry shows Consumer Asset, Alert Identity, Consumer Profile, role/priority, Binding Validation, Effective Resolution, and Actions. Provider-wide active-alert payload fields are not presented as Core Validation capabilities.
+- **MinIO uses the same provider workspace hierarchy as Prometheus and Alertmanager.** Its list Hero says `MinIO Integrations`, primary action says `Register Connection`, and provider details use `Configuration`, `Core Validation`, `Runtime & History`, and `Bindings & Consumers`. MinIO-specific S3 fields, `minio-metrics-2024-v1`, and `minio-alerts-v1` remain technical content inside that shared shell.
+
 - one validation header with the canonical shared loading bar;
 - one horizontal provider capability-readiness surface before the registry;
 - coverage progress and three compact provider-specific evidence metrics;
