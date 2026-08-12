@@ -77,6 +77,12 @@ def test_domain_landing_routes_share_one_taxonomy_page_builder() -> None:
     assert 'selector_summary(binding.selector_json' in domain_service
     assert 'paginate_sequence(' in domain_service
     assert "'bindings': sum(1 for binding in related_bindings if binding.enabled)" in domain_service
+    assert (
+        'consumer_bindings = [binding for binding in related_bindings if not _is_owner_asset_binding(binding)]'
+        in domain_service
+    )
+    assert 'module.domain_key == owner_domain' in domain_service
+    assert '_consumer_binding_count(instance, consumer_bindings)' in domain_service
     assert 'KubernetesConnection.query' not in domain_service
     assert 'PrometheusInstance.query' not in domain_service
     assert 'AlertmanagerInstance.query' not in domain_service
@@ -85,6 +91,7 @@ def test_domain_landing_routes_share_one_taxonomy_page_builder() -> None:
 
 def test_domain_template_uses_shared_capability_registry_provider_registry_and_bindings() -> None:
     template = read('app/templates/integrations/domain.html')
+    content_tabs = read('app/templates/components/content_tabs.html')
 
     assert 'components/page_hero.html' in template
     assert 'components/content_tabs.html' in template
@@ -94,15 +101,22 @@ def test_domain_template_uses_shared_capability_registry_provider_registry_and_b
     assert 'Capability Registry' in template
     assert 'Provider Registry' in template
     assert 'Bindings' in template
-    assert 'Registry and Bindings' in template
+    assert 'Registry and Consumer Bindings' in template
+    assert 'Registry and Bindings' not in template
     assert 'data-kaori-domain-provider-registry' in template
     assert 'data-kaori-domain-binding-registry' in template
     assert 'No {{ domain.label }} Provider Registered' in template
     assert 'No {{ domain.label }} Bindings Yet' in template
     assert 'Core Validation' in template
-    assert 'Create Binding' in template
+    assert 'Add Consumer Binding' in template
     assert 'Consumer Contract' in template
     assert 'url_for(row.workspace_endpoint)' in template
+    assert 'Open {{ item.runtime_label }}' in template
+    assert 'hx_target="#domain-workspace"' in template
+    assert 'hx_select="#domain-workspace"' in template
+    assert 'hx_indicator="#integration-domain-workspace-loading"' in template
+    assert 'hx_indicator=none' in content_tabs
+    assert 'hx-indicator="{{ hx_indicator }}"' in content_tabs
     assert 'Domain Operating Boundary' in template
     assert 'data-kaori-integration-domain-workspace' in template
     assert 'provider_registry_pagination.allowed_per_page' in template
@@ -121,8 +135,14 @@ def test_domain_binding_registry_is_cross_domain_and_asset_centric() -> None:
     assert 'IntegrationInstance.provider_type.in_(provider_types)' in domain_service
     assert 'IntegrationBinding.asset_type.in_(owned_asset_types)' in domain_service
     assert 'or_(*clauses)' in domain_service
-    assert 'Native Provider Contract' in domain_service
-    assert 'Cross-domain sources are included when they target an asset owned by {{ domain.label }}.' in template
+    assert 'Native Provider Contract' not in domain_service
+    assert 'Native Provider Contract' not in template
+    assert 'Consumer Profile Pending' in domain_service
+    assert '_is_owner_asset_binding(binding)' in domain_service
+    assert (
+        'Native provider ownership is represented by the Provider Registry and is not duplicated as a consumer binding.'
+        in template
+    )
 
 
 def test_breadcrumbs_insert_domain_between_integrations_and_provider() -> None:

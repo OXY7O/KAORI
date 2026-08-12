@@ -40,7 +40,7 @@ def test_minio_detail_uses_same_four_provider_workspace_domains() -> None:
 
     assert 'x-data="integrationWorkspaceTabs(' in detail
     assert 'framed_workspace_tabs.render' in detail
-    for label in ('Configuration', 'Core Validation', 'Runtime & History', 'Bindings & Lifecycle'):
+    for label in ('Configuration', 'Validation & Capabilities', 'Runtime & History', 'Bindings & Lifecycle'):
         assert label in detail
     assert 'MinIO Integration' in detail
     assert 'Connection Posture' in detail
@@ -48,16 +48,18 @@ def test_minio_detail_uses_same_four_provider_workspace_domains() -> None:
 
 def test_minio_bindings_expose_metrics_and_alert_consumer_profiles() -> None:
     scope = read('app/templates/minio/partials/_detail_scope.html')
+    binding_registry = read('app/templates/minio/partials/_binding_registry.html')
     validation = read('app/templates/minio/partials/_detail_validation.html')
 
-    assert 'Consumer Binding Registry' in scope
+    assert 'Consumer Binding Registry' in binding_registry
     assert 'Prometheus Metrics Consumer' in scope
     assert 'Alertmanager Alert Consumer' in scope
     assert 'minio-metrics-2024-v1' in scope
     assert 'minio-alerts-v1' in scope
-    assert 'MinIO Core Validation' in validation
-    assert 'Consumer Validation Boundary' in validation
-    assert 'missing consumer stream' in validation.lower()
+    assert 'Compatibility & Capability Matrix' in validation
+    assert 'MinIO Capability Readiness' in validation
+    assert 'Capability Registry' in read('app/templates/minio/partials/_capability_registry.html')
+    assert 'consumer-specific evidence' in validation.lower()
 
 
 def test_minio_detail_matches_asset_owner_lifecycle_contract() -> None:
@@ -103,6 +105,7 @@ def test_minio_asset_owner_deletion_removes_asset_bindings_not_shared_sources() 
 
 def test_minio_configuration_and_runtime_have_provider_parity_routes() -> None:
     routes = read('app/minio/routes.py')
+    workspace_web = read('app/minio/workspace_web.py')
     form = read('app/templates/minio/instance_form.html')
     service = read('app/minio/service.py')
 
@@ -113,5 +116,35 @@ def test_minio_configuration_and_runtime_have_provider_parity_routes() -> None:
     assert 'Save Changes' in form
     assert "url_for('minio.test_instance_configuration'" in form
     assert "@minio_bp.post('/instances/<int:instance_id>/runtime/refresh')" in routes
-    assert 'enqueue_runtime_health_refresh(' in routes
+    assert 'queue_runtime_refresh(' in routes
+    assert 'enqueue_runtime_health_refresh(' in workspace_web
     assert 'runtime_refresh_status' in routes
+
+
+def test_minio_validation_runtime_and_binding_tables_match_kubernetes_workspace_contract() -> None:
+    detail = read('app/templates/minio/instance_detail.html')
+    validation = read('app/templates/minio/partials/_detail_validation.html')
+    capability_registry = read('app/templates/minio/partials/_capability_registry.html')
+    runtime = read('app/templates/minio/partials/_detail_runtime.html')
+    bindings = read('app/templates/minio/partials/_binding_registry.html')
+    routes = read('app/minio/routes.py')
+
+    assert 'Validation & Capabilities' in detail
+    assert 'connection_validation_header.render(' in validation
+    assert "hx-post=\"{{ url_for('minio.validate_instance'" in validation
+    assert 'minio-validation-loading' in validation
+    assert "hx-get=\"{{ url_for('minio.validation_status'" in validation
+    assert 'minio-capability-registry' in capability_registry
+    assert 'capability_per_page' in capability_registry
+    assert 'pagination_ui.numeric_pages(' in capability_registry
+    assert 'hx-target="#minio-capability-registry"' in capability_registry
+    assert 'integrations/partials/_runtime_history.html' in runtime
+    assert 'runtime_history_filters_enabled=true' in runtime
+    assert 'minio.runtime_history' in runtime
+    assert 'minio-binding-registry' in bindings
+    assert 'binding_per_page' in bindings
+    assert 'pagination_ui.numeric_pages(' in bindings
+    assert 'hx-target="#minio-binding-registry"' in bindings
+    assert "@minio_bp.get('/instances/<int:instance_id>/capabilities/registry')" in routes
+    assert "@minio_bp.get('/instances/<int:instance_id>/runtime/history')" in routes
+    assert "@minio_bp.get('/instances/<int:instance_id>/bindings/registry')" in routes

@@ -4,7 +4,7 @@ import json
 import logging
 
 from celery.exceptions import CeleryError
-from flask import Blueprint, abort, current_app, make_response, redirect, render_template, request, url_for
+from flask import Blueprint, abort, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from kombu.exceptions import OperationalError as KombuOperationalError
@@ -15,8 +15,6 @@ from app.integrations.minio.client import MinioConnectionError
 from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
 from app.integrations.validation.web import (
     enqueue_binding_validation,
-    enqueue_instance_validation,
-    enqueue_runtime_health_refresh,
     snapshot_feedback_for_user,
     validate_snapshot_access,
 )
@@ -39,6 +37,7 @@ from app.minio.service import (
     test_minio_connection,
     update_minio_instance,
 )
+from app.minio.workspace_web import detail_query_from_request, queue_full_validation, queue_runtime_refresh
 from app.models.minio import MinioInstance
 from app.notifications.service import get_navigation_notification_context, record_operational_activity
 from app.rbac.decorators import permission_required
@@ -392,7 +391,7 @@ def instance_detail(instance_id: int) -> ResponseReturnValue:
 
     return render_template(
         'minio/instance_detail.html',
-        **build_detail_context(instance),
+        **build_detail_context(instance, detail_query_from_request()),
         binding_form=binding_form,
         alert_binding_form=alert_binding_form,
         validation_job=build_validation_snapshot(validation_task_id) if validation_task_id else None,
@@ -403,36 +402,34 @@ def instance_detail(instance_id: int) -> ResponseReturnValue:
     )
 
 
+@minio_bp.get('/instances/<int:instance_id>/capabilities/registry')
+@permission_required('settings.manage_integrations')
+def capability_registry(instance_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    context = build_detail_context(instance, detail_query_from_request())
+    validation_task_id = get_active_validation_task_id(
+        provider_type='minio',
+        operation='full_validation',
+        instance_id=instance.id,
+    )
+    context['validation_job'] = build_validation_snapshot(validation_task_id) if validation_task_id else None
+    return render_template('minio/partials/_capability_registry.html', **context)
+
+
 @minio_bp.post('/instances/<int:instance_id>/validate')
 @permission_required('settings.manage_integrations')
 def validate_instance(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
-    try:
-        _snapshot, created = enqueue_instance_validation(
-            provider_type='minio',
-            instance_id=instance.id,
-            requested_by_user_id=int(current_user.id),
-        )
-        _queue_feedback(
-            event_type='minio_validation_queued',
-            status='info',
-            title='MinIO Validation Queued',
-            message=f'KAORI queued Full Validation for {instance.name}.',
-            detail='The worker will refresh S3 API, compatibility, capability, and canonical asset-binding evidence.',
-            action_url=url_for('minio.instance_detail', instance_id=instance.id, _anchor='validation'),
-        )
-        if not created:
-            logger.info('Reused active MinIO validation job for instance %s.', instance.id)
-    except (CeleryError, KombuOperationalError, OSError, RuntimeError, SQLAlchemyError, ValueError) as exc:
-        logger.exception('Could not queue MinIO validation.')
-        _queue_feedback(
-            event_type='minio_validation_queue_failed',
-            status='error',
-            title='MinIO Validation Could Not Start',
-            message=f'KAORI could not queue Full Validation for {instance.name}.',
-            detail=str(exc),
-            action_url=url_for('minio.instance_detail', instance_id=instance.id),
-        )
+    is_htmx = request.headers.get('HX-Request') == 'true'
+    validation_job, feedback = queue_full_validation(
+        instance,
+        user_id=int(current_user.id),
+        is_htmx=is_htmx,
+    )
+    if is_htmx:
+        context = build_detail_context(instance, detail_query_from_request())
+        context.update(validation_job=validation_job, operation_feedback=feedback)
+        return render_template('minio/partials/_detail_validation.html', **context)
     return redirect(url_for('minio.instance_detail', instance_id=instance.id, _anchor='validation'))
 
 
@@ -440,59 +437,15 @@ def validate_instance(instance_id: int) -> ResponseReturnValue:
 @permission_required('settings.manage_integrations')
 def refresh_runtime(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
-    try:
-        runtime_refresh_job, created = enqueue_runtime_health_refresh(
-            provider_type='minio',
-            instance_id=instance.id,
-            requested_by_user_id=int(current_user.id),
-        )
-        feedback = record_operational_activity(
-            user_id=int(current_user.id),
-            event_type='minio_runtime_refresh_queued' if created else 'minio_runtime_refresh_already_running',
-            status='info' if created else 'warning',
-            title='MinIO Runtime Refresh Queued' if created else 'MinIO Runtime Refresh Already Running',
-            message=(
-                f'KAORI queued a lightweight runtime refresh for {instance.name}.'
-                if created
-                else f'A runtime refresh is already running for {instance.name}.'
-            ),
-            detail=(
-                'The runtime worker will refresh MinIO endpoint health without rebuilding consumer binding evidence.'
-                if created
-                else 'KAORI kept the active task and did not enqueue a duplicate.'
-            ),
-            action_url=url_for('minio.instance_detail', instance_id=instance.id, _anchor='runtime'),
-            action_label='Review MinIO runtime',
-            action_icon='activity',
-            metadata={
-                'task_id': runtime_refresh_job.get('task_id'),
-                'instance_id': instance.id,
-                'queue': current_app.config.get('INTEGRATION_RUNTIME_CELERY_QUEUE', 'integration-runtime'),
-            },
-            queue_feedback=request.headers.get('HX-Request') != 'true',
-        )
-    except (CeleryError, KombuOperationalError, OSError, RuntimeError, SQLAlchemyError, ValueError) as exc:
-        logger.exception('Could not enqueue MinIO runtime refresh for %s.', instance_id)
-        runtime_refresh_job = None
-        feedback = record_operational_activity(
-            user_id=int(current_user.id),
-            event_type='minio_runtime_refresh_enqueue_failed',
-            status='error',
-            title='MinIO Runtime Refresh Not Queued',
-            message=f'KAORI could not queue runtime health refresh for {instance.name}.',
-            detail='Verify Redis, the Celery broker, and the integration-runtime worker before retrying.',
-            action_url=url_for('minio.instance_detail', instance_id=instance.id, _anchor='runtime'),
-            action_label='Review MinIO runtime',
-            action_icon='activity',
-            metadata={'instance_id': instance.id, 'reason': type(exc).__name__},
-            queue_feedback=request.headers.get('HX-Request') != 'true',
-        )
-    if request.headers.get('HX-Request') == 'true':
-        context = build_detail_context(instance)
-        context.update(
-            runtime_refresh_job=runtime_refresh_job,
-            operation_feedback=feedback,
-        )
+    is_htmx = request.headers.get('HX-Request') == 'true'
+    runtime_refresh_job, feedback = queue_runtime_refresh(
+        instance,
+        user_id=int(current_user.id),
+        is_htmx=is_htmx,
+    )
+    if is_htmx:
+        context = build_detail_context(instance, detail_query_from_request())
+        context.update(runtime_refresh_job=runtime_refresh_job, operation_feedback=feedback)
         return render_template('minio/partials/_detail_runtime.html', **context)
     return redirect(url_for('minio.instance_detail', instance_id=instance.id, _anchor='runtime'))
 
@@ -510,6 +463,51 @@ def runtime_refresh_status(instance_id: int, task_id: str) -> ResponseReturnValu
         operation_feedback=snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
     )
     return render_template('minio/partials/_detail_runtime.html', **context)
+
+
+@minio_bp.get('/instances/<int:instance_id>/validation/status/<string:task_id>')
+@permission_required('settings.manage_integrations')
+def validation_status(instance_id: int, task_id: str) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    snapshot = build_validation_snapshot(task_id)
+    if not validate_snapshot_access(snapshot, provider_type='minio', instance_id=instance.id):
+        abort(404)
+    context = build_detail_context(instance, detail_query_from_request())
+    context.update(
+        validation_job=snapshot,
+        operation_feedback=snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
+    )
+    return render_template('minio/partials/_detail_validation.html', **context)
+
+
+@minio_bp.get('/instances/<int:instance_id>/runtime/history')
+@permission_required('settings.manage_integrations')
+def runtime_history(instance_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    context = build_detail_context(instance, detail_query_from_request())
+    return render_template(
+        'integrations/partials/_runtime_history.html',
+        runtime_history=context['runtime_history'],
+        runtime_history_id='minio-runtime-history',
+        runtime_history_loading_id='minio-history-loading',
+        runtime_history_url=url_for('minio.runtime_history', instance_id=instance.id),
+        runtime_history_endpoint='minio.runtime_history',
+        runtime_history_route_args={'instance_id': instance.id},
+        runtime_history_detail_url=url_for('minio.instance_detail', instance_id=instance.id),
+        runtime_history_detail_endpoint='minio.instance_detail',
+        runtime_history_filters_enabled=True,
+        provider_label='MinIO',
+    )
+
+
+@minio_bp.get('/instances/<int:instance_id>/bindings/registry')
+@permission_required('settings.manage_integrations')
+def binding_registry(instance_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    return render_template(
+        'minio/partials/_binding_registry.html',
+        **build_detail_context(instance, detail_query_from_request()),
+    )
 
 
 @minio_bp.post('/instances/<int:instance_id>/metrics-binding')

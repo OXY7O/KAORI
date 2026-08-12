@@ -1,0 +1,186 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/pagination.html" as pagination_ui %}
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table_label.html" as table_label %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% set registry = capability_registry %}
+{% set filters = registry.filters %}
+{% set pagination = registry.pagination %}
+<section id="minio-capability-registry"
+         class="mt-4 min-w-0 {{ integration_ui.section_shell_classes() }}"
+         aria-labelledby="minio-capability-registry-title"
+         data-kaori-minio-capability-registry>
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                {{ integration_ui.palette_icon("blocks", "info", size="lg", rounded="xl") }}
+                <div class="min-w-0">
+                    <h3 id="minio-capability-registry-title"
+                        class="text-base font-semibold text-content-primary">Capability Registry</h3>
+                    <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">Review the MinIO API capability contract selected by the compatibility profile. Provider capability evidence remains independent from Prometheus metrics and Alertmanager alert bindings.</p>
+                </div>
+            </div>
+            {{ table_label.metadata_label(registry.total_contracts ~ " Capability Contracts") }}
+        </div>
+        {{ loading_bar.render("minio-capability-loading", label="Refreshing MinIO Capability Registry") }}
+    </header>
+    <form method="get"
+          action="{{ url_for('minio.instance_detail', instance_id=instance.id) }}#validation"
+          hx-get="{{ url_for('minio.capability_registry', instance_id=instance.id) }}"
+          hx-target="#minio-capability-registry"
+          hx-swap="outerHTML"
+          hx-indicator="#minio-capability-loading"
+          hx-trigger="input changed delay:300ms from:#minio-capability-search, change delay:100ms from:select"
+          class="{{ integration_ui.filter_region_classes() }}">
+        <input type="hidden" name="capability_page" value="1">
+        <input type="hidden"
+               name="capability_per_page"
+               value="{{ pagination.per_page }}">
+        <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_14rem_14rem]">
+            <label class="block min-w-0">
+                <span class="{{ integration_ui.control_label_classes() }}">Search Capability</span>
+                <span class="relative block">
+                    <i data-lucide="search"
+                       class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
+                       aria-hidden="true"></i>
+                    <input id="minio-capability-search"
+                           type="search"
+                           name="capability_q"
+                           value="{{ filters.query }}"
+                           placeholder="Search capability or contract..."
+                           autocomplete="off"
+                           class="{{ integration_ui.search_classes() }}">
+                </span>
+            </label>
+            <label class="block">
+                <span class="{{ integration_ui.control_label_classes() }}">Requirement</span>
+                <select name="capability_requirement"
+                        class="{{ integration_ui.control_classes() }}">
+                    <option value="" {% if not filters.requirement %}selected{% endif %}>All Requirements</option>
+                    <option value="required"
+                            {% if filters.requirement == "required" %}selected{% endif %}>Required</option>
+                    <option value="optional"
+                            {% if filters.requirement == "optional" %}selected{% endif %}>Optional</option>
+                </select>
+            </label>
+            <label class="block">
+                <span class="{{ integration_ui.control_label_classes() }}">Validation Status</span>
+                <select name="capability_status"
+                        class="{{ integration_ui.control_classes() }}">
+                    <option value="" {% if not filters.status %}selected{% endif %}>All Statuses</option>
+                    <option value="ready" {% if filters.status == "ready" %}selected{% endif %}>Ready</option>
+                    <option value="blocked"
+                            {% if filters.status == "blocked" %}selected{% endif %}>Blocked</option>
+                </select>
+            </label>
+        </div>
+    </form>
+    <div class="overflow-hidden">
+        <table class="{{ table_ui.table_classes() }} table-fixed">
+            <colgroup>
+                <col class="w-[27%]">
+                <col class="w-[25%]">
+                <col class="w-[20%]">
+                <col class="w-[13%]">
+                <col class="w-[15%]">
+            </colgroup>
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th class="{{ table_ui.header_cell_classes() }}">Capability</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Description</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">API Contract</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Requirement</th>
+                    <th class="{{ table_ui.header_cell_classes(action=true) }}">Status</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for row in registry.rows %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <div class="flex min-w-0 items-start gap-3">
+                                {{ integration_ui.palette_icon("box" if row.required else "shield", "normal" if row.status == "ready" else "critical", size="md") }}
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-semibold text-content-primary"
+                                       title="{{ row.label }}">{{ row.label }}</p>
+                                    <p class="mt-0.5 truncate text-xs text-content-muted">{{ row.key }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="line-clamp-2 text-xs leading-5 text-content-secondary"
+                               title="{{ row.description }}">{{ row.description }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="truncate text-sm font-semibold text-content-primary"
+                               title="{{ row.contract }}">{{ row.contract }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(row.requirement_label) }}</td>
+                        <td class="{{ table_ui.cell_classes(action=true) }}">{{ integration_status(row.status, "Ready" if row.status == "ready" else "Blocked", display="indicator") }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="px-5 py-10 text-center text-sm text-content-muted">No MinIO capability contracts match the active filters.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <footer class="{{ pagination_ui.footer_classes() }}">
+        <div class="{{ pagination_ui.summary_group_classes() }}">
+            <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> Capabilities</p>
+            <form method="get"
+                  action="{{ url_for('minio.instance_detail', instance_id=instance.id) }}#validation"
+                  hx-get="{{ url_for('minio.capability_registry', instance_id=instance.id) }}"
+                  hx-target="#minio-capability-registry"
+                  hx-swap="outerHTML"
+                  hx-indicator="#minio-capability-loading"
+                  class="{{ pagination_ui.rows_group_classes() }}">
+                <input type="hidden" name="capability_page" value="1">
+                <input type="hidden" name="capability_q" value="{{ filters.query }}">
+                <input type="hidden"
+                       name="capability_requirement"
+                       value="{{ filters.requirement }}">
+                <input type="hidden" name="capability_status" value="{{ filters.status }}">
+                <label for="minio-capability-per-page"
+                       class="font-semibold text-content-secondary">Rows</label>
+                <select id="minio-capability-per-page"
+                        name="capability_per_page"
+                        data-kaori-auto-submit
+                        class="{{ pagination_ui.page_size_classes() }}">
+                    {% for option in pagination.allowed_per_page %}
+                        <option value="{{ option }}"
+                                {% if option == pagination.per_page %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+        <nav class="{{ pagination_ui.navigation_group_classes() }}"
+             aria-label="MinIO capability pagination">
+            {% set capability_query = {"capability_q": filters.query, "capability_requirement": filters.requirement, "capability_status": filters.status, "capability_per_page": pagination.per_page} %}
+            {% if pagination.has_prev %}
+                <a href="{{ url_for('minio.instance_detail', instance_id=instance.id, capability_page=pagination.prev_page, **capability_query) }}#validation"
+                   hx-get="{{ url_for('minio.capability_registry', instance_id=instance.id, capability_page=pagination.prev_page, **capability_query) }}"
+                   hx-target="#minio-capability-registry"
+                   hx-swap="outerHTML"
+                   hx-indicator="#minio-capability-loading"
+                   class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(true) }}"
+                      aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+            {% endif %}
+            {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, "capability_page", hx_target="#minio-capability-registry", hx_indicator="#minio-capability-loading", endpoint="minio.capability_registry", query_params={"instance_id": instance.id, "capability_q": filters.query, "capability_requirement": filters.requirement, "capability_status": filters.status, "capability_per_page": pagination.per_page}, hx_swap="outerHTML", href_endpoint="minio.instance_detail") }}
+            {% if pagination.has_next %}
+                <a href="{{ url_for('minio.instance_detail', instance_id=instance.id, capability_page=pagination.next_page, **capability_query) }}#validation"
+                   hx-get="{{ url_for('minio.capability_registry', instance_id=instance.id, capability_page=pagination.next_page, **capability_query) }}"
+                   hx-target="#minio-capability-registry"
+                   hx-swap="outerHTML"
+                   hx-indicator="#minio-capability-loading"
+                   class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(true) }}"
+                      aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+            {% endif %}
+        </nav>
+    </footer>
+</section>

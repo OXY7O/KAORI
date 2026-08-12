@@ -52,14 +52,16 @@ Domain Workspace
 Domain Operating Boundary
 ```
 
-The **Provider Registry** lists canonical `IntegrationInstance` targets owned by the domain. It uses the global five-row default and `5 / 10 / 25 / 50` page sizes, provider readiness, capability ownership, binding count, and one route back to the product-specific workspace. An empty registry names the provider implementations already registered in the Integration kernel and directs the operator to register the first runtime.
+The **Provider Registry** lists canonical `IntegrationInstance` targets owned by the domain. It uses the global five-row default and `5 / 10 / 25 / 50` page sizes, provider readiness, capability ownership, consumer-binding count, and one route back to the product-specific workspace. Provider workspace actions remain visible in the workspace header in both empty and populated states; registration/navigation actions MUST NOT exist only inside an empty-state row.
 
-The **Bindings** tab is asset-centric rather than provider-to-provider. It includes:
+The **Bindings** tab is a consumer registry, not a duplicate of provider ownership. Native asset-owner attachments such as Kubernetes→`kubernetes_cluster` and MinIO→`object_storage_system` remain internal ownership evidence and are not displayed or counted as consumer bindings. The tab includes:
 
-- bindings whose source provider belongs to the current domain; and
-- cross-domain sources whose `asset_type` is owned by the current domain.
+- Prometheus, Alertmanager, or future reusable-source bindings whose `asset_type` is owned by the current domain; and
+- bindings whose source provider belongs to a source-oriented domain such as Observability.
 
-This means Orchestration can show Kubernetes API plus Prometheus/Alertmanager bindings that target a Kubernetes cluster, while Storage can show MinIO plus Prometheus bindings that target the same `object_storage_system`. Observability shows Prometheus/Alertmanager bindings across their consumers because those providers own the source side.
+This means Orchestration shows Prometheus/Alertmanager consumer bindings targeting Kubernetes clusters while Kubernetes API ownership remains in Provider Registry. Storage behaves the same way: MinIO owns the `object_storage_system`, while Prometheus and Alertmanager appear only after explicit consumer binding. Observability shows Prometheus/Alertmanager bindings across their consumer assets because those providers own the source side.
+
+The **Provider Registry / Bindings** switch is server-owned but MUST use HTMX replacement of `#domain-workspace` with URL push-state. Tab switching must not perform a full document navigation; the shared content-tab contract owns `hx-get`, `hx-target`, `hx-select`, `hx-swap`, and an operation-scoped loading indicator.
 
 Managed asset ownership is declared by Integration taxonomy capability metadata (`asset_types`). Domain landing services must remain provider-neutral and must not query `KubernetesConnection`, `PrometheusInstance`, `AlertmanagerInstance`, `MinioInstance`, or future provider-specific models directly.
 
@@ -610,3 +612,15 @@ Shared ownership:
 - provider-specific templates supply only the asset label and deletion consequence;
 - MinIO fourth workspace is `Bindings & Lifecycle` because the object-storage asset owns
   its downstream Prometheus and Alertmanager associations.
+
+
+### Asset-owner detail workspace parity
+
+Kubernetes and MinIO are asset-owner providers. Their detail workspaces MUST share the same operational composition contract even when the provider-specific evidence differs:
+
+- `Configuration` owns the persisted connection contract.
+- `Validation & Capabilities` owns compatibility, provider capability readiness, an HTMX-filtered capability registry, and `5/10/25/50` pagination.
+- `Runtime & History` owns operation-scoped runtime refresh plus the canonical shared runtime-history table with HTMX filters and pagination.
+- the fourth lifecycle workspace owns provider-specific consumer/lifecycle evidence. For MinIO this is `Bindings & Lifecycle`; its consumer registry contains only Prometheus/Alertmanager bindings and uses HTMX pagination.
+
+Provider-owned API identity MUST NOT be duplicated as a consumer binding. MinIO API ownership is represented by the MinIO/ObjectStorageSystem relationship; Kubernetes API ownership is represented by the Kubernetes connection/cluster relationship.

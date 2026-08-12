@@ -58,9 +58,9 @@
                  class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
             {{ framed_workspace_tabs.render([
                         ("configuration", "Configuration", "settings-2", instance.environment|default("") |title),
-            ("validation", "Core Validation", "scan-search", readiness|replace("_", " ")|title),
+            ("validation", "Validation & Capabilities", "scan-search", readiness|replace("_", " ")|title),
             ("runtime", "Runtime & History", "activity", runtime_state.health_status_label|default("Not Observed")),
-            ("scope", "Bindings & Lifecycle", "waypoints", (binding_rows|length|string) ~ " Bindings")
+            ("scope", "Bindings & Lifecycle", "waypoints", (binding_total|string) ~ " Bindings")
             ], prefix="minio", aria_label="MinIO Connection Domains") }}
             <div class="p-4 sm:p-5 lg:p-6">
                 <div id="minio-panel-configuration"

@@ -1,4 +1,5 @@
 {% import "components/connection_validation_header.html" as connection_validation_header %}
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 <div id="minio-runtime-panel"
@@ -58,41 +59,9 @@
             </article>
         </div>
     </section>
-    <section class="{{ integration_ui.section_shell_classes() }}">
-        {{ integration_ui.section_header("history", "Recent Runtime Observations", "Provider runtime history remains independent from metrics and alert consumer validation.", eyebrow="History") }}
-        {% if runtime_history %}
-            <div class="overflow-x-auto">
-                <table class="min-w-[840px] w-full text-left text-sm">
-                    <thead class="border-b border-outline-subtle bg-surface-hover text-xs uppercase tracking-wide text-content-muted">
-                        <tr>
-                            <th class="px-5 py-3 font-semibold sm:px-6">Observed</th>
-                            <th class="px-4 py-3 font-semibold">Readiness</th>
-                            <th class="px-4 py-3 font-semibold">Health</th>
-                            <th class="px-4 py-3 font-semibold">Score</th>
-                            <th class="px-5 py-3 font-semibold sm:px-6">Runtime Reading</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-outline-subtle">
-                        {% for row in runtime_history %}
-                            <tr class="bg-surface-card">
-                                <td class="px-5 py-4 font-medium text-content-primary sm:px-6">{{ row.observed_at_display }}</td>
-                                <td class="px-4 py-4">{{ integration_status(row.readiness, row.readiness|replace("_", " ") |title, display="indicator") }}</td>
-                                <td class="px-4 py-4">{{ integration_status(row.health_status, row.health_status|replace("_", " ") |title, display="indicator") }}</td>
-                                <td class="px-4 py-4 font-semibold tabular-nums text-content-primary">{{ row.health_score ~ "/100" if row.health_score is not none else "N/A" }}</td>
-                                <td class="px-5 py-4 text-xs leading-5 text-content-secondary sm:px-6">{{ row.message or "No additional runtime message." }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <div class="p-5 sm:p-6">
-                <div class="rounded-xl border border-outline-subtle bg-surface-hover p-5">
-                    <p class="text-sm font-semibold text-content-primary">No Runtime Observation Yet</p>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Run provider validation or the scheduled runtime refresh before interpreting MinIO runtime health.</p>
-                </div>
-            </div>
-        {% endif %}
-    </section>
+    {% with runtime_history=runtime_history, runtime_history_id="minio-runtime-history", runtime_history_loading_id="minio-history-loading", runtime_history_url=url_for("minio.runtime_history", instance_id=instance.id), runtime_history_endpoint="minio.runtime_history", runtime_history_route_args={"instance_id": instance.id}, runtime_history_detail_url=url_for("minio.instance_detail", instance_id=instance.id), runtime_history_detail_endpoint="minio.instance_detail", runtime_history_filters_enabled=true, runtime_history_tab="runtime", provider_label="MinIO" %}
+        {% include "integrations/partials/_runtime_history.html" %}
+    {% endwith %}
+    {{ framed_workspace_tabs.badge_oob("minio", "runtime", runtime_state.health_status_label|default("Not Observed") ) }}
     {% include "components/operation_feedback_oob.html" %}
 </div>

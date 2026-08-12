@@ -11,7 +11,6 @@ PYTHON_FILES = (
     'app/models/minio.py',
     'app/integrations/minio/__init__.py',
     'app/integrations/minio/adapter.py',
-    'app/integrations/minio/binding.py',
     'app/integrations/minio/capabilities.py',
     'app/integrations/minio/client.py',
     'app/integrations/minio/compatibility.py',
@@ -21,7 +20,9 @@ PYTHON_FILES = (
     'app/minio/registration.py',
     'app/minio/routes.py',
     'app/minio/service.py',
+    'app/minio/workspace_web.py',
     'migrations/versions/20260812_minio_object_storage_provider.py',
+    'migrations/versions/20260812_remove_minio_owner_self_binding.py',
 )
 
 
@@ -42,6 +43,7 @@ def main() -> None:
     object_storage = read('app/models/object_storage.py')
     minio_model = read('app/models/minio.py')
     migration = read('migrations/versions/20260812_minio_object_storage_provider.py')
+    owner_binding_cleanup = read('migrations/versions/20260812_remove_minio_owner_self_binding.py')
     registration = read('app/integrations/minio/__init__.py')
     capabilities = read('app/integrations/minio/capabilities.py')
     compatibility = read('app/integrations/minio/compatibility.py')
@@ -59,6 +61,9 @@ def main() -> None:
     minio_configuration = read('app/templates/minio/partials/_detail_configuration.html')
     minio_scope = read('app/templates/minio/partials/_detail_scope.html')
     minio_runtime = read('app/templates/minio/partials/_detail_runtime.html')
+    minio_validation = read('app/templates/minio/partials/_detail_validation.html')
+    minio_capability_registry = read('app/templates/minio/partials/_capability_registry.html')
+    minio_binding_registry = read('app/templates/minio/partials/_binding_registry.html')
     minio_routes = read('app/minio/routes.py')
     deletion = read('app/integrations/deletion.py')
 
@@ -77,11 +82,19 @@ def main() -> None:
     require("op.create_table(\n        'object_storage_systems'" in migration, 'object storage asset migration missing')
     require("op.create_table(\n        'minio_instances'" in migration, 'MinIO provider migration missing')
     require('minio_prometheus' not in migration.lower(), 'MinIO must not add a provider-pair binding table')
+    require(
+        "down_revision = '20260812_prom_consumer_profiles'" in owner_binding_cleanup,
+        'MinIO owner-binding cleanup must extend the consumer-profile head',
+    )
+    require('DELETE FROM integration_bindings' in owner_binding_cleanup, 'MinIO owner self-binding cleanup is missing')
+    require("ii.provider_type = 'minio'" in owner_binding_cleanup, 'MinIO owner-binding cleanup must target MinIO only')
 
     require("provider_type='minio'" in registration, 'MinIO provider is not registered')
     require("domain_key='storage'" in registration, 'MinIO must belong to Storage')
     require("capability_key='object_storage'" in registration, 'MinIO must belong to Object Storage')
     require("navigation_endpoint_prefixes=('minio.',)" in registration, 'MinIO navigation ownership is missing')
+    require("'binding.create'" not in registration, 'MinIO provider must not create a self consumer binding')
+    require("'binding.validate'" not in registration, 'MinIO Core Validation must not validate an owner self-binding')
     require('asset_type=OBJECT_STORAGE_SYSTEM_SCOPE' in registration, 'MinIO Prometheus profile must be asset-scoped')
     for metric in (
         'minio_software_version_info',
@@ -103,6 +116,13 @@ def main() -> None:
     require("signature_version='s3v4'" in client, 'MinIO S3 client must use SigV4')
     require('client.list_buckets()' in client, 'MinIO registration validation must prove bucket discovery access')
 
+    require(
+        'ensure_primary_asset_binding' not in service, 'MinIO registration must not create a provider-to-self binding'
+    )
+    require(
+        not (ROOT / 'app/integrations/minio/binding.py').exists(),
+        'deprecated MinIO owner-binding module must be removed',
+    )
     require(
         "create_source_binding(\n        'prometheus'" in service, 'MinIO metrics must use canonical source binding'
     )
@@ -154,6 +174,10 @@ def main() -> None:
 
     require('MinIO API Readiness' in minio_detail, 'MinIO detail hero must use the asset-owner API-readiness pattern')
     require(
+        'Validation & Capabilities' in minio_detail,
+        'MinIO validation workspace must match the Kubernetes capability model',
+    )
+    require(
         'Bindings & Lifecycle' in minio_detail,
         'MinIO fourth workspace must combine consumer bindings with asset lifecycle',
     )
@@ -165,6 +189,39 @@ def main() -> None:
     require('Connection Lifecycle' in minio_scope, 'MinIO asset lifecycle section is missing')
     require('Delete Connection' in minio_scope, 'MinIO delete action is missing')
     require("url_for('minio.delete_instance'" in minio_scope, 'MinIO delete route wiring is missing')
+    require(
+        'Compatibility & Capability Matrix' in minio_validation,
+        'MinIO validation workspace must use the canonical capability header',
+    )
+    require('minio-capability-registry' in minio_capability_registry, 'MinIO capability registry is missing')
+    require('capability_per_page' in minio_capability_registry, 'MinIO capability registry pagination is missing')
+    require(
+        'hx-target="#minio-capability-registry"' in minio_capability_registry,
+        'MinIO capability registry must paginate through HTMX',
+    )
+    require(
+        'integrations/partials/_runtime_history.html' in minio_runtime,
+        'MinIO runtime history must reuse the canonical runtime-history workspace',
+    )
+    require('runtime_history_filters_enabled=true' in minio_runtime, 'MinIO runtime history filters must be enabled')
+    require('minio-binding-registry' in minio_binding_registry, 'MinIO consumer binding registry is missing')
+    require('binding_per_page' in minio_binding_registry, 'MinIO consumer binding pagination is missing')
+    require(
+        'hx-target="#minio-binding-registry"' in minio_binding_registry,
+        'MinIO consumer binding registry must paginate through HTMX',
+    )
+    require(
+        "@minio_bp.get('/instances/<int:instance_id>/capabilities/registry')" in minio_routes,
+        'MinIO capability HTMX endpoint is missing',
+    )
+    require(
+        "@minio_bp.get('/instances/<int:instance_id>/runtime/history')" in minio_routes,
+        'MinIO runtime history HTMX endpoint is missing',
+    )
+    require(
+        "@minio_bp.get('/instances/<int:instance_id>/bindings/registry')" in minio_routes,
+        'MinIO binding registry HTMX endpoint is missing',
+    )
     require('Refresh Runtime' in minio_runtime, 'MinIO manual runtime refresh is missing')
     require("url_for('minio.refresh_runtime'" in minio_runtime, 'MinIO runtime refresh route wiring is missing')
     require(

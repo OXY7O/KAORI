@@ -78,6 +78,24 @@ def test_minio_prometheus_metrics_plane_reuses_canonical_asset_binding() -> None
     assert "BindingProbe('minio_bucket_usage_total_bytes'" in registration
 
 
+def test_minio_owner_relationship_is_not_a_consumer_self_binding() -> None:
+    service = read('app/minio/service.py')
+    adapter = read('app/integrations/minio/adapter.py')
+    registration = read('app/integrations/minio/__init__.py')
+    presentation = read('app/minio/presentation.py')
+    cleanup = read('migrations/versions/20260812_remove_minio_owner_self_binding.py')
+
+    assert 'ensure_primary_asset_binding' not in service
+    assert "'binding.create'" not in registration
+    assert "'binding.validate'" not in registration
+    assert "IntegrationInstance.provider_type.in_(('prometheus', 'alertmanager'))" in presentation
+    assert 'Native Provider Contract' not in presentation
+    assert 'DELETE FROM integration_bindings' in cleanup
+    assert "ii.provider_type = 'minio'" in cleanup
+    assert "if operation == 'binding.create'" not in adapter
+    assert "if operation == 'binding.validate'" not in adapter
+
+
 def test_validation_admission_and_runtime_monitoring_are_provider_generic() -> None:
     validation_web = read('app/integrations/validation/web.py')
     monitoring = read('app/integrations/runtime/monitoring.py')
@@ -119,7 +137,7 @@ def test_minio_workspace_is_nested_under_integrations_storage() -> None:
     assert 'Integration Coverage' in tabs
     assert 'Connection Registry' in tabs
     assert 'framed_workspace_tabs.render' in detail
-    assert 'Core Validation' in detail
+    assert 'Validation & Capabilities' in detail
     assert 'Bindings & Lifecycle' in detail
 
 

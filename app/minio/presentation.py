@@ -3,13 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from app.common.pagination import paginate_sequence
 from app.common.presentation import present_user_datetime
 from app.integrations.alertmanager.binding_profiles import get_alert_consumer_profile
 from app.integrations.deletion import asset_owner_deletion_guard
+from app.integrations.minio.capabilities import API_CAPABILITIES, CAPABILITY_PROFILE
 from app.integrations.prometheus.binding_profiles import get_binding_validation_profile
 from app.integrations.registry import get_integration
-from app.integrations.runtime.presentation import runtime_observation_state_view
-from app.integrations.runtime.repository import list_runtime_history
+from app.integrations.runtime.presentation import runtime_history_view, runtime_observation_state_view
+from app.integrations.runtime.repository import paginate_runtime_history
 from app.minio.service import (
     alert_source_for_binding,
     current_alert_binding,
@@ -36,6 +38,22 @@ class MinioIndexQuery:
     coverage_per_page: int = 5
 
 
+@dataclass(frozen=True, slots=True)
+class MinioDetailQuery:
+    capability_query: str = ''
+    capability_requirement: str = ''
+    capability_status: str = ''
+    capability_page: int = 1
+    capability_per_page: int = 5
+    binding_page: int = 1
+    binding_per_page: int = 5
+    history_page: int = 1
+    history_per_page: int = 5
+    history_trigger: str = ''
+    history_health: str = ''
+    history_readiness: str = ''
+
+
 def build_index_context(query: MinioIndexQuery | None = None) -> dict[str, Any]:
     query = query or MinioIndexQuery()
     instances = (
@@ -54,15 +72,7 @@ def build_index_context(query: MinioIndexQuery | None = None) -> dict[str, Any]:
         alert_source = alert_source_for_binding(alert_binding)
         metrics_status = _source_binding_status(metrics_source, metrics_binding)
         alert_status = _source_binding_status(alert_source, alert_binding)
-        own_binding_count = len(
-            [
-                binding
-                for binding in instance.integration_instance.bindings
-                if binding.asset_type == 'object_storage_system'
-                and binding.asset_key == instance.object_storage_system_id
-            ]
-        )
-        binding_count = own_binding_count + int(metrics_binding is not None) + int(alert_binding is not None)
+        binding_count = int(metrics_binding is not None) + int(alert_binding is not None)
         total_bindings += binding_count
         metrics_bound += int(metrics_binding is not None)
         alerts_bound += int(alert_binding is not None)
@@ -228,47 +238,60 @@ def _filter_coverage_rows(
     return filtered
 
 
-def build_detail_context(instance: MinioInstance) -> dict[str, Any]:
+def build_detail_context(
+    instance: MinioInstance,
+    query: MinioDetailQuery | None = None,
+) -> dict[str, Any]:
+    query = query or MinioDetailQuery()
     metrics_binding = current_metrics_binding(instance)
     metrics_source = metrics_source_for_binding(metrics_binding)
     alert_binding = current_alert_binding(instance)
     alert_source = alert_source_for_binding(alert_binding)
-    runtime_history = list_runtime_history('minio', str(instance.id), limit=5)
-    latest_runtime = runtime_history[0] if runtime_history else None
+
+    runtime_rows, runtime_pagination = paginate_runtime_history(
+        'minio',
+        str(instance.id),
+        page=query.history_page,
+        per_page=query.history_per_page,
+        trigger_type=query.history_trigger,
+        health_status=query.history_health,
+        readiness=query.history_readiness,
+    )
+    latest_rows, _latest_pagination = paginate_runtime_history(
+        'minio',
+        str(instance.id),
+        page=1,
+        per_page=5,
+    )
+    latest_runtime = latest_rows[0] if latest_rows else None
     runtime_state = runtime_observation_state_view(
         latest_runtime,
         fallback_readiness=instance.readiness_status or 'validation_required',
         fallback_compatibility_profile=instance.compatibility_profile,
         fallback_capabilities=tuple(instance.capabilities or ()),
     )
-    own_binding = next(
-        (
-            item
-            for item in instance.integration_instance.bindings
-            if item.asset_type == 'object_storage_system'
-            and item.asset_key == instance.object_storage_system_id
-            and item.integration_instance_id == instance.integration_instance_id
-        ),
-        None,
+
+    all_binding_rows = _asset_binding_rows(instance)
+    binding_rows, binding_pagination = paginate_sequence(
+        all_binding_rows,
+        page=query.binding_page,
+        per_page=query.binding_per_page,
     )
-    binding_rows = _asset_binding_rows(instance)
+    capability_registry = build_minio_capability_registry(
+        instance,
+        query=query.capability_query,
+        requirement=query.capability_requirement,
+        status=query.capability_status,
+        page=query.capability_page,
+        per_page=query.capability_per_page,
+    )
+
     return {
         'instance': instance,
         'asset': instance.object_storage_system,
         'canonical': instance.integration_instance,
         'runtime_state': runtime_state,
-        'runtime_history': [
-            {
-                'observed_at_display': present_user_datetime(row.observed_at, empty='Unknown', include_seconds=True),
-                'readiness': row.readiness or 'validation_required',
-                'health_status': row.health_status or 'not_observed',
-                'health_score': row.health_score,
-                'latency_ms': row.latency_ms,
-                'message': row.message or '',
-            }
-            for row in runtime_history
-        ],
-        'api_binding': own_binding,
+        'runtime_history': runtime_history_view(runtime_rows, pagination=runtime_pagination),
         'metrics_binding': metrics_binding,
         'metrics_source': metrics_source,
         'metrics_status': _source_binding_status(metrics_source, metrics_binding),
@@ -276,6 +299,9 @@ def build_detail_context(instance: MinioInstance) -> dict[str, Any]:
         'alert_source': alert_source,
         'alert_status': _source_binding_status(alert_source, alert_binding),
         'binding_rows': binding_rows,
+        'binding_total': len(all_binding_rows),
+        'binding_pagination': binding_pagination,
+        'capability_registry': capability_registry,
         'validated_at_display': present_user_datetime(instance.last_validated_at, empty='Not validated'),
         'checked_at_display': present_user_datetime(instance.last_checked_at, empty='Not observed'),
         'bucket_count': int((instance.validation_summary or {}).get('bucket_count') or 0),
@@ -289,6 +315,69 @@ def build_detail_context(instance: MinioInstance) -> dict[str, Any]:
     }
 
 
+def build_minio_capability_registry(
+    instance: MinioInstance,
+    *,
+    query: str = '',
+    requirement: str = '',
+    status: str = '',
+    page: int = 1,
+    per_page: int = 5,
+) -> dict[str, Any]:
+    observed = set(instance.capabilities or ())
+    rows: list[dict[str, Any]] = []
+    for definition in API_CAPABILITIES:
+        row_status = 'ready' if definition.key in observed else 'blocked'
+        rows.append(
+            {
+                'key': definition.key,
+                'label': definition.label,
+                'description': definition.description,
+                'required': bool(definition.required),
+                'requirement_label': 'Required' if definition.required else 'Optional',
+                'status': row_status,
+                'contract': CAPABILITY_PROFILE,
+            }
+        )
+
+    normalized_query = str(query or '').strip().lower()
+    normalized_requirement = str(requirement or '').strip().lower()
+    normalized_status = str(status or '').strip().lower()
+    if normalized_query:
+        rows = [
+            row
+            for row in rows
+            if normalized_query
+            in ' '.join(
+                str(value or '') for value in (row['key'], row['label'], row['description'], row['contract'])
+            ).lower()
+        ]
+    if normalized_requirement in {'required', 'optional'}:
+        want_required = normalized_requirement == 'required'
+        rows = [row for row in rows if row['required'] is want_required]
+    else:
+        normalized_requirement = ''
+    if normalized_status in {'ready', 'blocked'}:
+        rows = [row for row in rows if row['status'] == normalized_status]
+    else:
+        normalized_status = ''
+
+    page_rows, pagination = paginate_sequence(rows, page=page, per_page=per_page)
+    return {
+        'rows': page_rows,
+        'pagination': pagination,
+        'filters': {
+            'query': normalized_query,
+            'requirement': normalized_requirement,
+            'status': normalized_status,
+        },
+        'total_contracts': len(API_CAPABILITIES),
+        'ready_count': len(observed.intersection({item.key for item in API_CAPABILITIES})),
+        'required_count': sum(1 for item in API_CAPABILITIES if item.required),
+        'optional_count': sum(1 for item in API_CAPABILITIES if not item.required),
+    }
+
+
 def _asset_binding_rows(instance: MinioInstance) -> list[dict[str, Any]]:
     rows = (
         IntegrationBinding.query.join(IntegrationInstance)
@@ -296,6 +385,7 @@ def _asset_binding_rows(instance: MinioInstance) -> list[dict[str, Any]]:
             IntegrationBinding.asset_type == 'object_storage_system',
             IntegrationBinding.asset_key == instance.object_storage_system_id,
             IntegrationBinding.enabled.is_(True),
+            IntegrationInstance.provider_type.in_(('prometheus', 'alertmanager')),
         )
         .order_by(
             IntegrationInstance.provider_type.asc(), IntegrationBinding.priority.asc(), IntegrationBinding.id.asc()
@@ -314,7 +404,7 @@ def _asset_binding_rows(instance: MinioInstance) -> list[dict[str, Any]]:
             profile = get_alert_consumer_profile(binding.asset_type)
             profile_label = profile.label if profile is not None else binding.validation_profile
         else:
-            profile_label = 'Native Provider Contract'
+            continue
         result.append(
             {
                 'binding': binding,

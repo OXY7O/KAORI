@@ -2,48 +2,7 @@
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 <div id="bindings" class="space-y-4 font-sans">
-    <section class="{{ integration_ui.section_shell_classes() }}">
-        {{ integration_ui.section_header("waypoints", "Consumer Binding Registry", "Review all provider-to-asset associations first, then configure metrics and alert consumers independently.", eyebrow="Consumer Resolution") }}
-        {% if binding_rows %}
-            <div class="overflow-x-auto">
-                <table class="min-w-[980px] w-full text-left text-sm">
-                    <thead class="border-b border-outline-subtle bg-surface-hover text-xs uppercase tracking-wide text-content-muted">
-                        <tr>
-                            <th class="px-5 py-3 font-semibold sm:px-6">Provider Source</th>
-                            <th class="px-4 py-3 font-semibold">Provider Role</th>
-                            <th class="px-4 py-3 font-semibold">Consumer Profile</th>
-                            <th class="px-4 py-3 font-semibold">Validation</th>
-                            <th class="px-5 py-3 font-semibold sm:px-6">Evidence</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-outline-subtle">
-                        {% for row in binding_rows %}
-                            <tr class="bg-surface-card">
-                                <td class="px-5 py-4 sm:px-6">
-                                    <p class="font-semibold text-content-primary">{{ row.source_name }}</p>
-                                    <p class="mt-1 text-xs text-content-muted">{{ row.provider_label }}</p>
-                                </td>
-                                <td class="px-4 py-4 text-content-secondary">{{ row.binding.binding_role|title }} · Priority {{ row.binding.priority }}</td>
-                                <td class="px-4 py-4">
-                                    <p class="font-semibold text-content-primary">{{ row.profile_label }}</p>
-                                    <p class="mt-1 text-xs text-content-muted">{{ row.binding.validation_profile or "Provider-native contract" }}</p>
-                                </td>
-                                <td class="px-4 py-4">{{ integration_status(row.validation_status, row.validation_status|replace("_", " ") |title, display="indicator") }}</td>
-                                <td class="px-5 py-4 text-xs leading-5 text-content-secondary sm:px-6">{{ row.validation_message }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <div class="p-5 sm:p-6">
-                <div class="rounded-xl border border-outline-subtle bg-surface-hover p-5">
-                    <p class="text-sm font-semibold text-content-primary">No Consumer Bindings Yet</p>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">The MinIO API connection may be validated independently. Add metrics or alert consumer sources only when this object-storage asset requires them.</p>
-                </div>
-            </div>
-        {% endif %}
-    </section>
+    {% include "minio/partials/_binding_registry.html" %}
     <section id="metrics-binding"
              class="{{ integration_ui.section_shell_classes() }}">
         {{ integration_ui.section_header("activity", "Prometheus Metrics Consumer", "Bind a reusable Prometheus connection and validate the object-storage metric stream with minio-metrics-2024-v1.", eyebrow="Metrics Binding") }}
@@ -229,8 +188,8 @@
             </article>
             <article class="bg-surface-card p-5">
                 <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Asset Bindings</p>
-                <p class="mt-2 text-2xl font-semibold tabular-nums text-content-primary">{{ binding_rows|length }}</p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Native API, Prometheus metrics, and Alertmanager alert associations targeting this asset.</p>
+                <p class="mt-2 text-2xl font-semibold tabular-nums text-content-primary">{{ binding_total }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Prometheus metrics and Alertmanager alert consumer bindings targeting this asset.</p>
             </article>
             <article class="bg-surface-card p-5">
                 <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Deletion Guard</p>
