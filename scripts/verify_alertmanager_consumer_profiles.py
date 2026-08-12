@@ -64,14 +64,14 @@ def main() -> int:
     assert 'Integration Coverage' in provider_tabs
     assert 'Connection Registry' in provider_tabs
     assert 'Core Validation' in minio_detail
-    assert 'Bindings & Consumers' in minio_detail
+    assert 'Bindings & Lifecycle' in minio_detail
 
     assert 'kubernetes-alerts-v1' in alertmanager_readme
     assert 'minio-alerts-v1' in alertmanager_readme
     assert 'Consumer alert contracts are binding-scoped.' in compatibility_doc
     assert 'Alertmanager consumer-profile boundary' in module_map
     assert 'Alertmanager provider validation is consumer-neutral' in workspace_standard
-    assert 'MinIO uses the same provider workspace hierarchy as Prometheus and Alertmanager.' in workspace_standard
+    assert 'MinIO mirrors Kubernetes as an asset-owner provider' in workspace_standard
 
     print('PASS — Alertmanager provider readiness is consumer-neutral and alert consumers are binding-scoped.')
     return 0

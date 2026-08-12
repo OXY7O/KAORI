@@ -1,4 +1,5 @@
 # Changelog
+- Aligned MinIO with Kubernetes asset-owner lifecycle semantics: reusable configuration/edit flow, Core Validation, manual Runtime Refresh, governed Prometheus/Alertmanager consumer bindings, guarded Delete Connection, and retained shared observability sources/history.
 - Unified provider registration action footers on one embedded gate-state component: Test Connection readiness now renders as a compact status surface, Cancel/Register actions share one responsive geometry, and verified state enables the canonical primary CTA across Kubernetes, Prometheus, Alertmanager, and MinIO.
 - Standardized provider registration field labels, placeholders, Cancel actions, and helper-text density across Kubernetes, Prometheus, Alertmanager, and MinIO; hardened MinIO connection-test diagnostics and separated S3 reachability from product-identity Core Validation.
 - Simplified provider connection right rails to one shared Flow + Related Operational Workspace contract and fixed Kubernetes front-page typing/overview regressions detected by Pyright.
@@ -24,6 +25,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Repaired Integration domain route ownership so Flask application boot and `flask db upgrade` import `build_integration_domain_page` directly from `domain_service` instead of a removed `service.py` re-export.
 
 ### Changed
+- Aligned MinIO provider details with the Kubernetes asset-owner lifecycle: `object_storage_system` configuration is editable without recreating consumer bindings, runtime health refresh is operation-scoped, and `Bindings & Lifecycle` owns guarded deletion of the MinIO asset plus its asset-scoped Prometheus/Alertmanager bindings while retaining reusable observability source connections and historical evidence.
 - Unified provider registration action footers on one embedded gate-state component: Test Connection readiness now renders as a compact status surface, Cancel/Register actions share one responsive geometry, and verified state enables the canonical primary CTA across Kubernetes, Prometheus, Alertmanager, and MinIO.
 - Standardized provider front pages across Kubernetes, Prometheus, Alertmanager, and MinIO with shared overview geometry and framed Coverage/Registry tabs while preserving provider-specific evidence inside those tabs.
 - Generalized Alertmanager around consumer-neutral Core Validation and asset-scoped alert Consumer Profiles, including `kubernetes-alerts-v1` and `minio-alerts-v1`, so shared Alertmanager instances can segregate Kubernetes, MinIO, and future alert streams by binding selector without false provider degradation.

@@ -4,17 +4,21 @@ import json
 import logging
 
 from celery.exceptions import CeleryError
-from flask import Blueprint, abort, make_response, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from kombu.exceptions import OperationalError as KombuOperationalError
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.integrations.deletion import DeletionBlocked
 from app.integrations.minio.client import MinioConnectionError
 from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
 from app.integrations.validation.web import (
     enqueue_binding_validation,
     enqueue_instance_validation,
+    enqueue_runtime_health_refresh,
+    snapshot_feedback_for_user,
+    validate_snapshot_access,
 )
 from app.minio.forms import MinioAlertBindingForm, MinioInstanceForm, MinioMetricsBindingForm
 from app.minio.presentation import MinioIndexQuery, build_detail_context, build_index_context
@@ -27,11 +31,13 @@ from app.minio.service import (
     create_minio_instance,
     current_alert_binding,
     current_metrics_binding,
+    delete_minio_instance,
     metrics_source_for_binding,
     prometheus_choices,
     remove_alert_binding,
     remove_metrics_binding,
     test_minio_connection,
+    update_minio_instance,
 )
 from app.models.minio import MinioInstance
 from app.notifications.service import get_navigation_notification_context, record_operational_activity
@@ -236,6 +242,109 @@ def test_new_instance_connection() -> ResponseReturnValue:
     return response
 
 
+@minio_bp.route('/instances/<int:instance_id>/edit', methods=['GET', 'POST'])
+@permission_required('settings.manage_integrations')
+def edit_instance(instance_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    form = MinioInstanceForm(obj=instance, existing_instance=instance)
+    if request.method == 'GET':
+        form.secret_key.data = ''
+
+    if form.validate_on_submit():
+        try:
+            updated = update_minio_instance(instance, form.to_input(existing_instance=instance))
+        except (CredentialEncryptionError, SQLAlchemyError, ValueError) as exc:
+            logger.exception('Could not update MinIO connection %s.', instance_id)
+            _queue_feedback(
+                event_type='minio_provider_update_failed',
+                status='error',
+                title='MinIO Connection Not Updated',
+                message=f'KAORI could not update {instance.name}.',
+                detail=str(exc),
+                action_url=url_for('minio.edit_instance', instance_id=instance.id),
+            )
+        else:
+            _queue_feedback(
+                event_type='minio_provider_updated',
+                status='success',
+                title='MinIO Connection Updated',
+                message=f'{updated.name} configuration was saved.',
+                detail='Connection-sensitive changes reset provider readiness. Run Core Validation before using the updated MinIO connection operationally.',
+                action_url=url_for('minio.instance_detail', instance_id=updated.id, _anchor='configuration'),
+            )
+            return redirect(url_for('minio.instance_detail', instance_id=updated.id, _anchor='configuration'))
+
+    return render_template(
+        'minio/instance_form.html',
+        form=form,
+        instance=instance,
+        registration_proof='',
+        notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
+    )
+
+
+@minio_bp.post('/instances/<int:instance_id>/test-configuration')
+@permission_required('settings.manage_integrations')
+def test_instance_configuration(instance_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    form = MinioInstanceForm(existing_instance=instance)
+    if not form.validate_on_submit():
+        feedback = record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='minio_configuration_test_failed',
+            status='error',
+            title='MinIO configuration test failed',
+            message='Review the submitted MinIO connection fields before testing this configuration.',
+            detail='The submitted form did not satisfy the MinIO connection contract.',
+            action_url=url_for('minio.edit_instance', instance_id=instance.id),
+            action_label='Review MinIO configuration',
+            action_icon='settings-2',
+            metadata={'fields': sorted(form.errors), 'instance_id': instance.id},
+            queue_feedback=False,
+        )
+    else:
+        values = form.to_input(existing_instance=instance)
+        try:
+            result = test_minio_connection(values)
+        except (MinioConnectionError, ValueError) as exc:
+            feedback = record_operational_activity(
+                user_id=int(current_user.id),
+                event_type='minio_configuration_test_failed',
+                status='error',
+                title='MinIO configuration test failed',
+                message=str(exc),
+                detail='Review the MinIO S3 API endpoint, credentials, TLS trust, and required read-only discovery permissions.',
+                action_url=url_for('minio.edit_instance', instance_id=instance.id),
+                action_label='Review MinIO configuration',
+                action_icon='settings-2',
+                metadata={'instance_id': instance.id},
+                queue_feedback=False,
+            )
+        else:
+            feedback = record_operational_activity(
+                user_id=int(current_user.id),
+                event_type='minio_configuration_test',
+                status='success',
+                title='MinIO configuration reachable',
+                message='KAORI reached the submitted MinIO S3 API endpoint with the effective credential.',
+                detail=f'S3 API returned {result.bucket_count} visible bucket(s) in {result.latency_ms} ms. Save changes, then run Core Validation.',
+                action_url=url_for('minio.edit_instance', instance_id=instance.id),
+                action_label='Review MinIO configuration',
+                action_icon='settings-2',
+                metadata={
+                    'instance_id': instance.id,
+                    'bucket_count': result.bucket_count,
+                    'latency_ms': result.latency_ms,
+                },
+                queue_feedback=False,
+            )
+    return render_template(
+        'minio/partials/_connection_test_result.html',
+        connection_feedback=feedback,
+        notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
+    )
+
+
 @minio_bp.get('/instances/<int:instance_id>')
 @permission_required('settings.manage_integrations')
 def instance_detail(instance_id: int) -> ResponseReturnValue:
@@ -248,6 +357,11 @@ def instance_detail(instance_id: int) -> ResponseReturnValue:
     validation_task_id = get_active_validation_task_id(
         provider_type='minio',
         operation='full_validation',
+        instance_id=instance.id,
+    )
+    runtime_task_id = get_active_validation_task_id(
+        provider_type='minio',
+        operation='runtime_refresh',
         instance_id=instance.id,
     )
     metrics_binding = current_metrics_binding(instance)
@@ -282,6 +396,7 @@ def instance_detail(instance_id: int) -> ResponseReturnValue:
         binding_form=binding_form,
         alert_binding_form=alert_binding_form,
         validation_job=build_validation_snapshot(validation_task_id) if validation_task_id else None,
+        runtime_refresh_job=build_validation_snapshot(runtime_task_id) if runtime_task_id else None,
         binding_validation_job=binding_job,
         alert_binding_validation_job=alert_binding_job,
         notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
@@ -319,6 +434,82 @@ def validate_instance(instance_id: int) -> ResponseReturnValue:
             action_url=url_for('minio.instance_detail', instance_id=instance.id),
         )
     return redirect(url_for('minio.instance_detail', instance_id=instance.id, _anchor='validation'))
+
+
+@minio_bp.post('/instances/<int:instance_id>/runtime/refresh')
+@permission_required('settings.manage_integrations')
+def refresh_runtime(instance_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    try:
+        runtime_refresh_job, created = enqueue_runtime_health_refresh(
+            provider_type='minio',
+            instance_id=instance.id,
+            requested_by_user_id=int(current_user.id),
+        )
+        feedback = record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='minio_runtime_refresh_queued' if created else 'minio_runtime_refresh_already_running',
+            status='info' if created else 'warning',
+            title='MinIO Runtime Refresh Queued' if created else 'MinIO Runtime Refresh Already Running',
+            message=(
+                f'KAORI queued a lightweight runtime refresh for {instance.name}.'
+                if created
+                else f'A runtime refresh is already running for {instance.name}.'
+            ),
+            detail=(
+                'The runtime worker will refresh MinIO endpoint health without rebuilding consumer binding evidence.'
+                if created
+                else 'KAORI kept the active task and did not enqueue a duplicate.'
+            ),
+            action_url=url_for('minio.instance_detail', instance_id=instance.id, _anchor='runtime'),
+            action_label='Review MinIO runtime',
+            action_icon='activity',
+            metadata={
+                'task_id': runtime_refresh_job.get('task_id'),
+                'instance_id': instance.id,
+                'queue': current_app.config.get('INTEGRATION_RUNTIME_CELERY_QUEUE', 'integration-runtime'),
+            },
+            queue_feedback=request.headers.get('HX-Request') != 'true',
+        )
+    except (CeleryError, KombuOperationalError, OSError, RuntimeError, SQLAlchemyError, ValueError) as exc:
+        logger.exception('Could not enqueue MinIO runtime refresh for %s.', instance_id)
+        runtime_refresh_job = None
+        feedback = record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='minio_runtime_refresh_enqueue_failed',
+            status='error',
+            title='MinIO Runtime Refresh Not Queued',
+            message=f'KAORI could not queue runtime health refresh for {instance.name}.',
+            detail='Verify Redis, the Celery broker, and the integration-runtime worker before retrying.',
+            action_url=url_for('minio.instance_detail', instance_id=instance.id, _anchor='runtime'),
+            action_label='Review MinIO runtime',
+            action_icon='activity',
+            metadata={'instance_id': instance.id, 'reason': type(exc).__name__},
+            queue_feedback=request.headers.get('HX-Request') != 'true',
+        )
+    if request.headers.get('HX-Request') == 'true':
+        context = build_detail_context(instance)
+        context.update(
+            runtime_refresh_job=runtime_refresh_job,
+            operation_feedback=feedback,
+        )
+        return render_template('minio/partials/_detail_runtime.html', **context)
+    return redirect(url_for('minio.instance_detail', instance_id=instance.id, _anchor='runtime'))
+
+
+@minio_bp.get('/instances/<int:instance_id>/runtime/refresh/status/<string:task_id>')
+@permission_required('settings.manage_integrations')
+def runtime_refresh_status(instance_id: int, task_id: str) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    snapshot = build_validation_snapshot(task_id)
+    if not validate_snapshot_access(snapshot, provider_type='minio', instance_id=instance.id):
+        abort(404)
+    context = build_detail_context(instance)
+    context.update(
+        runtime_refresh_job=snapshot,
+        operation_feedback=snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
+    )
+    return render_template('minio/partials/_detail_runtime.html', **context)
 
 
 @minio_bp.post('/instances/<int:instance_id>/metrics-binding')
@@ -545,3 +736,53 @@ def delete_alert_binding(instance_id: int) -> ResponseReturnValue:
         action_url=url_for('minio.instance_detail', instance_id=instance.id, _anchor='scope'),
     )
     return redirect(url_for('minio.instance_detail', instance_id=instance.id, _anchor='scope'))
+
+
+@minio_bp.post('/instances/<int:instance_id>/delete')
+@permission_required('settings.manage_integrations')
+def delete_instance(instance_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    instance_name = instance.name
+    asset_name = instance.object_storage_system.name
+    try:
+        summary = delete_minio_instance(instance)
+    except DeletionBlocked as exc:
+        logger.warning('MinIO deletion blocked for %s: %s', instance_id, exc)
+        _queue_feedback(
+            event_type='minio_instance_delete_rejected',
+            status='warning',
+            title='MinIO Connection Deletion Blocked',
+            message=f'{instance_name} still has active operational dependencies.',
+            detail=str(exc),
+            action_url=url_for('minio.instance_detail', instance_id=instance_id, _anchor='scope'),
+        )
+        return redirect(url_for('minio.instance_detail', instance_id=instance_id, _anchor='scope'))
+    except SQLAlchemyError:
+        logger.exception('MinIO instance deletion failed for %s.', instance_id)
+        _queue_feedback(
+            event_type='minio_instance_delete_failed',
+            status='error',
+            title='MinIO Connection Not Deleted',
+            message=f'KAORI could not delete {instance_name}.',
+            detail='Review database connectivity and dependent records before retrying the deletion.',
+            action_url=url_for('minio.instance_detail', instance_id=instance_id, _anchor='scope'),
+        )
+        return redirect(url_for('minio.instance_detail', instance_id=instance_id, _anchor='scope'))
+
+    record_operational_activity(
+        user_id=int(current_user.id),
+        event_type='minio_instance_deleted',
+        status='success',
+        title='MinIO Connection Deleted',
+        message=f'{instance_name} and its object-storage asset were removed from KAORI.',
+        detail=(
+            f'Removed {summary["asset_bindings"]} asset-scoped binding(s) for {asset_name}. '
+            'Reusable Prometheus and Alertmanager source connections remain registered; runtime history and Activity Audit evidence are retained.'
+        ),
+        action_url=url_for('minio.index', tab='registry'),
+        action_label='Open MinIO Registry',
+        action_icon='database',
+        metadata={'instance_name': instance_name, 'asset_name': asset_name, **summary},
+        queue_feedback=True,
+    )
+    return redirect(url_for('minio.index', tab='registry'))

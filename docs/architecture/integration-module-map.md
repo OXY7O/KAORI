@@ -185,11 +185,15 @@ changes only the affected binding.
 ### Provider workspace alignment
 
 Kubernetes, Prometheus, Alertmanager, and MinIO follow the same provider interaction
-model: Integration overview, Connection Registry, Register Connection, Connection
-Configuration, Core Validation, Runtime & History, and Bindings & Consumers.
-Provider-specific API fields, compatibility evidence, and consumer contracts may
-differ, but the Hero semantics, connection terminology, readiness boundaries, tab
-hierarchy, and empty/populated registry states must not drift per provider.
+model for front pages, registration, Configuration, Core Validation, and Runtime &
+History. Asset-owner providers use a lifecycle-oriented final workspace: Kubernetes
+owns the managed cluster lifecycle and MinIO owns the canonical `object_storage_system`
+lifecycle, while Prometheus and Alertmanager remain reusable shared-source providers.
+MinIO therefore exposes `Bindings & Lifecycle` so Prometheus metrics and Alertmanager
+alert bindings are governed around the object-storage asset without coupling or
+deleting those reusable source connections. Provider-specific API fields and
+consumer contracts may differ, but Hero semantics, connection terminology, readiness
+boundaries, and empty/populated registry states must not drift per provider.
 
 ## Worker ownership
 

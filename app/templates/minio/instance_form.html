@@ -1,36 +1,78 @@
 {% extends "layouts/app.html" %}
 {% import "components/operational_toggle.html" as operational_toggle %}
 {% import "components/operational_callout.html" as operational_callout %}
+{% import "components/form_action_bar.html" as form_action_bar %}
+{% import "components/action_button.html" as action_button %}
+{% import "components/page_hero.html" as page_hero %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "integrations/components/_provider_registration_hero.html" as provider_registration_hero %}
 {% import "integrations/components/_provider_registration_context.html" as provider_registration_context %}
 {% import "integrations/components/_provider_registration_actions.html" as provider_registration_actions %}
-{% block title %}Register MinIO Connection · KAORI{% endblock title %}
+{% block title %}{{ "Edit" if instance is defined and instance else "Register" }} MinIO Connection · KAORI{% endblock title %}
 {% block dashboard_content %}
     <div id="minio-registration-workspace"
          class="kaori-integration-semantic space-y-6">
-        {{ provider_registration_hero.render("database",
-                "Object Storage Integration",
-                "database-zap",
-                "Register MinIO Connection",
-                "Create a reusable object-storage API connection before Core Validation and independent metrics or alert consumer bindings.",
-                "database-zap",
-                "MinIO-Compatible S3 API",
-                url_for("minio.index") ,
-        "MinIO connection workflow") }}
-        <form id="minio-registration-form"
+        {% if instance is defined and instance %}
+            <section class="{{ page_hero.shell_classes() }}">
+                <div class="{{ page_hero.layout_classes() }}">
+                    <div class="{{ page_hero.content_classes() }}">
+                        {% call page_hero.intro("database", "Object Storage Integration", "settings-2") %}
+                            <h1 class="{{ page_hero.title_classes() }}">Edit MinIO Connection</h1>
+                            <p class="mt-2 {{ page_hero.description_classes() }}">Update the reusable MinIO API connection contract while preserving the canonical object-storage asset and its consumer bindings.</p>
+                            <div class="{{ page_hero.metadata_row_classes() }}">
+                                {{ page_hero.meta_label('database-zap', 'MinIO-Compatible S3 API') }}
+                                {{ page_hero.meta_label('shield-check', 'Revalidate After Change') }}
+                                {{ page_hero.meta_label('link-2', 'Bindings Preserved') }}
+                            </div>
+                        {% endcall %}
+                    </div>
+                    <aside class="{{ page_hero.aside_classes() }}"
+                           aria-label="MinIO configuration posture">
+                        <div class="{{ page_hero.context_panel_classes() }}">
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="min-w-0">
+                                    <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Configuration Posture</p>
+                                    <h2 class="{{ page_hero.context_panel_title_classes() }}">Preserve Asset, Revalidate Changes</h2>
+                                </div>
+                                {{ integration_status(instance.readiness_status or "validation_required", (instance.readiness_status or "validation_required") |replace("_", " ")|title) }}
+                            </div>
+                            <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                                {{ page_hero.context_metric("fingerprint", "Managed Asset", instance.object_storage_system.name, "Canonical object-storage asset remains stable", value_classes="truncate text-sm font-semibold leading-5") }}
+                                {{ page_hero.context_metric("scan-search", "After Save", "Core Validation", "Refresh provider evidence", value_classes="text-sm font-semibold leading-5") }}
+                            </div>
+                            <a href="{{ url_for('minio.instance_detail', instance_id=instance.id) }}"
+                               class="{{ page_hero.context_single_action_classes() }}">
+                                <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
+                                Back to Connection
+                            </a>
+                        </div>
+                    </aside>
+                </div>
+            </section>
+        {% else %}
+            {{ provider_registration_hero.render("database",
+                        "Object Storage Integration",
+                        "database-zap",
+                        "Register MinIO Connection",
+                        "Create a reusable object-storage API connection before Core Validation and independent metrics or alert consumer bindings.",
+                        "database-zap",
+                        "MinIO-Compatible S3 API",
+                        url_for("minio.index") ,
+            "MinIO connection workflow") }}
+        {% endif %}
+        <form id="minio-instance-form"
               method="post"
               class="grid gap-6 xl:grid-cols-12 xl:items-start"
-              x-data="{ connectionVerified: {{ 'true' if registration_proof else 'false' }}, invalidateConnectionTest(event) { const fieldName = event.target?.name || ''; if (['csrf_token', 'connection_test_proof', 'action'].includes(fieldName)) return; this.connectionVerified = false; this.$refs.connectionProof.value = ''; }, applyConnectionTest(event) { this.connectionVerified = event.detail?.connected === true; this.$refs.connectionProof.value = event.detail?.proof || ''; } }"
-              x-on:input.capture="invalidateConnectionTest($event)"
-              x-on:change.capture="invalidateConnectionTest($event)"
-              x-on:minio-connection-tested.window="applyConnectionTest($event)">
+              {% if not (instance is defined and instance) %}x-data="{ connectionVerified: {{ 'true' if registration_proof else 'false' }}, invalidateConnectionTest(event) { const fieldName = event.target?.name || ''; if (['csrf_token', 'connection_test_proof', 'action'].includes(fieldName)) return; this.connectionVerified = false; this.$refs.connectionProof.value = ''; }, applyConnectionTest(event) { this.connectionVerified = event.detail?.connected === true; this.$refs.connectionProof.value = event.detail?.proof || ''; } }" x-on:input.capture="invalidateConnectionTest($event)" x-on:change.capture="invalidateConnectionTest($event)" x-on:minio-connection-tested.window="applyConnectionTest($event)"{% endif %}>
             {{ form.hidden_tag() }}
-            <input x-ref="connectionProof"
-                   type="hidden"
-                   name="connection_test_proof"
-                   value="{{ registration_proof or '' }}">
+            {% if not (instance is defined and instance) %}
+                <input x-ref="connectionProof"
+                       type="hidden"
+                       name="connection_test_proof"
+                       value="{{ registration_proof or '' }}">
+            {% endif %}
             <section class="{{ integration_ui.section_shell_classes() }} xl:col-span-8">
                 <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                     <div class="flex items-start gap-3">
@@ -38,8 +80,8 @@
                             <i data-lucide="settings-2" class="h-5 w-5" aria-hidden="true"></i>
                         </span>
                         <div>
-                            <h2 class="text-base font-semibold text-content-primary">Connection Configuration</h2>
-                            <p class="mt-1 text-sm leading-6 text-content-secondary">Define connection identity, MinIO S3 API access, compatibility contract, and operational controls.</p>
+                            <h2 class="text-base font-semibold text-content-primary">{{ "MinIO Connection Configuration" if instance is defined and instance else "Connection Configuration" }}</h2>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">{{ "Modify identity, credentials, transport trust, and request controls. Connection-sensitive changes reset readiness until Core Validation completes." if instance is defined and instance else "Define connection identity, MinIO S3 API access, compatibility contract, and operational controls." }}</p>
                         </div>
                     </div>
                 </header>
@@ -75,14 +117,14 @@
                     <section class="relative overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated">
                         {% call connection_validation_header.render(
                             "Endpoint & Access",
-                            "Define MinIO S3 API access and credentials, then verify reachability before registration. Use the S3 API URL, not the Console URL.",
+                            "Define MinIO S3 API access and credentials, then verify reachability before saving. Use the S3 API URL, not the Console URL.",
                             icon="network",
                             loading_id="minio-connection-test-loading",
                             loading_label="Testing MinIO connection"
                             ) %}
                             <button type="button"
-                                    hx-post="{{ url_for('minio.test_new_instance_connection') }}"
-                                    hx-include="#minio-registration-form"
+                                    hx-post="{{ url_for('minio.test_instance_configuration', instance_id=instance.id) if instance is defined and instance else url_for('minio.test_new_instance_connection') }}"
+                                    hx-include="#minio-instance-form"
                                     hx-target="#minio-connection-test-result"
                                     hx-swap="innerHTML"
                                     hx-indicator="#minio-connection-test-loading"
@@ -153,25 +195,47 @@
                         </div>
                     </section>
                 </div>
-                {{ provider_registration_actions.render(url_for('minio.index') ,
-                aria_label='MinIO Connection Actions',
-                register_label='Register Connection',
-                loading_label='Registering Connection...',
-                submit_name='action',
-                submit_value='save'
-                ) }}
+                {% if instance is defined and instance %}
+                    {% call form_action_bar.render("Save changes, then run Core Validation before interpreting provider readiness.", aria_label="MinIO Configuration Actions", embedded=true) %}
+                        <a href="{{ url_for('minio.instance_detail', instance_id=instance.id) }}"
+                           class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary">Cancel</a>
+                        <button type="submit"
+                                class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover">
+                            <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
+                            Save Changes
+                        </button>
+                    {% endcall %}
+                {% else %}
+                    {{ provider_registration_actions.render(url_for('minio.index') ,
+                    aria_label='MinIO Connection Actions',
+                    register_label='Register Connection',
+                    loading_label='Registering Connection...',
+                    submit_name='action',
+                    submit_value='save'
+                    ) }}
+                {% endif %}
             </section>
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
-                {% set minio_flow_items = [('Define Connection Identity', 'Create the reusable KAORI identity for this MinIO endpoint and object-storage asset.'), ('Configure Endpoint Access', 'Set the S3 API endpoint, credentials, TLS behavior, and supported release contract.'), ('Test Connection', 'Verify MinIO identity and API reachability before registration is enabled.'), ('Register Connection', 'Create the provider identity before Core Validation and consumer binding.')] %}
-                {{ provider_registration_context.render("MinIO Registration Flow",
-                                "How a reusable object-storage connection is registered in KAORI.",
+                {% if instance is defined and instance %}
+                    {% set minio_flow_items = [('Review Identity & Environment', 'Keep the canonical object-storage asset stable while updating its connection metadata.'), ('Adjust Endpoint Access', 'Rotate credentials or transport settings only when operationally required.'), ('Test Configuration', 'Verify the submitted S3 transport contract using the effective secret key.'), ('Run Core Validation', 'Rebuild MinIO compatibility and provider capability evidence after saving.')] %}
+                    {% set flow_title = "MinIO Configuration Flow" %}
+                    {% set flow_description = "How connection changes return this object-storage provider to an operationally ready state." %}
+                    {% set flow_note = "Consumer bindings remain attached to the canonical object-storage asset; only provider readiness is reset when connection-sensitive settings change." %}
+                {% else %}
+                    {% set minio_flow_items = [('Define Connection Identity', 'Create the reusable KAORI identity for this MinIO endpoint and object-storage asset.'), ('Configure Endpoint Access', 'Set the S3 API endpoint, credentials, TLS behavior, and supported release contract.'), ('Test Connection', 'Verify MinIO identity and API reachability before registration is enabled.'), ('Register Connection', 'Create the provider identity before Core Validation and consumer binding.')] %}
+                    {% set flow_title = "MinIO Registration Flow" %}
+                    {% set flow_description = "How a reusable object-storage connection is registered in KAORI." %}
+                    {% set flow_note = "Registration proves only the MinIO connection contract; metrics and alerts remain independent consumer bindings." %}
+                {% endif %}
+                {{ provider_registration_context.render(flow_title,
+                                flow_description,
                                 minio_flow_items,
                                 "Storage Integrations",
                                 "MinIO supplies the object-storage API plane while Prometheus metrics and Alertmanager alerts remain independent consumer bindings on the same managed asset.",
                                 url_for("integrations.storage") ,
                 "Open Storage Integrations",
                 flow_icon="workflow",
-                flow_note="Registration proves only the MinIO connection contract; metrics and alerts remain independent consumer bindings.",
+                flow_note=flow_note,
                 related_icon="waypoints",
                 authority_boundary="MinIO remains authoritative for storage state. KAORI owns provider readiness and consumer-binding evidence without copying observability credentials into this connection.") }}
             </aside>

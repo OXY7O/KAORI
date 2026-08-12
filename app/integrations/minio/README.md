@@ -20,7 +20,7 @@ MinIO Integrations
   → Test Connection
   → Core Validation
   → Runtime & History
-  → Bindings & Consumers
+  → Bindings & Lifecycle
 ```
 
 The visual shell, registration terminology, Hero hierarchy, tab structure,
@@ -56,3 +56,32 @@ Prometheus, or Alertmanager provider readiness.
 
 A future S3-compatible provider reuses the same asset/binding model with its own
 compatibility and consumer profiles.
+
+## Asset-owner lifecycle parity
+
+MinIO follows the same managed-asset ownership pattern as Kubernetes. The MinIO
+connection owns one canonical `object_storage_system` asset; Prometheus and
+Alertmanager are reusable sources that may bind to that asset but are never deleted
+with it. The provider detail therefore exposes the same operator lifecycle boundaries:
+
+```text
+Configuration
+  → Configure Connection
+Core Validation
+Runtime & History
+  → Refresh Runtime
+Bindings & Lifecycle
+  → Prometheus metrics binding
+  → Alertmanager alert binding
+  → governed Delete Connection
+```
+
+Deleting the MinIO asset owner removes the MinIO provider identity, the managed
+object-storage asset, and every binding targeting that asset. Shared Prometheus and
+Alertmanager connections remain registered. Active KAORI jobs referencing either the
+MinIO provider or the object-storage asset block deletion until they complete. Runtime
+observation history and Activity Audit records remain retained evidence.
+
+Connection-sensitive configuration changes preserve the canonical object-storage asset
+and its consumer bindings but reset MinIO provider readiness until Core Validation is
+run again.

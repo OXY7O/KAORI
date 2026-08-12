@@ -50,6 +50,14 @@
             syncTab() {
                 this.activeTab = resolveTab()
             },
+            deleteModal: false,
+            deleteUrl: '',
+            deleteName: '',
+            openDelete(url, name) {
+                this.deleteUrl = url || ''
+                this.deleteName = name || ''
+                this.deleteModal = true
+            },
         }
     }
 })()

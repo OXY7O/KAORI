@@ -218,6 +218,49 @@
             </form>
         {% endif %}
     </section>
+    <section id="connection-lifecycle"
+             class="{{ integration_ui.section_shell_classes() }}">
+        {{ integration_ui.section_header("route", "Connection Lifecycle", "Review deletion guardrails for this MinIO registration and its managed object-storage asset.", eyebrow="Lifecycle") }}
+        <div class="grid gap-px bg-outline-subtle md:grid-cols-3">
+            <article class="bg-surface-card p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Managed Asset</p>
+                <p class="mt-2 text-sm font-semibold text-content-primary">{{ asset.name }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Object-storage asset owned by this MinIO API connection.</p>
+            </article>
+            <article class="bg-surface-card p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Asset Bindings</p>
+                <p class="mt-2 text-2xl font-semibold tabular-nums text-content-primary">{{ binding_rows|length }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Native API, Prometheus metrics, and Alertmanager alert associations targeting this asset.</p>
+            </article>
+            <article class="bg-surface-card p-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Deletion Guard</p>
+                <div class="mt-2">{{ integration_status("blocked" if deletion_guard.blocked else "ready", "Blocked" if deletion_guard.blocked else "Clear", display="indicator") }}</div>
+                <p class="mt-2 text-xs leading-5 text-content-secondary">{{ deletion_guard.reasons[0] if deletion_guard.reasons else "No active KAORI job currently blocks deletion." }}</p>
+            </article>
+        </div>
+        <footer class="flex flex-col gap-4 border-t border-outline-subtle bg-surface-card px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                {{ integration_ui.palette_icon("route", "warning" if deletion_guard.blocked else "brand", size="sm") }}
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-content-primary">Next Lifecycle Action</p>
+                    {% if deletion_guard.blocked %}
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Resolve the active dependency before deleting this connection. Shared Prometheus and Alertmanager connections are never deleted with the MinIO asset.</p>
+                    {% else %}
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Deleting this asset owner removes the MinIO registration and every binding targeting this object-storage asset. Shared Prometheus and Alertmanager connections remain reusable.</p>
+                    {% endif %}
+                </div>
+            </div>
+            <button type="button"
+                    data-delete-url="{{ url_for('minio.delete_instance', instance_id=instance.id) }}"
+                    data-delete-name="{{ instance.name }}"
+                    @click="openDelete($el.dataset.deleteUrl, $el.dataset.deleteName)"
+                    {% if deletion_guard.blocked %}disabled{% endif %}
+                    class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-status-critical px-4 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-50">
+                <i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i>
+                Delete Connection
+            </button>
+        </footer>
+    </section>
     <div class="rounded-xl border border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6">
         <div class="flex items-start gap-3">
             {{ integration_ui.palette_icon("shield-check", "brand", size="sm") }}

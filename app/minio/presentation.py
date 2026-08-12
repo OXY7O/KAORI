@@ -5,6 +5,7 @@ from typing import Any
 
 from app.common.presentation import present_user_datetime
 from app.integrations.alertmanager.binding_profiles import get_alert_consumer_profile
+from app.integrations.deletion import asset_owner_deletion_guard
 from app.integrations.prometheus.binding_profiles import get_binding_validation_profile
 from app.integrations.registry import get_integration
 from app.integrations.runtime.presentation import runtime_observation_state_view
@@ -279,6 +280,12 @@ def build_detail_context(instance: MinioInstance) -> dict[str, Any]:
         'checked_at_display': present_user_datetime(instance.last_checked_at, empty='Not observed'),
         'bucket_count': int((instance.validation_summary or {}).get('bucket_count') or 0),
         'capability_count': len(instance.capabilities or ()),
+        'deletion_guard': asset_owner_deletion_guard(
+            provider_type='minio',
+            provider_instance_id=instance.id,
+            asset_type='object_storage_system',
+            asset_key=str(instance.object_storage_system_id),
+        ),
     }
 
 

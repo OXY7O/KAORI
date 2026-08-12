@@ -45,6 +45,31 @@ def provider_active_job_count(*, provider_type: str, provider_instance_id: int) 
     )
 
 
+def asset_owner_active_job_count(
+    *,
+    provider_type: str,
+    provider_instance_id: int,
+    asset_type: str,
+    asset_key: str,
+) -> int:
+    """Count active jobs referencing an asset-owning provider or its managed asset."""
+    return (
+        JobExecution.query.filter(JobExecution.status.in_(ACTIVE_JOB_STATUSES))
+        .filter(
+            or_(
+                (
+                    (JobExecution.provider_type == provider_type)
+                    & (JobExecution.provider_instance_id == provider_instance_id)
+                ),
+                (JobExecution.scope_type == asset_type) & (JobExecution.scope_key == str(asset_key)),
+                JobExecution.resource_group == f'integration:{provider_type}:{provider_instance_id}',
+                JobExecution.resource_group == f'{asset_type}:{asset_key}',
+            )
+        )
+        .count()
+    )
+
+
 def kubernetes_active_job_count(*, connection_id: int, cluster_id: str) -> int:
     return (
         JobExecution.query.filter(JobExecution.status.in_(ACTIVE_JOB_STATUSES))
@@ -77,6 +102,33 @@ def provider_deletion_guard(*, provider_type: str, provider_instance_id: int) ->
     if active_jobs:
         reasons.append(
             f'{active_jobs} active KAORI job(s) still reference this connection. '
+            'Wait for completion or cancel an eligible queued job before deleting it.'
+        )
+    return DeletionGuard(
+        blocked=bool(reasons),
+        reasons=tuple(reasons),
+        active_jobs=active_jobs,
+    )
+
+
+def asset_owner_deletion_guard(
+    *,
+    provider_type: str,
+    provider_instance_id: int,
+    asset_type: str,
+    asset_key: str,
+) -> DeletionGuard:
+    """Guard deletion of a provider that owns one managed operational asset."""
+    active_jobs = asset_owner_active_job_count(
+        provider_type=provider_type,
+        provider_instance_id=provider_instance_id,
+        asset_type=asset_type,
+        asset_key=asset_key,
+    )
+    reasons: list[str] = []
+    if active_jobs:
+        reasons.append(
+            f'{active_jobs} active KAORI job(s) still reference this connection or managed asset. '
             'Wait for completion or cancel an eligible queued job before deleting it.'
         )
     return DeletionGuard(

@@ -1,8 +1,40 @@
+{% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-<div class="space-y-4 font-sans">
+<div id="minio-runtime-panel"
+     class="space-y-4 font-sans"
+     {% if runtime_refresh_job and runtime_refresh_job.is_active %}hx-get="{{ url_for('minio.runtime_refresh_status', instance_id=instance.id, task_id=runtime_refresh_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML"{% endif %}>
     <section class="{{ integration_ui.section_shell_classes() }}">
-        {{ integration_ui.section_header("activity", "Runtime & History", "Review persisted MinIO runtime observations separately from provider Core Validation and consumer-binding evidence.", eyebrow="Runtime Evidence") }}
+        {% call connection_validation_header.render(
+            "Runtime Health & Diagnostics",
+            "Refresh persisted MinIO endpoint health independently from Core Validation and consumer-binding evidence.",
+            icon="activity",
+            loading_id="minio-runtime-loading",
+            loading_active=runtime_refresh_job and runtime_refresh_job.is_active,
+            loading_label="Refreshing MinIO runtime health"
+            ) %}
+            <button type="button"
+                    hx-post="{{ url_for('minio.refresh_runtime', instance_id=instance.id) }}"
+                    hx-target="#minio-runtime-panel"
+                    hx-swap="outerHTML"
+                    hx-disabled-elt="this"
+                    hx-indicator="#minio-runtime-loading"
+                    {% if runtime_refresh_job and runtime_refresh_job.is_active %}disabled{% endif %}
+                    class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-wait disabled:opacity-70">
+                <i data-lucide="{{ 'loader-circle' if runtime_refresh_job and runtime_refresh_job.is_active else 'refresh-cw' }}"
+                   class="h-4 w-4{% if runtime_refresh_job and runtime_refresh_job.is_active %} animate-spin{% endif %}"
+                   aria-hidden="true"></i>
+                {{ 'Refresh Running' if runtime_refresh_job and runtime_refresh_job.is_active else 'Refresh Runtime' }}
+            </button>
+        {% endcall %}
+        {% if runtime_refresh_job and runtime_refresh_job.is_active %}
+            <div class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-subtle px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between">
+                <span class="inline-flex items-center gap-2 font-semibold text-content-primary"><i data-lucide="loader-circle"
+   class="h-3.5 w-3.5 animate-spin text-kaori-primary dark:text-kaori-accent"
+   aria-hidden="true"></i>{{ runtime_refresh_job.title or 'MinIO runtime refresh running' }}</span>
+                <span>Task {{ runtime_refresh_job.task_id[:8] }} · {{ runtime_refresh_job.state_label|title }} · {{ runtime_refresh_job.elapsed_seconds }}s</span>
+            </div>
+        {% endif %}
         <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
             <article class="bg-surface-card p-5">
                 <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Runtime Health</p>
@@ -62,4 +94,5 @@
             </div>
         {% endif %}
     </section>
+    {% include "components/operation_feedback_oob.html" %}
 </div>

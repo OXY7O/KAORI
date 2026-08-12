@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from urllib.parse import urlsplit
 
 from flask_wtf import FlaskForm
@@ -10,8 +11,21 @@ from app.cluster.constants import ENVIRONMENTS
 from app.integrations.minio.compatibility import SUPPORTED_RELEASE
 from app.minio.contracts import MinioAlertBindingInput, MinioMetricsBindingInput, MinioRegistrationInput
 
+if TYPE_CHECKING:
+    from app.models.minio import MinioInstance
+
 
 class MinioInstanceForm(FlaskForm):
+    def __init__(self, *args, existing_instance: MinioInstance | None = None, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.existing_instance = existing_instance
+        if existing_instance is not None:
+            self.secret_key.validators = [Optional(), Length(max=4096)]
+            self.secret_key.render_kw = {
+                **(self.secret_key.render_kw or {}),
+                'placeholder': 'Leave blank to keep the current secret key',
+            }
+
     name = StringField(
         'Connection Name',
         validators=[DataRequired(), Length(min=2, max=160)],
@@ -79,14 +93,17 @@ class MinioInstanceForm(FlaskForm):
         if str(field.data or '').strip() != SUPPORTED_RELEASE:
             raise ValidationError(f'This implementation currently supports {SUPPORTED_RELEASE}.')
 
-    def to_input(self) -> MinioRegistrationInput:
+    def to_input(self, *, existing_instance: MinioInstance | None = None) -> MinioRegistrationInput:
+        current = existing_instance or getattr(self, 'existing_instance', None)
+        submitted_secret = str(self.secret_key.data or '')
+        secret_key = submitted_secret or (str(current.secret_key) if current is not None else '')
         return MinioRegistrationInput(
             name=str(self.name.data or '').strip(),
             environment=str(self.environment.data or '').strip(),
             description=str(self.description.data or '').strip() or None,
             endpoint=str(self.endpoint.data or '').strip().rstrip('/'),
             access_key=str(self.access_key.data or '').strip(),
-            secret_key=str(self.secret_key.data or ''),
+            secret_key=secret_key,
             region=str(self.region.data or 'us-east-1').strip(),
             addressing_style=str(self.addressing_style.data or 'path').strip(),
             timeout=int(self.timeout.data or 5),

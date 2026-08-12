@@ -502,7 +502,7 @@ Prometheus and Alertmanager validation workspaces follow the Kubernetes `Compati
 
 - **Alertmanager provider validation is consumer-neutral.** Provider Core Validation owns Alertmanager product/version compatibility plus Status, Alerts, and Silences API v2 evidence. Kubernetes, MinIO, infrastructure, and future alert payload semantics belong to `IntegrationBinding` consumer profiles such as `kubernetes-alerts-v1` and `minio-alerts-v1`. A non-global binding requires an alert identity selector; missing or malformed consumer evidence may affect that binding but must not mutate Alertmanager provider readiness.
 - **Alertmanager binding tables expose Consumer Profile explicitly.** The registry shows Consumer Asset, Alert Identity, Consumer Profile, role/priority, Binding Validation, Effective Resolution, and Actions. Provider-wide active-alert payload fields are not presented as Core Validation capabilities.
-- **MinIO uses the same provider workspace hierarchy as Prometheus and Alertmanager.** Its list Hero says `MinIO Integrations`, primary action says `Register Connection`, and provider details use `Configuration`, `Core Validation`, `Runtime & History`, and `Bindings & Consumers`. MinIO-specific S3 fields, `minio-metrics-2024-v1`, and `minio-alerts-v1` remain technical content inside that shared shell.
+- **MinIO mirrors Kubernetes as an asset-owner provider while preserving the shared provider shell.** Its list Hero says `MinIO Integrations`, primary action says `Register Connection`, and provider details use `Configuration`, `Core Validation`, `Runtime & History`, and `Bindings & Lifecycle`. The lifecycle workspace owns the canonical `object_storage_system` asset plus its Prometheus metrics and Alertmanager alert consumer bindings; deleting MinIO removes that managed asset and those asset-scoped bindings without deleting the reusable Prometheus or Alertmanager source connections.
 
 - one validation header with the canonical shared loading bar;
 - one horizontal provider capability-readiness surface before the registry;
@@ -572,8 +572,41 @@ Validation and Runtime HTMX responses MUST refresh their framed-tab status badge
 - Registration/configuration right-context ownership is shared by `integrations/components/_provider_registration_context.html`. Provider connection forms render exactly two context surfaces: the provider flow and one `Related Operational Workspace` card. Do not restore separate expandable `Connection Identity & Contract`, `Compatibility Guide`, `After Registration`, or lifecycle cards beside the connection form; those details belong to Configuration, Core Validation, Runtime & History, or Bindings & Consumers after registration.
 - The related workspace points to the provider domain (`Orchestration`, `Observability`, or `Storage`) and keeps the authority boundary concise. Any initial consumer binding created by a registration shortcut is described inside that related-workspace context instead of adding a third side card.
 - `Test Connection` MUST be an HTMX operation with its own loading indicator and signed registration proof; it MUST NOT submit or refresh the entire registration workspace.
-- Registration action bars use the same new-connection contract: `Cancel` + disabled `Register Connection`, with the helper text `Run Test Connection successfully before KAORI enables Register Connection.` Prometheus and Alertmanager MUST NOT omit Cancel or use `Instance` terminology in operator-facing actions.
+- Registration action bars use the shared gated-footer contract: `Connection Test Required` / `Complete Test Connection before registration.` before verification, then `Connection Verified` / `Verified connection payload is ready to register.` after verification, with `Cancel` + `Register Connection`. Prometheus and Alertmanager MUST NOT omit Cancel or use `Instance` terminology in operator-facing actions.
 - Registration identity fields use one wording contract: `Connection Name`, `Environment` when the provider persists environment context, and `Description`. Canonical placeholders are `<Provider> Production` and `Operational purpose and ownership context`. Endpoint placeholders use `https://<provider>.example.internal`; basic-auth usernames use `service-account`; secret fields use action wording such as `Enter password`, `Enter bearer token`, or `Enter secret key`.
 - Keep field-level helper text sparse. Section headers own the explanation for Connection Identity, Endpoint & Access, compatibility, and operational controls. Per-field helper text is reserved for controls whose behavior cannot be expressed by label/placeholder alone (for example kubeconfig replacement behavior). Do not add explanatory mini-cards under ordinary registration fields.
 - MinIO `Test Connection` proves S3 endpoint reachability, request signing, and the read-only discovery permission required by the provider. MinIO product identity and release compatibility are Core Validation evidence. Product identity may use MinIO deployment/server headers or the unauthenticated `/minio/health/live` probe so a reverse proxy that strips response headers does not create a false registration failure.
 - Provider-specific fields may differ, but MinIO, Prometheus, Alertmanager, and Kubernetes must keep the same visual and interaction hierarchy.
+
+
+### Asset-owner provider lifecycle
+
+Kubernetes and MinIO are asset-owning providers. Their detail workspaces use the same
+operator lifecycle model even though the technical evidence differs:
+
+```text
+Configuration
+  → managed provider connection contract
+  → Configure Connection
+Validation / Capabilities
+Runtime & History
+  → operation-scoped Runtime Refresh
+Bindings / Lifecycle
+  → downstream consumer bindings
+  → deletion guard
+  → Delete Connection
+```
+
+Deleting an asset-owning provider removes only that provider identity, its managed
+asset, and bindings that target the asset. Reusable cross-domain providers such as
+Prometheus and Alertmanager remain registered. Runtime observation and Activity Audit
+history remain retained evidence. Active jobs referencing the provider or managed asset
+block deletion.
+
+Shared ownership:
+
+- tab state and asset-owner destructive state are owned by `integration_workspace_tabs.js`;
+- Kubernetes and MinIO destructive dialogs use `integrations/components/_asset_owner_delete_modal.html`;
+- provider-specific templates supply only the asset label and deletion consequence;
+- MinIO fourth workspace is `Bindings & Lifecycle` because the object-storage asset owns
+  its downstream Prometheus and Alertmanager associations.

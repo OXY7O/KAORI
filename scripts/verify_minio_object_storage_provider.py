@@ -55,6 +55,12 @@ def main() -> None:
     integration_navigation = read('app/integrations/navigation.py')
     presentation = read('app/bootstrap/presentation.py')
     domain_template = read('app/templates/integrations/domain.html')
+    minio_detail = read('app/templates/minio/instance_detail.html')
+    minio_configuration = read('app/templates/minio/partials/_detail_configuration.html')
+    minio_scope = read('app/templates/minio/partials/_detail_scope.html')
+    minio_runtime = read('app/templates/minio/partials/_detail_runtime.html')
+    minio_routes = read('app/minio/routes.py')
+    deletion = read('app/integrations/deletion.py')
 
     require(
         "__tablename__ = 'object_storage_systems'" in object_storage, 'provider-neutral object storage asset missing'
@@ -144,6 +150,36 @@ def main() -> None:
     require(
         "'domain_label': module.domain.label" in integration_navigation,
         'breadcrumb domain must come from provider taxonomy',
+    )
+
+    require('MinIO API Readiness' in minio_detail, 'MinIO detail hero must use the asset-owner API-readiness pattern')
+    require(
+        'Bindings & Lifecycle' in minio_detail,
+        'MinIO fourth workspace must combine consumer bindings with asset lifecycle',
+    )
+    require(
+        'Configure Connection' in minio_configuration,
+        'MinIO configuration must expose the managed connection lifecycle action',
+    )
+    require("url_for('minio.edit_instance'" in minio_configuration, 'MinIO configuration edit route is missing')
+    require('Connection Lifecycle' in minio_scope, 'MinIO asset lifecycle section is missing')
+    require('Delete Connection' in minio_scope, 'MinIO delete action is missing')
+    require("url_for('minio.delete_instance'" in minio_scope, 'MinIO delete route wiring is missing')
+    require('Refresh Runtime' in minio_runtime, 'MinIO manual runtime refresh is missing')
+    require("url_for('minio.refresh_runtime'" in minio_runtime, 'MinIO runtime refresh route wiring is missing')
+    require(
+        "@minio_bp.post('/instances/<int:instance_id>/delete')" in minio_routes,
+        'MinIO governed delete endpoint is missing',
+    )
+    require(
+        "@minio_bp.post('/instances/<int:instance_id>/runtime/refresh')" in minio_routes,
+        'MinIO runtime refresh endpoint is missing',
+    )
+    require('def asset_owner_deletion_guard(' in deletion, 'generic asset-owner deletion guard is missing')
+    require('def delete_minio_instance(' in service, 'MinIO asset-owner deletion service is missing')
+    require(
+        'Prometheus and Alertmanager source instances remain reusable' in service,
+        'MinIO deletion must preserve shared observability sources',
     )
 
     require(

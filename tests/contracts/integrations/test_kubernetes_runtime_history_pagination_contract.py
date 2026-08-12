@@ -51,12 +51,13 @@ def test_full_page_kubernetes_detail_reads_requested_history_page() -> None:
 def test_runtime_history_full_page_fallback_opens_runtime_tab() -> None:
     runtime = read('app/templates/integrations/partials/_runtime_history.html')
     detail = read('app/templates/integrations/kubernetes/detail.html')
+    workspace_tabs = read('app/static/js/integration_workspace_tabs.js')
 
     assert 'name="tab" value="{{ runtime_history_tab_name }}"' in runtime
     assert "runtime_history_tab|default('runtime', true)" in runtime
-    assert "url.searchParams.get('tab')" in detail
-    assert 'syncTab()' in detail
-    assert "nextUrl.searchParams.set('tab', tab)" in detail
+    assert "integrationWorkspaceTabs(['configuration', 'validation', 'runtime', 'inventory']" in detail
+    assert "url.searchParams.get('tab')" in workspace_tabs
+    assert "nextUrl.searchParams.set('tab', tab)" in workspace_tabs
 
 
 def test_runtime_history_footer_uses_kaori_inventory_wording() -> None:

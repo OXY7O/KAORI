@@ -7,9 +7,11 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.extensions.db import db
 from app.integrations.alertmanager.capabilities import BINDING_CAPABILITY_KEYS as ALERTMANAGER_CAPABILITY_SCOPE
 from app.integrations.binding_service import SourceBindingSpec, create_source_binding
+from app.integrations.deletion import DeletionBlocked, asset_owner_deletion_guard
 from app.integrations.minio.binding import ensure_primary_asset_binding
 from app.integrations.minio.capabilities import OBJECT_STORAGE_SYSTEM_SCOPE, PROMETHEUS_CAPABILITY_SCOPE
 from app.integrations.minio.client import MinioConnectionResult, test_connection_values
+from app.jobs.service import acquire_resource_admission_locks
 from app.minio.contracts import MinioAlertBindingInput, MinioMetricsBindingInput, MinioRegistrationInput
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance
@@ -86,6 +88,136 @@ def create_minio_instance(values: MinioRegistrationInput) -> MinioInstance:
         db.session.rollback()
         raise
     return instance
+
+
+def update_minio_instance(instance: MinioInstance, values: MinioRegistrationInput) -> MinioInstance:
+    duplicate_canonical = IntegrationInstance.query.filter(
+        IntegrationInstance.provider_type == 'minio',
+        IntegrationInstance.name == values.name,
+        IntegrationInstance.id != instance.integration_instance_id,
+    ).first()
+    if duplicate_canonical is not None:
+        raise ValueError('A MinIO connection with this name already exists.')
+    duplicate_asset = ObjectStorageSystem.query.filter(
+        ObjectStorageSystem.name == values.name,
+        ObjectStorageSystem.id != instance.object_storage_system_id,
+    ).first()
+    if duplicate_asset is not None:
+        raise ValueError('An object-storage asset with this name already exists.')
+
+    connection_changed = any(
+        (
+            instance.endpoint != values.endpoint,
+            instance.access_key != values.access_key,
+            str(instance.secret_key) != values.secret_key,
+            instance.region != values.region,
+            instance.addressing_style != values.addressing_style,
+            instance.timeout != values.timeout,
+            instance.verify_ssl != values.verify_ssl,
+            instance.declared_release != values.declared_release,
+        )
+    )
+
+    canonical = instance.integration_instance
+    asset = instance.object_storage_system
+    canonical.name = values.name
+    canonical.description = values.description
+    canonical.environment = values.environment
+    canonical.enabled = values.enabled
+    asset.name = values.name
+    asset.description = values.description
+    asset.environment = values.environment
+
+    instance.endpoint = values.endpoint
+    instance.access_key = values.access_key
+    instance.secret_key = values.secret_key
+    instance.region = values.region
+    instance.addressing_style = values.addressing_style
+    instance.timeout = values.timeout
+    instance.verify_ssl = values.verify_ssl
+    instance.declared_release = values.declared_release
+
+    if connection_changed:
+        canonical.readiness_status = 'validation_required'
+        canonical.health_status = None
+        canonical.last_error = None
+        canonical.last_checked_at = None
+        instance.detected_product = None
+        instance.observed_server_header = None
+        instance.deployment_id = None
+        instance.compatibility_status = None
+        instance.compatibility_profile = None
+        instance.capability_profile = None
+        instance.capabilities = None
+        instance.validation_summary = None
+        instance.validation_message = (
+            'MinIO connection settings changed. Run Core Validation before KAORI treats this provider as ready.'
+        )
+        instance.last_validated_at = None
+        asset.status = 'unknown'
+        asset.last_check = None
+
+    canonical.metadata_json = {
+        **(canonical.metadata_json or {}),
+        'asset_type': OBJECT_STORAGE_SYSTEM_SCOPE,
+        'asset_key': asset.id,
+        'endpoint_product': 'minio',
+        'declared_release': instance.declared_release,
+    }
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+    return instance
+
+
+def delete_minio_instance(instance: MinioInstance) -> dict[str, int]:
+    """Delete a MinIO asset-owner connection and only its asset-scoped bindings.
+
+    Prometheus and Alertmanager source instances remain reusable. Runtime observation
+    and Activity Audit history are intentionally retained by their canonical history
+    models. The object-storage asset and every binding that targets it are removed
+    together with the MinIO connection identity.
+    """
+    asset_key = str(instance.object_storage_system_id)
+    acquire_resource_admission_locks(
+        f'integration:minio:{instance.id}',
+        f'{OBJECT_STORAGE_SYSTEM_SCOPE}:{asset_key}',
+    )
+    guard = asset_owner_deletion_guard(
+        provider_type='minio',
+        provider_instance_id=instance.id,
+        asset_type=OBJECT_STORAGE_SYSTEM_SCOPE,
+        asset_key=asset_key,
+    )
+    if guard.blocked:
+        raise DeletionBlocked(guard)
+
+    canonical = instance.integration_instance
+    asset = instance.object_storage_system
+    deleted_bindings = IntegrationBinding.query.filter(
+        IntegrationBinding.asset_type == OBJECT_STORAGE_SYSTEM_SCOPE,
+        IntegrationBinding.asset_key == asset_key,
+    ).delete(synchronize_session=False)
+
+    # ObjectStorageSystem owns the MinioInstance row through a delete-orphan
+    # relationship. Flush that lifecycle first, then remove the canonical provider
+    # identity without touching reusable Prometheus or Alertmanager instances.
+    db.session.delete(asset)
+    db.session.flush()
+    if canonical is not None:
+        db.session.delete(canonical)
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        raise
+    return {
+        'asset_bindings': int(deleted_bindings or 0),
+        'object_storage_asset_deleted': 1,
+        'canonical_instance_deleted': int(canonical is not None),
+    }
 
 
 def prometheus_choices() -> list[tuple[int, str]]:

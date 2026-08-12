@@ -120,7 +120,7 @@ def test_minio_workspace_is_nested_under_integrations_storage() -> None:
     assert 'Connection Registry' in tabs
     assert 'framed_workspace_tabs.render' in detail
     assert 'Core Validation' in detail
-    assert 'Bindings & Consumers' in detail
+    assert 'Bindings & Lifecycle' in detail
 
 
 def test_minio_service_boundary_uses_input_contracts_not_forms() -> None:
@@ -134,7 +134,8 @@ def test_minio_service_boundary_uses_input_contracts_not_forms() -> None:
     assert 'from app.minio.contracts import MinioRegistrationInput' in registration
     assert 'app.minio.forms' not in service
     assert 'app.minio.forms' not in registration
-    assert 'def to_input(self) -> MinioRegistrationInput:' in forms
+    assert 'def to_input(self' in forms
+    assert '-> MinioRegistrationInput:' in forms
     assert 'def to_input(self) -> MinioMetricsBindingInput:' in forms
     assert 'def to_input(self) -> MinioAlertBindingInput:' in forms
 
@@ -144,3 +145,14 @@ def test_domain_section_header_runtime_regression_is_closed() -> None:
 
     assert '{% call integration_ui.section_header(' not in template
     assert '{{ integration_ui.section_header(' in template
+
+
+def test_minio_asset_owner_lifecycle_preserves_observability_sources() -> None:
+    service = read('app/minio/service.py')
+    detail = read('app/templates/minio/instance_detail.html')
+    scope = read('app/templates/minio/partials/_detail_scope.html')
+
+    assert 'def delete_minio_instance(' in service
+    assert 'asset_owner_deletion_guard(' in service
+    assert 'Shared Prometheus and Alertmanager connections remain reusable.' in scope
+    assert 'Bindings & Lifecycle' in detail
