@@ -1,6 +1,8 @@
 {% import "components/table.html" as table_ui %}
+{% import "components/action_button.html" as action_button %}
 {% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "integrations/components/_observability_binding_modal.html" as observability_binding_modal %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set ready_binding_count = binding_rows|selectattr('operational_status', 'equalto', 'ready')|list|length %}
 {% set validated_binding_count = binding_rows|selectattr('validation_status', 'equalto', 'ready')|list|length %}
@@ -26,7 +28,7 @@
                         data-dialog-target="prometheus-create-binding-dialog"
                         class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                     <i data-lucide="link" class="h-4 w-4" aria-hidden="true"></i>
-                    Add Kubernetes Binding
+                    Add Binding
                 </button>
             </div>
         </header>
@@ -46,7 +48,7 @@
                             ('link-2', 'Consumer Bindings', binding_rows|length, 'Kubernetes, MinIO, and future asset mappings'),
                             ('shield-check', 'Validated Bindings', validated_binding_count, 'Binding validation currently Ready'),
                             ('route', 'Operational Bindings', ready_binding_count, 'Source + binding gates currently usable'),
-                            ('layout-grid', 'Resolution Scopes', resolution_scope_count, 'Scopes with consumer resolution context')
+                            ('layout-grid', 'Consumer Assets', resolution_scope_count, 'Managed assets with resolver context')
                         ] %}
             {% for icon, label, value, helper in binding_metrics %}
                 <div class="px-5 py-4 sm:px-6">
@@ -62,143 +64,7 @@
             {% endfor %}
         </div>
     </section>
-    <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
-             aria-labelledby="prometheus-bound-scopes-title"
-             data-kaori-bound-scopes-full-width>
-        <header class="flex flex-col gap-2 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
-            <div class="flex min-w-0 items-start gap-3">
-                {{ integration_ui.palette_icon('boxes', 'brand', size='md') }}
-                <div class="min-w-0">
-                    <h3 id="prometheus-bound-scopes-title"
-                        class="text-sm font-semibold text-content-primary">Consumer Bindings</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Each row represents one governed asset binding, its auto-selected consumer validation profile, and independent operational state.</p>
-                </div>
-            </div>
-            {{ table_label.metadata_label(binding_rows|length ~ (' binding' if binding_rows|length == 1 else ' bindings') ) }}
-        </header>
-        <div x-data="{ selectorEditor: null }" class="overflow-x-auto">
-            <table class="{{ table_ui.table_classes('min-w-[72rem]') }}">
-                <thead class="{{ table_ui.head_classes() }}">
-                    <tr>
-                        <th class="{{ table_ui.header_cell_classes() }}">Consumer Asset</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Metrics Identity</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Preference</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Binding Validation</th>
-                        <th class="{{ table_ui.header_cell_classes() }}">Effective Resolution</th>
-                        <th class="{{ table_ui.header_cell_classes(action=true) }}">Action</th>
-                    </tr>
-                </thead>
-                <tbody class="{{ table_ui.body_classes() }}">
-                    {% for row in binding_rows %}
-                        <tr class="{{ table_ui.row_classes() }}">
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <div class="flex min-w-0 items-start gap-3">
-                                    {{ integration_ui.palette_icon('boxes', 'brand', size='sm') }}
-                                    <div class="min-w-0">
-                                        <p class="text-sm font-semibold text-content-primary">{{ row.scope_label }}</p>
-                                        <p class="mt-0.5 text-xs font-medium text-content-secondary">{{ row.scope_type_label }} · {{ row.consumer_profile_label }}</p>
-                                        <p class="mt-0.5 max-w-[18rem] truncate text-xs text-content-muted"
-                                           title="{{ row.binding.asset_key }}">{{ row.binding.asset_key }}</p>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="max-w-[18rem] text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.selector_summary }}</p>
-                                <p class="mt-0.5 text-xs text-content-muted">{{ 'Scoped query isolation' if row.selector_configured else 'Dedicated source identity' }}</p>
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }}">
-                                <p class="text-sm font-semibold text-content-primary">{{ row.binding.binding_role|title }}</p>
-                                <p class="mt-0.5 text-xs text-content-muted">Priority {{ row.binding.priority }}</p>
-                            </td>
-                            <td class="{{ table_ui.cell_classes() }}">{{ integration_status(row.validation_status, display='indicator') }}</td>
-                            <td class="{{ table_ui.cell_classes() }}">{{ integration_status(row.operational_status, row.operational_label, display='indicator') }}</td>
-                            <td class="{{ table_ui.cell_classes(action=true) }}">
-                                <div class="flex items-center justify-end gap-2">
-                                    <button type="button"
-                                            @click="selectorEditor = selectorEditor === {{ row.binding.id }} ? null : {{ row.binding.id }}"
-                                            class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:bg-kaori-soft hover:text-kaori-primary"><i data-lucide="settings-2" class="h-3.5 w-3.5" aria-hidden="true"></i>Configure</button>
-                                    <form method="post"
-                                          action="{{ url_for('prometheus.validate_instance_binding', instance_id=instance.id, binding_id=row.binding.id) }}"
-                                          hx-post="{{ url_for('prometheus.validate_instance_binding', instance_id=instance.id, binding_id=row.binding.id) }}"
-                                          hx-target="#prometheus-scope-workspace"
-                                          hx-swap="outerHTML">
-                                        {% if csrf_token is defined %}
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        {% endif %}
-                                        <button type="submit"
-                                                {% if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id %}disabled{% endif %}
-                                                class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:bg-kaori-soft hover:text-kaori-primary disabled:cursor-wait disabled:opacity-60"><i data-lucide="{{ 'loader-circle' if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id else 'scan-search' }}"
-   class="h-3.5 w-3.5{% if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id %} animate-spin{% endif %}"
-   aria-hidden="true"></i>{{ 'Validating' if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id else 'Validate' }}</button>
-                                    </form>
-                                    <button type="button"
-                                            data-prometheus-delete-button
-                                            data-delete-url="{{ url_for('prometheus.delete_instance_binding', instance_id=instance.id, binding_id=row.binding.id) }}"
-                                            data-delete-title="Remove Scope Binding?"
-                                            data-delete-name="{{ row.scope_label }}"
-                                            data-delete-detail="This Prometheus connection will no longer be eligible for the selected managed cluster. Historical runtime and Activity Audit records remain available."
-                                            data-delete-action-label="Remove Binding"
-                                            class="inline-flex h-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-2.5 text-status-critical-text transition hover:bg-status-critical-soft"
-                                            aria-label="Remove {{ row.scope_label }} binding">
-                                        <i data-lucide="unlink" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr x-cloak
-                            x-show="selectorEditor === {{ row.binding.id }}"
-                            class="bg-surface-subtle">
-                            <td colspan="6" class="px-4 py-4">
-                                <form method="post"
-                                      action="{{ url_for('prometheus.update_instance_binding_selector', instance_id=instance.id, binding_id=row.binding.id) }}"
-                                      hx-post="{{ url_for('prometheus.update_instance_binding_selector', instance_id=instance.id, binding_id=row.binding.id) }}"
-                                      hx-target="#prometheus-scope-workspace"
-                                      hx-swap="outerHTML"
-                                      class="grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_7rem_1fr_auto] xl:items-end">
-                                    {% if csrf_token is defined %}
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    {% endif %}
-                                    <div>
-                                        <label class="mb-1.5 block text-xs font-semibold text-content-primary">Metrics Label</label>
-                                        <input name="selector_label"
-                                               value="{{ row.selector_label or 'cluster' }}"
-                                               required
-                                               maxlength="100"
-                                               class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-                                    </div>
-                                    <div>
-                                        <label class="mb-1.5 block text-xs font-semibold text-content-primary">Operator</label>
-                                        <select name="selector_operator"
-                                                class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-                                            {% for operator in ['=', '=~', '!=', '!~'] %}
-                                                <option value="{{ operator }}"
-                                                        {% if row.selector_operator == operator %}selected{% endif %}>{{ operator }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="mb-1.5 block text-xs font-semibold text-content-primary">Metrics Value</label>
-                                        <input name="selector_value"
-                                               value="{{ row.selector_value }}"
-                                               required
-                                               maxlength="255"
-                                               class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-                                    </div>
-                                    <button type="submit"
-                                            class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="save" class="h-3.5 w-3.5" aria-hidden="true"></i>Save Identity</button>
-                                </form>
-                                <p class="mt-2 text-xs leading-5 text-content-muted">Saving the selector returns this binding to Validation Required until binding validation succeeds again.</p>
-                            </td>
-                        </tr>
-                    {% else %}
-                        <tr>
-                            <td colspan="6" class="px-5 py-10 text-center text-sm text-content-muted">No consumer binding is attached to this Prometheus source yet.</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </section>
+    {% include "prometheus/partials/_binding_registry.html" %}
     <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
              aria-labelledby="prometheus-binding-decision-title"
              data-kaori-binding-decision-horizontal>
@@ -216,7 +82,7 @@
         <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
             {% for label, value, helper in [
                 ('Source Readiness', (instance.readiness_status or 'validation_required')|replace('_', ' ')|title, 'Provider validation state'),
-                ('Bound Scopes', binding_rows|length, 'Managed cluster mappings'),
+                ('Consumer Bindings', binding_rows|length, 'Managed asset mappings'),
                 ('Validated Bindings', validated_binding_count, 'Binding checks currently Ready'),
                 ('Operational Bindings', ready_binding_count, 'Effective resolver paths')
                 ] %}
@@ -241,8 +107,8 @@
                 <div class="flex items-start gap-3">
                     {{ integration_ui.palette_icon('scan-line', 'brand', size='sm') }}
                     <div class="min-w-0">
-                        <p class="text-xs font-semibold text-content-primary">Metrics Identity Boundary</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Shared-source bindings must inject cluster identity selectors so analytics cannot mix managed-cluster evidence.</p>
+                        <p class="text-xs font-semibold text-content-primary">Consumer Identity Boundary</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Shared-source bindings use stable asset selectors so Kubernetes, MinIO, and future consumer evidence remains isolated.</p>
                     </div>
                 </div>
             </section>
@@ -252,7 +118,7 @@
                     <div class="min-w-0">
                         <p class="text-xs font-semibold text-content-primary">Next Operational Action</p>
                         {% if not binding_rows %}
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Create the first cluster binding, configure its identity selector, then run binding validation.</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Create the first consumer binding, configure its asset identity selector, then run Binding Validation.</p>
                         {% elif ready_binding_count < binding_rows|length %}
                             <p class="mt-1 text-xs leading-5 text-content-secondary">Validate non-operational bindings and resolve source-readiness, selector, or capability gaps.</p>
                         {% else %}
@@ -275,7 +141,7 @@
                     <p class="mt-1 max-w-4xl text-xs leading-5 text-content-secondary">Compare which source each analytics domain resolves to. Expand a consumer only when candidate-level evidence is required.</p>
                 </div>
             </div>
-            {{ table_label.metadata_label(source_resolution_rows|length ~ (' Scope' if source_resolution_rows|length == 1 else ' Scopes') ) }}
+            {{ table_label.metadata_label(source_resolution_rows|length ~ (' Asset' if source_resolution_rows|length == 1 else ' Assets') ) }}
         </header>
         <div class="divide-y divide-outline-subtle">
             {% for scope in source_resolution_rows %}
@@ -337,7 +203,7 @@
                                                     {% endif %}
                                                 </div>
                                             {% else %}
-                                                <p class="rounded-lg border border-outline-subtle bg-surface-card p-3.5 text-xs leading-5 text-content-secondary">No candidate source is registered for this consumer in the selected scope.</p>
+                                                <p class="rounded-lg border border-outline-subtle bg-surface-card p-3.5 text-xs leading-5 text-content-secondary">No candidate source is registered for this consumer asset.</p>
                                             {% endfor %}
                                         </div>
                                     </div>
@@ -349,7 +215,7 @@
             {% else %}
                 <div class="px-5 py-10 text-center">
                     <p class="text-sm font-semibold text-content-primary">No Resolution Context Yet</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Create a cluster binding to establish consumer-specific metrics-source resolution.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Create a consumer binding to establish asset-specific metrics-source resolution.</p>
                 </div>
             {% endfor %}
         </div>
@@ -367,7 +233,7 @@
                                 class="text-sm font-semibold text-content-primary">Connection Lifecycle</h3>
                             {{ integration_status('blocked' if bindings or (deletion_guard and deletion_guard.blocked) else 'ready', 'Blocked' if bindings or (deletion_guard and deletion_guard.blocked) else 'Guardrails Passed', display='indicator') }}
                         </div>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Deletion requires cluster bindings and active provider jobs to be resolved first.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Deletion requires consumer bindings and active provider jobs to be resolved first.</p>
                     </div>
                 </div>
             </div>
@@ -391,126 +257,15 @@
             </div>
         </div>
     </section>
-    <dialog id="prometheus-create-binding-dialog"
-            data-kaori-binding-dialog
-            class="kaori-native-dialog m-auto w-[min(44rem,calc(100vw-2rem))] max-h-[calc(100vh-2rem)] overflow-hidden rounded-xl border border-outline-default bg-surface-card p-0 text-content-primary shadow-2xl ">
-        <form method="post"
-              action="{{ url_for('prometheus.add_instance_binding', instance_id=instance.id) }}"
-              hx-post="{{ url_for('prometheus.add_instance_binding', instance_id=instance.id) }}"
-              hx-target="#prometheus-scope-workspace"
-              hx-swap="outerHTML"
-              hx-indicator="#prometheus-binding-loading"
-              class="relative flex max-h-[calc(100vh-2rem)] flex-col">
-            {% if csrf_token is defined %}
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            {% endif %}
-            <header class="flex items-start justify-between gap-3 border-b border-outline-subtle px-5 py-4">
-                <div class="flex min-w-0 items-start gap-3">
-                    {{ integration_ui.palette_icon('link', 'brand', size='md') }}
-                    <div class="min-w-0">
-                        <h3 class="text-base font-semibold text-content-primary">Create Kubernetes Metrics Binding</h3>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">Authorize this source for one managed Kubernetes cluster. KAORI automatically assigns the Kubernetes Metrics v1 consumer profile.</p>
-                    </div>
-                </div>
-                <button type="button"
-                        data-kaori-dialog-close
-                        class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-secondary hover:bg-surface-hover"
-                        aria-label="Close create binding dialog">
-                    <i data-lucide="x" class="h-4 w-4" aria-hidden="true"></i>
-                </button>
-            </header>
-            <div class="min-h-0 flex-1 overflow-y-auto p-5">
-                {% if binding_error %}
-                    <div class="mb-4 rounded-lg border border-status-critical-border bg-status-critical-soft p-3 text-xs leading-5 text-status-critical-text">{{ binding_error }}</div>
-                {% endif %}
-                <div class="grid gap-4 sm:grid-cols-2">
-                    <div class="sm:col-span-2">
-                        <label for="prometheus-binding-cluster"
-                               class="mb-1.5 block text-sm font-semibold text-content-primary">Managed Cluster</label>
-                        <select id="prometheus-binding-cluster"
-                                name="cluster_id"
-                                required
-                                class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-                            <option value="">Select Managed Cluster</option>
-                            {% for cluster in clusters %}
-                                <option value="{{ cluster.id }}">{{ cluster.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div>
-                        <label class="mb-1.5 block text-sm font-semibold text-content-primary">Source Role</label>
-                        <select name="binding_role"
-                                required
-                                class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-                            <option value="primary">Primary</option>
-                            <option value="secondary">Secondary</option>
-                            <option value="fallback">Fallback</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="mb-1.5 block text-sm font-semibold text-content-primary">Priority</label>
-                        <input type="number"
-                               name="priority"
-                               min="1"
-                               max="1000"
-                               value="100"
-                               required
-                               class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-                    </div>
-                </div>
-                <section class="mt-5 rounded-xl border border-outline-subtle bg-surface-subtle p-4">
-                    <div class="flex items-start gap-3">
-                        {{ integration_ui.palette_icon('scan-line', 'brand', size='sm') }}
-                        <div>
-                            <p class="text-sm font-semibold text-content-primary">Metrics Identity Selector</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">This selector is injected into every PromQL query through the binding.</p>
-                        </div>
-                    </div>
-                    <div class="mt-4 grid gap-3 sm:grid-cols-[1fr_7rem_1fr]">
-                        <div>
-                            <label class="mb-1.5 block text-xs font-semibold text-content-primary">Label</label>
-                            <input name="selector_label"
-                                   value="cluster"
-                                   required
-                                   maxlength="100"
-                                   class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-                        </div>
-                        <div>
-                            <label class="mb-1.5 block text-xs font-semibold text-content-primary">Operator</label>
-                            <select name="selector_operator"
-                                    class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-                                <option value="=">=</option>
-                                <option value="=~">=~</option>
-                                <option value="!=">!=</option>
-                                <option value="!~">!~</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="mb-1.5 block text-xs font-semibold text-content-primary">Value</label>
-                            <input name="selector_value"
-                                   required
-                                   maxlength="255"
-                                   placeholder="k8s-vm-dev"
-                                   class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-                        </div>
-                    </div>
-                </section>
-            </div>
-            <footer class="flex items-center justify-between gap-3 border-t border-outline-subtle bg-surface-subtle px-5 py-3.5">
-                <p class="text-xs leading-5 text-content-muted">Saving creates the binding in Validation Required until the Kubernetes consumer profile completes validation.</p>
-                <div class="flex items-center gap-2">
-                    <button type="button"
-                            data-kaori-dialog-close
-                            class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary hover:bg-surface-hover">Cancel</button>
-                    <button type="submit"
-                            class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="link" class="h-4 w-4" aria-hidden="true"></i>Create Binding</button>
-                </div>
-            </footer>
-            <div id="prometheus-binding-loading"
-                 class="htmx-indicator pointer-events-none absolute bottom-0 left-0 right-0 h-1 overflow-hidden bg-kaori-soft">
-                <div class="notification-progress-indeterminate h-full bg-kaori-primary"></div>
-            </div>
-        </form>
-    </dialog>
+    {{ observability_binding_modal.render("prometheus-create-binding-dialog",
+        "Prometheus",
+        "activity",
+        "metrics",
+        url_for('prometheus.add_instance_binding', instance_id=instance.id) ,
+    "#prometheus-scope-workspace",
+    "prometheus-binding-loading",
+    consumer_asset_groups,
+    binding_error=binding_error|default(none)
+    ) }}
 </div>
 {% include "components/operation_feedback_oob.html" %}

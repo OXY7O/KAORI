@@ -22,6 +22,10 @@ def main() -> int:
     model = read('app/models/integration.py')
     migration = read('migrations/versions/20260812_prometheus_consumer_validation_profiles.py')
     validation_template = read('app/templates/prometheus/partials/_detail_validation_content.html')
+    readiness_template = read('app/templates/integrations/components/_readiness_explanation.html')
+    binding_template = read('app/templates/prometheus/partials/_binding_registry.html')
+    binding_modal = read('app/templates/integrations/components/_observability_binding_modal.html')
+    consumer_assets = read('app/integrations/consumer_assets.py')
     kernel_readme = read('app/integrations/README.md')
     compatibility_doc = read('docs/INTEGRATION_COMPATIBILITY.md')
     module_map = read('docs/architecture/integration-module-map.md')
@@ -59,11 +63,14 @@ def main() -> int:
     assert "SET validation_status = 'validation_required'" in migration
 
     assert 'Prometheus Core Validation' in validation_template
-    assert 'Consumer Validation Boundary' in validation_template
-    assert (
-        'Kubernetes, MinIO, and other metric contracts are validated through their asset-scoped bindings.'
-        in validation_template
-    )
+    assert 'integrations/components/_readiness_explanation.html' in validation_template
+    assert 'data-kaori-consumer-readiness-boundary' in readiness_template
+    assert 'Consumer Binding Registry' in binding_template
+    assert 'data-kaori-observability-binding-modal' in binding_modal
+    assert "asset_type='kubernetes_cluster'" in consumer_assets
+    assert "asset_type='object_storage_system'" in consumer_assets
+    assert 'Validate Prometheus compatibility and core APIs.' in validation_template
+    assert 'Consumer metrics remain binding-specific.' in validation_template
 
     canonical_flow = (
         'Provider\n'

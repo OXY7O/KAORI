@@ -20,8 +20,12 @@ def main() -> int:
     resolver = read('app/alertmanager/resolver.py')
     forms = read('app/alertmanager/forms.py')
     minio_service = read('app/minio/service.py')
+    consumer_assets = read('app/integrations/consumer_assets.py')
     validation_template = read('app/templates/alertmanager/partials/_detail_validation_content.html')
     scope_template = read('app/templates/alertmanager/partials/_detail_scope.html')
+    binding_template = read('app/templates/alertmanager/partials/_binding_registry.html')
+    binding_modal = read('app/templates/integrations/components/_observability_binding_modal.html')
+    readiness_template = read('app/templates/integrations/components/_readiness_explanation.html')
     minio_index = read('app/templates/minio/index.html')
     provider_frontpage = read('app/templates/integrations/components/_provider_frontpage.html')
     provider_tabs = read('app/templates/components/integration_workspace_tabs.html')
@@ -48,23 +52,25 @@ def main() -> int:
     assert 'binding.validation_evidence or {}' in evaluator
     assert 'instance.capabilities or {}' not in evaluator
 
-    assert "'object_storage_system'" in forms
-    assert 'object_storage_scope_key' in forms
-    assert "create_source_binding(\n        'alertmanager'" in minio_service
-    assert 'asset_type=OBJECT_STORAGE_SYSTEM_SCOPE' in minio_service
+    assert 'registered_consumer_asset_definitions' in forms
+    assert "asset_type='object_storage_system'" in consumer_assets
+    assert 'create_source_binding' not in minio_service
 
     assert 'Alertmanager Core Validation' in validation_template
-    assert 'Consumer Validation Boundary' in validation_template
-    assert 'Consumer Binding Registry' in scope_template
-    assert 'Consumer Profile' in scope_template
+    assert 'integrations/components/_readiness_explanation.html' in validation_template
+    assert 'data-kaori-consumer-readiness-boundary' in readiness_template
+    assert 'Consumer Binding Registry' in binding_template
+    assert 'Consumer Profile' in binding_template
+    assert 'observability_binding_modal.render(' in scope_template
+    assert 'data-kaori-observability-binding-modal' in binding_modal
 
     assert 'MinIO Integrations' in minio_index
     assert 'provider_front.hero(' in minio_index
     assert 'Register Connection' in provider_frontpage
     assert 'Integration Coverage' in provider_tabs
     assert 'Connection Registry' in provider_tabs
-    assert 'Core Validation' in minio_detail
-    assert 'Bindings & Lifecycle' in minio_detail
+    assert 'Validation & Capabilities' in minio_detail
+    assert 'Inventory & Lifecycle' in minio_detail
 
     assert 'kubernetes-alerts-v1' in alertmanager_readme
     assert 'minio-alerts-v1' in alertmanager_readme

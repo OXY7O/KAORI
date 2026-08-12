@@ -4,8 +4,10 @@ from typing import Any
 
 from flask import url_for
 
+from app.common.pagination import paginate_sequence
 from app.extensions.db import db
 from app.integrations.binding_selectors import selector_form_values, selector_is_configured, selector_summary
+from app.integrations.consumer_assets import build_consumer_asset_groups
 from app.integrations.deletion import provider_deletion_guard
 from app.integrations.prometheus.binding_profiles import get_binding_validation_profile
 from app.integrations.prometheus.capabilities import PROVIDER_CAPABILITY_KEYS
@@ -112,9 +114,11 @@ def build_instance_context(
     history_trigger: str = '',
     history_health: str = '',
     history_readiness: str = '',
+    binding_page: int = 1,
+    binding_per_page: int = 5,
 ) -> dict[str, Any]:
     bindings = bindings_for_instance(instance)
-    clusters = Cluster.query.order_by(Cluster.created_at.asc(), Cluster.id.asc()).all()
+    consumer_asset_groups = build_consumer_asset_groups(get_binding_validation_profile)
     available_capabilities: set[str] = {
         str(item) for item in ((instance.capabilities or {}).get('available') or ()) if item
     }
@@ -151,14 +155,21 @@ def build_instance_context(
         provider_type='prometheus',
         provider_instance_id=instance.id,
     )
+    binding_rows = [_binding_row(binding, instance) for binding in bindings]
+    binding_registry_rows, binding_registry_pagination = paginate_sequence(
+        binding_rows,
+        page=binding_page,
+        per_page=binding_per_page,
+    )
 
     return {
         'instance': instance,
         'bindings': bindings,
         'deletion_guard': deletion_guard,
-        'binding_rows': [_binding_row(binding, instance) for binding in bindings],
-        'clusters': clusters,
-        'clusters_by_id': {cluster.id: cluster for cluster in clusters},
+        'binding_rows': binding_rows,
+        'binding_registry_rows': binding_registry_rows,
+        'binding_registry_pagination': binding_registry_pagination,
+        'consumer_asset_groups': consumer_asset_groups,
         'capability_rows': capability_rows,
         'capability_summary': {
             'total': len(capability_rows),

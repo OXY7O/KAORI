@@ -28,6 +28,7 @@ from app.alertmanager.resolver import AlertmanagerSourceResolution, resolve_aler
 from app.common.integration_errors import describe_integration_failure
 from app.extensions.db import db
 from app.integrations.alertmanager.exceptions import AlertmanagerError
+from app.integrations.consumer_assets import get_consumer_asset_definition, resolve_consumer_asset
 from app.integrations.deletion import DeletionBlocked, provider_deletion_guard
 from app.integrations.lifecycle import ensure_canonical_instance, invalidate_bindings
 from app.integrations.registry import get_integration
@@ -35,7 +36,6 @@ from app.jobs.service import acquire_resource_admission_locks
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationBinding, IntegrationInstance
-from app.models.object_storage import ObjectStorageSystem
 
 
 def get_cluster_by_id(cluster_id: str) -> Cluster | None:
@@ -43,10 +43,11 @@ def get_cluster_by_id(cluster_id: str) -> Cluster | None:
 
 
 def binding_scope_validation_error(scope_type: str, scope_key: str) -> str | None:
-    if scope_type == KUBERNETES_CLUSTER_SCOPE and get_cluster_by_id(scope_key) is None:
-        return 'Select a managed cluster that still exists in KAORI inventory.'
-    if scope_type == 'object_storage_system' and db.session.get(ObjectStorageSystem, scope_key) is None:
-        return 'Select an object-storage system that still exists in KAORI inventory.'
+    definition = get_consumer_asset_definition(scope_type)
+    if definition is None:
+        return 'Select a supported managed asset type.'
+    if resolve_consumer_asset(scope_type, scope_key) is None:
+        return f'Select a {definition.label.lower()} that still exists in KAORI inventory.'
     return None
 
 

@@ -46,12 +46,23 @@ cluster-owned configuration.
 
 Endpoint product/version detection and the declared Prometheus source profile
 are separate. Thanos may expose Prometheus-compatible query APIs without a
-Prometheus `/version` identity. Provider Core Validation establishes endpoint compatibility and the
-`prometheus-core-v1` API contract only. The UI action `Run Full Validation`
-orchestrates this provider-core check and may refresh existing bindings, but
-provider readiness is derived only from provider-core evidence. Exporter/domain
+Prometheus `/version` identity. Provider Full Validation establishes endpoint
+compatibility and the `prometheus-core-v1` API contract only. Exporter/domain
 metrics, labels, and consumer PromQL contracts are validated through each
 `IntegrationBinding` and stored as binding evidence.
+
+## Source-owned consumer binding UX
+
+Prometheus is the mutation owner for its consumer bindings. `Bindings & Consumers` uses
+one shared `Add Binding` modal backed by the canonical managed-asset registry. Current
+eligible asset families are Kubernetes clusters and object-storage systems; the selected
+asset type resolves `kubernetes-metrics-v1` or `minio-metrics-2024-v1` automatically.
+Asset-owner pages show the resulting Prometheus source read-only and do not create or
+remove the binding themselves.
+
+Adding a future managed asset such as Vault requires registering its asset definition and
+a compatible Prometheus consumer profile (for example `vault-metrics-v1`). It must not
+require a Vault-specific Prometheus form or binding table.
 
 ## Prometheus Manage UI and lifecycle contract
 

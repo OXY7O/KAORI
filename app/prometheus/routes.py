@@ -11,13 +11,15 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.cluster.service import get_cluster_by_id
 from app.common.http import is_htmx_request
 from app.extensions.db import db
+from app.integrations.binding_service import SourceBindingSpec
 from app.integrations.capability_registry import build_capability_registry_view
+from app.integrations.consumer_assets import get_consumer_asset_definition, resolve_consumer_asset
 from app.integrations.deletion import DeletionBlocked
 from app.integrations.lifecycle import ensure_canonical_instance
 from app.integrations.prometheus.exceptions import PrometheusError
 from app.integrations.runtime.presentation import runtime_history_view
 from app.integrations.runtime.repository import paginate_runtime_history
-from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
+from app.integrations.validation.state import build_validation_snapshot
 from app.integrations.validation.web import (
     enqueue_binding_validation,
     enqueue_instance_validation,
@@ -25,13 +27,11 @@ from app.integrations.validation.web import (
     snapshot_feedback_for_user,
     validate_snapshot_access,
 )
-from app.models import PrometheusInstance
 from app.models.integration import IntegrationBinding
 from app.notifications.service import get_navigation_notification_context, record_operational_activity
+from app.prometheus.edit_web import edit_instance_response
 from app.prometheus.forms import PrometheusInstanceForm
-from app.prometheus.presentation import build_instance_context
 from app.prometheus.registration import issue_registration_proof, verify_registration_proof
-from app.prometheus.repository import get_instance
 from app.prometheus.service import (
     PrometheusService,
     create_prometheus_binding,
@@ -39,6 +39,15 @@ from app.prometheus.service import (
     save_prometheus_instance,
     test_prometheus_form_connection,
     update_prometheus_binding_selector,
+)
+from app.prometheus.workspace_web import (
+    instance_detail_context as _instance_detail_context,
+)
+from app.prometheus.workspace_web import (
+    instance_or_404 as _instance_or_404,
+)
+from app.prometheus.workspace_web import (
+    render_instance_partial as _render_instance_partial,
 )
 from app.rbac.decorators import permission_required
 
@@ -52,91 +61,10 @@ prometheus_bp = Blueprint(
 )
 
 
-def _instance_or_404(instance_id: int) -> PrometheusInstance:
-    instance = get_instance(instance_id)
-    if instance is None:
-        abort(404)
-    return instance
-
-
 def _htmx_redirect(location: str) -> ResponseReturnValue:
     response = make_response('', 204)
     response.headers['HX-Redirect'] = location
     return response
-
-
-def _render_instance_partial(
-    template_name: str,
-    instance: PrometheusInstance,
-    *,
-    operation_feedback: dict | None = None,
-    **extra_context,
-) -> str:
-    context = _instance_detail_context(instance)
-    context.update(extra_context)
-    context['operation_feedback'] = operation_feedback
-    context['notification_context'] = get_navigation_notification_context(
-        user_id=int(current_user.id),
-    )
-    return render_template(template_name, **context)
-
-
-def _instance_detail_context(
-    instance: PrometheusInstance,
-    *,
-    page: int = 1,
-    per_page: int = 5,
-    history_trigger: str = '',
-    history_health: str = '',
-    history_readiness: str = '',
-) -> dict:
-    """Build the complete Prometheus manage-workspace context.
-
-    All full-page and HTMX partial responses use the same context builder so
-    Configuration, Validation, Runtime, Scope, and lifecycle controls cannot
-    drift or render with missing route dependencies.
-    """
-    context = build_instance_context(
-        instance,
-        page=page,
-        per_page=per_page,
-        history_trigger=history_trigger,
-        history_health=history_health,
-        history_readiness=history_readiness,
-    )
-    context['capability_registry'] = build_capability_registry_view(
-        context.get('capability_rows', []),
-        search_fields=('label', 'category', 'source_owner'),
-    )
-    context['delete_instance_url'] = url_for(
-        'prometheus.delete_instance',
-        instance_id=instance.id,
-    )
-    validation_task_id = get_active_validation_task_id(
-        provider_type='prometheus',
-        operation='full_validation',
-        instance_id=instance.id,
-    )
-    context['validation_job'] = build_validation_snapshot(validation_task_id) if validation_task_id else None
-    runtime_task_id = get_active_validation_task_id(
-        provider_type='prometheus',
-        operation='runtime_refresh',
-        instance_id=instance.id,
-    )
-    context['runtime_refresh_job'] = build_validation_snapshot(runtime_task_id) if runtime_task_id else None
-    binding_job = None
-    for binding in context.get('bindings', []):
-        task_id = get_active_validation_task_id(
-            provider_type='prometheus',
-            operation='binding_validation',
-            instance_id=instance.id,
-            binding_id=binding.id,
-        )
-        if task_id:
-            binding_job = build_validation_snapshot(task_id)
-            break
-    context['binding_validation_job'] = binding_job
-    return context
 
 
 @prometheus_bp.route('/instances/new', methods=['GET', 'POST'])
@@ -478,77 +406,23 @@ def test_instance_configuration(instance_id: int) -> ResponseReturnValue:
     )
 
 
-@prometheus_bp.route('/instances/<int:instance_id>', methods=['GET', 'POST'])
+@prometheus_bp.route('/instances/<int:instance_id>/edit', methods=['GET', 'POST'])
+@permission_required('settings.manage_integrations')
+def edit_instance(instance_id: int) -> ResponseReturnValue:
+    return edit_instance_response(instance_id)
+
+
+@prometheus_bp.get('/instances/<int:instance_id>')
 @permission_required('settings.manage_integrations')
 def instance_detail(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
-    form = PrometheusInstanceForm(obj=instance)
-    setattr(form, '_existing_instance', instance)
-    operation_feedback = None
-    is_htmx = is_htmx_request()
-
-    if request.method == 'POST':
-        if form.validate_on_submit():
-            try:
-                instance = save_prometheus_instance(form, instance=instance)
-            except Exception as exc:
-                logger.exception('Prometheus instance update failed for %s.', instance_id)
-                operation_feedback = record_operational_activity(
-                    user_id=current_user.id,
-                    event_type='prometheus_instance_update_failed',
-                    status='error',
-                    title='Prometheus instance not updated',
-                    message=f'KAORI could not update {instance.name}.',
-                    detail='Review the submitted connection settings and KAORI logs before retrying.',
-                    action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#configuration',
-                    action_label='Review Prometheus configuration',
-                    action_icon='settings-2',
-                    metadata={'instance_id': instance.id, 'reason': type(exc).__name__},
-                    queue_feedback=not is_htmx,
-                )
-            else:
-                operation_feedback = record_operational_activity(
-                    user_id=current_user.id,
-                    event_type='prometheus_instance_updated',
-                    status='success',
-                    title='Prometheus instance updated',
-                    message=f'{instance.name} connection settings were saved.',
-                    detail='Readiness returned to Validation Required until Full Validation rebuilds the technical evidence.',
-                    action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#validation',
-                    action_label='Review Prometheus validation',
-                    action_icon='scan-search',
-                    metadata={'instance_id': instance.id},
-                    queue_feedback=not is_htmx,
-                )
-        else:
-            operation_feedback = record_operational_activity(
-                user_id=current_user.id,
-                event_type='prometheus_instance_update_rejected',
-                status='error',
-                title='Prometheus instance not updated',
-                message=f'KAORI could not update {instance.name}.',
-                detail='Review the highlighted configuration fields before saving again.',
-                action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#configuration',
-                action_label='Review Prometheus configuration',
-                action_icon='settings-2',
-                metadata={'instance_id': instance.id, 'fields': sorted(form.errors)},
-                queue_feedback=not is_htmx,
-            )
-
-        if is_htmx:
-            return _render_instance_partial(
-                'prometheus/partials/_detail_configuration.html',
-                instance,
-                operation_feedback=operation_feedback,
-                form=form,
-            )
-        return redirect(url_for('prometheus.instance_detail', instance_id=instance.id) + '#configuration')
-
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 5, type=int)
     history_trigger = request.args.get('history_trigger', '', type=str)
     history_health = request.args.get('history_health', '', type=str)
     history_readiness = request.args.get('history_readiness', '', type=str)
+    binding_page = request.args.get('binding_page', 1, type=int) or 1
+    binding_per_page = request.args.get('binding_per_page', 5, type=int) or 5
     context = _instance_detail_context(
         instance,
         page=page,
@@ -556,17 +430,45 @@ def instance_detail(instance_id: int) -> ResponseReturnValue:
         history_trigger=history_trigger,
         history_health=history_health,
         history_readiness=history_readiness,
+        binding_page=binding_page,
+        binding_per_page=binding_per_page,
     )
-    context['form'] = form
     return render_template('prometheus/instance_detail.html', **context)
+
+
+@prometheus_bp.get('/instances/<int:instance_id>/bindings/registry')
+@permission_required('settings.manage_integrations')
+def instance_binding_registry(instance_id: int) -> ResponseReturnValue:
+    instance = _instance_or_404(instance_id)
+    context = _instance_detail_context(
+        instance,
+        binding_page=request.args.get('binding_page', 1, type=int) or 1,
+        binding_per_page=request.args.get('binding_per_page', 5, type=int) or 5,
+    )
+    return render_template('prometheus/partials/_binding_registry.html', **context)
 
 
 @prometheus_bp.post('/instances/<int:instance_id>/bindings')
 @permission_required('settings.manage_integrations')
 def add_instance_binding(instance_id: int) -> ResponseReturnValue:
     instance = _instance_or_404(instance_id)
-    cluster_id = request.form.get('cluster_id', '').strip()
-    cluster = get_cluster_by_id(cluster_id) if cluster_id else None
+    asset_type = (request.form.get('asset_type') or 'kubernetes_cluster').strip().lower()
+    asset_key = (
+        request.form.get('asset_key')
+        or request.form.get('cluster_asset_key')
+        or request.form.get('object_storage_asset_key')
+        or ''
+    ).strip()
+    asset_definition = get_consumer_asset_definition(asset_type)
+    asset = resolve_consumer_asset(asset_type, asset_key)
+    asset_label = (
+        str(getattr(asset, 'name', '') or asset_key)
+        if asset is not None
+        else asset_definition.label
+        if asset_definition is not None
+        else 'the selected consumer asset'
+    )
+
     role = (request.form.get('binding_role') or 'primary').strip().lower()
     priority = request.form.get('priority', 100, type=int) or 100
     selector_label = request.form.get('selector_label', '').strip() or None
@@ -575,16 +477,21 @@ def add_instance_binding(instance_id: int) -> ResponseReturnValue:
     is_htmx = is_htmx_request()
 
     try:
-        if cluster is None:
-            raise ValueError('Select an available managed cluster.')
+        if asset_definition is None:
+            raise ValueError('Select a supported managed asset type.')
+        if asset is None:
+            raise ValueError('Select an available managed asset.')
         binding = create_prometheus_binding(
             instance=instance,
-            cluster=cluster,
-            role=role,
-            priority=priority,
-            selector_label=selector_label,
-            selector_value=selector_value,
-            selector_operator=selector_operator,
+            spec=SourceBindingSpec(
+                asset_type=asset_type,
+                asset_key=str(asset_key),
+                role=role,
+                priority=priority,
+                selector_label=selector_label,
+                selector_value=selector_value,
+                selector_operator=selector_operator,
+            ),
         )
     except ValueError as exc:
         error = str(exc)
@@ -593,14 +500,15 @@ def add_instance_binding(instance_id: int) -> ResponseReturnValue:
             event_type='prometheus_binding_create_rejected',
             status='error',
             title='Prometheus binding not saved',
-            message=f'KAORI could not bind {instance.name} to {cluster.name if cluster else "the selected scope"}.',
+            message=f'KAORI could not bind {instance.name} to {asset_label}.',
             detail=error,
             action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#scope',
-            action_label='Review Prometheus scope',
+            action_label='Review Prometheus bindings',
             action_icon='waypoints',
             metadata={
                 'instance_id': instance.id,
-                'cluster_id': cluster.id if cluster else cluster_id or None,
+                'asset_type': asset_type,
+                'asset_key': asset_key or None,
                 'binding_role': role,
                 'priority': priority,
                 'selector_label': selector_label,
@@ -610,20 +518,21 @@ def add_instance_binding(instance_id: int) -> ResponseReturnValue:
     except Exception as exc:
         db.session.rollback()
         logger.exception('Prometheus binding creation failed for instance %s.', instance_id)
-        error = 'KAORI could not save the scope binding. Review database connectivity and retry.'
+        error = 'KAORI could not save the consumer binding. Review database connectivity and retry.'
         operation_feedback = record_operational_activity(
             user_id=current_user.id,
             event_type='prometheus_binding_create_failed',
             status='error',
             title='Prometheus binding not saved',
-            message=f'KAORI could not bind {instance.name} to {cluster.name if cluster else "the selected scope"}.',
+            message=f'KAORI could not bind {instance.name} to {asset_label}.',
             detail=error,
             action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#scope',
-            action_label='Review Prometheus scope',
+            action_label='Review Prometheus bindings',
             action_icon='waypoints',
             metadata={
                 'instance_id': instance.id,
-                'cluster_id': cluster.id if cluster else cluster_id or None,
+                'asset_type': asset_type,
+                'asset_key': asset_key or None,
                 'reason': type(exc).__name__,
             },
             queue_feedback=not is_htmx,
@@ -635,15 +544,16 @@ def add_instance_binding(instance_id: int) -> ResponseReturnValue:
             event_type='prometheus_binding_created',
             status='success',
             title='Prometheus binding created',
-            message=f'{instance.name} is now available to {cluster.name}.',
+            message=f'{instance.name} is now available to {asset_label}.',
             detail=f'{role.title()} source with priority {priority}. Metrics identity: {selector_label or "unscoped"}.',
             action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#scope',
-            action_label='Review Prometheus scope',
+            action_label='Review Prometheus bindings',
             action_icon='waypoints',
             metadata={
                 'instance_id': instance.id,
                 'binding_id': binding.id,
-                'cluster_id': cluster.id,
+                'asset_type': binding.asset_type,
+                'asset_key': binding.asset_key,
                 'selector_label': selector_label,
                 'selector_value': selector_value,
             },

@@ -65,14 +65,14 @@ def main() -> int:
         ),
         'app/prometheus/routes.py': (
             "event_type='prometheus_instance_created'",
-            "event_type='prometheus_instance_updated'",
             "event_type='prometheus_instance_deleted'",
         ),
+        'app/prometheus/edit_web.py': ("event_type='prometheus_instance_updated'",),
         'app/alertmanager/routes.py': (
             "event_type='alertmanager_instance_created'",
-            "event_type='alertmanager_instance_updated'",
             "event_type='alertmanager_instance_deleted'",
         ),
+        'app/alertmanager/edit_web.py': ("event_type='alertmanager_instance_updated'",),
     }.items():
         require(path, *tokens)
     require(

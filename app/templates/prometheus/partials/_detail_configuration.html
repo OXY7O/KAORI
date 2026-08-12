@@ -1,248 +1,27 @@
-{% import "components/operational_toggle.html" as operational_toggle %}
-{% import "components/form_action_bar.html" as form_action_bar %}
-{% import "components/loading_bar.html" as loading_bar %}
-{% import "components/table_label.html" as table_label %}
-{% import "integrations/components/_configuration_decision.html" as configuration_decision %}
-{% from "integrations/components/_semantic_status.html" import integration_status %}
-{% set field_classes = "h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-normal text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20" %}
-{% set textarea_classes = "min-h-24 w-full resize-y rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-normal leading-6 text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20" %}
-{% set endpoint_product = (instance.endpoint_product or 'prometheus')|lower %}
-{% set endpoint_product_label = 'Prometheus' %}
-{% set readiness = instance.readiness_status or 'validation_required' %}
-<div id="prometheus-configuration-workspace"
-     class="space-y-4 font-sans"
-     data-kaori-prometheus-configuration-v2>
-    <div class="grid items-stretch gap-4 xl:grid-cols-[minmax(0,1fr)_25rem] 2xl:grid-cols-[minmax(0,1fr)_27rem]">
-        <form id="prometheus-instance-form"
-              method="post"
-              action="{{ url_for('prometheus.instance_detail', instance_id=instance.id) }}#configuration"
-              hx-post="{{ url_for('prometheus.instance_detail', instance_id=instance.id) }}"
-              hx-target="#prometheus-configuration-workspace"
-              hx-swap="outerHTML"
-              hx-disabled-elt="button[type='submit']"
-              class="h-full min-w-0"
-              x-data="{ authType: '{{ form.auth_type.data or 'none' }}', detectionMode: '{{ form.version_detection_mode.data or 'automatic' }}' }">
-            {{ form.hidden_tag() }}
-            <section class="flex h-full flex-col overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
-                <header class="border-b border-outline-subtle px-5 py-4">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="flex min-w-0 items-start gap-3">
-                            <span class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"
-                                  aria-hidden="true">
-                                <i data-lucide="settings-2" class="h-4 w-4"></i>
-                            </span>
-                            <div class="min-w-0">
-                                <h3 class="text-sm font-semibold text-content-primary">Connection Configuration</h3>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Changes remain configuration evidence until Full Validation rebuilds readiness.</p>
-                            </div>
-                        </div>
-                    </div>
-                </header>
-                {% if form.errors %}
-                    <div class="border-b border-status-critical-border bg-status-critical-soft px-5 py-3.5">
-                        <p class="text-sm font-semibold text-status-critical-text">Configuration Requires Attention</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Review the highlighted fields before saving again.</p>
-                    </div>
-                {% endif %}
-                <div class="flex-1 divide-y divide-outline-subtle">
-                    <section class="px-5 py-5" aria-labelledby="prometheus-identity-title">
-                        <div class="mb-4 flex items-start gap-3">
-                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"
-                                  aria-hidden="true"><i data-lucide="id-card" class="h-4 w-4"></i></span>
-                            <div>
-                                <h4 id="prometheus-identity-title"
-                                    class="text-sm font-semibold text-content-primary">Source Identity</h4>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Keep the provider identity stable while multiple Kubernetes scopes consume it.</p>
-                            </div>
-                        </div>
-                        <div class="grid gap-4 lg:grid-cols-2">
-                            <div>
-                                <label for="{{ form.name.id }}"
-                                       class="mb-1.5 block text-sm font-semibold text-content-primary">Instance Name</label>
-                                {{ form.name(class_=field_classes) }}
-                                {% for error in form.name.errors %}
-                                    <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
-                                {% endfor %}
-                            </div>
-                            <div>
-                                <label for="{{ form.description.id }}"
-                                       class="mb-1.5 block text-sm font-semibold text-content-primary">Description</label>
-                                {{ form.description(class_=textarea_classes, rows=3) }}
-                                {% for error in form.description.errors %}
-                                    <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </section>
-                    <section class="px-5 py-5" aria-labelledby="prometheus-endpoint-title">
-                        <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                            <div class="flex items-start gap-3">
-                                <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"
-                                      aria-hidden="true"><i data-lucide="network" class="h-4 w-4"></i></span>
-                                <div>
-                                    <h4 id="prometheus-endpoint-title"
-                                        class="text-sm font-semibold text-content-primary">Endpoint &amp; Access</h4>
-                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Endpoint reachability does not imply provider core readiness or consumer-binding readiness.</p>
-                                </div>
-                            </div>
-                            <button type="button"
-                                    hx-post="{{ url_for('prometheus.test_instance_configuration', instance_id=instance.id) }}"
-                                    hx-include="#prometheus-instance-form"
-                                    hx-target="#prometheus-configuration-test-result"
-                                    hx-swap="innerHTML"
-                                    hx-indicator="#prometheus-configuration-test-loading"
-                                    hx-disabled-elt="this"
-                                    class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-wait disabled:opacity-70">
-                                <i data-lucide="plug-zap" class="h-4 w-4" aria-hidden="true"></i>
-                                Test Connection
-                            </button>
-                        </div>
-                        {{ loading_bar.render('prometheus-configuration-test-loading', label='Testing Prometheus configuration') }}
-                        <div class="grid gap-4">
-                            <div>
-                                <label for="{{ form.endpoint.id }}"
-                                       class="mb-1.5 block text-sm font-semibold text-content-primary">Endpoint URL</label>
-                                {{ form.endpoint(class_=field_classes) }}
-                                {% for error in form.endpoint.errors %}
-                                    <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
-                                {% endfor %}
-                                <p class="mt-1.5 text-xs leading-5 text-content-muted">Use the base endpoint reachable from KAORI; do not append <span class="font-semibold text-content-primary">/api/v1</span>.</p>
-                            </div>
-                            <div class="grid gap-4 lg:grid-cols-2">
-                                <div>
-                                    <label for="{{ form.auth_type.id }}"
-                                           class="mb-1.5 block text-sm font-semibold text-content-primary">Authentication</label>
-                                    {{ form.auth_type(class_=field_classes, **{'x-on:change':'authType = $event.target.value'}) }}
-                                    {% for error in form.auth_type.errors %}
-                                        <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
-                                    {% endfor %}
-                                </div>
-                                <div>
-                                    <label for="{{ form.timeout.id }}"
-                                           class="mb-1.5 block text-sm font-semibold text-content-primary">Request Timeout</label>
-                                    {{ form.timeout(class_=field_classes) }}
-                                    {% for error in form.timeout.errors %}
-                                        <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
-                                    {% endfor %}
-                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">Allowed range: 1–5 seconds.</p>
-                                </div>
-                            </div>
-                            <div x-show="authType === 'basic'"
-                                 x-cloak
-                                 class="grid gap-4 lg:grid-cols-2">
-                                <div>
-                                    <label for="{{ form.username.id }}"
-                                           class="mb-1.5 block text-sm font-semibold text-content-primary">Username</label>
-                                    {{ form.username(class_=field_classes) }}
-                                    {% for error in form.username.errors %}
-                                        <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
-                                    {% endfor %}
-                                </div>
-                                <div>
-                                    <label for="{{ form.password.id }}"
-                                           class="mb-1.5 block text-sm font-semibold text-content-primary">Password</label>
-                                    {{ form.password(class_=field_classes, autocomplete='new-password', placeholder='Leave blank to keep the current password') }}
-                                    {% for error in form.password.errors %}
-                                        <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            <div x-show="authType === 'bearer'" x-cloak>
-                                <label for="{{ form.bearer_token.id }}"
-                                       class="mb-1.5 block text-sm font-semibold text-content-primary">Bearer Token</label>
-                                {{ form.bearer_token(class_=field_classes, autocomplete='new-password', placeholder='Leave blank to keep the current token') }}
-                                {% for error in form.bearer_token.errors %}
-                                    <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        <div id="prometheus-configuration-test-result"
-                             class="sr-only"
-                             aria-live="polite"></div>
-                    </section>
-                    <section class="px-5 py-5" aria-labelledby="prometheus-compatibility-title">
-                        <div class="mb-4 flex items-start gap-3">
-                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"
-                                  aria-hidden="true"><i data-lucide="scan-search" class="h-4 w-4"></i></span>
-                            <div>
-                                <h4 id="prometheus-compatibility-title"
-                                    class="text-sm font-semibold text-content-primary">Compatibility Detection</h4>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Direct Prometheus may be auto-detected; a Prometheus-compatible query gateway may need an explicit upstream source contract.</p>
-                            </div>
-                        </div>
-                        <div class="grid gap-4 lg:grid-cols-2">
-                            <div>
-                                <label for="{{ form.version_detection_mode.id }}"
-                                       class="mb-1.5 block text-sm font-semibold text-content-primary">Detection Mode</label>
-                                {{ form.version_detection_mode(class_=field_classes, **{'x-on:change':'detectionMode = $event.target.value'}) }}
-                                {% for error in form.version_detection_mode.errors %}
-                                    <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
-                                {% endfor %}
-                            </div>
-                            <div x-show="detectionMode === 'manual'" x-cloak>
-                                <label for="{{ form.source_prometheus_major.id }}"
-                                       class="mb-1.5 block text-sm font-semibold text-content-primary">Prometheus Source Version</label>
-                                {{ form.source_prometheus_major(class_=field_classes, **{':required':"detectionMode === 'manual'"}) }}
-                                {% for error in form.source_prometheus_major.errors %}
-                                    <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </section>
-                    <section class="px-5 py-5" aria-labelledby="prometheus-controls-title">
-                        <div class="mb-4 flex items-start gap-3">
-                            <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"
-                                  aria-hidden="true"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
-                            <div>
-                                <h4 id="prometheus-controls-title"
-                                    class="text-sm font-semibold text-content-primary">Security &amp; Operational Controls</h4>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Trust verification and source eligibility remain independent controls.</p>
-                            </div>
-                        </div>
-                        <div class="grid gap-3 lg:grid-cols-2">
-                            {% call operational_toggle.render('Verify TLS Certificate', 'Reject untrusted or mismatched certificates.') %}
-                                {{ form.verify_ssl(class_='h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-2 focus:ring-outline-focus/20 focus:ring-offset-2') }}
-                            {% endcall %}
-                            {% call operational_toggle.render('Allow KAORI to Use This Connection', 'Disabled sources stay registered but are excluded from source resolution.') %}
-                                {{ form.enabled(class_='h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-2 focus:ring-outline-focus/20 focus:ring-offset-2') }}
-                            {% endcall %}
-                        </div>
-                    </section>
-                </div>
-                {% call form_action_bar.render('Saving changes resets technical readiness until Full Validation succeeds.', aria_label='Prometheus Configuration Actions', embedded=true) %}
-                    <button type="submit"
-                            class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60">
-                        <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
-                        Save Changes
-                    </button>
-                {% endcall %}
-            </section>
-        </form>
-        {{ configuration_decision.side_panel('Prometheus Configuration Decision',
-                'Current source contract and the controlled path back to operational Analytics use.',
-                readiness,
-                [
-                ('Canonical Source', instance.name, 'Reusable provider identity') ,
-        ('Endpoint Product', endpoint_product_label, instance.detected_version or 'Version not observed'),
-        ('Core Profile', instance.query_profile or 'Validation Required', 'Provider-neutral Prometheus core contract selected by Full Validation'),
-        ('Scope Bindings', bindings|length, 'Governed consumer contexts')
-        ],
-        'Saving endpoint, access, trust, or compatibility settings resets readiness. Test Connection proves transport only.',
-        'Consumer Boundary',
-        'Prometheus executes metric queries. KAORI governs source selection, validation evidence, bindings, and consumer eligibility.',
-        [
-        ('Save Changes', 'Resets technical readiness.'),
-        ('Test Connection', 'Proves transport reachability only.'),
-        ('Full Validation', 'Rebuilds capability evidence.'),
-        ('Consumer Use', 'Requires eligible scope bindings.')
-        ],
-        [
-        ('Transport Check', 'Test Connection'),
-        ('Capability Contract', 'Full Validation'),
-        ('Consumer Eligibility', 'Scope Binding'),
-        ('Operational Use', 'Source Resolution')
-        ]
-        ) }}
-    </div>
-</div>
-{% include "components/operation_feedback_oob.html" %}
+{% import "integrations/components/_provider_configuration_contract.html" as provider_configuration_contract %}
+{% set readiness = instance.readiness_status or "validation_required" %}
+{% set auth_label = (instance.auth_type or "none")|replace("_", " ")|title %}
+{% set compatibility_label = instance.compatibility_profile or "Validation Required" %}
+{% set summary_items = [
+    ("Canonical Identity", instance.name, "Stable provider and audit identity"),
+    ("Environment", instance.environment|default("")|title, "Coverage and policy context"),
+    ("Detected Version", instance.detected_version or "Not Observed", "Observed from the Prometheus-compatible API"),
+    ("Compatibility", compatibility_label, "Resolved by Validation & Capabilities")
+] %}
+{% set evidence_items = [
+    ("server", "brand", "Prometheus API Endpoint", instance.endpoint, "Base HTTP API endpoint queried by KAORI."),
+    ("shield-check", "success" if instance.verify_ssl else "warning", "TLS Verification", "Enabled" if instance.verify_ssl else "Disabled", "Certificate validation policy for this source."),
+    ("key-round", "info", "Access Contract", auth_label, "Credentials remain encrypted and independent from consumer bindings."),
+    ("database", "success" if instance.enabled else "warning", "Metrics Authority", "Prometheus Runtime" if instance.enabled else "Source Disabled", "Prometheus owns query and metrics history; bindings only scope consumer use.")
+] %}
+{% set flow_items = [('Configure', 'Set reusable identity, endpoint access, TLS, authentication, and compatibility detection.', 'settings-2'), ('Validate', 'Confirm provider-neutral Prometheus HTTP API and PromQL capabilities.', 'badge-check'), ('Observe', 'Persist runtime health and historical provider evidence independently from consumers.', 'activity'), ('Bind', 'Associate Kubernetes, MinIO, and future managed assets through consumer profiles.', 'waypoints')] %}
+{{ provider_configuration_contract.render("Prometheus",
+"chart-spline",
+readiness,
+summary_items,
+evidence_items,
+"Prometheus owns metrics query and history. KAORI keeps provider readiness separate from consumer bindings.",
+flow_items,
+"Connection changes require revalidation; existing consumer bindings stay attached to their managed assets.",
+url_for("prometheus.edit_instance", instance_id=instance.id) 
+) }}

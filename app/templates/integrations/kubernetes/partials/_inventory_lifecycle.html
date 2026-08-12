@@ -1,4 +1,5 @@
 {% import "components/table.html" as table_ui %}
+{% import "integrations/components/_asset_owner_observability_sources.html" as asset_owner_sources %}
 {% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
@@ -176,66 +177,9 @@
                     {% endfor %}
                 </div>
             </section>
-            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
-                     aria-labelledby="bound-sources-title">
-                <header class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
-                    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                        <div class="flex items-start gap-3">
-                            {{ integration_ui.palette_icon('radio-tower', 'info', size='sm') }}
-                            <div class="min-w-0">
-                                <h3 id="bound-sources-title"
-                                    class="text-sm font-semibold text-content-primary">Bound Observability Sources</h3>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Source readiness, binding validation, and effective resolution remain independent evidence dimensions.</p>
-                            </div>
-                        </div>
-                        {{ table_label.metadata_label(source_bindings|length ~ ' Source' ~ ('' if source_bindings|length == 1 else 's') ) }}
-                    </div>
-                </header>
-                <div class="overflow-hidden">
-                    <table class="{{ table_ui.table_classes() }} table-fixed">
-                        <colgroup>
-                            <col class="w-[34%]">
-                            <col class="w-[22%]">
-                            <col class="w-[22%]">
-                            <col class="w-[22%]">
-                        </colgroup>
-                        <thead class="{{ table_ui.head_classes() }}">
-                            <tr>
-                                <th class="{{ table_ui.header_cell_classes() }}">Source</th>
-                                <th class="{{ table_ui.header_cell_classes() }}">Source Readiness</th>
-                                <th class="{{ table_ui.header_cell_classes() }}">Binding Validation</th>
-                                <th class="{{ table_ui.header_cell_classes(action=true) }}">Effective Resolution</th>
-                            </tr>
-                        </thead>
-                        <tbody class="{{ table_ui.body_classes() }}">
-                            {% for source in source_bindings %}
-                                <tr class="{{ table_ui.row_classes() }}">
-                                    <td class="{{ table_ui.cell_classes() }}">
-                                        <div class="flex min-w-0 items-start gap-3">
-                                            {{ integration_ui.palette_icon(source.icon, 'brand', size='sm') }}
-                                            <div class="min-w-0">
-                                                <p class="truncate text-sm font-semibold text-content-primary"
-                                                   title="{{ source.name }}">{{ source.name }}</p>
-                                                <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">
-                                                    {{ source.provider }}
-                                                    {% if source.role %}· {{ source.role|title }} Source{% endif %}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="{{ table_ui.cell_classes() }}">{{ integration_status(source.source_readiness, display='indicator') }}</td>
-                                    <td class="{{ table_ui.cell_classes() }}">{{ integration_status(source.binding_validation, display='indicator') }}</td>
-                                    <td class="{{ table_ui.cell_classes(action=true) }}">{{ integration_status(source.effective_status, source.effective_label, display='indicator') }}</td>
-                                </tr>
-                            {% else %}
-                                <tr>
-                                    <td colspan="4" class="px-5 py-8 text-center text-sm text-content-muted">No reusable observability source is currently bound to this Kubernetes connection.</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+            {{ asset_owner_sources.render(source_bindings,
+                        total_count=source_bindings|length,
+                        empty_message="No reusable observability source is currently bound to this Kubernetes connection.") }}
         </div>
     </section>
 </div>

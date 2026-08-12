@@ -2,6 +2,7 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "integrations/components/_capability_readiness.html" as capability_readiness %}
+{% import "integrations/components/_readiness_explanation.html" as readiness_explanation %}
 {% set readiness = instance.readiness_status or "validation_required" %}
 {% set validated_count = capability_summary.observed %}
 {% set total_count = capability_summary.total %}
@@ -29,7 +30,7 @@
          {% if validation_job and validation_job.is_active %}hx-get="{{ url_for('alertmanager.instance_validation_status', instance_id=instance.id, task_id=validation_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML"{% endif %}>
     {% call connection_validation_header.render(
         "Alertmanager Core Validation",
-        "Validate provider compatibility and the core Alertmanager API contract without depending on Kubernetes, MinIO, or any other consumer alert stream.",
+        "Validate compatibility and core Alertmanager APIs. Consumer alert streams remain binding-specific.",
         icon="scan-search",
         loading_id="alertmanager-validation-loading",
         loading_active=validation_job and validation_job.is_active,
@@ -68,10 +69,10 @@
     {% endif %}
     <div class="space-y-4 p-4 sm:p-5">
         {{ capability_readiness.render("Alertmanager Provider Readiness",
-                "Provider readiness is established only from Alertmanager compatibility and core API evidence. Consumer alert labels and payload semantics belong to bindings.",
+                "Core API evidence determines Alertmanager readiness.",
                 readiness,
                 readiness|replace("_", " ") |title,
-        "Validated core capability coverage",
+        "Validated Capabilities",
         validated_count ~ " / " ~ total_count,
         readiness_percent,
         capability_metadata,
@@ -82,11 +83,23 @@
         "Full Validation owns provider compatibility and core API evidence only. Binding Validation owns consumer profiles, selectors, alert identity, and payload evidence. Runtime Refresh owns current endpoint health.",
         next_action
         ) }}
-        <div class="rounded-xl border border-brand-outline bg-kaori-soft px-4 py-3"
-             data-kaori-alertmanager-consumer-validation-boundary>
-            <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">Consumer Validation Boundary</p>
-            <p class="mt-1 text-sm leading-6 text-content-secondary">Kubernetes, MinIO, and other alert contracts are validated through their asset-scoped bindings. A missing consumer alert stream does not degrade Alertmanager provider readiness.</p>
-        </div>
+        {% if readiness == "ready" %}
+            {% set readiness_decision_title = "Provider Readiness Is Ready" %}
+            {% set readiness_decision_message = "Core Alertmanager APIs are ready. Kubernetes and MinIO alert coverage remains binding-specific." %}
+            {% set readiness_decision_tone = "normal" %}
+        {% elif readiness in ["blocked", "failed", "unavailable", "incompatible"] %}
+            {% set readiness_decision_title = "Why Readiness Is Blocked" %}
+            {% set readiness_decision_message = next_action %}
+            {% set readiness_decision_tone = "critical" %}
+        {% else %}
+            {% set readiness_decision_title = "Why Readiness Needs Attention" %}
+            {% set readiness_decision_message = next_action %}
+            {% set readiness_decision_tone = "warning" %}
+        {% endif %}
+        {{ readiness_explanation.render(readiness_decision_title,
+                readiness_decision_message,
+                readiness_decision_tone,
+                [capability_summary.required_missing ~ " required gaps", binding_rows|length ~ " consumer bindings"]) }}
         {% include "alertmanager/partials/_capability_registry.html" %}
     </div>
 </section>

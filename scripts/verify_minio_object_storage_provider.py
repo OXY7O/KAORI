@@ -123,18 +123,18 @@ def main() -> None:
         not (ROOT / 'app/integrations/minio/binding.py').exists(),
         'deprecated MinIO owner-binding module must be removed',
     )
-    require(
-        "create_source_binding(\n        'prometheus'" in service, 'MinIO metrics must use canonical source binding'
-    )
-    require(
-        'asset_type=OBJECT_STORAGE_SYSTEM_SCOPE' in service,
-        'MinIO Prometheus binding must target object_storage_system',
-    )
+    require('create_source_binding' not in service, 'MinIO asset-owner service must not mutate observability bindings')
     require('prometheus_id' not in minio_model, 'MinIO model must not own a direct Prometheus foreign key')
     require('app.minio.forms' not in service, 'MinIO service layer must not depend on WTForms')
     require('app.minio.forms' not in registration_service, 'MinIO registration proof must not depend on WTForms')
     require('MinioRegistrationInput' in service, 'MinIO service must consume the registration input contract')
-    require('MinioMetricsBindingInput' in service, 'MinIO metrics binding must consume the binding input contract')
+    require(
+        'MinioMetricsBindingInput' not in service,
+        'MinIO asset-owner service must not own metrics binding input contracts',
+    )
+    require(
+        'MinioAlertBindingInput' not in service, 'MinIO asset-owner service must not own alert binding input contracts'
+    )
 
     require(
         'get_integration(provider_type).get_instance(instance_id)' in validation_web,
@@ -178,15 +178,17 @@ def main() -> None:
         'MinIO validation workspace must match the Kubernetes capability model',
     )
     require(
-        'Bindings & Lifecycle' in minio_detail,
-        'MinIO fourth workspace must combine consumer bindings with asset lifecycle',
+        'Inventory & Lifecycle' in minio_detail,
+        'MinIO fourth workspace must match the asset-owner inventory/lifecycle model',
     )
     require(
         'Configure Connection' in minio_configuration,
         'MinIO configuration must expose the managed connection lifecycle action',
     )
     require("url_for('minio.edit_instance'" in minio_configuration, 'MinIO configuration edit route is missing')
-    require('Connection Lifecycle' in minio_scope, 'MinIO asset lifecycle section is missing')
+    require('Lifecycle Gate' in minio_scope, 'MinIO asset lifecycle gate is missing')
+    require('Next Lifecycle Action' in minio_scope, 'MinIO lifecycle action summary is missing')
+    require('Open Observability' in minio_scope, 'MinIO asset owner must direct binding mutation to Observability')
     require('Delete Connection' in minio_scope, 'MinIO delete action is missing')
     require("url_for('minio.delete_instance'" in minio_scope, 'MinIO delete route wiring is missing')
     require(
@@ -204,7 +206,15 @@ def main() -> None:
         'MinIO runtime history must reuse the canonical runtime-history workspace',
     )
     require('runtime_history_filters_enabled=true' in minio_runtime, 'MinIO runtime history filters must be enabled')
-    require('minio-binding-registry' in minio_binding_registry, 'MinIO consumer binding registry is missing')
+    require('minio-binding-registry' in minio_binding_registry, 'MinIO observability source registry is missing')
+    require(
+        'Bound Observability Sources' in minio_binding_registry,
+        'MinIO must use the asset-owner observability source table',
+    )
+    require(
+        'Binding mutation belongs to the Observability source workspace' in minio_binding_registry,
+        'MinIO must keep binding mutation source-owned',
+    )
     require('binding_per_page' in minio_binding_registry, 'MinIO consumer binding pagination is missing')
     require(
         'hx-target="#minio-binding-registry"' in minio_binding_registry,
@@ -222,6 +232,11 @@ def main() -> None:
         "@minio_bp.get('/instances/<int:instance_id>/bindings/registry')" in minio_routes,
         'MinIO binding registry HTMX endpoint is missing',
     )
+    for forbidden_route in ('metrics-binding', 'alert-binding', 'validate_binding', 'remove_binding'):
+        require(
+            forbidden_route not in minio_routes,
+            f'MinIO route layer must not own observability binding mutation: {forbidden_route}',
+        )
     require('Refresh Runtime' in minio_runtime, 'MinIO manual runtime refresh is missing')
     require("url_for('minio.refresh_runtime'" in minio_runtime, 'MinIO runtime refresh route wiring is missing')
     require(

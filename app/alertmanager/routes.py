@@ -8,6 +8,7 @@ from flask import Blueprint, abort, current_app, make_response, redirect, render
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
+from app.alertmanager.edit_web import edit_instance_response
 from app.alertmanager.forms import (
     AlertmanagerBindingForm,
     parse_alertmanager_binding_form,
@@ -25,14 +26,19 @@ from app.alertmanager.service import (
     get_cluster_by_id,
     remove_alertmanager_binding,
     remove_alertmanager_instance,
-    save_alertmanager_instance,
     test_alertmanager_form_connection,
     update_alertmanager_binding_selector,
+)
+from app.alertmanager.workspace_web import (
+    instance_context as _instance_context,
+)
+from app.alertmanager.workspace_web import (
+    render_instance_partial as _render_instance_partial,
 )
 from app.common.http import is_htmx_request
 from app.integrations.capability_registry import build_capability_registry_view
 from app.integrations.deletion import DeletionBlocked
-from app.integrations.validation.state import build_validation_snapshot, get_active_validation_task_id
+from app.integrations.validation.state import build_validation_snapshot
 from app.integrations.validation.web import (
     enqueue_binding_validation,
     enqueue_instance_validation,
@@ -56,56 +62,6 @@ def _htmx_redirect(location: str) -> ResponseReturnValue:
     response = make_response('', 204)
     response.headers['HX-Redirect'] = location
     return response
-
-
-def _instance_context(instance) -> dict:
-    context = build_instance_context(instance)
-    context['capability_registry'] = build_capability_registry_view(
-        context.get('capability_rows', []),
-        search_fields=('label', 'category', 'description'),
-        distinguish_optional_gap=True,
-    )
-    validation_task_id = get_active_validation_task_id(
-        provider_type='alertmanager',
-        operation='full_validation',
-        instance_id=instance.id,
-    )
-    context['validation_job'] = build_validation_snapshot(validation_task_id) if validation_task_id else None
-    runtime_task_id = get_active_validation_task_id(
-        provider_type='alertmanager',
-        operation='runtime_refresh',
-        instance_id=instance.id,
-    )
-    context['runtime_refresh_job'] = build_validation_snapshot(runtime_task_id) if runtime_task_id else None
-    binding_job = None
-    for binding in context.get('bindings', []):
-        task_id = get_active_validation_task_id(
-            provider_type='alertmanager',
-            operation='binding_validation',
-            instance_id=instance.id,
-            binding_id=binding.id,
-        )
-        if task_id:
-            binding_job = build_validation_snapshot(task_id)
-            break
-    context['binding_validation_job'] = binding_job
-    return context
-
-
-def _render_instance_partial(
-    template_name: str,
-    instance,
-    *,
-    operation_feedback: dict | None = None,
-    **extra_context,
-) -> str:
-    context = _instance_context(instance)
-    context.update(extra_context)
-    context['operation_feedback'] = operation_feedback
-    context['notification_context'] = get_navigation_notification_context(
-        user_id=int(current_user.id),
-    )
-    return render_template(template_name, **context)
 
 
 @alertmanager_bp.route('/instances/new', methods=['GET', 'POST'])
@@ -372,62 +328,42 @@ def test_instance_configuration(instance_id: int) -> ResponseReturnValue:
     )
 
 
-@alertmanager_bp.route('/instances/<int:instance_id>', methods=['GET', 'POST'])
+@alertmanager_bp.route('/instances/<int:instance_id>/edit', methods=['GET', 'POST'])
+@permission_required('settings.manage_integrations')
+def edit_instance(instance_id: int) -> ResponseReturnValue:
+    return edit_instance_response(instance_id)
+
+
+@alertmanager_bp.get('/instances/<int:instance_id>')
 @permission_required('settings.manage_integrations')
 def instance_detail(instance_id: int) -> ResponseReturnValue:
     instance = get_alertmanager_instance(instance_id)
     if instance is None:
         abort(404)
-    is_htmx = is_htmx_request()
+    return render_template(
+        'alertmanager/instance_detail.html',
+        **_instance_context(
+            instance,
+            binding_page=request.args.get('binding_page', 1, type=int) or 1,
+            binding_per_page=request.args.get('binding_per_page', 5, type=int) or 5,
+        ),
+    )
 
-    if request.method == 'POST':
-        form = parse_alertmanager_instance_form(request.form)
-        try:
-            instance = save_alertmanager_instance(form=form, instance=instance)
-        except ValueError as exc:
-            feedback = record_instance_activity(
-                user_id=int(current_user.id),
-                instance=instance,
-                event_type='alertmanager_instance_update_rejected',
-                status='error',
-                title='Alertmanager instance not updated',
-                message=f'KAORI could not update {instance.name}.',
-                detail=str(exc),
-                queue_feedback=not is_htmx,
-            )
-        except Exception as exc:
-            logger.exception('Alertmanager instance update failed for %s.', instance_id)
-            feedback = record_instance_activity(
-                user_id=int(current_user.id),
-                instance=instance,
-                event_type='alertmanager_instance_update_failed',
-                status='error',
-                title='Alertmanager instance not updated',
-                message=f'KAORI could not update {instance.name}.',
-                detail='Review KAORI logs and database connectivity before retrying.',
-                metadata={'reason': type(exc).__name__},
-                queue_feedback=not is_htmx,
-            )
-        else:
-            feedback = record_instance_activity(
-                user_id=int(current_user.id),
-                instance=instance,
-                event_type='alertmanager_instance_updated',
-                status='success',
-                title='Alertmanager instance updated',
-                message=f'{instance.name} connection settings were saved.',
-                detail='Readiness is now Validation Required until a Full Validation completes.',
-                queue_feedback=not is_htmx,
-            )
-        if is_htmx:
-            return _render_instance_partial(
-                'alertmanager/partials/_detail_configuration.html',
-                instance,
-                operation_feedback=feedback,
-            )
-        return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#configuration')
 
-    return render_template('alertmanager/instance_detail.html', **_instance_context(instance))
+@alertmanager_bp.get('/instances/<int:instance_id>/bindings/registry')
+@permission_required('settings.manage_integrations')
+def instance_binding_registry(instance_id: int) -> ResponseReturnValue:
+    instance = get_alertmanager_instance(instance_id)
+    if instance is None:
+        abort(404)
+    return render_template(
+        'alertmanager/partials/_binding_registry.html',
+        **_instance_context(
+            instance,
+            binding_page=request.args.get('binding_page', 1, type=int) or 1,
+            binding_per_page=request.args.get('binding_per_page', 5, type=int) or 5,
+        ),
+    )
 
 
 @alertmanager_bp.post('/instances/<int:instance_id>/runtime/refresh')

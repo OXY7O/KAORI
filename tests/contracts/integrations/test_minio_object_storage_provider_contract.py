@@ -62,13 +62,12 @@ def test_minio_api_plane_uses_s3_sdk_and_encrypted_credentials() -> None:
 def test_minio_prometheus_metrics_plane_reuses_canonical_asset_binding() -> None:
     service = read('app/minio/service.py')
     registration = read('app/integrations/minio/__init__.py')
-    binding_service = read('app/integrations/binding_service.py')
+    prometheus_profiles = read('app/integrations/minio/__init__.py')
+    consumer_assets = read('app/integrations/consumer_assets.py')
 
-    assert "create_source_binding(\n        'prometheus'" in service
-    assert 'asset_type=OBJECT_STORAGE_SYSTEM_SCOPE' in service
-    assert 'asset_key=instance.object_storage_system_id' in service
-    assert 'capability_scope=list(PROMETHEUS_CAPABILITY_SCOPE)' in service
-    assert 'def create_source_binding(' in binding_service
+    assert 'create_source_binding' not in service
+    assert "asset_type='object_storage_system'" in consumer_assets
+    assert "profile_key='minio-metrics-2024-v1'" in prometheus_profiles
     assert 'minio_prometheus' not in service.lower()
 
     assert 'BindingValidationProfile(' in registration
@@ -83,12 +82,14 @@ def test_minio_owner_relationship_is_not_a_consumer_self_binding() -> None:
     adapter = read('app/integrations/minio/adapter.py')
     registration = read('app/integrations/minio/__init__.py')
     presentation = read('app/minio/presentation.py')
+    source_projection = read('app/integrations/asset_owner_sources.py')
     cleanup = read('migrations/versions/20260812_remove_minio_owner_self_binding.py')
 
     assert 'ensure_primary_asset_binding' not in service
     assert "'binding.create'" not in registration
     assert "'binding.validate'" not in registration
-    assert "IntegrationInstance.provider_type.in_(('prometheus', 'alertmanager'))" in presentation
+    assert 'build_bound_observability_source_rows(' in presentation
+    assert 'IntegrationInstance.provider_type.in_(_OBSERVABILITY_PROVIDER_TYPES)' in source_projection
     assert 'Native Provider Contract' not in presentation
     assert 'DELETE FROM integration_bindings' in cleanup
     assert "ii.provider_type = 'minio'" in cleanup
@@ -138,7 +139,7 @@ def test_minio_workspace_is_nested_under_integrations_storage() -> None:
     assert 'Connection Registry' in tabs
     assert 'framed_workspace_tabs.render' in detail
     assert 'Validation & Capabilities' in detail
-    assert 'Bindings & Lifecycle' in detail
+    assert 'Inventory & Lifecycle' in detail
 
 
 def test_minio_service_boundary_uses_input_contracts_not_forms() -> None:
@@ -147,15 +148,15 @@ def test_minio_service_boundary_uses_input_contracts_not_forms() -> None:
     forms = read('app/minio/forms.py')
 
     assert 'MinioRegistrationInput' in service
-    assert 'MinioMetricsBindingInput' in service
-    assert 'MinioAlertBindingInput' in service
+    assert 'MinioMetricsBindingInput' not in service
+    assert 'MinioAlertBindingInput' not in service
     assert 'from app.minio.contracts import MinioRegistrationInput' in registration
     assert 'app.minio.forms' not in service
     assert 'app.minio.forms' not in registration
     assert 'def to_input(self' in forms
     assert '-> MinioRegistrationInput:' in forms
-    assert 'def to_input(self) -> MinioMetricsBindingInput:' in forms
-    assert 'def to_input(self) -> MinioAlertBindingInput:' in forms
+    assert 'MinioMetricsBindingForm' not in forms
+    assert 'MinioAlertBindingForm' not in forms
 
 
 def test_domain_section_header_runtime_regression_is_closed() -> None:
@@ -172,5 +173,5 @@ def test_minio_asset_owner_lifecycle_preserves_observability_sources() -> None:
 
     assert 'def delete_minio_instance(' in service
     assert 'asset_owner_deletion_guard(' in service
-    assert 'Shared Prometheus and Alertmanager connections remain reusable.' in scope
-    assert 'Bindings & Lifecycle' in detail
+    assert 'reusable Prometheus or Alertmanager connections remain retained' in scope
+    assert 'Inventory & Lifecycle' in detail

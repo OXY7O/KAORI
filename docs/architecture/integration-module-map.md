@@ -185,15 +185,21 @@ changes only the affected binding.
 ### Provider workspace alignment
 
 Kubernetes, Prometheus, Alertmanager, and MinIO follow the same provider interaction
-model for front pages, registration, Configuration, Core Validation, and Runtime &
+model for front pages, registration, Configuration, Validation & Capabilities, and Runtime &
 History. Asset-owner providers use a lifecycle-oriented final workspace: Kubernetes
 owns the managed cluster lifecycle and MinIO owns the canonical `object_storage_system`
 lifecycle, while Prometheus and Alertmanager remain reusable shared-source providers.
-MinIO therefore exposes `Bindings & Lifecycle` so Prometheus metrics and Alertmanager
-alert bindings are governed around the object-storage asset without coupling or
-deleting those reusable source connections. Provider-specific API fields and
+Kubernetes and MinIO expose `Inventory & Lifecycle`, where bound observability sources are
+read-only evidence. Prometheus/Alertmanager own binding creation, validation, update, and
+removal from their `Bindings & Consumers` workspaces. Provider-specific API fields and
 consumer contracts may differ, but Hero semantics, connection terminology, readiness
-boundaries, and empty/populated registry states must not drift per provider.
+boundaries, standard tables, and empty/populated registry states must not drift per provider.
+
+Eligible consumer asset families are registered centrally in `app/integrations/consumer_assets.py`.
+The shared Observability Add Binding modal resolves each source provider's Consumer Profile from
+the selected asset type. A future managed asset such as Vault should register `vault_system` plus
+compatible Prometheus/Alertmanager profiles; it then becomes eligible without a new source-specific
+binding form or binding table.
 
 ## Worker ownership
 
@@ -263,5 +269,5 @@ IntegrationInstance + IntegrationBinding
           └── Binding Registry
 ```
 
-A binding is included when its source provider belongs to the selected domain **or** when its target `asset_type` is owned by that domain. This keeps cross-domain observability visible from the consumer domain without introducing provider-to-provider foreign keys. For example, `Prometheus → object_storage_system` is visible from both Observability (source ownership) and Storage (asset ownership), while the persisted relation remains the canonical `IntegrationBinding`.
+A domain Bindings view includes **consumer bindings** whose source provider belongs to the selected source-oriented domain or whose target `asset_type` is owned by the selected consumer domain. Native asset-owner attachments are excluded from this view and from consumer-binding counts. For example, `Prometheus → object_storage_system` and `Alertmanager → object_storage_system` are visible from Storage, while MinIO ownership of the same `object_storage_system` is represented by the provider connection itself rather than a MinIO self-binding.
 

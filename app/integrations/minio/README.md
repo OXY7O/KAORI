@@ -2,7 +2,7 @@
 
 MinIO is the first `Storage → Object Storage` provider registered with the KAORI Integration kernel.
 
-The provider owns the S3 API plane and binds to a provider-neutral `object_storage_system` asset. Prometheus and Alertmanager remain independent Observability providers and may bind to the same asset for metrics and alerts. No direct MinIO → Prometheus/Alertmanager foreign key or product-specific binding table is allowed.
+The provider owns the S3 API plane and one provider-neutral `object_storage_system` asset through the MinIO connection record. That owner relationship is not a consumer binding. Prometheus and Alertmanager remain independent Observability providers and may bind to the asset for metrics and alerts. No direct MinIO → Prometheus/Alertmanager foreign key, MinIO self-binding, or product-specific binding table is allowed.
 
 Initial compatibility target: `RELEASE.2024-08-03T04-33-23Z` (`minio-release-2024-08-03`).
 
@@ -18,9 +18,9 @@ MinIO Integrations
   → Register Connection
   → Connection Configuration
   → Test Connection
-  → Core Validation
+  → Validation & Capabilities
   → Runtime & History
-  → Bindings & Lifecycle
+  → Inventory & Lifecycle
 ```
 
 The visual shell, registration terminology, Hero hierarchy, tab structure,
@@ -51,7 +51,7 @@ ObjectStorageSystem
 
 MinIO API readiness must not depend on Prometheus metric presence or Alertmanager
 alert presence. Conversely, metrics and alert readiness belong to their
-provider-to-`object_storage_system` bindings and must not mutate MinIO,
+Prometheus/Alertmanager-to-`object_storage_system` consumer bindings and must not mutate MinIO,
 Prometheus, or Alertmanager provider readiness.
 
 A future S3-compatible provider reuses the same asset/binding model with its own
@@ -67,12 +67,11 @@ with it. The provider detail therefore exposes the same operator lifecycle bound
 ```text
 Configuration
   → Configure Connection
-Core Validation
+Validation & Capabilities
 Runtime & History
   → Refresh Runtime
-Bindings & Lifecycle
-  → Prometheus metrics binding
-  → Alertmanager alert binding
+Inventory & Lifecycle
+  → bound Prometheus/Alertmanager source inventory (read-only)
   → governed Delete Connection
 ```
 
@@ -84,4 +83,5 @@ observation history and Activity Audit records remain retained evidence.
 
 Connection-sensitive configuration changes preserve the canonical object-storage asset
 and its consumer bindings but reset MinIO provider readiness until Core Validation is
-run again.
+run again. Consumer binding creation, validation, update, and removal are performed from
+the Prometheus or Alertmanager source workspace; MinIO only inventories those bound sources.

@@ -182,5 +182,7 @@ Provider Registry
 Bindings
 ```
 
-The Provider Registry is built from canonical `IntegrationInstance` rows. The Bindings view is asset-centric and includes both domain-owned provider bindings and cross-domain sources targeting asset types owned by the domain taxonomy. Provider-specific ORM queries are not allowed in the shared domain service.
+The Provider Registry is built from canonical `IntegrationInstance` rows. The Bindings view contains consumer-source relationships only; native asset-owner/provider relationships are represented by Provider Registry/managed-asset ownership and are never duplicated as self-bindings. Cross-domain sources appear when they target an asset type owned by the domain taxonomy. Provider-specific ORM queries are not allowed in the shared domain service.
+
+Prometheus and Alertmanager own binding mutation for their respective source families. Kubernetes and MinIO surface bound observability sources as read-only lifecycle inventory. Eligible asset families are registered centrally in `app/integrations/consumer_assets.py`, so adding a future asset such as Vault extends source binding/coverage by adding the asset definition plus compatible consumer profiles instead of a new binding table or product-specific source form.
 

@@ -8,6 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.common.integration_errors import describe_integration_failure
 from app.extensions.db import db
 from app.integrations.binding_selectors import build_selector
+from app.integrations.binding_service import SourceBindingSpec
 from app.integrations.deletion import DeletionBlocked, provider_deletion_guard
 from app.integrations.lifecycle import (
     BindingPersistenceSpec,
@@ -337,23 +338,21 @@ def remove_prometheus_instance(instance: PrometheusInstance) -> None:
 def create_prometheus_binding(
     *,
     instance: PrometheusInstance,
-    cluster: Cluster,
-    role: str = 'primary',
-    priority: int = 100,
-    selector_label: str | None = None,
-    selector_value: str | None = None,
-    selector_operator: str = '=',
+    spec: SourceBindingSpec,
     commit: bool = True,
 ) -> IntegrationBinding:
     return get_integration('prometheus').execute(
         'binding.create',
         instance,
-        cluster=cluster,
-        role=role,
-        priority=priority,
-        selector_label=selector_label,
-        selector_value=selector_value,
-        selector_operator=selector_operator,
+        scope_type=spec.asset_type,
+        scope_key=spec.asset_key,
+        role=spec.role,
+        priority=spec.priority,
+        selector_label=spec.selector_label,
+        selector_value=spec.selector_value,
+        selector_operator=spec.selector_operator,
+        capability_scope=spec.capability_scope,
+        enabled=spec.enabled,
         commit=commit,
     )
 

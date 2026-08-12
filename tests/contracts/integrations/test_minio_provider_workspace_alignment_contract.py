@@ -40,10 +40,12 @@ def test_minio_detail_uses_same_four_provider_workspace_domains() -> None:
 
     assert 'x-data="integrationWorkspaceTabs(' in detail
     assert 'framed_workspace_tabs.render' in detail
-    for label in ('Configuration', 'Validation & Capabilities', 'Runtime & History', 'Bindings & Lifecycle'):
+    for label in ('Configuration', 'Validation & Capabilities', 'Runtime & History', 'Inventory & Lifecycle'):
         assert label in detail
     assert 'MinIO Integration' in detail
-    assert 'Connection Posture' in detail
+    posture = read('app/templates/integrations/components/_provider_detail_posture.html')
+    assert 'provider_detail_posture.render(' in detail
+    assert 'Connection Posture' in posture
 
 
 def test_minio_bindings_expose_metrics_and_alert_consumer_profiles() -> None:
@@ -51,11 +53,11 @@ def test_minio_bindings_expose_metrics_and_alert_consumer_profiles() -> None:
     binding_registry = read('app/templates/minio/partials/_binding_registry.html')
     validation = read('app/templates/minio/partials/_detail_validation.html')
 
-    assert 'Consumer Binding Registry' in binding_registry
-    assert 'Prometheus Metrics Consumer' in scope
-    assert 'Alertmanager Alert Consumer' in scope
-    assert 'minio-metrics-2024-v1' in scope
-    assert 'minio-alerts-v1' in scope
+    assert 'Bound Observability Sources' in binding_registry
+    assert 'Binding mutation belongs to the Observability source workspace' in binding_registry
+    assert 'Open Observability' in scope
+    assert 'Prometheus Metrics Consumer' not in scope
+    assert 'Alertmanager Alert Consumer' not in scope
     assert 'Compatibility & Capability Matrix' in validation
     assert 'MinIO Capability Readiness' in validation
     assert 'Capability Registry' in read('app/templates/minio/partials/_capability_registry.html')
@@ -73,11 +75,12 @@ def test_minio_detail_matches_asset_owner_lifecycle_contract() -> None:
 
     assert 'MinIO API Readiness' in detail
     assert 'Validated Capabilities' in detail
-    assert 'Bindings & Lifecycle' in detail
+    assert 'Inventory & Lifecycle' in detail
     assert 'minio/partials/_delete_modal.html' in detail
     assert 'Configure Connection' in configuration
     assert "url_for('minio.edit_instance'" in configuration
-    assert 'Connection Lifecycle' in scope
+    assert 'Lifecycle Gate' in scope
+    assert 'Next Lifecycle Action' in scope
     assert 'Delete Connection' in scope
     assert "url_for('minio.delete_instance'" in scope
     assert 'asset_owner_delete_modal.render(' in modal

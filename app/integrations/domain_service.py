@@ -34,11 +34,16 @@ def build_integration_domain_page(
     modules = tuple(module for module in registry.all() if module.domain_key == domain.key)
     instances = _load_domain_instances(modules)
     related_bindings = _load_related_bindings(domain.key, modules)
+    consumer_bindings = [binding for binding in related_bindings if not _is_owner_asset_binding(binding)]
 
-    provider_types = _provider_type_rows(modules, instances)
-    capability_rows = _capability_rows(domain.key, modules, provider_types, related_bindings)
-    provider_registry_rows = _provider_registry_rows(modules, instances)
-    binding_registry_rows = _binding_registry_rows(related_bindings)
+    provider_types = _provider_type_rows(modules, instances, consumer_bindings)
+    capability_rows = _capability_rows(domain.key, modules, provider_types, consumer_bindings)
+    provider_registry_rows = _provider_registry_rows(modules, instances, consumer_bindings)
+    binding_registry_rows = _binding_registry_rows(
+        consumer_bindings,
+        identity_bindings=related_bindings,
+        owner_instances=instances,
+    )
 
     provider_rows, provider_pagination = paginate_sequence(
         provider_registry_rows,
@@ -55,7 +60,7 @@ def build_integration_domain_page(
         modules,
         instances,
         capability_rows,
-        related_bindings,
+        consumer_bindings,
     )
     normalized_tab = active_tab if active_tab in {'registry', 'bindings'} else 'registry'
     return {
@@ -118,18 +123,26 @@ def _load_related_bindings(
 def _provider_type_rows(
     modules: tuple[IntegrationModule, ...],
     instances: list[IntegrationInstance],
+    consumer_bindings: list[IntegrationBinding],
 ) -> list[dict[str, Any]]:
     instances_by_provider: dict[str, list[IntegrationInstance]] = {}
     for instance in instances:
         instances_by_provider.setdefault(instance.provider_type, []).append(instance)
-    return [_provider_type_row(module, instances_by_provider.get(module.provider_type, [])) for module in modules]
+    return [
+        _provider_type_row(module, instances_by_provider.get(module.provider_type, []), consumer_bindings)
+        for module in modules
+    ]
 
 
-def _provider_type_row(module: IntegrationModule, targets: list[IntegrationInstance]) -> dict[str, Any]:
+def _provider_type_row(
+    module: IntegrationModule,
+    targets: list[IntegrationInstance],
+    consumer_bindings: list[IntegrationBinding],
+) -> dict[str, Any]:
     enabled_targets = _enabled_targets(targets)
     ready = sum(1 for item in enabled_targets if item.readiness_status == 'ready')
     attention = len(enabled_targets) - ready
-    bindings = _enabled_binding_count(enabled_targets)
+    bindings = sum(_consumer_binding_count(item, consumer_bindings) for item in enabled_targets)
     return {
         'key': module.provider_type,
         'label': module.label,
@@ -151,6 +164,7 @@ def _provider_type_row(module: IntegrationModule, targets: list[IntegrationInsta
 def _provider_registry_rows(
     modules: tuple[IntegrationModule, ...],
     instances: list[IntegrationInstance],
+    consumer_bindings: list[IntegrationBinding],
 ) -> list[dict[str, Any]]:
     module_by_provider = {module.provider_type: module for module in modules}
     rows: list[dict[str, Any]] = []
@@ -162,7 +176,7 @@ def _provider_registry_rows(
         detail_url = None
         if record is not None:
             detail_url = module.detail_url(record.id, section='').rstrip('#')
-        enabled_bindings = sum(1 for binding in instance.bindings if binding.enabled)
+        enabled_bindings = _consumer_binding_count(instance, consumer_bindings)
         readiness = _instance_readiness(instance)
         rows.append(
             {
@@ -185,8 +199,16 @@ def _provider_registry_rows(
     return rows
 
 
-def _binding_registry_rows(bindings: list[IntegrationBinding]) -> list[dict[str, Any]]:
-    asset_labels = _asset_identity_labels(bindings)
+def _binding_registry_rows(
+    bindings: list[IntegrationBinding],
+    *,
+    identity_bindings: list[IntegrationBinding] | None = None,
+    owner_instances: list[IntegrationInstance] | None = None,
+) -> list[dict[str, Any]]:
+    asset_labels = _asset_identity_labels(
+        identity_bindings or bindings,
+        owner_instances=owner_instances or [],
+    )
     rows: list[dict[str, Any]] = []
     for binding in bindings:
         instance = binding.instance
@@ -210,8 +232,8 @@ def _binding_registry_rows(bindings: list[IntegrationBinding]) -> list[dict[str,
                 'source_icon': module.icon,
                 'role': _humanize(binding.binding_role, empty='Primary'),
                 'priority': binding.priority,
-                'profile': binding.validation_profile or 'Native Provider Contract',
-                'selector': selector_summary(binding.selector_json, empty='Native / unscoped'),
+                'profile': binding.validation_profile or 'Consumer Profile Pending',
+                'selector': selector_summary(binding.selector_json, empty='Selector not configured'),
                 'validation_status': _binding_status(binding),
                 'validation_message': binding.validation_message or 'Binding validation has not reported detail.',
                 'last_validated': _format_timestamp(binding.last_validated_at),
@@ -223,8 +245,51 @@ def _binding_registry_rows(bindings: list[IntegrationBinding]) -> list[dict[str,
     return rows
 
 
-def _asset_identity_labels(bindings: list[IntegrationBinding]) -> dict[tuple[str, str], str]:
+def _is_owner_asset_binding(binding: IntegrationBinding) -> bool:
+    """Return True for the provider attachment that owns the managed asset.
+
+    Domain Bindings are a consumer-facing registry. Kubernetes→Cluster and
+    MinIO→ObjectStorageSystem owner attachments remain internal ownership evidence
+    and must not be presented or counted as consumer bindings.
+    """
+    owner_domain = domain_key_for_asset_type(binding.asset_type)
+    if owner_domain is None:
+        return False
+    try:
+        module = registry.get(binding.instance.provider_type)
+    except IntegrationNotRegistered:
+        return False
+    return module.domain_key == owner_domain
+
+
+def _consumer_binding_count(
+    instance: IntegrationInstance,
+    consumer_bindings: list[IntegrationBinding],
+) -> int:
+    metadata = instance.metadata_json or {}
+    asset_type = str(metadata.get('asset_type') or '').strip()
+    asset_key = str(metadata.get('asset_key') or '').strip()
+    if asset_type and asset_key:
+        return sum(
+            1
+            for binding in consumer_bindings
+            if binding.enabled and binding.asset_type == asset_type and str(binding.asset_key) == asset_key
+        )
+    return sum(1 for binding in consumer_bindings if binding.enabled and binding.integration_instance_id == instance.id)
+
+
+def _asset_identity_labels(
+    bindings: list[IntegrationBinding],
+    *,
+    owner_instances: list[IntegrationInstance],
+) -> dict[tuple[str, str], str]:
     labels: dict[tuple[str, str], str] = {}
+    for instance in owner_instances:
+        metadata = instance.metadata_json or {}
+        asset_type = str(metadata.get('asset_type') or '').strip()
+        asset_key = str(metadata.get('asset_key') or '').strip()
+        if asset_type and asset_key:
+            labels[(asset_type, asset_key)] = instance.name
     for binding in bindings:
         owner_domain = domain_key_for_asset_type(binding.asset_type)
         if owner_domain is None:
@@ -256,6 +321,7 @@ def _capability_rows(
                 'key': capability.key,
                 'label': capability.label,
                 'description': capability.description,
+                'asset_types': list(capability.asset_types),
                 'provider_count': len(capability_modules),
                 'provider_labels': [module.runtime_label or module.label for module in capability_modules],
                 **counts,
@@ -309,10 +375,6 @@ def _domain_stats(
 
 def _enabled_targets(instances: Iterable[IntegrationInstance]) -> list[IntegrationInstance]:
     return [item for item in instances if item.enabled and item.lifecycle_status == 'active']
-
-
-def _enabled_binding_count(instances: Iterable[IntegrationInstance]) -> int:
-    return sum(sum(1 for binding in item.bindings if binding.enabled) for item in instances)
 
 
 def _instance_readiness(instance: IntegrationInstance) -> str:

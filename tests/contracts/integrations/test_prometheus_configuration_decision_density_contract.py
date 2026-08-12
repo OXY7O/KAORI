@@ -7,48 +7,21 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_shared_configuration_decision_supports_dense_optional_evidence() -> None:
-    shared = read('app/templates/integrations/components/_configuration_decision.html')
+def test_shared_provider_configuration_contract_is_compact_and_read_only() -> None:
+    shared = read('app/templates/integrations/components/_provider_configuration_contract.html')
+    assert 'Connection Contract' in shared
+    assert 'Connection Evidence' in shared
+    assert 'Operational Context' in read('app/templates/integrations/components/_provider_operational_context.html')
+    operational = read('app/templates/integrations/components/_provider_operational_context.html')
+    assert 'Step {{ loop.index }}' in operational
+    assert 'Configure Connection' in shared
+    assert '<form' not in shared
 
-    assert 'operational_effects=none' in shared
-    assert 'validation_boundary=none' in shared
-    assert 'Controlled Flow' in shared
-    assert 'Operational Effects' in shared
-    assert 'Validation Boundary' in shared
-    assert 'mt-3 grid gap-2 sm:grid-cols-2' in shared
-    assert 'flex h-full min-h-full flex-col self-stretch' in shared
 
-
-def test_prometheus_configuration_populates_operational_effects() -> None:
+def test_prometheus_configuration_exposes_provider_and_consumer_boundary() -> None:
     prometheus = read('app/templates/prometheus/partials/_detail_configuration.html')
-
-    for token in (
-        "('Save Changes', 'Resets technical readiness.')",
-        "('Test Connection', 'Proves transport reachability only.')",
-        "('Full Validation', 'Rebuilds capability evidence.')",
-        "('Consumer Use', 'Requires eligible scope bindings.')",
-    ):
-        assert token in prometheus
-
-
-def test_prometheus_configuration_populates_validation_boundary() -> None:
-    prometheus = read('app/templates/prometheus/partials/_detail_configuration.html')
-
-    for token in (
-        "('Transport Check', 'Test Connection')",
-        "('Capability Contract', 'Full Validation')",
-        "('Consumer Eligibility', 'Scope Binding')",
-        "('Operational Use', 'Source Resolution')",
-    ):
-        assert token in prometheus
-
-
-def test_prometheus_configuration_keeps_symmetric_geometry_and_compact_boundary_copy() -> None:
-    prometheus = read('app/templates/prometheus/partials/_detail_configuration.html')
-
-    assert 'grid items-stretch gap-4' in prometheus
-    assert (
-        'Prometheus executes metric queries. KAORI governs source selection, validation evidence, bindings, and consumer eligibility.'
-        in prometheus
-    )
-    assert 'Prometheus remains authoritative for metric collection and query execution.' not in prometheus
+    assert 'provider_configuration_contract.render(' in prometheus
+    assert 'Prometheus API Endpoint' in prometheus
+    assert 'Prometheus owns metrics query and history.' in prometheus
+    assert 'provider readiness separate from consumer bindings' in prometheus
+    assert 'url_for("prometheus.edit_instance"' in prometheus

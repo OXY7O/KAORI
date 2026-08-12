@@ -5,11 +5,9 @@ from typing import Any
 
 from app.common.pagination import paginate_sequence
 from app.common.presentation import present_user_datetime
-from app.integrations.alertmanager.binding_profiles import get_alert_consumer_profile
+from app.integrations.asset_owner_sources import build_bound_observability_source_rows
 from app.integrations.deletion import asset_owner_deletion_guard
 from app.integrations.minio.capabilities import API_CAPABILITIES, CAPABILITY_PROFILE
-from app.integrations.prometheus.binding_profiles import get_binding_validation_profile
-from app.integrations.registry import get_integration
 from app.integrations.runtime.presentation import runtime_history_view, runtime_observation_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.minio.service import (
@@ -379,44 +377,10 @@ def build_minio_capability_registry(
 
 
 def _asset_binding_rows(instance: MinioInstance) -> list[dict[str, Any]]:
-    rows = (
-        IntegrationBinding.query.join(IntegrationInstance)
-        .filter(
-            IntegrationBinding.asset_type == 'object_storage_system',
-            IntegrationBinding.asset_key == instance.object_storage_system_id,
-            IntegrationBinding.enabled.is_(True),
-            IntegrationInstance.provider_type.in_(('prometheus', 'alertmanager')),
-        )
-        .order_by(
-            IntegrationInstance.provider_type.asc(), IntegrationBinding.priority.asc(), IntegrationBinding.id.asc()
-        )
-        .all()
+    return build_bound_observability_source_rows(
+        asset_type='object_storage_system',
+        asset_key=instance.object_storage_system_id,
     )
-    result: list[dict[str, Any]] = []
-    for binding in rows:
-        canonical = binding.instance
-        module = get_integration(canonical.provider_type)
-        source = module.get_record_for_canonical(canonical.id)
-        if canonical.provider_type == 'prometheus':
-            profile = get_binding_validation_profile(binding.asset_type)
-            profile_label = profile.label if profile is not None else binding.validation_profile
-        elif canonical.provider_type == 'alertmanager':
-            profile = get_alert_consumer_profile(binding.asset_type)
-            profile_label = profile.label if profile is not None else binding.validation_profile
-        else:
-            continue
-        result.append(
-            {
-                'binding': binding,
-                'provider_type': canonical.provider_type,
-                'provider_label': module.label,
-                'source_name': getattr(source, 'name', None) or canonical.name,
-                'profile_label': profile_label or 'Validation Required',
-                'validation_status': binding.validation_status or 'validation_required',
-                'validation_message': binding.validation_message or 'Validation has not been recorded.',
-            }
-        )
-    return result
 
 
 def _provider_status(instance: MinioInstance) -> dict[str, str]:

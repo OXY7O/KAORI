@@ -1,80 +1,16 @@
 {% import "components/pagination.html" as pagination_ui %}
-{% import "components/table.html" as table_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
-{% import "integrations/components/_workspace.html" as integration_ui %}
-{% from "integrations/components/_semantic_status.html" import integration_status %}
-<section id="minio-binding-registry"
-         class="{{ integration_ui.section_shell_classes() }}"
-         aria-labelledby="minio-binding-registry-title"
-         data-kaori-minio-binding-registry>
-    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div class="flex min-w-0 items-start gap-3">
-                {{ integration_ui.palette_icon("waypoints", "brand", size="lg") }}
-                <div class="min-w-0">
-                    <h3 id="minio-binding-registry-title"
-                        class="text-base font-semibold text-content-primary">Consumer Binding Registry</h3>
-                    <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">Review Prometheus metrics and Alertmanager alert consumers bound to this object-storage asset. MinIO API ownership remains part of the provider connection, not a consumer binding.</p>
-                </div>
-            </div>
-            <span class="text-xs font-semibold text-content-muted">{{ binding_total }} Consumer Binding{{ "" if binding_total == 1 else "s" }}</span>
-        </div>
-        {{ loading_bar.render("minio-binding-registry-loading", label="Refreshing MinIO Consumer Bindings") }}
-    </header>
-    <div class="overflow-hidden">
-        <table class="{{ table_ui.table_classes() }} table-fixed">
-            <colgroup>
-                <col class="w-[28%]">
-                <col class="w-[18%]">
-                <col class="w-[24%]">
-                <col class="w-[15%]">
-                <col class="w-[15%]">
-            </colgroup>
-            <thead class="{{ table_ui.head_classes() }}">
-                <tr>
-                    <th class="{{ table_ui.header_cell_classes() }}">Provider Source</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Provider Role</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Consumer Profile</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Validation</th>
-                    <th class="{{ table_ui.header_cell_classes(action=true) }}">Evidence</th>
-                </tr>
-            </thead>
-            <tbody class="{{ table_ui.body_classes() }}">
-                {% for row in binding_rows %}
-                    <tr class="{{ table_ui.row_classes() }}">
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <div class="flex min-w-0 items-start gap-3">
-                                {{ integration_ui.palette_icon("chart-no-axes-combined" if row.provider_type == "prometheus" else "bell-ring", "brand", size="sm") }}
-                                <div class="min-w-0">
-                                    <p class="truncate text-sm font-semibold text-content-primary"
-                                       title="{{ row.source_name }}">{{ row.source_name }}</p>
-                                    <p class="mt-0.5 text-xs text-content-muted">{{ row.provider_label }}</p>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ row.binding.binding_role|default("primary") |title }}</span></td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="truncate text-sm font-semibold text-content-primary"
-                               title="{{ row.profile_label }}">{{ row.profile_label }}</p>
-                            <p class="mt-0.5 truncate text-xs text-content-muted">{{ row.binding.validation_profile or "Validation Required" }}</p>
-                        </td>
-                        <td class="{{ table_ui.cell_classes() }}">{{ integration_status(row.validation_status, row.validation_status|replace("_", " ") |title, display="indicator") }}</td>
-                        <td class="{{ table_ui.cell_classes(action=true) }}">
-                            <p class="line-clamp-2 text-xs leading-5 text-content-secondary"
-                               title="{{ row.validation_message }}">{{ row.validation_message }}</p>
-                        </td>
-                    </tr>
-                {% else %}
-                    <tr>
-                        <td colspan="5" class="px-5 py-10 text-center text-sm text-content-muted">No Prometheus or Alertmanager consumer binding targets this object-storage asset yet.</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+{% import "integrations/components/_asset_owner_observability_sources.html" as asset_owner_sources %}
+<section id="minio-binding-registry" data-kaori-minio-binding-registry>
+    {{ loading_bar.render("minio-binding-registry-loading", label="Refreshing Bound Observability Sources") }}
+    {{ asset_owner_sources.render(binding_rows,
+        total_count=binding_total,
+        empty_message="No reusable observability source is currently bound to this object-storage asset. Add the binding from Prometheus or Alertmanager in Observability.",
+        title="Bound Observability Sources",
+        description="Source readiness, binding validation, and effective resolution remain independent evidence dimensions. Binding mutation belongs to the Observability source workspace.") }}
     <footer class="{{ pagination_ui.footer_classes() }}">
         <div class="{{ pagination_ui.summary_group_classes() }}">
-            <p>Showing <span class="font-semibold text-content-primary">{{ binding_pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ binding_pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ binding_pagination.total_items }}</span> Consumer Bindings</p>
+            <p>Showing <span class="font-semibold text-content-primary">{{ binding_pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ binding_pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ binding_pagination.total_items }}</span> Observability Sources</p>
             <form method="get"
                   action="{{ url_for('minio.instance_detail', instance_id=instance.id) }}#scope"
                   hx-get="{{ url_for('minio.binding_registry', instance_id=instance.id) }}"
@@ -97,7 +33,7 @@
             </form>
         </div>
         <nav class="{{ pagination_ui.navigation_group_classes() }}"
-             aria-label="MinIO consumer binding pagination">
+             aria-label="MinIO observability source pagination">
             {% set binding_query = {"binding_per_page": binding_pagination.per_page} %}
             {% if binding_pagination.has_prev %}
                 <a href="{{ url_for('minio.instance_detail', instance_id=instance.id, binding_page=binding_pagination.prev_page, **binding_query) }}#scope"
@@ -105,10 +41,10 @@
                    hx-target="#minio-binding-registry"
                    hx-swap="outerHTML"
                    hx-indicator="#minio-binding-registry-loading"
-                   class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+                   class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous</a>
             {% else %}
                 <span class="{{ pagination_ui.navigation_classes(true) }}"
-                      aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+                      aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous</span>
             {% endif %}
             {{ pagination_ui.numeric_pages(binding_pagination.page, binding_pagination.total_pages, "binding_page", hx_target="#minio-binding-registry", hx_indicator="#minio-binding-registry-loading", endpoint="minio.binding_registry", query_params={"instance_id": instance.id, "binding_per_page": binding_pagination.per_page}, hx_swap="outerHTML", href_endpoint="minio.instance_detail") }}
             {% if binding_pagination.has_next %}
@@ -117,10 +53,10 @@
                    hx-target="#minio-binding-registry"
                    hx-swap="outerHTML"
                    hx-indicator="#minio-binding-registry-loading"
-                   class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+                   class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i></a>
             {% else %}
                 <span class="{{ pagination_ui.navigation_classes(true) }}"
-                      aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+                      aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i></span>
             {% endif %}
         </nav>
     </footer>

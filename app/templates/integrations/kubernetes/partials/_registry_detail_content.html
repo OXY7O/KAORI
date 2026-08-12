@@ -26,28 +26,31 @@
                     <a href="{{ url_for('prometheus.instance_detail', instance_id=row.prometheus_instance_id) }}#scope"
                        class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-status-normal-border bg-status-normal-soft px-2.5 text-xs font-semibold text-status-normal transition hover:brightness-95">
                         <i data-lucide="chart-no-axes-combined" class="h-3.5 w-3.5"></i>
-                        Metrics
+                        Metrics Source
                     </a>
                 {% else %}
-                    <a href="{{ url_for('integrations.bind_prometheus_source', scope_key=row.cluster_id) }}"
-                       class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-brand-outline bg-kaori-soft px-2.5 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-primary hover:text-white">
+                    <span class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-outline-subtle bg-surface-subtle px-2.5 text-xs font-semibold text-content-muted">
                         <i data-lucide="chart-no-axes-combined" class="h-3.5 w-3.5"></i>
-                        Metrics
-                    </a>
+                        Metrics Not Bound
+                    </span>
                 {% endif %}
                 {% if row.alertmanager_instance_id %}
                     <a href="{{ url_for('alertmanager.instance_detail', instance_id=row.alertmanager_instance_id) }}#scope"
                        class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-status-normal-border bg-status-normal-soft px-2.5 text-xs font-semibold text-status-normal transition hover:brightness-95">
                         <i data-lucide="siren" class="h-3.5 w-3.5"></i>
-                        Alerts
+                        Alert Source
                     </a>
                 {% else %}
-                    <a href="{{ url_for('integrations.bind_alertmanager_source', scope_key=row.cluster_id) }}"
-                       class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-brand-outline bg-kaori-soft px-2.5 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-primary hover:text-white">
+                    <span class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-outline-subtle bg-surface-subtle px-2.5 text-xs font-semibold text-content-muted">
                         <i data-lucide="siren" class="h-3.5 w-3.5"></i>
-                        Alerts
-                    </a>
+                        Alerts Not Bound
+                    </span>
                 {% endif %}
+                <a href="{{ url_for('integrations.observability') }}"
+                   class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-brand-outline bg-surface-card px-2.5 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft dark:text-kaori-accent">
+                    <i data-lucide="activity" class="h-3.5 w-3.5"></i>
+                    Open Observability
+                </a>
                 {% if current_user.has_permission('clusters.manage') %}
                     <button type="button"
                             data-delete-url="{{ url_for('cluster.delete_cluster_route', cluster_id=row.cluster_id) }}"

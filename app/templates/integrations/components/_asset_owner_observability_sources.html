@@ -1,0 +1,70 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% macro render(rows, total_count=none, empty_message="No reusable observability source is currently bound to this managed asset.", title="Bound Observability Sources", description="Source readiness, binding validation, and effective resolution remain independent evidence dimensions.") -%}
+    {% set visible_total = total_count if total_count is not none else rows|length %}
+    <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+             aria-labelledby="asset-owner-observability-sources-title"
+             data-kaori-asset-owner-observability-sources>
+        <header class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div class="flex items-start gap-3">
+                    {{ integration_ui.palette_icon("radio-tower", "info", size="sm") }}
+                    <div class="min-w-0">
+                        <h3 id="asset-owner-observability-sources-title"
+                            class="text-sm font-semibold text-content-primary">{{ title }}</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ description }}</p>
+                    </div>
+                </div>
+                {{ table_label.metadata_label(visible_total ~ " Source" ~ ("" if visible_total == 1 else "s") ) }}
+            </div>
+        </header>
+        <div class="overflow-x-auto">
+            <table class="{{ table_ui.table_classes('min-w-[52rem]') }} table-fixed"
+                   data-kaori-asset-owner-source-table>
+                <colgroup>
+                    <col class="w-[34%]">
+                    <col class="w-[22%]">
+                    <col class="w-[22%]">
+                    <col class="w-[22%]">
+                </colgroup>
+                <thead class="{{ table_ui.head_classes() }}">
+                    <tr>
+                        <th class="{{ table_ui.header_cell_classes() }}">Source</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Source Readiness</th>
+                        <th class="{{ table_ui.header_cell_classes() }}">Binding Validation</th>
+                        <th class="{{ table_ui.header_cell_classes(action=true) }}">Effective Resolution</th>
+                    </tr>
+                </thead>
+                <tbody class="{{ table_ui.body_classes() }}">
+                    {% for source in rows %}
+                        <tr class="{{ table_ui.row_classes() }}">
+                            <td class="{{ table_ui.cell_classes() }}">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    {{ integration_ui.palette_icon(source.icon, "brand", size="sm") }}
+                                    <div class="min-w-0">
+                                        <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]"
+                                           title="{{ source.name }}">{{ source.name }}</p>
+                                        <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">
+                                            {{ source.provider }}
+                                            {% if source.role %}· {{ source.role|title }} Source{% endif %}
+                                            {% if source.profile_label %}· {{ source.profile_label }}{% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="{{ table_ui.cell_classes() }}">{{ integration_status(source.source_readiness, display="indicator") }}</td>
+                            <td class="{{ table_ui.cell_classes() }}">{{ integration_status(source.binding_validation, display="indicator") }}</td>
+                            <td class="{{ table_ui.cell_classes(action=true) }}">{{ integration_status(source.effective_status, source.effective_label, display="indicator") }}</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="px-5 py-8 text-center text-sm text-content-muted">{{ empty_message }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{%- endmacro %}

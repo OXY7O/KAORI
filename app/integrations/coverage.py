@@ -6,6 +6,7 @@ from sqlalchemy.orm import contains_eager
 
 from app.cluster.constants import get_environment_label
 from app.integrations.binding_selectors import selector_is_configured, selector_summary
+from app.integrations.consumer_assets import registered_consumer_asset_definitions
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.cluster import Cluster
 from app.models.integration import IntegrationBinding, IntegrationInstance
@@ -22,7 +23,7 @@ _PROVIDER_META = {
         'register_endpoint': 'prometheus.new_instance',
         'detail_endpoint': 'prometheus.instance_detail',
         'selector_label': 'Metrics identity',
-        'selector_help': 'The selector is injected into PromQL so one shared source cannot mix metrics from different clusters.',
+        'selector_help': 'The selector isolates one managed asset inside a shared Prometheus source.',
     },
     'alertmanager': {
         'key': 'alertmanager',
@@ -34,7 +35,7 @@ _PROVIDER_META = {
         'register_endpoint': 'alertmanager.new_instance',
         'detail_endpoint': 'alertmanager.instance_detail',
         'selector_label': 'Alert identity',
-        'selector_help': 'The selector is appended to Alertmanager alert and silence filters so one shared source remains isolated by cluster.',
+        'selector_help': 'The selector isolates one managed asset inside a shared Alertmanager source.',
     },
 }
 
@@ -44,6 +45,148 @@ def provider_meta(provider_type: str) -> dict[str, str]:
         return dict(_PROVIDER_META[provider_type])
     except KeyError as exc:
         raise ValueError(f'Unsupported integration provider: {provider_type}.') from exc
+
+
+def _provider_binding_indexes(
+    provider_type: str,
+) -> tuple[list[IntegrationBinding], dict[tuple[str, str], list[IntegrationBinding]], dict[int, int], dict[int, int]]:
+    bindings = (
+        IntegrationBinding.query.join(IntegrationInstance)
+        .filter(IntegrationInstance.provider_type == provider_type)
+        .order_by(
+            IntegrationBinding.asset_type.asc(),
+            IntegrationBinding.asset_key.asc(),
+            IntegrationBinding.priority.asc(),
+            IntegrationBinding.id.asc(),
+        )
+        .all()
+    )
+    by_asset: dict[tuple[str, str], list[IntegrationBinding]] = {}
+    sharing_counts: dict[int, int] = {}
+    unscoped_counts: dict[int, int] = {}
+    for binding in bindings:
+        if binding.asset_type in {definition.asset_type for definition in registered_consumer_asset_definitions()}:
+            by_asset.setdefault((binding.asset_type, binding.asset_key), []).append(binding)
+        if not binding.enabled:
+            continue
+        sharing_counts[binding.integration_instance_id] = sharing_counts.get(binding.integration_instance_id, 0) + 1
+        if not selector_is_configured(binding.selector_json):
+            unscoped_counts[binding.integration_instance_id] = (
+                unscoped_counts.get(binding.integration_instance_id, 0) + 1
+            )
+    return bindings, by_asset, sharing_counts, unscoped_counts
+
+
+def _managed_asset_scopes() -> list[dict[str, Any]]:
+    scopes: list[dict[str, Any]] = []
+    for definition in registered_consumer_asset_definitions():
+        assets = definition.model.query.order_by(definition.model.name.asc(), definition.model.id.asc()).all()
+        for asset in assets:
+            scopes.append(
+                {
+                    'scope_type': definition.asset_type,
+                    'scope_key': str(asset.id),
+                    'scope_name': str(asset.name),
+                    'environment': get_environment_label(str(getattr(asset, 'environment', '') or '')),
+                    'search_hint': f'{definition.label.lower()} {definition.asset_type.replace("_", " ")}',
+                }
+            )
+    return scopes
+
+
+def _coverage_row(
+    scope: dict[str, Any],
+    *,
+    bindings_by_asset: dict[tuple[str, str], list[IntegrationBinding]],
+    instance_by_canonical: dict[int, Any],
+    sharing_counts: dict[int, int],
+) -> dict[str, Any]:
+    scope_bindings = bindings_by_asset.get((scope['scope_type'], scope['scope_key']), [])
+    enabled = sorted(
+        (binding for binding in scope_bindings if binding.enabled),
+        key=lambda item: (_role_rank(item.binding_role), item.priority, item.id),
+    )
+    binding = enabled[0] if enabled else None
+    source = instance_by_canonical.get(binding.integration_instance_id) if binding is not None else None
+    shared = bool(binding is not None and sharing_counts.get(binding.integration_instance_id, 0) > 1)
+    selector_configured = bool(binding is not None and selector_is_configured(binding.selector_json))
+    status, label, detail = _coverage_status(
+        selected_binding=binding,
+        selected_source=source,
+        shared=shared,
+        selector_configured=selector_configured,
+    )
+    source_name = source.name if source is not None else None
+    return {
+        **scope,
+        'source': source,
+        'source_id': source.id if source is not None else None,
+        'source_name': source_name,
+        'source_readiness': (source.readiness_status or 'validation_required')
+        if source is not None
+        else 'not_configured',
+        'binding': binding,
+        'binding_role': binding.binding_role if binding is not None else None,
+        'binding_priority': binding.priority if binding is not None else None,
+        'selector_summary': selector_summary(binding.selector_json) if binding is not None else 'Not configured',
+        'selector_configured': selector_configured,
+        'shared_source': shared,
+        'coverage_status': status,
+        'coverage_label': label,
+        'coverage_detail': detail,
+        'search_text': ' '.join(
+            filter(
+                None,
+                [
+                    scope['scope_name'].lower(),
+                    scope['scope_key'].lower(),
+                    scope['environment'].lower(),
+                    (source_name or '').lower(),
+                    label.lower(),
+                    scope['search_hint'],
+                ],
+            )
+        ),
+    }
+
+
+def _coverage_source_options(
+    instances: list[Any],
+    *,
+    meta: dict[str, str],
+    sharing_counts: dict[int, int],
+    unscoped_counts: dict[int, int],
+) -> list[dict[str, Any]]:
+    blocked = {'blocked', 'unavailable', 'disabled', 'incompatible'}
+    options: list[dict[str, Any]] = []
+    for instance in instances:
+        if not instance.enabled:
+            continue
+        readiness = (instance.readiness_status or 'validation_required').lower()
+        canonical_id = instance.integration_instance_id or -1
+        unscoped = unscoped_counts.get(canonical_id, 0)
+        selectable = readiness not in blocked and unscoped == 0
+        options.append(
+            {
+                'id': instance.id,
+                'name': instance.name,
+                'readiness': readiness,
+                'binding_count': sharing_counts.get(canonical_id, 0),
+                'unscoped_binding_count': unscoped,
+                'endpoint_product': getattr(instance, 'endpoint_product', None) or meta['label'],
+                'selectable': selectable,
+                'selection_reason': (
+                    'Available for binding; provider and binding validation still apply.'
+                    if selectable
+                    else (
+                        'Configure and validate selectors on existing bindings before sharing this source.'
+                        if unscoped
+                        else f'Provider readiness {readiness.replace("_", " ")} blocks new bindings.'
+                    )
+                ),
+            }
+        )
+    return options
 
 
 def build_provider_coverage(
@@ -62,97 +205,16 @@ def build_provider_coverage(
         for instance in instances
         if instance.integration_instance_id is not None
     }
-    provider_bindings = (
-        IntegrationBinding.query.join(IntegrationInstance)
-        .filter(IntegrationInstance.provider_type == provider_type)
-        .order_by(
-            IntegrationBinding.asset_type.asc(),
-            IntegrationBinding.asset_key.asc(),
-            IntegrationBinding.priority.asc(),
-            IntegrationBinding.id.asc(),
+    _, bindings_by_asset, sharing_counts, unscoped_counts = _provider_binding_indexes(provider_type)
+    all_rows = [
+        _coverage_row(
+            scope,
+            bindings_by_asset=bindings_by_asset,
+            instance_by_canonical=instance_by_canonical,
+            sharing_counts=sharing_counts,
         )
-        .all()
-    )
-    bindings_by_scope: dict[str, list[IntegrationBinding]] = {}
-    sharing_counts: dict[int, int] = {}
-    unscoped_counts: dict[int, int] = {}
-    for binding in provider_bindings:
-        if binding.asset_type == 'kubernetes_cluster':
-            bindings_by_scope.setdefault(binding.asset_key, []).append(binding)
-        if binding.enabled:
-            sharing_counts[binding.integration_instance_id] = sharing_counts.get(binding.integration_instance_id, 0) + 1
-            if not selector_is_configured(binding.selector_json):
-                unscoped_counts[binding.integration_instance_id] = (
-                    unscoped_counts.get(binding.integration_instance_id, 0) + 1
-                )
-
-    rows: list[dict[str, Any]] = []
-    clusters = Cluster.query.order_by(Cluster.name.asc(), Cluster.id.asc()).all()
-    for cluster in clusters:
-        scope_bindings = bindings_by_scope.get(str(cluster.id), [])
-        enabled_bindings = [binding for binding in scope_bindings if binding.enabled]
-        enabled_bindings.sort(key=lambda item: (_role_rank(item.binding_role), item.priority, item.id))
-        selected_binding = enabled_bindings[0] if enabled_bindings else None
-        selected_source = (
-            instance_by_canonical.get(selected_binding.integration_instance_id)
-            if selected_binding is not None
-            else None
-        )
-        shared = bool(
-            selected_binding is not None and sharing_counts.get(selected_binding.integration_instance_id, 0) > 1
-        )
-        selector_configured = bool(
-            selected_binding is not None and selector_is_configured(selected_binding.selector_json)
-        )
-        coverage_status, coverage_label, coverage_detail = _coverage_status(
-            selected_binding=selected_binding,
-            selected_source=selected_source,
-            shared=shared,
-            selector_configured=selector_configured,
-        )
-        rows.append(
-            {
-                'scope_type': 'kubernetes_cluster',
-                'scope_key': str(cluster.id),
-                'scope_name': cluster.name,
-                'environment': get_environment_label(cluster.environment),
-                'source': selected_source,
-                'source_id': selected_source.id if selected_source is not None else None,
-                'source_name': selected_source.name if selected_source is not None else None,
-                'source_readiness': (
-                    selected_source.readiness_status or 'validation_required'
-                    if selected_source is not None
-                    else 'not_configured'
-                ),
-                'binding': selected_binding,
-                'binding_role': selected_binding.binding_role if selected_binding is not None else None,
-                'binding_priority': selected_binding.priority if selected_binding is not None else None,
-                'selector_summary': (
-                    selector_summary(selected_binding.selector_json)
-                    if selected_binding is not None
-                    else 'Not configured'
-                ),
-                'selector_configured': selector_configured,
-                'shared_source': shared,
-                'coverage_status': coverage_status,
-                'coverage_label': coverage_label,
-                'coverage_detail': coverage_detail,
-                'search_text': ' '.join(
-                    filter(
-                        None,
-                        [
-                            cluster.name.lower(),
-                            str(cluster.id).lower(),
-                            get_environment_label(cluster.environment).lower(),
-                            (selected_source.name or '').lower() if selected_source is not None else '',
-                            coverage_label.lower(),
-                        ],
-                    )
-                ),
-            }
-        )
-
-    all_rows = rows
+        for scope in _managed_asset_scopes()
+    ]
     filtered_rows = all_rows
     normalized_query = query.strip().lower()
     if normalized_query:
@@ -163,36 +225,6 @@ def build_provider_coverage(
         filtered_rows = [row for row in filtered_rows if row['coverage_status'] == status]
 
     page_rows, pagination = _paginate(filtered_rows, page=page, per_page=per_page)
-    source_options = []
-    blocked_readiness = {'blocked', 'unavailable', 'disabled', 'incompatible'}
-    for instance in instances:
-        if not instance.enabled:
-            continue
-        readiness = (instance.readiness_status or 'validation_required').lower()
-        canonical_id = instance.integration_instance_id or -1
-        unscoped_binding_count = unscoped_counts.get(canonical_id, 0)
-        selectable = readiness not in blocked_readiness and unscoped_binding_count == 0
-        source_options.append(
-            {
-                'id': instance.id,
-                'name': instance.name,
-                'readiness': readiness,
-                'binding_count': sharing_counts.get(canonical_id, 0),
-                'unscoped_binding_count': unscoped_binding_count,
-                'endpoint_product': getattr(instance, 'endpoint_product', None) or meta['label'],
-                'selectable': selectable,
-                'selection_reason': (
-                    'Available for binding; provider and binding validation still apply.'
-                    if selectable
-                    else (
-                        'Configure and validate selectors on existing bindings before sharing this source.'
-                        if unscoped_binding_count
-                        else f'Provider readiness {readiness.replace("_", " ")} blocks new bindings.'
-                    )
-                ),
-            }
-        )
-
     return {
         'provider': meta,
         'coverage_rows': page_rows,
@@ -206,7 +238,9 @@ def build_provider_coverage(
             for option in ('ready', 'degraded', 'validation_required', 'blocked', 'uncovered')
             if any(row['coverage_status'] == option for row in all_rows)
         ],
-        'source_options': source_options,
+        'source_options': _coverage_source_options(
+            instances, meta=meta, sharing_counts=sharing_counts, unscoped_counts=unscoped_counts
+        ),
         'coverage_stats': {
             'total': len(all_rows),
             'ready': sum(1 for row in all_rows if row['coverage_status'] == 'ready'),

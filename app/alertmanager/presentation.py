@@ -6,12 +6,14 @@ from typing import Any
 from app.alertmanager.repository import count_bindings_by_scope_type, list_bindings_for_instance, list_instances
 from app.alertmanager.resolver import AlertmanagerSourceResolution, resolve_alertmanager_sources
 from app.alertmanager.sanitization import safe_endpoint
+from app.common.pagination import paginate_sequence
 from app.common.presentation import present_user_datetime
 from app.extensions.db import db
 from app.integrations.alertmanager.binding_profiles import get_alert_consumer_profile
 from app.integrations.alertmanager.capabilities import CAPABILITY_BY_KEY, CORE_CAPABILITIES
 from app.integrations.alertmanager.requirements import evaluate_module_readiness
 from app.integrations.binding_selectors import selector_form_values, selector_is_configured, selector_summary
+from app.integrations.consumer_assets import build_consumer_asset_groups
 from app.integrations.coverage import build_provider_coverage
 from app.integrations.deletion import provider_deletion_guard
 from app.integrations.readiness import resolve_binding_operational_status
@@ -109,9 +111,13 @@ def _core_capability_summary(observed_capabilities: set[str]) -> dict[str, int]:
     }
 
 
-def build_instance_context(instance: AlertmanagerInstance | None = None) -> dict[str, Any]:
-    clusters = Cluster.query.order_by(Cluster.created_at.asc(), Cluster.id.asc()).all()
-    object_storage_systems = ObjectStorageSystem.query.order_by(ObjectStorageSystem.name.asc()).all()
+def build_instance_context(
+    instance: AlertmanagerInstance | None = None,
+    *,
+    binding_page: int = 1,
+    binding_per_page: int = 5,
+) -> dict[str, Any]:
+    consumer_asset_groups = build_consumer_asset_groups(get_alert_consumer_profile)
     bindings = list_bindings_for_instance(instance.id) if instance else []
     observed_capabilities = set(instance.capabilities or []) if instance else set()
     capability_rows = []
@@ -176,13 +182,20 @@ def build_instance_context(instance: AlertmanagerInstance | None = None) -> dict
         if instance is not None
         else None
     )
+    binding_rows = [_binding_row(binding, instance) for binding in bindings] if instance is not None else []
+    binding_registry_rows, binding_registry_pagination = paginate_sequence(
+        binding_rows,
+        page=binding_page,
+        per_page=binding_per_page,
+    )
     return {
         'instance': instance,
         'bindings': bindings,
         'deletion_guard': deletion_guard,
-        'binding_rows': [_binding_row(binding, instance) for binding in bindings] if instance is not None else [],
-        'clusters': clusters,
-        'object_storage_systems': object_storage_systems,
+        'binding_rows': binding_rows,
+        'binding_registry_rows': binding_registry_rows,
+        'binding_registry_pagination': binding_registry_pagination,
+        'consumer_asset_groups': consumer_asset_groups,
         'capability_rows': capability_rows,
         'module_readiness_rows': evaluate_module_readiness(observed_capabilities),
         'capability_summary': _core_capability_summary(observed_capabilities),

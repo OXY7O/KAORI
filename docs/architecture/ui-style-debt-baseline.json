@@ -10,9 +10,6 @@
     "app/templates/access/roles/partials/_role_detail.html": {
       "semantic_border_utilities": 2
     },
-    "app/templates/alertmanager/instance_form.html": {
-      "semantic_border_utilities": 6
-    },
     "app/templates/alertmanager/partials/_delete_confirmation_modal.html": {
       "semantic_border_utilities": 2
     },
@@ -107,6 +104,9 @@
     "app/templates/integrations/components/_asset_owner_delete_modal.html": {
       "semantic_border_utilities": 1
     },
+    "app/templates/integrations/components/_observability_binding_modal.html": {
+      "semantic_border_utilities": 1
+    },
     "app/templates/integrations/components/_workspace.html": {
       "semantic_border_utilities": 5
     },
@@ -162,12 +162,8 @@
     "app/templates/prometheus/partials/_delete_confirmation_modal.html": {
       "semantic_border_utilities": 2
     },
-    "app/templates/prometheus/partials/_detail_configuration.html": {
-      "semantic_border_utilities": 1
-    },
     "app/templates/prometheus/partials/_detail_scope.html": {
-      "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 1
+      "copied_standard_surface_shells": 1
     },
     "app/templates/prometheus/partials/_runtime_panel.html": {
       "copied_standard_surface_shells": 1

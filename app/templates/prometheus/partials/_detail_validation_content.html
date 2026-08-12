@@ -2,6 +2,7 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "integrations/components/_capability_readiness.html" as capability_readiness %}
+{% import "integrations/components/_readiness_explanation.html" as readiness_explanation %}
 {% set readiness = instance.readiness_status or 'validation_required' %}
 {% set readiness_percent = ((capability_summary.observed * 100 / capability_summary.total)|round|int) if capability_summary.total else 0 %}
 {% set required_ready = capability_summary.required_missing == 0 %}
@@ -26,7 +27,7 @@
          {% if validation_job and validation_job.is_active %}hx-get="{{ url_for('prometheus.instance_validation_status', instance_id=instance.id, task_id=validation_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML"{% endif %}>
     {% call connection_validation_header.render(
         'Prometheus Core Validation',
-        'Validate endpoint compatibility and provider-neutral Prometheus APIs. Kubernetes, MinIO, and other metric contracts are validated through their asset-scoped bindings.',
+        'Validate Prometheus compatibility and core APIs. Consumer metrics remain binding-specific.',
         icon='scan-search',
         loading_id='prometheus-validation-loading',
         loading_active=validation_job and validation_job.is_active,
@@ -60,10 +61,10 @@
     {% endif %}
     <div class="space-y-4 p-4 sm:p-5">
         {{ capability_readiness.render('Prometheus Provider Readiness',
-                'Provider readiness is based only on endpoint compatibility and generic Prometheus APIs. Consumer-specific metric coverage never degrades the shared provider runtime.',
+                'Core API evidence determines Prometheus readiness.',
                 readiness,
                 readiness|replace('_', ' ') |title,
-        'Validated core capability coverage',
+        'Validated Capabilities',
         capability_summary.observed ~ ' / ' ~ capability_summary.total,
         readiness_percent,
         capability_metadata,
@@ -74,17 +75,25 @@
         'Full Validation owns provider compatibility and core API readiness. Consumer bindings own Kubernetes, MinIO, and future metric-contract validation.',
         next_action
         ) }}
-        <div class="rounded-xl border border-outline-subtle bg-surface-hover px-4 py-3.5 sm:px-5">
-            <div class="flex items-start gap-3">
-                <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft text-kaori-primary dark:border-brand-outline dark:text-kaori-accent"><i data-lucide="waypoints" class="h-4 w-4" aria-hidden="true"></i></span>
-                <div class="min-w-0">
-                    <p class="text-sm font-semibold text-content-primary">Consumer Validation Boundary</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">A single Prometheus runtime may serve multiple domains. Each binding selects its consumer profile automatically from the asset type, such as Kubernetes Metrics v1 or MinIO Metrics 2024 v1.</p>
-                </div>
-            </div>
-        </div>
+        {% if readiness == "ready" %}
+            {% set readiness_decision_title = "Provider Readiness Is Ready" %}
+            {% set readiness_decision_message = "Core Prometheus APIs are ready. Kubernetes and MinIO metric coverage remains binding-specific." %}
+            {% set readiness_decision_tone = "normal" %}
+        {% elif readiness in ["blocked", "failed", "unavailable", "incompatible"] %}
+            {% set readiness_decision_title = "Why Readiness Is Blocked" %}
+            {% set readiness_decision_message = next_action %}
+            {% set readiness_decision_tone = "critical" %}
+        {% else %}
+            {% set readiness_decision_title = "Why Readiness Needs Attention" %}
+            {% set readiness_decision_message = next_action %}
+            {% set readiness_decision_tone = "warning" %}
+        {% endif %}
+        {{ readiness_explanation.render(readiness_decision_title,
+                readiness_decision_message,
+                readiness_decision_tone,
+                [capability_summary.required_missing ~ " required gaps", binding_rows|length ~ " consumer bindings"]) }}
         {% include "prometheus/partials/_capability_registry.html" %}
     </div>
 </section>
-{{ framed_workspace_tabs.badge_oob("prometheus", "validation", (instance.readiness_status or "validation_required")|replace("_", " ")|title) }}
+{{ framed_workspace_tabs.badge_oob("prometheus", "validation", (instance.readiness_status or "validation_required") |replace("_", " ")|title) }}
 {% include "components/operation_feedback_oob.html" %}

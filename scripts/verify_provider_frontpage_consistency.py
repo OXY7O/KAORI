@@ -35,6 +35,9 @@ def main() -> int:
     shared_registration_hero = read('app/templates/integrations/components/_provider_registration_hero.html')
     shared_registration_context = read('app/templates/integrations/components/_provider_registration_context.html')
     shared_registration_actions = read('app/templates/integrations/components/_provider_registration_actions.html')
+    shared_detail_posture = read('app/templates/integrations/components/_provider_detail_posture.html')
+    shared_configuration_contract = read('app/templates/integrations/components/_provider_configuration_contract.html')
+    coverage_service = read('app/integrations/coverage.py')
     provider_registration_pages = {
         'Kubernetes': read('app/templates/cluster/add.html'),
         'Prometheus': read('app/templates/prometheus/instance_form.html'),
@@ -102,9 +105,7 @@ def main() -> int:
     assert '## Provider Front Page Contract' in workspace_standard
     assert 'Connection | Endpoint / Scope | Core Readiness | Compatibility | Bindings | Actions' in workspace_standard
     assert 'Asset / Scope | Provider API | Metrics Source | Alert Source | Coverage | Actions' in workspace_standard
-    assert (
-        'Operational Scope | Environment | Primary Source | Consumer Binding | Coverage | Actions' in workspace_standard
-    )
+    assert 'Consumer Asset | Environment | Primary Source | Consumer Binding | Coverage | Actions' in workspace_standard
     assert 'front page must not introduce a provider-only giant card layout' in workspace_standard
 
     for marker in (
@@ -187,6 +188,28 @@ def main() -> int:
     assert 'identity_evidence' in minio_client
     assert "if result.product != 'minio'" not in minio_service
 
+    for marker in (
+        'data-kaori-provider-detail-posture',
+        'Connection Posture',
+        'Review Validation',
+        'Back to Registry',
+    ):
+        assert marker in shared_detail_posture
+
+    for marker in (
+        'data-kaori-provider-configuration-contract',
+        'Connection Contract',
+        'Connection Evidence',
+        'operational_context.render(',
+        'Configure Connection',
+    ):
+        assert marker in shared_configuration_contract
+    assert 'Operational Boundary' not in shared_configuration_contract
+    assert 'Operational Flow' not in shared_configuration_contract
+
+    assert 'registered_consumer_asset_definitions' in coverage_service
+    assert 'definition.asset_type' in coverage_service
+    assert "'scope_type': definition.asset_type" in coverage_service
     print(
         'PASS — KAORI provider front pages and connection forms share DRY Hero, two-surface context, gated registration actions, canonical field copy, coverage, and registry contracts.'
     )

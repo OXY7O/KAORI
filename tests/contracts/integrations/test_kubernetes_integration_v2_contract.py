@@ -108,6 +108,7 @@ def test_kubernetes_runtime_health_requires_persisted_observation() -> None:
 
 def test_kubernetes_actions_are_permission_aware() -> None:
     detail = read('app/templates/integrations/kubernetes/detail.html')
+    detail_posture = read('app/templates/integrations/components/_provider_detail_posture.html')
     capability = (
         read('app/templates/integrations/kubernetes/partials/_capability_workspace.html')
         + read('app/templates/integrations/kubernetes/partials/_capability_registry.html')
@@ -117,13 +118,14 @@ def test_kubernetes_actions_are_permission_aware() -> None:
     connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
 
     assert "current_user.has_permission('clusters.sync')" in detail
+    assert 'show_primary_action' in detail_posture
     assert "current_user.has_permission('settings.manage_integrations')" in detail
     routes = read('app/integrations/routes.py')
     assert "@integrations_bp.get('/kubernetes')" in routes
     assert 'def kubernetes() -> ResponseReturnValue:' in routes
-    assert "url_for('integrations.kubernetes')" in detail
+    assert "url_for('integrations.kubernetes')" in detail or 'url_for("integrations.kubernetes")' in detail
     assert 'cluster.list_clusters' not in detail
-    assert 'Back to Registry' in detail
+    assert 'Back to Registry' in detail_posture
     assert "current_user.has_permission('clusters.sync')" in capability
     assert "current_user.has_permission('clusters.sync')" in runtime
     assert "current_user.has_permission('clusters.manage')" in connection
@@ -141,13 +143,14 @@ def test_validation_rbac_excludes_secrets_from_baseline_and_labels_optional_acce
 
 
 def test_source_binding_evidence_is_not_collapsed_into_one_status() -> None:
-    service = read('app/integrations/service.py')
+    source_projection = read('app/integrations/asset_owner_sources.py')
     inventory = read('app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html')
 
     for key in ('source_readiness', 'binding_validation', 'effective_status', 'effective_label'):
-        assert f"'{key}'" in service
+        assert f"'{key}'" in source_projection
+    shared_sources = read('app/templates/integrations/components/_asset_owner_observability_sources.html')
     for label in ('Source Readiness', 'Binding Validation', 'Effective Resolution'):
-        assert label in inventory
+        assert label in shared_sources
     assert 'source.status' not in inventory
 
 
@@ -302,11 +305,12 @@ def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
     assert 'data-kaori-connection-contract-v2' in connection
     assert 'data-kaori-connection-summary' in connection
     assert 'data-kaori-connection-evidence' in connection
-    assert 'data-kaori-operational-context' in connection
+    operational_context = read('app/templates/integrations/components/_provider_operational_context.html')
+    assert 'data-kaori-operational-context' in operational_context
     assert 'Connection Summary' in connection
     assert 'Connection Evidence' in connection
-    assert 'Operational Boundary' in connection
-    assert 'Operational Flow' in connection
+    assert 'operational_context.render(' in connection
+    assert 'Step {{ loop.index }}' in operational_context
     assert '_minimum_validation_rbac.html' in connection
     assert 'font-sans' in connection
     assert 'font-mono' not in connection
@@ -323,7 +327,9 @@ def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
     assert 'data-kaori-inventory-lifecycle-v4' in inventory
     assert 'data-kaori-inventory-lifecycle-v5' in inventory
     assert 'data-kaori-inventory-lifecycle-decision' in inventory
-    assert 'Bound Observability Sources' in inventory
+    assert 'Bound Observability Sources' in read(
+        'app/templates/integrations/components/_asset_owner_observability_sources.html'
+    )
     assert 'components/table.html' in inventory
     assert 'Inventory &amp; Lifecycle Decision' in inventory
     assert 'Retention Boundary' in inventory
@@ -423,7 +429,6 @@ def test_kubernetes_integration_overview_uses_controlled_kaori_icon_palette() ->
 def test_kubernetes_integration_uses_canonical_compact_label_roles() -> None:
     page = read('app/templates/integrations/kubernetes.html')
     provider_frontpage = read('app/templates/integrations/components/_provider_frontpage.html')
-    detail = read('app/templates/integrations/kubernetes/detail.html')
     coverage = read('app/templates/integrations/kubernetes/partials/_integration_coverage.html')
     registry = read('app/templates/integrations/kubernetes/partials/_registry.html')
     connection = read('app/templates/integrations/kubernetes/partials/_connection_contract.html')
@@ -440,7 +445,8 @@ def test_kubernetes_integration_uses_canonical_compact_label_roles() -> None:
 
     assert 'provider_front.hero(' in page
     assert 'display="text"' in provider_frontpage
-    assert "display='text'" in detail
+    detail_posture = read('app/templates/integrations/components/_provider_detail_posture.html')
+    assert 'display="text"' in detail_posture
     assert 'display="indicator"' in coverage
     assert 'display="indicator"' in registry
     assert "display='special'" in connection
@@ -450,7 +456,8 @@ def test_kubernetes_integration_uses_canonical_compact_label_roles() -> None:
     assert 'components/table_label.html' in runtime
     assert "metadata_label((runtime_state.diagnostics|length) ~ ' Checks')" in runtime
     assert "display='indicator'" in runtime
-    assert "display='indicator'" in inventory
+    asset_sources = read('app/templates/integrations/components/_asset_owner_observability_sources.html')
+    assert 'display="indicator"' in asset_sources
     assert "integration_status(health_tone, row.effective_status_label, display='indicator')" in history
     assert 'Validation · {{ row.readiness_label }}' in history
     assert labels.count('whitespace-nowrap') >= 4

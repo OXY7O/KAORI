@@ -80,6 +80,18 @@ from upstream rule presence.
 | `binding.selector.update` | `inline` | Update alert identity and invalidate prior consumer evidence. |
 | `binding.validate` | `integration-validation` | Validate the Consumer Profile and selector-scoped alert stream. |
 
+## Source-owned consumer binding UX
+
+Alertmanager is the mutation owner for its alert consumer bindings. `Bindings & Consumers`
+uses the shared `Add Binding` modal backed by the canonical managed-asset registry. Current
+eligible asset families include Kubernetes clusters and object-storage systems; the asset
+type resolves the corresponding alert Consumer Profile and selector contract. Asset-owner
+pages only inventory the bound Alertmanager source and do not create/remove the binding.
+
+A future managed asset such as Vault becomes bindable by registering its asset definition
+and a compatible alert profile (for example `vault-alerts-v1`); no Vault-specific
+Alertmanager form or binding table is required.
+
 ## Persistence and authority
 
 `AlertmanagerInstance` in `app/models/alertmanager.py` stores one reusable

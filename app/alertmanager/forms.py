@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlsplit
 
+from app.integrations.consumer_assets import registered_consumer_asset_definitions
+
 SUPPORTED_AUTH_TYPES = {'none', 'basic', 'bearer'}
 SUPPORTED_DEPLOYMENT_TYPES = {
     'external_managed',
@@ -13,15 +15,7 @@ SUPPORTED_DEPLOYMENT_TYPES = {
     'cluster_managed',
 }
 SUPPORTED_BINDING_ROLES = {'primary', 'secondary', 'fallback'}
-SUPPORTED_SCOPE_TYPES = {
-    'kubernetes_cluster',
-    'server',
-    'server_group',
-    'hci_environment',
-    'storage_service',
-    'object_storage_system',
-    'global',
-}
+SUPPORTED_SCOPE_TYPES = {definition.asset_type for definition in registered_consumer_asset_definitions()}
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,7 +70,7 @@ def parse_alertmanager_instance_form(form_data: Mapping[str, Any]) -> Alertmanag
 
 
 def parse_alertmanager_binding_form(form_data: Mapping[str, Any]) -> AlertmanagerBindingForm:
-    scope_type = str(form_data.get('scope_type', '')).strip().lower()
+    scope_type = str(form_data.get('asset_type') or form_data.get('scope_type') or '').strip().lower()
     if scope_type not in SUPPORTED_SCOPE_TYPES:
         scope_type = 'kubernetes_cluster'
 
@@ -84,12 +78,14 @@ def parse_alertmanager_binding_form(form_data: Mapping[str, Any]) -> Alertmanage
     if binding_role not in SUPPORTED_BINDING_ROLES:
         binding_role = 'primary'
 
-    if scope_type == 'kubernetes_cluster':
-        scope_key = str(form_data.get('cluster_scope_key') or form_data.get('scope_key') or '').strip()
-    elif scope_type == 'object_storage_system':
-        scope_key = str(form_data.get('object_storage_scope_key') or form_data.get('scope_key') or '').strip()
-    else:
-        scope_key = str(form_data.get('generic_scope_key') or form_data.get('scope_key') or '').strip()
+    scope_key = str(
+        form_data.get('asset_key')
+        or form_data.get('cluster_scope_key')
+        or form_data.get('object_storage_scope_key')
+        or form_data.get('generic_scope_key')
+        or form_data.get('scope_key')
+        or ''
+    ).strip()
 
     return AlertmanagerBindingForm(
         scope_type=scope_type,

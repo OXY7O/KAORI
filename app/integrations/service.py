@@ -7,6 +7,7 @@ from sqlalchemy import func, select
 
 from app.common.presentation import present_key_label, present_user_datetime
 from app.extensions.db import db
+from app.integrations.asset_owner_sources import build_bound_observability_source_rows
 from app.integrations.contracts import IntegrationNotRegistered
 from app.integrations.coverage import (
     bound_source_for_scope,
@@ -21,7 +22,6 @@ from app.integrations.overview_extensions import (
     sort_runtime_rows,
 )
 from app.integrations.prometheus.scope import cluster_bindings_for_instance
-from app.integrations.readiness import resolve_binding_operational_status
 from app.integrations.registry import get_integration, registry
 from app.integrations.taxonomy import (
     capability_definitions_for_domain,
@@ -310,35 +310,10 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
         connection_id=connection.id,
         cluster_id=cluster.id,
     )
-    source_bindings = []
-    for provider, icon, source, binding in (
-        ('Prometheus', 'activity', prometheus_source, prometheus_binding),
-        ('Alertmanager', 'siren', alertmanager_source, alertmanager_binding),
-    ):
-        source_readiness = getattr(source, 'readiness_status', None) if source else 'not_configured'
-        binding_validation = getattr(binding, 'validation_status', None) if binding else 'not_bound'
-        effective = (
-            resolve_binding_operational_status(
-                source_readiness=source_readiness,
-                binding_validation=binding_validation,
-                source_enabled=bool(getattr(source, 'enabled', True)),
-                binding_enabled=bool(getattr(binding, 'enabled', True)),
-            )
-            if source and binding
-            else {'status': 'not_configured', 'label': 'Not Configured'}
-        )
-        source_bindings.append(
-            {
-                'provider': provider,
-                'icon': icon,
-                'name': source.name if source else 'Not bound',
-                'source_readiness': source_readiness or 'validation_required',
-                'binding_validation': binding_validation or 'validation_required',
-                'effective_status': effective['status'],
-                'effective_label': effective['label'],
-                'role': binding.binding_role if binding else None,
-            }
-        )
+    source_bindings = build_bound_observability_source_rows(
+        asset_type='kubernetes_cluster',
+        asset_key=cluster.id,
+    )
     return {
         'connection': connection,
         'cluster': cluster,

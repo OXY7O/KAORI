@@ -226,70 +226,29 @@ def main() -> int:
         errors,
     )
 
-    # Configuration is the deliberate side-rail exception and must stay shared + symmetric.
-    config_decision = read('app/templates/integrations/components/_configuration_decision.html')
-    require(
-        'data-kaori-configuration-decision-side' in config_decision,
-        'Shared Configuration Decision side panel marker is missing',
-        errors,
-    )
-    require(
-        'flex h-full min-h-full flex-col self-stretch' in config_decision,
-        'Configuration Decision must stretch with the working form',
-        errors,
-    )
-    require(
-        'operational_effects=none' in config_decision,
-        'Configuration Decision must support optional Operational Effects evidence',
-        errors,
-    )
-    require(
-        'validation_boundary=none' in config_decision,
-        'Configuration Decision must support optional Validation Boundary evidence',
-        errors,
-    )
-    require(
-        'Operational Effects' in config_decision, 'Configuration Decision Operational Effects block is missing', errors
-    )
-    require(
-        'Validation Boundary' in config_decision, 'Configuration Decision Validation Boundary block is missing', errors
-    )
-    require(
-        'xl:sticky' not in config_decision, 'Configuration Decision must not become a mismatched sticky rail', errors
-    )
+    # Provider detail Configuration is read-only; edit workspaces are separate.
+    config_contract = read('app/templates/integrations/components/_provider_configuration_contract.html')
+    for marker in (
+        'data-kaori-provider-configuration-contract',
+        'Connection Contract',
+        'Connection Evidence',
+        'operational_context.render(',
+        'Configure Connection',
+    ):
+        require(marker in config_contract, f'Shared provider Configuration contract missing: {marker}', errors)
+    require('Operational Boundary' not in config_contract, 'Separate Operational Boundary surface is retired', errors)
+    require('Operational Flow' not in config_contract, 'Separate Operational Flow surface is retired', errors)
     for provider in ('prometheus', 'alertmanager'):
         relative = f'app/templates/{provider}/partials/_detail_configuration.html'
         source = read(relative)
         require(
-            'configuration_decision.side_panel(' in source,
-            f'{relative}: must use shared Configuration Decision side panel',
+            'provider_configuration_contract.render(' in source,
+            f'{relative}: must use shared read-only provider Configuration contract',
             errors,
         )
+        require('<form' not in source, f'{relative}: detail Configuration must not embed editable forms', errors)
         require(
-            'grid-cols-[minmax(0,1fr)_25rem]' in source,
-            f'{relative}: canonical desktop configuration rail width drifted',
-            errors,
-        )
-        require(
-            'items-stretch' in source, f'{relative}: configuration surfaces must remain vertically symmetric', errors
-        )
-        require('embedded=true' in source, f'{relative}: Save Changes must remain an embedded footer action', errors)
-    prometheus_configuration = read('app/templates/prometheus/partials/_detail_configuration.html')
-    for required in (
-        "('Save Changes', 'Resets technical readiness.')",
-        "('Test Connection', 'Proves transport reachability only.')",
-        "('Full Validation', 'Rebuilds capability evidence.')",
-        "('Consumer Use', 'Requires eligible scope bindings.')",
-        "('Transport Check', 'Test Connection')",
-        "('Capability Contract', 'Full Validation')",
-        "('Consumer Eligibility', 'Scope Binding')",
-        "('Operational Use', 'Source Resolution')",
-        'Prometheus executes metric queries. KAORI governs source selection, validation evidence, bindings, and consumer eligibility.',
-    ):
-        require(
-            required in prometheus_configuration,
-            f'Prometheus Configuration Decision density contract missing: {required}',
-            errors,
+            'edit_instance' in source, f'{relative}: Configuration must link to dedicated Edit Connection page', errors
         )
 
     # Provider detail tabs use one shared controller.
@@ -371,7 +330,10 @@ def main() -> int:
     # Canonical Kubernetes navigation must not regress to the retired cluster list endpoint.
     kubernetes_detail = read('app/templates/integrations/kubernetes/detail.html')
     require(
-        "url_for('integrations.kubernetes')" in kubernetes_detail,
+        (
+            "url_for('integrations.kubernetes')" in kubernetes_detail
+            or 'url_for("integrations.kubernetes")' in kubernetes_detail
+        ),
         'Kubernetes detail must return to Integration registry',
         errors,
     )

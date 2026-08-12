@@ -125,7 +125,7 @@ Asset / Scope | Provider API | Metrics Source | Alert Source | Coverage | Action
 Canonical observability-provider coverage columns for Prometheus and Alertmanager are:
 
 ```text
-Operational Scope | Environment | Primary Source | Consumer Binding | Coverage | Actions
+Consumer Asset | Environment | Primary Source | Consumer Binding | Coverage | Actions
 ```
 
 Rules:
@@ -504,7 +504,7 @@ Prometheus and Alertmanager validation workspaces follow the Kubernetes `Compati
 
 - **Alertmanager provider validation is consumer-neutral.** Provider Core Validation owns Alertmanager product/version compatibility plus Status, Alerts, and Silences API v2 evidence. Kubernetes, MinIO, infrastructure, and future alert payload semantics belong to `IntegrationBinding` consumer profiles such as `kubernetes-alerts-v1` and `minio-alerts-v1`. A non-global binding requires an alert identity selector; missing or malformed consumer evidence may affect that binding but must not mutate Alertmanager provider readiness.
 - **Alertmanager binding tables expose Consumer Profile explicitly.** The registry shows Consumer Asset, Alert Identity, Consumer Profile, role/priority, Binding Validation, Effective Resolution, and Actions. Provider-wide active-alert payload fields are not presented as Core Validation capabilities.
-- **MinIO mirrors Kubernetes as an asset-owner provider while preserving the shared provider shell.** Its list Hero says `MinIO Integrations`, primary action says `Register Connection`, and provider details use `Configuration`, `Core Validation`, `Runtime & History`, and `Bindings & Lifecycle`. The lifecycle workspace owns the canonical `object_storage_system` asset plus its Prometheus metrics and Alertmanager alert consumer bindings; deleting MinIO removes that managed asset and those asset-scoped bindings without deleting the reusable Prometheus or Alertmanager source connections.
+- **MinIO mirrors Kubernetes as an asset-owner provider while preserving the shared provider shell.** Its list Hero says `MinIO Integrations`, primary action says `Register Connection`, and provider details use `Configuration`, `Validation & Capabilities`, `Runtime & History`, and `Inventory & Lifecycle`. The lifecycle workspace inventories the canonical `object_storage_system` asset plus its bound Prometheus/Alertmanager sources read-only; binding creation/removal belongs to the Observability source workspace. Deleting MinIO removes the managed asset and bindings that target it without deleting reusable Prometheus or Alertmanager source connections.
 
 - one validation header with the canonical shared loading bar;
 - one horizontal provider capability-readiness surface before the registry;
@@ -544,7 +544,7 @@ Kubernetes, Prometheus, Alertmanager, Runtime Observations, and Integration Runt
 
 Before final lock, Integrations use the following canonical composition rules:
 
-- **Configuration** — Prometheus and Alertmanager use one shared `Configuration Decision` side panel beside the primary configuration form. Configuration is the deliberate exception to the full-width decision pattern because its content is compact guidance while the form is the active working surface. The shared panel owns current contract facts, change impact, the `Configure → Validate → Observe → Resolve` flow, and the provider consumer boundary. Use the canonical 25rem/27rem desktop rail; do not duplicate provider-specific side-panel markup.
+- **Configuration** — provider detail pages are read-only connection-contract workspaces. Kubernetes, Prometheus, Alertmanager, and MinIO expose registered identity, endpoint/transport evidence, authority boundary, operational flow, and a canonical `Configure Connection` action. Editing occurs on the dedicated `Edit <Provider> Connection` page; provider detail tabs MUST NOT embed editable forms.
 - **Provider workspace tabs** — Prometheus and Alertmanager use `integration_workspace_tabs.js` as the shared tab-state controller. Page-local copies of URL/hash synchronization, keyboard navigation, and `moveTab()` logic are prohibited.
 - **Runtime Observation modal** — the content macro must call `_record_detail_modal.html` with `size='standard'`; it must not own a second standalone `<dialog>` shell. Diagnostic detail is shown once under `Diagnostic Review`; only a non-duplicative `standalone_message` may appear above it. Lifecycle and capability evidence remain optional dedicated boundaries.
 - **Integration Runtime Overview** — runtime records use a full-width fixed-layout KAORI table and the shared native `View More` modal. Inline `View More / Hide Details` expansion is prohibited for runtime record detail.
@@ -552,7 +552,7 @@ Before final lock, Integrations use the following canonical composition rules:
 - **Hero metrics** — provider Hero context metrics use `page_hero.context_metric()` instead of copied metric-card markup.
 - **Style debt** — no new Integration verifier debt may be added. When an Integration file drops below its recorded debt ceiling, update the baseline in the same patch.
 
-- Configuration form and decision rail must stretch to the same desktop row height; use the embedded shared form action footer and avoid sticky positioning for the equal-height pair.
+- Provider detail Hero posture is owned by `integrations/components/_provider_detail_posture.html` so the right-side posture card has identical geometry across Kubernetes, Prometheus, Alertmanager, and MinIO. Provider-specific text and evidence values may differ; card structure, metric density, and actions do not.
 
 ## Domain workspace visual and runtime feedback contract
 
@@ -571,7 +571,7 @@ Validation and Runtime HTMX responses MUST refresh their framed-tab status badge
 - Registration workspaces share the same interaction hierarchy: Hero → `Connection Configuration` → `Connection Identity` → `Endpoint & Access` with operation-scoped `Test Connection` → compatibility/request controls → action bar.
 - Registration Hero ownership is shared by `integrations/components/_provider_registration_hero.html`. Kubernetes, Prometheus, Alertmanager, and MinIO MUST NOT copy their own registration-posture panel. The shared right-side contract is `Registration Posture` / `Pre-save Requirements` / `Draft`, with `Before Save · Test Connection` and `After Save · Core Validation`, followed by `Back to Registry`.
 - Registration naming uses **Register `<Provider>` Connection**. `Add Kubernetes Connection` and `Register Alertmanager Instance` are retired operator-facing labels.
-- Registration/configuration right-context ownership is shared by `integrations/components/_provider_registration_context.html`. Provider connection forms render exactly two context surfaces: the provider flow and one `Related Operational Workspace` card. Do not restore separate expandable `Connection Identity & Contract`, `Compatibility Guide`, `After Registration`, or lifecycle cards beside the connection form; those details belong to Configuration, Core Validation, Runtime & History, or Bindings & Consumers after registration.
+- Registration/configuration right-context ownership is shared by `integrations/components/_provider_registration_context.html`. Provider connection forms render exactly two context surfaces: the provider flow and one `Related Operational Workspace` card. Do not restore separate expandable `Connection Identity & Contract`, `Compatibility Guide`, `After Registration`, or lifecycle cards beside the connection form; those details belong to Configuration, Validation & Capabilities, Runtime & History, or the provider's final lifecycle/source workspace after registration.
 - The related workspace points to the provider domain (`Orchestration`, `Observability`, or `Storage`) and keeps the authority boundary concise. Any initial consumer binding created by a registration shortcut is described inside that related-workspace context instead of adding a third side card.
 - `Test Connection` MUST be an HTMX operation with its own loading indicator and signed registration proof; it MUST NOT submit or refresh the entire registration workspace.
 - Registration action bars use the shared gated-footer contract: `Connection Test Required` / `Complete Test Connection before registration.` before verification, then `Connection Verified` / `Verified connection payload is ready to register.` after verification, with `Cancel` + `Register Connection`. Prometheus and Alertmanager MUST NOT omit Cancel or use `Instance` terminology in operator-facing actions.
@@ -593,8 +593,8 @@ Configuration
 Validation / Capabilities
 Runtime & History
   → operation-scoped Runtime Refresh
-Bindings / Lifecycle
-  → downstream consumer bindings
+Inventory / Lifecycle
+  → bound observability-source inventory
   → deletion guard
   → Delete Connection
 ```
@@ -610,8 +610,7 @@ Shared ownership:
 - tab state and asset-owner destructive state are owned by `integration_workspace_tabs.js`;
 - Kubernetes and MinIO destructive dialogs use `integrations/components/_asset_owner_delete_modal.html`;
 - provider-specific templates supply only the asset label and deletion consequence;
-- MinIO fourth workspace is `Bindings & Lifecycle` because the object-storage asset owns
-  its downstream Prometheus and Alertmanager associations.
+- Kubernetes and MinIO use `Inventory & Lifecycle` as the fourth asset-owner workspace. It presents bound Prometheus/Alertmanager sources as read-only operational inventory plus the asset deletion lifecycle; source-binding mutation stays in Observability.
 
 
 ### Asset-owner detail workspace parity
@@ -621,6 +620,18 @@ Kubernetes and MinIO are asset-owner providers. Their detail workspaces MUST sha
 - `Configuration` owns the persisted connection contract.
 - `Validation & Capabilities` owns compatibility, provider capability readiness, an HTMX-filtered capability registry, and `5/10/25/50` pagination.
 - `Runtime & History` owns operation-scoped runtime refresh plus the canonical shared runtime-history table with HTMX filters and pagination.
-- the fourth lifecycle workspace owns provider-specific consumer/lifecycle evidence. For MinIO this is `Bindings & Lifecycle`; its consumer registry contains only Prometheus/Alertmanager bindings and uses HTMX pagination.
+- the fourth asset-owner workspace is `Inventory & Lifecycle`. Kubernetes and MinIO render their bound Prometheus/Alertmanager sources through the shared asset-owner source table with HTMX pagination; this workspace is read-only for binding mutation and owns only asset lifecycle actions such as governed deletion.
 
 Provider-owned API identity MUST NOT be duplicated as a consumer binding. MinIO API ownership is represented by the MinIO/ObjectStorageSystem relationship; Kubernetes API ownership is represented by the Kubernetes connection/cluster relationship.
+
+### Shared provider detail and observability coverage
+
+- Prometheus and Alertmanager Configuration tabs use `integrations/components/_provider_configuration_contract.html` and expose `Configure Connection`; edit forms live on dedicated edit routes.
+- Edit connection pages for Kubernetes, Prometheus, Alertmanager, and MinIO keep exactly two right-context surfaces through `_provider_registration_context.html`: the provider flow and `Related Operational Workspace`. Validation matrices, RBAC explainers, runtime history, and binding diagnostics belong to their detail workspaces, not the edit form rail.
+- **Observability binding mutation is source-owned.** Prometheus owns Prometheus binding create/update/validate/remove actions; Alertmanager owns the equivalent alert-binding actions. Asset-owner workspaces never duplicate those mutation controls.
+- Observability coverage is asset-centric, not Kubernetes-only. Prometheus and Alertmanager coverage enumerates every managed asset registered in `consumer_assets.py`, currently `kubernetes_cluster` and `object_storage_system`. Binding mutation is source-owned: operators create, validate, update, and remove Prometheus bindings from Prometheus and Alertmanager bindings from Alertmanager. Kubernetes/MinIO asset-owner pages expose bound-source evidence read-only and link back to Observability.
+- The `Bindings & Consumers` workspace on Prometheus/Alertmanager uses one shared `Add Binding` modal. Asset type and asset identity are selected first; the Consumer Profile is resolved from the canonical asset registry plus the source provider's binding-profile registry. Provider-specific `Add Kubernetes Binding` or `Add MinIO Binding` forms are prohibited.
+- Future managed assets such as Vault extend the same flow by registering a canonical asset definition (for example `vault_system`) and compatible source profiles such as `vault-metrics-v1` and/or `vault-alerts-v1`. Once registered, the asset becomes eligible in Observability coverage and the shared Add Binding modal without a new product-specific Prometheus/Alertmanager form or binding table.
+- Prometheus/Alertmanager Capability Registry tables use the same KAORI table hierarchy as domain Capability Registry: shared filter geometry, standard headers/cells, status inside the Status column, `View More` for detailed evidence, 5/10/25/50 pagination, and operation-scoped HTMX loading. Readiness labels must not float outside their canonical table/decision surface.
+- Provider Configuration combines authority and lifecycle guidance into one `Operational Context` surface through `_provider_operational_context.html`; separate `Operational Boundary` and `Operational Flow` cards are retired.
+- Provider readiness explanation uses `_readiness_explanation.html` and adapts content/style to Ready, Attention/Degraded, or Blocked/Failed while keeping the same geometry across Orchestration and Observability.
