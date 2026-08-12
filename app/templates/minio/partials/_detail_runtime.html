@@ -64,6 +64,5 @@
         {% endwith %}
     </div>
 {% endif %}
-
-{{ framed_workspace_tabs.badge_oob("minio", "runtime", runtime_state.health_status_label|default("Not Observed")) }}
+{{ framed_workspace_tabs.badge_oob("minio", "runtime", runtime_state.health_status_label|default("Not Observed") ) }}
 {% include "components/operation_feedback_oob.html" %}

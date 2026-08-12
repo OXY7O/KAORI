@@ -28,7 +28,7 @@
             {{ table_label.metadata_label(registry.total_contracts ~ " Capability Contracts") }}
         </div>
         <div data-kaori-capability-loading-region>
-            {{ loading_bar.render("minio-capability-loading", active=validation_job and validation_job.is_active, label="Refreshing MinIO Capability Registry") }}
+            {{ loading_bar.render("minio-capability-loading", label="Refreshing MinIO Capability Registry") }}
         </div>
     </header>
     <form method="get"

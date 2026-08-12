@@ -77,10 +77,8 @@ def test_capability_registry_uses_runtime_history_style_htmx_loading_contract():
 
     assert 'components/pagination.html' in source
     assert 'components/loading_bar.html' in source
-    assert (
-        "loading_bar.render('kubernetes-capability-loading', active=validation_job and validation_job.is_active"
-        in source
-    )
+    assert "loading_bar.render('kubernetes-capability-loading', label='Refreshing Capability Registry')" in source
+    assert 'active=validation_job and validation_job.is_active' not in source
     assert 'hx-indicator="#kubernetes-capability-loading"' in source
     assert 'data-kaori-capability-loading-region' in source
     assert "hx-get=\"{{ url_for('integrations.kubernetes_capability_registry'" in source

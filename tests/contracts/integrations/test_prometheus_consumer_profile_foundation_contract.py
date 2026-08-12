@@ -57,10 +57,14 @@ def test_prometheus_ui_separates_provider_and_consumer_readiness() -> None:
 
     assert 'Prometheus Core Validation' in validation
     assert 'Prometheus Provider Readiness' in validation
-    assert 'Full Validation owns provider compatibility and core API readiness.' in validation
+    assert (
+        'Full Validation owns core APIs; bindings own consumer evidence; Runtime Refresh owns live health.'
+        in validation
+    )
     assert 'Consumer Bindings' in scope
     assert 'Consumer Identity Boundary' in scope
     assert 'consumer_profile_label' in registry
+
 
 def test_domain_route_does_not_depend_on_service_reexport() -> None:
     routes = read('app/integrations/routes.py')

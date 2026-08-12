@@ -150,12 +150,7 @@
                     </div>
                 </header>
                 <div class="divide-y divide-outline-subtle" data-kaori-consumer-list>
-                    {% set consumers = [
-                        ("scan-search", "Validation & Capabilities", "Registered S3 authority", "Product identity, compatibility, S3 access, and provider capability evidence."),
-                        ("activity", "Runtime Monitoring", "Persisted provider runtime", "Endpoint health, latency, diagnostics, and Recent Runtime Observations."),
-                        ("radio-tower", "Observability Correlation", "Source-owned bindings", "Prometheus metrics and Alertmanager alert evidence remain independently validated per asset binding."),
-                        ("scroll-text", "Activity Audit", "Retained lifecycle evidence", "Registration, validation, runtime, and deletion actions remain traceable after provider lifecycle changes.")
-                    ] %}
+                    {% set consumers = [('scan-search', 'Validation & Capabilities', 'Registered S3 authority', 'Product identity, compatibility, S3 access, and provider capability evidence.'), ('activity', 'Runtime Monitoring', 'Persisted provider runtime', 'Endpoint health, latency, diagnostics, and Recent Runtime Observations.'), ('radio-tower', 'Observability Correlation', 'Source-owned bindings', 'Prometheus metrics and Alertmanager alert evidence remain independently validated per asset binding.'), ('scroll-text', 'Activity Audit', 'Retained lifecycle evidence', 'Registration, validation, runtime, and deletion actions remain traceable after provider lifecycle changes.')] %}
                     {% for icon, title, boundary, description in consumers %}
                         <article class="grid gap-3 px-4 py-3.5 transition hover:bg-kaori-mist sm:px-5 lg:grid-cols-[minmax(14rem,0.8fr)_minmax(15rem,0.8fr)_minmax(0,1.4fr)] lg:items-center">
                             <div class="flex min-w-0 items-start gap-3">

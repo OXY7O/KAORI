@@ -14,6 +14,8 @@ printf '\n[3/5] Provider workspace contracts\n'
 pytest -q \
   tests/contracts/integrations/test_provider_workspace_alignment_20260812_contract.py \
   tests/contracts/integrations/test_provider_workspace_followup_20260812_contract.py \
+  tests/contracts/integrations/test_provider_workspace_followup_v2_20260812_contract.py \
+  tests/integrations/test_kubernetes_readiness_messages.py \
   tests/contracts/integrations/test_kubernetes_integration_v2_contract.py \
   tests/contracts/integrations/test_minio_provider_workspace_alignment_contract.py \
   tests/contracts/integrations/test_integration_domain_ui_refinement_contract.py

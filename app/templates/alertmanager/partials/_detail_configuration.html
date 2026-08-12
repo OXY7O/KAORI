@@ -16,6 +16,12 @@
     ("siren", "success" if instance.enabled else "warning", "Alerting Authority", deployment_label if instance.enabled else "Source Disabled", "Alertmanager owns alert routing and delivery; bindings only scope consumer use.")
 ] %}
 {% set flow_items = [('Configure', 'Set reusable identity, endpoint access, TLS, authentication, and deployment contract.', 'settings-2'), ('Validate', 'Confirm provider-neutral Alertmanager status, alerts, and silences APIs.', 'badge-check'), ('Observe', 'Persist runtime health and provider diagnostics independently from consumers.', 'activity'), ('Bind', 'Associate Kubernetes, MinIO, and future managed assets through alert consumer profiles.', 'waypoints')] %}
+{% set operational_metadata = [
+    "Alert Routing Authority",
+    "Read-Only Discovery",
+    "Alertmanager API v2",
+    "Deployment · " ~ deployment_label
+] %}
 {{ provider_configuration_contract.render("Alertmanager",
 "siren",
 readiness,
@@ -24,5 +30,6 @@ evidence_items,
 "Alertmanager owns alert routing and delivery. KAORI keeps provider readiness separate from consumer bindings.",
 flow_items,
 "Connection changes require revalidation; existing consumer bindings stay attached to their managed assets.",
-url_for("alertmanager.edit_instance", instance_id=instance.id) 
+url_for("alertmanager.edit_instance", instance_id=instance.id),
+operational_metadata=operational_metadata
 ) }}

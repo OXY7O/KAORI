@@ -27,6 +27,9 @@
         "Compatibility & Capability Matrix",
         "Validate MinIO identity, compatibility, S3 access, and core capabilities.",
         icon="scan-search",
+        loading_id="minio-validation-loading",
+        loading_active=validation_job and validation_job.is_active,
+        loading_label="Running MinIO Full Validation",
         ) %}
         <form method="post"
               action="{{ url_for('minio.validate_instance', instance_id=instance.id) }}"
@@ -34,7 +37,7 @@
               hx-target="#minio-core-validation"
               hx-swap="outerHTML"
               hx-disabled-elt="button"
-              hx-indicator="#minio-capability-loading">
+              hx-indicator="#minio-validation-loading">
             {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
             <button type="submit"
                     {% if validation_job and validation_job.is_active %}disabled{% endif %}
@@ -49,7 +52,7 @@
     {{ provider_job_status.render(validation_job, 'MinIO validation running in worker', 'MinIO') }}
     <div class="p-5 sm:p-6">
         {{ capability_readiness.render("MinIO Capability Readiness",
-                "Provider identity, supported release, S3 API access, and MinIO capability evidence used by object-storage workspaces.",
+                "Required MinIO identity, compatibility, and S3 capability evidence.",
                 readiness,
                 readiness_label,
                 "Validated Capabilities",
@@ -58,10 +61,10 @@
                 capability_metadata,
                 capability_metrics,
                 "Object Storage Provider Eligible" if readiness == "ready" else "Remediation Required",
-                "The MinIO API contract is ready for provider-owned object-storage workflows." if readiness == "ready" else (instance.validation_message or "Run Full Validation to establish provider evidence."),
+                "Required MinIO S3 contracts are usable." if readiness == "ready" else "Resolve required MinIO API or compatibility gaps.",
                 "normal" if readiness == "ready" else "critical",
-                "Full Validation owns MinIO product identity, compatibility, S3 API, and provider capability evidence. Runtime Refresh owns current endpoint health. Prometheus and Alertmanager bindings own consumer-specific evidence.",
-                "No corrective action is required. Revalidate after MinIO upgrades, credential changes, or S3 API changes." if readiness == "ready" else "Resolve MinIO API or compatibility gaps, then rerun Full Validation."
+                "Full Validation owns S3 capability evidence; Runtime Refresh owns live health; bindings own consumer evidence.",
+                "Revalidate after MinIO, credential, or S3 API changes." if readiness == "ready" else "Resolve MinIO gaps, then rerun Full Validation."
         ) }}
         {% if readiness == "ready" %}
             {% set readiness_decision_title = "Provider Readiness Is Ready" %}
@@ -83,6 +86,5 @@
         {% include "minio/partials/_capability_registry.html" %}
     </div>
 </section>
-
 {{ framed_workspace_tabs.badge_oob("minio", "validation", readiness_label) }}
 {% include "components/operation_feedback_oob.html" %}

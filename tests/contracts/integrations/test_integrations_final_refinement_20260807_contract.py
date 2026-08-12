@@ -74,11 +74,10 @@ def test_alertmanager_capability_matrix_uses_modal_detail() -> None:
 
     assert 'import "integrations/components/_record_detail_modal.html" as record_detail_modal' in registry
     assert 'Alertmanager Core Validation' in source
-    assert 'Full Validation owns provider compatibility and core API evidence only.' in source
+    assert 'Full Validation owns core APIs; bindings own consumer evidence; Runtime Refresh owns live health.' in source
     assert 'Consumer Binding Registry' in bindings
     assert 'record_actions.view_more(' in registry
     assert 'provider_capability_detail.content(' in registry
     assert 'Provider API Probe' in registry
     assert 'Hide Details' not in source
     assert 'x-show="open"' not in source
-

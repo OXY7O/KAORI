@@ -67,7 +67,5 @@
 </nav>
 {%- endmacro %}
 {% macro badge_oob(prefix, key, badge) -%}
-<span id="{{ prefix }}-{{ key }}-tab-badge"
-      hx-swap-oob="innerHTML"
-      class="hidden">{{ badge }}</span>
+<span id="{{ prefix }}-{{ key }}-tab-badge" hx-swap-oob="innerHTML" class="hidden">{{ badge }}</span>
 {%- endmacro %}

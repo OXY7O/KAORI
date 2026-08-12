@@ -19,9 +19,9 @@
     "Core profile · alertmanager-core-v1"
 ] %}
 {% if capability_summary.required_missing %}
-    {% set next_action = "Restore required Alertmanager API v2 access, then rerun Full Validation before relying on this provider." %}
+    {% set next_action = "Restore Alertmanager API v2 access, then rerun Full Validation." %}
 {% else %}
-    {% set next_action = "Provider Core Validation is ready. Validate each consumer binding separately to prove alert identity and payload semantics for that asset." %}
+    {% set next_action = "Validate consumer bindings for asset-specific alert evidence." %}
 {% endif %}
 <section id="alertmanager-validation-workspace"
          class="relative overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm font-sans"
@@ -33,6 +33,9 @@
         "Alertmanager Core Validation",
         "Validate compatibility and core Alertmanager APIs. Consumer alert streams remain binding-specific.",
         icon="scan-search",
+        loading_id="alertmanager-validation-loading",
+        loading_active=validation_job and validation_job.is_active,
+        loading_label="Running Alertmanager Full Validation",
         ) %}
         <form method="post"
               action="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
@@ -40,7 +43,7 @@
               hx-target="#alertmanager-validation-workspace"
               hx-swap="outerHTML"
               hx-disabled-elt="button"
-              hx-indicator="#alertmanager-capability-loading">
+              hx-indicator="#alertmanager-validation-loading">
             {% if csrf_token is defined %}
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             {% endif %}
@@ -66,9 +69,9 @@
         capability_metadata,
         capability_metrics,
         "Provider Core Ready" if required_ready else "Remediation Required",
-        "Status, Alerts, and Silences API contracts are usable; consumer binding validation remains an independent gate." if required_ready else "Restore the required Alertmanager API contract before treating this provider as ready.",
+        "Core Alertmanager APIs are usable." if required_ready else "Restore required core API contracts.",
         "normal" if required_ready else "critical",
-        "Full Validation owns provider compatibility and core API evidence only. Binding Validation owns consumer profiles, selectors, alert identity, and payload evidence. Runtime Refresh owns current endpoint health.",
+        "Full Validation owns core APIs; bindings own consumer evidence; Runtime Refresh owns live health.",
         next_action
         ) }}
         {% if readiness == "ready" %}
@@ -91,7 +94,6 @@
         {% include "alertmanager/partials/_capability_registry.html" %}
     </div>
 </section>
-
 {{ framed_workspace_tabs.badge_oob("alertmanager", "validation", (instance.readiness_status or "validation_required") |replace("_", " ")|title) }}
 {% include "components/operation_feedback_oob.html" %}
 {% if validation_scope_oob is defined and validation_scope_oob %}

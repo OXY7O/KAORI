@@ -144,5 +144,4 @@
     </div>
 </article>
 {% include "components/operation_feedback_oob.html" %}
-
-{{ framed_workspace_tabs.badge_oob("prometheus", "runtime", runtime_state.health_status_label|default("Not Observed")) }}
+{{ framed_workspace_tabs.badge_oob("prometheus", "runtime", runtime_state.health_status_label|default("Not Observed") ) }}

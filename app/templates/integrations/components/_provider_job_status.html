@@ -10,7 +10,7 @@
             </span>
             <span>
                 Task {{ job.task_id[:8] }} · {{ job.state_label|title }} · {{ job.elapsed_seconds }}s
-                {% if provider_label %}<span class="sr-only"> · {{ provider_label }}</span>{% endif %}
+                {% if provider_label %}<span class="sr-only">· {{ provider_label }}</span>{% endif %}
             </span>
         </div>
     {% endif %}

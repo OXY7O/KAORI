@@ -68,6 +68,7 @@ def test_alertmanager_supports_object_storage_consumers_without_special_binding_
     assert 'create_source_binding(' not in minio_service
     assert 'minio_alertmanager' not in minio_service.lower()
 
+
 def test_alertmanager_ui_exposes_consumer_profile_and_core_boundary() -> None:
     validation = read('app/templates/alertmanager/partials/_detail_validation_content.html')
     scope = read('app/templates/alertmanager/partials/_detail_scope.html')
@@ -76,11 +77,15 @@ def test_alertmanager_ui_exposes_consumer_profile_and_core_boundary() -> None:
 
     assert 'Alertmanager Core Validation' in validation
     assert 'Alertmanager Provider Readiness' in validation
-    assert 'Full Validation owns provider compatibility and core API evidence only.' in validation
+    assert (
+        'Full Validation owns core APIs; bindings own consumer evidence; Runtime Refresh owns live health.'
+        in validation
+    )
     assert 'Consumer Binding Registry' in registry
     assert 'Consumer Profile' in registry
     assert 'Alert Identity Boundary' in scope
     assert 'Resolved Consumer Profile' in binding_modal
+
 
 def test_alertmanager_consumer_profile_contract_is_documented() -> None:
     readme = read('app/integrations/alertmanager/README.md')

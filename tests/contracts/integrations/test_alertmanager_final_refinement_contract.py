@@ -15,13 +15,15 @@ def test_alertmanager_validation_matches_kubernetes_capability_matrix_and_regist
     routes = ALERT_ROUTES.read_text()
     assert 'Alertmanager Core Validation' in content
     assert 'Alertmanager Provider Readiness' in content
-    assert 'Full Validation owns provider compatibility and core API evidence only.' in content
+    assert (
+        'Full Validation owns core APIs; bindings own consumer evidence; Runtime Refresh owns live health.' in content
+    )
     assert 'data-kaori-provider-capability-matrix' in content
     assert 'capability_readiness.render(' in content
     assert 'include "alertmanager/partials/_capability_registry.html"' in content
     assert 'Validation Decision' not in content
     assert 'alertmanager-capability-loading' in registry
-    assert 'active=validation_job and validation_job.is_active' in registry
+    assert 'active=validation_job and validation_job.is_active' not in registry
     assert 'hx-indicator="#{{ loading_id }}"' in registry
     assert 'data-kaori-server-filtered-registry' in registry
     assert 'components/pagination.html' in registry
@@ -29,6 +31,7 @@ def test_alertmanager_validation_matches_kubernetes_capability_matrix_and_regist
     assert 'x-model' not in registry
     assert "@alertmanager_bp.get('/instances/<int:instance_id>/validation/capabilities')" in routes
     assert 'def instance_capability_registry' in routes
+
 
 def test_alertmanager_validation_modal_matches_kubernetes_capability_evidence_concept():
     registry = ALERT_REGISTRY.read_text()
@@ -53,6 +56,7 @@ def test_alertmanager_validation_modal_matches_kubernetes_capability_evidence_co
     assert '{{ table_ui.action_classes() }}' in actions
     assert 'data-lucide="chevron-right"' in actions
     assert 'panel-top-open' not in actions
+
 
 def test_alertmanager_runtime_matches_kubernetes_full_width_runtime_pattern():
     content = read('app/templates/alertmanager/partials/_runtime_panel.html')
@@ -83,6 +87,7 @@ def test_alertmanager_binding_workspace_is_full_width_and_lifecycle_action_is_se
     assert 'data-kaori-bound-scopes-full-width' in registry
     assert 'table-fixed' in registry
     assert 'table_ui.action_classes(true)' in registry
+
 
 def test_alertmanager_capability_pagination_precomputes_hx_urls() -> None:
     registry = ALERT_REGISTRY.read_text(encoding='utf-8')

@@ -37,9 +37,9 @@
 {% elif legacy_features %}
     {% set capability_next_action = 'Migrate ' ~ (legacy_features|length) ~ ' legacy API fallback' ~ ('' if legacy_features|length == 1 else 's') ~ ', then rerun Full Validation.' %}
 {% elif optional_blocked_features %}
-    {% set capability_next_action = "Core workspaces are eligible. Review optional governed access only for approved sensitive-resource workflows." %}
+    {% set capability_next_action = "Review optional access only when needed." %}
 {% else %}
-    {% set capability_next_action = "No corrective action is required. Revalidate after Kubernetes upgrades, API changes, or RBAC changes." %}
+    {% set capability_next_action = "Revalidate after Kubernetes, API, or RBAC changes." %}
 {% endif %}
 <section id="kubernetes-capability-workspace"
          class="relative font-sans {{ integration_ui.section_shell_classes() }}"
@@ -53,8 +53,11 @@
          {% if validation_job and validation_job.is_active %}hx-get="{{ url_for('integrations.kubernetes_capability_validation_status', cluster_id=cluster.id, task_id=validation_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML"{% endif %}>
     {% call connection_validation_header.render(
         'Compatibility & Capability Matrix',
-        'Validate served Kubernetes APIs, effective RBAC, stable adapters, fallbacks, and downstream eligibility.',
+        'Validate served APIs, effective RBAC, compatibility, and downstream eligibility.',
         icon='scan-search',
+        loading_id='kubernetes-validation-loading',
+        loading_active=validation_job and validation_job.is_active,
+        loading_label='Running Kubernetes Full Validation',
         ) %}
         {% if current_user.has_permission('clusters.sync') %}
             <form method="post"
@@ -63,7 +66,7 @@
                   hx-target="#kubernetes-capability-workspace"
                   hx-swap="outerHTML"
                   hx-disabled-elt="button"
-                  hx-indicator="#kubernetes-capability-loading">
+                  hx-indicator="#kubernetes-validation-loading">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit"
                         {% if validation_job and validation_job.is_active %}disabled{% endif %}
@@ -79,7 +82,7 @@
     {{ provider_job_status.render(validation_job, 'Kubernetes validation running in worker', 'Kubernetes') }}
     <div class="p-5 sm:p-6">
         {{ capability_readiness.render('Kubernetes Capability Readiness',
-                'Required API discovery, effective RBAC, compatibility, and capability evidence used by Inventory and downstream Kubernetes workspaces.',
+                'Required API and RBAC evidence for Kubernetes workspaces.',
                 validation_state.readiness,
                 validation_state.readiness_label,
                 'Validated Capabilities',
@@ -88,9 +91,9 @@
                 capability_metadata,
                 capability_metrics,
                 'Core Workspaces Eligible' if validation_state.readiness == 'ready' else 'Remediation Required',
-                'Required API and RBAC contracts permit Inventory and downstream workspaces to operate; runtime health remains an independent gate.' if validation_state.readiness == 'ready' else 'Resolve required API or RBAC evidence before runtime refresh and inventory synchronization.',
+                'Required API and RBAC contracts are usable.' if validation_state.readiness == 'ready' else 'Resolve required API or RBAC gaps.',
                 'normal' if validation_state.readiness == 'ready' else 'critical',
-                'Full Validation owns API discovery, compatibility selection, capability contracts, and effective RBAC. Runtime Refresh owns current Kubernetes API reachability, latency, and health.',
+                'Full Validation owns API and RBAC evidence; Runtime Refresh owns live API health.',
                 capability_next_action) }}
         {% if validation_state.readiness != 'ready' or optional_blocked_features %}
             <section class="mt-4 rounded-xl border border-outline-subtle bg-surface-card p-4"
@@ -120,5 +123,4 @@
     </div>
 </section>
 {% include 'components/operation_feedback_oob.html' %}
-
 {{ framed_workspace_tabs.badge_oob("kubernetes", "validation", validation_state.readiness_label) }}

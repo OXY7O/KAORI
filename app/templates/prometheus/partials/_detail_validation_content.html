@@ -17,9 +17,9 @@
     'Core Profile · ' ~ (instance.capability_profile or instance.query_profile or 'Validation Required')
 ] %}
 {% if capability_summary.required_missing %}
-    {% set next_action = "Restore the blocked provider-level API capability, then rerun Full Validation." %}
+    {% set next_action = "Restore blocked core APIs, then rerun Full Validation." %}
 {% else %}
-    {% set next_action = "Provider core is ready. Validate each consumer binding to establish Kubernetes, MinIO, or future metric-contract evidence." %}
+    {% set next_action = "Validate consumer bindings for asset-specific metric evidence." %}
 {% endif %}
 <section id="prometheus-validation-workspace"
          class="relative overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm font-sans"
@@ -30,6 +30,9 @@
         'Prometheus Core Validation',
         'Validate Prometheus compatibility and core APIs. Consumer metrics remain binding-specific.',
         icon='scan-search',
+        loading_id='prometheus-validation-loading',
+        loading_active=validation_job and validation_job.is_active,
+        loading_label='Running Prometheus Full Validation',
         ) %}
         <form method="post"
               action="{{ url_for('prometheus.instance_validate', instance_id=instance.id) }}"
@@ -37,7 +40,7 @@
               hx-target="#prometheus-validation-workspace"
               hx-swap="outerHTML"
               hx-disabled-elt="button"
-              hx-indicator="#prometheus-capability-loading">
+              hx-indicator="#prometheus-validation-loading">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit"
                     {% if validation_job and validation_job.is_active %}disabled{% endif %}
@@ -61,9 +64,9 @@
         capability_metadata,
         capability_metrics,
         'Provider Core Ready' if required_ready else 'Provider Remediation Required',
-        'This runtime can serve eligible consumer bindings.' if required_ready else 'Restore the provider-level API contract before validating consumer bindings.',
+        'Core Prometheus APIs are usable.' if required_ready else 'Restore required core API contracts.',
         'normal' if required_ready else 'critical',
-        'Full Validation owns provider compatibility and core API readiness. Consumer bindings own Kubernetes, MinIO, and future metric-contract validation.',
+        'Full Validation owns core APIs; bindings own consumer evidence; Runtime Refresh owns live health.',
         next_action
         ) }}
         {% if readiness == "ready" %}
@@ -86,6 +89,5 @@
         {% include "prometheus/partials/_capability_registry.html" %}
     </div>
 </section>
-
 {{ framed_workspace_tabs.badge_oob("prometheus", "validation", (instance.readiness_status or "validation_required") |replace("_", " ")|title) }}
 {% include "components/operation_feedback_oob.html" %}

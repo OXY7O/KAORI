@@ -15,6 +15,7 @@ from app.integrations.coverage import (
 )
 from app.integrations.deletion import kubernetes_deletion_guard
 from app.integrations.kubernetes.compatibility import FEATURE_CONTRACTS
+from app.integrations.kubernetes.messages import compact_readiness_reasons
 from app.integrations.overview_extensions import (
     build_extension_runtime_rows,
     build_overview_stats,
@@ -322,8 +323,8 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
         'validation_state': {
             'readiness': connection.readiness_status or 'validation_required',
             'readiness_label': present_key_label(connection.readiness_status or 'validation_required'),
-            'message': ' '.join(str(item) for item in (discovery.get('readiness_reasons') or []) if item)
-            or 'Run Full Validation to refresh served API, compatibility, and effective RBAC evidence.',
+            'message': ' '.join(compact_readiness_reasons(discovery.get('readiness_reasons') or []))
+            or 'Run Full Validation to refresh API, compatibility, and RBAC evidence.',
         },
         'runtime_history': list_runtime_history('kubernetes', str(connection.id), limit=5),
         'feature_rows': feature_rows,

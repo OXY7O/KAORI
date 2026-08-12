@@ -6,6 +6,7 @@ from typing import Any
 from app.common.presentation import present_count, present_key_label, present_milliseconds, present_user_datetime
 from app.integrations.compatibility import kubernetes_lifecycle_policy
 from app.integrations.contracts import RuntimeState
+from app.integrations.kubernetes.messages import compact_readiness_reason
 from app.models.runtime import IntegrationRuntimeObservation
 
 
@@ -289,7 +290,7 @@ def _effective_runtime_posture(health_status: str | None, readiness: str | None)
 
 
 def _diagnostic_summary(detail: str, *, label: str = 'Diagnostic') -> str:
-    value = ' '.join(str(detail or '').split())
+    value = compact_readiness_reason(detail)
     lowered = value.lower()
     label_lower = str(label or '').lower()
     subject = 'Kubernetes API' if 'kubernetes' in label_lower else 'Provider'

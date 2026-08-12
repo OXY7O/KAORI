@@ -32,13 +32,14 @@ def test_operator_facing_prometheus_name_is_canonical() -> None:
 def test_loading_bars_are_operation_scoped() -> None:
     for provider in ('prometheus', 'alertmanager', 'minio'):
         registry = read(f'app/templates/{provider}/partials/_capability_registry.html')
-        assert 'active=validation_job and validation_job.is_active' in registry
+        assert 'active=validation_job and validation_job.is_active' not in registry
         assert 'hx-indicator="#{{ loading_id }}"' in registry or provider == 'minio'
 
         validation_name = '_detail_validation_content.html' if provider != 'minio' else '_detail_validation.html'
         validation = read(f'app/templates/{provider}/partials/{validation_name}')
-        assert f'{provider}-validation-loading' not in validation
-        assert f'hx-indicator="#{provider}-capability-loading"' in validation
+        assert f'{provider}-validation-loading' in validation
+        assert f'hx-indicator="#{provider}-validation-loading"' in validation
+
 
 def test_validation_and_runtime_refresh_tab_badges_oob() -> None:
     tabs = read('app/templates/components/framed_workspace_tabs.html')

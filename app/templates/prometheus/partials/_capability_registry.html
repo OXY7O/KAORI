@@ -33,7 +33,7 @@
             {{ table_label.metadata_label(registry.total_contracts ~ " Capability Contracts") }}
         </div>
         <div data-kaori-capability-loading-region>
-            {{ loading_bar.render(loading_id, active=validation_job and validation_job.is_active, label="Refreshing Capability Registry") }}
+            {{ loading_bar.render(loading_id, label="Refreshing Capability Registry") }}
         </div>
     </header>
     <form method="get"

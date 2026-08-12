@@ -21,7 +21,7 @@ def test_minio_configuration_reuses_canonical_operational_context() -> None:
     assert 'Step {{ loop.index }}' in operational_context
 
 
-def test_provider_full_validation_uses_one_capability_loading_bar() -> None:
+def test_provider_full_validation_uses_header_loading_bar_only() -> None:
     workspaces = {
         'prometheus': 'app/templates/prometheus/partials/_detail_validation_content.html',
         'alertmanager': 'app/templates/alertmanager/partials/_detail_validation_content.html',
@@ -32,9 +32,13 @@ def test_provider_full_validation_uses_one_capability_loading_bar() -> None:
         workspace = read(workspace_path)
         registry = read(f'app/templates/{provider}/partials/_capability_registry.html')
 
-        assert f'{provider}-validation-loading' not in workspace
-        assert f'hx-indicator="#{provider}-capability-loading"' in workspace
-        assert 'active=validation_job and validation_job.is_active' in registry
+        assert (
+            f"loading_id='{provider}-validation-loading'" in workspace
+            or f'loading_id="{provider}-validation-loading"' in workspace
+        )
+        assert f'hx-indicator="#{provider}-validation-loading"' in workspace
+        assert f'{provider}-capability-loading' in registry
+        assert 'active=validation_job and validation_job.is_active' not in registry
 
 
 def test_provider_tab_badges_are_safe_during_full_page_render() -> None:

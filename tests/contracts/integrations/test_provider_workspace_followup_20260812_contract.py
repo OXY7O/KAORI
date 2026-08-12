@@ -82,7 +82,7 @@ def test_kubernetes_legacy_primary_finding_is_compact() -> None:
     validation = read('app/integrations/kubernetes/validation.py')
 
     assert 'is in a legacy lifecycle band.' in validation
-    assert 'Plan an upgrade to return readiness to Ready.' in validation
+    assert 'Plan an upgrade.' in validation
     assert (
         'Stable APIs remain usable, but upgrade planning is required before readiness can return to Ready.'
         not in validation

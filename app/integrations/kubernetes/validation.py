@@ -119,9 +119,7 @@ def test_cluster_connection(
 
         readiness_reasons: list[str] = []
         if lifecycle == 'legacy':
-            readiness_reasons.append(
-                f'Kubernetes {git_version} is in a legacy lifecycle band. Plan an upgrade to return readiness to Ready.'
-            )
+            readiness_reasons.append(f'Kubernetes {git_version} is in a legacy lifecycle band. Plan an upgrade.')
         if discovery['legacy_features']:
             readiness_reasons.append(
                 'Legacy API adapters are selected for: ' + ', '.join(discovery['legacy_features']) + '.'
