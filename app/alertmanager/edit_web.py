@@ -49,13 +49,13 @@ def edit_instance_response(instance_id: int) -> ResponseReturnValue:
                 instance=instance,
                 event_type='alertmanager_instance_updated',
                 status='success',
-                title='Alertmanager connection updated',
+                title='Alertmanager Connection Updated',
                 message=f'{instance.name} connection settings were saved.',
                 detail='Readiness is now Validation Required until Full Validation completes.',
                 action_url=registry_url,
                 action_label='Back to Alertmanager Registry',
                 action_icon='siren',
-                queue_feedback=not is_htmx,
+                queue_feedback=True,
             )
             if is_htmx:
                 response = make_response('', 204)

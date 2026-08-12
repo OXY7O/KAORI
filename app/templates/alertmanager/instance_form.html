@@ -36,9 +36,9 @@
                         "Alertmanager API v2",
                         "Connection",
                         instance.name,
-                        instance.environment|default("")|title,
-                        instance.readiness_status or "validation_required",
-                        url_for("integrations.alertmanager"),
+                        instance.environment|default("") |title,
+            instance.readiness_status or "validation_required",
+            url_for("integrations.alertmanager"),
             "Alertmanager configuration posture") }}
         {% else %}
             {{ provider_registration_hero.render("siren",

@@ -1,6 +1,7 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
+{% import "integrations/components/_validation_poller.html" as validation_poller %}
 {% import "integrations/components/_provider_job_status.html" as provider_job_status %}
 {% import "integrations/components/_capability_readiness.html" as capability_readiness %}
 {% import "integrations/components/_readiness_explanation.html" as readiness_explanation %}
@@ -27,8 +28,7 @@
          class="relative overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm font-sans"
          data-kaori-alertmanager-validation-v4
          data-kaori-alertmanager-core-validation
-         data-kaori-provider-capability-matrix
-         {% if validation_job and validation_job.is_active %}hx-get="{{ url_for('alertmanager.instance_validation_status', instance_id=instance.id, task_id=validation_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML"{% endif %}>
+         data-kaori-provider-capability-matrix>
     {% call connection_validation_header.render(
         "Alertmanager Core Validation",
         "Validate compatibility and core Alertmanager APIs. Consumer alert streams remain binding-specific.",
@@ -57,6 +57,7 @@
             </button>
         </form>
     {% endcall %}
+    {{ validation_poller.render(validation_job and validation_job.is_active, url_for('alertmanager.instance_validation_status', instance_id=instance.id, task_id=validation_job.task_id) if validation_job and validation_job.is_active else '', '#alertmanager-validation-workspace') }}
     {{ provider_job_status.render(validation_job, 'Alertmanager validation running in worker', 'Alertmanager') }}
     <div class="space-y-4 p-4 sm:p-5">
         {{ capability_readiness.render("Alertmanager Provider Readiness",

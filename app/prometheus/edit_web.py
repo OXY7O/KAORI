@@ -52,14 +52,14 @@ def edit_instance_response(instance_id: int) -> ResponseReturnValue:
                     user_id=current_user.id,
                     event_type='prometheus_instance_updated',
                     status='success',
-                    title='Prometheus connection updated',
+                    title='Prometheus Connection Updated',
                     message=f'{instance.name} connection settings were saved.',
                     detail='Readiness returned to Validation Required until Full Validation rebuilds provider evidence.',
                     action_url=registry_url,
                     action_label='Back to Prometheus Registry',
                     action_icon='chart-spline',
                     metadata={'instance_id': instance.id},
-                    queue_feedback=not is_htmx,
+                    queue_feedback=True,
                 )
                 if is_htmx:
                     response = make_response('', 204)

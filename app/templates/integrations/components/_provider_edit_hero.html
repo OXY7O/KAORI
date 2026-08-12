@@ -1,8 +1,7 @@
 {% import "components/page_hero.html" as page_hero %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% macro render(eyebrow_icon, eyebrow_label, leading_icon, title, description, api_icon, api_label, identity_label, identity_value, environment_label, readiness, back_url, aria_label) -%}
-    <section class="{{ page_hero.shell_classes() }}"
-             data-kaori-provider-edit-hero>
+    <section class="{{ page_hero.shell_classes() }}" data-kaori-provider-edit-hero>
         <div class="{{ page_hero.layout_classes() }}">
             <div class="{{ page_hero.content_classes() }}">
                 {% call page_hero.intro(eyebrow_icon, eyebrow_label, leading_icon) %}

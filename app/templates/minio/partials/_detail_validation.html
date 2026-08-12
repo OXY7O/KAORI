@@ -1,4 +1,5 @@
 {% import "components/connection_validation_header.html" as connection_validation_header %}
+{% import "integrations/components/_validation_poller.html" as validation_poller %}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "integrations/components/_provider_job_status.html" as provider_job_status %}
 {% import "integrations/components/_capability_readiness.html" as capability_readiness %}
@@ -12,8 +13,7 @@
 {% set capability_percent = ((capability_ready * 100 / capability_total) if capability_total else 0) %}
 {% set capability_metadata = [
     "Product · " ~ compatibility_policy.product_label,
-    "Profile · " ~ (instance.compatibility_profile or compatibility_policy.profile_label),
-    "Supported Range · " ~ compatibility_policy.supported_range
+    "Profile · " ~ (instance.compatibility_profile or compatibility_policy.profile_key)
 ] %}
 {% set capability_metrics = [
     {"icon": "layers-3", "tone": "normal", "label": "Validated Capabilities", "value": capability_ready, "description": "MinIO API contracts observed by Full Validation."},
@@ -21,8 +21,7 @@
     {"icon": "shield-x", "tone": "critical" if capability_blocked else "normal", "label": "Capability Gaps", "value": capability_blocked, "description": "Provider API contracts that are not currently evidenced."}
 ] %}
 <section id="minio-core-validation"
-         class="relative font-sans {{ integration_ui.section_shell_classes() }}"
-         {% if validation_job and validation_job.is_active %}hx-get="{{ url_for('minio.validation_status', instance_id=instance.id, task_id=validation_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML"{% endif %}>
+         class="relative font-sans {{ integration_ui.section_shell_classes() }}">
     {% call connection_validation_header.render(
         "Compatibility & Capability Matrix",
         "Validate MinIO identity, compatibility, S3 access, and core capabilities.",
@@ -49,10 +48,11 @@
             </button>
         </form>
     {% endcall %}
+    {{ validation_poller.render(validation_job and validation_job.is_active, url_for('minio.validation_status', instance_id=instance.id, task_id=validation_job.task_id) if validation_job and validation_job.is_active else '', '#minio-core-validation') }}
     {{ provider_job_status.render(validation_job, 'MinIO validation running in worker', 'MinIO') }}
     <div class="p-5 sm:p-6">
         {{ capability_readiness.render("MinIO Capability Readiness",
-                "Required MinIO identity, compatibility, and S3 capability evidence.",
+                "Required MinIO identity, compatibility, and S3 capability evidence. Qualified range: " ~ compatibility_policy.supported_range ~ ".",
                 readiness,
                 readiness_label,
                 "Validated Capabilities",

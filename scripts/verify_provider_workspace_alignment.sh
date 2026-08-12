@@ -16,6 +16,7 @@ pytest -q \
   tests/contracts/integrations/test_provider_workspace_followup_20260812_contract.py \
   tests/contracts/integrations/test_provider_workspace_followup_v2_20260812_contract.py \
   tests/contracts/integrations/test_provider_workspace_followup_v3_20260812_contract.py \
+  tests/contracts/integrations/test_provider_workspace_followup_v4_20260812_contract.py \
   tests/integrations/test_minio_compatibility_profiles.py \
   tests/integrations/test_kubernetes_readiness_messages.py \
   tests/contracts/integrations/test_kubernetes_integration_v2_contract.py \

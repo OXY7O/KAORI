@@ -17,8 +17,6 @@
 {% set operational_metadata = [
     "S3 API Authority",
     "Read-Only Discovery",
-    "Product · " ~ compatibility_policy.product_label,
-    "Supported Range · " ~ compatibility_policy.supported_range,
     "Region · " ~ (instance.region or "us-east-1"),
     (instance.addressing_style or "path")|title ~ " Addressing"
 ] %}

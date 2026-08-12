@@ -22,9 +22,9 @@
                         "Prometheus-Compatible API",
                         "Connection",
                         instance.name,
-                        instance.environment|default("")|title,
-                        instance.readiness_status or "validation_required",
-                        url_for("integrations.prometheus"),
+                        instance.environment|default("") |title,
+            instance.readiness_status or "validation_required",
+            url_for("integrations.prometheus"),
             "Prometheus configuration posture") }}
         {% else %}
             {{ provider_registration_hero.render("activity",

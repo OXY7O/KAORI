@@ -1,4 +1,5 @@
 {% import "components/connection_validation_header.html" as connection_validation_header %}
+{% import "integrations/components/_validation_poller.html" as validation_poller %}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "integrations/components/_provider_job_status.html" as provider_job_status %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
@@ -49,8 +50,7 @@
          data-kaori-capability-workspace-v5
          data-kaori-capability-workspace-v6
          data-kaori-capability-workspace-v7
-         data-kaori-capability-workspace-v8
-         {% if validation_job and validation_job.is_active %}hx-get="{{ url_for('integrations.kubernetes_capability_validation_status', cluster_id=cluster.id, task_id=validation_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML"{% endif %}>
+         data-kaori-capability-workspace-v8>
     {% call connection_validation_header.render(
         'Compatibility & Capability Matrix',
         'Validate served APIs, effective RBAC, compatibility, and downstream eligibility.',
@@ -79,6 +79,7 @@
             </form>
         {% endif %}
     {% endcall %}
+    {{ validation_poller.render(validation_job and validation_job.is_active, url_for('integrations.kubernetes_capability_validation_status', cluster_id=cluster.id, task_id=validation_job.task_id) if validation_job and validation_job.is_active else '', '#kubernetes-capability-workspace') }}
     {{ provider_job_status.render(validation_job, 'Kubernetes validation running in worker', 'Kubernetes') }}
     <div class="p-5 sm:p-6">
         {{ capability_readiness.render('Kubernetes Capability Readiness',

@@ -1,0 +1,11 @@
+{% macro render(active, status_url, target, delay="1500ms") -%}
+    {% if active %}
+        <span class="hidden"
+              aria-hidden="true"
+              data-kaori-validation-poller
+              hx-get="{{ status_url }}"
+              hx-trigger="load delay:{{ delay }}"
+              hx-target="{{ target }}"
+              hx-swap="outerHTML"></span>
+    {% endif %}
+{%- endmacro %}

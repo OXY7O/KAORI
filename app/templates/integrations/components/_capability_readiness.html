@@ -33,7 +33,7 @@
                     </div>
                     {{ integration_status(status, status_label, display='text') }}
                 </div>
-                <div class="mt-5 grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                <div class="mt-5 grid gap-4 sm:grid-cols-[minmax(12rem,1fr)_minmax(0,24rem)] sm:items-end">
                     <div>
                         <div class="flex items-center justify-between gap-3 text-xs font-semibold text-content-secondary">
                             <span>{{ coverage_label }}</span>
@@ -44,7 +44,7 @@
                         </div>
                     </div>
                     {% if metadata_labels %}
-                        <div class="flex flex-wrap items-center gap-2 sm:justify-end">
+                        <div class="flex min-w-0 flex-wrap items-center gap-2 sm:justify-end">
                             {% for item in metadata_labels %}
                                 {{ table_label.metadata_label(item) }}
                             {% endfor %}

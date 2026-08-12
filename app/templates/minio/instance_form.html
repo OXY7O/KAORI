@@ -23,9 +23,9 @@
                         "MinIO-Compatible S3 API",
                         "Managed Asset",
                         instance.object_storage_system.name,
-                        instance.environment|default("")|title,
-                        instance.readiness_status or "validation_required",
-                        url_for("minio.index"),
+                        instance.environment|default("") |title,
+            instance.readiness_status or "validation_required",
+            url_for("minio.index"),
             "MinIO configuration posture") }}
         {% else %}
             {{ provider_registration_hero.render("database",
