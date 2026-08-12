@@ -16,7 +16,7 @@ from app.integrations.validation.web import (
     enqueue_instance_validation,
 )
 from app.minio.forms import MinioAlertBindingForm, MinioInstanceForm, MinioMetricsBindingForm
-from app.minio.presentation import build_detail_context, build_index_context
+from app.minio.presentation import MinioIndexQuery, build_detail_context, build_index_context
 from app.minio.registration import issue_registration_proof, verify_registration_proof
 from app.minio.service import (
     alert_source_for_binding,
@@ -67,17 +67,30 @@ def _queue_feedback(*, event_type: str, status: str, title: str, message: str, d
 @minio_bp.get('/')
 @permission_required('settings.manage_integrations')
 def index() -> ResponseReturnValue:
-    return render_template(
-        'minio/index.html',
-        **build_index_context(
+    context = build_index_context(
+        MinioIndexQuery(
             tab=request.args.get('tab', 'coverage').strip(),
+            query=request.args.get('q', '').strip(),
+            environment=request.args.get('environment', '').strip(),
+            readiness=request.args.get('readiness', '').strip(),
+            compatibility=request.args.get('compatibility', '').strip(),
             page=request.args.get('page', 1, type=int) or 1,
             per_page=request.args.get('per_page', 5, type=int) or 5,
+            coverage_query=request.args.get('coverage_q', '').strip(),
+            coverage_environment=request.args.get('coverage_environment', '').strip(),
+            coverage_status=request.args.get('coverage_status', '').strip(),
             coverage_page=request.args.get('coverage_page', 1, type=int) or 1,
             coverage_per_page=request.args.get('coverage_per_page', 5, type=int) or 5,
-        ),
-        notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
+        )
     )
+    context['notification_context'] = get_navigation_notification_context(user_id=int(current_user.id))
+    if request.headers.get('HX-Request') == 'true':
+        target = request.headers.get('HX-Target')
+        if target == 'minio-coverage-content':
+            return render_template('minio/partials/_coverage_content.html', **context)
+        if target == 'minio-registry-content':
+            return render_template('minio/partials/_registry_content.html', **context)
+    return render_template('minio/index.html', **context)
 
 
 @minio_bp.route('/instances/new', methods=['GET', 'POST'])

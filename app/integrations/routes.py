@@ -112,6 +112,8 @@ def kubernetes() -> ResponseReturnValue:
         page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
     )
+    requested_tab = request.args.get('tab', 'coverage').strip()
+    context['active_tab'] = requested_tab if requested_tab in {'coverage', 'registry'} else 'coverage'
     is_registry_partial = (
         request.headers.get('HX-Request') == 'true'
         and request.headers.get('HX-Target') == 'kubernetes-connection-registry'
@@ -500,6 +502,8 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
             source = created_binding.source
             cluster = created_binding.cluster
             binding = created_binding.binding
+            if source is None or cluster is None or binding is None:
+                raise ValueError('KAORI could not resolve the saved source binding context.')
         except ValueError as exc:
             feedback = record_operational_activity(
                 user_id=current_user.id,

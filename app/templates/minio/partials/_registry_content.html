@@ -1,0 +1,95 @@
+{% import "components/table.html" as table_ui %}
+{% import "integrations/components/_provider_registry.html" as provider_registry %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
+<div class="overflow-x-auto">
+    <table class="{{ table_ui.table_classes('min-w-[1040px]') }}">
+        <colgroup>
+            <col class="w-[26%]">
+            <col class="w-[14%]">
+            <col class="w-[16%]">
+            <col class="w-[20%]">
+            <col class="w-[12%]">
+            <col class="w-[12%]">
+        </colgroup>
+        <thead class="{{ table_ui.head_classes() }}">
+            <tr>
+                <th class="{{ table_ui.header_cell_classes() }}">Connection</th>
+                <th class="{{ table_ui.header_cell_classes() }}">Environment</th>
+                <th class="{{ table_ui.header_cell_classes() }}">Core Readiness</th>
+                <th class="{{ table_ui.header_cell_classes() }}">Compatibility</th>
+                <th class="{{ table_ui.header_cell_classes() }}">Bindings</th>
+                <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="{{ table_ui.body_classes() }}">
+            {% for row in rows %}
+                <tr class="{{ table_ui.row_classes() }}">
+                    <td class="{{ table_ui.cell_classes() }}">
+                        <div class="flex min-w-0 items-start gap-3">
+                            {{ integration_ui.palette_icon('database', 'brand') }}
+                            <div class="min-w-0">
+                                <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.name }}</p>
+                                <p class="mt-1 break-words text-xs text-content-muted [overflow-wrap:anywhere]">{{ row.asset_name }}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="{{ table_ui.cell_classes() }}">{{ row.environment|replace('_', ' ') |title }}</td>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        {{ integration_status(row.readiness_status or "validation_required", "Ready" if row.readiness_status == "ready" else ("Blocked" if row.readiness_status == "blocked" else "Validation Required") , display="indicator") }}
+                    </td>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        <p class="break-words text-sm font-medium text-content-primary [overflow-wrap:anywhere]">{{ row.compatibility_profile or "Not Validated" }}</p>
+                        <p class="mt-1 break-words text-xs text-content-muted [overflow-wrap:anywhere]">{{ row.declared_release }}</p>
+                    </td>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        <p class="font-semibold tabular-nums text-content-primary">{{ row.binding_count }}</p>
+                        <p class="mt-1 text-xs text-content-muted">Consumer associations</p>
+                    </td>
+                    <td class="{{ table_ui.cell_classes(action=true) }}">
+                        <a href="{{ url_for('minio.instance_detail', instance_id=row.id) }}"
+                           class="{{ table_ui.action_classes() }}">
+                            <i data-lucide="activity" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                            View Details
+                        </a>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="6" class="p-0">
+                        {% set empty_state_icon = "database-zap" %}
+                        {% set empty_state_label = "No Results" if registry_has_active_filters else "Setup Required" %}
+                        {% set empty_state_title = "No MinIO Connections Match the Active Filters" if registry_has_active_filters else "No MinIO Connections Found" %}
+                        {% set empty_state_description = "Adjust the registry filters to review another MinIO connection." if registry_has_active_filters else "Register a MinIO API connection to establish Core Validation and downstream consumer coverage." %}
+                        {% set empty_state_action_url = url_for('minio.new_instance') %}
+                        {% set empty_state_action_label = "Register Connection" %}
+                        {% set empty_state_action_icon = "plus" %}
+                        {% set empty_state_permission = "settings.manage_integrations" %}
+                        {% set empty_state_show_admin_required = true %}
+                        {% set empty_state_min_height = "min-h-[210px]" %}
+                        {% include "components/states/_empty_state.html" %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% set registry_query_params = {
+    "tab": "registry",
+    "q": selected_query,
+    "environment": selected_environment,
+    "readiness": selected_readiness,
+    "compatibility": selected_compatibility,
+    "coverage_page": 1,
+    "coverage_per_page": coverage_pagination.per_page,
+    "coverage_q": selected_coverage_query,
+    "coverage_environment": selected_coverage_environment,
+    "coverage_status": selected_coverage_status
+} %}
+{{ provider_registry.pagination_footer(pagination,
+"minio.index",
+"#minio-registry-content",
+"#minio-registry-loading",
+registry_query_params,
+item_label="Connections",
+swap="innerHTML") }}

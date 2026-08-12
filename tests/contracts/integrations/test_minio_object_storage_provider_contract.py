@@ -100,6 +100,7 @@ def test_minio_workspace_is_nested_under_integrations_storage() -> None:
     presentation = read('app/bootstrap/presentation.py')
     routes = read('app/minio/routes.py')
     index = read('app/templates/minio/index.html')
+    tabs = read('app/templates/components/integration_workspace_tabs.html')
     detail = read('app/templates/minio/instance_detail.html')
 
     assert 'from app.minio.routes import minio_bp' in blueprints
@@ -112,8 +113,8 @@ def test_minio_workspace_is_nested_under_integrations_storage() -> None:
     assert "'domain_label': module.domain.label" in integration_navigation
     assert 'MinIO Integrations' in index
     assert 'Register Connection' in index
-    assert 'Integration Coverage' in index
-    assert 'Connection Registry' in index
+    assert 'Integration Coverage' in tabs
+    assert 'Connection Registry' in tabs
     assert 'framed_workspace_tabs.render' in detail
     assert 'Core Validation' in detail
     assert 'Bindings & Consumers' in detail

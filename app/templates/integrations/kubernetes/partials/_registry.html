@@ -19,6 +19,7 @@
           hx-indicator="#kubernetes-registry-loading"
           hx-trigger="input changed delay:300ms from:#kubernetes-registry-search, change delay:100ms from:select"
           class="border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
+        <input type="hidden" name="tab" value="registry">
         <input type="hidden" name="page" value="1">
         <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
         <div data-kaori-one-line-filters
@@ -106,9 +107,9 @@
                             <div class="flex min-w-0 items-start gap-3">
                                 {{ integration_ui.palette_icon('server-cog', connection_icon_tone) }}
                                 <div class="min-w-0">
-                                    <p class="truncate text-sm font-semibold text-content-primary"
+                                    <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]"
                                        title="{{ row.cluster_name }}">{{ row.cluster_name }}</p>
-                                    <p class="mt-1 truncate text-xs text-content-muted"
+                                    <p class="mt-1 break-words text-xs text-content-muted [overflow-wrap:anywhere]"
                                        title="{{ row.server }}">{{ row.environment }} · {{ row.server }}</p>
                                 </div>
                             </div>
@@ -122,9 +123,9 @@
                             <p class="mt-1 text-xs text-content-muted">{{ row.coverage_ready_count }} of 3 operational domains ready</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            <p class="truncate text-sm font-semibold text-content-primary"
+                            <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]"
                                title="{{ row.version or 'Not Discovered' }}">{{ row.version or 'Not Discovered' }}</p>
-                            <p class="mt-1 truncate text-xs text-content-muted"
+                            <p class="mt-1 break-words text-xs text-content-muted [overflow-wrap:anywhere]"
                                title="{{ row.compatibility_profile or 'Validation Required' }}">{{ row.compatibility_profile or 'Validation Required' }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes(action=true) }}">
@@ -174,6 +175,7 @@
         </table>
     </div>
     {% set registry_query_params = {
+            'tab': 'registry',
             'q': selected_query,
             'environment': selected_environment,
             'readiness': selected_readiness,

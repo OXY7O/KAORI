@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 from app.common.presentation import present_user_datetime
@@ -18,14 +19,24 @@ from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.minio import MinioInstance
 
 
-def build_index_context(
-    *,
-    tab: str = 'coverage',
-    page: int = 1,
-    per_page: int = 5,
-    coverage_page: int = 1,
-    coverage_per_page: int = 5,
-) -> dict[str, Any]:
+@dataclass(frozen=True, slots=True)
+class MinioIndexQuery:
+    tab: str = 'coverage'
+    query: str = ''
+    environment: str = ''
+    readiness: str = ''
+    compatibility: str = ''
+    page: int = 1
+    per_page: int = 5
+    coverage_query: str = ''
+    coverage_environment: str = ''
+    coverage_status: str = ''
+    coverage_page: int = 1
+    coverage_per_page: int = 5
+
+
+def build_index_context(query: MinioIndexQuery | None = None) -> dict[str, Any]:
+    query = query or MinioIndexQuery()
     instances = (
         MinioInstance.query.join(MinioInstance.integration_instance).order_by(IntegrationInstance.name.asc()).all()
     )
@@ -84,11 +95,24 @@ def build_index_context(
             }
         )
 
-    registry_page_rows, pagination = _paginate(registry_rows, page=page, per_page=per_page)
-    coverage_page_rows, coverage_pagination = _paginate(
+    filtered_registry_rows = _filter_registry_rows(
+        registry_rows,
+        query=query.query,
+        environment=query.environment,
+        readiness=query.readiness,
+        compatibility=query.compatibility,
+    )
+    filtered_coverage_rows = _filter_coverage_rows(
         coverage_rows,
-        page=coverage_page,
-        per_page=coverage_per_page,
+        query=query.coverage_query,
+        environment=query.coverage_environment,
+        status=query.coverage_status,
+    )
+    registry_page_rows, pagination = _paginate(filtered_registry_rows, page=query.page, per_page=query.per_page)
+    coverage_page_rows, coverage_pagination = _paginate(
+        filtered_coverage_rows,
+        page=query.coverage_page,
+        per_page=query.coverage_per_page,
     )
     ready = sum(1 for item in instances if item.readiness_status == 'ready')
     return {
@@ -96,7 +120,32 @@ def build_index_context(
         'coverage_rows': coverage_page_rows,
         'pagination': pagination,
         'coverage_pagination': coverage_pagination,
-        'active_tab': tab if tab in {'coverage', 'registry'} else 'coverage',
+        'active_tab': query.tab if query.tab in {'coverage', 'registry'} else 'coverage',
+        'selected_query': query.query,
+        'selected_environment': query.environment,
+        'selected_readiness': query.readiness,
+        'selected_compatibility': query.compatibility,
+        'selected_coverage_query': query.coverage_query,
+        'selected_coverage_environment': query.coverage_environment,
+        'selected_coverage_status': query.coverage_status,
+        'registry_has_active_filters': bool(query.query or query.environment or query.readiness or query.compatibility),
+        'coverage_has_active_filters': bool(
+            query.coverage_query or query.coverage_environment or query.coverage_status
+        ),
+        'environment_options': sorted({row['environment'] for row in registry_rows if row.get('environment')}),
+        'readiness_options': [
+            {'value': 'ready', 'label': 'Ready'},
+            {'value': 'blocked', 'label': 'Blocked'},
+            {'value': 'validation_required', 'label': 'Validation Required'},
+        ],
+        'compatibility_options': sorted(
+            {row['compatibility_profile'] for row in registry_rows if row.get('compatibility_profile')}
+        ),
+        'coverage_environment_options': sorted({row['environment'] for row in coverage_rows if row.get('environment')}),
+        'coverage_status_options': [
+            {'value': 'ready', 'label': 'Ready'},
+            {'value': 'attention', 'label': 'Attention'},
+        ],
         'stats': {
             'total': len(instances),
             'configured': len(instances),
@@ -108,6 +157,73 @@ def build_index_context(
             'uncovered': sum(1 for row in coverage_rows if row['coverage_status'] != 'ready'),
         },
     }
+
+
+def _filter_registry_rows(
+    rows: list[dict[str, Any]],
+    *,
+    query: str,
+    environment: str,
+    readiness: str,
+    compatibility: str,
+) -> list[dict[str, Any]]:
+    normalized_query = str(query or '').strip().lower()
+    filtered = rows
+    if normalized_query:
+        filtered = [
+            row
+            for row in filtered
+            if normalized_query
+            in ' '.join(
+                str(value or '')
+                for value in (
+                    row.get('name'),
+                    row.get('asset_name'),
+                    row.get('environment'),
+                    row.get('compatibility_profile'),
+                    row.get('declared_release'),
+                )
+            ).lower()
+        ]
+    if environment:
+        filtered = [row for row in filtered if row.get('environment') == environment]
+    if readiness:
+        filtered = [row for row in filtered if row.get('readiness_status') == readiness]
+    if compatibility:
+        filtered = [row for row in filtered if row.get('compatibility_profile') == compatibility]
+    return filtered
+
+
+def _filter_coverage_rows(
+    rows: list[dict[str, Any]],
+    *,
+    query: str,
+    environment: str,
+    status: str,
+) -> list[dict[str, Any]]:
+    normalized_query = str(query or '').strip().lower()
+    filtered = rows
+    if normalized_query:
+        filtered = [
+            row
+            for row in filtered
+            if normalized_query
+            in ' '.join(
+                str(value or '')
+                for value in (
+                    row.get('asset_name'),
+                    row.get('environment'),
+                    getattr(row.get('instance'), 'name', ''),
+                    getattr(row.get('metrics_source'), 'name', ''),
+                    getattr(row.get('alert_source'), 'name', ''),
+                )
+            ).lower()
+        ]
+    if environment:
+        filtered = [row for row in filtered if row.get('environment') == environment]
+    if status:
+        filtered = [row for row in filtered if row.get('coverage_status') == status]
+    return filtered
 
 
 def build_detail_context(instance: MinioInstance) -> dict[str, Any]:

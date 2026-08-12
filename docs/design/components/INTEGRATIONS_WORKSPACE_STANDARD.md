@@ -65,6 +65,51 @@ Managed asset ownership is declared by Integration taxonomy capability metadata 
 
 Provider Core Validation and Binding Validation remain separate evidence boundaries on the domain page. Provider Registry readiness reflects provider Core Validation; the Bindings tab shows the selected consumer profile, selector, and binding validation status.
 
+## Provider Front Page Contract
+
+Kubernetes, Prometheus, Alertmanager, and MinIO provider landing pages use one canonical front-page hierarchy. Provider-specific technical evidence may differ inside the workspace, but the navigation and visual grammar must not.
+
+```text
+Operational Integration Hero
+├── Registered Connections
+├── Ready Connections
+├── Consumer Bindings
+└── Register Connection
+
+<Provider> Integration Overview
+├── Registered Connections
+├── Validated Connections
+├── Needs Attention
+├── Uncovered Assets / Scopes
+├── Integration Contract
+├── Consumer Resolution
+└── Authority Boundary
+
+Provider Workspace
+├── Integration Coverage
+└── Connection Registry
+```
+
+The shared overview geometry is owned by:
+
+```text
+app/templates/integrations/components/_provider_frontpage.html
+app/templates/components/integration_workspace_tabs.html
+```
+
+Rules:
+
+- the Hero eyebrow is `Operational Integration`;
+- the primary action is `Register Connection`;
+- Hero metadata uses `Registered Connections`, `Ready Connections`, and `Consumer Bindings`;
+- the four overview metrics retain the same order on every provider;
+- `Integration Contract`, `Consumer Resolution`, and `Authority Boundary` retain the same three-column geometry;
+- every provider front page exposes `Integration Coverage` and `Connection Registry` through the shared framed workspace tabs;
+- provider-specific evidence belongs inside those two tabs rather than replacing the front-page hierarchy;
+- Kubernetes `Operational Readiness Paths` remains valid provider-specific coverage evidence, but it lives inside the `Integration Coverage` tab;
+- MinIO keeps object-storage-specific API, metrics, and alert columns, but its empty state must retain the same filter, table-header, and pagination geometry as a populated registry;
+- empty provider pages must not replace the registry/table with a provider-specific onboarding card; the empty-state message renders inside the canonical table surface.
+
 ## Provider Registry Contract
 
 Prometheus and Alertmanager registries share:

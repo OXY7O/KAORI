@@ -45,6 +45,7 @@ def test_kubernetes_registry_uses_one_line_htmx_filters_and_inventory_table() ->
     assert 'xl:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,1fr))]' in registry
     assert 'table-fixed' in registry
     assert "table_ui.table_classes('min-w-[1040px]')" not in registry
+    assert '[overflow-wrap:anywhere]' in registry
     assert 'input changed delay:300ms' in registry
     assert 'change delay:100ms from:select' in registry
     assert 'Apply Filters' not in registry
@@ -457,7 +458,7 @@ def test_kubernetes_integration_uses_canonical_compact_label_roles() -> None:
     labels = read('app/templates/components/table_label.html')
     standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
 
-    assert "display='text'" in page
+    assert 'display="text"' in page
     assert "display='text'" in detail
     assert "display='text'" in coverage
     assert "display='indicator'" in coverage

@@ -56,6 +56,7 @@ run_static() {
     python scripts/verify_prometheus_consumer_profiles.py
     python scripts/verify_alertmanager_consumer_profiles.py
     python scripts/verify_integrations_final_lock.py
+    python scripts/verify_provider_frontpage_consistency.py
     python scripts/verify_hero_component_standard.py
     python scripts/verify_form_with_context_standard.py
     python scripts/verify_title_case_standard.py

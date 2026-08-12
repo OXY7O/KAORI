@@ -1,5 +1,9 @@
 # Changelog
 
+- Unified Kubernetes, Prometheus, Alertmanager, and MinIO provider landing pages on one canonical front-page hierarchy: Operational Integration Hero, shared Integration Overview, Integration Coverage, and Connection Registry; MinIO empty states now retain the same filter/table/pagination geometry as populated states.
+- Fixed Integration binding success-path type narrowing so Pyright no longer treats the resolved Kubernetes asset as optional after a successful binding create.
+- Cleaned active Alertmanager workspace djLint findings (T002/H037) and aligned capability pagination URL construction with the Prometheus registry pattern.
+
 - Refined Integration domain workspace UX across Orchestration, Observability, and Storage: separated tab rails from registry table surfaces, preserved readable row text with the sidebar open, normalized operator-facing Prometheus naming, isolated operation-specific loading bars, and added live HTMX tab-status refresh for validation/runtime updates.
 - Refined Integration domain landing-page UX by removing duplicated KPI tiles, using compact capability/provider metadata, and replacing empty provider metrics with an explicit registration-validation-binding onboarding path.
 
@@ -13,6 +17,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Repaired Integration domain route ownership so Flask application boot and `flask db upgrade` import `build_integration_domain_page` directly from `domain_service` instead of a removed `service.py` re-export.
 
 ### Changed
+- Standardized provider front pages across Kubernetes, Prometheus, Alertmanager, and MinIO with shared overview geometry and framed Coverage/Registry tabs while preserving provider-specific evidence inside those tabs.
 - Generalized Alertmanager around consumer-neutral Core Validation and asset-scoped alert Consumer Profiles, including `kubernetes-alerts-v1` and `minio-alerts-v1`, so shared Alertmanager instances can segregate Kubernetes, MinIO, and future alert streams by binding selector without false provider degradation.
 - Aligned MinIO provider pages with the canonical Kubernetes/Prometheus/Alertmanager Integration workspace: `MinIO Integrations` + `Register Connection`, Integration Coverage/Connection Registry, shared registration workflow, and Configuration/Core Validation/Runtime & History/Bindings & Consumers detail tabs.
 - Unified Orchestration, Observability, and Storage domain landing pages on one Capability Registry + Provider Registry + Bindings workspace, including asset-owned cross-domain binding visibility and canonical five-row pagination.

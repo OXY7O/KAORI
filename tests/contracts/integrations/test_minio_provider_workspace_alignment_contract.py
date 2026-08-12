@@ -9,14 +9,16 @@ def read(path: str) -> str:
 
 def test_minio_index_uses_canonical_provider_registry_shell() -> None:
     index = read('app/templates/minio/index.html')
+    tabs = read('app/templates/components/integration_workspace_tabs.html')
+    registry = read('app/templates/minio/partials/_registry_content.html')
 
     assert 'MinIO Integrations' in index
     assert 'Register Connection' in index
     assert 'MinIO Integration Overview' in index
     assert 'integration_workspace_tabs' in index
-    assert 'Integration Coverage' in index
-    assert 'Connection Registry' in index
-    assert 'No MinIO Connection Registered' in index
+    assert 'Integration Coverage' in tabs
+    assert 'Connection Registry' in tabs
+    assert 'No MinIO Connections Found' in registry
 
 
 def test_minio_registration_matches_shared_connection_workflow() -> None:

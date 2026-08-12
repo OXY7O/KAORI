@@ -1,0 +1,39 @@
+{% import "integrations/components/_workspace.html" as integration_ui %}
+{% macro overview(icon, title, description, metrics, contract_title, contract_description, resolution_title, resolution_description, authority_title, authority_description) -%}
+    <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+             data-kaori-provider-integration-overview>
+        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+            <div class="flex items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
+                    <i data-lucide="{{ icon }}" class="h-5 w-5" aria-hidden="true"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-lg font-semibold text-content-primary">{{ title }}</h2>
+                    <p class="mt-1 max-w-5xl text-sm leading-6 text-content-secondary">{{ description }}</p>
+                </div>
+            </div>
+        </header>
+        <div class="{{ integration_ui.metric_grid_classes(4) }}">
+            {% for item in metrics %}
+                {{ integration_ui.metric_card(item.label, item.value, item.description, item.icon) }}
+            {% endfor %}
+        </div>
+        <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle md:grid-cols-3">
+            <article class="bg-surface-card px-5 py-4 sm:px-6">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Integration Contract</p>
+                <p class="mt-1.5 text-sm font-semibold text-content-primary">{{ contract_title }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ contract_description }}</p>
+            </article>
+            <article class="bg-surface-card px-5 py-4 sm:px-6">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Consumer Resolution</p>
+                <p class="mt-1.5 text-sm font-semibold text-content-primary">{{ resolution_title }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ resolution_description }}</p>
+            </article>
+            <article class="bg-surface-card px-5 py-4 sm:px-6">
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Authority Boundary</p>
+                <p class="mt-1.5 text-sm font-semibold text-content-primary">{{ authority_title }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ authority_description }}</p>
+            </article>
+        </div>
+    </section>
+{%- endmacro %}

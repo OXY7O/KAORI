@@ -1,29 +1,31 @@
-{% import "components/pagination.html" as pagination_ui %}
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/integration_workspace_tabs.html" as integration_tabs %}
+{% import "integrations/components/_provider_frontpage.html" as provider_front %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-{% block title %}Kubernetes Integrations · KAORI{% endblock %}
+{% block title %}Kubernetes Integrations · KAORI{% endblock title %}
 {% block dashboard_content %}
-    {% set posture_status = (
-            'Healthy'
-            if stats.total > 0 and stats.fully_operational == stats.total
-            else ('Attention' if stats.total > 0 else 'Not Configured')
-        ) %}
+    {% set posture_status = "Healthy" if stats.total > 0 and stats.fully_operational == stats.total else ("Attention" if stats.total > 0 else "Not Configured") %}
+    {% set uncovered_assets = stats.total - stats.fully_operational %}
+    {% set overview_metrics = [
+            {"label": "Registered Connections", "value": stats.total, "description": "Reusable Kubernetes API endpoints", "icon": "server-cog"},
+            {"label": "Validated Connections", "value": stats.ready, "description": "Core Kubernetes API validation ready", "icon": "badge-check"},
+            {"label": "Needs Attention", "value": stats.attention, "description": "Validation or runtime review", "icon": "triangle-alert"},
+            {"label": "Uncovered Assets", "value": uncovered_assets, "description": "Clusters without complete consumer coverage", "icon": "unlink"}
+        ] %}
     <div class="kaori-integration-semantic space-y-6"
          data-kaori-kubernetes-integration-icon-palette
          x-data="{ deleteModal: false, deleteUrl: '', deleteName: '', openDelete(url, name) { this.deleteUrl = url; this.deleteName = name; this.deleteModal = true; } }">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro('boxes', 'Integrations · Kubernetes', 'network') %}
+                    {% call page_hero.intro("boxes", "Operational Integration", "network") %}
                         <h1 class="{{ page_hero.title_classes() }}">Kubernetes Integrations</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">
-                            Register, validate, and govern Kubernetes API connections and their operational capabilities.
-                        </p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Register, validate, and govern reusable Kubernetes API connections and consumer bindings.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('boxes', stats.total ~ ' Connections') }}
-                            {{ page_hero.meta_label('circle-check', stats.ready ~ ' Ready') }}
-                            {{ page_hero.meta_label('link-2', stats.bindings ~ ' Bindings') }}
+                            {{ page_hero.meta_label("server-cog", stats.total ~ " Registered Connections") }}
+                            {{ page_hero.meta_label("circle-check-big", stats.ready ~ " Ready Connections") }}
+                            {{ page_hero.meta_label("link-2", stats.bindings ~ " Consumer Bindings") }}
                         </div>
                     {% endcall %}
                 </div>
@@ -33,22 +35,13 @@
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Integration Posture</p>
-                                <p class="{{ page_hero.context_panel_title_classes() }}">API Readiness and Operational Coverage</p>
+                                <p class="{{ page_hero.context_panel_title_classes() }}">Connection Readiness and Bindings</p>
                             </div>
-                            {{ integration_status('healthy' if posture_status == 'Healthy' else ('degraded' if posture_status == 'Attention' else 'not_configured') ,
-                            posture_status,
-                            display='text'
-                            ) }}
+                            {{ integration_status("healthy" if posture_status == "Healthy" else ("degraded" if posture_status == "Attention" else "not_configured") , posture_status, display="text") }}
                         </div>
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                            {{ page_hero.context_metric('badge-check',
-                                                        'API Ready',
-                                                        stats.ready ~ ' / ' ~ stats.total,
-                                                        'Validated Kubernetes connections') }}
-                            {{ page_hero.context_metric('workflow',
-                                                        'Operational',
-                                                        stats.fully_operational ~ ' / ' ~ stats.total,
-                                                        'Inventory, Analytics, and Alerts ready') }}
+                            {{ page_hero.context_metric("badge-check", "Ready", stats.ready ~ " / " ~ stats.total, "Validated connections available") }}
+                            {{ page_hero.context_metric("link-2", "Bindings", stats.bindings, "Governed consumer associations") }}
                         </div>
                         <a href="{{ url_for('cluster.add_cluster') }}"
                            class="{{ page_hero.context_single_action_classes() }}">
@@ -59,8 +52,23 @@
                 </aside>
             </div>
         </section>
-        {% include 'integrations/kubernetes/partials/_integration_coverage.html' %}
-        {% include 'integrations/kubernetes/partials/_registry.html' %}
-        {% include 'integrations/kubernetes/partials/_delete_modal.html' %}
+        {{ provider_front.overview("network",
+                "Kubernetes Integration Overview",
+                "Each Kubernetes connection is registered once; direct API authority and downstream metrics or alert consumers remain separate operational evidence.",
+                overview_metrics,
+                "Kubernetes API",
+                "Endpoint identity, authentication, effective RBAC, version compatibility, and core API capabilities are validated before use.",
+                "Direct Authority and Binding Aware",
+                "Inventory uses direct Kubernetes authority, while Analytics and Alert Intelligence resolve eligible Prometheus and Alertmanager consumer bindings.",
+                "Kubernetes Remains Authoritative",
+                "Cluster state, workloads, namespaces, configuration, and API authorization remain owned by Kubernetes; KAORI governs validation and consumer resolution evidence.") }}
+        {% call(tab_name) integration_tabs.render("kubernetes", active_tab, stats.total, stats.total) %}
+            {% if tab_name == "coverage" %}
+                {% include "integrations/kubernetes/partials/_integration_coverage.html" %}
+            {% else %}
+                {% include "integrations/kubernetes/partials/_registry.html" %}
+            {% endif %}
+        {% endcall %}
+        {% include "integrations/kubernetes/partials/_delete_modal.html" %}
     </div>
-{% endblock %}
+{% endblock dashboard_content %}

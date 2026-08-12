@@ -1,22 +1,27 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/integration_workspace_tabs.html" as integration_tabs %}
-{% import "components/pagination.html" as pagination_ui %}
-{% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "integrations/components/_provider_frontpage.html" as provider_front %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% block title %}MinIO Integrations · KAORI{% endblock title %}
 {% block dashboard_content %}
     {% set posture_status = "Healthy" if stats.total > 0 and stats.ready == stats.configured else ("Attention" if stats.total > 0 else "Not Configured") %}
+    {% set overview_metrics = [
+            {"label": "Registered Connections", "value": stats.total, "description": "Reusable MinIO S3 API endpoints", "icon": "server-cog"},
+            {"label": "Validated Connections", "value": stats.ready, "description": "Core MinIO API validation ready", "icon": "badge-check"},
+            {"label": "Needs Attention", "value": stats.attention, "description": "Validation or runtime review", "icon": "triangle-alert"},
+            {"label": "Uncovered Assets", "value": stats.uncovered, "description": "Assets missing metrics or alert coverage", "icon": "unlink"}
+        ] %}
     <div class="kaori-integration-semantic space-y-6">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro("database", "Operational Integration", "database-zap") %}
                         <h1 class="{{ page_hero.title_classes() }}">MinIO Integrations</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Register, validate, and govern MinIO connections and object-storage consumer bindings.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Register, validate, and govern reusable MinIO connections and consumer bindings.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label("server-cog", stats.total ~ " Registered Connections") }}
-                            {{ page_hero.meta_label("circle-check-big", stats.ready ~ " Ready Sources") }}
+                            {{ page_hero.meta_label("circle-check-big", stats.ready ~ " Ready Connections") }}
                             {{ page_hero.meta_label("link-2", stats.bindings ~ " Consumer Bindings") }}
                         </div>
                     {% endcall %}
@@ -33,7 +38,7 @@
                         </div>
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
                             {{ page_hero.context_metric("badge-check", "Ready", stats.ready ~ " / " ~ stats.configured, "Validated connections available") }}
-                            {{ page_hero.context_metric("link-2", "Bindings", stats.bindings, "Asset-scoped consumer associations") }}
+                            {{ page_hero.context_metric("link-2", "Bindings", stats.bindings, "Governed consumer associations") }}
                         </div>
                         <a href="{{ url_for('minio.new_instance') }}"
                            class="{{ page_hero.context_single_action_classes() }}">
@@ -44,184 +49,21 @@
                 </aside>
             </div>
         </section>
-        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-            <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-                <div class="flex items-start gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
-                        <i data-lucide="boxes" class="h-5 w-5" aria-hidden="true"></i>
-                    </span>
-                    <div>
-                        <h2 class="text-lg font-semibold text-content-primary">MinIO Integration Overview</h2>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">Each MinIO connection is registered once; metrics and alerting sources remain independent providers bound to the same object-storage asset.</p>
-                    </div>
-                </div>
-            </header>
-            <div class="{{ integration_ui.metric_grid_classes(4) }}">
-                {% for item in [
-                    ("Registered Connections", stats.total, "Reusable MinIO S3 API endpoints", "server-cog"),
-                    ("Validated Connections", stats.ready, "Core API validation ready", "badge-check"),
-                    ("Needs Attention", stats.attention, "Validation or runtime review", "triangle-alert"),
-                    ("Uncovered Assets", stats.uncovered, "Missing metrics or alert consumer source", "unlink")
-                    ] %}
-                    {{ integration_ui.metric_card(item[0], item[1], item[2], item[3]) }}
-                {% endfor %}
-            </div>
-            <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle md:grid-cols-3">
-                <div class="bg-surface-card px-5 py-4 sm:px-6">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Integration Contract</p>
-                    <p class="mt-1.5 text-sm font-semibold text-content-primary">MinIO-Compatible S3 API</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Endpoint identity, authentication, supported release, and core S3 API behavior are validated before operational use.</p>
-                </div>
-                <div class="bg-surface-card px-5 py-4 sm:px-6">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Consumer Resolution</p>
-                    <p class="mt-1.5 text-sm font-semibold text-content-primary">Asset, Selector, and Profile Aware</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Prometheus metrics and Alertmanager alerts are validated independently through object-storage consumer bindings.</p>
-                </div>
-                <div class="bg-surface-card px-5 py-4 sm:px-6">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Authority Boundary</p>
-                    <p class="mt-1.5 text-sm font-semibold text-content-primary">Each Provider Remains Authoritative</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">MinIO owns storage state, Prometheus owns metrics, and Alertmanager owns alert delivery; KAORI governs registration and binding evidence.</p>
-                </div>
-            </div>
-        </section>
-        {% call(tab_name) integration_tabs.render("minio", active_tab, coverage_pagination.total_items, pagination.total_items) %}
+        {{ provider_front.overview("boxes",
+                "MinIO Integration Overview",
+                "Each MinIO connection is registered once; metrics and alert sources remain independent providers bound to the same object-storage asset.",
+                overview_metrics,
+                "MinIO-Compatible S3 API",
+                "Endpoint identity, authentication, supported release, and core S3 API behavior are validated before operational use.",
+                "Asset, Binding, and Runtime Aware",
+                "KAORI resolves metrics and alert consumers independently through asset-scoped bindings and consumer profiles.",
+                "Each Provider Remains Authoritative",
+                "MinIO owns storage state, Prometheus owns metrics, and Alertmanager owns alert delivery; KAORI governs registration and binding evidence.") }}
+        {% call(tab_name) integration_tabs.render("minio", active_tab, stats.total, stats.total) %}
             {% if tab_name == "coverage" %}
-                <section class="{{ integration_ui.section_shell_classes() }}"
-                         aria-labelledby="minio-coverage-title">
-                    {{ integration_ui.section_header("route", "MinIO Integration Coverage", "Review the API connection and independent observability consumers associated with each object-storage asset.", eyebrow="Integration Coverage") }}
-                    {% if coverage_rows %}
-                        <div class="overflow-x-auto">
-                            <table class="min-w-[980px] w-full text-left text-sm">
-                                <thead class="border-b border-outline-subtle bg-surface-hover text-xs uppercase tracking-wide text-content-muted">
-                                    <tr>
-                                        <th class="px-5 py-3 font-semibold sm:px-6">Object Storage Asset</th>
-                                        <th class="px-4 py-3 font-semibold">MinIO API</th>
-                                        <th class="px-4 py-3 font-semibold">Metrics Source</th>
-                                        <th class="px-4 py-3 font-semibold">Alert Source</th>
-                                        <th class="px-5 py-3 text-right font-semibold sm:px-6">Coverage</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-outline-subtle">
-                                    {% for row in coverage_rows %}
-                                        <tr class="bg-surface-card">
-                                            <td class="px-5 py-4 sm:px-6">
-                                                <p class="font-semibold text-content-primary">{{ row.asset_name }}</p>
-                                                <p class="mt-1 text-xs text-content-muted">{{ row.environment|replace('_', ' ') |title }}</p>
-                                            </td>
-                                            <td class="px-4 py-4">
-                                                {{ integration_status(row.api_status.status, row.api_status.label, display="indicator") }}
-                                                <p class="mt-1 text-xs text-content-muted">{{ row.instance.name }}</p>
-                                            </td>
-                                            <td class="px-4 py-4">
-                                                {{ integration_status(row.metrics_status.status, row.metrics_status.label, display="indicator") }}
-                                                <p class="mt-1 text-xs text-content-muted">{{ row.metrics_source.name if row.metrics_source else "No Prometheus binding" }}</p>
-                                            </td>
-                                            <td class="px-4 py-4">
-                                                {{ integration_status(row.alert_status.status, row.alert_status.label, display="indicator") }}
-                                                <p class="mt-1 text-xs text-content-muted">{{ row.alert_source.name if row.alert_source else "No Alertmanager binding" }}</p>
-                                            </td>
-                                            <td class="px-5 py-4 text-right sm:px-6">{{ integration_status(row.coverage_status, row.coverage_label, display="indicator") }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <div class="p-5 sm:p-6">
-                            <div class="rounded-xl border border-brand-outline bg-kaori-soft p-5">
-                                <div class="flex items-start gap-3">
-                                    {{ integration_ui.palette_icon("route", "brand", size="lg") }}
-                                    <div>
-                                        <p class="text-sm font-semibold text-content-primary">No MinIO Coverage Yet</p>
-                                        <p class="mt-1 text-sm leading-6 text-content-secondary">Register the first MinIO connection. After Core Validation, bind Prometheus and Alertmanager only when those consumer planes are required.</p>
-                                        <a href="{{ url_for('minio.new_instance') }}"
-                                           class="mt-4 inline-flex h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover">
-                                            <i data-lucide="plus" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                            Register Connection
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    {% endif %}
-                    {% if coverage_pagination.total_items %}
-                        <footer class="{{ pagination_ui.footer_classes() }}">
-                            <span>Showing <strong class="font-semibold text-content-primary">{{ coverage_pagination.start_item }}–{{ coverage_pagination.end_item }}</strong> of <strong class="font-semibold text-content-primary">{{ coverage_pagination.total_items }}</strong> Assets</span>
-                            {{ pagination_ui.numeric_pages(coverage_pagination.page, coverage_pagination.total_pages, "coverage_page", endpoint="minio.index", query_params={"tab": "coverage", "coverage_per_page": coverage_pagination.per_page, "page": pagination.page, "per_page": pagination.per_page}) }}
-                        </footer>
-                    {% endif %}
-                </section>
+                {% include "minio/partials/_coverage.html" %}
             {% else %}
-                <section class="{{ integration_ui.section_shell_classes() }}"
-                         aria-labelledby="minio-registry-title">
-                    {{ integration_ui.section_header("database-zap", "MinIO Connection Registry", "Manage reusable object-storage API connections and review their consumer binding coverage.", eyebrow="Connection Registry") }}
-                    {% if rows %}
-                        <div class="overflow-x-auto">
-                            <table class="min-w-[980px] w-full text-left text-sm">
-                                <thead class="border-b border-outline-subtle bg-surface-hover text-xs uppercase tracking-wide text-content-muted">
-                                    <tr>
-                                        <th class="px-5 py-3 font-semibold sm:px-6">Connection</th>
-                                        <th class="px-4 py-3 font-semibold">Environment</th>
-                                        <th class="px-4 py-3 font-semibold">Core Readiness</th>
-                                        <th class="px-4 py-3 font-semibold">Compatibility</th>
-                                        <th class="px-4 py-3 font-semibold">Consumer Bindings</th>
-                                        <th class="px-5 py-3 text-right font-semibold sm:px-6">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-outline-subtle">
-                                    {% for row in rows %}
-                                        <tr class="bg-surface-card">
-                                            <td class="px-5 py-4 sm:px-6">
-                                                <p class="font-semibold text-content-primary">{{ row.name }}</p>
-                                                <p class="mt-1 text-xs text-content-muted">{{ row.asset_name }}</p>
-                                            </td>
-                                            <td class="px-4 py-4 text-content-secondary">{{ row.environment|replace('_', ' ') |title }}</td>
-                                            <td class="px-4 py-4">{{ integration_status(row.readiness_status or "validation_required", "Ready" if row.readiness_status == "ready" else ("Blocked" if row.readiness_status == "blocked" else "Validation Required") , display="indicator") }}</td>
-                                            <td class="px-4 py-4">
-                                                <p class="font-medium text-content-primary">{{ row.compatibility_profile or "Not Validated" }}</p>
-                                                <p class="mt-1 text-xs text-content-muted">{{ row.declared_release }}</p>
-                                            </td>
-                                            <td class="px-4 py-4">
-                                                <p class="font-semibold tabular-nums text-content-primary">{{ row.binding_count }}</p>
-                                                <p class="mt-1 text-xs text-content-muted">API, metrics, and alert associations</p>
-                                            </td>
-                                            <td class="px-5 py-4 text-right sm:px-6">
-                                                <a href="{{ url_for('minio.instance_detail', instance_id=row.id) }}"
-                                                   class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-kaori-soft px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-primary hover:text-white dark:text-kaori-accent">
-                                                    View Details
-                                                    <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <div class="p-5 sm:p-6">
-                            <div class="rounded-xl border border-brand-outline bg-kaori-soft p-5">
-                                <div class="flex items-start gap-3">
-                                    {{ integration_ui.palette_icon("database", "brand", size="lg") }}
-                                    <div>
-                                        <p class="text-sm font-semibold text-content-primary">No MinIO Connection Registered</p>
-                                        <p class="mt-1 text-sm leading-6 text-content-secondary">Create the reusable MinIO S3 API connection first. Consumer metrics and alerting remain separate bindings after the connection is validated.</p>
-                                        <a href="{{ url_for('minio.new_instance') }}"
-                                           class="mt-4 inline-flex h-9 items-center gap-2 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover">
-                                            <i data-lucide="plus" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                            Register Connection
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    {% endif %}
-                    {% if pagination.total_items %}
-                        <footer class="{{ pagination_ui.footer_classes() }}">
-                            <span>Showing <strong class="font-semibold text-content-primary">{{ pagination.start_item }}–{{ pagination.end_item }}</strong> of <strong class="font-semibold text-content-primary">{{ pagination.total_items }}</strong> Connections</span>
-                            {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, "page", endpoint="minio.index", query_params={"tab": "registry", "per_page": pagination.per_page, "coverage_page": coverage_pagination.page, "coverage_per_page": coverage_pagination.per_page}) }}
-                        </footer>
-                    {% endif %}
-                </section>
+                {% include "minio/partials/_registry.html" %}
             {% endif %}
         {% endcall %}
     </div>
