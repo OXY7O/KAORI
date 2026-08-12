@@ -22,11 +22,12 @@ def test_inventory_schedule_is_registered_and_database_backed() -> None:
 
 def test_scheduled_and_manual_fleet_sync_share_registered_dispatch() -> None:
     scheduler = _source('app/jobs/scheduler.py')
-    quick_sync = _source('app/cluster/quick_sync.py')
+    jobs_routes = _source('app/jobs/routes.py')
     sync_jobs = _source('app/cluster/sync_jobs.py')
 
     assert 'dispatch_registered_job(' in scheduler
-    assert "job_key='kubernetes.inventory.sync'" in quick_sync
+    assert "job_keys.append('kubernetes.inventory.sync')" in jobs_routes
+    assert "job_keys.append('object_storage.inventory.sync')" in jobs_routes
     assert 'enqueue_canonical_job(' in sync_jobs
     assert "resource_group='kubernetes-inventory:global'" in sync_jobs
 
@@ -54,7 +55,8 @@ def test_quick_action_wording_describes_inventory_scope() -> None:
     navbar = _source('app/templates/components/navigation/navbar.html')
 
     assert 'Sync All Inventory' in navbar
-    assert 'complete inventory refresh' in navbar
+    assert 'canonical inventory jobs' in navbar
+    assert "url_for('jobs.quick_sync_all_inventory')" in navbar
 
 
 def test_registered_inventory_dispatch_supports_recovery_for_one_cluster() -> None:

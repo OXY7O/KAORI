@@ -5,7 +5,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 def test_manual_job_action_labels_are_compact():
     source = (ROOT / 'app/jobs/configuration.py').read_text()
-    for label in ('Sync Inventory', 'Sync TLS', 'Refresh Analytics', 'Refresh Forecast'):
+    for label in ('Sync Kubernetes Inventory', 'Sync TLS', 'Refresh Analytics', 'Refresh Forecast'):
         assert f"'{label}'" in source
     for legacy in ('Sync All Inventory', 'Sync TLS Now', 'Run Analytics Refresh', 'Run Forecast Refresh'):
         assert legacy not in source

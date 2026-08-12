@@ -95,7 +95,7 @@ def build_job_configuration_context(*, selected_job_key: str | None = None) -> d
     }
     execution_presentation = {
         'kubernetes.inventory.sync': {
-            'manual_action_label': 'Sync Inventory',
+            'manual_action_label': 'Sync Kubernetes Inventory',
             'manual_action_icon': 'database-zap',
             'execution_scope_label': 'All Eligible Clusters',
             'execution_scope_detail': (
@@ -106,7 +106,9 @@ def build_job_configuration_context(*, selected_job_key: str | None = None) -> d
             'manual_action_label': 'Sync Object Storage Inventory',
             'manual_action_icon': 'database-zap',
             'execution_scope_label': 'All Eligible Storage Systems',
-            'execution_scope_detail': (f'{selected_context.get("eligible_system_count", 0)} Ready managed systems'),
+            'execution_scope_detail': (
+                f'{selected_context.get("eligible_system_count", 0)} Ready managed systems'
+            ),
         },
         'governance.tls_certificates.sync': {
             'manual_action_label': 'Sync TLS',

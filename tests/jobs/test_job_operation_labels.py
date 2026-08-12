@@ -6,7 +6,7 @@ def test_tls_certificate_sync_preserves_tls_acronym():
 
 
 def test_registered_job_operations_use_definition_names():
-    assert job_operation_label('inventory_sync_all') == 'Inventory Sync'
+    assert job_operation_label('inventory_sync_all') == 'Kubernetes Inventory Sync'
     assert job_operation_label('materialize_analytics') == 'Analytics Data Refresh'
     assert job_operation_label('materialize_forecast') == 'Forecast Data Refresh'
     assert job_operation_label('dispatch_due_reports') == 'Report Schedule Dispatcher'

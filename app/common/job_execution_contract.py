@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 _REGISTERED_OPERATION_LABELS = {
-    'inventory_sync_all': 'Inventory Sync',
+    'inventory_sync_all': 'Kubernetes Inventory Sync',
     'object_storage_inventory_sync_all': 'Object Storage Inventory Sync',
     'dispatch_due_reports': 'Report Schedule Dispatcher',
     'tls_certificate_sync': 'TLS Certificate Sync',

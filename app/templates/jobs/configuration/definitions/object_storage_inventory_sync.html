@@ -86,22 +86,29 @@
                     <dl class="grid divide-y divide-outline-subtle text-xs sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                         <div class="px-4 py-3">
                             <dt class="font-semibold text-content-muted">Last Dispatch</dt>
-                            <dd class="mt-1 font-semibold text-content-primary">{{ policy.last_dispatched_at|user_datetime if policy.last_dispatched_at else 'Never Dispatched' }}</dd>
+                            <dd class="mt-1 font-semibold text-content-primary">
+                                {{ policy.last_dispatched_at|user_datetime if policy.last_dispatched_at else 'Never Dispatched' }}
+                            </dd>
                         </div>
                         <div class="px-4 py-3">
                             <dt class="font-semibold text-content-muted">Next Scheduled</dt>
-                            <dd class="mt-1 font-semibold text-content-primary">{{ policy.next_run_at|user_datetime if policy.next_run_at else 'Not Scheduled' }}</dd>
+                            <dd class="mt-1 font-semibold text-content-primary">
+                                {{ policy.next_run_at|user_datetime if policy.next_run_at else 'Not Scheduled' }}
+                            </dd>
                         </div>
                         <div class="px-4 py-3">
                             <dt class="font-semibold text-content-muted">Policy Updated</dt>
-                            <dd class="mt-1 font-semibold text-content-primary">{{ policy.updated_at|user_datetime }}</dd>
+                            <dd class="mt-1 font-semibold text-content-primary">
+                                {{ policy.updated_at|user_datetime }}
+                            </dd>
                         </div>
                     </dl>
                 </div>
             </div>
             <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <div class="flex items-start gap-2 text-xs leading-5 text-content-muted">
-                    <i data-lucide="info" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
+                    <i data-lucide="info"
+                       class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
                     <p>Saved changes are picked up by the scheduler without restarting Celery Beat.</p>
                 </div>
                 {% if can_configure %}

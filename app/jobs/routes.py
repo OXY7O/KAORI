@@ -318,6 +318,101 @@ def update_policy(job_key: str) -> ResponseReturnValue:
     return redirect(url_for('jobs.configuration', job_key=job_key))
 
 
+def _quick_action_response(*, accepted: bool) -> ResponseReturnValue:
+    if _is_htmx():
+        response = make_response('', 202 if accepted else 204)
+        response.headers['Cache-Control'] = 'no-store, max-age=0'
+        return response
+    return redirect(_jobs_execution_url(queue='inventory'))
+
+
+@bp.post('/quick-actions/inventory/sync-all')
+@permission_required('jobs.execute')
+def quick_sync_all_inventory() -> ResponseReturnValue:
+    """Dispatch every inventory domain the current user is allowed to execute."""
+    job_keys: list[str] = []
+    if current_user.has_permission('clusters.sync'):
+        job_keys.append('kubernetes.inventory.sync')
+    if current_user.has_permission('storage.sync'):
+        job_keys.append('object_storage.inventory.sync')
+    if not job_keys:
+        abort(403)
+
+    accepted_names: list[str] = []
+    active_names: list[str] = []
+    blocked_messages: list[str] = []
+    failed_names: list[str] = []
+
+    for job_key in job_keys:
+        definition = _get_job_definition_or_404(job_key)
+        try:
+            outcome = dispatch_registered_job(
+                job_key=job_key,
+                trigger_type='manual',
+                requested_by_user_id=int(current_user.id),
+            )
+        except (
+            CeleryError,
+            JobQuotaExceeded,
+            KombuOperationalError,
+            OSError,
+            RuntimeError,
+            SQLAlchemyError,
+        ):
+            logger.exception('Quick Action could not dispatch registered inventory job %s.', job_key)
+            failed_names.append(definition.name)
+            continue
+
+        if outcome.accepted:
+            if outcome.created:
+                accepted_names.append(definition.name)
+            else:
+                active_names.append(definition.name)
+            continue
+        blocked_messages.append(f'{definition.name}: {outcome.message}')
+
+    accepted = bool(accepted_names or active_names)
+    issue_count = len(blocked_messages) + len(failed_names)
+    if accepted and not issue_count:
+        feedback_status = 'success' if accepted_names else 'info'
+        feedback_title = 'All Inventory Sync Queued' if accepted_names else 'Inventory Sync Already Active'
+    elif accepted:
+        feedback_status = 'warning'
+        feedback_title = 'Inventory Sync Partially Queued'
+    else:
+        feedback_status = 'warning' if blocked_messages and not failed_names else 'error'
+        feedback_title = 'Inventory Sync Could Not Start'
+
+    queued_summary = ', '.join(accepted_names) or 'No new inventory jobs'
+    active_summary = ', '.join(active_names)
+    issue_summary = '; '.join([*blocked_messages, *(f'{name}: dispatch failed' for name in failed_names)])
+    message_parts = [queued_summary]
+    if active_summary:
+        message_parts.append(f'Already active: {active_summary}')
+
+    record_operational_activity(
+        user_id=int(current_user.id),
+        event_type='inventory_sync_all_quick_action',
+        status=feedback_status,
+        title=feedback_title,
+        message='. '.join(message_parts) + '.',
+        detail=issue_summary or 'Track each domain execution independently in Jobs & Executions.',
+        action_url=_jobs_execution_url(queue='inventory'),
+        action_label='Open Job Executions',
+        action_icon='list-checks',
+        metadata={
+            'job_keys': job_keys,
+            'queued_jobs': accepted_names,
+            'active_jobs': active_names,
+            'blocked_jobs': blocked_messages,
+            'failed_jobs': failed_names,
+            'feedback_delivery': 'activity_center',
+        },
+        queue_feedback=True,
+    )
+    return _quick_action_response(accepted=accepted)
+
+
 @bp.post('/configuration/<path:job_key>/run')
 @permission_required('jobs.execute')
 def run_now(job_key: str) -> ResponseReturnValue:

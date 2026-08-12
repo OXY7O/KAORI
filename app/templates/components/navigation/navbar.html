@@ -94,59 +94,46 @@
                         </div>
                     </div>
                     <div class="p-2.5">
-                        {% if current_user.has_permission('clusters.sync') and current_user.has_permission('jobs.execute') %}
-                            {% if cluster_onboarding.has_clusters %}
-                                <form id="quick-sync-form"
-                                      method="POST"
-                                      action="{{ url_for('cluster.sync_all_clusters') }}"
-                                      class="block">
-                                    {% if csrf_token is defined %}
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    {% endif %}
-                                    <button type="submit"
-                                            hx-post="{{ url_for('cluster.sync_all_clusters') }}"
-                                            hx-swap="none"
-                                            hx-include="#quick-sync-form"
-                                            hx-disabled-elt="this"
-                                            @click="quickOpen = false"
-                                            class="group relative flex w-full items-start gap-3 overflow-hidden rounded-xl border border-kaori-primary/15 bg-kaori-soft p-3 text-left transition hover:border-kaori-primary/30 hover:bg-kaori-soft cursor-pointer disabled:cursor-wait disabled:opacity-75">
-                                        <span class="relative z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-kaori-primary text-white shadow-sm shadow-kaori-primary/20">
-                                            <i data-lucide="refresh-cw"
-                                               class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>
-                                        </span>
-                                        <span class="relative z-10 min-w-0 flex-1">
-                                            <span class="flex items-center justify-between gap-2">
-                                                <span class="text-xs font-semibold text-content-primary">Sync All Inventory</span>
-                                                <span class="rounded-md bg-surface-elevated px-2 py-1 text-xs font-semibold uppercase tracking-wide text-kaori-primary">Inventory</span>
-                                            </span>
-                                            <span class="mt-1 block text-xs leading-4 text-content-secondary">
-                                                Queue a complete inventory refresh for every eligible Kubernetes cluster.
-                                            </span>
-                                            <span class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-content-muted">
-                                                <span class="inline-flex items-center gap-1"><i data-lucide="box" class="h-3 w-3"></i> Workloads</span>
-                                                <span class="inline-flex items-center gap-1"><i data-lucide="network" class="h-3 w-3"></i> Network</span>
-                                                <span class="inline-flex items-center gap-1"><i data-lucide="database" class="h-3 w-3"></i> Storage</span>
-                                            </span>
-                                        </span>
-                                    </button>
-                                </form>
-                            {% elif cluster_onboarding.can_manage_clusters %}
-                                <a href="{{ url_for('cluster.add_cluster') }}"
-                                   class="group relative flex w-full items-start gap-3 overflow-hidden rounded-xl border border-status-warning-border bg-status-warning-soft p-3 text-left transition hover:border-status-warning hover:bg-status-warning-soft ">
-                                    <span class="relative z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-status-warning text-white shadow-sm shadow-status-warning/20">
-                                        <i data-lucide="server-cog" class="h-4 w-4"></i>
+                        {% set can_sync_kubernetes_inventory = current_user.has_permission('clusters.sync') %}
+                        {% set can_sync_object_storage_inventory = current_user.has_permission('storage.sync') %}
+                        {% if current_user.has_permission('jobs.execute') and (can_sync_kubernetes_inventory or can_sync_object_storage_inventory) %}
+                            <form id="quick-sync-form"
+                                  method="POST"
+                                  action="{{ url_for('jobs.quick_sync_all_inventory') }}"
+                                  class="block">
+                                {% if csrf_token is defined %}
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                {% endif %}
+                                <button type="submit"
+                                        hx-post="{{ url_for('jobs.quick_sync_all_inventory') }}"
+                                        hx-swap="none"
+                                        hx-include="#quick-sync-form"
+                                        hx-disabled-elt="this"
+                                        @click="quickOpen = false"
+                                        class="group relative flex w-full items-start gap-3 overflow-hidden rounded-xl border border-kaori-primary/15 bg-kaori-soft p-3 text-left transition hover:border-kaori-primary/30 hover:bg-kaori-soft cursor-pointer disabled:cursor-wait disabled:opacity-75">
+                                    <span class="relative z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-kaori-primary text-white shadow-sm shadow-kaori-primary/20">
+                                        <i data-lucide="refresh-cw"
+                                           class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>
                                     </span>
                                     <span class="relative z-10 min-w-0 flex-1">
                                         <span class="flex items-center justify-between gap-2">
-                                            <span class="text-xs font-semibold text-content-primary">Add a cluster first</span>
-                                            <span class="rounded-md bg-status-warning-soft px-2 py-1 text-xs font-semibold uppercase tracking-wide text-status-warning-text">Required</span>
+                                            <span class="text-xs font-semibold text-content-primary">Sync All Inventory</span>
+                                            <span class="rounded-md bg-surface-elevated px-2 py-1 text-xs font-semibold uppercase tracking-wide text-kaori-primary">Inventory</span>
                                         </span>
                                         <span class="mt-1 block text-xs leading-4 text-content-secondary">
-                                            At least one Kubernetes cluster is required before global inventory sync can run.
+                                            Queue canonical inventory jobs for every eligible managed inventory domain.
+                                        </span>
+                                        <span class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-content-muted">
+                                            {% if can_sync_kubernetes_inventory %}
+                                                <span class="inline-flex items-center gap-1"><i data-lucide="boxes" class="h-3 w-3"></i> Kubernetes</span>
+                                            {% endif %}
+                                            {% if can_sync_object_storage_inventory %}
+                                                <span class="inline-flex items-center gap-1"><i data-lucide="database" class="h-3 w-3"></i> Object Storage</span>
+                                            {% endif %}
                                         </span>
                                     </span>
-                                </a>
-                            {% endif %}
+                                </button>
+                            </form>
                         {% endif %}
                         <div class="my-2 border-t border-outline-subtle "></div>
                         <a href="{{ url_for('reports.generate_report') }}"
