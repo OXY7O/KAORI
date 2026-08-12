@@ -1,56 +1,25 @@
 {% extends "layouts/app.html" %}
-{% import "components/page_hero.html" as page_hero %}
 {% import "components/form_action_bar.html" as form_action_bar %}
-{% import "components/info_flow.html" as info_flow %}
-{% import "components/information_guide_card.html" as information_guide_card %}
-{% import "components/context_guidance_card.html" as context_guidance_card %}
-{% import "components/related_page_card.html" as related_page_card %}
 {% import "components/operational_toggle.html" as operational_toggle %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
-{% from "integrations/components/_semantic_status.html" import integration_status %}
+{% import "integrations/components/_provider_registration_hero.html" as provider_registration_hero %}
+{% import "integrations/components/_provider_registration_context.html" as provider_registration_context %}
 {% block title %}Register MinIO Connection · KAORI{% endblock title %}
 {% block dashboard_content %}
     <div id="minio-registration-workspace"
          class="kaori-integration-semantic space-y-6">
-        <section class="{{ page_hero.shell_classes() }}">
-            <div class="{{ page_hero.layout_classes() }}">
-                <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro("database", "Object Storage Integration", "database-zap") %}
-                        <h1 class="{{ page_hero.title_classes() }}">Register MinIO Connection</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Create a reusable object-storage API connection before Core Validation and independent metrics or alert consumer bindings.</p>
-                        <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('database-zap', 'MinIO-Compatible S3 API') }}
-                            {{ page_hero.meta_label('shield-check', 'Capability-Aware Validation') }}
-                            {{ page_hero.meta_label('link-2', 'Governed Consumer Binding') }}
-                        </div>
-                    {% endcall %}
-                </div>
-                <aside class="{{ page_hero.aside_classes() }}"
-                       aria-label="MinIO connection workflow">
-                    <div class="{{ page_hero.context_panel_classes() }}">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Registration Posture</p>
-                                <h2 class="{{ page_hero.context_panel_title_classes() }}">Pre-save Requirements</h2>
-                            </div>
-                            {{ integration_status('not_configured', 'Draft') }}
-                        </div>
-                        <div class="mt-4 grid grid-cols-2 gap-2">
-                            {{ page_hero.context_metric("plug-zap", "Before Save", "Test Connection", "Registration reuses the verified payload", value_classes="text-sm font-semibold leading-5") }}
-                            {{ page_hero.context_metric("scan-search", "After Save", "Core Validation", "Then assign consumer bindings", value_classes="text-sm font-semibold leading-5") }}
-                        </div>
-                        <a href="{{ url_for('minio.index') }}"
-                           class="{{ page_hero.context_single_action_classes() }}">
-                            <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
-                            Back to Registry
-                        </a>
-                    </div>
-                </aside>
-            </div>
-        </section>
+        {{ provider_registration_hero.render("database",
+                "Object Storage Integration",
+                "database-zap",
+                "Register MinIO Connection",
+                "Create a reusable object-storage API connection before Core Validation and independent metrics or alert consumer bindings.",
+                "database-zap",
+                "MinIO-Compatible S3 API",
+                url_for("minio.index") ,
+        "MinIO connection workflow") }}
         <form id="minio-registration-form"
               method="post"
               class="grid gap-6 xl:grid-cols-12 xl:items-start"
@@ -202,13 +171,18 @@
                 {% endcall %}
             </section>
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
-                {% set flow_items = [('Define Connection Identity', 'Create the reusable KAORI identity for this MinIO endpoint and object-storage asset.'), ('Configure Endpoint Access', 'Set the S3 API endpoint, credentials, TLS behavior, and supported release contract.'), ('Test Connection', 'Verify MinIO identity and API reachability before registration is enabled.'), ('Register Connection', 'Create the provider identity before Core Validation and consumer binding.')] %}
-                {{ info_flow.render("MinIO Registration Flow", "How a reusable object-storage connection is registered in KAORI.", flow_items, icon="workflow", note="Registration proves only the MinIO connection contract; metrics and alerts remain independent consumer bindings.", open_by_default=true) }}
-                {{ related_page_card.render("Storage Consumers", "MinIO provides the object-storage API plane while Prometheus and Alertmanager may be bound independently for metrics and alerts.", url_for("integrations.storage") , "Open Storage Integrations", icon="waypoints", eyebrow="Related Integration Workspace", boundary="MinIO remains authoritative for storage state. KAORI owns provider readiness and consumer-binding evidence without copying observability credentials into this connection.") }}
-                {% set contract_items = [('fingerprint', 'Connection Identity', 'The canonical KAORI record for this MinIO endpoint and object-storage asset.'), ('file-check-2', 'Connection Contract', 'S3 endpoint, credential identity, TLS, region, timeout, and addressing behavior.'), ('badge-check', 'Compatibility Contract', 'The declared MinIO release selects the supported provider capability contract.'), ('link-2', 'Consumer Bindings', 'Prometheus metrics and Alertmanager alerts are assigned after registration through independent profiles and selectors.')] %}
-                {{ information_guide_card.render("Connection Identity & Contract", "Reference the records that define MinIO source identity, compatibility, readiness, and consumer eligibility.", contract_items, icon="file-check-2") }}
-                {% set next_items = [('Open the Registered Connection', 'and review the saved connection identity and observed MinIO endpoint information.'), ('Run Core Validation', 'to establish provider compatibility and MinIO API readiness evidence.'), ('Bind Metrics or Alerts', 'only when the object-storage asset should consume a Prometheus or Alertmanager source.'), ('Validate Each Consumer Binding', 'to prove the selector and consumer profile independently from MinIO provider readiness.')] %}
-                {{ context_guidance_card.render("After Registration", "Complete these steps before the connection is used operationally.", next_items, icon="list-checks") }}
+                {% set minio_flow_items = [('Define Connection Identity', 'Create the reusable KAORI identity for this MinIO endpoint and object-storage asset.'), ('Configure Endpoint Access', 'Set the S3 API endpoint, credentials, TLS behavior, and supported release contract.'), ('Test Connection', 'Verify MinIO identity and API reachability before registration is enabled.'), ('Register Connection', 'Create the provider identity before Core Validation and consumer binding.')] %}
+                {{ provider_registration_context.render("MinIO Registration Flow",
+                                "How a reusable object-storage connection is registered in KAORI.",
+                                minio_flow_items,
+                                "Storage Integrations",
+                                "MinIO supplies the object-storage API plane while Prometheus metrics and Alertmanager alerts remain independent consumer bindings on the same managed asset.",
+                                url_for("integrations.storage") ,
+                "Open Storage Integrations",
+                flow_icon="workflow",
+                flow_note="Registration proves only the MinIO connection contract; metrics and alerts remain independent consumer bindings.",
+                related_icon="waypoints",
+                authority_boundary="MinIO remains authoritative for storage state. KAORI owns provider readiness and consumer-binding evidence without copying observability credentials into this connection.") }}
             </aside>
         </form>
         {% include "components/operation_feedback_oob.html" %}

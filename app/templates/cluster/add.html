@@ -1,42 +1,39 @@
 {% extends "layouts/app.html" %}
-{% import "components/related_page_card.html" as related_page_card %}
-{% import "components/info_flow.html" as info_flow %}
-{% import "components/information_guide_card.html" as information_guide_card %}
-{% block title %}Add Cluster · KAORI{% endblock title %}
+{% import "integrations/components/_provider_registration_hero.html" as provider_registration_hero %}
+{% import "integrations/components/_provider_registration_context.html" as provider_registration_context %}
+{% block title %}Register Kubernetes Connection · KAORI{% endblock title %}
 {% block dashboard_content %}
     <div class="kaori-integration-semantic space-y-6">
-        {% set page_title = "Add Kubernetes Connection" %}
-        {% set page_eyebrow = "Kubernetes Integration" %}
-        {% set page_description = "Register one tested Kubernetes API connection for inventory, runtime validation, governance, operations, and source bindings." %}
-        {% set page_icon = "server-cog" %}
-        {% set page_badges = [
-            {
-                "label": "Kubernetes API",
-                "icon": "boxes"
-            },
-            {
-                "label": "Test Before Save",
-                "icon": "plug-zap"
-            },
-            {
-                "label": "Least-Privilege RBAC",
-                "icon": "shield-check"
-            }
-        ] %}
-        {% set page_posture_eyebrow = "Registration Posture" %}
-        {% set page_posture_title = "Tested Access Before Persistence" %}
-        {% set page_metric_one = 'plug-zap', 'Before Save', 'Test Connection', 'Proof expires after 10 minutes' %}
-        {% set page_metric_two = 'scan-search', 'After Save', 'Worker Validation', 'Compatibility and capability evidence' %}
-        {% include "cluster/partials/_page_header.html" %}
-        {% set form_mode = "add" %}{% set form_icon = "file-plus-2" %}{% set form_title = "Kubernetes Connection Configuration" %}{% set form_description = "Define the canonical identity, upload least-privilege access, and verify the Kubernetes API before KAORI persists the connection." %}{% set submit_label = "Save Connection" %}{% set action_helper = "Run Test Connection successfully before KAORI enables Save Connection." %}
+        {{ provider_registration_hero.render("boxes",
+                "Cluster Orchestration Integration",
+                "server-cog",
+                "Register Kubernetes Connection",
+                "Create a reusable Kubernetes API connection before Core Validation and independent metrics or alert consumer bindings.",
+                "boxes",
+                "Kubernetes API",
+                url_for("integrations.kubernetes") ,
+        "Kubernetes connection workflow") }}
+        {% set form_mode = "add" %}
+        {% set form_icon = "file-plus-2" %}
+        {% set form_title = "Connection Configuration" %}
+        {% set form_description = "Define connection identity, least-privilege API access, transport trust, and operational controls." %}
+        {% set submit_label = "Register Connection" %}
+        {% set action_helper = "Run Test Connection successfully before KAORI enables Register Connection." %}
         <div class="grid gap-6 xl:grid-cols-12 xl:items-start">
             <div class="xl:col-span-8">{% include "cluster/partials/_form.html" %}</div>
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
-                {% set cluster_registration_flow = [('Define Connection Identity', 'Name the managed cluster and select the environment used by KAORI navigation, audit, and policy context.'), ('Upload Least-Privilege Kubeconfig', 'Provide only the API credentials and certificate material required by approved inventory and operations.'), ('Test Kubernetes Access', 'KAORI verifies API reachability, authentication, TLS behavior, and Kubernetes version without saving the cluster.'), ('Save and Validate', 'Registration repeats the lightweight probe and creates the canonical connection. Run Full Validation from the manage workspace to build compatibility, RBAC, and capability evidence.')] %}
-                {{ info_flow.render('Kubernetes Registration Flow', 'How a tested API connection becomes operational in KAORI.', cluster_registration_flow, icon='waypoints', note='Changing any field or kubeconfig after a successful test invalidates the proof and disables Save Connection.', note_icon='circle-alert', open_by_default=true) }}
-                {{ related_page_card.render('Kubernetes Inventory', 'This connection supplies normalized Kubernetes resource context to KAORI Inventory.', url_for('inventory.overview') , 'Open Kubernetes Inventory', icon='boxes', eyebrow='Related Operational Workspace', boundary='Kubernetes remains authoritative for live resources. KAORI stores synchronized operational context, history, governance, and audit evidence.') }}
-                {% set rbac_items = [('shield-check', 'Read and Discovery', 'Allow get, list, and watch only for the Kubernetes resources KAORI inventories and validates.'), ('key-round', 'Secret Operations', 'Grant Secret or ConfigMap write/reveal permissions only when those governed KAORI features are explicitly enabled.'), ('user-check', 'Self Subject Access Review', 'Allow KAORI to verify effective permissions so capability gaps are distinguished from unsupported APIs.'), ('lock-keyhole', 'Credential Boundary', 'Use a dedicated service account, short-lived credentials where possible, and no cluster-admin kubeconfig for routine operation.')] %}
-                {{ information_guide_card.render('Kubernetes RBAC & Access Contract', 'Use least privilege and expand permissions only for approved KAORI capability domains.', rbac_items, icon='shield-check') }}
+                {% set cluster_registration_flow = [('Define Connection Identity', 'Name the managed cluster and select the environment used by KAORI navigation, audit, and policy context.'), ('Upload Least-Privilege Kubeconfig', 'Provide only the API credentials and certificate material required by approved inventory and operations.'), ('Test Kubernetes Access', 'KAORI verifies API reachability, authentication, TLS behavior, and Kubernetes version without saving the connection.'), ('Register Connection', 'Create the canonical Kubernetes connection, then run Core Validation before downstream consumers rely on it.')] %}
+                {{ provider_registration_context.render("Kubernetes Registration Flow",
+                                "How a tested API connection becomes operational in KAORI.",
+                                cluster_registration_flow,
+                                "Orchestration Integrations",
+                                "Review Kubernetes provider coverage, connection readiness, and governed downstream consumer bindings from the orchestration workspace.",
+                                url_for("integrations.orchestration") ,
+                "Open Orchestration Integrations",
+                flow_icon="waypoints",
+                flow_note="Changing any field or kubeconfig after a successful test invalidates the proof and disables Register Connection.",
+                related_icon="boxes",
+                authority_boundary="Kubernetes remains authoritative for live cluster resources. KAORI owns connection readiness, synchronized operational evidence, and governed consumer bindings.") }}
             </aside>
         </div>
     </div>

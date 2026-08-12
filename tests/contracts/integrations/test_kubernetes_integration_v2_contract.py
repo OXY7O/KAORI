@@ -407,13 +407,16 @@ def test_kubernetes_integration_overview_uses_controlled_kaori_icon_palette() ->
     assert 'Kubernetes Cluster' in coverage
     assert 'Kubernetes API' in coverage
     assert 'registry_header("Kubernetes Integration Coverage"' in coverage
-    assert 'palette_icon("boxes", "brand")' in coverage
+    assert 'palette_icon("boxes", "brand")' in coverage or "palette_icon('boxes', 'brand')" in coverage
     assert "'tone': 'info'" not in coverage
     assert "'tone': 'warning'" not in coverage
     assert "'provider_tone'" not in coverage
     assert 'data-kaori-kubernetes-registry-icon-palette' in registry
     assert 'connection_icon_tone = "success" if row.readiness == "ready"' in registry
-    assert 'palette_icon("server-cog", connection_icon_tone)' in registry
+    assert (
+        'palette_icon("server-cog", connection_icon_tone)' in registry
+        or "palette_icon('server-cog', connection_icon_tone)" in registry
+    )
     assert "registry_header(title, description, icon, loading_id, title_id=None, tone='brand')" in provider_registry
 
 

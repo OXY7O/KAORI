@@ -2,14 +2,12 @@
 {% import "components/page_hero.html" as page_hero %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% import "components/operational_toggle.html" as operational_toggle %}
-{% import "components/related_page_card.html" as related_page_card %}
 {% import "components/form_action_bar.html" as form_action_bar %}
-{% import "components/info_flow.html" as info_flow %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/table.html" as table_ui %}
-{% import "components/context_guidance_card.html" as context_guidance_card %}
-{% import "components/information_guide_card.html" as information_guide_card %}
 {% import "components/action_button.html" as action_button %}
+{% import "integrations/components/_provider_registration_hero.html" as provider_registration_hero %}
+{% import "integrations/components/_provider_registration_context.html" as provider_registration_context %}
 {% block title %}{{ 'Edit' if instance else 'Register' }} Prometheus Connection · KAORI{% endblock title %}
 {% block dashboard_content %}
     <div id="prometheus-registration-workspace"
@@ -17,58 +15,54 @@
         {% set hero_readiness = (instance.readiness_status or 'validation_required') if instance else 'draft' %}
         {% set binding_count = bindings|length if bindings is defined else 0 %}
         {% set source_posture = 'Ready' if hero_readiness == 'ready' else ('Attention' if hero_readiness in ['degraded', 'blocked'] else ('Configured' if instance else 'Draft')) %}
-        <section class="{{ page_hero.shell_classes() }}">
-            <div class="{{ page_hero.layout_classes() }}">
-                <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro('activity', 'Metrics Integration', 'chart-spline') %}
-                        <h1 class="{{ page_hero.title_classes() }}">
-                            {{ 'Edit Prometheus Connection' if instance else 'Register Prometheus Connection' }}
-                        </h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">
-                            {{ 'Update the reusable metrics connection contract, then run validation again.' if instance else 'Create a reusable metrics connection before validating capabilities and assigning scope bindings.' }}
-                        </p>
-                        <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('database-zap', 'Prometheus-Compatible API') }}
-                            {{ page_hero.meta_label('shield-check', 'Capability-Aware Validation') }}
-                            {{ page_hero.meta_label('link-2', 'Governed Scope Binding') }}
-                        </div>
-                    {% endcall %}
-                </div>
-                <aside class="{{ page_hero.aside_classes() }}"
-                       aria-label="Prometheus connection workflow">
-                    <div class="{{ page_hero.context_panel_classes() }}">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">{{ 'Connection Posture' if instance else 'Registration Posture' }}</p>
-                                <h2 class="{{ page_hero.context_panel_title_classes() }}">{{ 'Readiness & Scope Coverage' if instance else 'Pre-save Requirements' }}</h2>
+        {% if instance %}
+            <section class="{{ page_hero.shell_classes() }}">
+                <div class="{{ page_hero.layout_classes() }}">
+                    <div class="{{ page_hero.content_classes() }}">
+                        {% call page_hero.intro("activity", "Metrics Integration", "chart-spline") %}
+                            <h1 class="{{ page_hero.title_classes() }}">Edit Prometheus Connection</h1>
+                            <p class="mt-2 {{ page_hero.description_classes() }}">Update the reusable metrics connection contract, then run validation again.</p>
+                            <div class="{{ page_hero.metadata_row_classes() }}">
+                                {{ page_hero.meta_label('database-zap', 'Prometheus-Compatible API') }}
+                                {{ page_hero.meta_label('shield-check', 'Capability-Aware Validation') }}
+                                {{ page_hero.meta_label('link-2', 'Governed Consumer Binding') }}
                             </div>
-                            {{ integration_status('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else ('validation_required' if source_posture == 'Configured' else 'not_configured') ), source_posture) }}
-                        </div>
-                        {% if instance %}
-                            <div class="mt-4 grid grid-cols-2 gap-2">
-                                {{ page_hero.context_metric('shield-check', 'Readiness', hero_readiness|replace('_', ' ') |title, 'Established by Full Validation', value_classes='truncate text-sm font-semibold leading-5') }}
-                                {{ page_hero.context_metric('link-2', 'Consumer Bindings', binding_count, 'Assets eligible to use this source') }}
+                        {% endcall %}
+                    </div>
+                    <aside class="{{ page_hero.aside_classes() }}"
+                           aria-label="Prometheus connection workflow">
+                        <div class="{{ page_hero.context_panel_classes() }}">
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="min-w-0">
+                                    <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Posture</p>
+                                    <h2 class="{{ page_hero.context_panel_title_classes() }}">Readiness &amp; Consumer Coverage</h2>
+                                </div>
+                                {{ integration_status("ready" if source_posture == "Ready" else ("degraded" if source_posture == "Attention" else "validation_required") , source_posture) }}
+                            </div>
+                            <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                                {{ page_hero.context_metric("shield-check", "Readiness", hero_readiness|replace("_", " ") |title, "Established by Full Validation", value_classes="truncate text-sm font-semibold leading-5") }}
+                                {{ page_hero.context_metric("link-2", "Consumer Bindings", binding_count, "Assets eligible to use this source") }}
                             </div>
                             <a href="{{ url_for('prometheus.instance_detail', instance_id=instance.id) }}"
                                class="{{ page_hero.context_single_action_classes() }}">
                                 <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
                                 Back to Connection
                             </a>
-                        {% else %}
-                            <div class="mt-4 grid grid-cols-2 gap-2">
-                                {{ page_hero.context_metric('plug-zap', 'Before Save', 'Test Connection', 'Registration repeats the probe', value_classes='text-sm font-semibold leading-5') }}
-                                {{ page_hero.context_metric('scan-search', 'After Save', 'Full Validation', 'Then assign scope bindings', value_classes='text-sm font-semibold leading-5') }}
-                            </div>
-                            <a href="{{ url_for('integrations.prometheus') }}"
-                               class="{{ page_hero.context_single_action_classes() }}">
-                                <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
-                                Back to Registry
-                            </a>
-                        {% endif %}
-                    </div>
-                </aside>
-            </div>
-        </section>
+                        </div>
+                    </aside>
+                </div>
+            </section>
+        {% else %}
+            {{ provider_registration_hero.render("activity",
+                        "Metrics Integration",
+                        "chart-spline",
+                        "Register Prometheus Connection",
+                        "Create a reusable metrics connection before Core Validation and independent consumer bindings.",
+                        "database-zap",
+                        "Prometheus-Compatible API",
+                        url_for("integrations.prometheus") ,
+            "Prometheus connection workflow") }}
+        {% endif %}
         <form id="prometheus-instance-form"
               method="post"
               action="{{ url_for('prometheus.new_instance', cluster_id=initial_cluster.id if initial_cluster else none) }}"
@@ -243,67 +237,35 @@
             </section>
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
                 {% if instance %}
-                    {% set prometheus_flow_items = [('Save Changes', 'Update the reusable connection contract and return readiness to Validation Required.'), ('Test Connection', 'Confirm the saved endpoint remains reachable with the selected access settings.'), ('Run Full Validation', 'Rebuild provider compatibility and generic Prometheus API readiness evidence.'), ('Review Consumer Bindings', 'Confirm Kubernetes, MinIO, and future consumers have independent validated bindings.')] %}
-                    {{ info_flow.render('Prometheus Configuration Flow',
-                                        'How saved connection changes return to governed operational use.',
+                    {% set prometheus_flow_items = [('Save Changes', 'Update the reusable connection contract and return readiness to Validation Required.'), ('Test Connection', 'Confirm the saved endpoint remains reachable with the selected access settings.'), ('Run Core Validation', 'Rebuild provider compatibility and generic Prometheus API readiness evidence.'), ('Review Consumer Bindings', 'Confirm Kubernetes, MinIO, and future consumers retain independent validated bindings.')] %}
+                    {{ provider_registration_context.render("Prometheus Configuration Flow",
+                                        "How saved connection changes return to governed operational use.",
                                         prometheus_flow_items,
-                                        icon='workflow',
-                                        note='Saving changes does not establish readiness until Full Validation succeeds.',
-                                        open_by_default=true) }}
+                                        "Observability Integrations",
+                                        "Review Prometheus provider coverage, connection readiness, and consumer bindings from the observability workspace.",
+                                        url_for("integrations.observability") ,
+                    "Open Observability Integrations",
+                    flow_icon="workflow",
+                    flow_note="Saving changes does not establish readiness until Core Validation succeeds.",
+                    related_icon="waypoints",
+                    authority_boundary="Prometheus remains authoritative for metric collection and query execution. KAORI owns provider readiness, consumer binding validation, and governed source resolution.") }}
                 {% else %}
-                    {% set prometheus_flow_items = [('Define Connection Identity', 'Provide a stable KAORI name and ownership description for the reusable source.'), ('Configure Endpoint Access', 'Set the endpoint, authentication, TLS verification, timeout, and compatibility detection.'), ('Test Connection', 'Verify reachability and compatibility before KAORI enables registration.'), ('Register Connection', 'Create the reusable connection identity before Full Validation and scope binding.')] %}
-                    {{ info_flow.render('Prometheus Registration Flow',
-                                        'How a reusable metrics connection is registered in KAORI.',
+                    {% set prometheus_flow_items = [('Define Connection Identity', 'Provide a stable KAORI name and ownership description for the reusable source.'), ('Configure Endpoint Access', 'Set the endpoint, authentication, TLS verification, timeout, and compatibility detection.'), ('Test Connection', 'Verify reachability and compatibility before KAORI enables registration.'), ('Register Connection', 'Create the reusable connection identity before Core Validation and consumer binding.')] %}
+                    {% set prometheus_related_description = "A single Prometheus runtime can serve Kubernetes, MinIO, and future integrations through independent consumer bindings." %}
+                    {% if initial_cluster %}
+                        {% set prometheus_related_description = prometheus_related_description ~ " This registration will also create the initial metrics binding for " ~ initial_cluster.name ~ "." %}
+                    {% endif %}
+                    {{ provider_registration_context.render("Prometheus Registration Flow",
+                                        "How a reusable metrics connection is registered in KAORI.",
                                         prometheus_flow_items,
-                                        icon='workflow',
-                                        note='Registration requires a successful Test Connection and creates the reusable source identity only.',
-                                        open_by_default=true) }}
-                    {{ related_page_card.render('Observability Consumers',
-                                        'A single Prometheus runtime can serve Kubernetes, MinIO, and future integrations through independent consumer bindings.',
-                                        url_for('integrations.observability') ,
-                    'Open Observability Integrations',
-                    icon='waypoints',
-                    eyebrow='Related Integration Workspace',
-                    boundary='Prometheus remains authoritative for metric collection and query execution. KAORI owns provider readiness, consumer binding validation, and governed source resolution.'
-                    ) }}
-                {% endif %}
-                {% set compatibility_detection_items = [('scan-search', 'Automatic Detection', 'Use for a direct Prometheus endpoint. KAORI discovers the observed product and compatibility evidence.'), ('network', 'Manual Source Declaration', 'Use for a Prometheus-compatible query gateway that can hide the upstream major version.'), ('badge-check', 'Full Validation Still Applies', 'Detection identifies the compatibility contract; Full Validation establishes capabilities and readiness.')] %}
-                {{ information_guide_card.render('Compatibility Detection',
-                                'Choose how KAORI identifies the Prometheus contract behind this endpoint.',
-                                compatibility_detection_items,
-                                icon='scan-search') }}
-                {% if instance %}
-                    {% set after_save_items = [('Test the Saved Connection', 'to confirm endpoint access after the configuration change.'), ('Run Full Validation', 'to rebuild compatibility, capability, and readiness evidence.'), ('Review Scope Resolution', 'to confirm the source remains eligible for every governed binding.')] %}
-                    {{ context_guidance_card.render('After Saving Changes',
-                                        'Complete these checks before relying on the updated source.',
-                                        after_save_items,
-                                        icon='list-checks') }}
-                    {{ related_page_card.render('Observability Consumers',
-                                        'A single Prometheus runtime can serve Kubernetes, MinIO, and future integrations through independent consumer bindings.',
-                                        url_for('integrations.observability') ,
-                    'Open Observability Integrations',
-                    icon='waypoints',
-                    eyebrow='Related Integration Workspace',
-                    boundary='Prometheus remains authoritative for metric collection and query execution. KAORI owns provider readiness, consumer binding validation, and governed source resolution.'
-                    ) }}
-                {% else %}
-                    {% set connection_contract_items = [('fingerprint', 'Connection Identity', 'The canonical KAORI record for this Prometheus-compatible source. Register it once and reference it through governed bindings.'), ('file-check-2', 'Connection Contract', 'The base URL, authentication, timeout, TLS verification, lifecycle state, and tested reachability used to access the source.'), ('badge-check', 'Compatibility Contract', 'Automatic or manual source detection identifies the supported Prometheus-compatible API before provider Full Validation.'), ('link-2', 'Consumer Bindings', 'Determine which Kubernetes, MinIO, or future assets may use the source; each binding owns its selector and consumer validation profile.')] %}
-                    {{ information_guide_card.render('Connection Identity & Contract',
-                                        'Reference the records that define source identity, compatibility, readiness, and eligibility.',
-                                        connection_contract_items,
-                                        icon='file-check-2') }}
-                    {% set after_registration_items = [('Open the Registered Connection', 'and review the saved connection identity and observed endpoint information.'), ('Run Full Validation', 'to establish provider compatibility and core API readiness evidence.'), ('Review Diagnostics', 'when a provider-level compatibility or core API contract is degraded or blocked.'), ('Assign Consumer Bindings', 'to make the validated source eligible for Kubernetes, MinIO, or future consumers without duplicating the connection.')] %}
-                    {{ context_guidance_card.render('After Registration',
-                                        'Complete these steps before the source is used operationally.',
-                                        after_registration_items,
-                                        icon='list-checks') }}
-                {% endif %}
-                {% if initial_cluster %}
-                    <div class="rounded-lg border border-outline-subtle bg-surface-hover p-3.5">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Initial Scope Binding</p>
-                        <p class="mt-2 text-sm font-semibold text-content-primary">{{ initial_cluster.name }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">The new connection will be assigned as the primary metrics source for this managed cluster.</p>
-                    </div>
+                                        "Observability Integrations",
+                                        prometheus_related_description,
+                                        url_for("integrations.observability") ,
+                    "Open Observability Integrations",
+                    flow_icon="workflow",
+                    flow_note="Registration requires a successful Test Connection and creates the reusable source identity only.",
+                    related_icon="waypoints",
+                    authority_boundary="Prometheus remains authoritative for metric collection and query execution. KAORI owns provider readiness, consumer binding validation, and governed source resolution.") }}
                 {% endif %}
             </aside>
         </form>

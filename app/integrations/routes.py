@@ -50,11 +50,6 @@ def overview() -> ResponseReturnValue:
         readiness=request.args.get('readiness', '').strip(),
         page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
-        coverage_query=request.args.get('coverage_q', '').strip(),
-        coverage_environment=request.args.get('coverage_environment', '').strip(),
-        coverage_status=request.args.get('coverage_status', '').strip(),
-        coverage_page=request.args.get('coverage_page', 1, type=int) or 1,
-        coverage_per_page=request.args.get('coverage_per_page', 5, type=int) or 5,
     )
     is_runtime_partial = (
         is_htmx_request() and htmx_target() == 'integration-runtime-overview' and context['active_tab'] == 'runtime'

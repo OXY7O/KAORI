@@ -2,16 +2,14 @@
 {% import "components/page_hero.html" as page_hero %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% import "components/table_label.html" as table_label %}
-{% import "components/info_flow.html" as info_flow %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/table.html" as table_ui %}
 {% import "components/operational_toggle.html" as operational_toggle %}
-{% import "components/related_page_card.html" as related_page_card %}
 {% import "components/form_action_bar.html" as form_action_bar %}
-{% import "components/context_guidance_card.html" as context_guidance_card %}
-{% import "components/information_guide_card.html" as information_guide_card %}
 {% import "components/action_button.html" as action_button %}
-{% block title %}{{ instance.name if instance else 'Register Alertmanager Instance' }} · KAORI{% endblock title %}
+{% import "integrations/components/_provider_registration_hero.html" as provider_registration_hero %}
+{% import "integrations/components/_provider_registration_context.html" as provider_registration_context %}
+{% block title %}{{ instance.name if instance else 'Register Alertmanager Connection' }} · KAORI{% endblock title %}
 {% block dashboard_content %}
     {% set submitted_form = draft_form if draft_form is defined else none %}
     {% set current_auth_type = instance.auth_type if instance else (submitted_form.auth_type if submitted_form else 'none') %}
@@ -29,57 +27,32 @@
          class="kaori-integration-semantic space-y-6">
         {% set hero_readiness = (instance.readiness_status or 'validation_required') if instance else 'draft' %}
         {% set source_posture = 'Ready' if hero_readiness == 'ready' else ('Attention' if hero_readiness in ['degraded', 'blocked'] else ('Configured' if instance else 'Draft')) %}
-        <section class="{{ page_hero.shell_classes() }}">
-            <div class="{{ page_hero.layout_classes() }}">
-                <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro('siren', 'Alertmanager Integration', 'server-cog') %}
-                        <h1 class="{{ page_hero.title_classes() }}">{{ instance.name if instance else 'Register Alertmanager Instance' }}</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">
-                            {% if instance %}
-                                Manage connection settings, validation, runtime health, and scope bindings.
-                            {% else %}
-                                Create a reusable Alertmanager connection and verify reachability before registration.
-                            {% endif %}
-                        </p>
-                        <div class="{{ page_hero.metadata_row_classes() }}">
-                            {% if instance %}
-                                {{ page_hero.meta_label('shield-check', hero_readiness|replace('_', ' ') |title) }}
-                                {{ page_hero.meta_label('link-2', (bindings|length|string) ~ ' Scope Bindings') }}
-                            {% else %}
-                                {{ page_hero.meta_label('file-pen-line', 'Draft Connection') }}
-                                {{ page_hero.meta_label('plug-zap', 'Reachability Required') }}
-                            {% endif %}
-                        </div>
-                    {% endcall %}
-                </div>
-                <aside class="{{ page_hero.aside_classes() }}"
-                       aria-label="Alertmanager registration posture">
-                    <div class="{{ page_hero.context_panel_classes() }}">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">{{ 'Connection Posture' if instance else 'Registration Posture' }}</p>
-                                <h2 class="{{ page_hero.context_panel_title_classes() }}">{{ 'Readiness & Scope Coverage' if instance else 'Pre-save Requirements' }}</h2>
+        {% if instance %}
+            <section class="{{ page_hero.shell_classes() }}">
+                <div class="{{ page_hero.layout_classes() }}">
+                    <div class="{{ page_hero.content_classes() }}">
+                        {% call page_hero.intro("siren", "Alerting Integration", "server-cog") %}
+                            <h1 class="{{ page_hero.title_classes() }}">{{ instance.name }}</h1>
+                            <p class="mt-2 {{ page_hero.description_classes() }}">Manage connection settings, validation, runtime health, and consumer bindings.</p>
+                            <div class="{{ page_hero.metadata_row_classes() }}">
+                                {{ page_hero.meta_label("shield-check", hero_readiness|replace("_", " ") |title) }}
+                                {{ page_hero.meta_label("link-2", (bindings|length|string) ~ " Consumer Bindings") }}
                             </div>
-                            {{ integration_status('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else ('validation_required' if source_posture == 'Configured' else 'not_configured') ), source_posture) }}
-                        </div>
-                        {% if instance %}
-                            <div class="mt-4 grid grid-cols-2 gap-2">
-                                <div class="{{ page_hero.context_metric_card_classes() }}">
-                                    <div class="flex items-center gap-2 text-brand-foreground">
-                                        <i data-lucide="shield-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                        <p class="text-xs font-semibold">Readiness</p>
-                                    </div>
-                                    <p class="mt-1.5 truncate text-sm font-semibold leading-5 text-brand-foreground">{{ hero_readiness|replace('_', ' ') |title }}</p>
-                                    <p class="{{ page_hero.context_metric_helper_classes() }}">Established by Full Validation</p>
+                        {% endcall %}
+                    </div>
+                    <aside class="{{ page_hero.aside_classes() }}"
+                           aria-label="Alertmanager connection posture">
+                        <div class="{{ page_hero.context_panel_classes() }}">
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="min-w-0">
+                                    <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Posture</p>
+                                    <h2 class="{{ page_hero.context_panel_title_classes() }}">Readiness &amp; Consumer Coverage</h2>
                                 </div>
-                                <div class="{{ page_hero.context_metric_card_classes() }}">
-                                    <div class="flex items-center gap-2 text-brand-foreground">
-                                        <i data-lucide="link-2" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                        <p class="text-xs font-semibold">Scope Bindings</p>
-                                    </div>
-                                    <p class="mt-1.5 text-xl font-semibold leading-none text-brand-foreground">{{ bindings|length }}</p>
-                                    <p class="{{ page_hero.context_metric_helper_classes() }}">Contexts eligible to use this source</p>
-                                </div>
+                                {{ integration_status("ready" if source_posture == "Ready" else ("degraded" if source_posture == "Attention" else "validation_required") , source_posture) }}
+                            </div>
+                            <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                                {{ page_hero.context_metric("shield-check", "Readiness", hero_readiness|replace("_", " ") |title, "Established by Full Validation", value_classes="truncate text-sm font-semibold leading-5") }}
+                                {{ page_hero.context_metric("link-2", "Consumer Bindings", bindings|length, "Assets eligible to use this source") }}
                             </div>
                             <div class="{{ page_hero.context_actions_classes() }}">
                                 <form method="post"
@@ -101,35 +74,21 @@
                                     Back to Registry
                                 </a>
                             </div>
-                        {% else %}
-                            <div class="mt-4 grid grid-cols-2 gap-2">
-                                <div class="{{ page_hero.context_metric_card_classes() }}">
-                                    <div class="flex items-center gap-2 text-brand-foreground">
-                                        <i data-lucide="plug-zap" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                        <p class="text-xs font-semibold">Before Save</p>
-                                    </div>
-                                    <p class="mt-1.5 text-sm font-semibold leading-5 text-brand-foreground">Test Connection</p>
-                                    <p class="{{ page_hero.context_metric_helper_classes() }}">Registration repeats the probe</p>
-                                </div>
-                                <div class="{{ page_hero.context_metric_card_classes() }}">
-                                    <div class="flex items-center gap-2 text-brand-foreground">
-                                        <i data-lucide="scan-search" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                        <p class="text-xs font-semibold">After Save</p>
-                                    </div>
-                                    <p class="mt-1.5 text-sm font-semibold leading-5 text-brand-foreground">Full Validation</p>
-                                    <p class="{{ page_hero.context_metric_helper_classes() }}">Then assign scope bindings</p>
-                                </div>
-                            </div>
-                            <a href="{{ url_for('integrations.alertmanager') }}"
-                               class="{{ page_hero.context_single_action_classes() }}">
-                                <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
-                                Back to Registry
-                            </a>
-                        {% endif %}
-                    </div>
-                </aside>
-            </div>
-        </section>
+                        </div>
+                    </aside>
+                </div>
+            </section>
+        {% else %}
+            {{ provider_registration_hero.render("siren",
+                        "Alerting Integration",
+                        "server-cog",
+                        "Register Alertmanager Connection",
+                        "Create a reusable alerting connection before Core Validation and independent consumer bindings.",
+                        "bell-ring",
+                        "Alertmanager API",
+                        url_for("integrations.alertmanager") ,
+            "Alertmanager connection workflow") }}
+        {% endif %}
         {% if instance %}
             {% include "alertmanager/partials/_runtime_panel.html" %}
             {% include "alertmanager/partials/_runtime_history.html" %}
@@ -370,63 +329,36 @@
                 </section>
             </form>
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
-                {% if not instance %}
-                    {% set alertmanager_registration_flow = [('Register Connection Identity', 'KAORI stores one reusable Alertmanager connection containing the endpoint, access method, TLS behavior, ownership context, and lifecycle state.'), ('Verify Reachability', 'Test Connection confirms the submitted endpoint can be reached with the selected authentication and TLS settings before KAORI creates the record.'), ('Validate Capabilities', 'Open the registered instance and run Full Validation to discover supported APIs, compatibility profile, evidence, and readiness.'), ('Assign Operational Scope', 'Create governed bindings that determine where the source is eligible and whether it acts as a primary, secondary, or fallback connection.')] %}
-                    {{ info_flow.render('Alertmanager Registration Flow',
-                                        'How a connection becomes an eligible operational source in KAORI.',
-                                        alertmanager_registration_flow,
-                                        icon='waypoints',
-                                        note='Registration creates the reusable connection identity only. Capability readiness and scope eligibility are established after registration.',
-                                        note_icon='circle-alert',
-                                        open_by_default=true) }}
-                    {{ related_page_card.render('Alert Intelligence',
-                                        'This Alertmanager connection supplies governed alert lifecycle context to KAORI Alert Intelligence.',
-                                        url_for('intelligence.alert_intelligence') ,
-                    'Open Alert Intelligence',
-                    icon='brain-circuit',
-                    eyebrow='Related Intelligence Workspace',
-                    boundary='Alertmanager remains authoritative for routing, grouping, inhibition, silences, and notification delivery.'
-                    ) }}
-                    {% set connection_type_items = [('building-2', 'Externally Managed', 'Use when another team, service owner, or platform manages the Alertmanager lifecycle and KAORI consumes the exposed connection.'), ('box', 'Standalone', 'Use for a dedicated, independently operated Alertmanager that is not presented as a shared organizational service.'), ('network', 'Shared Service', 'Use for a centralized Alertmanager intended to serve multiple infrastructure assets, services, domains, or workflows through governed bindings.'), ('target', 'Managed for a Specific Scope', 'Use when ownership and lifecycle align to one primary operational scope. Governed bindings may still extend eligibility.')] %}
-                    {{ information_guide_card.render('Connection Type Guide',
-                                        'Compare the ownership and deployment models for this endpoint.',
-                                        connection_type_items,
-                                        icon='boxes') }}
-                    {% set connection_contract_items = [('fingerprint', 'Connection Identity', 'The canonical KAORI record for the Alertmanager connection. It is registered once and referenced by bindings.'), ('file-check-2', 'Connection Contract', 'The base URL, authentication, request timeout, TLS verification, and API v2 status reachability used to access the source.'), ('badge-check', 'Capability Contract', 'Established only by Full Validation. It records supported APIs, detected version or profile, and readiness.'), ('link-2', 'Scope Bindings', 'Determine where the source is eligible and how resolver priority selects primary, secondary, or fallback connections.')] %}
-                    {{ information_guide_card.render('Connection Identity & Contract',
-                                        'Reference the records that define source identity, readiness, and eligibility.',
-                                        connection_contract_items,
-                                        icon='file-check-2') }}
-                    {% set after_registration_items = [('Open the Registered Instance', 'and run Full Validation to establish capability and readiness status.'), ('Review Diagnostics', 'when readiness is degraded or blocked, then correct endpoint, access, or capability issues.'), ('Create Scope Bindings', 'and assign the connection role and priority for each operational context.'), ('Keep the Connection Enabled', 'when KAORI should consider it during source resolution; disable it temporarily during maintenance.')] %}
-                    {{ context_guidance_card.render('After Registration',
-                                        'Complete these steps before the source is used operationally.',
-                                        after_registration_items,
-                                        icon='list-checks') }}
+                {% if instance %}
+                    {% set alertmanager_flow_items = [('Save Changes', 'Update the reusable connection contract and return readiness to Validation Required.'), ('Test Connection', 'Confirm the saved endpoint remains reachable with the selected authentication and TLS settings.'), ('Run Core Validation', 'Rebuild Alertmanager API compatibility and provider readiness evidence.'), ('Review Consumer Bindings', 'Confirm Kubernetes, MinIO, and future consumers retain independent alert bindings and selectors.')] %}
+                    {{ provider_registration_context.render("Alertmanager Configuration Flow",
+                                        "How saved connection changes return to governed operational use.",
+                                        alertmanager_flow_items,
+                                        "Observability Integrations",
+                                        "Review Alertmanager provider coverage, connection readiness, and alert consumer bindings from the observability workspace.",
+                                        url_for("integrations.observability") ,
+                    "Open Observability Integrations",
+                    flow_icon="workflow",
+                    flow_note="Saving changes does not establish readiness until Core Validation succeeds.",
+                    related_icon="waypoints",
+                    authority_boundary="Alertmanager remains authoritative for routing, grouping, inhibition, silences, and notification delivery. KAORI owns provider readiness and governed consumer-binding evidence.") }}
                 {% else %}
-                    {% set connection_lifecycle_items = [('Save', 'persists settings and resets readiness to Validation Required.'), ('Full Validation', 'rebuilds the capability profile and readiness state.'), ('Enabled', 'permits the resolver to select this source for its bound scopes.')] %}
-                    {{ context_guidance_card.render('Connection Lifecycle',
-                                        'How configuration changes affect runtime use.',
-                                        connection_lifecycle_items,
-                                        icon='route') }}
-                {% endif %}
-                {% if initial_cluster %}
-                    <section class="overflow-hidden rounded-xl border border-brand-outline bg-surface-card shadow-sm">
-                        <header class="border-b border-brand-outline bg-kaori-soft px-4 py-3.5 dark:bg-surface-muted">
-                            <div class="flex items-start gap-3">
-                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary dark:text-kaori-accent">
-                                    <i data-lucide="boxes" class="h-4 w-4"></i>
-                                </div>
-                                <div>
-                                    <h2 class="text-sm font-semibold text-content-primary">Initial Scope Binding</h2>
-                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Created together with the connection.</p>
-                                </div>
-                            </div>
-                        </header>
-                        <div class="p-4">
-                            <p class="text-sm font-semibold text-content-primary">{{ initial_cluster.name }}</p>
-                            <p class="mt-1.5 text-xs leading-5 text-content-muted">After registration, this connection is assigned as the primary Alertmanager source for the selected managed cluster. Full Validation is still required before operational use.</p>
-                        </div>
-                    </section>
+                    {% set alertmanager_flow_items = [('Define Connection Identity', 'Create one reusable Alertmanager connection for the endpoint and its ownership context.'), ('Configure Endpoint Access', 'Set authentication, TLS behavior, request timeout, and the supported Alertmanager API contract.'), ('Test Connection', 'Verify endpoint reachability and API access before KAORI enables registration.'), ('Register Connection', 'Create the reusable connection identity before Core Validation and consumer binding.')] %}
+                    {% set alertmanager_related_description = "A single Alertmanager runtime can serve Kubernetes, MinIO, and future integrations through independent consumer bindings and selectors." %}
+                    {% if initial_cluster %}
+                        {% set alertmanager_related_description = alertmanager_related_description ~ " This registration will also create the initial alert binding for " ~ initial_cluster.name ~ "." %}
+                    {% endif %}
+                    {{ provider_registration_context.render("Alertmanager Registration Flow",
+                                        "How a reusable alerting connection is registered in KAORI.",
+                                        alertmanager_flow_items,
+                                        "Observability Integrations",
+                                        alertmanager_related_description,
+                                        url_for("integrations.observability") ,
+                    "Open Observability Integrations",
+                    flow_icon="waypoints",
+                    flow_note="Registration creates the reusable connection identity only; Core Validation and consumer eligibility remain separate gates.",
+                    related_icon="waypoints",
+                    authority_boundary="Alertmanager remains authoritative for routing, grouping, inhibition, silences, and notification delivery. KAORI owns provider readiness and governed consumer-binding evidence.") }}
                 {% endif %}
             </aside>
         </div>
@@ -659,9 +591,7 @@
                                     :disabled="scopeType !== 'kubernetes_cluster'"
                                     class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-normal">
                                 <option value="">Select managed cluster</option>
-                                {% for cluster in clusters %}
-                                    <option value="{{ cluster.id }}">{{ cluster.name }}</option>
-                                {% endfor %}
+                                {% for cluster in clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}
                             </select>
                         </label>
                         <label x-show="scopeType !== 'kubernetes_cluster'"

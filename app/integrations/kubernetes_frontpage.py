@@ -9,7 +9,11 @@ from app.cluster.constants import get_environment_label
 from app.common.pagination import paginate_sequence
 from app.common.presentation import present_user_datetime
 from app.integrations.coverage import bound_source_for_scope, bound_sources_for_scopes
-from app.integrations.readiness import resolve_binding_operational_status, resolve_cluster_coverage
+from app.integrations.readiness import (
+    OperationalPosture,
+    resolve_binding_operational_status,
+    resolve_cluster_coverage,
+)
 from app.models import Cluster
 from app.models.kubernetes import KubernetesConnection
 
@@ -54,9 +58,13 @@ class KubernetesFrontPageFilters:
     coverage: KubernetesCoverageFilters = field(default_factory=KubernetesCoverageFilters)
 
 
-def _provider_posture(source: Any | None, binding: Any | None) -> dict[str, str]:
+def _provider_posture(source: Any | None, binding: Any | None) -> OperationalPosture:
     if source is None or binding is None:
-        return {'status': 'not_configured', 'label': 'Not Configured'}
+        return {
+            'status': 'not_configured',
+            'label': 'Not Configured',
+            'message': 'No eligible provider binding has been configured for this consumer.',
+        }
     return resolve_binding_operational_status(
         source_readiness=getattr(source, 'readiness_status', None),
         binding_validation=getattr(binding, 'validation_status', None),
@@ -65,21 +73,29 @@ def _provider_posture(source: Any | None, binding: Any | None) -> dict[str, str]
     )
 
 
-def _inventory_coverage(readiness: str) -> dict[str, str]:
+def _inventory_coverage(readiness: str) -> OperationalPosture:
     labels = {
         'ready': 'Ready',
         'degraded': 'Degraded',
         'blocked': 'Blocked',
     }
     if readiness in labels:
-        return {'status': readiness, 'label': labels[readiness]}
-    return {'status': 'validation_required', 'label': 'Validation Required'}
+        return {
+            'status': readiness,
+            'label': labels[readiness],
+            'message': 'Kubernetes Inventory follows the direct Kubernetes API readiness gate.',
+        }
+    return {
+        'status': 'validation_required',
+        'label': 'Validation Required',
+        'message': 'Run Kubernetes Core Validation before Inventory is treated as operationally ready.',
+    }
 
 
 def _coverage_summary(
     *,
     readiness: str,
-    coverage_items: tuple[dict[str, str], dict[str, str], dict[str, str]],
+    coverage_items: tuple[OperationalPosture, OperationalPosture, OperationalPosture],
 ) -> dict[str, str]:
     ready_count = sum(1 for item in coverage_items if item['status'] == 'ready')
     if readiness in {'blocked', 'degraded'}:

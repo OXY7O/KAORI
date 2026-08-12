@@ -1,4 +1,7 @@
 # Changelog
+- Simplified provider connection right rails to one shared Flow + Related Operational Workspace contract and fixed Kubernetes front-page typing/overview regressions detected by Pyright.
+- Unified Kubernetes, Prometheus, Alertmanager, and MinIO registration Heroes on one reusable contract; Kubernetes now uses `Register Kubernetes Connection`, the same Draft/Pre-save posture panel, and the same Test Connection → Core Validation progression as the other providers.
+
 - Standardized provider empty states and registration UX: consumer coverage now uses asset terminology, route-owned authorization avoids redundant `Admin Required` states, and MinIO Test Connection follows the same operation-scoped HTMX proof flow as Kubernetes, Prometheus, and Alertmanager.
 
 - Refactored Integration provider front pages to share one DRY Hero, Integration Overview, canonical Connection Registry column contract, and reusable direct/observability coverage table geometry across Kubernetes, Prometheus, Alertmanager, and MinIO.

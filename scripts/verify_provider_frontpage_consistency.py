@@ -32,6 +32,14 @@ def main() -> int:
     }
     observability_coverage = read('app/templates/components/integration_coverage_content.html')
     workspace_standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
+    shared_registration_hero = read('app/templates/integrations/components/_provider_registration_hero.html')
+    shared_registration_context = read('app/templates/integrations/components/_provider_registration_context.html')
+    provider_registration_pages = {
+        'Kubernetes': read('app/templates/cluster/add.html'),
+        'Prometheus': read('app/templates/prometheus/instance_form.html'),
+        'Alertmanager': read('app/templates/alertmanager/instance_form.html'),
+        'MinIO': read('app/templates/minio/instance_form.html'),
+    }
 
     for provider, page in provider_pages.items():
         assert 'integrations/components/_provider_frontpage.html' in page, provider
@@ -98,6 +106,41 @@ def main() -> int:
     )
     assert 'front page must not introduce a provider-only giant card layout' in workspace_standard
 
+    for marker in (
+        'data-kaori-provider-registration-hero',
+        'Registration Posture',
+        'Pre-save Requirements',
+        'Draft',
+        'Before Save',
+        'Test Connection',
+        'Registration reuses the verified payload',
+        'After Save',
+        'Core Validation',
+        'Then assign consumer bindings',
+        'Back to Registry',
+    ):
+        assert marker in shared_registration_hero
+
+    for provider, page in provider_registration_pages.items():
+        assert 'integrations/components/_provider_registration_hero.html' in page, provider
+        assert 'provider_registration_hero.render(' in page, provider
+        assert 'integrations/components/_provider_registration_context.html' in page, provider
+        assert 'provider_registration_context.render(' in page, provider
+
+    for marker in (
+        'data-kaori-provider-registration-context',
+        'info_flow.render(',
+        'related_page_card.render(',
+        'Related Operational Workspace',
+    ):
+        assert marker in shared_registration_context
+    assert 'information_guide_card' not in shared_registration_context
+    assert 'context_guidance_card' not in shared_registration_context
+
+    assert 'Register Kubernetes Connection' in provider_registration_pages['Kubernetes']
+    assert 'Add Kubernetes Connection' not in provider_registration_pages['Kubernetes']
+    assert 'Register Alertmanager Connection' in provider_registration_pages['Alertmanager']
+
     coverage = (ROOT / 'app/templates/components/integration_coverage_content.html').read_text()
     registry = (ROOT / 'app/templates/integrations/components/_provider_registry.html').read_text()
     minio_form = (ROOT / 'app/templates/minio/instance_form.html').read_text()
@@ -109,7 +152,9 @@ def main() -> int:
     assert 'minio.test_new_instance_connection' in minio_form
     assert 'minio-connection-tested' in minio_routes
 
-    print('PASS — KAORI provider front pages share DRY Hero, coverage, and connection-registry contracts.')
+    print(
+        'PASS — KAORI provider front pages and connection forms share DRY Hero, two-surface context, coverage, and registry contracts.'
+    )
     return 0
 
 
