@@ -8,13 +8,14 @@ from app.cluster.constants import ENVIRONMENTS
 
 class ClusterCreateForm(FlaskForm):
     name = StringField(
-        'Cluster Name',
+        'Connection Name',
         validators=[
             DataRequired(),
             Length(
                 max=100,
             ),
         ],
+        render_kw={'placeholder': 'Kubernetes Production'},
     )
 
     environment = SelectField(
@@ -33,6 +34,7 @@ class ClusterCreateForm(FlaskForm):
                 max=500,
             ),
         ],
+        render_kw={'placeholder': 'Operational purpose and ownership context'},
     )
 
     kubeconfig = FileField(

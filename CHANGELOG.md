@@ -1,4 +1,5 @@
 # Changelog
+- Standardized provider registration field labels, placeholders, Cancel actions, and helper-text density across Kubernetes, Prometheus, Alertmanager, and MinIO; hardened MinIO connection-test diagnostics and separated S3 reachability from product-identity Core Validation.
 - Simplified provider connection right rails to one shared Flow + Related Operational Workspace contract and fixed Kubernetes front-page typing/overview regressions detected by Pyright.
 - Unified Kubernetes, Prometheus, Alertmanager, and MinIO registration Heroes on one reusable contract; Kubernetes now uses `Register Kubernetes Connection`, the same Draft/Pre-save posture panel, and the same Test Connection → Core Validation progression as the other providers.
 

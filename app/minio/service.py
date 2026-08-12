@@ -28,10 +28,8 @@ def test_minio_connection(values: MinioRegistrationInput) -> MinioConnectionResu
         timeout=values.timeout,
         verify_ssl=values.verify_ssl,
     )
-    if result.product != 'minio':
-        raise ValueError(
-            'The S3 endpoint is reachable, but KAORI could not verify MinIO product identity from the response headers.'
-        )
+    # Registration Test Connection proves endpoint/authentication/S3 access only.
+    # Product identity and release compatibility remain authoritative Core Validation evidence.
     return result
 
 

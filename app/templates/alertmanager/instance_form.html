@@ -9,6 +9,7 @@
 {% import "components/action_button.html" as action_button %}
 {% import "integrations/components/_provider_registration_hero.html" as provider_registration_hero %}
 {% import "integrations/components/_provider_registration_context.html" as provider_registration_context %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
 {% block title %}{{ instance.name if instance else 'Register Alertmanager Connection' }} · KAORI{% endblock title %}
 {% block dashboard_content %}
     {% set submitted_form = draft_form if draft_form is defined else none %}
@@ -93,7 +94,7 @@
             {% include "alertmanager/partials/_runtime_panel.html" %}
             {% include "alertmanager/partials/_runtime_history.html" %}
         {% endif %}
-        <div class="grid gap-5 xl:grid-cols-12 xl:items-start">
+        <div class="grid gap-6 xl:grid-cols-12 xl:items-start">
             <form id="alertmanager-instance-form"
                   method="post"
                   action="{{ url_for('alertmanager.new_instance', cluster_id=initial_cluster.id if initial_cluster else none) }}"
@@ -113,38 +114,39 @@
                        name="connection_test_proof"
                        value="{{ registration_proof if registration_proof is defined and registration_proof else '' }}">
                 {% if initial_cluster %}<input type="hidden" name="cluster_id" value="{{ initial_cluster.id }}">{% endif %}
-                <section class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                    <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
-                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
-                            <i data-lucide="settings-2" class="h-5 w-5"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <h2 class="text-base font-semibold text-content-primary">Instance Configuration</h2>
-                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Connection identity, endpoint access, security controls, and operational availability.</p>
+                <section class="{{ integration_ui.section_shell_classes() }}">
+                    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
+                                <i data-lucide="settings-2" class="h-5 w-5" aria-hidden="true"></i>
+                            </span>
+                            <div>
+                                <h2 class="text-base font-semibold text-content-primary">Connection Configuration</h2>
+                                <p class="mt-1 text-sm leading-6 text-content-secondary">Define connection identity, Alertmanager API access, authentication, and operational controls.</p>
+                            </div>
                         </div>
                     </header>
-                    <div class="space-y-5 p-5">
-                        <section class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                    <div class="space-y-6 p-5 sm:p-6">
+                        <section>
                             <div class="mb-4 flex items-start gap-3">
-                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
-                                    <i data-lucide="id-card" class="h-4 w-4"></i>
-                                </div>
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
+                                    <i data-lucide="fingerprint" class="h-4 w-4" aria-hidden="true"></i>
+                                </span>
                                 <div>
                                     <h3 class="text-sm font-semibold text-content-primary">Connection Identity</h3>
-                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">A reusable KAORI identity for this Alertmanager endpoint, independent from the scopes that use it.</p>
+                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Stable identity used by validation, consumer bindings, runtime history, notifications, and audit records.</p>
                                 </div>
                             </div>
                             <div class="grid gap-4 lg:grid-cols-2">
                                 <div>
                                     <label for="alertmanager-name"
-                                           class="mb-1.5 block text-sm font-semibold text-content-primary">Instance Name</label>
+                                           class="mb-1.5 block text-sm font-semibold text-content-primary">Connection Name</label>
                                     <input id="alertmanager-name"
                                            name="name"
                                            required
                                            value="{{ instance.name if instance else (submitted_form.name if submitted_form else (initial_cluster.name ~ ' Alertmanager' if initial_cluster else '')) }}"
-                                           placeholder="Central Alertmanager"
+                                           placeholder="Alertmanager Production"
                                            class="{{ field_classes }}">
-                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">Use a stable operational name that remains meaningful across multiple bindings.</p>
                                 </div>
                                 <div>
                                     <label for="alertmanager-deployment-type"
@@ -158,9 +160,6 @@
                                                     {% if selected_deployment == value %}selected{% endif %}>{{ label }}</option>
                                         {% endfor %}
                                     </select>
-                                    <div class="mt-2 rounded-lg border border-brand-outline bg-kaori-soft px-3 py-2.5 dark:bg-surface-muted">
-                                        <p class="text-xs leading-5 text-content-secondary"><span class="font-semibold text-kaori-primary dark:text-kaori-accent">What this controls:</span> the operational ownership and deployment model recorded for this connection. It does not restrict scope bindings or capability usage.</p>
-                                    </div>
                                 </div>
                             </div>
                             <div class="mt-4">
@@ -169,14 +168,14 @@
                                 <textarea id="alertmanager-description"
                                           name="description"
                                           rows="3"
-                                          placeholder="Operational ownership, responsibility, and intended usage."
+                                          placeholder="Operational purpose and ownership context"
                                           class="{{ textarea_classes }}">{{ instance.description if instance and instance.description else (submitted_form.description if submitted_form and submitted_form.description else '') }}</textarea>
                             </div>
                         </section>
                         <section class="relative overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated">
                             {% call connection_validation_header.render(
                                 'Endpoint & Access',
-                                'Validate endpoint access before registration.',
+                                'Define Alertmanager endpoint access and authentication, then verify reachability before registration.',
                                 icon='network',
                                 loading_id='alertmanager-connection-test-loading',
                                 loading_label='Testing Alertmanager connection'
@@ -206,9 +205,8 @@
                                            name="endpoint"
                                            required
                                            value="{{ instance.endpoint if instance else (submitted_form.endpoint if submitted_form else '') }}"
-                                           placeholder="https://alertmanager.example.internal:9093"
+                                           placeholder="https://alertmanager.example.internal"
                                            class="{{ field_classes }}">
-                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">Use the base URL reachable from the KAORI runtime. Do not append <span class="font-medium text-kaori-primary">/api/v2</span> or embed credentials in the URL.</p>
                                 </div>
                                 <div class="mt-4 grid gap-4 lg:grid-cols-2">
                                     <div>
@@ -234,7 +232,6 @@
                                                max="30"
                                                value="{{ instance.timeout if instance else (submitted_form.timeout if submitted_form else 5) }}"
                                                class="{{ field_classes }}">
-                                        <p class="mt-1.5 text-xs leading-5 text-content-muted">Allowed range: 1–30 seconds.</p>
                                     </div>
                                 </div>
                                 <div x-show="authType === 'basic'"
@@ -247,6 +244,7 @@
                                                name="username"
                                                x-bind:required="authType === 'basic'"
                                                value="{{ instance.username if instance and instance.username else (submitted_form.username if submitted_form and submitted_form.username else '') }}"
+                                               placeholder="service-account"
                                                class="{{ field_classes }}">
                                     </div>
                                     <div>
@@ -274,14 +272,14 @@
                                 </div>
                             </div>
                         </section>
-                        <section class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                        <section class="border-t border-outline-subtle pt-6">
                             <div class="mb-4 flex items-start gap-3">
-                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
-                                    <i data-lucide="shield-check" class="h-4 w-4"></i>
-                                </div>
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
+                                    <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
+                                </span>
                                 <div>
                                     <h3 class="text-sm font-semibold text-content-primary">Security &amp; Operational Controls</h3>
-                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Control certificate verification and whether this connection is eligible for scope resolution.</p>
+                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Control certificate verification and whether KAORI may resolve this connection for consumer bindings.</p>
                                 </div>
                             </div>
                             <div class="grid gap-3 lg:grid-cols-2">
@@ -314,16 +312,18 @@
                         {% endif %}
                     </div>
                     {% call form_action_bar.render(
-                        'Save changes, then run Full Validation.' if instance else 'Register after Test Connection succeeds.',
-                        aria_label='Alertmanager Instance Actions'
+                        'Save changes, then run Full Validation.' if instance else 'Run Test Connection successfully before KAORI enables Register Connection.',
+                        aria_label='Alertmanager Connection Actions'
                         ) %}
+                        <a href="{{ url_for('alertmanager.instance_detail', instance_id=instance.id) if instance else url_for('integrations.alertmanager') }}"
+                           class="{{ action_button.classes('secondary') }}">Cancel</a>
                         <button type="submit"
                                 data-operation-submit
-                                data-loading-label="{{ 'Updating instance...' if instance else 'Registering instance...' }}"
+                                data-loading-label="{{ 'Saving changes...' if instance else 'Registering connection...' }}"
                                 {% if not instance %}disabled x-bind:disabled="!connectionVerified" x-bind:title="connectionVerified ? 'Register this verified connection' : 'Run Test Connection successfully before registering'"{% endif %}
                                 class="{{ action_button.classes('primary') }}">
                             <i data-lucide="save" class="h-4 w-4"></i>
-                            <span data-operation-submit-label>{{ 'Update Instance' if instance else 'Register Instance' }}</span>
+                            <span data-operation-submit-label>{{ 'Save Changes' if instance else 'Register Connection' }}</span>
                         </button>
                     {% endcall %}
                 </section>

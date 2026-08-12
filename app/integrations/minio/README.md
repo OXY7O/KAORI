@@ -27,6 +27,8 @@ The visual shell, registration terminology, Hero hierarchy, tab structure,
 readiness semantics, and empty/populated registry states are shared. Only
 MinIO-specific technical fields and consumer contracts differ.
 
+Registration `Test Connection` is intentionally narrower than Core Validation. It verifies the submitted S3 API endpoint, SigV4 credentials, and bucket-discovery permission (`s3:ListAllMyBuckets`). Product identity and the declared MinIO release remain Core Validation evidence. KAORI accepts MinIO identity evidence from `x-minio-deployment-id`, the server header, or `/minio/health/live`; this avoids false negatives when a reverse proxy strips MinIO-specific response headers.
+
 ## Validation boundary
 
 MinIO follows the canonical provider lifecycle:

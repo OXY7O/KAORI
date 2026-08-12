@@ -58,7 +58,7 @@
                         <div class="grid gap-4 md:grid-cols-2">
                             <label class="block">
                                 <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.name.label.text }}</span>
-                                {{ form.name(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", placeholder="MinIO Production") }}
+                                {{ form.name(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20") }}
                                 {% for error in form.name.errors %}
                                     <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
                                 {% endfor %}
@@ -70,13 +70,13 @@
                         </div>
                         <label class="mt-4 block">
                             <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.description.label.text }}</span>
-                            {{ form.description(class_="min-h-24 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 py-2.5 text-sm text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", placeholder="Operational purpose, ownership, and storage role") }}
+                            {{ form.description(class_="min-h-24 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 py-2.5 text-sm text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20") }}
                         </label>
                     </section>
                     <section class="relative overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated">
                         {% call connection_validation_header.render(
                             "Endpoint & Access",
-                            "Define MinIO S3 API credentials and transport trust, then verify reachability before registration.",
+                            "Define MinIO S3 API access and credentials, then verify reachability before registration. Use the S3 API URL, not the Console URL.",
                             icon="network",
                             loading_id="minio-connection-test-loading",
                             loading_label="Testing MinIO connection"
@@ -102,7 +102,6 @@
                                 {% for error in form.endpoint.errors %}
                                     <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
                                 {% endfor %}
-                                <p class="mt-1.5 text-xs leading-5 text-content-muted">Use the MinIO S3 API base URL reachable from KAORI. Do not use the Console URL or embed credentials.</p>
                             </label>
                             <div class="grid gap-4 md:grid-cols-2">
                                 <label class="block">

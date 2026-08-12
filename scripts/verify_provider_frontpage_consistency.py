@@ -141,6 +141,23 @@ def main() -> int:
     assert 'Add Kubernetes Connection' not in provider_registration_pages['Kubernetes']
     assert 'Register Alertmanager Connection' in provider_registration_pages['Alertmanager']
 
+    registration_forms = {
+        'Kubernetes': read('app/templates/cluster/add.html') + read('app/templates/cluster/partials/_form.html'),
+        'Prometheus': provider_registration_pages['Prometheus'],
+        'Alertmanager': provider_registration_pages['Alertmanager'],
+        'MinIO': provider_registration_pages['MinIO'],
+    }
+    for provider, form in registration_forms.items():
+        assert 'Cancel' in form, provider
+        assert 'Register Connection' in form, provider
+        assert 'Run Test Connection successfully before KAORI enables Register Connection.' in form, provider
+
+    assert 'placeholder="Alertmanager Production"' in registration_forms['Alertmanager']
+    assert 'placeholder="Operational purpose and ownership context"' in registration_forms['Alertmanager']
+    assert 'Use a stable operational name' not in registration_forms['Alertmanager']
+    assert 'What this controls:' not in registration_forms['Alertmanager']
+    assert 'Allowed range: 1–30 seconds.' not in registration_forms['Alertmanager']
+
     coverage = (ROOT / 'app/templates/components/integration_coverage_content.html').read_text()
     registry = (ROOT / 'app/templates/integrations/components/_provider_registry.html').read_text()
     minio_form = (ROOT / 'app/templates/minio/instance_form.html').read_text()
@@ -151,9 +168,15 @@ def main() -> int:
     assert 'connection_validation_header.render(' in minio_form
     assert 'minio.test_new_instance_connection' in minio_form
     assert 'minio-connection-tested' in minio_routes
+    minio_client = read('app/integrations/minio/client.py')
+    minio_service = read('app/minio/service.py')
+    assert 's3:ListAllMyBuckets' in minio_client
+    assert '/minio/health/live' in minio_client
+    assert 'identity_evidence' in minio_client
+    assert "if result.product != 'minio'" not in minio_service
 
     print(
-        'PASS — KAORI provider front pages and connection forms share DRY Hero, two-surface context, coverage, and registry contracts.'
+        'PASS — KAORI provider front pages and connection forms share DRY Hero, two-surface context, canonical field/action copy, coverage, and registry contracts.'
     )
     return 0
 

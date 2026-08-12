@@ -11,7 +11,6 @@
       "semantic_border_utilities": 2
     },
     "app/templates/alertmanager/instance_form.html": {
-      "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 6
     },
     "app/templates/alertmanager/partials/_delete_confirmation_modal.html": {

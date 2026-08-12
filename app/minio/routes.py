@@ -178,8 +178,8 @@ def test_new_instance_connection() -> ResponseReturnValue:
                 event_type='minio_connection_test_failed',
                 status='error',
                 title='MinIO connection test failed',
-                message='KAORI could not verify the submitted MinIO S3 API endpoint.',
-                detail=str(exc),
+                message=str(exc),
+                detail='Review the MinIO S3 API endpoint, credentials, TLS trust, and required read-only discovery permissions.',
                 action_url=url_for('minio.new_instance'),
                 action_label='Review MinIO form',
                 action_icon='database',
@@ -196,8 +196,13 @@ def test_new_instance_connection() -> ResponseReturnValue:
                 title='MinIO connection verified',
                 message='KAORI reached the submitted MinIO S3 API endpoint.',
                 detail=(
-                    f'MinIO returned {result.bucket_count} visible bucket(s) in {result.latency_ms} ms. '
-                    'Register the connection, then run Core Validation.'
+                    f'MinIO S3 API returned {result.bucket_count} visible bucket(s) in {result.latency_ms} ms. '
+                    + (
+                        f'Product identity evidence: {result.identity_evidence}. '
+                        if result.product == 'minio'
+                        else 'Product identity was not conclusive during Test Connection and will be resolved by Core Validation. '
+                    )
+                    + 'Register the connection, then run Core Validation.'
                 ),
                 action_url=url_for('minio.new_instance'),
                 action_label='Review MinIO form',

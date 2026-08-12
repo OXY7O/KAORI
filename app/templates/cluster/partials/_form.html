@@ -53,7 +53,7 @@
                     </div>
                 </div>
                 <div class="grid gap-5 lg:grid-cols-2">
-                    <label class="block"><span class="mb-2 block text-sm font-semibold text-content-primary">Cluster Name</span>{{ form.name(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20") }}</label>
+                    <label class="block"><span class="mb-2 block text-sm font-semibold text-content-primary">{{ form.name.label.text }}</span>{{ form.name(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20") }}</label>
                     <label class="block"><span class="mb-2 block text-sm font-semibold text-content-primary">Environment</span>{{ form.environment(class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20") }}</label>
                 </div>
                 <label class="mt-5 block"><span class="mb-2 block text-sm font-semibold text-content-primary">Description</span>{{ form.description(rows="4", class="w-full rounded-lg border border-outline-default bg-surface-card px-3.5 py-3 text-sm font-medium leading-6 text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20") }}</label>
@@ -113,8 +113,8 @@
                class="{{ action_button.classes('secondary') }}">Cancel</a>
             <button type="submit"
                     data-operation-submit
-                    data-loading-label="{{ 'Registering Cluster...' if form_mode == 'add' else 'Updating cluster...' }}"
-                    {% if form_mode == 'add' %}disabled x-bind:disabled="!connectionVerified" x-bind:title="connectionVerified ? 'Save this tested Kubernetes connection' : 'Run Test Connection successfully before saving'"{% endif %}
+                    data-loading-label="{{ 'Registering Connection...' if form_mode == 'add' else 'Updating Connection...' }}"
+                    {% if form_mode == 'add' %}disabled x-bind:disabled="!connectionVerified" x-bind:title="connectionVerified ? 'Register this tested Kubernetes connection' : 'Run Test Connection successfully before registration'"{% endif %}
                     class="{{ action_button.classes('primary') }}">
                 <i data-lucide="save" class="h-4 w-4"></i><span data-operation-submit-label>{{ submit_label }}</span>
             </button>

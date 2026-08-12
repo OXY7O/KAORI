@@ -52,8 +52,10 @@ def test_minio_api_plane_uses_s3_sdk_and_encrypted_credentials() -> None:
     assert "signature_version='s3v4'" in client
     assert "s3={'addressing_style': addressing_style or 'path'}" in client
     assert 'client.list_buckets()' in client
-    assert "PasswordField('Secret Key'" in forms
-    assert "StringField('Access Key'" in forms
+    assert 'PasswordField(' in forms
+    assert "'Secret Key'" in forms
+    assert 'StringField(' in forms
+    assert "'Access Key'" in forms
     assert 'secret_key: Mapped[str] = mapped_column(EncryptedText()' in model
 
 

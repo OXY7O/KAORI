@@ -21,7 +21,7 @@ class PrometheusConfigForm(FlaskForm):
             ),
         ],
         render_kw={
-            'placeholder': 'http://localhost:9090',
+            'placeholder': 'https://prometheus.example.internal',
         },
     )
 
@@ -63,7 +63,7 @@ class PrometheusConfigForm(FlaskForm):
             Length(max=255),
         ],
         render_kw={
-            'placeholder': 'admin',
+            'placeholder': 'service-account',
         },
     )
 
@@ -82,7 +82,7 @@ class PrometheusConfigForm(FlaskForm):
             Length(max=4096),
         ],
         render_kw={
-            'placeholder': 'eyJhbGciOi...',
+            'placeholder': 'Enter bearer token',
         },
     )
 
@@ -159,7 +159,7 @@ class PrometheusConfigForm(FlaskForm):
 
 class PrometheusInstanceForm(PrometheusConfigForm):
     name = StringField(
-        'Instance Name',
+        'Connection Name',
         validators=[DataRequired(), Length(min=2, max=160)],
         render_kw={'placeholder': 'Prometheus Production'},
     )

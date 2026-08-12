@@ -119,6 +119,7 @@ class MinioRuntimeAdapter:
             'server_header': result.server_header,
             'deployment_id': result.deployment_id,
             'detected_product': result.product,
+            'identity_evidence': result.identity_evidence,
         }
 
         if not product_ready:
@@ -126,8 +127,9 @@ class MinioRuntimeAdapter:
             instance.compatibility_status = 'product_mismatch'
             instance.compatibility_profile = None
             instance.validation_message = (
-                'The S3 API is reachable, but the endpoint did not expose MinIO product identity. '
-                'Review the endpoint or any proxy that strips MinIO response headers.'
+                'The S3 API is reachable, but Core Validation could not confirm MinIO product identity '
+                'from the deployment header, server header, or MinIO liveness endpoint. '
+                'Review the S3 API endpoint and any reverse proxy that filters MinIO health paths or response headers.'
             )
             instance.object_storage_system.status = 'blocked'
         elif compatibility.readiness == 'ready':

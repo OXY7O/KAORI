@@ -116,7 +116,7 @@
                     <section class="relative overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated">
                         {% call connection_validation_header.render(
                             'Endpoint & Access',
-                            'Validate endpoint access before registration.',
+                            'Define Prometheus endpoint access and authentication, then verify reachability before registration.',
                             icon='network',
                             loading_id='prometheus-connection-test-loading',
                             loading_label='Testing Prometheus connection'
@@ -144,7 +144,6 @@
                                 {% for error in form.endpoint.errors %}
                                     <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
                                 {% endfor %}
-                                <p class="mt-1.5 text-xs leading-5 text-content-muted">Use the base URL reachable from the KAORI runtime. Do not append an API path or embed credentials in the URL.</p>
                             </label>
                             <div class="mt-4 grid gap-4 md:grid-cols-2">
                                 <label class="block">
@@ -154,22 +153,19 @@
                                 <label class="block">
                                     <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.timeout.label.text }}</span>
                                     {{ form.timeout(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20') }}
-                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">Connection and query timeout in seconds.</p>
                                 </label>
                             </div>
                             <div class="mt-4 grid gap-4 md:grid-cols-2"
                                  x-show="authType === 'basic'"
                                  x-cloak>
-                                <label class="block"><span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.username.label.text }}</span>{{ form.username(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', **{':required':"authType === 'basic'"}) }}</label>
+                                <label class="block"><span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.username.label.text }}</span>{{ form.username(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', **{':required':"authType === 'basic'"}) }}</label>
                                 <label class="block">
-                                    <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.password.label.text }}</span>{{ form.password(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', **{':required':"authType === 'basic' && " + ('false' if instance else 'true') }) }}
-                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">{{ 'Leave blank to retain the saved password.' if instance else 'Required for Basic Authentication.' }}</p>
+                                    <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.password.label.text }}</span>{{ form.password(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', placeholder=('Leave blank to keep the current password' if instance else 'Enter password') , **{':required':"authType === 'basic' && " + ('false' if instance else 'true') }) }}
                                 </label>
                             </div>
                             <div class="mt-4" x-show="authType === 'bearer'" x-cloak>
                                 <label class="block">
-                                    <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.bearer_token.label.text }}</span>{{ form.bearer_token(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', **{':required':"authType === 'bearer' && " + ('false' if instance else 'true') }) }}
-                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">{{ 'Leave blank to retain the saved token.' if instance else 'Required for Bearer Authentication.' }}</p>
+                                    <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.bearer_token.label.text }}</span>{{ form.bearer_token(class_='h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20', placeholder=('Leave blank to keep the current token' if instance else 'Enter bearer token') , **{':required':"authType === 'bearer' && " + ('false' if instance else 'true') }) }}
                                 </label>
                             </div>
                         </div>
@@ -223,9 +219,11 @@
                          aria-hidden="true"></div>
                 {% endif %}
                 {% call form_action_bar.render(
-                    'Save changes, then run Full Validation.' if instance else 'Register after Test Connection succeeds.',
+                    'Save changes, then run Full Validation.' if instance else 'Run Test Connection successfully before KAORI enables Register Connection.',
                     aria_label='Prometheus Connection Actions'
                     ) %}
+                    <a href="{{ url_for('prometheus.instance_detail', instance_id=instance.id) if instance else url_for('integrations.prometheus') }}"
+                       class="{{ action_button.classes('secondary') }}">Cancel</a>
                     <button type="submit"
                             data-operation-submit
                             data-loading-label="{{ 'Saving changes...' if instance else 'Registering connection...' }}"

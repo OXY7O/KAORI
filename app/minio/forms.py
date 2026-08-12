@@ -12,17 +12,38 @@ from app.minio.contracts import MinioAlertBindingInput, MinioMetricsBindingInput
 
 
 class MinioInstanceForm(FlaskForm):
-    name = StringField('Connection Name', validators=[DataRequired(), Length(min=2, max=160)])
+    name = StringField(
+        'Connection Name',
+        validators=[DataRequired(), Length(min=2, max=160)],
+        render_kw={'placeholder': 'MinIO Production'},
+    )
     environment = SelectField('Environment', choices=ENVIRONMENTS, validators=[DataRequired()])
-    description = TextAreaField('Description', validators=[Optional(), Length(max=2000)])
+    description = TextAreaField(
+        'Description',
+        validators=[Optional(), Length(max=2000)],
+        render_kw={'rows': 3, 'placeholder': 'Operational purpose and ownership context'},
+    )
     endpoint = StringField(
         'S3 API Endpoint',
         validators=[DataRequired(), Length(max=500)],
-        render_kw={'placeholder': 'https://minio.example.com'},
+        render_kw={'placeholder': 'https://minio.example.internal'},
     )
-    access_key = StringField('Access Key', validators=[DataRequired(), Length(max=255)])
-    secret_key = PasswordField('Secret Key', validators=[DataRequired(), Length(max=4096)])
-    region = StringField('S3 Region', validators=[DataRequired(), Length(max=80)], default='us-east-1')
+    access_key = StringField(
+        'Access Key',
+        validators=[DataRequired(), Length(max=255)],
+        render_kw={'placeholder': 'minio-reader'},
+    )
+    secret_key = PasswordField(
+        'Secret Key',
+        validators=[DataRequired(), Length(max=4096)],
+        render_kw={'placeholder': 'Enter secret key'},
+    )
+    region = StringField(
+        'S3 Region',
+        validators=[DataRequired(), Length(max=80)],
+        default='us-east-1',
+        render_kw={'placeholder': 'us-east-1'},
+    )
     addressing_style = SelectField(
         'S3 Addressing Style',
         choices=[('path', 'Path Style — Recommended for MinIO'), ('auto', 'Automatic')],
