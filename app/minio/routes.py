@@ -398,7 +398,11 @@ def refresh_runtime(instance_id: int) -> ResponseReturnValue:
     )
     if is_htmx:
         context = build_detail_context(instance, detail_query_from_request())
-        context.update(runtime_refresh_job=runtime_refresh_job, operation_feedback=feedback)
+        context.update(
+            runtime_refresh_job=runtime_refresh_job,
+            operation_feedback=feedback,
+            runtime_history_oob=True,
+        )
         return render_template('minio/partials/_detail_runtime.html', **context)
     return redirect(url_for('minio.instance_detail', instance_id=instance.id, _anchor='runtime'))
 
@@ -414,6 +418,7 @@ def runtime_refresh_status(instance_id: int, task_id: str) -> ResponseReturnValu
     context.update(
         runtime_refresh_job=snapshot,
         operation_feedback=snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
+        runtime_history_oob=True,
     )
     return render_template('minio/partials/_detail_runtime.html', **context)
 

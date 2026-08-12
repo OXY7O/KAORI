@@ -53,7 +53,7 @@ def test_provider_registration_heroes_share_one_canonical_contract() -> None:
     for marker in (
         'data-kaori-provider-registration-hero',
         'Registration Posture',
-        'Pre-save Requirements',
+        'Pre-Save Requirements',
         'Draft',
         'Before Save',
         'Test Connection',
@@ -209,3 +209,30 @@ def test_minio_connection_test_separates_s3_access_from_product_identity() -> No
     assert 'Product identity and release compatibility remain authoritative Core Validation evidence' in service
     assert 'message=str(exc)' in routes
     assert 'identity_evidence' in adapter
+
+
+def test_edit_connection_pages_keep_only_flow_and_related_workspace_context() -> None:
+    edit_templates = {
+        'Kubernetes': read('app/templates/cluster/edit.html'),
+        'Prometheus': read('app/templates/prometheus/instance_form.html'),
+        'Alertmanager': read('app/templates/alertmanager/instance_form.html'),
+        'MinIO': read('app/templates/minio/instance_form.html'),
+    }
+    for provider, source in edit_templates.items():
+        assert 'provider_registration_context.render(' in source, provider
+        assert 'information_guide_card.render(' not in source, provider
+        assert 'context_guidance_card.render(' not in source, provider
+
+
+def test_prometheus_and_alertmanager_detail_configuration_link_to_edit_pages() -> None:
+    prometheus = read('app/templates/prometheus/partials/_detail_configuration.html')
+    alertmanager = read('app/templates/alertmanager/partials/_detail_configuration.html')
+    shared = read('app/templates/integrations/components/_provider_configuration_contract.html')
+    prom_routes = read('app/prometheus/routes.py')
+    am_routes = read('app/alertmanager/routes.py')
+
+    assert 'Configure Connection' in shared
+    assert 'url_for("prometheus.edit_instance"' in prometheus
+    assert 'url_for("alertmanager.edit_instance"' in alertmanager
+    assert "@prometheus_bp.route('/instances/<int:instance_id>/edit'" in prom_routes
+    assert "@alertmanager_bp.route('/instances/<int:instance_id>/edit'" in am_routes

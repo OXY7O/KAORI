@@ -2,6 +2,7 @@
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "integrations/components/_provider_job_status.html" as provider_job_status %}
 {% import "integrations/components/_capability_readiness.html" as capability_readiness %}
+{% import "integrations/components/_readiness_explanation.html" as readiness_explanation %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% set readiness = instance.readiness_status or "validation_required" %}
 {% set readiness_label = "Ready" if readiness == "ready" else ("Blocked" if readiness == "blocked" else "Validation Required") %}
@@ -57,11 +58,28 @@
                 capability_metadata,
                 capability_metrics,
                 "Object Storage Provider Eligible" if readiness == "ready" else "Remediation Required",
-                "The MinIO API contract is ready for provider-owned object-storage workflows." if readiness == "ready" else (instance.validation_message or "Run Full Validation to establish provider evidence.") ,
-        "normal" if readiness == "ready" else "critical",
-        "Full Validation owns MinIO product identity, compatibility, S3 API, and provider capability evidence. Runtime Refresh owns current endpoint health. Prometheus and Alertmanager bindings own consumer-specific evidence.",
-        "No corrective action is required. Revalidate after MinIO upgrades, credential changes, or S3 API changes." if readiness == "ready" else "Resolve MinIO API or compatibility gaps, then rerun Full Validation."
+                "The MinIO API contract is ready for provider-owned object-storage workflows." if readiness == "ready" else (instance.validation_message or "Run Full Validation to establish provider evidence."),
+                "normal" if readiness == "ready" else "critical",
+                "Full Validation owns MinIO product identity, compatibility, S3 API, and provider capability evidence. Runtime Refresh owns current endpoint health. Prometheus and Alertmanager bindings own consumer-specific evidence.",
+                "No corrective action is required. Revalidate after MinIO upgrades, credential changes, or S3 API changes." if readiness == "ready" else "Resolve MinIO API or compatibility gaps, then rerun Full Validation."
         ) }}
+        {% if readiness == "ready" %}
+            {% set readiness_decision_title = "Provider Readiness Is Ready" %}
+            {% set readiness_decision_message = "MinIO identity, compatibility, S3 access, and required provider capabilities are ready. Observability evidence remains binding-specific." %}
+            {% set readiness_decision_tone = "normal" %}
+        {% elif readiness in ["blocked", "failed", "unavailable", "incompatible"] %}
+            {% set readiness_decision_title = "Why Readiness Is Blocked" %}
+            {% set readiness_decision_message = instance.validation_message or "Resolve MinIO API or compatibility gaps, then rerun Full Validation." %}
+            {% set readiness_decision_tone = "critical" %}
+        {% else %}
+            {% set readiness_decision_title = "Why Readiness Needs Attention" %}
+            {% set readiness_decision_message = instance.validation_message or "Run Full Validation to establish MinIO provider evidence." %}
+            {% set readiness_decision_tone = "warning" %}
+        {% endif %}
+        {{ readiness_explanation.render(readiness_decision_title,
+                readiness_decision_message,
+                readiness_decision_tone,
+                [capability_blocked ~ " capability gaps", binding_total ~ " bound sources"]) }}
         {% include "minio/partials/_capability_registry.html" %}
     </div>
 </section>

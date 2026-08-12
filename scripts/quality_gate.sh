@@ -60,6 +60,7 @@ run_static() {
     python scripts/verify_hero_component_standard.py
     python scripts/verify_form_with_context_standard.py
     python scripts/verify_title_case_standard.py
+    python scripts/verify_integrations_title_case.py
     python scripts/verify_operational_dashboard_standard.py
     python scripts/verify_analytics_compact_label_standard.py
     python scripts/verify_analytics_final_lock.py

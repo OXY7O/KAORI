@@ -326,6 +326,7 @@ def build_minio_capability_registry(
     rows: list[dict[str, Any]] = []
     for definition in API_CAPABILITIES:
         row_status = 'ready' if definition.key in observed else 'blocked'
+        available = row_status == 'ready'
         rows.append(
             {
                 'key': definition.key,
@@ -334,7 +335,36 @@ def build_minio_capability_registry(
                 'required': bool(definition.required),
                 'requirement_label': 'Required' if definition.required else 'Optional',
                 'status': row_status,
+                'status_label': 'Ready' if available else 'Blocked',
+                'available': available,
                 'contract': CAPABILITY_PROFILE,
+                'category': 'MinIO S3 API',
+                'source_owner': 'MinIO S3 API',
+                'evidence': (
+                    f'Full Validation observed {definition.label} in the persisted MinIO capability snapshot.'
+                    if available
+                    else f'Full Validation did not observe {definition.label} in the current MinIO capability snapshot.'
+                ),
+                'success_criteria': definition.description,
+                'impact': (
+                    'Required provider capability used to establish MinIO readiness.'
+                    if definition.required
+                    else 'Optional read-only capability that increases object-storage governance depth.'
+                ),
+                'next_action': (
+                    'No corrective action is required. Revalidate after MinIO upgrades or credential changes.'
+                    if available
+                    else 'Verify the registered MinIO credential can perform this read-only operation, then rerun Full Validation.'
+                ),
+                'remediation': (
+                    []
+                    if available
+                    else [
+                        'Verify the registered MinIO endpoint and read-only credential permissions.',
+                        'Rerun Full Validation and confirm this capability becomes Ready.',
+                    ]
+                ),
+                'technical_checks': [],
             }
         )
 

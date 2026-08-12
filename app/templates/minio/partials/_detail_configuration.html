@@ -20,9 +20,10 @@
     ("Bind", "Associate reusable Prometheus metrics and Alertmanager alert sources only when required.", "waypoints")
 ] %}
 {% set operational_metadata = [
+    "S3 API Authority",
+    "Read-Only Discovery",
     "Region · " ~ (instance.region or "us-east-1"),
-    (instance.addressing_style or "path")|title ~ " Addressing",
-    (instance.timeout|string) ~ "s Timeout"
+    (instance.addressing_style or "path")|title ~ " Addressing"
 ] %}
 {{ provider_configuration_contract.render(
     "MinIO",

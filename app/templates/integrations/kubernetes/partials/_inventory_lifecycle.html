@@ -180,6 +180,23 @@
             {{ asset_owner_sources.render(source_bindings,
                         total_count=source_bindings|length,
                         empty_message="No reusable observability source is currently bound to this Kubernetes connection.") }}
+            <section class="rounded-xl border border-outline-subtle bg-surface-card px-5 py-4 sm:px-6"
+                     data-kaori-kubernetes-binding-ownership>
+                <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        {{ integration_ui.palette_icon('waypoints', 'brand', size='sm') }}
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-content-primary">Binding Ownership</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Create, validate, update, and remove Prometheus or Alertmanager bindings from the selected Observability source. This Kubernetes asset-owner workspace remains read-only for binding mutation.</p>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('integrations.observability') }}"
+                       class="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-brand-outline bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft dark:text-kaori-accent">
+                        <i data-lucide="activity" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                        Open Observability
+                    </a>
+                </div>
+            </section>
         </div>
     </section>
 </div>

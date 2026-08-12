@@ -3,60 +3,67 @@
 {% import "integrations/components/_provider_job_status.html" as provider_job_status %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-<div id="minio-runtime-panel"
-     class="space-y-4 font-sans"
-     {% if runtime_refresh_job and runtime_refresh_job.is_active %}hx-get="{{ url_for('minio.runtime_refresh_status', instance_id=instance.id, task_id=runtime_refresh_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML"{% endif %}>
-    <section class="{{ integration_ui.section_shell_classes() }}">
-        {% call connection_validation_header.render(
-            "Runtime Health & Diagnostics",
-            "Refresh persisted MinIO endpoint health independently from Core Validation and consumer-binding evidence.",
-            icon="activity",
-            loading_id="minio-runtime-loading",
-            loading_active=runtime_refresh_job and runtime_refresh_job.is_active,
-            loading_label="Refreshing MinIO runtime health"
-            ) %}
-            <button type="button"
-                    hx-post="{{ url_for('minio.refresh_runtime', instance_id=instance.id) }}"
-                    hx-target="#minio-runtime-panel"
-                    hx-swap="outerHTML"
-                    hx-disabled-elt="this"
-                    hx-indicator="#minio-runtime-loading"
-                    {% if runtime_refresh_job and runtime_refresh_job.is_active %}disabled{% endif %}
-                    class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-wait disabled:opacity-70">
-                <i data-lucide="{{ 'loader-circle' if runtime_refresh_job and runtime_refresh_job.is_active else 'refresh-cw' }}"
-                   class="h-4 w-4{% if runtime_refresh_job and runtime_refresh_job.is_active %} animate-spin{% endif %}"
-                   aria-hidden="true"></i>
-                {{ 'Refresh Running' if runtime_refresh_job and runtime_refresh_job.is_active else 'Refresh Runtime' }}
-            </button>
-        {% endcall %}
-        {{ provider_job_status.render(runtime_refresh_job, 'MinIO runtime refresh running', 'MinIO') }}
-        <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
-            <article class="bg-surface-card p-5">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Runtime Health</p>
-                <div class="mt-2">{{ integration_status(runtime_state.health_status, runtime_state.health_status_label, display="indicator") }}</div>
-                <p class="mt-2 text-xs leading-5 text-content-secondary">{{ runtime_state.summary or runtime_state.message }}</p>
-            </article>
-            <article class="bg-surface-card p-5">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Health Score</p>
-                <p class="mt-2 text-2xl font-semibold tabular-nums text-content-primary">{{ runtime_state.health_score_display }}</p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Persisted provider-runtime observation only.</p>
-            </article>
-            <article class="bg-surface-card p-5">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Observed At</p>
-                <p class="mt-2 text-sm font-semibold text-content-primary">{{ runtime_state.observed_at_display }}</p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Latest stored runtime evidence.</p>
-            </article>
-            <article class="bg-surface-card p-5">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Latency</p>
-                <p class="mt-2 text-sm font-semibold text-content-primary">{{ runtime_state.latency_display }}</p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Latest observed MinIO API response latency.</p>
-            </article>
-        </div>
-    </section>
-    {% with runtime_history=runtime_history, runtime_history_id="minio-runtime-history", runtime_history_loading_id="minio-history-loading", runtime_history_url=url_for("minio.runtime_history", instance_id=instance.id), runtime_history_endpoint="minio.runtime_history", runtime_history_route_args={"instance_id": instance.id}, runtime_history_detail_url=url_for("minio.instance_detail", instance_id=instance.id), runtime_history_detail_endpoint="minio.instance_detail", runtime_history_filters_enabled=true, runtime_history_tab="runtime", provider_label="MinIO" %}
+<article id="minio-runtime-panel"
+         class="relative font-sans {{ integration_ui.section_shell_classes() }}"
+         data-kaori-minio-runtime-refresh-surface
+         {% if runtime_refresh_job and runtime_refresh_job.is_active %}hx-get="{{ url_for('minio.runtime_refresh_status', instance_id=instance.id, task_id=runtime_refresh_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML"{% endif %}>
+    {% call connection_validation_header.render(
+        "Runtime Health & Diagnostics",
+        "Refresh persisted MinIO endpoint health independently from Core Validation and consumer-binding evidence.",
+        icon="activity",
+        loading_id="minio-runtime-loading",
+        loading_active=runtime_refresh_job and runtime_refresh_job.is_active,
+        loading_label="Refreshing MinIO runtime health"
+        ) %}
+        <button type="button"
+                hx-post="{{ url_for('minio.refresh_runtime', instance_id=instance.id) }}"
+                hx-target="#minio-runtime-panel"
+                hx-swap="outerHTML"
+                hx-disabled-elt="this"
+                hx-indicator="#minio-runtime-loading"
+                {% if runtime_refresh_job and runtime_refresh_job.is_active %}disabled{% endif %}
+                class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-wait disabled:opacity-70">
+            <i data-lucide="{{ 'loader-circle' if runtime_refresh_job and runtime_refresh_job.is_active else 'refresh-cw' }}"
+               class="h-4 w-4{% if runtime_refresh_job and runtime_refresh_job.is_active %} animate-spin{% endif %}"
+               aria-hidden="true"></i>
+            {{ 'Refresh Running' if runtime_refresh_job and runtime_refresh_job.is_active else 'Refresh Runtime' }}
+        </button>
+    {% endcall %}
+    {{ provider_job_status.render(runtime_refresh_job, 'MinIO runtime refresh running', 'MinIO') }}
+    <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
+        <article class="bg-surface-card p-5">
+            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Runtime Health</p>
+            <div class="mt-2">{{ integration_status(runtime_state.health_status, runtime_state.health_status_label, display="indicator") }}</div>
+            <p class="mt-2 text-xs leading-5 text-content-secondary">{{ runtime_state.summary or runtime_state.message }}</p>
+        </article>
+        <article class="bg-surface-card p-5">
+            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Health Score</p>
+            <p class="mt-2 text-2xl font-semibold tabular-nums text-content-primary">{{ runtime_state.health_score_display }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">Persisted provider-runtime observation only.</p>
+        </article>
+        <article class="bg-surface-card p-5">
+            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Observed At</p>
+            <p class="mt-2 text-sm font-semibold text-content-primary">{{ runtime_state.observed_at_display }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">Latest stored runtime evidence.</p>
+        </article>
+        <article class="bg-surface-card p-5">
+            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Latency</p>
+            <p class="mt-2 text-sm font-semibold text-content-primary">{{ runtime_state.latency_display }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">Latest observed MinIO API response latency.</p>
+        </article>
+    </div>
+</article>
+{% if runtime_history_oob|default(false) %}
+    {% with runtime_history=runtime_history, runtime_history_id="minio-runtime-history", runtime_history_loading_id="minio-history-loading", runtime_history_url=url_for("minio.runtime_history", instance_id=instance.id), runtime_history_endpoint="minio.runtime_history", runtime_history_route_args={"instance_id": instance.id}, runtime_history_detail_url=url_for("minio.instance_detail", instance_id=instance.id), runtime_history_detail_endpoint="minio.instance_detail", runtime_history_filters_enabled=true, runtime_history_tab="runtime", provider_label="MinIO", runtime_history_oob=true %}
         {% include "integrations/partials/_runtime_history.html" %}
     {% endwith %}
+{% else %}
+    <div data-kaori-minio-runtime-history-external>
+        {% with runtime_history=runtime_history, runtime_history_id="minio-runtime-history", runtime_history_loading_id="minio-history-loading", runtime_history_url=url_for("minio.runtime_history", instance_id=instance.id), runtime_history_endpoint="minio.runtime_history", runtime_history_route_args={"instance_id": instance.id}, runtime_history_detail_url=url_for("minio.instance_detail", instance_id=instance.id), runtime_history_detail_endpoint="minio.instance_detail", runtime_history_filters_enabled=true, runtime_history_tab="runtime", provider_label="MinIO", runtime_history_oob=false %}
+            {% include "integrations/partials/_runtime_history.html" %}
+        {% endwith %}
+    </div>
+{% endif %}
 
 {{ framed_workspace_tabs.badge_oob("minio", "runtime", runtime_state.health_status_label|default("Not Observed")) }}
-    {% include "components/operation_feedback_oob.html" %}
-</div>
+{% include "components/operation_feedback_oob.html" %}

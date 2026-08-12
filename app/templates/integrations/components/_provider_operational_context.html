@@ -25,7 +25,8 @@
                     </div>
                 </div>
                 {% if metadata_items %}
-                    <div class="flex flex-wrap gap-2 lg:max-w-[42%] lg:justify-end">
+                    <div class="flex flex-wrap gap-2 lg:max-w-[42%] lg:justify-end"
+                         data-kaori-authority-boundary-metadata>
                         {% for item in metadata_items %}
                             {{ table_label.metadata_label(item) }}
                         {% endfor %}

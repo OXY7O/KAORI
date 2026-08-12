@@ -3,6 +3,9 @@
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
+{% import "integrations/components/_record_detail_modal.html" as record_detail_modal %}
+{% import "integrations/components/_provider_capability_detail.html" as provider_capability_detail %}
+{% import "integrations/components/_record_actions.html" as record_actions %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set registry = capability_registry %}
 {% set filters = registry.filters %}
@@ -10,7 +13,8 @@
 <section id="minio-capability-registry"
          class="mt-4 min-w-0 {{ integration_ui.section_shell_classes() }}"
          aria-labelledby="minio-capability-registry-title"
-         data-kaori-minio-capability-registry>
+         data-kaori-minio-capability-registry
+         data-kaori-capability-table-standard>
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div class="flex min-w-0 items-start gap-3">
@@ -18,12 +22,14 @@
                 <div class="min-w-0">
                     <h3 id="minio-capability-registry-title"
                         class="text-base font-semibold text-content-primary">Capability Registry</h3>
-                    <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">Review the MinIO API capability contract selected by the compatibility profile. Provider capability evidence remains independent from Prometheus metrics and Alertmanager alert bindings.</p>
+                    <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">Review MinIO S3 API capability, contract profile, requirement, and validation state. Detailed evidence stays behind View More.</p>
                 </div>
             </div>
             {{ table_label.metadata_label(registry.total_contracts ~ " Capability Contracts") }}
         </div>
-        {{ loading_bar.render("minio-capability-loading", active=validation_job and validation_job.is_active, label="Refreshing MinIO Capability Registry") }}
+        <div data-kaori-capability-loading-region>
+            {{ loading_bar.render("minio-capability-loading", active=validation_job and validation_job.is_active, label="Refreshing MinIO Capability Registry") }}
+        </div>
     </header>
     <form method="get"
           action="{{ url_for('minio.instance_detail', instance_id=instance.id) }}#validation"
@@ -76,51 +82,54 @@
             </label>
         </div>
     </form>
-    <div class="overflow-hidden">
+    <div class="overflow-hidden" data-kaori-capability-records>
         <table class="{{ table_ui.table_classes() }} table-fixed">
             <colgroup>
-                <col class="w-[27%]">
-                <col class="w-[25%]">
+                <col class="w-[38%]">
                 <col class="w-[20%]">
-                <col class="w-[13%]">
-                <col class="w-[15%]">
+                <col class="w-[16%]">
+                <col class="w-[14%]">
+                <col class="w-[12%]">
             </colgroup>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
                     <th class="{{ table_ui.header_cell_classes() }}">Capability</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Description</th>
                     <th class="{{ table_ui.header_cell_classes() }}">API Contract</th>
                     <th class="{{ table_ui.header_cell_classes() }}">Requirement</th>
-                    <th class="{{ table_ui.header_cell_classes(action=true) }}">Status</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Status</th>
+                    <th class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for row in registry.rows %}
-                    <tr class="{{ table_ui.row_classes() }}">
+                    {% set icon_tone = "normal" if row.available else ("critical" if row.required else "warning") %}
+                    <tr class="{{ table_ui.row_classes() }}" data-kaori-capability-record>
                         <td class="{{ table_ui.cell_classes() }}">
                             <div class="flex min-w-0 items-start gap-3">
-                                {{ integration_ui.palette_icon("box" if row.required else "shield", "normal" if row.status == "ready" else "critical", size="md") }}
+                                {{ integration_ui.palette_icon("database" if row.required else "shield", icon_tone, size="md") }}
                                 <div class="min-w-0">
                                     <p class="truncate text-sm font-semibold text-content-primary"
                                        title="{{ row.label }}">{{ row.label }}</p>
-                                    <p class="mt-0.5 truncate text-xs text-content-muted">{{ row.key }}</p>
+                                    <p class="mt-0.5 truncate text-xs leading-5 text-content-muted"
+                                       title="{{ row.description }}">{{ row.description }}</p>
                                 </div>
                             </div>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            <p class="line-clamp-2 text-xs leading-5 text-content-secondary"
-                               title="{{ row.description }}">{{ row.description }}</p>
-                        </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <p class="truncate text-sm font-semibold text-content-primary"
+                            <p class="truncate font-semibold text-content-primary"
                                title="{{ row.contract }}">{{ row.contract }}</p>
+                            <p class="mt-0.5 truncate text-xs text-content-muted">MinIO S3 API</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(row.requirement_label) }}</td>
-                        <td class="{{ table_ui.cell_classes(action=true) }}">{{ integration_status(row.status, "Ready" if row.status == "ready" else "Blocked", display="indicator") }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ integration_status(row.status, row.status_label, display="indicator") }}</td>
+                        <td class="{{ table_ui.cell_classes(action=true) }}">{{ record_actions.view_more("minio-capability-detail-" ~ loop.index, role="capability") }}</td>
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="5" class="px-5 py-10 text-center text-sm text-content-muted">No MinIO capability contracts match the active filters.</td>
+                        <td colspan="5" class="px-5 py-10 text-center">
+                            <p class="text-sm font-semibold text-content-primary">No Capability Records Match the Current Filters</p>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">Adjust Search Capability, Requirement, or Validation Status to broaden the registry results.</p>
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -156,7 +165,7 @@
             </form>
         </div>
         <nav class="{{ pagination_ui.navigation_group_classes() }}"
-             aria-label="MinIO capability pagination">
+             aria-label="MinIO Capability Registry pagination">
             {% set capability_query = {"capability_q": filters.query, "capability_requirement": filters.requirement, "capability_status": filters.status, "capability_per_page": pagination.per_page} %}
             {% if pagination.has_prev %}
                 <a href="{{ url_for('minio.instance_detail', instance_id=instance.id, capability_page=pagination.prev_page, **capability_query) }}#validation"
@@ -183,4 +192,22 @@
             {% endif %}
         </nav>
     </footer>
+    {% for row in registry.rows %}
+        {% call record_detail_modal.render(
+            "minio-capability-detail-" ~ loop.index,
+            row.key,
+            "MinIO Capability Evidence",
+            row.label,
+            row.contract ~ " · " ~ row.requirement_label ~ " capability",
+            icon="scan-search",
+            footer_text="Capability details use the latest completed MinIO Full Validation evidence.",
+            size="standard"
+            ) %}
+            {{ provider_capability_detail.content(row,
+                        "MinIO",
+                        row.source_owner,
+                        "S3 API Probe",
+                        "Full Validation owns MinIO product identity, compatibility, S3 API access, and provider capability evidence. Prometheus and Alertmanager remain independently validated binding sources.") }}
+        {% endcall %}
+    {% endfor %}
 </section>

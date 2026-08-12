@@ -120,8 +120,7 @@ def test_cluster_connection(
         readiness_reasons: list[str] = []
         if lifecycle == 'legacy':
             readiness_reasons.append(
-                f'Kubernetes {git_version} is in the KAORI legacy lifecycle band. '
-                'Stable APIs remain usable, but upgrade planning is required before readiness can return to Ready.'
+                f'Kubernetes {git_version} is in a legacy lifecycle band. Plan an upgrade to return readiness to Ready.'
             )
         if discovery['legacy_features']:
             readiness_reasons.append(
