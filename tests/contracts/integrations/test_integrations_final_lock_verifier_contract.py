@@ -21,7 +21,8 @@ def test_final_lock_verifier_is_wired_into_static_quality_gate() -> None:
     assert 'verify_integrations_final_lock.py' in quality_gate
     assert 'data-kaori-capability-readiness' in verifier
     assert 'runtime_decision.render(' in verifier
-    assert 'configuration_decision.side_panel(' in verifier
+    assert 'data-kaori-provider-configuration-contract' in verifier
+    assert 'provider_configuration_contract.render(' in verifier
     assert 'binding_rows|default([])' in verifier
     assert 'workspace_tabs.render(' in verifier
 

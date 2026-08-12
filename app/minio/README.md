@@ -16,6 +16,6 @@ persist provider-pair relationships.
 - Validate the selector through the MinIO `object_storage_system` Prometheus
   binding profile.
 
-Bucket Inventory and Object Storage Analytics are intentionally deferred to the
-next phase and will consume the normalized provider/binding contract rather than
-owning MinIO or Prometheus credentials.
+Object Storage Inventory consumes this normalized provider contract through canonical Job Execution. `Object Storage Inventory Sync` runs on the shared `inventory` queue, is scheduled automatically through `JobPolicy`, and is also available for manual execution from Jobs & Executions. Full Validation and Runtime Refresh do not commit bucket inventory. Failed inventory collection preserves the last committed system/bucket snapshot.
+
+Object Storage Analytics remains deferred and will consume committed inventory snapshots rather than owning MinIO or Prometheus credentials.

@@ -16,19 +16,16 @@ def test_alertmanager_detail_uses_provider_v2_tabs_without_malformed_alpine_mark
     assert "scrollIntoView({ behavior: 'smooth', block: 'start' })); } } }" not in content
 
 
-def test_alertmanager_configuration_uses_shared_side_decision_and_primary_form_workspace():
+def test_alertmanager_configuration_uses_read_only_contract_and_edit_link():
     content = read('app/templates/alertmanager/partials/_detail_configuration.html')
-    shared = read('app/templates/integrations/components/_configuration_decision.html')
-    assert 'configuration_decision.side_panel(' in content
-    assert 'Alertmanager Configuration Decision' in content
-    assert 'Alertmanager API v2' in content
-    assert 'Controlled Flow' in shared
-    assert 'data-kaori-configuration-decision-side' in shared
-    assert 'grid-cols-[minmax(0,1fr)_25rem]' in content
-    assert 'items-stretch' in content
-    assert 'embedded=true' in content
-    assert 'flex h-full min-h-full flex-col self-stretch' in shared
-    assert 'xl:sticky xl:top-4' not in shared
+    shared = read('app/templates/integrations/components/_provider_configuration_contract.html')
+    routes = read('app/alertmanager/routes.py')
+    assert 'provider_configuration_contract.render(' in content
+    assert 'Alertmanager API Endpoint' in content
+    assert 'Configure Connection' in shared
+    assert 'data-kaori-provider-configuration-contract' in shared
+    assert 'url_for("alertmanager.edit_instance"' in content
+    assert "@alertmanager_bp.route('/instances/<int:instance_id>/edit'" in routes
 
 
 def test_alertmanager_validation_uses_kubernetes_style_capability_readiness_and_registry():
@@ -36,11 +33,11 @@ def test_alertmanager_validation_uses_kubernetes_style_capability_readiness_and_
     registry = read('app/templates/alertmanager/partials/_capability_registry.html')
     assert 'Alertmanager Core Validation' in content
     assert 'Alertmanager Provider Readiness' in content
-    assert 'data-kaori-alertmanager-consumer-validation-boundary' in content
+    assert 'integrations/components/_readiness_explanation.html' in content
     assert 'integrations/components/_capability_readiness.html' in content
     assert 'data-kaori-provider-capability-matrix' in content
     assert 'Validation Decision' not in content
-    assert 'Alert Management Capability Registry' in registry
+    assert 'Capability Registry' in registry
     assert 'record_actions.view_more(' in registry
     assert 'table_ui.table_classes' in registry
 
@@ -61,13 +58,15 @@ def test_alertmanager_runtime_uses_kubernetes_layout_and_history_filters():
 def test_alertmanager_bindings_use_standard_table_and_native_dialog():
     content = read('app/templates/alertmanager/partials/_detail_scope.html')
     assert 'Bindings &amp; Consumers' in content
-    assert 'Consumer Binding Registry' in content
-    assert 'Consumer Profile' in content
-    assert 'Bound Operational Scopes' in content
+    binding_registry = read('app/templates/alertmanager/partials/_binding_registry.html')
+    binding_modal = read('app/templates/integrations/components/_observability_binding_modal.html')
+    assert 'Consumer Binding Registry' in binding_registry
+    assert 'Consumer Profile' in binding_registry
     assert 'Effective Consumer Resolution' in content
     assert 'Binding Decision' in content
-    assert '<dialog id="alertmanager-create-binding-dialog"' in content
-    assert 'table_ui.table_classes' in content
+    assert 'observability_binding_modal.render(' in content
+    assert 'data-kaori-observability-binding-modal' in binding_modal
+    assert 'table_ui.table_classes' in binding_registry
 
 
 def test_alertmanager_runtime_history_accepts_server_side_filters():

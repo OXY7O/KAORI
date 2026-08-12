@@ -43,6 +43,7 @@ def test_prometheus_bindings_use_kaori_table_and_native_create_dialog() -> None:
     assert '<dialog id="{{ dialog_id }}"' in modal
     assert 'm-auto w-[min(46rem,calc(100vw-2rem))]' in modal
 
+
 def test_prometheus_runtime_history_filters_are_server_side() -> None:
     routes = read('app/prometheus/routes.py')
     presentation = read('app/prometheus/presentation.py')

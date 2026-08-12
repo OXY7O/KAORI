@@ -166,7 +166,7 @@ Operational results use `components/operational_toast.html` and `#operational-to
 ## Form + Right Context Reference v1
 
 **Canonical component:** `components/form_with_context_rail.html`  
-**Visual references:** Add Kubernetes Connection, Register Prometheus Connection, Register Alertmanager Connection, and Create Kubernetes ConfigMap.
+**Visual references:** Register Kubernetes Connection, Register Prometheus Connection, Register Alertmanager Connection, and Create Kubernetes ConfigMap.
 
 Browser review established the Integration registration composition as a reusable KAORI layout family rather than a provider-specific implementation detail. The pattern is now formally named **Form + Right Context** and is available to any focused create, edit, register, or configuration task whose main form should remain dominant while workflow/safety/reference guidance remains secondary.
 

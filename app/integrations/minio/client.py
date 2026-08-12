@@ -46,6 +46,20 @@ class MinioConnectionResult:
     bucket_inventory: tuple[MinioBucketSummary, ...] = ()
 
 
+@dataclass(frozen=True, slots=True)
+class MinioInventoryResult:
+    latency_ms: int
+    buckets: tuple[MinioBucketSummary, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class MinioRuntimeProbeResult:
+    connected: bool
+    latency_ms: int
+    status_code: int
+    probe: str
+
+
 def build_s3_client(
     *,
     endpoint: str,
@@ -73,16 +87,16 @@ def build_s3_client(
     )
 
 
-def test_connection_values(
+def _list_buckets_values(
     *,
     endpoint: str,
     access_key: str,
     secret_key: str,
-    region: str = 'us-east-1',
-    addressing_style: str = 'path',
-    timeout: int = 5,
-    verify_ssl: bool = True,
-) -> MinioConnectionResult:
+    region: str,
+    addressing_style: str,
+    timeout: int,
+    verify_ssl: bool,
+) -> tuple[dict[str, Any], int]:
     client = build_s3_client(
         endpoint=endpoint,
         access_key=access_key,
@@ -108,18 +122,11 @@ def test_connection_values(
     except (BotoCoreError, OSError) as exc:
         raise MinioConnectionError(f'MinIO S3 API validation failed: {exc}') from exc
     latency_ms = max(int((perf_counter() - started) * 1000), 0)
-    metadata = payload.get('ResponseMetadata') or {}
-    headers = metadata.get('HTTPHeaders') or {}
-    server_header = str(headers.get('server') or '').strip() or None
-    deployment_id = str(headers.get('x-minio-deployment-id') or '').strip() or None
-    product, identity_evidence = _detect_product_identity(
-        endpoint=endpoint,
-        timeout=timeout,
-        verify_ssl=verify_ssl,
-        server_header=server_header,
-        deployment_id=deployment_id,
-    )
-    bucket_inventory = tuple(
+    return payload, latency_ms
+
+
+def _bucket_inventory(payload: dict[str, Any]) -> tuple[MinioBucketSummary, ...]:
+    return tuple(
         sorted(
             (
                 MinioBucketSummary(
@@ -132,6 +139,39 @@ def test_connection_values(
             key=lambda item: item.name,
         )
     )
+
+
+def test_connection_values(
+    *,
+    endpoint: str,
+    access_key: str,
+    secret_key: str,
+    region: str = 'us-east-1',
+    addressing_style: str = 'path',
+    timeout: int = 5,
+    verify_ssl: bool = True,
+) -> MinioConnectionResult:
+    payload, latency_ms = _list_buckets_values(
+        endpoint=endpoint,
+        access_key=access_key,
+        secret_key=secret_key,
+        region=region,
+        addressing_style=addressing_style,
+        timeout=timeout,
+        verify_ssl=verify_ssl,
+    )
+    metadata = payload.get('ResponseMetadata') or {}
+    headers = metadata.get('HTTPHeaders') or {}
+    server_header = str(headers.get('server') or '').strip() or None
+    deployment_id = str(headers.get('x-minio-deployment-id') or '').strip() or None
+    product, identity_evidence = _detect_product_identity(
+        endpoint=endpoint,
+        timeout=timeout,
+        verify_ssl=verify_ssl,
+        server_header=server_header,
+        deployment_id=deployment_id,
+    )
+    bucket_inventory = _bucket_inventory(payload)
     buckets = tuple(item.name for item in bucket_inventory)
     return MinioConnectionResult(
         connected=True,
@@ -146,13 +186,111 @@ def test_connection_values(
     )
 
 
+def collect_bucket_inventory_values(
+    *,
+    endpoint: str,
+    access_key: str,
+    secret_key: str,
+    region: str = 'us-east-1',
+    addressing_style: str = 'path',
+    timeout: int = 5,
+    verify_ssl: bool = True,
+) -> MinioInventoryResult:
+    """Collect bucket records for the Inventory Job without changing provider validation state."""
+    payload, latency_ms = _list_buckets_values(
+        endpoint=endpoint,
+        access_key=access_key,
+        secret_key=secret_key,
+        region=region,
+        addressing_style=addressing_style,
+        timeout=timeout,
+        verify_ssl=verify_ssl,
+    )
+    return MinioInventoryResult(
+        latency_ms=latency_ms,
+        buckets=_bucket_inventory(payload),
+    )
+
+
+def collect_instance_bucket_inventory(instance: MinioInstance) -> MinioInventoryResult:
+    return collect_bucket_inventory_values(
+        endpoint=instance.endpoint,
+        access_key=instance.access_key,
+        secret_key=instance.secret_key,
+        region=instance.region,
+        addressing_style=instance.addressing_style,
+        timeout=instance.timeout,
+        verify_ssl=instance.verify_ssl,
+    )
+
+
+def probe_runtime_values(
+    *,
+    endpoint: str,
+    timeout: int = 5,
+    verify_ssl: bool = True,
+    product: str | None = None,
+) -> MinioRuntimeProbeResult:
+    """Run a lightweight provider health probe without collecting inventory."""
+    parsed = urlsplit(endpoint)
+    if parsed.scheme not in {'http', 'https'} or not parsed.netloc:
+        raise MinioConnectionError('The object-storage runtime endpoint is not a valid HTTP or HTTPS URL.')
+
+    product_key = str(product or '').strip().lower().replace('-', '_')
+    if product_key == 'minio':
+        probe_url = urlunsplit((parsed.scheme, parsed.netloc, '/minio/health/live', '', ''))
+        method = 'GET'
+        probe = 'minio-health-live'
+    else:
+        probe_url = urlunsplit((parsed.scheme, parsed.netloc, parsed.path or '/', '', ''))
+        method = 'HEAD'
+        probe = 'endpoint-head'
+
+    started = perf_counter()
+    try:
+        response = requests.request(
+            method,
+            probe_url,
+            timeout=max(int(timeout), 1),
+            verify=verify_ssl,
+            allow_redirects=False,
+        )
+    except requests.exceptions.SSLError as exc:
+        raise MinioConnectionError('TLS validation failed during the object-storage runtime health probe.') from exc
+    except RequestException as exc:
+        raise MinioConnectionError(
+            'KAORI could not reach the object-storage endpoint during the lightweight runtime health probe.'
+        ) from exc
+
+    latency_ms = max(int((perf_counter() - started) * 1000), 0)
+    if product_key == 'minio' and response.status_code != 200:
+        raise MinioConnectionError(f'MinIO runtime health endpoint returned HTTP {response.status_code}.')
+    if product_key != 'minio' and response.status_code >= 500:
+        raise MinioConnectionError(f'Object-storage runtime endpoint returned HTTP {response.status_code}.')
+    return MinioRuntimeProbeResult(
+        connected=True,
+        latency_ms=latency_ms,
+        status_code=response.status_code,
+        probe=probe,
+    )
+
+
+def probe_instance_runtime_health(instance: MinioInstance) -> MinioRuntimeProbeResult:
+    return probe_runtime_values(
+        endpoint=instance.endpoint,
+        timeout=instance.timeout,
+        verify_ssl=instance.verify_ssl,
+        product=instance.detected_product,
+    )
+
+
 def _client_error_message(exc: ClientError) -> str:
     error = exc.response.get('Error') or {}
     code = str(error.get('Code') or '').strip()
     if code in {'AccessDenied', 'AllAccessDisabled'}:
         return (
             'The access key reached the S3 API, but ListBuckets was denied. '
-            'KAORI requires s3:ListAllMyBuckets to discover object-storage assets.'
+            'KAORI requires s3:ListAllMyBuckets to validate bucket-discovery capability and run inventory jobs.'
         )
     if code in {'InvalidAccessKeyId', 'SignatureDoesNotMatch', 'InvalidToken', 'ExpiredToken'}:
         return (

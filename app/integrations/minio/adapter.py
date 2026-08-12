@@ -6,11 +6,11 @@ from typing import Any
 from app.extensions.db import db
 from app.integrations.contracts import CapabilitySnapshot, DiagnosticResult, HealthFactor, RuntimeState
 from app.integrations.minio.capabilities import CAPABILITY_KEYS, CAPABILITY_PROFILE
-from app.integrations.minio.client import test_instance_connection
+from app.integrations.minio.client import probe_instance_runtime_health, test_instance_connection
 from app.integrations.minio.compatibility import evaluate_minio_release
 from app.integrations.runtime.scoring import calculate_health
 from app.models.minio import MinioInstance
-from app.storage_inventory.sync import commit_bucket_inventory
+from app.storage_inventory.sync import sync_object_storage_inventory
 
 
 def _health_factors(instance: MinioInstance) -> tuple[HealthFactor, ...]:
@@ -49,11 +49,10 @@ def _health_factors(instance: MinioInstance) -> tuple[HealthFactor, ...]:
 def _diagnostics(instance: MinioInstance) -> tuple[DiagnosticResult, ...]:
     connected = instance.last_status == 'connected'
     compatibility_ready = instance.compatibility_status == 'compatible'
-    bucket_count = int((instance.validation_summary or {}).get('bucket_count') or 0)
     api_detail = (
-        f'{instance.detected_product or "S3-compatible endpoint"}; {bucket_count} bucket(s) visible.'
+        f'{instance.detected_product or "S3-compatible endpoint"} runtime endpoint is reachable.'
         if connected
-        else instance.last_error or 'API validation has not been observed.'
+        else instance.last_error or 'Runtime health has not been observed.'
     )
     return (
         DiagnosticResult(
@@ -65,7 +64,7 @@ def _diagnostics(instance: MinioInstance) -> tuple[DiagnosticResult, ...]:
             duration_ms=instance.last_response_time_ms,
             severity='critical' if instance.last_status and not connected else 'info',
             recommendation=(
-                'Review endpoint, access key, secret key, TLS trust, and S3 permissions.'
+                'Review endpoint, TLS trust, network access, and provider runtime health.'
                 if instance.last_status and not connected
                 else None
             ),
@@ -87,8 +86,8 @@ def _snapshot_metadata(instance: MinioInstance) -> dict[str, Any]:
         'asset_key': instance.object_storage_system_id,
         'declared_release': instance.declared_release,
         'detected_product': instance.detected_product,
-        'bucket_count': int((instance.validation_summary or {}).get('bucket_count') or 0),
         'deployment_id': instance.deployment_id,
+        'inventory_owner': 'job_execution',
     }
 
 
@@ -96,6 +95,7 @@ class MinioRuntimeAdapter:
     provider = 'minio'
 
     def refresh(self, instance: MinioInstance) -> dict[str, Any]:
+        """Run Full Validation without committing object-storage inventory."""
         now = datetime.now(UTC)
         result = test_instance_connection(instance)
         compatibility = evaluate_minio_release(instance.declared_release, product=result.product)
@@ -114,26 +114,21 @@ class MinioRuntimeAdapter:
         instance.last_status = 'connected'
         instance.last_error = None
         instance.validation_summary = {
-            'bucket_count': result.bucket_count,
-            'sample_buckets': list(result.bucket_names[:10]),
             'server_header': result.server_header,
             'deployment_id': result.deployment_id,
             'detected_product': result.product,
             'identity_evidence': result.identity_evidence,
             'compatibility_supported_range': compatibility.supported_range,
+            'bucket_discovery_capability': 'available',
+            'inventory_owner': 'job_execution',
         }
-        commit_bucket_inventory(
-            instance.object_storage_system,
-            result.bucket_inventory,
-            observed_at=now,
-        )
 
         if not product_identified:
             instance.readiness_status = 'blocked'
             instance.compatibility_status = 'product_mismatch'
             instance.compatibility_profile = None
             instance.validation_message = (
-                'The S3 API is reachable, but Core Validation could not confirm MinIO product identity '
+                'The S3 API is reachable, but Full Validation could not confirm MinIO product identity '
                 'from the deployment header, server header, or MinIO liveness endpoint. '
                 'Review the S3 API endpoint and any reverse proxy that filters MinIO health paths or response headers.'
             )
@@ -141,7 +136,7 @@ class MinioRuntimeAdapter:
         elif compatibility.readiness == 'ready':
             instance.readiness_status = 'ready'
             instance.validation_message = (
-                f'MinIO S3 API is reachable and listed {result.bucket_count} bucket(s). {compatibility.message}'
+                f'MinIO S3 API access and bucket-discovery capability are validated. {compatibility.message}'
             )
             instance.object_storage_system.status = 'connected'
         else:
@@ -162,6 +157,7 @@ class MinioRuntimeAdapter:
                 'asset_key': instance.object_storage_system_id,
                 'endpoint_product': result.product,
                 'declared_release': instance.declared_release,
+                'inventory_owner': 'job_execution',
             }
         )
         canonical.metadata_json = metadata
@@ -175,13 +171,14 @@ class MinioRuntimeAdapter:
             'compatibility_profile': instance.compatibility_profile,
             'capability_profile': instance.capability_profile,
             'capabilities': list(instance.capabilities or []),
-            'bucket_count': result.bucket_count,
             'latency_ms': result.latency_ms,
             'validation_message': instance.validation_message,
+            'inventory_owner': 'job_execution',
         }
 
     def refresh_health(self, instance: MinioInstance) -> dict[str, Any]:
-        result = test_instance_connection(instance)
+        """Refresh lightweight endpoint health without capability or inventory discovery."""
+        result = probe_instance_runtime_health(instance)
         now = datetime.now(UTC)
         instance.last_checked_at = now
         instance.last_response_time_ms = result.latency_ms
@@ -194,19 +191,29 @@ class MinioRuntimeAdapter:
             'success': True,
             'connected': True,
             'latency_ms': result.latency_ms,
-            'bucket_count': result.bucket_count,
-            'message': 'MinIO S3 API health check completed.',
+            'status_code': result.status_code,
+            'probe': result.probe,
+            'message': 'MinIO runtime health probe completed without inventory discovery.',
         }
 
     def execute(self, operation: str, instance: MinioInstance, **kwargs: Any):
         if operation == 'connection.test':
-            return self.refresh_health(instance)
+            result = test_instance_connection(instance)
+            return {
+                'success': result.connected,
+                'connected': result.connected,
+                'latency_ms': result.latency_ms,
+                'product': result.product,
+                'identity_evidence': result.identity_evidence,
+            }
         if operation == 'runtime.validate':
             return self.refresh(instance)
         if operation == 'runtime.health':
             return self.refresh_health(instance)
         if operation == 'runtime.state':
             return self.get_state(instance, validation_result=kwargs.get('validation_result'))
+        if operation == 'inventory.sync':
+            return sync_object_storage_inventory(instance)
         raise ValueError(f'Unsupported MinIO integration operation: {operation}')
 
     def get_state(

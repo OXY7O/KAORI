@@ -421,6 +421,7 @@ class Config:
         'imports': (
             'app.analytics.tasks',
             'app.cluster.tasks',
+            'app.storage_inventory.tasks',
             'app.governance.tls_certificates.tasks',
             'app.retention.tasks',
             'app.integrations.runtime.tasks',
@@ -442,6 +443,9 @@ class Config:
                 'queue': 'inventory',
             },
             'app.cluster.tasks.sync_single_cluster': {
+                'queue': 'inventory',
+            },
+            'app.storage_inventory.tasks.sync_all_object_storage': {
                 'queue': 'inventory',
             },
             'app.governance.tls_certificates.tasks.sync_tls_certificates': {

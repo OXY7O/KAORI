@@ -56,13 +56,19 @@ def test_observability_edit_success_returns_to_registry_for_browser_and_htmx() -
 
     assert "registry_url = url_for('integrations.prometheus')" in prometheus
     assert "response.headers['HX-Redirect'] = registry_url" in prometheus
-    assert "return redirect(registry_url)" in prometheus
-    assert "'#configuration'" not in prometheus.split("event_type='prometheus_instance_updated'", 1)[1].split('context =', 1)[0]
+    assert 'return redirect(registry_url)' in prometheus
+    assert (
+        "'#configuration'"
+        not in prometheus.split("event_type='prometheus_instance_updated'", 1)[1].split('context =', 1)[0]
+    )
 
     assert "registry_url = url_for('integrations.alertmanager')" in alertmanager
     assert "response.headers['HX-Redirect'] = registry_url" in alertmanager
-    assert "return redirect(registry_url)" in alertmanager
-    assert "'#configuration'" not in alertmanager.split("event_type='alertmanager_instance_updated'", 1)[1].split('context =', 1)[0]
+    assert 'return redirect(registry_url)' in alertmanager
+    assert (
+        "'#configuration'"
+        not in alertmanager.split("event_type='alertmanager_instance_updated'", 1)[1].split('context =', 1)[0]
+    )
 
     assert "return redirect(url_for('minio.index', tab='registry'))" in minio
 
@@ -71,7 +77,7 @@ def test_minio_edit_secret_can_preserve_existing_credential() -> None:
     forms = read('app/minio/forms.py')
     template = read('app/templates/minio/instance_form.html')
 
-    secret_field = forms.split("secret_key = PasswordField(", 1)[1].split('region = StringField(', 1)[0]
+    secret_field = forms.split('secret_key = PasswordField(', 1)[1].split('region = StringField(', 1)[0]
     assert 'DataRequired()' not in secret_field
     assert 'validators=[Length(max=4096)]' in secret_field
     assert 'def validate_secret_key' in forms
@@ -101,7 +107,7 @@ def test_minio_compatibility_is_product_specific_and_range_aware() -> None:
 
     assert 'COMPATIBILITY_PROFILE_KEYS' in capabilities
     assert "if 'astor' in normalized_header" in client
-    assert "evaluate_minio_release(instance.declared_release, product=result.product)" in adapter
+    assert 'evaluate_minio_release(instance.declared_release, product=result.product)' in adapter
     assert 'Supported Range · ' in configuration
     assert 'Qualified range: ' in validation
     assert 'Product · ' in validation

@@ -1,7 +1,5 @@
 {% extends "layouts/app.html" %}
-{% import "components/related_page_card.html" as related_page_card %}
-{% import "components/info_flow.html" as info_flow %}
-{% import "components/information_guide_card.html" as information_guide_card %}
+{% import "integrations/components/_provider_registration_context.html" as provider_registration_context %}
 {% block title %}Edit Kubernetes Connection · KAORI{% endblock title %}
 {% block dashboard_content %}
     <div class="kaori-integration-semantic space-y-6">
@@ -19,11 +17,18 @@
         <div class="grid gap-6 xl:grid-cols-12 xl:items-start">
             <div class="xl:col-span-8">{% include "cluster/partials/_form.html" %}</div>
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
-                {% set cluster_edit_flow = [('Review Identity and Environment', 'Keep the canonical cluster identity stable unless the operational naming contract has changed.'), ('Adjust Transport Trust', 'Change TLS verification only when the endpoint certificate policy requires an approved exception.'), ('Save Configuration', 'KAORI preserves the kubeconfig and history while updating the connection contract.'), ('Run Full Validation', 'Use the Kubernetes manage workspace to rebuild compatibility, capability, and runtime evidence after saving.')] %}
-                {{ info_flow.render('Kubernetes Configuration Flow', 'How configuration changes return to an operationally ready state.', cluster_edit_flow, icon='route', note='Metadata and TLS changes do not replace the stored kubeconfig. Credential rotation remains a separate controlled lifecycle.', note_icon='shield-check', open_by_default=true) }}
-                {{ related_page_card.render('Kubernetes Inventory', 'This connection supplies normalized Kubernetes resource context to KAORI Inventory.', url_for('inventory.overview') , 'Open Kubernetes Inventory', icon='boxes', eyebrow='Related Operational Workspace', boundary='Kubernetes remains authoritative for live resources. KAORI presents synchronized context, history, governance, and audit evidence.') }}
-                {% set rbac_items = [('shield-check', 'Effective Permissions', 'Full Validation evaluates served APIs and Self Subject Access Review evidence for each required resource.'), ('route-off', 'Blocked Capability', 'A served API without required verbs is reported as blocked; KAORI does not fall back to an older API to bypass RBAC.'), ('key-round', 'Credential Rotation', 'Rotate the service-account token or kubeconfig through the approved credential lifecycle, then validate again.'), ('scroll-text', 'Audit Boundary', 'Configuration changes, validation outcomes, and access failures are recorded in Activity Audit Log.')] %}
-                {{ information_guide_card.render('Kubernetes RBAC & Access Contract', 'Review how KAORI interprets authorization and compatibility after configuration changes.', rbac_items, icon='shield-check') }}
+                {% set cluster_edit_flow = [('Review Identity & Environment', 'Keep the canonical cluster identity stable while updating connection metadata.'), ('Adjust Endpoint Access', 'Update kubeconfig or TLS policy only when the operational contract changes.'), ('Save Changes', 'Persist the revised connection contract and return readiness to Validation Required.'), ('Run Full Validation', 'Rebuild Kubernetes API, capability, RBAC, and runtime evidence before operational use.')] %}
+                {{ provider_registration_context.render("Kubernetes Configuration Flow",
+                                "How saved connection changes return to governed operational use.",
+                                cluster_edit_flow,
+                                "Orchestration Integrations",
+                                "Review Kubernetes provider coverage, API readiness, and downstream Prometheus or Alertmanager consumer bindings from the orchestration workspace.",
+                                url_for("integrations.orchestration") ,
+                "Open Orchestration Integrations",
+                flow_icon="workflow",
+                flow_note="Saving changes does not establish readiness until Full Validation succeeds.",
+                related_icon="waypoints",
+                authority_boundary="Kubernetes remains authoritative for live resources and API authorization. KAORI owns provider readiness, normalized evidence, and governed consumer-binding resolution.") }}
             </aside>
         </div>
     </div>

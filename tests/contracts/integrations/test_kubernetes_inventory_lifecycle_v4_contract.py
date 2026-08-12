@@ -37,6 +37,7 @@ def test_inventory_lifecycle_keeps_kaori_table_standard_for_bound_sources():
     assert 'table-fixed' in shared
     assert "display='indicator'" in shared or 'display="indicator"' in shared
 
+
 def test_inventory_lifecycle_uses_violet_for_identity_not_full_surfaces():
     text = source()
     assert "palette_icon('database', 'brand'" in text

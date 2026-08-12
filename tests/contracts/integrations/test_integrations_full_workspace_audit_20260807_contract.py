@@ -51,6 +51,7 @@ def test_provider_bound_scope_tables_are_full_width_before_decision_split() -> N
     assert 'Consumer Bindings' in read('app/templates/prometheus/partials/_detail_scope.html')
     assert 'Consumer Binding Registry' in read('app/templates/alertmanager/partials/_binding_registry.html')
 
+
 def test_compact_labels_are_one_line_by_default() -> None:
     labels = read('app/templates/components/table_label.html')
     assert labels.count('whitespace-nowrap') >= 4

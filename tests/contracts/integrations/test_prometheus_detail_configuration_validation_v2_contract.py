@@ -8,28 +8,24 @@ PROMQL_REGISTRY = ROOT / 'app/templates/prometheus/partials/_capability_registry
 PROMETHEUS_ROUTES = ROOT / 'app/prometheus/routes.py'
 
 
-def test_configuration_uses_shared_side_decision_and_primary_form_workspace():
+def test_configuration_uses_shared_read_only_contract_and_edit_route():
     text = CONFIG.read_text()
-    shared = (ROOT / 'app/templates/integrations/components/_configuration_decision.html').read_text()
-    assert 'configuration_decision.side_panel(' in text
-    assert 'Prometheus Configuration Decision' in text
-    assert 'data-kaori-configuration-decision-side' in shared
-    assert 'Controlled Flow' in shared
-    assert 'xl:grid-cols-[minmax(0,1fr)_25rem]' in text
-    assert 'items-stretch' in text
-    assert 'embedded=true' in text
-    assert 'flex h-full min-h-full flex-col self-stretch' in shared
-    assert 'xl:sticky xl:top-4' not in shared
-    assert 'Test Connection' in text
-    assert 'Save Changes' in text
+    shared = (ROOT / 'app/templates/integrations/components/_provider_configuration_contract.html').read_text()
+    routes = PROMETHEUS_ROUTES.read_text()
+    assert 'provider_configuration_contract.render(' in text
+    assert 'data-kaori-provider-configuration-contract' in shared
+    assert 'Configure Connection' in shared
+    assert 'url_for("prometheus.edit_instance"' in text
+    assert "@prometheus_bp.route('/instances/<int:instance_id>/edit'" in routes
+    assert '<form' not in text
 
 
-def test_configuration_keeps_endpoint_product_semantics_explicit():
+def test_configuration_keeps_prometheus_product_semantics_explicit():
     text = CONFIG.read_text()
-    assert "{% set endpoint_product_label = 'Prometheus' %}" in text
+    assert 'Prometheus API Endpoint' in text
+    assert 'Prometheus' in text
     assert 'Thanos Query' not in text
-    assert 'Prometheus Source Version' in text
-    assert 'Detection Mode' in text
+    assert 'provider-neutral Prometheus HTTP API and PromQL capabilities' in text
 
 
 def test_validation_uses_kubernetes_style_capability_readiness_before_full_width_registry():
@@ -40,7 +36,7 @@ def test_validation_uses_kubernetes_style_capability_readiness_before_full_width
     assert 'integrations/components/_capability_readiness.html' in text
     assert 'capability_readiness.render(' in text
     assert 'include "prometheus/partials/_capability_registry.html"' in text
-    assert 'Prometheus Core Capability Registry' in registry
+    assert 'Capability Registry' in registry
     assert 'data-kaori-provider-capability-matrix' in text
     assert 'Validation Decision' not in text
     assert 'lg:sticky lg:top-4' not in text
@@ -51,7 +47,7 @@ def test_promql_registry_is_full_width_and_uses_server_backed_kaori_loading():
     routes = PROMETHEUS_ROUTES.read_text()
     assert 'overflow-hidden' in text
     assert 'table-fixed' in text
-    assert '<col class="w-[43%]">' in text
+    assert '<col class="w-[38%]">' in text
     assert "table_ui.table_classes('min-w-[820px]')" not in text
     assert 'overflow-x-auto' not in text
     assert 'components/pagination.html' in text
@@ -75,10 +71,10 @@ def test_validation_filters_are_htmx_backed_and_buttonless():
     assert 'All Statuses' in text
     assert 'Apply Filters' not in text
     assert 'Reset Filters' not in text
-    assert 'table_ui.inventory_filter_bar_classes()' in text
-    assert 'table_ui.filter_input_classes()' in text
-    assert 'table_ui.filter_select_classes()' in text
-    assert 'hx-trigger="keyup changed delay:300ms' in text
+    assert 'integration_ui.filter_region_classes()' in text
+    assert 'integration_ui.search_classes()' in text
+    assert 'integration_ui.control_classes()' in text
+    assert 'hx-trigger="input changed delay:300ms' in text
     assert 'hx-get="{{ url_for(registry_endpoint, instance_id=instance.id) }}"' in text
 
 
@@ -95,7 +91,7 @@ def test_promql_view_more_matches_kubernetes_capability_evidence_concept():
     actions = (ROOT / 'app/templates/integrations/components/_record_actions.html').read_text()
     assert 'provider_capability_detail.content(' in registry
     assert 'record_actions.view_more(' in registry
-    assert "'Prometheus Core Capability Evidence'" in registry
+    assert 'Prometheus Core Capability Evidence' in registry
     for token in (
         'Capability Contract',
         'Validation Evidence',

@@ -57,7 +57,7 @@
     </div>
 {%- endmacro %}
 
-{% macro render_links(tabset_id, tabs, active_key, aria_label, embedded=false, data_namespace='content', hx_target=none, hx_select=none, hx_swap='outerHTML', hx_push_url='true') -%}
+{% macro render_links(tabset_id, tabs, active_key, aria_label, embedded=false, data_namespace='content', hx_target=none, hx_select=none, hx_swap='outerHTML', hx_push_url='true', hx_indicator=none) -%}
     <nav class="{{ shell_classes(embedded) }}"
          aria-label="{{ aria_label }}"
          data-kaori-tab-variant="content-tabs-server">
@@ -74,6 +74,7 @@
                    {% if active_key == tab_id %}aria-current="page"{% endif %}
                    {% if hx_target %}hx-get="{{ tab_href }}" hx-target="{{ hx_target }}" hx-swap="{{ hx_swap }}" hx-push-url="{{ hx_push_url }}"{% endif %}
                    {% if hx_select %}hx-select="{{ hx_select }}"{% endif %}
+                   {% if hx_indicator %}hx-indicator="{{ hx_indicator }}"{% endif %}
                    class="{{ item_classes() }} {{ active_classes() if active_key == tab_id else inactive_classes() }}">
                     <i data-lucide="{{ tab_icon }}" class="h-4 w-4" aria-hidden="true"></i>
                     <span>{{ tab_label }}</span>

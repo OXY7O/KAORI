@@ -102,6 +102,12 @@ def build_job_configuration_context(*, selected_job_key: str | None = None) -> d
                 f'{selected_context.get("eligible_cluster_count", 0)} eligible cluster bindings'
             ),
         },
+        'object_storage.inventory.sync': {
+            'manual_action_label': 'Sync Object Storage Inventory',
+            'manual_action_icon': 'database-zap',
+            'execution_scope_label': 'All Eligible Storage Systems',
+            'execution_scope_detail': (f'{selected_context.get("eligible_system_count", 0)} Ready managed systems'),
+        },
         'governance.tls_certificates.sync': {
             'manual_action_label': 'Sync TLS',
             'manual_action_icon': 'refresh-cw',
@@ -148,7 +154,11 @@ def build_job_configuration_context(*, selected_job_key: str | None = None) -> d
             },
         )
     )
-    selected_context['execution_disabled'] = not bool(selected_context.get('eligible_cluster_count', 1))
+    eligible_target_count = selected_context.get(
+        'eligible_target_count',
+        selected_context.get('eligible_cluster_count', 1),
+    )
+    selected_context['execution_disabled'] = not bool(eligible_target_count)
     enabled_count = sum(1 for policy in policies if policy.enabled)
     attention_count = sum(1 for policy in policies if policy.last_dispatch_status in _ATTENTION_DISPATCH_STATUSES)
     active_executions = JobExecution.query.filter(

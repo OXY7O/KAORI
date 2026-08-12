@@ -27,7 +27,7 @@ Canonical geometry is owned by:
 
 Current visual references are:
 
-- Add Kubernetes Connection
+- Register Kubernetes Connection
 - Register Prometheus Connection
 - Register Alertmanager Connection
 - Create Kubernetes ConfigMap

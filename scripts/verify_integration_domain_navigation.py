@@ -106,6 +106,9 @@ def main() -> int:
         'selector_summary(binding.selector_json',
         'paginate_sequence(',
         "'bindings': sum(1 for binding in related_bindings if binding.enabled)",
+        'consumer_bindings = [binding for binding in related_bindings if not _is_owner_asset_binding(binding)]',
+        'module.domain_key == owner_domain',
+        '_consumer_binding_count(instance, consumer_bindings)',
     ):
         if marker not in domain_service:
             errors.append(f'domain page is not canonical asset/binding driven: {marker}')
@@ -123,26 +126,34 @@ def main() -> int:
         'Capability Registry',
         'Provider Registry',
         'Bindings',
-        'Registry and Bindings',
+        'Registry and Consumer Bindings',
         'data-kaori-domain-provider-registry',
         'data-kaori-domain-binding-registry',
         'No {{ domain.label }} Provider Registered',
         'No {{ domain.label }} Bindings Yet',
         'Core Validation',
-        'Create Binding',
+        'Add Consumer Binding',
         'Consumer Contract',
         'Domain Operating Boundary',
         'provider_registry_pagination.allowed_per_page',
         'binding_registry_pagination.allowed_per_page',
+        'Open {{ item.runtime_label }}',
+        'hx_target="#domain-workspace"',
+        'hx_select="#domain-workspace"',
+        'hx_indicator="#integration-domain-workspace-loading"',
     ):
         if marker not in domain_template:
             errors.append(f'domain template missing canonical registry/binding boundary: {marker}')
 
     if (
-        'Cross-domain sources are included when they target an asset owned by {{ domain.label }}.'
+        'Native provider ownership is represented by the Provider Registry and is not duplicated as a consumer binding.'
         not in domain_template
     ):
-        errors.append('domain binding empty state does not explain cross-domain asset-centric coverage')
+        errors.append('domain binding empty state does not explain consumer-only binding semantics')
+    if 'Native Provider Contract' in domain_service:
+        errors.append('domain binding registry still exposes native provider ownership as a consumer contract')
+    if 'Consumer Profile Pending' not in domain_service:
+        errors.append('domain binding registry does not use consumer-profile fallback semantics')
 
     for marker in (
         "BreadcrumbItem(integration_owner['domain_label'])",

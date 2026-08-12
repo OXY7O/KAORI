@@ -58,7 +58,7 @@ Additional jobs must be added through a new definition rather than a parallel sc
 - `jobs.configure`: update automatic job policies.
 - `jobs.cancel`: request cancellation for eligible executions.
 
-A definition may require an additional domain permission. Inventory Sync requires both `jobs.execute` and `clusters.sync` for manual execution.
+A definition may require an additional domain permission. Kubernetes Inventory Sync requires `jobs.execute` + `clusters.sync`; Object Storage Inventory Sync requires `jobs.execute` + `storage.sync` for manual execution.
 
 ## Scheduler
 

@@ -207,6 +207,7 @@ def build_inventory_sync_context(policy: JobPolicy) -> dict[str, Any]:
     return {
         'registered_cluster_count': registered_cluster_count,
         'eligible_cluster_count': eligible_cluster_count,
+        'eligible_target_count': eligible_cluster_count,
         'blocked_cluster_count': blocked_cluster_count,
         'eligible_targets': eligible_targets,
         'scheduler_state': scheduler_state,

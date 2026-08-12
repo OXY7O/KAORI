@@ -306,7 +306,11 @@ def build_detail_context(
         ),
         'validated_at_display': present_user_datetime(instance.last_validated_at, empty='Not validated'),
         'checked_at_display': present_user_datetime(instance.last_checked_at, empty='Not observed'),
-        'bucket_count': int((instance.validation_summary or {}).get('bucket_count') or 0),
+        'bucket_count': len(instance.object_storage_system.buckets or ()),
+        'inventory_observed_at_display': present_user_datetime(
+            instance.object_storage_system.inventory_observed_at,
+            empty='Not Collected',
+        ),
         'capability_count': len(instance.capabilities or ()),
         'deletion_guard': asset_owner_deletion_guard(
             provider_type='minio',

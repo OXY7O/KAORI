@@ -54,7 +54,7 @@ def test_form_with_context_standard_is_indexed_and_distinct_from_fixed_width_rai
     right_rail = read('docs/design/components/RIGHT_CONTEXT_RAIL.md')
     design_readme = read('docs/design/README.md')
     assert '# KAORI Form + Right Context Standard' in standard
-    assert 'Add Kubernetes Connection' in standard
+    assert 'Register Kubernetes Connection' in standard
     assert 'Register Prometheus Connection' in standard
     assert 'Register Alertmanager Connection' in standard
     assert 'Create Kubernetes ConfigMap' in standard

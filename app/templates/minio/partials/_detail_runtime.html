@@ -9,7 +9,7 @@
          {% if runtime_refresh_job and runtime_refresh_job.is_active %}hx-get="{{ url_for('minio.runtime_refresh_status', instance_id=instance.id, task_id=runtime_refresh_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML"{% endif %}>
     {% call connection_validation_header.render(
         "Runtime Health & Diagnostics",
-        "Refresh persisted MinIO endpoint health independently from Core Validation and consumer-binding evidence.",
+        "Refresh lightweight MinIO endpoint health without capability mutation or inventory discovery.",
         icon="activity",
         loading_id="minio-runtime-loading",
         loading_active=runtime_refresh_job and runtime_refresh_job.is_active,

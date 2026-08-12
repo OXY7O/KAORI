@@ -97,7 +97,7 @@ def main() -> int:
 
     for token in (
         '# KAORI Form + Right Context Standard',
-        'Add Kubernetes Connection',
+        'Register Kubernetes Connection',
         'Register Prometheus Connection',
         'Register Alertmanager Connection',
         'Create Kubernetes ConfigMap',

@@ -57,5 +57,7 @@ def test_prometheus_and_alertmanager_registration_forms_use_shared_action_contra
         assert "action_button.classes('secondary')" in source
         assert "action_button.classes('primary')" in source
 
-    assert 'dark:bg-surface-muted' in alertmanager
-    assert 'dark:text-kaori-accent' in alertmanager
+    shared_context = read('app/templates/integrations/components/_provider_registration_context.html')
+    assert 'provider_registration_context.render(' in prometheus
+    assert 'provider_registration_context.render(' in alertmanager
+    assert 'Related Operational Workspace' in shared_context

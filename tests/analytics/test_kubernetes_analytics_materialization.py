@@ -14,6 +14,8 @@ from app.analytics.materialization.catalog import canonical_parameters, get_data
 from app.analytics.materialization.presentation import pending_page_context
 from app.analytics.materialization.requests import MaterializedRequest
 from app.analytics.materialization.service import SnapshotResult, store_snapshot
+from app.integrations.prometheus.capabilities import PROVIDER_CAPABILITY_KEYS
+from app.integrations.prometheus.capabilities import definition as prometheus_capability_definition
 from app.integrations.prometheus.query_profiles.audit import PromQLProfileAuditor
 from app.jobs.definitions.forecast_refresh import FORECAST_REFRESH_DEFINITION
 from app.prometheus.presentation import _RESOLUTION_CONSUMERS, _module_readiness_rows
@@ -144,26 +146,27 @@ def test_prometheus_provider_readiness_is_independent_from_kubernetes_query_gaps
         instance,
         available_capabilities={'instant_query', 'range_query', 'series_discovery', 'label_discovery'},
     )
+    expected_labels: list[str] = []
+    for key in PROVIDER_CAPABILITY_KEYS:
+        capability = prometheus_capability_definition(key)
+        assert capability is not None
+        expected_labels.append(capability.label)
+
     assert rows == [
         {
             'key': 'prometheus_core',
             'label': 'Prometheus Core Runtime',
             'description': 'Provider-neutral HTTP API and PromQL capabilities required before any consumer binding is eligible.',
             'status': 'ready',
-            'required_capability_labels': [
-                'Instant Query',
-                'Range Query',
-                'Series Discovery',
-                'Label Discovery',
-            ],
+            'required_capability_labels': expected_labels,
             'optional_capability_labels': [],
             'missing_required_labels': [],
             'missing_optional_labels': [],
             'operator_guidance': (
                 'No provider-level action is required. Validate each Kubernetes, MinIO, or future consumer through its binding.'
             ),
-            'ready_count': 4,
-            'query_count': 4,
+            'ready_count': len(PROVIDER_CAPABILITY_KEYS),
+            'query_count': len(PROVIDER_CAPABILITY_KEYS),
             'blocked_count': 0,
         }
     ]

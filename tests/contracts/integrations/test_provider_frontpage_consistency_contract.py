@@ -121,3 +121,17 @@ def test_asset_provider_coverage_tables_share_one_column_contract() -> None:
     assert 'provider_registry.asset_coverage_head(' in minio
     assert 'Object Storage Asset' in minio
     assert 'MinIO API' in minio
+
+
+def test_observability_coverage_includes_kubernetes_and_object_storage_assets() -> None:
+    coverage_service = read('app/integrations/coverage.py')
+    coverage_template = read('app/templates/components/integration_coverage_content.html')
+    consumer_assets = read('app/integrations/consumer_assets.py')
+
+    assert 'registered_consumer_asset_definitions()' in coverage_service
+    assert "asset_type='kubernetes_cluster'" in consumer_assets
+    assert "asset_type='object_storage_system'" in consumer_assets
+    assert 'for definition in registered_consumer_asset_definitions()' in coverage_service
+    assert 'Choose Source' in coverage_template
+    assert 'Manage Binding' in coverage_template
+    assert 'url_for(provider.registry_endpoint' in coverage_template

@@ -22,18 +22,18 @@ def test_shared_record_detail_and_action_contract_is_canonical() -> None:
     assert 'row.standalone_message' in runtime_modal
 
 
-def test_provider_configuration_uses_shared_side_decision() -> None:
-    shared = read('app/templates/integrations/components/_configuration_decision.html')
-    assert 'data-kaori-configuration-decision-side' in shared
-    assert 'Controlled Flow' in shared
-    assert 'flex h-full min-h-full flex-col self-stretch' in shared
-    assert 'xl:sticky xl:top-4' not in shared
+def test_provider_configuration_uses_shared_read_only_contract() -> None:
+    shared = read('app/templates/integrations/components/_provider_configuration_contract.html')
+    assert 'data-kaori-provider-configuration-contract' in shared
+    assert 'Connection Contract' in shared
+    assert 'Connection Evidence' in shared
+    assert 'Operational Context' in read('app/templates/integrations/components/_provider_operational_context.html')
+    operational = read('app/templates/integrations/components/_provider_operational_context.html')
+    assert 'Step {{ loop.index }}' in operational
+    assert 'Configure Connection' in shared
     for provider in ('prometheus', 'alertmanager'):
         source = read(f'app/templates/{provider}/partials/_detail_configuration.html')
-        assert 'configuration_decision.side_panel(' in source
-        assert 'grid-cols-[minmax(0,1fr)_25rem]' in source
-        assert 'items-stretch' in source
-        assert 'embedded=true' in source
+        assert 'provider_configuration_contract.render(' in source
 
 
 def test_provider_tabs_share_one_controller() -> None:

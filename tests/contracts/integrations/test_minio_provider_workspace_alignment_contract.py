@@ -92,6 +92,7 @@ def test_minio_detail_matches_asset_owner_lifecycle_contract() -> None:
     assert 'Refresh Runtime' in runtime
     assert "url_for('minio.refresh_runtime'" in runtime
 
+
 def test_minio_asset_owner_deletion_removes_asset_bindings_not_shared_sources() -> None:
     service = read('app/minio/service.py')
     routes = read('app/minio/routes.py')
@@ -136,7 +137,7 @@ def test_minio_validation_runtime_and_binding_tables_match_kubernetes_workspace_
 
     assert 'Validation & Capabilities' in detail
     assert 'connection_validation_header.render(' in validation
-    assert 'hx-post="{{ url_for(\'minio.validate_instance\'' in validation
+    assert "hx-post=\"{{ url_for('minio.validate_instance'" in validation
     assert 'minio-validation-loading' in validation
     assert 'hx-indicator="#minio-validation-loading"' in validation
     assert 'validation_poller.render(' in validation
@@ -156,4 +157,3 @@ def test_minio_validation_runtime_and_binding_tables_match_kubernetes_workspace_
     assert "@minio_bp.get('/instances/<int:instance_id>/capabilities/registry')" in routes
     assert "@minio_bp.get('/instances/<int:instance_id>/runtime/history')" in routes
     assert "@minio_bp.get('/instances/<int:instance_id>/bindings/registry')" in routes
-

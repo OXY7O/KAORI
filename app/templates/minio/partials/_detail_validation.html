@@ -17,7 +17,7 @@
 ] %}
 {% set capability_metrics = [
     {"icon": "layers-3", "tone": "normal", "label": "Validated Capabilities", "value": capability_ready, "description": "MinIO API contracts observed by Full Validation."},
-    {"icon": "database", "tone": "neutral", "label": "Visible Buckets", "value": bucket_count, "description": "Buckets visible to the registered read-only credential."},
+    {"icon": "list-checks", "tone": "neutral", "label": "Required Contracts", "value": capability_registry.required_count, "description": "Required provider contracts in the MinIO capability profile."},
     {"icon": "shield-x", "tone": "critical" if capability_blocked else "normal", "label": "Capability Gaps", "value": capability_blocked, "description": "Provider API contracts that are not currently evidenced."}
 ] %}
 <section id="minio-core-validation"
@@ -63,7 +63,7 @@
                 "Object Storage Provider Eligible" if readiness == "ready" else "Remediation Required",
                 "Required MinIO S3 contracts are usable." if readiness == "ready" else "Resolve required MinIO API or compatibility gaps.",
                 "normal" if readiness == "ready" else "critical",
-                "Full Validation owns S3 capability evidence; Runtime Refresh owns live health; bindings own consumer evidence.",
+                "Full Validation owns S3 capability evidence; Runtime Refresh owns live health; Inventory Sync owns committed storage assets; bindings own consumer evidence.",
                 "Revalidate after MinIO, credential, or S3 API changes." if readiness == "ready" else "Resolve MinIO gaps, then rerun Full Validation.") }}
         {% if readiness == "ready" %}
             {% set readiness_decision_title = "Provider Readiness Is Ready" %}

@@ -49,10 +49,9 @@ ObjectStorageSystem
         → Binding Validation
 ```
 
-MinIO API readiness must not depend on Prometheus metric presence or Alertmanager
-alert presence. Conversely, metrics and alert readiness belong to their
-Prometheus/Alertmanager-to-`object_storage_system` consumer bindings and must not mutate MinIO,
-Prometheus, or Alertmanager provider readiness.
+MinIO API readiness must not depend on Prometheus metric presence, Alertmanager alert presence, or inventory freshness. Conversely, metrics and alert readiness belong to their Prometheus/Alertmanager-to-`object_storage_system` consumer bindings and must not mutate provider readiness.
+
+Inventory collection is a separate canonical Job Execution. `Full Validation` proves MinIO identity, compatibility, S3 access, and provider capability contracts; `Runtime Refresh` performs only lightweight endpoint health observation; `Object Storage Inventory Sync` collects and atomically commits system/bucket snapshots on the `inventory` queue. The job is enabled by default on the same 60-minute policy cadence as Kubernetes Inventory Sync and can be run manually from Jobs & Executions → Job Configuration.
 
 A future S3-compatible provider reuses the same asset/binding model with its own
 compatibility and consumer profiles.
@@ -71,6 +70,7 @@ Validation & Capabilities
 Runtime & History
   → Refresh Runtime
 Inventory & Lifecycle
+  → committed Object Storage Inventory Sync snapshot (read-only)
   → bound Prometheus/Alertmanager source inventory (read-only)
   → governed Delete Connection
 ```
