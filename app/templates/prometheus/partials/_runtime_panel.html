@@ -1,3 +1,4 @@
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
@@ -148,4 +149,5 @@
         </section>
     </div>
 </article>
-{% include 'components/operation_feedback_oob.html' %}
+{% include "components/operation_feedback_oob.html" %}
+{{ framed_workspace_tabs.badge_oob("prometheus", "runtime", runtime_state.health_status_label|default("Not Observed")) }}

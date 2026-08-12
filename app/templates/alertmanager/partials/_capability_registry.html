@@ -31,7 +31,7 @@
             </div>
             {{ table_label.metadata_label(capability_summary.total ~ ' Capabilities') }}
         </div>
-        {{ loading_bar.render(loading_id, active=validation_job and validation_job.is_active, label='Refreshing Alert Management Capability Registry') }}
+        {{ loading_bar.render(loading_id, label='Refreshing Alert Management Capability Registry') }}
     </header>
     <div class="{{ table_ui.inventory_filter_bar_classes() }}"
          data-kaori-alertmanager-capability-filters>

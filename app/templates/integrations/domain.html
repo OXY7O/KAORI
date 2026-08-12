@@ -5,13 +5,15 @@
 {% import "components/table.html" as table_ui %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
+
 {% block title %}{{ domain.label }} Integrations · KAORI{% endblock title %}
+
 {% block dashboard_content %}
     {% set posture_label = "Ready" if posture_status == "ready" else ("Attention" if posture_status == "attention" else "Not Configured") %}
     {% set workspace_tabs = [
-            ("registry", "Provider Registry", "server-cog", url_for(domain.workspace_endpoint, tab="registry"), stats.registered_targets),
-            ("bindings", "Bindings", "link-2", url_for(domain.workspace_endpoint, tab="bindings"), stats.bindings)
-        ] %}
+        ("registry", "Provider Registry", "server-cog", url_for(domain.workspace_endpoint, tab="registry"), stats.registered_targets),
+        ("bindings", "Bindings", "link-2", url_for(domain.workspace_endpoint, tab="bindings"), stats.bindings)
+    ] %}
     <div class="kaori-integration-semantic space-y-6"
          data-kaori-integration-domain-workspace>
         <section class="{{ page_hero.shell_classes() }}">
@@ -44,12 +46,16 @@
                         <div class="{{ page_hero.context_actions_classes() }}">
                             <a href="{{ url_for('integrations.overview') }}"
                                class="{{ page_hero.context_action_classes() }}">
-                                <i data-lucide="layout-grid" class="h-4 w-4" aria-hidden="true"></i>
+                                <i data-lucide="layout-grid"
+                                   class="h-4 w-4"
+                                   aria-hidden="true"></i>
                                 Integration Overview
                             </a>
                             <a href="{{ url_for('integrations.overview', tab='runtime') }}#integration-workspace"
                                class="{{ page_hero.context_action_classes() }}">
-                                <i data-lucide="activity" class="h-4 w-4" aria-hidden="true"></i>
+                                <i data-lucide="activity"
+                                   class="h-4 w-4"
+                                   aria-hidden="true"></i>
                                 Runtime Overview
                             </a>
                         </div>
@@ -57,11 +63,12 @@
                 </aside>
             </div>
         </section>
+
         <section class="{{ integration_ui.section_shell_classes() }}"
                  aria-label="{{ domain.label }} Capability Registry">
             {{ integration_ui.section_header("layers-3",
                         "Capability Registry",
-                        "Stable capability boundaries define provider ownership and the managed assets that may receive cross-domain bindings.",
+                        "Capability boundaries define provider ownership and which managed assets may receive bindings.",
                         eyebrow=domain.label ~ " Domain") }}
             <div class="divide-y divide-outline-subtle">
                 {% for item in capabilities %}
@@ -72,7 +79,7 @@
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <h3 class="text-sm font-semibold text-content-primary">{{ item.label }}</h3>
-                                        {{ integration_status(item.status, "Ready" if item.status == "ready" else ("Attention" if item.status == "attention" else ("Not Configured" if item.provider_labels else "No Provider") ), display="indicator") }}
+                                        {{ integration_status(item.status, "Ready" if item.status == "ready" else ("Attention" if item.status == "attention" else ("Not Configured" if item.provider_labels else "No Provider")), display="indicator") }}
                                     </div>
                                     <p class="mt-1 text-sm leading-6 text-content-secondary">{{ item.description }}</p>
                                 </div>
@@ -98,6 +105,7 @@
                 {% endfor %}
             </div>
         </section>
+
         <section class="{{ integration_ui.section_shell_classes() }}"
                  id="domain-workspace"
                  aria-labelledby="domain-workspace-title">
@@ -108,17 +116,18 @@
                         <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">{{ domain.label }} Workspace</p>
                         <h2 id="domain-workspace-title"
                             class="mt-0.5 text-base font-semibold text-content-primary">Registry and Bindings</h2>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">Review registered provider targets and the asset-centric bindings that make those providers eligible for domain consumers.</p>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Review provider connections and asset-centric consumer bindings for this domain.</p>
                     </div>
                 </div>
             </header>
             <div class="mt-4">
                 {{ content_tabs.render_links("integration-domain-workspace", workspace_tabs, active_tab, "Integration Domain Workspace", embedded=true, data_namespace="integration-domain") }}
             </div>
+
             {% if active_tab == "registry" %}
-                <div data-kaori-domain-provider-registry>
-                    <div class="overflow-hidden">
-                        <table class="{{ table_ui.table_classes() }} table-fixed">
+                <div class="p-4 sm:p-5" data-kaori-domain-provider-registry>
+                    <div class="overflow-x-auto rounded-xl border border-outline-subtle" data-kaori-domain-registry-surface>
+                        <table class="{{ table_ui.table_classes('min-w-[920px]') }}">
                             <colgroup>
                                 <col class="w-[32%]">
                                 <col class="w-[20%]">
@@ -142,9 +151,9 @@
                                             <div class="flex min-w-0 items-start gap-3">
                                                 {{ integration_ui.palette_icon(row.provider_icon, "brand", size="sm") }}
                                                 <div class="min-w-0">
-                                                    <p class="truncate text-sm font-semibold text-content-primary"
+                                                    <p class="text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]"
                                                        title="{{ row.name }}">{{ row.name }}</p>
-                                                    <p class="mt-1 truncate text-xs text-content-muted">{{ row.provider_label }} · {{ row.environment }}</p>
+                                                    <p class="mt-1 text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ row.provider_label }} · {{ row.environment }}</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -158,7 +167,7 @@
                                         </td>
                                         <td class="{{ table_ui.cell_classes() }}">
                                             <p class="text-sm font-semibold text-content-primary">{{ row.bindings }}</p>
-                                            <p class="mt-1 text-xs text-content-muted">Enabled asset binding{{ "" if row.bindings == 1 else "s" }}</p>
+                                            <p class="mt-1 text-xs text-content-muted">Enabled binding{{ "" if row.bindings == 1 else "s" }}</p>
                                         </td>
                                         <td class="{{ table_ui.cell_classes(action=true) }}">
                                             <a href="{{ row.detail_url or url_for(row.workspace_endpoint) }}"
@@ -210,14 +219,9 @@
                                       class="{{ pagination_ui.rows_group_classes() }}">
                                     <input type="hidden" name="tab" value="registry">
                                     <input type="hidden" name="provider_page" value="1">
-                                    <input type="hidden"
-                                           name="binding_page"
-                                           value="{{ binding_registry_pagination.page }}">
-                                    <input type="hidden"
-                                           name="binding_per_page"
-                                           value="{{ binding_registry_pagination.per_page }}">
-                                    <label for="domain-provider-per-page"
-                                           class="font-semibold text-content-secondary">Rows</label>
+                                    <input type="hidden" name="binding_page" value="{{ binding_registry_pagination.page }}">
+                                    <input type="hidden" name="binding_per_page" value="{{ binding_registry_pagination.per_page }}">
+                                    <label for="domain-provider-per-page" class="font-semibold text-content-secondary">Rows</label>
                                     <select id="domain-provider-per-page"
                                             name="provider_per_page"
                                             data-kaori-auto-submit
@@ -229,33 +233,30 @@
                                     </select>
                                 </form>
                             </div>
-                            <nav class="{{ pagination_ui.navigation_group_classes() }}"
-                                 aria-label="Provider Registry pagination">
+                            <nav class="{{ pagination_ui.navigation_group_classes() }}" aria-label="Provider Registry pagination">
                                 {% if provider_registry_pagination.has_prev %}
                                     <a href="{{ url_for(domain.workspace_endpoint, tab='registry', provider_page=provider_registry_pagination.prev_page, provider_per_page=provider_registry_pagination.per_page, binding_page=binding_registry_pagination.page, binding_per_page=binding_registry_pagination.per_page) }}"
                                        class="{{ pagination_ui.navigation_classes(false) }}">
                                         <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous
                                     </a>
                                 {% else %}
-                                    <span class="{{ pagination_ui.navigation_classes(true) }}"
-                                          aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous</span>
+                                    <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous</span>
                                 {% endif %}
                                 {{ pagination_ui.numeric_pages(provider_registry_pagination.page, provider_registry_pagination.total_pages, "provider_page", endpoint=domain.workspace_endpoint, query_params={"tab": "registry", "provider_per_page": provider_registry_pagination.per_page, "binding_page": binding_registry_pagination.page, "binding_per_page": binding_registry_pagination.per_page}) }}
                                 {% if provider_registry_pagination.has_next %}
                                     <a href="{{ url_for(domain.workspace_endpoint, tab='registry', provider_page=provider_registry_pagination.next_page, provider_per_page=provider_registry_pagination.per_page, binding_page=binding_registry_pagination.page, binding_per_page=binding_registry_pagination.per_page) }}"
                                        class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i></a>
                                 {% else %}
-                                    <span class="{{ pagination_ui.navigation_classes(true) }}"
-                                          aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i></span>
+                                    <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i></span>
                                 {% endif %}
                             </nav>
                         </footer>
                     {% endif %}
                 </div>
             {% else %}
-                <div data-kaori-domain-binding-registry>
-                    <div class="overflow-hidden">
-                        <table class="{{ table_ui.table_classes() }} table-fixed">
+                <div class="p-4 sm:p-5" data-kaori-domain-binding-registry>
+                    <div class="overflow-x-auto rounded-xl border border-outline-subtle" data-kaori-domain-registry-surface>
+                        <table class="{{ table_ui.table_classes('min-w-[920px]') }}">
                             <colgroup>
                                 <col class="w-[27%]">
                                 <col class="w-[23%]">
@@ -276,22 +277,22 @@
                                 {% for row in binding_registry_rows %}
                                     <tr class="{{ table_ui.row_classes() }}">
                                         <td class="{{ table_ui.cell_classes() }}">
-                                            <p class="truncate text-sm font-semibold text-content-primary"
+                                            <p class="text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]"
                                                title="{{ row.consumer_label }}">{{ row.consumer_label }}</p>
-                                            <p class="mt-1 truncate text-xs text-content-muted"
+                                            <p class="mt-1 text-xs leading-5 text-content-muted [overflow-wrap:anywhere]"
                                                title="{{ row.asset_key }}">{{ row.asset_type_label }} · {{ row.asset_key }}</p>
                                         </td>
                                         <td class="{{ table_ui.cell_classes() }}">
                                             <div class="flex min-w-0 items-start gap-2.5">
                                                 {{ integration_ui.palette_icon(row.source_icon, "brand", size="sm") }}
                                                 <div class="min-w-0">
-                                                    <p class="truncate text-sm font-semibold text-content-primary">{{ row.source_name }}</p>
-                                                    <p class="mt-1 truncate text-xs text-content-muted">{{ row.source_provider }} · {{ row.role }}</p>
+                                                    <p class="text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ row.source_name }}</p>
+                                                    <p class="mt-1 text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ row.source_provider }} · {{ row.role }}</p>
                                                 </div>
                                             </div>
                                         </td>
                                         <td class="{{ table_ui.cell_classes() }}">
-                                            <p class="truncate text-sm font-semibold text-content-primary"
+                                            <p class="text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]"
                                                title="{{ row.profile }}">{{ row.profile }}</p>
                                             <p class="mt-1 truncate font-mono text-xs text-content-muted"
                                                title="{{ row.selector }}">{{ row.selector }}</p>
@@ -320,13 +321,9 @@
                                                             <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">Bindings appear here after a provider runtime is associated with a managed asset. Cross-domain sources are included when they target an asset owned by {{ domain.label }}.</p>
                                                             <div class="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-content-secondary">
                                                                 <span class="inline-flex min-h-7 items-center gap-1.5 rounded-md border border-brand-outline bg-surface-card/70 px-2.5"><span class="text-kaori-primary dark:text-kaori-accent">1</span>Register Provider</span>
-                                                                <i data-lucide="arrow-right"
-                                                                   class="h-3.5 w-3.5 text-content-muted"
-                                                                   aria-hidden="true"></i>
+                                                                <i data-lucide="arrow-right" class="h-3.5 w-3.5 text-content-muted" aria-hidden="true"></i>
                                                                 <span class="inline-flex min-h-7 items-center gap-1.5 rounded-md border border-brand-outline bg-surface-card/70 px-2.5"><span class="text-kaori-primary dark:text-kaori-accent">2</span>Core Validation</span>
-                                                                <i data-lucide="arrow-right"
-                                                                   class="h-3.5 w-3.5 text-content-muted"
-                                                                   aria-hidden="true"></i>
+                                                                <i data-lucide="arrow-right" class="h-3.5 w-3.5 text-content-muted" aria-hidden="true"></i>
                                                                 <span class="inline-flex min-h-7 items-center gap-1.5 rounded-md border border-brand-outline bg-surface-card/70 px-2.5"><span class="text-kaori-primary dark:text-kaori-accent">3</span>Create Binding</span>
                                                             </div>
                                                         </div>
@@ -348,14 +345,9 @@
                                       class="{{ pagination_ui.rows_group_classes() }}">
                                     <input type="hidden" name="tab" value="bindings">
                                     <input type="hidden" name="binding_page" value="1">
-                                    <input type="hidden"
-                                           name="provider_page"
-                                           value="{{ provider_registry_pagination.page }}">
-                                    <input type="hidden"
-                                           name="provider_per_page"
-                                           value="{{ provider_registry_pagination.per_page }}">
-                                    <label for="domain-binding-per-page"
-                                           class="font-semibold text-content-secondary">Rows</label>
+                                    <input type="hidden" name="provider_page" value="{{ provider_registry_pagination.page }}">
+                                    <input type="hidden" name="provider_per_page" value="{{ provider_registry_pagination.per_page }}">
+                                    <label for="domain-binding-per-page" class="font-semibold text-content-secondary">Rows</label>
                                     <select id="domain-binding-per-page"
                                             name="binding_per_page"
                                             data-kaori-auto-submit
@@ -367,24 +359,21 @@
                                     </select>
                                 </form>
                             </div>
-                            <nav class="{{ pagination_ui.navigation_group_classes() }}"
-                                 aria-label="Binding Registry pagination">
+                            <nav class="{{ pagination_ui.navigation_group_classes() }}" aria-label="Binding Registry pagination">
                                 {% if binding_registry_pagination.has_prev %}
                                     <a href="{{ url_for(domain.workspace_endpoint, tab='bindings', binding_page=binding_registry_pagination.prev_page, binding_per_page=binding_registry_pagination.per_page, provider_page=provider_registry_pagination.page, provider_per_page=provider_registry_pagination.per_page) }}"
                                        class="{{ pagination_ui.navigation_classes(false) }}">
                                         <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous
                                     </a>
                                 {% else %}
-                                    <span class="{{ pagination_ui.navigation_classes(true) }}"
-                                          aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous</span>
+                                    <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>Previous</span>
                                 {% endif %}
                                 {{ pagination_ui.numeric_pages(binding_registry_pagination.page, binding_registry_pagination.total_pages, "binding_page", endpoint=domain.workspace_endpoint, query_params={"tab": "bindings", "binding_per_page": binding_registry_pagination.per_page, "provider_page": provider_registry_pagination.page, "provider_per_page": provider_registry_pagination.per_page}) }}
                                 {% if binding_registry_pagination.has_next %}
                                     <a href="{{ url_for(domain.workspace_endpoint, tab='bindings', binding_page=binding_registry_pagination.next_page, binding_per_page=binding_registry_pagination.per_page, provider_page=provider_registry_pagination.page, provider_per_page=provider_registry_pagination.per_page) }}"
                                        class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i></a>
                                 {% else %}
-                                    <span class="{{ pagination_ui.navigation_classes(true) }}"
-                                          aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i></span>
+                                    <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i></span>
                                 {% endif %}
                             </nav>
                         </footer>
@@ -392,6 +381,7 @@
                 </div>
             {% endif %}
         </section>
+
         <div class="rounded-xl border border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6"
              data-kaori-domain-operating-boundary>
             <div class="flex items-start gap-3">

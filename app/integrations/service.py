@@ -4,7 +4,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import contains_eager
+from sqlalchemy.orm import contains_eager, selectinload
 
 from app.cluster.constants import get_environment_label
 from app.common.presentation import present_key_label, present_user_datetime
@@ -1054,7 +1054,7 @@ def _runtime_overview_rows(
         rows.append(
             {
                 'provider': 'prometheus',
-                'provider_label': 'Prometheus / Thanos',
+                'provider_label': 'Prometheus',
                 'provider_icon': 'activity',
                 'instance_id': str(instance.id),
                 'detail_key': f'prometheus:{instance.id}',
@@ -1121,6 +1121,7 @@ def _runtime_overview_rows(
                 or instance.last_error,
             }
         )
+
 
     sort_runtime_rows(rows)
     return rows

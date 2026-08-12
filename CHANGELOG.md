@@ -1,4 +1,6 @@
 # Changelog
+
+- Refined Integration domain workspace UX across Orchestration, Observability, and Storage: separated tab rails from registry table surfaces, preserved readable row text with the sidebar open, normalized operator-facing Prometheus naming, isolated operation-specific loading bars, and added live HTMX tab-status refresh for validation/runtime updates.
 - Refined Integration domain landing-page UX by removing duplicated KPI tiles, using compact capability/provider metadata, and replacing empty provider metrics with an explicit registration-validation-binding onboarding path.
 
 All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for release identity.

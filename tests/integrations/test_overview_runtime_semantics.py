@@ -23,7 +23,7 @@ def test_runtime_scope_label_describes_active_filters() -> None:
             health='not_observed',
             readiness='validation_required',
         )
-        == 'Prometheus / Thanos · Not Observed · Validation Required'
+        == 'Prometheus · Not Observed · Validation Required'
     )
 
 

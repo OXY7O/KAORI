@@ -449,3 +449,13 @@ Before final lock, Integrations use the following canonical composition rules:
 - **Style debt** — no new Integration verifier debt may be added. When an Integration file drops below its recorded debt ceiling, update the baseline in the same patch.
 
 - Configuration form and decision rail must stretch to the same desktop row height; use the embedded shared form action footer and avoid sticky positioning for the equal-height pair.
+
+## Domain workspace visual and runtime feedback contract
+
+Orchestration, Observability, and Storage MUST use the same domain workspace shell and interaction hierarchy. The **Provider Registry** / **Bindings** tab rail is visually separated from the registry table surface; a table header must never appear as a continuation of the active tab strip. Provider and binding rows must preserve readable identity text when the application sidebar is open: prefer wrapping with bounded minimum table width and horizontal overflow over truncating operational identity or contract text.
+
+Provider labels shown to operators use the canonical provider family name. Prometheus-compatible query backends remain compatibility/runtime implementation details; registry and workspace labels are **Prometheus**, not `Prometheus / Thanos` or `Thanos Query`.
+
+Loading feedback is operation-scoped. Full/Core Validation may animate only its validation loader; Runtime Refresh may animate only its runtime loader; capability registry filters/pagination may animate only the capability-registry loader; binding validation may animate only the binding loader. A parent validation job MUST NOT automatically activate nested registry loading bars.
+
+Validation and Runtime HTMX responses MUST refresh their framed-tab status badge out-of-band so newly persisted readiness/health labels are visible without a full page refresh. Provider-level labels remain derived from provider evidence; consumer-binding labels remain derived from binding evidence.

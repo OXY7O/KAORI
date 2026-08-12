@@ -1,3 +1,4 @@
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "integrations/components/_capability_readiness.html" as capability_readiness %}
@@ -82,7 +83,8 @@
                 </div>
             </div>
         </div>
-        {% include 'prometheus/partials/_capability_registry.html' %}
+        {% include "prometheus/partials/_capability_registry.html" %}
     </div>
 </section>
-{% include 'components/operation_feedback_oob.html' %}
+{{ framed_workspace_tabs.badge_oob("prometheus", "validation", (instance.readiness_status or "validation_required")|replace("_", " ")|title) }}
+{% include "components/operation_feedback_oob.html" %}

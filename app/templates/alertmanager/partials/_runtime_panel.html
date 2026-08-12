@@ -1,3 +1,4 @@
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "integrations/components/_runtime_decision.html" as runtime_decision %}
@@ -144,3 +145,4 @@
         </section>
     </div>
 </section>
+{{ framed_workspace_tabs.badge_oob("alertmanager", "runtime", runtime_state.health_status_label|default("Not Observed")) }}

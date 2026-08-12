@@ -7,7 +7,7 @@
 {% set field_classes = "h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-normal text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20" %}
 {% set textarea_classes = "min-h-24 w-full resize-y rounded-lg border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-normal leading-6 text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20" %}
 {% set endpoint_product = (instance.endpoint_product or 'prometheus')|lower %}
-{% set endpoint_product_label = 'Thanos Query' if endpoint_product == 'thanos' else 'Prometheus' %}
+{% set endpoint_product_label = 'Prometheus' %}
 {% set readiness = instance.readiness_status or 'validation_required' %}
 <div id="prometheus-configuration-workspace"
      class="space-y-4 font-sans"
@@ -167,7 +167,7 @@
                             <div>
                                 <h4 id="prometheus-compatibility-title"
                                     class="text-sm font-semibold text-content-primary">Compatibility Detection</h4>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Direct Prometheus may be auto-detected; Thanos Query needs an explicit upstream Prometheus source contract.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">Direct Prometheus may be auto-detected; a Prometheus-compatible query gateway may need an explicit upstream source contract.</p>
                             </div>
                         </div>
                         <div class="grid gap-4 lg:grid-cols-2">
@@ -245,4 +245,4 @@
         ) }}
     </div>
 </div>
-{% include 'components/operation_feedback_oob.html' %}
+{% include "components/operation_feedback_oob.html" %}

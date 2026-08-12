@@ -267,7 +267,7 @@
                     boundary='Prometheus remains authoritative for metric collection and query execution. KAORI owns provider readiness, consumer binding validation, and governed source resolution.'
                     ) }}
                 {% endif %}
-                {% set compatibility_detection_items = [('scan-search', 'Automatic Detection', 'Use for a direct Prometheus endpoint. KAORI discovers the observed product and compatibility evidence.'), ('network', 'Manual Source Declaration', 'Use for Thanos Query or another Prometheus-compatible gateway that can hide the upstream major version.'), ('badge-check', 'Full Validation Still Applies', 'Detection identifies the compatibility contract; Full Validation establishes capabilities and readiness.')] %}
+                {% set compatibility_detection_items = [('scan-search', 'Automatic Detection', 'Use for a direct Prometheus endpoint. KAORI discovers the observed product and compatibility evidence.'), ('network', 'Manual Source Declaration', 'Use for a Prometheus-compatible query gateway that can hide the upstream major version.'), ('badge-check', 'Full Validation Still Applies', 'Detection identifies the compatibility contract; Full Validation establishes capabilities and readiness.')] %}
                 {{ information_guide_card.render('Compatibility Detection',
                                 'Choose how KAORI identifies the Prometheus contract behind this endpoint.',
                                 compatibility_detection_items,
@@ -307,6 +307,6 @@
                 {% endif %}
             </aside>
         </form>
-        {% include 'components/operation_feedback_oob.html' %}
+        {% include "components/operation_feedback_oob.html" %}
     </div>
 {% endblock dashboard_content %}

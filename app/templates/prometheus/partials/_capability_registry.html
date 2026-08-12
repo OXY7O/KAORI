@@ -31,7 +31,7 @@
             </div>
             {{ table_label.metadata_label(capability_summary.total ~ ' Capabilities') }}
         </div>
-        {{ loading_bar.render(loading_id, active=validation_job and validation_job.is_active, label='Refreshing Prometheus Core Capability Registry') }}
+        {{ loading_bar.render(loading_id, label='Refreshing Prometheus Core Capability Registry') }}
     </header>
     <div class="{{ table_ui.inventory_filter_bar_classes() }}"
          data-kaori-promql-capability-filters>
@@ -170,8 +170,9 @@
              aria-label="Prometheus Core Capability Registry pagination">
             {% set query_params = {'query': filters.query, 'requirement': filters.requirement, 'status': filters.status, 'per_page': pagination.per_page} %}
             {% if pagination.has_prev %}
+                {% set previous_registry_url = url_for(registry_endpoint, instance_id=instance.id, page=pagination.prev_page, per_page=pagination.per_page, query=filters.query, requirement=filters.requirement, status=filters.status) %}
                 <a href="{{ url_for(detail_endpoint, instance_id=instance.id, tab='validation') }}"
-                   hx-get="{{ url_for(registry_endpoint, instance_id=instance.id, page=pagination.prev_page, per_page=pagination.per_page, query=filters.query, requirement=filters.requirement, status=filters.status) }}"
+                   hx-get="{{ previous_registry_url }}"
                    hx-target="#{{ target_id }}"
                    hx-swap="outerHTML"
                    hx-indicator="#{{ loading_id }}"
@@ -182,8 +183,9 @@
             {% endif %}
             {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, 'page', hx_target='#' ~ target_id, hx_indicator='#' ~ loading_id, endpoint=registry_endpoint, query_params=query_params, hx_swap='outerHTML', href_endpoint=detail_endpoint) }}
             {% if pagination.has_next %}
+                {% set next_registry_url = url_for(registry_endpoint, instance_id=instance.id, page=pagination.next_page, per_page=pagination.per_page, query=filters.query, requirement=filters.requirement, status=filters.status) %}
                 <a href="{{ url_for(detail_endpoint, instance_id=instance.id, tab='validation') }}"
-                   hx-get="{{ url_for(registry_endpoint, instance_id=instance.id, page=pagination.next_page, per_page=pagination.per_page, query=filters.query, requirement=filters.requirement, status=filters.status) }}"
+                   hx-get="{{ next_registry_url }}"
                    hx-target="#{{ target_id }}"
                    hx-swap="outerHTML"
                    hx-indicator="#{{ loading_id }}"

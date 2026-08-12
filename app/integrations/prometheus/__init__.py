@@ -62,7 +62,7 @@ integration_module = IntegrationModule(
     ),
     capability_keys=CAPABILITY_KEYS,
     compatibility_profiles=COMPATIBILITY_PROFILES,
-    runtime_label='Prometheus / Thanos',
+    runtime_label='Prometheus',
     navigation_endpoint_prefixes=('integrations.prometheus', 'prometheus.'),
     detail_url_builder=_detail_url,
     failure_recorder=_record_failure,

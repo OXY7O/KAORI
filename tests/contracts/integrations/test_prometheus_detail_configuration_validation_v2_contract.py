@@ -26,7 +26,8 @@ def test_configuration_uses_shared_side_decision_and_primary_form_workspace():
 
 def test_configuration_keeps_endpoint_product_semantics_explicit():
     text = CONFIG.read_text()
-    assert "'Thanos Query' if endpoint_product == 'thanos' else 'Prometheus'" in text
+    assert "{% set endpoint_product_label = 'Prometheus' %}" in text
+    assert 'Thanos Query' not in text
     assert 'Prometheus Source Version' in text
     assert 'Detection Mode' in text
 
