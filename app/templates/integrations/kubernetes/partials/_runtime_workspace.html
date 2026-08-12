@@ -1,4 +1,6 @@
 {% import "components/connection_validation_header.html" as connection_validation_header %}
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+{% import "integrations/components/_provider_job_status.html" as provider_job_status %}
 {% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
@@ -54,17 +56,7 @@
             </span>
         {% endif %}
     {% endcall %}
-    {% if validation_job and validation_job.is_active %}
-        <div class="flex flex-col gap-2 border-b border-brand-outline bg-kaori-soft px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between">
-            <span class="inline-flex items-center gap-2 font-semibold text-kaori-primary dark:text-kaori-accent">
-                <i data-lucide="loader-circle"
-                   class="h-3.5 w-3.5 animate-spin"
-                   aria-hidden="true"></i>
-                {{ validation_job.title or 'Kubernetes runtime refresh running' }}
-            </span>
-            <span>Task {{ validation_job.task_id[:8] }} · {{ validation_job.state_label|title }} · {{ validation_job.elapsed_seconds }}s</span>
-        </div>
-    {% endif %}
+    {{ provider_job_status.render(validation_job, 'Kubernetes runtime refresh running', 'Kubernetes') }}
     <div class="space-y-4 p-4 sm:p-5" data-kaori-runtime-main-layout>
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
                  data-kaori-runtime-decision-summary
@@ -263,9 +255,8 @@
     </div>
 </article>
 {% include 'components/operation_feedback_oob.html' %}
-<span id="kubernetes-runtime-tab-badge"
-      hx-swap-oob="innerHTML"
-      class="hidden">{{ runtime_state.health_status_label }}</span>
+
+{{ framed_workspace_tabs.badge_oob("kubernetes", "runtime", runtime_state.health_status_label) }}
 {% if runtime_history_oob|default(false) and history %}
     {% with runtime_history=history, runtime_history_id='kubernetes-runtime-history', runtime_history_loading_id='kubernetes-history-loading', runtime_history_url=url_for('integrations.kubernetes_runtime_history', cluster_id=cluster.id), runtime_history_endpoint='integrations.kubernetes_runtime_history', runtime_history_route_args={'cluster_id': cluster.id}, runtime_history_detail_url=url_for('integrations.kubernetes_detail', cluster_id=cluster.id, tab='runtime'), runtime_history_detail_endpoint='integrations.kubernetes_detail', runtime_history_filters_enabled=true, provider_label='Kubernetes', runtime_history_oob=true %}
         {% include 'integrations/partials/_runtime_history.html' %}

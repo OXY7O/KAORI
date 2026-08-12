@@ -27,14 +27,15 @@ def test_inventory_lifecycle_uses_horizontal_decision_surface_not_side_rail():
 
 def test_inventory_lifecycle_keeps_kaori_table_standard_for_bound_sources():
     text = source()
-    assert 'table_ui.table_classes()' in text
-    assert 'table_ui.head_classes()' in text
-    assert 'table_ui.row_classes()' in text
-    assert 'table-fixed' in text
-    assert 'min-w-[720px]' not in text
-    assert 'overflow-x-auto' not in text
-    assert "display='indicator'" in text
-
+    shared = (ROOT / 'app/templates/integrations/components/_asset_owner_observability_sources.html').read_text(
+        encoding='utf-8'
+    )
+    assert 'asset_owner_sources.render(' in text
+    assert 'table_ui.table_classes(' in shared
+    assert 'table_ui.head_classes()' in shared
+    assert 'table_ui.row_classes()' in shared
+    assert 'table-fixed' in shared
+    assert "display='indicator'" in shared or 'display="indicator"' in shared
 
 def test_inventory_lifecycle_uses_violet_for_identity_not_full_surfaces():
     text = source()

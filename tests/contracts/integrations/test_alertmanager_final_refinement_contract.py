@@ -15,12 +15,13 @@ def test_alertmanager_validation_matches_kubernetes_capability_matrix_and_regist
     routes = ALERT_ROUTES.read_text()
     assert 'Alertmanager Core Validation' in content
     assert 'Alertmanager Provider Readiness' in content
-    assert 'data-kaori-alertmanager-consumer-validation-boundary' in content
+    assert 'Full Validation owns provider compatibility and core API evidence only.' in content
     assert 'data-kaori-provider-capability-matrix' in content
     assert 'capability_readiness.render(' in content
     assert 'include "alertmanager/partials/_capability_registry.html"' in content
     assert 'Validation Decision' not in content
     assert 'alertmanager-capability-loading' in registry
+    assert 'active=validation_job and validation_job.is_active' in registry
     assert 'hx-indicator="#{{ loading_id }}"' in registry
     assert 'data-kaori-server-filtered-registry' in registry
     assert 'components/pagination.html' in registry
@@ -29,16 +30,15 @@ def test_alertmanager_validation_matches_kubernetes_capability_matrix_and_regist
     assert "@alertmanager_bp.get('/instances/<int:instance_id>/validation/capabilities')" in routes
     assert 'def instance_capability_registry' in routes
 
-
 def test_alertmanager_validation_modal_matches_kubernetes_capability_evidence_concept():
     registry = ALERT_REGISTRY.read_text()
     shared = read('app/templates/integrations/components/_provider_capability_detail.html')
     actions = read('app/templates/integrations/components/_record_actions.html')
     assert 'provider_capability_detail.content(' in registry
     assert 'record_actions.view_more(' in registry
-    assert "'Alertmanager Capability Evidence'" in registry
-    assert "'Runnable API Request'" in registry
-    assert "size='standard'" in registry
+    assert 'Alertmanager Capability Evidence' in registry
+    assert 'Provider API Probe' in registry
+    assert 'size="standard"' in registry or "size='standard'" in registry
     for token in (
         'Capability Contract',
         'Validation Evidence',
@@ -53,7 +53,6 @@ def test_alertmanager_validation_modal_matches_kubernetes_capability_evidence_co
     assert '{{ table_ui.action_classes() }}' in actions
     assert 'data-lucide="chevron-right"' in actions
     assert 'panel-top-open' not in actions
-
 
 def test_alertmanager_runtime_matches_kubernetes_full_width_runtime_pattern():
     content = read('app/templates/alertmanager/partials/_runtime_panel.html')
@@ -72,6 +71,7 @@ def test_alertmanager_runtime_matches_kubernetes_full_width_runtime_pattern():
 
 def test_alertmanager_binding_workspace_is_full_width_and_lifecycle_action_is_secondary():
     content = read('app/templates/alertmanager/partials/_detail_scope.html')
+    registry = read('app/templates/alertmanager/partials/_binding_registry.html')
     assert 'data-kaori-alertmanager-binding-decision-horizontal' in content
     assert 'data-kaori-alertmanager-consumer-resolution-full-width' in content
     assert 'data-kaori-alertmanager-lifecycle-horizontal' in content
@@ -80,9 +80,9 @@ def test_alertmanager_binding_workspace_is_full_width_and_lifecycle_action_is_se
     assert 'bg-status-critical px-4' not in content
     assert 'xl:sticky' not in content
     assert 'min-w-[76rem]' not in content
-    assert 'table-fixed' in content
-    assert 'table_ui.action_classes(true)' in content
-
+    assert 'data-kaori-bound-scopes-full-width' in registry
+    assert 'table-fixed' in registry
+    assert 'table_ui.action_classes(true)' in registry
 
 def test_alertmanager_capability_pagination_precomputes_hx_urls() -> None:
     registry = ALERT_REGISTRY.read_text(encoding='utf-8')

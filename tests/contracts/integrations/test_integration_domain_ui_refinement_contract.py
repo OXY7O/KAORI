@@ -30,20 +30,28 @@ def test_operator_facing_prometheus_name_is_canonical() -> None:
 
 
 def test_loading_bars_are_operation_scoped() -> None:
-    prometheus_registry = read('app/templates/prometheus/partials/_capability_registry.html')
-    alertmanager_registry = read('app/templates/alertmanager/partials/_capability_registry.html')
-    assert 'active=validation_job and validation_job.is_active' not in prometheus_registry
-    assert 'active=validation_job and validation_job.is_active' not in alertmanager_registry
-    assert 'hx-indicator="#{{ loading_id }}"' in prometheus_registry
-    assert 'hx-indicator="#{{ loading_id }}"' in alertmanager_registry
+    for provider in ('prometheus', 'alertmanager', 'minio'):
+        registry = read(f'app/templates/{provider}/partials/_capability_registry.html')
+        assert 'active=validation_job and validation_job.is_active' in registry
+        assert 'hx-indicator="#{{ loading_id }}"' in registry or provider == 'minio'
 
+        validation_name = '_detail_validation_content.html' if provider != 'minio' else '_detail_validation.html'
+        validation = read(f'app/templates/{provider}/partials/{validation_name}')
+        assert f'{provider}-validation-loading' not in validation
+        assert f'hx-indicator="#{provider}-capability-loading"' in validation
 
 def test_validation_and_runtime_refresh_tab_badges_oob() -> None:
     tabs = read('app/templates/components/framed_workspace_tabs.html')
     assert 'macro badge_oob' in tabs
-    assert 'hx-swap-oob="outerHTML"' in tabs
-    for provider in ('prometheus', 'alertmanager'):
-        validation = read(f'app/templates/{provider}/partials/_detail_validation_content.html')
-        runtime = read(f'app/templates/{provider}/partials/_runtime_panel.html')
+    assert 'hx-swap-oob="innerHTML"' in tabs
+    assert 'class="hidden"' in tabs
+    assert 'hx-swap-oob="outerHTML"' not in tabs.split('macro badge_oob', 1)[1]
+
+    for provider in ('prometheus', 'alertmanager', 'minio'):
+        validation_name = '_detail_validation_content.html' if provider != 'minio' else '_detail_validation.html'
+        runtime_name = '_runtime_panel.html' if provider != 'minio' else '_detail_runtime.html'
+        validation = read(f'app/templates/{provider}/partials/{validation_name}')
+        runtime = read(f'app/templates/{provider}/partials/{runtime_name}')
+
         assert f'badge_oob("{provider}", "validation"' in validation
         assert f'badge_oob("{provider}", "runtime"' in runtime

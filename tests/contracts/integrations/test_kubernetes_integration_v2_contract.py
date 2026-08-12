@@ -208,7 +208,7 @@ def test_secret_capability_is_optional_and_kept_out_of_baseline_readiness() -> N
     assert "'requirement_label': 'Required' if required else 'Optional'" in service
     assert 'Optional Capability Access Is Limited' in capability
     assert 'Do not expand the baseline ClusterRole.' in capability
-    assert '{{ validation_state.readiness_label }}</span>' in capability
+    assert 'badge_oob("kubernetes", "validation", validation_state.readiness_label)' in capability
 
 
 def test_minimum_validation_rbac_uses_copy_friendly_modal() -> None:
@@ -438,7 +438,6 @@ def test_kubernetes_integration_uses_canonical_compact_label_roles() -> None:
         + read('app/templates/integrations/components/_capability_readiness.html')
     )
     runtime = read('app/templates/integrations/kubernetes/partials/_runtime_workspace.html')
-    inventory = read('app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html')
     history = read('app/templates/integrations/partials/_runtime_history.html')
     labels = read('app/templates/components/table_label.html')
     standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')

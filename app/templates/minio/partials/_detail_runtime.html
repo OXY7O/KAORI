@@ -1,5 +1,6 @@
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+{% import "integrations/components/_provider_job_status.html" as provider_job_status %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 <div id="minio-runtime-panel"
@@ -28,14 +29,7 @@
                 {{ 'Refresh Running' if runtime_refresh_job and runtime_refresh_job.is_active else 'Refresh Runtime' }}
             </button>
         {% endcall %}
-        {% if runtime_refresh_job and runtime_refresh_job.is_active %}
-            <div class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-subtle px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between">
-                <span class="inline-flex items-center gap-2 font-semibold text-content-primary"><i data-lucide="loader-circle"
-   class="h-3.5 w-3.5 animate-spin text-kaori-primary dark:text-kaori-accent"
-   aria-hidden="true"></i>{{ runtime_refresh_job.title or 'MinIO runtime refresh running' }}</span>
-                <span>Task {{ runtime_refresh_job.task_id[:8] }} · {{ runtime_refresh_job.state_label|title }} · {{ runtime_refresh_job.elapsed_seconds }}s</span>
-            </div>
-        {% endif %}
+        {{ provider_job_status.render(runtime_refresh_job, 'MinIO runtime refresh running', 'MinIO') }}
         <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
             <article class="bg-surface-card p-5">
                 <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Runtime Health</p>
@@ -62,6 +56,7 @@
     {% with runtime_history=runtime_history, runtime_history_id="minio-runtime-history", runtime_history_loading_id="minio-history-loading", runtime_history_url=url_for("minio.runtime_history", instance_id=instance.id), runtime_history_endpoint="minio.runtime_history", runtime_history_route_args={"instance_id": instance.id}, runtime_history_detail_url=url_for("minio.instance_detail", instance_id=instance.id), runtime_history_detail_endpoint="minio.instance_detail", runtime_history_filters_enabled=true, runtime_history_tab="runtime", provider_label="MinIO" %}
         {% include "integrations/partials/_runtime_history.html" %}
     {% endwith %}
-    {{ framed_workspace_tabs.badge_oob("minio", "runtime", runtime_state.health_status_label|default("Not Observed") ) }}
+
+{{ framed_workspace_tabs.badge_oob("minio", "runtime", runtime_state.health_status_label|default("Not Observed")) }}
     {% include "components/operation_feedback_oob.html" %}
 </div>

@@ -13,11 +13,12 @@
                     <tr class="align-top transition hover:bg-surface-hover">
                         <td class="px-5 py-4 sm:px-6">
                             <div class="flex min-w-0 items-start gap-3">
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ 'database' if row.scope_type == 'object_storage_system' else 'boxes' }}" class="h-4 w-4"></i></span>
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ 'database' if row.scope_type == 'object_storage_system' else 'boxes' }}"
+   class="h-4 w-4"></i></span>
                                 <div class="min-w-0">
                                     <p class="truncate font-semibold text-content-primary"
                                        title="{{ row.scope_name }}">{{ row.scope_name }}</p>
-                                    <p class="mt-1 text-xs text-content-muted">{{ row.scope_type|replace("_", " ")|title }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ row.scope_type|replace('_', ' ') |title }}</p>
                                 </div>
                             </div>
                         </td>

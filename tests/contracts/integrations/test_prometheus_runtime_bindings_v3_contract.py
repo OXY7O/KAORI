@@ -28,18 +28,20 @@ def test_prometheus_runtime_matches_kubernetes_layout_and_filtered_history() -> 
 
 def test_prometheus_bindings_use_kaori_table_and_native_create_dialog() -> None:
     template = read('app/templates/prometheus/partials/_detail_scope.html')
+    registry = read('app/templates/prometheus/partials/_binding_registry.html')
+    modal = read('app/templates/integrations/components/_observability_binding_modal.html')
 
     assert 'Bindings &amp; Consumers' in template
     assert 'Consumer Bindings' in template
     assert 'Effective Consumer Resolution' in template
     assert 'Binding Decision' in template
-    assert 'table_ui.table_classes' in template
-    assert "integration_status(row.validation_status, display='indicator')" in template
-    assert '<dialog id="prometheus-create-binding-dialog"' in template
+    assert 'table_ui.table_classes' in registry
+    assert "integration_status(row.validation_status, display='indicator')" in registry
+    assert 'observability_binding_modal.render("prometheus-create-binding-dialog"' in template
     assert 'data-kaori-dialog-open' in template
     assert 'data-dialog-target="prometheus-create-binding-dialog"' in template
-    assert 'm-auto w-[min(44rem,calc(100vw-2rem))]' in template
-
+    assert '<dialog id="{{ dialog_id }}"' in modal
+    assert 'm-auto w-[min(46rem,calc(100vw-2rem))]' in modal
 
 def test_prometheus_runtime_history_filters_are_server_side() -> None:
     routes = read('app/prometheus/routes.py')

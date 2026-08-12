@@ -53,13 +53,14 @@ def test_binding_persists_profile_and_validation_evidence() -> None:
 def test_prometheus_ui_separates_provider_and_consumer_readiness() -> None:
     validation = read('app/templates/prometheus/partials/_detail_validation_content.html')
     scope = read('app/templates/prometheus/partials/_detail_scope.html')
+    registry = read('app/templates/prometheus/partials/_binding_registry.html')
 
     assert 'Prometheus Core Validation' in validation
     assert 'Prometheus Provider Readiness' in validation
-    assert 'Consumer Validation Boundary' in validation
+    assert 'Full Validation owns provider compatibility and core API readiness.' in validation
     assert 'Consumer Bindings' in scope
-    assert 'consumer_profile_label' in scope
-
+    assert 'Consumer Identity Boundary' in scope
+    assert 'consumer_profile_label' in registry
 
 def test_domain_route_does_not_depend_on_service_reexport() -> None:
     routes = read('app/integrations/routes.py')

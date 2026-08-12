@@ -1,27 +1,31 @@
 {% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
-<div id="bindings"
-     class="space-y-4 font-sans"
-     data-kaori-minio-inventory-lifecycle>
+{% set readiness = instance.readiness_status or "validation_required" %}
+<div class="space-y-4 font-sans"
+     data-kaori-minio-inventory-lifecycle
+     data-kaori-inventory-lifecycle-v4
+     data-kaori-inventory-lifecycle-v5>
     <section class="{{ integration_ui.section_shell_classes() }}"
-             aria-labelledby="minio-inventory-lifecycle-title">
+             aria-labelledby="minio-inventory-operational-use-title">
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div class="flex min-w-0 flex-1 items-start gap-3">
                     {{ integration_ui.palette_icon("database", "brand", size="lg", rounded="xl") }}
                     <div class="min-w-0">
-                        <h2 id="minio-inventory-lifecycle-title"
+                        <h2 id="minio-inventory-operational-use-title"
                             class="text-base font-semibold text-content-primary">Inventory &amp; Lifecycle</h2>
-                        <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">Review object-storage inventory evidence, bound observability sources, retention boundaries, and the governed MinIO connection lifecycle.</p>
+                        <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">Review object-storage inventory evidence, KAORI consumers, bound observability sources, evidence boundaries, and the governed MinIO connection lifecycle in one workspace.</p>
                     </div>
                 </div>
-                {{ integration_status(instance.readiness_status or "validation_required", (instance.readiness_status or "validation_required") |replace("_", " ")|title, display="text") }}
+                <div class="shrink-0">{{ integration_status(readiness, readiness|replace("_", " ") |title, display="text") }}</div>
             </div>
         </header>
         <section class="border-b border-outline-subtle bg-surface-subtle"
                  aria-labelledby="minio-inventory-lifecycle-decision-title"
-                 data-kaori-minio-inventory-lifecycle-decision>
+                 data-kaori-minio-inventory-lifecycle-decision
+                 data-kaori-inventory-lifecycle-decision
+                 data-kaori-inventory-snapshot-strip>
             <header class="border-b border-outline-subtle px-5 py-3.5 sm:px-6">
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
@@ -29,35 +33,36 @@
                         <div class="min-w-0">
                             <h3 id="minio-inventory-lifecycle-decision-title"
                                 class="text-sm font-semibold text-content-primary">Inventory &amp; Lifecycle Decision</h3>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Inventory visibility, provider evidence, consumer sources, and deletion guardrails are summarized before detailed binding evidence.</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Inventory visibility, provider evidence, observability coverage, and deletion guardrails are summarized before detailed consumer and source evidence.</p>
                         </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-2 lg:justify-end">
-                        {{ table_label.metadata_label("Validated · " ~ validated_at_display) }}
+                        {{ table_label.metadata_label("Last Validated · " ~ validated_at_display) }}
                         {{ integration_status("blocked" if deletion_guard.blocked else "ready", "Deletion Blocked" if deletion_guard.blocked else "Guardrails Passed", display="text") }}
                     </div>
                 </div>
             </header>
-            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+            <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4"
+                 data-kaori-inventory-decision>
                 <article class="bg-surface-card p-5">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Object Storage Inventory</p>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Snapshot Freshness</p>
                             <p class="mt-2 text-lg font-semibold tabular-nums text-content-primary">{{ bucket_count }} Bucket{{ "" if bucket_count == 1 else "s" }}</p>
                         </div>
                         {{ integration_ui.palette_icon("database", "normal" if bucket_count else "unknown", size="md") }}
                     </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">Bucket visibility from the latest completed MinIO Core Validation.</p>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">Object-storage visibility from the latest completed MinIO Full Validation at {{ validated_at_display }}.</p>
                 </article>
                 <article class="bg-surface-card p-5">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
                             <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Evidence Coverage</p>
-                            <p class="mt-2 text-lg font-semibold tabular-nums text-content-primary">{{ capability_count }} Capabilities</p>
+                            <p class="mt-2 text-lg font-semibold tabular-nums text-content-primary">{{ capability_count }} Validated Capabilities</p>
                         </div>
                         {{ integration_ui.palette_icon("badge-check", "normal" if capability_count else "unknown", size="md") }}
                     </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">Provider-owned S3 API capability evidence retained by KAORI.</p>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">Provider-owned S3 API and MinIO compatibility evidence retained by KAORI.</p>
                 </article>
                 <article class="bg-surface-card p-5">
                     <div class="flex items-start justify-between gap-3">
@@ -67,7 +72,7 @@
                         </div>
                         {{ integration_ui.palette_icon("radio-tower", "info" if binding_total else "unknown", size="md") }}
                     </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">Prometheus and Alertmanager bindings are managed from their Observability source workspaces.</p>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">Prometheus and Alertmanager remain reusable source-owned connections with asset-scoped binding evidence.</p>
                 </article>
                 <article class="bg-surface-card p-5">
                     <div class="flex items-start justify-between gap-3">
@@ -77,16 +82,17 @@
                         </div>
                         {{ integration_ui.palette_icon("shield-alert" if deletion_guard.blocked else "shield-check", "warning" if deletion_guard.blocked else "normal", size="md") }}
                     </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ deletion_guard.reasons[0] if deletion_guard.reasons else "No active KAORI job currently blocks connection removal." }}</p>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ (deletion_guard.reasons|length) ~ " blocking condition" ~ ("" if deletion_guard.reasons|length == 1 else "s") if deletion_guard.blocked else "No active KAORI job currently blocks connection removal." }}</p>
                 </article>
             </div>
-            <div class="grid gap-px bg-outline-subtle lg:grid-cols-2">
+            <div class="grid gap-px bg-outline-subtle lg:grid-cols-2"
+                 data-kaori-inventory-lifecycle-boundary>
                 <section class="bg-surface-card px-5 py-4 sm:px-6">
                     <div class="flex items-start gap-3">
                         {{ integration_ui.palette_icon("trash-2", "critical", size="sm") }}
                         <div class="min-w-0">
                             <p class="text-sm font-semibold text-content-primary">Removed With Connection</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">The MinIO registration, object-storage asset, and bindings targeting this asset are removed.</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">The MinIO registration, encrypted access contract, object-storage asset, and bindings targeting this asset are removed.</p>
                         </div>
                     </div>
                 </section>
@@ -100,16 +106,21 @@
                     </div>
                 </section>
             </div>
-            <section class="border-t border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
+            <section class="border-t border-outline-subtle bg-surface-card px-5 py-4 sm:px-6"
+                     aria-labelledby="minio-lifecycle-action-title">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
                         {{ integration_ui.palette_icon("route", "warning" if deletion_guard.blocked else "brand", size="sm") }}
                         <div class="min-w-0">
-                            <p class="text-sm font-semibold text-content-primary">Next Lifecycle Action</p>
+                            <h4 id="minio-lifecycle-action-title"
+                                class="text-sm font-semibold text-content-primary">Next Lifecycle Action</h4>
                             {% if deletion_guard.blocked %}
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Resolve the active dependency before deleting this connection. Shared observability sources remain independent.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                    Resolve {{ deletion_guard.reasons|length }} blocking condition{{ "" if deletion_guard.reasons|length == 1 else "s" }} before deleting this connection.
+                                    {% if deletion_guard.reasons %}First: {{ deletion_guard.reasons[0] }}{% endif %}
+                                </p>
                             {% else %}
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Deletion guardrails are clear. Removal affects only this MinIO asset and its asset-scoped bindings.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">Deletion guardrails are clear. Removal affects only this MinIO registration, its object-storage asset, and asset-scoped bindings.</p>
                             {% endif %}
                         </div>
                     </div>
@@ -125,7 +136,44 @@
                 </div>
             </section>
         </section>
-        <div class="space-y-4 p-4 sm:p-5">
+        <div class="space-y-4 p-4 sm:p-5" data-kaori-inventory-lifecycle-content>
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card"
+                     aria-labelledby="minio-operational-consumers-title">
+                <header class="border-b border-outline-subtle px-4 py-3.5 sm:px-5">
+                    <div class="flex items-start gap-3">
+                        {{ integration_ui.palette_icon("workflow", "brand", size="sm") }}
+                        <div class="min-w-0">
+                            <h3 id="minio-operational-consumers-title"
+                                class="text-sm font-semibold text-content-primary">KAORI Operational Consumers</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI functions consuming MinIO authority or retained provider evidence, with source ownership and mutation boundaries kept explicit.</p>
+                        </div>
+                    </div>
+                </header>
+                <div class="divide-y divide-outline-subtle" data-kaori-consumer-list>
+                    {% set consumers = [
+                        ("scan-search", "Validation & Capabilities", "Registered S3 authority", "Product identity, compatibility, S3 access, and provider capability evidence."),
+                        ("activity", "Runtime Monitoring", "Persisted provider runtime", "Endpoint health, latency, diagnostics, and Recent Runtime Observations."),
+                        ("radio-tower", "Observability Correlation", "Source-owned bindings", "Prometheus metrics and Alertmanager alert evidence remain independently validated per asset binding."),
+                        ("scroll-text", "Activity Audit", "Retained lifecycle evidence", "Registration, validation, runtime, and deletion actions remain traceable after provider lifecycle changes.")
+                    ] %}
+                    {% for icon, title, boundary, description in consumers %}
+                        <article class="grid gap-3 px-4 py-3.5 transition hover:bg-kaori-mist sm:px-5 lg:grid-cols-[minmax(14rem,0.8fr)_minmax(15rem,0.8fr)_minmax(0,1.4fr)] lg:items-center">
+                            <div class="flex min-w-0 items-start gap-3">
+                                {{ integration_ui.palette_icon(icon, "brand", size="sm") }}
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
+                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">KAORI Consumer</p>
+                                </div>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-content-secondary">Evidence Boundary</p>
+                                <p class="mt-1 text-xs leading-5 text-content-primary">{{ boundary }}</p>
+                            </div>
+                            <p class="text-xs leading-5 text-content-secondary">{{ description }}</p>
+                        </article>
+                    {% endfor %}
+                </div>
+            </section>
             {% include "minio/partials/_binding_registry.html" %}
             <section class="rounded-xl border border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -133,7 +181,7 @@
                         {{ integration_ui.palette_icon("waypoints", "brand", size="sm") }}
                         <div class="min-w-0">
                             <p class="text-sm font-semibold text-content-primary">Binding Ownership</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Create, validate, and remove Prometheus or Alertmanager bindings from the selected Observability source. This asset-owner workspace remains read-only for binding mutation.</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Create, validate, update, and remove Prometheus or Alertmanager bindings from the selected Observability source. This asset-owner workspace remains read-only for binding mutation.</p>
                         </div>
                     </div>
                     <a href="{{ url_for('integrations.observability') }}"

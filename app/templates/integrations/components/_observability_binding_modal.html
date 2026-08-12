@@ -16,17 +16,17 @@
         <form method="post" action="{{ form_action }}" hx-post="{{ form_action }}" hx-target="{{ hx_target }}" hx-swap="outerHTML" hx-disabled-elt="button, select, input" hx-indicator="#{{ loading_id }}" x-data="{ assetType: '{{ first_group.asset_type if first_group else '' }}', selectorLabel: '{{ first_group.selector_label if first_group else '' }}', selectorValue: '', profiles: {
             {% for group in consumer_asset_groups %}
                 '{{ group.asset_type }}': '{{ group.profile_key }}'
-                {% if not loop.last %}, {% endif %}
+                {% if not loop.last %},{% endif %}
             {% endfor %}
             }, selectorLabels: {
             {% for group in consumer_asset_groups %}
                 '{{ group.asset_type }}': '{{ group.selector_label }}'
-                {% if not loop.last %}, {% endif %}
+                {% if not loop.last %},{% endif %}
             {% endfor %}
             }, selectorPlaceholders: {
             {% for group in consumer_asset_groups %}
                 '{{ group.asset_type }}': '{{ group.selector_placeholder }}'
-                {% if not loop.last %}, {% endif %}
+                {% if not loop.last %},{% endif %}
             {% endfor %}
             } }" class="relative flex max-h-[calc(100vh-2rem)] flex-col">
             {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
@@ -72,7 +72,8 @@
                                         class="{{ integration_ui.control_classes() }}">
                                     <option value="">Select {{ group.label }}</option>
                                     {% for asset in group.assets %}
-                                        <option value="{{ asset.key }}">{{ asset.name }}
+                                        <option value="{{ asset.key }}">
+                                            {{ asset.name }}
                                             {% if asset.environment %}· {{ asset.environment|title }}{% endif %}
                                         </option>
                                     {% endfor %}

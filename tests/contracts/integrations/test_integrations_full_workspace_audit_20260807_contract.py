@@ -39,16 +39,17 @@ def test_runtime_observation_details_use_one_shared_native_dialog() -> None:
 
 
 def test_provider_bound_scope_tables_are_full_width_before_decision_split() -> None:
-    prometheus = read('app/templates/prometheus/partials/_detail_scope.html')
-    alertmanager = read('app/templates/alertmanager/partials/_detail_scope.html')
+    for provider in ('prometheus', 'alertmanager'):
+        scope = read(f'app/templates/{provider}/partials/_detail_scope.html')
+        registry = read(f'app/templates/{provider}/partials/_binding_registry.html')
+        include_marker = scope.index(f'include "{provider}/partials/_binding_registry.html"')
+        decision = scope.index('Binding Decision')
+        assert include_marker < decision
+        assert 'data-kaori-bound-scopes-full-width' in registry
+        assert 'table_ui.table_classes(' in registry
 
-    for template in (prometheus, alertmanager):
-        marker = template.index('data-kaori-bound-scopes-full-width')
-        decision = template.index('Binding Decision')
-        assert marker < decision
-    assert 'Consumer Bindings' in prometheus
-    assert 'Bound Operational Scopes' in alertmanager
-
+    assert 'Consumer Bindings' in read('app/templates/prometheus/partials/_detail_scope.html')
+    assert 'Consumer Binding Registry' in read('app/templates/alertmanager/partials/_binding_registry.html')
 
 def test_compact_labels_are_one_line_by_default() -> None:
     labels = read('app/templates/components/table_label.html')

@@ -1,5 +1,6 @@
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+{% import "integrations/components/_provider_job_status.html" as provider_job_status %}
 {% import "integrations/components/_capability_readiness.html" as capability_readiness %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% set readiness = instance.readiness_status or "validation_required" %}
@@ -25,9 +26,6 @@
         "Compatibility & Capability Matrix",
         "Validate MinIO identity, compatibility, S3 access, and core capabilities.",
         icon="scan-search",
-        loading_id="minio-validation-loading",
-        loading_active=validation_job and validation_job.is_active,
-        loading_label="Running MinIO Full Validation"
         ) %}
         <form method="post"
               action="{{ url_for('minio.validate_instance', instance_id=instance.id) }}"
@@ -35,7 +33,7 @@
               hx-target="#minio-core-validation"
               hx-swap="outerHTML"
               hx-disabled-elt="button"
-              hx-indicator="#minio-validation-loading">
+              hx-indicator="#minio-capability-loading">
             {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
             <button type="submit"
                     {% if validation_job and validation_job.is_active %}disabled{% endif %}
@@ -47,14 +45,7 @@
             </button>
         </form>
     {% endcall %}
-    {% if validation_job and validation_job.is_active %}
-        <div class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-subtle px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between">
-            <span class="inline-flex items-center gap-2 font-semibold text-content-primary"><i data-lucide="loader-circle"
-   class="h-3.5 w-3.5 animate-spin"
-   aria-hidden="true"></i>{{ validation_job.title or "MinIO validation running" }}</span>
-            <span>Task {{ validation_job.task_id[:8] }} · {{ validation_job.state_label|title }} · {{ validation_job.elapsed_seconds }}s</span>
-        </div>
-    {% endif %}
+    {{ provider_job_status.render(validation_job, 'MinIO validation running in worker', 'MinIO') }}
     <div class="p-5 sm:p-6">
         {{ capability_readiness.render("MinIO Capability Readiness",
                 "Provider identity, supported release, S3 API access, and MinIO capability evidence used by object-storage workspaces.",
@@ -74,5 +65,6 @@
         {% include "minio/partials/_capability_registry.html" %}
     </div>
 </section>
+
 {{ framed_workspace_tabs.badge_oob("minio", "validation", readiness_label) }}
 {% include "components/operation_feedback_oob.html" %}

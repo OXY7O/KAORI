@@ -1,8 +1,9 @@
-{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "components/table.html" as table_ui %}
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "integrations/components/_runtime_decision.html" as runtime_decision %}
+{% import "integrations/components/_provider_job_status.html" as provider_job_status %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set runtime_product = runtime_state.capability_metadata.endpoint_product|default(instance.endpoint_product or 'Prometheus', true) %}
@@ -64,14 +65,7 @@
             {{ 'Refresh Running' if runtime_refresh_job and runtime_refresh_job.is_active else 'Refresh Runtime' }}
         </button>
     {% endcall %}
-    {% if runtime_refresh_job and runtime_refresh_job.is_active %}
-        <div class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-subtle px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between">
-            <span class="inline-flex items-center gap-2 font-semibold text-content-primary"><i data-lucide="loader-circle"
-   class="h-3.5 w-3.5 animate-spin text-kaori-primary dark:text-kaori-accent"
-   aria-hidden="true"></i>{{ runtime_refresh_job.title or 'Prometheus runtime refresh running' }}</span>
-            <span>Task {{ runtime_refresh_job.task_id[:8] }} · {{ runtime_refresh_job.state_label|title }} · {{ runtime_refresh_job.elapsed_seconds }}s</span>
-        </div>
-    {% endif %}
+    {{ provider_job_status.render(runtime_refresh_job, 'Prometheus runtime refresh running', 'Prometheus') }}
     <div class="space-y-4 p-4 sm:p-5" data-kaori-prometheus-runtime-layout>
         {{ runtime_decision.render(health_tone,
                 runtime_state.health_status_label if runtime_observed else 'Not Observed',
@@ -150,4 +144,5 @@
     </div>
 </article>
 {% include "components/operation_feedback_oob.html" %}
+
 {{ framed_workspace_tabs.badge_oob("prometheus", "runtime", runtime_state.health_status_label|default("Not Observed")) }}

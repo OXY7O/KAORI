@@ -1,6 +1,7 @@
-{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "components/action_button.html" as action_button %}
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
+{% import "integrations/components/_provider_job_status.html" as provider_job_status %}
 {% import "integrations/components/_capability_readiness.html" as capability_readiness %}
 {% import "integrations/components/_readiness_explanation.html" as readiness_explanation %}
 {% set readiness = instance.readiness_status or "validation_required" %}
@@ -32,9 +33,6 @@
         "Alertmanager Core Validation",
         "Validate compatibility and core Alertmanager APIs. Consumer alert streams remain binding-specific.",
         icon="scan-search",
-        loading_id="alertmanager-validation-loading",
-        loading_active=validation_job and validation_job.is_active,
-        loading_label="Running Alertmanager core validation"
         ) %}
         <form method="post"
               action="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
@@ -42,7 +40,7 @@
               hx-target="#alertmanager-validation-workspace"
               hx-swap="outerHTML"
               hx-disabled-elt="button"
-              hx-indicator="#alertmanager-validation-loading">
+              hx-indicator="#alertmanager-capability-loading">
             {% if csrf_token is defined %}
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             {% endif %}
@@ -56,17 +54,7 @@
             </button>
         </form>
     {% endcall %}
-    {% if validation_job and validation_job.is_active %}
-        <div class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-subtle px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between">
-            <span class="inline-flex items-center gap-2 font-semibold text-content-primary">
-                <i data-lucide="loader-circle"
-                   class="h-3.5 w-3.5 animate-spin text-kaori-primary dark:text-kaori-accent"
-                   aria-hidden="true"></i>
-                {{ validation_job.title or "Alertmanager validation running in worker" }}
-            </span>
-            <span>Task {{ validation_job.task_id[:8] }} · {{ validation_job.state_label|title }} · {{ validation_job.elapsed_seconds }}s</span>
-        </div>
-    {% endif %}
+    {{ provider_job_status.render(validation_job, 'Alertmanager validation running in worker', 'Alertmanager') }}
     <div class="space-y-4 p-4 sm:p-5">
         {{ capability_readiness.render("Alertmanager Provider Readiness",
                 "Core API evidence determines Alertmanager readiness.",
@@ -103,6 +91,7 @@
         {% include "alertmanager/partials/_capability_registry.html" %}
     </div>
 </section>
+
 {{ framed_workspace_tabs.badge_oob("alertmanager", "validation", (instance.readiness_status or "validation_required") |replace("_", " ")|title) }}
 {% include "components/operation_feedback_oob.html" %}
 {% if validation_scope_oob is defined and validation_scope_oob %}

@@ -23,7 +23,7 @@
             </div>
             {{ table_label.metadata_label(registry.total_contracts ~ " Capability Contracts") }}
         </div>
-        {{ loading_bar.render("minio-capability-loading", label="Refreshing MinIO Capability Registry") }}
+        {{ loading_bar.render("minio-capability-loading", active=validation_job and validation_job.is_active, label="Refreshing MinIO Capability Registry") }}
     </header>
     <form method="get"
           action="{{ url_for('minio.instance_detail', instance_id=instance.id) }}#validation"

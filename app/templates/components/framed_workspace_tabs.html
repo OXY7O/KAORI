@@ -66,10 +66,8 @@
 </div>
 </nav>
 {%- endmacro %}
-
 {% macro badge_oob(prefix, key, badge) -%}
 <span id="{{ prefix }}-{{ key }}-tab-badge"
-      hx-swap-oob="outerHTML"
-      class="kaori-semantic-label inline-flex min-h-6 items-center rounded-md border px-2 text-xs font-semibold whitespace-nowrap"
-      :class="activeTab === '{{ key }}' ? 'border-brand-outline bg-kaori-soft text-kaori-primary dark:text-kaori-accent' : 'border-outline-subtle bg-surface-card text-content-muted'">{{ badge }}</span>
+      hx-swap-oob="innerHTML"
+      class="hidden">{{ badge }}</span>
 {%- endmacro %}

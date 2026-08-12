@@ -56,29 +56,31 @@ def test_alertmanager_supports_object_storage_consumers_without_special_binding_
     service = read('app/alertmanager/service.py')
     routes = read('app/alertmanager/routes.py')
     minio_service = read('app/minio/service.py')
+    consumer_assets = read('app/integrations/consumer_assets.py')
 
-    assert "'object_storage_system'" in forms
+    assert 'registered_consumer_asset_definitions' in forms
     assert 'object_storage_scope_key' in forms
-    assert 'ObjectStorageSystem' in service
+    assert "asset_type='object_storage_system'" in consumer_assets
+    assert 'ObjectStorageSystem' in consumer_assets
+    assert 'get_consumer_asset_definition' in service
+    assert 'resolve_consumer_asset' in service
     assert 'binding_scope_validation_error' in routes
-    assert "scope_type == 'object_storage_system'" in service
-    assert "create_source_binding(\n        'alertmanager'" in minio_service
-    assert 'asset_type=OBJECT_STORAGE_SYSTEM_SCOPE' in minio_service
+    assert 'create_source_binding(' not in minio_service
     assert 'minio_alertmanager' not in minio_service.lower()
-
 
 def test_alertmanager_ui_exposes_consumer_profile_and_core_boundary() -> None:
     validation = read('app/templates/alertmanager/partials/_detail_validation_content.html')
     scope = read('app/templates/alertmanager/partials/_detail_scope.html')
+    registry = read('app/templates/alertmanager/partials/_binding_registry.html')
+    binding_modal = read('app/templates/integrations/components/_observability_binding_modal.html')
 
     assert 'Alertmanager Core Validation' in validation
     assert 'Alertmanager Provider Readiness' in validation
-    assert 'Consumer Validation Boundary' in validation
-    assert 'Consumer Binding Registry' in scope
-    assert 'Consumer Profile' in scope
-    assert 'object_storage_scope_key' in scope
-    assert 'Resolved Consumer Profile' in scope
-
+    assert 'Full Validation owns provider compatibility and core API evidence only.' in validation
+    assert 'Consumer Binding Registry' in registry
+    assert 'Consumer Profile' in registry
+    assert 'Alert Identity Boundary' in scope
+    assert 'Resolved Consumer Profile' in binding_modal
 
 def test_alertmanager_consumer_profile_contract_is_documented() -> None:
     readme = read('app/integrations/alertmanager/README.md')

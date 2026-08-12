@@ -67,6 +67,7 @@ def test_minio_bindings_expose_metrics_and_alert_consumer_profiles() -> None:
 def test_minio_detail_matches_asset_owner_lifecycle_contract() -> None:
     detail = read('app/templates/minio/instance_detail.html')
     configuration = read('app/templates/minio/partials/_detail_configuration.html')
+    shared_configuration = read('app/templates/integrations/components/_provider_configuration_contract.html')
     scope = read('app/templates/minio/partials/_detail_scope.html')
     runtime = read('app/templates/minio/partials/_detail_runtime.html')
     modal = read('app/templates/minio/partials/_delete_modal.html')
@@ -77,8 +78,10 @@ def test_minio_detail_matches_asset_owner_lifecycle_contract() -> None:
     assert 'Validated Capabilities' in detail
     assert 'Inventory & Lifecycle' in detail
     assert 'minio/partials/_delete_modal.html' in detail
-    assert 'Configure Connection' in configuration
-    assert "url_for('minio.edit_instance'" in configuration
+    assert 'provider_configuration_contract.render(' in configuration
+    assert 'Configure Connection' in shared_configuration
+    assert 'Operational Context' in read('app/templates/integrations/components/_provider_operational_context.html')
+    assert 'url_for("minio.edit_instance"' in configuration
     assert 'Lifecycle Gate' in scope
     assert 'Next Lifecycle Action' in scope
     assert 'Delete Connection' in scope
@@ -88,7 +91,6 @@ def test_minio_detail_matches_asset_owner_lifecycle_contract() -> None:
     assert 'openDelete(url, name)' in tabs_js
     assert 'Refresh Runtime' in runtime
     assert "url_for('minio.refresh_runtime'" in runtime
-
 
 def test_minio_asset_owner_deletion_removes_asset_bindings_not_shared_sources() -> None:
     service = read('app/minio/service.py')
@@ -134,10 +136,12 @@ def test_minio_validation_runtime_and_binding_tables_match_kubernetes_workspace_
 
     assert 'Validation & Capabilities' in detail
     assert 'connection_validation_header.render(' in validation
-    assert "hx-post=\"{{ url_for('minio.validate_instance'" in validation
-    assert 'minio-validation-loading' in validation
-    assert "hx-get=\"{{ url_for('minio.validation_status'" in validation
+    assert 'hx-post="{{ url_for(\'minio.validate_instance\'' in validation
+    assert 'minio-validation-loading' not in validation
+    assert 'hx-indicator="#minio-capability-loading"' in validation
+    assert 'hx-get="{{ url_for(\'minio.validation_status\'' in validation
     assert 'minio-capability-registry' in capability_registry
+    assert 'active=validation_job and validation_job.is_active' in capability_registry
     assert 'capability_per_page' in capability_registry
     assert 'pagination_ui.numeric_pages(' in capability_registry
     assert 'hx-target="#minio-capability-registry"' in capability_registry
@@ -151,3 +155,4 @@ def test_minio_validation_runtime_and_binding_tables_match_kubernetes_workspace_
     assert "@minio_bp.get('/instances/<int:instance_id>/capabilities/registry')" in routes
     assert "@minio_bp.get('/instances/<int:instance_id>/runtime/history')" in routes
     assert "@minio_bp.get('/instances/<int:instance_id>/bindings/registry')" in routes
+

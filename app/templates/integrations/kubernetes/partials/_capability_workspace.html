@@ -1,4 +1,6 @@
 {% import "components/connection_validation_header.html" as connection_validation_header %}
+{% import "components/framed_workspace_tabs.html" as framed_workspace_tabs %}
+{% import "integrations/components/_provider_job_status.html" as provider_job_status %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_capability_readiness.html" as capability_readiness %}
@@ -74,17 +76,7 @@
             </form>
         {% endif %}
     {% endcall %}
-    {% if validation_job and validation_job.is_active %}
-        <div class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-subtle px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between">
-            <span class="inline-flex items-center gap-2 font-semibold text-content-primary">
-                <i data-lucide="loader-circle"
-                   class="h-3.5 w-3.5 animate-spin"
-                   aria-hidden="true"></i>
-                {{ validation_job.title or 'Kubernetes validation running in worker' }}
-            </span>
-            <span>Task {{ validation_job.task_id[:8] }} · {{ validation_job.state_label|title }} · {{ validation_job.elapsed_seconds }}s</span>
-        </div>
-    {% endif %}
+    {{ provider_job_status.render(validation_job, 'Kubernetes validation running in worker', 'Kubernetes') }}
     <div class="p-5 sm:p-6">
         {{ capability_readiness.render('Kubernetes Capability Readiness',
                 'Required API discovery, effective RBAC, compatibility, and capability evidence used by Inventory and downstream Kubernetes workspaces.',
@@ -128,6 +120,5 @@
     </div>
 </section>
 {% include 'components/operation_feedback_oob.html' %}
-<span id="kubernetes-validation-tab-badge"
-      hx-swap-oob="innerHTML"
-      class="hidden">{{ validation_state.readiness_label }}</span>
+
+{{ framed_workspace_tabs.badge_oob("kubernetes", "validation", validation_state.readiness_label) }}
