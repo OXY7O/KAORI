@@ -11,9 +11,9 @@
 {% set capability_blocked = capability_total - capability_ready %}
 {% set capability_percent = ((capability_ready * 100 / capability_total) if capability_total else 0) %}
 {% set capability_metadata = [
-    "Profile · " ~ (instance.compatibility_profile or "Validation Required"),
-    capability_registry.required_count ~ " Required",
-    capability_registry.optional_count ~ " Optional"
+    "Product · " ~ compatibility_policy.product_label,
+    "Profile · " ~ (instance.compatibility_profile or compatibility_policy.profile_label),
+    "Supported Range · " ~ compatibility_policy.supported_range
 ] %}
 {% set capability_metrics = [
     {"icon": "layers-3", "tone": "normal", "label": "Validated Capabilities", "value": capability_ready, "description": "MinIO API contracts observed by Full Validation."},
@@ -64,8 +64,7 @@
                 "Required MinIO S3 contracts are usable." if readiness == "ready" else "Resolve required MinIO API or compatibility gaps.",
                 "normal" if readiness == "ready" else "critical",
                 "Full Validation owns S3 capability evidence; Runtime Refresh owns live health; bindings own consumer evidence.",
-                "Revalidate after MinIO, credential, or S3 API changes." if readiness == "ready" else "Resolve MinIO gaps, then rerun Full Validation."
-        ) }}
+                "Revalidate after MinIO, credential, or S3 API changes." if readiness == "ready" else "Resolve MinIO gaps, then rerun Full Validation.") }}
         {% if readiness == "ready" %}
             {% set readiness_decision_title = "Provider Readiness Is Ready" %}
             {% set readiness_decision_message = "MinIO identity, compatibility, S3 access, and required provider capabilities are ready. Observability evidence remains binding-specific." %}

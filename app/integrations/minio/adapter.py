@@ -5,7 +5,6 @@ from typing import Any
 
 from app.extensions.db import db
 from app.integrations.contracts import CapabilitySnapshot, DiagnosticResult, HealthFactor, RuntimeState
-from app.integrations.minio.binding import ensure_primary_asset_binding, validate_asset_binding
 from app.integrations.minio.capabilities import CAPABILITY_KEYS, CAPABILITY_PROFILE
 from app.integrations.minio.client import test_instance_connection
 from app.integrations.minio.compatibility import evaluate_minio_release
@@ -96,10 +95,10 @@ class MinioRuntimeAdapter:
     provider = 'minio'
 
     def refresh(self, instance: MinioInstance) -> dict[str, Any]:
-        compatibility = evaluate_minio_release(instance.declared_release)
         now = datetime.now(UTC)
         result = test_instance_connection(instance)
-        product_ready = result.product == 'minio'
+        compatibility = evaluate_minio_release(instance.declared_release, product=result.product)
+        product_identified = result.product != 's3_compatible'
 
         instance.detected_product = result.product
         instance.observed_server_header = result.server_header
@@ -120,9 +119,10 @@ class MinioRuntimeAdapter:
             'deployment_id': result.deployment_id,
             'detected_product': result.product,
             'identity_evidence': result.identity_evidence,
+            'compatibility_supported_range': compatibility.supported_range,
         }
 
-        if not product_ready:
+        if not product_identified:
             instance.readiness_status = 'blocked'
             instance.compatibility_status = 'product_mismatch'
             instance.compatibility_profile = None
@@ -154,7 +154,7 @@ class MinioRuntimeAdapter:
             {
                 'asset_type': 'object_storage_system',
                 'asset_key': instance.object_storage_system_id,
-                'endpoint_product': 'minio',
+                'endpoint_product': result.product,
                 'declared_release': instance.declared_release,
             }
         )
@@ -201,17 +201,6 @@ class MinioRuntimeAdapter:
             return self.refresh_health(instance)
         if operation == 'runtime.state':
             return self.get_state(instance, validation_result=kwargs.get('validation_result'))
-        if operation == 'binding.create':
-            return ensure_primary_asset_binding(instance, commit=bool(kwargs.get('commit', True)))
-        if operation == 'binding.validate':
-            binding = kwargs.get('binding')
-            if binding is None:
-                raise ValueError('MinIO binding.validate requires a binding.')
-            return validate_asset_binding(
-                instance=instance,
-                binding=binding,
-                commit=bool(kwargs.get('commit', True)),
-            )
         raise ValueError(f'Unsupported MinIO integration operation: {operation}')
 
     def get_state(

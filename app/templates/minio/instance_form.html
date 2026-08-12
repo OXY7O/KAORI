@@ -3,11 +3,10 @@
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/form_action_bar.html" as form_action_bar %}
 {% import "components/action_button.html" as action_button %}
-{% import "components/page_hero.html" as page_hero %}
-{% from "integrations/components/_semantic_status.html" import integration_status %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "integrations/components/_provider_registration_hero.html" as provider_registration_hero %}
+{% import "integrations/components/_provider_edit_hero.html" as provider_edit_hero %}
 {% import "integrations/components/_provider_registration_context.html" as provider_registration_context %}
 {% import "integrations/components/_provider_registration_actions.html" as provider_registration_actions %}
 {% block title %}{{ "Edit" if instance is defined and instance else "Register" }} MinIO Connection · KAORI{% endblock title %}
@@ -15,42 +14,19 @@
     <div id="minio-registration-workspace"
          class="kaori-integration-semantic space-y-6">
         {% if instance is defined and instance %}
-            <section class="{{ page_hero.shell_classes() }}">
-                <div class="{{ page_hero.layout_classes() }}">
-                    <div class="{{ page_hero.content_classes() }}">
-                        {% call page_hero.intro("database", "Object Storage Integration", "settings-2") %}
-                            <h1 class="{{ page_hero.title_classes() }}">Edit MinIO Connection</h1>
-                            <p class="mt-2 {{ page_hero.description_classes() }}">Update the reusable MinIO API connection contract while preserving the canonical object-storage asset and its consumer bindings.</p>
-                            <div class="{{ page_hero.metadata_row_classes() }}">
-                                {{ page_hero.meta_label('database-zap', 'MinIO-Compatible S3 API') }}
-                                {{ page_hero.meta_label('shield-check', 'Revalidate After Change') }}
-                                {{ page_hero.meta_label('link-2', 'Bindings Preserved') }}
-                            </div>
-                        {% endcall %}
-                    </div>
-                    <aside class="{{ page_hero.aside_classes() }}"
-                           aria-label="MinIO configuration posture">
-                        <div class="{{ page_hero.context_panel_classes() }}">
-                            <div class="flex items-start justify-between gap-4">
-                                <div class="min-w-0">
-                                    <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Configuration Posture</p>
-                                    <h2 class="{{ page_hero.context_panel_title_classes() }}">Preserve Asset, Revalidate Changes</h2>
-                                </div>
-                                {{ integration_status(instance.readiness_status or "validation_required", (instance.readiness_status or "validation_required") |replace("_", " ")|title) }}
-                            </div>
-                            <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                                {{ page_hero.context_metric("fingerprint", "Managed Asset", instance.object_storage_system.name, "Canonical object-storage asset remains stable", value_classes="truncate text-sm font-semibold leading-5") }}
-                                {{ page_hero.context_metric("scan-search", "After Save", "Core Validation", "Refresh provider evidence", value_classes="text-sm font-semibold leading-5") }}
-                            </div>
-                            <a href="{{ url_for('minio.instance_detail', instance_id=instance.id) }}"
-                               class="{{ page_hero.context_single_action_classes() }}">
-                                <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
-                                Back to Connection
-                            </a>
-                        </div>
-                    </aside>
-                </div>
-            </section>
+            {{ provider_edit_hero.render("database",
+                        "Object Storage Integration",
+                        "settings-2",
+                        "Edit MinIO Connection",
+                        "Update the S3 API connection while preserving the object-storage asset and bindings.",
+                        "database-zap",
+                        "MinIO-Compatible S3 API",
+                        "Managed Asset",
+                        instance.object_storage_system.name,
+                        instance.environment|default("")|title,
+                        instance.readiness_status or "validation_required",
+                        url_for("minio.index"),
+            "MinIO configuration posture") }}
         {% else %}
             {{ provider_registration_hero.render("database",
                         "Object Storage Integration",
@@ -152,6 +128,12 @@
                                 <label class="block">
                                     <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.secret_key.label.text }}</span>
                                     {{ form.secret_key(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="new-password") }}
+                                    {% if instance is defined and instance %}
+                                        <p class="mt-1.5 text-xs leading-5 text-content-muted">Blank Preserves Existing Secret Key.</p>
+                                    {% endif %}
+                                    {% for error in form.secret_key.errors %}
+                                        <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
+                                    {% endfor %}
                                 </label>
                             </div>
                         </div>
@@ -183,6 +165,7 @@
                             <label class="block">
                                 <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.declared_release.label.text }}</span>
                                 {{ form.declared_release(class_="h-11 w-full cursor-not-allowed rounded-lg border border-outline-default bg-surface-hover px-3.5 font-mono text-sm text-content-secondary") }}
+                                <p class="mt-1.5 text-xs leading-5 text-content-muted">{{ form.declared_release.description }}</p>
                             </label>
                         </div>
                         <div class="mt-4 grid gap-3 md:grid-cols-2">
@@ -197,7 +180,7 @@
                 </div>
                 {% if instance is defined and instance %}
                     {% call form_action_bar.render("Save changes, then run Core Validation before interpreting provider readiness.", aria_label="MinIO Configuration Actions", embedded=true) %}
-                        <a href="{{ url_for('minio.instance_detail', instance_id=instance.id) }}"
+                        <a href="{{ url_for('minio.index', tab='registry') }}"
                            class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary">Cancel</a>
                         <button type="submit"
                                 class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover">

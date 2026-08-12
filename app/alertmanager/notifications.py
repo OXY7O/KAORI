@@ -18,9 +18,12 @@ def record_instance_activity(
     message: str,
     detail: str,
     metadata: dict[str, Any] | None = None,
+    action_url: str | None = None,
+    action_label: str = 'Open Alertmanager Integration',
+    action_icon: str = 'siren',
     queue_feedback: bool = True,
 ) -> dict[str, Any]:
-    action_url = (
+    resolved_action_url = action_url or (
         url_for('alertmanager.instance_detail', instance_id=instance.id)
         if instance is not None and instance.id is not None
         else url_for('integrations.alertmanager')
@@ -39,9 +42,9 @@ def record_instance_activity(
         title=title,
         message=message,
         detail=detail,
-        action_url=action_url,
-        action_label='Open Alertmanager integration',
-        action_icon='siren',
+        action_url=resolved_action_url,
+        action_label=action_label,
+        action_icon=action_icon,
         metadata=payload,
         queue_feedback=queue_feedback,
     )

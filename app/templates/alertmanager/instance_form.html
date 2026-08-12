@@ -1,6 +1,4 @@
 {% extends "layouts/app.html" %}
-{% import "components/page_hero.html" as page_hero %}
-{% from "integrations/components/_semantic_status.html" import integration_status %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/table.html" as table_ui %}
@@ -8,10 +6,11 @@
 {% import "components/form_action_bar.html" as form_action_bar %}
 {% import "components/action_button.html" as action_button %}
 {% import "integrations/components/_provider_registration_hero.html" as provider_registration_hero %}
+{% import "integrations/components/_provider_edit_hero.html" as provider_edit_hero %}
 {% import "integrations/components/_provider_registration_context.html" as provider_registration_context %}
 {% import "integrations/components/_provider_registration_actions.html" as provider_registration_actions %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
-{% block title %}{{ instance.name if instance else 'Register Alertmanager Connection' }} · KAORI{% endblock title %}
+{% block title %}{{ 'Edit Alertmanager Connection' if instance else 'Register Alertmanager Connection' }} · KAORI{% endblock title %}
 {% block dashboard_content %}
     {% set submitted_form = draft_form if draft_form is defined else none %}
     {% set current_auth_type = instance.auth_type if instance else (submitted_form.auth_type if submitted_form else 'none') %}
@@ -27,59 +26,20 @@
     } %}
     <div id="alertmanager-registration-workspace"
          class="kaori-integration-semantic space-y-6">
-        {% set hero_readiness = (instance.readiness_status or 'validation_required') if instance else 'draft' %}
-        {% set source_posture = 'Ready' if hero_readiness == 'ready' else ('Attention' if hero_readiness in ['degraded', 'blocked'] else ('Configured' if instance else 'Draft')) %}
         {% if instance %}
-            <section class="{{ page_hero.shell_classes() }}">
-                <div class="{{ page_hero.layout_classes() }}">
-                    <div class="{{ page_hero.content_classes() }}">
-                        {% call page_hero.intro("siren", "Alerting Integration", "server-cog") %}
-                            <h1 class="{{ page_hero.title_classes() }}">{{ instance.name }}</h1>
-                            <p class="mt-2 {{ page_hero.description_classes() }}">Manage connection settings, validation, runtime health, and consumer bindings.</p>
-                            <div class="{{ page_hero.metadata_row_classes() }}">
-                                {{ page_hero.meta_label("shield-check", hero_readiness|replace("_", " ") |title) }}
-                                {{ page_hero.meta_label("link-2", (bindings|length|string) ~ " Consumer Bindings") }}
-                            </div>
-                        {% endcall %}
-                    </div>
-                    <aside class="{{ page_hero.aside_classes() }}"
-                           aria-label="Alertmanager connection posture">
-                        <div class="{{ page_hero.context_panel_classes() }}">
-                            <div class="flex items-start justify-between gap-4">
-                                <div class="min-w-0">
-                                    <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Posture</p>
-                                    <h2 class="{{ page_hero.context_panel_title_classes() }}">Readiness &amp; Consumer Coverage</h2>
-                                </div>
-                                {{ integration_status("ready" if source_posture == "Ready" else ("degraded" if source_posture == "Attention" else "validation_required") , source_posture) }}
-                            </div>
-                            <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                                {{ page_hero.context_metric("shield-check", "Readiness", hero_readiness|replace("_", " ") |title, "Established by Full Validation", value_classes="truncate text-sm font-semibold leading-5") }}
-                                {{ page_hero.context_metric("link-2", "Consumer Bindings", bindings|length, "Assets eligible to use this source") }}
-                            </div>
-                            <div class="{{ page_hero.context_actions_classes() }}">
-                                <form method="post"
-                                      action="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
-                                      hx-post="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
-                                      hx-target="#alertmanager-validation-workspace"
-                                      hx-swap="outerHTML"
-                                      hx-disabled-elt="button">
-                                    {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                    <button type="submit"
-                                            class="{{ page_hero.context_action_classes() }} cursor-not-allowed opacity-60">
-                                        <i data-lucide="scan-line" class="h-4 w-4" aria-hidden="true"></i>
-                                        Full Validation
-                                    </button>
-                                </form>
-                                <a href="{{ url_for('integrations.alertmanager') }}"
-                                   class="{{ page_hero.context_action_classes() }}">
-                                    <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
-                                    Back to Registry
-                                </a>
-                            </div>
-                        </div>
-                    </aside>
-                </div>
-            </section>
+            {{ provider_edit_hero.render("siren",
+                        "Alerting Integration",
+                        "server-cog",
+                        "Edit Alertmanager Connection",
+                        "Update the reusable alerting connection while preserving consumer bindings.",
+                        "bell-ring",
+                        "Alertmanager API v2",
+                        "Connection",
+                        instance.name,
+                        instance.environment|default("")|title,
+                        instance.readiness_status or "validation_required",
+                        url_for("integrations.alertmanager"),
+            "Alertmanager configuration posture") }}
         {% else %}
             {{ provider_registration_hero.render("siren",
                         "Alerting Integration",
@@ -91,15 +51,13 @@
                         url_for("integrations.alertmanager") ,
             "Alertmanager connection workflow") }}
         {% endif %}
-        {% if instance %}
-            {% include "alertmanager/partials/_runtime_panel.html" %}
-            {% include "alertmanager/partials/_runtime_history.html" %}
-        {% endif %}
+        {% set alertmanager_submit_url = url_for("alertmanager.edit_instance", instance_id=instance.id) if instance else url_for("alertmanager.new_instance", cluster_id=initial_cluster.id if initial_cluster else none) %}
+        {% set alertmanager_test_url = url_for("alertmanager.test_instance_configuration", instance_id=instance.id) if instance else url_for("alertmanager.test_new_instance_connection") %}
         <div class="grid gap-6 xl:grid-cols-12 xl:items-start">
             <form id="alertmanager-instance-form"
                   method="post"
-                  action="{{ url_for('alertmanager.new_instance', cluster_id=initial_cluster.id if initial_cluster else none) }}"
-                  hx-post="{{ url_for('alertmanager.new_instance', cluster_id=initial_cluster.id if initial_cluster else none) }}"
+                  action="{{ alertmanager_submit_url }}"
+                  hx-post="{{ alertmanager_submit_url }}"
                   hx-target="#alertmanager-registration-workspace"
                   hx-select="#alertmanager-registration-workspace"
                   hx-swap="outerHTML"
@@ -183,7 +141,7 @@
                                 ) %}
                                 {% if not instance %}
                                     <button type="button"
-                                            hx-post="{{ url_for('alertmanager.test_new_instance_connection') }}"
+                                            hx-post="{{ alertmanager_test_url }}"
                                             hx-include="#alertmanager-instance-form"
                                             hx-target="#alertmanager-connection-test-result"
                                             hx-swap="innerHTML"
@@ -314,7 +272,7 @@
                     </div>
                     {% if instance %}
                         {% call form_action_bar.render('Save changes, then run Full Validation.', aria_label='Alertmanager Connection Actions') %}
-                            <a href="{{ url_for('alertmanager.instance_detail', instance_id=instance.id) }}"
+                            <a href="{{ url_for('integrations.alertmanager') }}"
                                class="{{ action_button.classes('secondary') }}">Cancel</a>
                             <button type="submit"
                                     data-operation-submit
@@ -367,299 +325,6 @@
                 {% endif %}
             </aside>
         </div>
-        {% if instance %}
-            <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-                <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="scan-search" class="h-5 w-5"></i></span>
-                        <div>
-                            <h2 class="text-lg font-bold text-content-primary">Compatibility &amp; Capability Matrix</h2>
-                            <p class="mt-1 text-sm leading-6 text-content-secondary">Validation checks exposed APIs and observed alert metadata, then maps them to KAORI capability readiness.</p>
-                        </div>
-                    </div>
-                </header>
-                <div class="grid gap-6 p-5 sm:p-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]">
-                    <div class="overflow-hidden rounded-xl border border-outline-subtle">
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full text-left text-sm">
-                                <thead class="bg-surface-hover text-xs font-semibold text-content-tertiary">
-                                    <tr>
-                                        <th class="px-4 py-3">Capability</th>
-                                        <th class="px-4 py-3">Category</th>
-                                        <th class="px-4 py-3">Required</th>
-                                        <th class="px-4 py-3">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-outline-subtle">
-                                    {% for row in capability_rows %}
-                                        <tr>
-                                            <td class="px-4 py-3">
-                                                <p class="font-bold text-content-primary">{{ row.label }}</p>
-                                                <p class="mt-1 text-xs text-content-secondary">{{ row.description }}</p>
-                                            </td>
-                                            <td class="px-4 py-3 text-content-secondary">{{ row.category|title }}</td>
-                                            <td class="px-4 py-3 text-content-secondary">{{ 'Yes' if row.required else 'No' }}</td>
-                                            <td class="px-4 py-3">{{ integration_status('ready' if row.available else ('blocked' if row.required else 'not_configured') ) }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="space-y-3">
-                        <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4 dark:bg-surface-muted">
-                            <p class="text-xs font-bold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">Detected Profile</p>
-                            <p class="mt-2 font-bold text-content-primary">{{ instance.capability_profile or 'Validation required' }}</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI uses detected capabilities at runtime instead of hard-coded product or version assumptions.</p>
-                        </div>
-                        {% for row in module_readiness_rows %}
-                            <div class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
-                                <div class="flex items-center justify-between gap-3">
-                                    <p class="font-bold text-content-primary">{{ row.label }}</p>
-                                    {{ integration_status(row.status) }}
-                                </div>
-                                {% if row.missing_required %}
-                                    <p class="mt-2 text-xs leading-5 text-content-secondary">Missing required: {{ row.missing_required|join(", ") }}</p>
-                                {% elif row.missing_optional %}
-                                    <p class="mt-2 text-xs leading-5 text-content-secondary">Optional metadata not observed: {{ row.missing_optional|join(", ") }}</p>
-                                {% else %}
-                                    <p class="mt-2 text-xs leading-5 text-content-secondary">All declared requirements are available.</p>
-                                {% endif %}
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </section>
-            <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-                <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="route" class="h-5 w-5"></i></span>
-                        <div>
-                            <h2 class="text-lg font-bold text-content-primary">Effective Source Resolution</h2>
-                            <p class="mt-1 text-sm leading-6 text-content-secondary">See which connection KAORI selects for each bound operational context, including capability gates, runtime health, and fallback decisions.</p>
-                        </div>
-                    </div>
-                </header>
-                <div class="space-y-5 p-5 sm:p-6">
-                    {% for scope in source_resolution_rows %}
-                        <article class="overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card">
-                            <div class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-                                <div>
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <p class="font-bold text-content-primary">{{ scope.scope_label }}</p>
-                                        {{ table_label.metadata_label(scope_type_labels.get(scope.scope_type, scope.scope_type_label) , 'boxes') }}
-                                    </div>
-                                    <p class="mt-1 text-xs text-content-tertiary">{{ scope.scope_type }}:{{ scope.scope_key }}</p>
-                                </div>
-                                <p class="text-xs text-content-secondary">Resolver evaluates every enabled binding for this operational context.</p>
-                            </div>
-                            <div class="grid gap-4 p-4 xl:grid-cols-2">
-                                {% for consumer_key, consumer_label, resolution in [('alerts', 'Alert retrieval', scope.alerts), ('silences', 'Silence retrieval', scope.silences)] %}
-                                    <section class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
-                                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                            <div>
-                                                <p class="text-xs font-bold uppercase tracking-wide text-content-tertiary">{{ consumer_label }}</p>
-                                                <p class="mt-2 font-bold text-content-primary">{{ resolution.selected_instance_name or 'No eligible source' }}</p>
-                                                <p class="mt-1 text-xs text-content-secondary">Requires {{ resolution.required_capabilities|join(", ") }}</p>
-                                            </div>
-                                            {% if resolution.selected_instance_id %}
-                                                {% if resolution.current_instance_selected %}
-                                                    {{ table_label.status_label('This instance is effective', 'normal', 'circle-check') }}
-                                                {% else %}
-                                                    {{ table_label.status_label('Another source is effective', 'info', 'route') }}
-                                                {% endif %}
-                                            {% else %}
-                                                {{ table_label.status_label('Unavailable', 'critical', 'octagon-alert') }}
-                                            {% endif %}
-                                        </div>
-                                        <div class="mt-4 space-y-2">
-                                            {% for candidate in resolution.candidates %}
-                                                <div class="rounded-xl border p-3 {{ 'border-status-normal-border bg-status-normal-soft' if candidate.is_selected else ('border-status-critical-border bg-status-critical-soft' if not candidate.eligible else 'border-outline-subtle bg-surface-card') }}">
-                                                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                                        <div class="min-w-0">
-                                                            <div class="flex flex-wrap items-center gap-2">
-                                                                <p class="truncate text-sm font-bold text-content-primary">{{ candidate.instance_name }}</p>
-                                                                {% if candidate.is_current_instance %}{{ table_label.metadata_label('Current', 'server-cog') }}{% endif %}
-                                                                {% if candidate.is_selected %}{{ table_label.status_label('Selected', 'normal', 'circle-check') }}{% endif %}
-                                                            </div>
-                                                            <p class="mt-1 text-xs text-content-secondary">{{ candidate.binding_role|title }} · Priority {{ candidate.priority }} · {{ candidate.operational_state|replace('_', ' ') |title }}</p>
-                                                        </div>
-                                                        {% if candidate.eligible %}
-                                                            {{ table_label.status_label('Eligible', 'normal', 'circle-check') }}
-                                                        {% else %}
-                                                            {{ table_label.status_label('Skipped', 'critical', 'circle-x') }}
-                                                        {% endif %}
-                                                    </div>
-                                                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ candidate.decision_reason }}</p>
-                                                    {% if candidate.missing_capability_labels %}
-                                                        <p class="mt-2 text-xs font-semibold text-status-critical-text">Missing: {{ candidate.missing_capability_labels|join(", ") }}</p>
-                                                    {% endif %}
-                                                </div>
-                                            {% else %}
-                                                <div class="rounded-xl border border-dashed border-outline-default bg-surface-card px-4 py-6 text-center text-sm text-content-secondary">No enabled bindings are available for this scope.</div>
-                                            {% endfor %}
-                                        </div>
-                                    </section>
-                                {% endfor %}
-                            </div>
-                        </article>
-                    {% else %}
-                        <div class="rounded-xl border border-dashed border-outline-default bg-surface-hover px-5 py-10 text-center">
-                            <p class="font-bold text-content-primary">No source resolution is available yet.</p>
-                            <p class="mt-2 text-sm text-content-secondary">Add a scope binding to evaluate eligible sources, capability mismatches, and fallback order.</p>
-                        </div>
-                    {% endfor %}
-                </div>
-            </section>
-            <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-                <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary dark:text-kaori-accent"><i data-lucide="link-2" class="h-5 w-5"></i></span>
-                        <div>
-                            <h2 class="text-lg font-bold text-content-primary">Scope Bindings</h2>
-                            <p class="mt-1 text-sm leading-6 text-content-secondary">Associate this source with multiple infrastructure assets, services, operational domains, workflows, or global contexts through canonical bindings.</p>
-                        </div>
-                    </div>
-                </header>
-                <div class="grid items-start gap-6 p-5 sm:p-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-                    <div class="overflow-hidden rounded-xl border border-outline-subtle">
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full text-left text-sm">
-                                <thead class="bg-surface-hover text-xs font-semibold text-content-tertiary">
-                                    <tr>
-                                        <th class="px-4 py-3">Scope</th>
-                                        <th class="px-4 py-3">Role</th>
-                                        <th class="px-4 py-3">Priority</th>
-                                        <th class="px-4 py-3">Status</th>
-                                        <th class="px-4 py-3 text-right">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-outline-subtle">
-                                    {% for row in binding_rows %}
-                                        <tr>
-                                            <td class="px-4 py-3">
-                                                <p class="font-bold text-content-primary">{{ row.scope_label }}</p>
-                                                <p class="mt-1 text-xs text-content-tertiary">{{ scope_type_labels.get(row.binding.asset_type, row.binding.asset_type|replace('_', ' ') |title) }} · {{ row.binding.asset_key }}</p>
-                                            </td>
-                                            <td class="px-4 py-3 text-content-secondary">{{ row.binding.binding_role|title }}</td>
-                                            <td class="px-4 py-3 text-content-secondary">{{ row.binding.priority }}</td>
-                                            <td class="px-4 py-3">{{ integration_status('ready' if row.binding.enabled else 'not_configured') }}</td>
-                                            <td class="px-4 py-3 text-right">
-                                                <button type="button"
-                                                        data-alertmanager-delete-button
-                                                        data-delete-url="{{ url_for('alertmanager.remove_binding', instance_id=instance.id, binding_id=row.binding.id) }}"
-                                                        data-delete-title="Remove scope binding?"
-                                                        data-delete-name="{{ row.scope_label }}"
-                                                        data-delete-detail="This Alertmanager connection will no longer be eligible for the selected operational scope. Historical activity remains available in Activity Audit Log."
-                                                        data-delete-action-label="Remove binding"
-                                                        class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-status-critical-border bg-surface-card px-3 text-xs font-semibold text-status-critical-text transition hover:bg-status-critical-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus cursor-pointer disabled:cursor-not-allowed">
-                                                    <i data-lucide="unlink" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                                    Remove
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    {% else %}
-                                        <tr>
-                                            <td colspan="5"
-                                                class="px-5 py-12 text-center text-sm text-content-secondary">This source is not bound to any operational scope.</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <form method="post"
-                          action="{{ url_for('alertmanager.create_binding', instance_id=instance.id) }}"
-                          x-data="{ scopeType: 'kubernetes_cluster' }"
-                          class="self-start space-y-4 rounded-xl border border-brand-outline bg-kaori-soft p-4 dark:bg-surface-muted">
-                        <div>
-                            <p class="text-xs font-bold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">Add or Update Binding</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">One primary source is allowed per scope; secondary and fallback sources may coexist.</p>
-                        </div>
-                        <label class="block text-xs font-bold text-content-primary">
-                            Scope Type
-                            <select name="scope_type"
-                                    x-model="scopeType"
-                                    class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-normal">
-                                <option value="kubernetes_cluster">Managed cluster</option>
-                                <option value="server">Infrastructure asset</option>
-                                <option value="server_group">Infrastructure asset group</option>
-                                <option value="hci_environment">Platform environment</option>
-                                <option value="storage_service">Infrastructure service</option>
-                                <option value="global">Global operational scope</option>
-                            </select>
-                        </label>
-                        <label x-show="scopeType === 'kubernetes_cluster'"
-                               class="block text-xs font-bold text-content-primary">
-                            Managed cluster
-                            <select name="cluster_scope_key"
-                                    :disabled="scopeType !== 'kubernetes_cluster'"
-                                    class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-normal">
-                                <option value="">Select managed cluster</option>
-                                {% for cluster in clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}
-                            </select>
-                        </label>
-                        <label x-show="scopeType !== 'kubernetes_cluster'"
-                               x-cloak
-                               class="block text-xs font-bold text-content-primary">
-                            Scope key
-                            <input name="generic_scope_key"
-                                   :disabled="scopeType === 'kubernetes_cluster'"
-                                   placeholder="Canonical asset, service, domain, or workflow key"
-                                   class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-normal">
-                        </label>
-                        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                            <label class="text-xs font-bold text-content-primary">
-                                Source Role
-                                <select name="binding_role"
-                                        class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-normal">
-                                    <option value="primary">Primary</option>
-                                    <option value="secondary">Secondary</option>
-                                    <option value="fallback">Fallback</option>
-                                </select>
-                            </label>
-                            <label class="text-xs font-bold text-content-primary">
-                                Priority
-                                <input type="number"
-                                       name="priority"
-                                       min="1"
-                                       max="1000"
-                                       value="100"
-                                       class="mt-2 w-full rounded-xl border border-outline-default bg-surface-card px-3 py-2.5 text-sm font-normal">
-                            </label>
-                        </div>
-                        <input type="hidden" name="enabled" value="1">
-                        <button type="submit"
-                                class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-kaori-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-kaori-primary-hover cursor-pointer disabled:cursor-not-allowed"><i data-lucide="link" class="h-4 w-4"></i>Save Binding</button>
-                    </form>
-                </div>
-            </section>
-            <details class="group overflow-hidden rounded-xl border border-status-critical-border bg-surface-card shadow-sm">
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4">
-                    <div>
-                        <p class="font-semibold text-content-primary">Instance Lifecycle</p>
-                        <p class="mt-1 text-xs text-content-secondary">Deletion is blocked while scope bindings remain.</p>
-                    </div>
-                    <i data-lucide="chevron-down"
-                       class="h-4 w-4 text-content-tertiary transition group-open:rotate-180"></i>
-                </summary>
-                <div class="border-t border-status-critical-border bg-status-critical-soft p-5">
-                    <button type="button"
-                            data-alertmanager-delete-button
-                            data-delete-url="{{ url_for('alertmanager.delete_instance', instance_id=instance.id) }}"
-                            data-delete-title="Delete Alertmanager instance?"
-                            data-delete-name="{{ instance.name }}"
-                            data-delete-detail="The connection identity, endpoint configuration, and saved credentials will be removed. Historical operational activity remains available in Activity Audit Log."
-                            data-delete-action-label="Delete instance"
-                            {% if bindings %}disabled{% endif %}
-                            class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-status-critical-border bg-surface-card px-4 text-sm font-semibold text-status-critical-text transition hover:bg-status-critical-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">
-                        <i data-lucide="trash-2" class="h-4 w-4" aria-hidden="true"></i>
-                        Delete instance
-                    </button>
-                </div>
-            </details>
-            {% include "alertmanager/partials/_delete_confirmation_modal.html" %}
-        {% endif %}
         {% include "components/operation_feedback_oob.html" %}
     </div>
 {% endblock dashboard_content %}

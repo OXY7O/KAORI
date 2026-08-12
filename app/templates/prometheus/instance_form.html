@@ -1,58 +1,31 @@
 {% extends "layouts/app.html" %}
-{% import "components/page_hero.html" as page_hero %}
-{% from "integrations/components/_semantic_status.html" import integration_status %}
 {% import "components/operational_toggle.html" as operational_toggle %}
 {% import "components/form_action_bar.html" as form_action_bar %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "components/table.html" as table_ui %}
 {% import "components/action_button.html" as action_button %}
 {% import "integrations/components/_provider_registration_hero.html" as provider_registration_hero %}
+{% import "integrations/components/_provider_edit_hero.html" as provider_edit_hero %}
 {% import "integrations/components/_provider_registration_context.html" as provider_registration_context %}
 {% import "integrations/components/_provider_registration_actions.html" as provider_registration_actions %}
 {% block title %}{{ 'Edit' if instance else 'Register' }} Prometheus Connection · KAORI{% endblock title %}
 {% block dashboard_content %}
     <div id="prometheus-registration-workspace"
          class="kaori-integration-semantic space-y-6">
-        {% set hero_readiness = (instance.readiness_status or 'validation_required') if instance else 'draft' %}
-        {% set binding_count = bindings|length if bindings is defined else 0 %}
-        {% set source_posture = 'Ready' if hero_readiness == 'ready' else ('Attention' if hero_readiness in ['degraded', 'blocked'] else ('Configured' if instance else 'Draft')) %}
         {% if instance %}
-            <section class="{{ page_hero.shell_classes() }}">
-                <div class="{{ page_hero.layout_classes() }}">
-                    <div class="{{ page_hero.content_classes() }}">
-                        {% call page_hero.intro("activity", "Metrics Integration", "chart-spline") %}
-                            <h1 class="{{ page_hero.title_classes() }}">Edit Prometheus Connection</h1>
-                            <p class="mt-2 {{ page_hero.description_classes() }}">Update the reusable metrics connection contract, then run validation again.</p>
-                            <div class="{{ page_hero.metadata_row_classes() }}">
-                                {{ page_hero.meta_label('database-zap', 'Prometheus-Compatible API') }}
-                                {{ page_hero.meta_label('shield-check', 'Capability-Aware Validation') }}
-                                {{ page_hero.meta_label('link-2', 'Governed Consumer Binding') }}
-                            </div>
-                        {% endcall %}
-                    </div>
-                    <aside class="{{ page_hero.aside_classes() }}"
-                           aria-label="Prometheus connection workflow">
-                        <div class="{{ page_hero.context_panel_classes() }}">
-                            <div class="flex items-start justify-between gap-4">
-                                <div class="min-w-0">
-                                    <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Posture</p>
-                                    <h2 class="{{ page_hero.context_panel_title_classes() }}">Readiness &amp; Consumer Coverage</h2>
-                                </div>
-                                {{ integration_status("ready" if source_posture == "Ready" else ("degraded" if source_posture == "Attention" else "validation_required") , source_posture) }}
-                            </div>
-                            <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                                {{ page_hero.context_metric("shield-check", "Readiness", hero_readiness|replace("_", " ") |title, "Established by Full Validation", value_classes="truncate text-sm font-semibold leading-5") }}
-                                {{ page_hero.context_metric("link-2", "Consumer Bindings", binding_count, "Assets eligible to use this source") }}
-                            </div>
-                            <a href="{{ url_for('prometheus.instance_detail', instance_id=instance.id) }}"
-                               class="{{ page_hero.context_single_action_classes() }}">
-                                <i data-lucide="arrow-left" class="h-4 w-4" aria-hidden="true"></i>
-                                Back to Connection
-                            </a>
-                        </div>
-                    </aside>
-                </div>
-            </section>
+            {{ provider_edit_hero.render("activity",
+                        "Metrics Integration",
+                        "chart-spline",
+                        "Edit Prometheus Connection",
+                        "Update the reusable metrics connection while preserving consumer bindings.",
+                        "database-zap",
+                        "Prometheus-Compatible API",
+                        "Connection",
+                        instance.name,
+                        instance.environment|default("")|title,
+                        instance.readiness_status or "validation_required",
+                        url_for("integrations.prometheus"),
+            "Prometheus configuration posture") }}
         {% else %}
             {{ provider_registration_hero.render("activity",
                         "Metrics Integration",
@@ -64,10 +37,12 @@
                         url_for("integrations.prometheus") ,
             "Prometheus connection workflow") }}
         {% endif %}
+        {% set prometheus_submit_url = url_for("prometheus.edit_instance", instance_id=instance.id) if instance else url_for("prometheus.new_instance", cluster_id=initial_cluster.id if initial_cluster else none) %}
+        {% set prometheus_test_url = url_for("prometheus.test_instance_configuration", instance_id=instance.id) if instance else url_for("prometheus.test_new_instance_connection") %}
         <form id="prometheus-instance-form"
               method="post"
-              action="{{ url_for('prometheus.new_instance', cluster_id=initial_cluster.id if initial_cluster else none) }}"
-              hx-post="{{ url_for('prometheus.new_instance', cluster_id=initial_cluster.id if initial_cluster else none) }}"
+              action="{{ prometheus_submit_url }}"
+              hx-post="{{ prometheus_submit_url }}"
               hx-target="#prometheus-registration-workspace"
               hx-select="#prometheus-registration-workspace"
               hx-swap="outerHTML"
@@ -124,7 +99,7 @@
                             ) %}
                             {% if not instance %}
                                 <button type="button"
-                                        hx-post="{{ url_for('prometheus.test_new_instance_connection') }}"
+                                        hx-post="{{ prometheus_test_url }}"
                                         hx-include="#prometheus-instance-form"
                                         hx-target="#prometheus-connection-test-result"
                                         hx-swap="innerHTML"
@@ -221,7 +196,7 @@
                 {% endif %}
                 {% if instance %}
                     {% call form_action_bar.render('Save changes, then run Full Validation.', aria_label='Prometheus Connection Actions') %}
-                        <a href="{{ url_for('prometheus.instance_detail', instance_id=instance.id) }}"
+                        <a href="{{ url_for('integrations.prometheus') }}"
                            class="{{ action_button.classes('secondary') }}">Cancel</a>
                         <button type="submit"
                                 data-operation-submit

@@ -30,6 +30,6 @@ evidence_items,
 "Alertmanager owns alert routing and delivery. KAORI keeps provider readiness separate from consumer bindings.",
 flow_items,
 "Connection changes require revalidation; existing consumer bindings stay attached to their managed assets.",
-url_for("alertmanager.edit_instance", instance_id=instance.id),
+url_for("alertmanager.edit_instance", instance_id=instance.id) ,
 operational_metadata=operational_metadata
 ) }}

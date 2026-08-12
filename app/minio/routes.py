@@ -192,6 +192,8 @@ def test_new_instance_connection() -> ResponseReturnValue:
                     + (
                         f'Product identity evidence: {result.identity_evidence}. '
                         if result.product == 'minio'
+                        else 'AStor product family was detected; Core Validation will apply its own compatibility qualification. '
+                        if result.product == 'astor'
                         else 'Product identity was not conclusive during Test Connection and will be resolved by Core Validation. '
                     )
                     + 'Register the connection, then run Core Validation.'
@@ -205,6 +207,7 @@ def test_new_instance_connection() -> ResponseReturnValue:
                     'bucket_count': result.bucket_count,
                     'latency_ms': result.latency_ms,
                     'deployment_id': result.deployment_id,
+                    'detected_product': result.product,
                 },
                 queue_feedback=False,
             )
@@ -256,9 +259,9 @@ def edit_instance(instance_id: int) -> ResponseReturnValue:
                 title='MinIO Connection Updated',
                 message=f'{updated.name} configuration was saved.',
                 detail='Connection-sensitive changes reset provider readiness. Run Core Validation before using the updated MinIO connection operationally.',
-                action_url=url_for('minio.instance_detail', instance_id=updated.id, _anchor='configuration'),
+                action_url=url_for('minio.index', tab='registry'),
             )
-            return redirect(url_for('minio.instance_detail', instance_id=updated.id, _anchor='configuration'))
+            return redirect(url_for('minio.index', tab='registry'))
 
     return render_template(
         'minio/instance_form.html',

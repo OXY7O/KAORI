@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from app.integrations.contracts import CapabilityDefinition
+from app.integrations.minio.compatibility import COMPATIBILITY_PROFILE_KEYS
 
 API_CAPABILITIES = (
     CapabilityDefinition('s3_api', 'S3 API', 'Reach the registered S3-compatible API endpoint.', required=True),
@@ -15,7 +16,7 @@ API_CAPABILITIES = (
 )
 
 CAPABILITY_KEYS = tuple(item.key for item in API_CAPABILITIES)
-COMPATIBILITY_PROFILES = ('minio-release-2024-08-03',)
+COMPATIBILITY_PROFILES = COMPATIBILITY_PROFILE_KEYS
 CAPABILITY_PROFILE = 'minio-object-storage-api-v1'
 
 OBJECT_STORAGE_SYSTEM_SCOPE = 'object_storage_system'

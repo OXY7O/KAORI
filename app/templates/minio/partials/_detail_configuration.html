@@ -1,11 +1,11 @@
 {% import "integrations/components/_provider_configuration_contract.html" as provider_configuration_contract %}
 {% set readiness = instance.readiness_status or "validation_required" %}
-{% set compatibility_label = instance.compatibility_profile or "Validation Required" %}
+{% set compatibility_label = instance.compatibility_profile or compatibility_policy.profile_label %}
 {% set summary_items = [
     ("Canonical Identity", "#" ~ canonical.id ~ " · " ~ asset.name, "Stable provider, asset, and audit identity"),
     ("Environment", instance.environment|default("")|title, "Coverage and policy context"),
-    ("Declared Release", instance.declared_release, "Configured MinIO release contract"),
-    ("Compatibility", compatibility_label, "Resolved by Full Validation")
+    ("Detected Product", compatibility_policy.product_label, "Product family resolved by Full Validation"),
+    ("Compatibility", compatibility_label, "Supported Range · " ~ compatibility_policy.supported_range)
 ] %}
 {% set evidence_items = [
     ("server", "brand", "MinIO S3 API Endpoint", instance.endpoint, "Base S3-compatible API endpoint queried by KAORI."),
@@ -17,6 +17,8 @@
 {% set operational_metadata = [
     "S3 API Authority",
     "Read-Only Discovery",
+    "Product · " ~ compatibility_policy.product_label,
+    "Supported Range · " ~ compatibility_policy.supported_range,
     "Region · " ~ (instance.region or "us-east-1"),
     (instance.addressing_style or "path")|title ~ " Addressing"
 ] %}

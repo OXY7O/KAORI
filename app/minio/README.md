@@ -10,7 +10,7 @@ persist provider-pair relationships.
 - Persist the provider through canonical `IntegrationInstance` identity plus one
   provider-neutral `ObjectStorageSystem` asset.
 - Store the secret key using KAORI `EncryptedText` credential handling.
-- Validate the strict `RELEASE.2024-08-03T04-33-23Z` compatibility profile.
+- Resolve the product-specific compatibility profile and its qualified release range. The current MinIO profile qualifies `RELEASE.2024-08-03T04-33-23Z`; AStor remains a separate qualification boundary.
 - Bind an existing Prometheus provider to the same object-storage asset using
   canonical `IntegrationBinding` plus an explicit selector.
 - Validate the selector through the MinIO `object_storage_system` Prometheus

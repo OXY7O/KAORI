@@ -8,6 +8,7 @@ from app.common.presentation import present_user_datetime
 from app.integrations.asset_owner_sources import build_bound_observability_source_rows
 from app.integrations.deletion import asset_owner_deletion_guard
 from app.integrations.minio.capabilities import API_CAPABILITIES, CAPABILITY_PROFILE
+from app.integrations.minio.compatibility import compatibility_policy_view
 from app.integrations.runtime.presentation import runtime_history_view, runtime_observation_state_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.minio.service import (
@@ -300,6 +301,9 @@ def build_detail_context(
         'binding_total': len(all_binding_rows),
         'binding_pagination': binding_pagination,
         'capability_registry': capability_registry,
+        'compatibility_policy': compatibility_policy_view(
+            instance.detected_product or 'minio', instance.declared_release
+        ),
         'validated_at_display': present_user_datetime(instance.last_validated_at, empty='Not validated'),
         'checked_at_display': present_user_datetime(instance.last_checked_at, empty='Not observed'),
         'bucket_count': int((instance.validation_summary or {}).get('bucket_count') or 0),

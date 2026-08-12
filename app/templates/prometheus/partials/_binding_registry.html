@@ -137,7 +137,10 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="6" class="px-5 py-10 text-center text-sm text-content-muted">No consumer binding is attached to this Prometheus source yet.</td>
+                        <td colspan="6" class="px-5 py-10 text-center">
+                            <p class="text-sm font-semibold text-content-primary">No Consumer Bindings</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">Create a binding to authorize this reusable Prometheus source for one managed consumer asset.</p>
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>

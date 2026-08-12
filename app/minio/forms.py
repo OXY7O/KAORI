@@ -8,7 +8,12 @@ from wtforms import BooleanField, IntegerField, PasswordField, SelectField, Stri
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, ValidationError
 
 from app.cluster.constants import ENVIRONMENTS
-from app.integrations.minio.compatibility import SUPPORTED_RELEASE
+from app.integrations.minio.compatibility import (
+    PROFILE_LABEL,
+    SUPPORTED_RELEASE,
+    SUPPORTED_RELEASE_RANGE_LABEL,
+    evaluate_minio_release,
+)
 from app.minio.contracts import MinioRegistrationInput
 
 if TYPE_CHECKING:
@@ -20,7 +25,6 @@ class MinioInstanceForm(FlaskForm):
         super().__init__(*args, **kwargs)
         self.existing_instance = existing_instance
         if existing_instance is not None:
-            self.secret_key.validators = [Optional(), Length(max=4096)]
             self.secret_key.render_kw = {
                 **(self.secret_key.render_kw or {}),
                 'placeholder': 'Leave blank to keep the current secret key',
@@ -49,7 +53,7 @@ class MinioInstanceForm(FlaskForm):
     )
     secret_key = PasswordField(
         'Secret Key',
-        validators=[DataRequired(), Length(max=4096)],
+        validators=[Length(max=4096)],
         render_kw={'placeholder': 'Enter secret key'},
     )
     region = StringField(
@@ -74,6 +78,7 @@ class MinioInstanceForm(FlaskForm):
         'MinIO Server Release',
         validators=[DataRequired(), Length(max=96)],
         default=SUPPORTED_RELEASE,
+        description=f'Profile · {PROFILE_LABEL} · Supported Range · {SUPPORTED_RELEASE_RANGE_LABEL}',
         render_kw={'readonly': True},
     )
     enabled = BooleanField('Allow KAORI to Use This Connection', default=True)
@@ -89,9 +94,14 @@ class MinioInstanceForm(FlaskForm):
             raise ValidationError('Endpoint must not include query parameters or a fragment.')
         field.data = endpoint
 
+    def validate_secret_key(self, field: PasswordField) -> None:
+        if self.existing_instance is None and not str(field.data or '').strip():
+            raise ValidationError('Secret Key is required for a new MinIO connection.')
+
     def validate_declared_release(self, field: StringField) -> None:
-        if str(field.data or '').strip() != SUPPORTED_RELEASE:
-            raise ValidationError(f'This implementation currently supports {SUPPORTED_RELEASE}.')
+        compatibility = evaluate_minio_release(str(field.data or '').strip(), product='minio')
+        if compatibility.readiness != 'ready':
+            raise ValidationError(compatibility.message)
 
     def to_input(self, *, existing_instance: MinioInstance | None = None) -> MinioRegistrationInput:
         current = existing_instance or getattr(self, 'existing_instance', None)

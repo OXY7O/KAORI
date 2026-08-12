@@ -5,6 +5,7 @@ from typing import Any
 
 from app.integrations.compatibility import kubernetes_lifecycle_policy
 from app.integrations.contracts import CapabilitySnapshot, DiagnosticResult, HealthFactor, RuntimeState
+from app.integrations.kubernetes.messages import compact_readiness_reasons
 from app.integrations.runtime.scoring import calculate_health
 from app.models.kubernetes import KubernetesConnection
 

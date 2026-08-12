@@ -4,7 +4,7 @@ MinIO is the first `Storage → Object Storage` provider registered with the KAO
 
 The provider owns the S3 API plane and one provider-neutral `object_storage_system` asset through the MinIO connection record. That owner relationship is not a consumer binding. Prometheus and Alertmanager remain independent Observability providers and may bind to the asset for metrics and alerts. No direct MinIO → Prometheus/Alertmanager foreign key, MinIO self-binding, or product-specific binding table is allowed.
 
-Initial compatibility target: `RELEASE.2024-08-03T04-33-23Z` (`minio-release-2024-08-03`).
+Compatibility is product-specific and range-aware. The current qualified MinIO profile is `minio-release-2024-08-03`, with `RELEASE.2024-08-03T04-33-23Z` as both the minimum and maximum qualified release. AStor is a separate product family and does not inherit the MinIO range until its own profile is qualified.
 
 ## Provider workspace standard
 

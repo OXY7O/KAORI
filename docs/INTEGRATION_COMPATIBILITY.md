@@ -86,7 +86,7 @@ selector is the segregation boundary used by KAORI for that managed asset.
 | Prometheus | Runtime still must be detected | `kube-prometheus-stack-87.10.1`, chart app `v0.92.1` | `prometheus-http-api-v1` when runtime is `>=2,<3` | Block until `/api/v1/status/buildinfo` confirms the server version. |
 | Thanos | `0.39.2` application family | Helm chart `17.3.1` | `thanos-query-prometheus-api-v1` | Supported initial query-backend profile after API and history probes. |
 | Alertmanager | `0.25.0`, `0.33.1` | Shared or asset-associated alerting provider | `alertmanager-api-v2` | Supported after consumer-neutral status, alerts, and silences API probes; asset alert contracts are binding-scoped. |
-| MinIO | `RELEASE.2024-08-03T04-33-23Z` | Object-storage provider | `minio-release-2024-08-03` | Supported after MinIO S3 API identity and core API validation; Prometheus metrics and Alertmanager alerts are independent asset bindings. |
+| MinIO | Qualified range: `RELEASE.2024-08-03T04-33-23Z` only | Object-storage provider | `minio-release-2024-08-03` | Product-specific range policy. Supported after S3 API identity and core API validation; Prometheus metrics and Alertmanager alerts are independent asset bindings. |
 
 The previous classification of `0.39.2` as a Prometheus version was incorrect. It belongs to the Thanos chart application version.
 
@@ -135,7 +135,7 @@ Integration list pages never render passwords, bearer tokens, embedded URL crede
 - Kubernetes: `1.20–1.23` legacy, `1.24–1.29` standard, `1.30–1.33` modern, and `1.34–1.36` current.
 - Prometheus: `2.40–2.x` legacy-supported and `3.x` current.
 - Alertmanager: `0.25–0.26` legacy API-v2 and `0.27–0.33` current API-v2.
-- MinIO: `RELEASE.2024-08-03T04-33-23Z` under the initial strict `minio-release-2024-08-03` profile.
+- MinIO: product-specific, range-aware profiles. The current `minio-release-2024-08-03` profile qualifies `RELEASE.2024-08-03T04-33-23Z` only. AStor is modeled as a separate product family and remains unqualified until a dedicated release range is registered.
 - Thanos Query: `0.39`, `0.40`, and `0.41` profiles.
 
 A matching version profile does not itself make an integration ready. Provider-level API/core checks must pass, while exporter/domain metrics, labels, and query contracts are evaluated independently on each asset binding.

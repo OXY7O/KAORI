@@ -104,14 +104,13 @@ def test_connection_values(
     headers = metadata.get('HTTPHeaders') or {}
     server_header = str(headers.get('server') or '').strip() or None
     deployment_id = str(headers.get('x-minio-deployment-id') or '').strip() or None
-    identity_evidence = _minio_identity_evidence(
+    product, identity_evidence = _detect_product_identity(
         endpoint=endpoint,
         timeout=timeout,
         verify_ssl=verify_ssl,
         server_header=server_header,
         deployment_id=deployment_id,
     )
-    product = 'minio' if identity_evidence != 'unverified' else 's3_compatible'
     buckets = tuple(
         sorted(
             str(item.get('Name') or '').strip()
@@ -146,6 +145,27 @@ def _client_error_message(exc: ClientError) -> str:
         )
     message = str(error.get('Message') or code or 'S3 request failed').strip()
     return f'MinIO S3 API returned {code or "an error"}: {message}'
+
+
+def _detect_product_identity(
+    *,
+    endpoint: str,
+    timeout: int,
+    verify_ssl: bool,
+    server_header: str | None,
+    deployment_id: str | None,
+) -> tuple[str, str]:
+    normalized_header = str(server_header or '').lower()
+    if 'astor' in normalized_header:
+        return 'astor', 'server-header'
+    evidence = _minio_identity_evidence(
+        endpoint=endpoint,
+        timeout=timeout,
+        verify_ssl=verify_ssl,
+        server_header=server_header,
+        deployment_id=deployment_id,
+    )
+    return ('minio', evidence) if evidence != 'unverified' else ('s3_compatible', evidence)
 
 
 def _minio_identity_evidence(
