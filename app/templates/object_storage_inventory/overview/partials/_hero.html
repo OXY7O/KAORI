@@ -4,25 +4,26 @@
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('database-zap', 'Object Storage Inventory', 'database') %}
                 <h1 class="{{ page_hero.title_classes() }}">Object Storage Overview</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Review committed object-storage systems and buckets discovered by validated provider connections.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review committed object-storage assets and inventory signals.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
-                    {{ page_hero.meta_label('server', overview.total_systems ~ ' Systems') }}
-                    {{ page_hero.meta_label('container', overview.total_buckets ~ ' Buckets') }}
-                    {{ page_hero.meta_label('database', 'Database Snapshot') }}
+                    {{ page_hero.meta_label('server', overview.total_systems ~ (' System Registered' if overview.total_systems == 1 else ' Systems Registered') ) }}
+                    {{ page_hero.meta_label('layers-3', overview.asset_catalog|length ~ ' Asset Types') }}
+                    {{ page_hero.meta_label('database', overview.inventory_records ~ ' Inventory Records') }}
                 </div>
             {% endcall %}
         </div>
         {{ page_hero.context_card('Object Storage Inventory Posture',
                 'Inventory Posture',
-                'Managed Storage Coverage',
+                'Fleet Posture',
                 overview.posture_label,
                 overview.posture_tone,
                 [
-                    ('circle-check', 'Ready Systems', overview.ready_systems, 'Provider-ready systems'),
-                    ('scan-search', 'Inventory Coverage', overview.inventory_coverage ~ '%', overview.inventoried_systems ~ '/' ~ overview.total_systems ~ ' systems observed')
+                    ('server-cog', 'Ready Systems', overview.ready_systems ~ '/' ~ overview.total_systems, 'Provider-ready systems'),
+                    ('scan-search', 'Active Signals', overview.active_signal_count, 'Current exceptions')
                 ],
-                'Open Storage Integrations',
+                'Manage Storage',
                 url_for('integrations.storage'),
-                'blocks') }}
+                action_icon='database-zap'
+                ) }}
     </div>
 </section>

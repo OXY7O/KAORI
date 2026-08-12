@@ -29,10 +29,10 @@ printf '\n[3/6] Sidebar Navigation Standard\n'
 python scripts/verify_sidebar_navigation_standard.py
 
 printf '\n[4/6] Object Storage Inventory Contracts\n'
-pytest -q tests/contracts/storage_inventory/test_object_storage_inventory_v1_contract.py
+pytest -q tests/contracts/storage_inventory
 
 printf '\n[5/6] Object Storage Inventory Unit Tests\n'
-pytest -q tests/storage_inventory/test_object_storage_presentation_contract.py
+pytest -q tests/storage_inventory
 
 printf '\n[6/6] Regression Contracts\n'
 if [[ "$FULL" == "true" ]]; then

@@ -1,11 +1,26 @@
+{% import "components/inventory_asset_card.html" as inventory_asset_card %}
 {% import "components/operational_section_card.html" as operational_section_card %}
-{% import "components/resource_posture_grid.html" as posture_grid %}
-{% set metrics = [
-    ('server', 'Managed Systems', overview.total_systems, 'Canonical object-storage systems registered in KAORI.', 'brand'),
-    ('container', 'Inventoried Buckets', overview.total_buckets, 'Buckets committed from the latest provider validation snapshots.', 'brand'),
-    ('circle-check', 'Ready Systems', overview.ready_systems, 'Systems with a ready provider runtime posture.', 'normal' if overview.total_systems and overview.blocked_systems == 0 else ('unknown' if overview.total_systems == 0 else 'warning')),
-    ('scan-search', 'Inventory Coverage', overview.inventory_coverage ~ '%', overview.inventoried_systems ~ '/' ~ overview.total_systems ~ ' systems have committed discovery evidence.', 'normal' if overview.total_systems and overview.inventoried_systems == overview.total_systems else ('unknown' if overview.total_systems == 0 else 'warning'))
-] %}
-{% call operational_section_card.render('Object Storage Inventory Posture', 'Provider-neutral system and bucket coverage from committed KAORI snapshots.', 'database', body_classes='p-0') %}
-    {{ posture_grid.render(metrics, columns=4) }}
+{% import "components/table_label.html" as table_label %}
+{% set asset_badge %}
+    {{ table_label.metadata_label(overview.asset_catalog|length ~ ' Asset Types', icon='layers-3') }}
+{% endset %}
+{% call operational_section_card.render(
+    'Inventory Asset Catalog',
+    'Open one object-storage asset inventory to review records collected from committed snapshots.',
+    'layout-grid',
+    id='object-storage-asset-catalog',
+    header_badge=asset_badge,
+    body_classes='p-5'
+    ) %}
+    <div class="grid gap-4 sm:grid-cols-2">
+        {% for asset in overview.asset_catalog %}
+            {{ inventory_asset_card.render(
+                asset.title,
+                asset.count,
+                asset.description,
+                url_for(asset.endpoint),
+                asset.icon
+            ) }}
+        {% endfor %}
+    </div>
 {% endcall %}

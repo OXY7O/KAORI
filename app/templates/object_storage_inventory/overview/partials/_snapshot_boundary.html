@@ -1,7 +1,18 @@
-{% import "components/operational_callout.html" as operational_callout %}
-{{ operational_callout.render(
-    'Committed Inventory Boundary',
-    'Object Storage Inventory reads PostgreSQL snapshots only. Full Validation owns S3 bucket discovery; inventory pages never query the provider API live.',
-    icon='database',
-    tone='info'
+{% import "components/snapshot_context_bar.html" as snapshot_context_bar %}
+{{ snapshot_context_bar.render(
+    source_label=overview.snapshot.source_label,
+    status=overview.snapshot.status,
+    tone=overview.snapshot.tone,
+    description=overview.snapshot.description,
+    latest_collected=overview.snapshot.latest_collected_at|user_datetime if overview.snapshot.latest_collected_at else 'Not Available',
+    scope_label=overview.snapshot.scope_label,
+    coverage_label=overview.snapshot.coverage_label,
+    exceptions_label=overview.snapshot.exception_label,
+    latest_supporting=overview.snapshot.latest_supporting,
+    scope_supporting=overview.snapshot.scope_supporting,
+    coverage_supporting=overview.snapshot.coverage_supporting,
+    exceptions_supporting=overview.snapshot.exceptions_supporting,
+    coverage_tone=overview.snapshot.coverage_tone,
+    exceptions_tone=overview.snapshot.exceptions_tone,
+    metric_icon_palette='brand'
 ) }}

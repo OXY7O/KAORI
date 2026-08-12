@@ -34,7 +34,19 @@ def _workspace_template(resource: str) -> str:
 @object_storage_inventory_bp.get('/')
 @permission_required('inventory.view')
 def overview() -> ResponseReturnValue:
-    return render_template('object_storage_inventory/overview/index.html', overview=build_overview())
+    overview_context = build_overview(
+        system_page=request.args.get('system_page', 1, type=int) or 1,
+        system_per_page=request.args.get('system_per_page', 5, type=int) or 5,
+    )
+    if (
+        request.headers.get('HX-Request') == 'true'
+        and request.headers.get('HX-Target') == 'object-storage-inventory-summary-content'
+    ):
+        return render_template(
+            'object_storage_inventory/overview/partials/_systems_snapshot_content.html',
+            overview=overview_context,
+        )
+    return render_template('object_storage_inventory/overview/index.html', overview=overview_context)
 
 
 @object_storage_inventory_bp.get('/systems')
