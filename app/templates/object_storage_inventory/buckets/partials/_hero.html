@@ -15,14 +15,14 @@
         {{ page_hero.context_card('Object Storage Bucket Posture',
                 'Bucket Posture',
                 'Committed Discovery Coverage',
-                ('Observed' if inventory.total_buckets else 'No Buckets'),
-                ('normal' if inventory.total_buckets else 'unknown'),
-                [
-                    ('server', 'Systems', inventory.systems_in_scope, 'Systems represented'),
-                    ('database', 'Products', inventory.products_in_scope, 'Detected product families')
-                ],
-                'Open Object Storage Systems',
-                url_for('object_storage_inventory.systems'),
-                'server') }}
+                ('Observed' if inventory.total_buckets else 'No Buckets') ,
+        ('normal' if inventory.total_buckets else 'unknown'),
+        [
+        ('server', 'Systems', inventory.systems_in_scope, 'Systems represented'),
+        ('database', 'Products', inventory.products_in_scope, 'Detected product families')
+        ],
+        'Open Object Storage Systems',
+        url_for('object_storage_inventory.systems'),
+        'server') }}
     </div>
 </section>

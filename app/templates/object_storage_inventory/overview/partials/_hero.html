@@ -18,12 +18,12 @@
                 overview.posture_label,
                 overview.posture_tone,
                 [
-                    ('server-cog', 'Ready Systems', overview.ready_systems ~ '/' ~ overview.total_systems, 'Provider-ready systems'),
-                    ('scan-search', 'Active Signals', overview.active_signal_count, 'Current exceptions')
-                ],
-                'Manage Storage',
-                url_for('integrations.storage'),
-                action_icon='database-zap'
-                ) }}
+                ('server-cog', 'Ready Systems', overview.ready_systems ~ '/' ~ overview.total_systems, 'Provider-ready systems') ,
+        ('scan-search', 'Active Signals', overview.active_signal_count, 'Current exceptions')
+        ],
+        'Manage Storage',
+        url_for('integrations.storage'),
+        action_icon='database-zap'
+        ) }}
     </div>
 </section>

@@ -14,12 +14,11 @@
     ) %}
     <div class="grid gap-4 sm:grid-cols-2">
         {% for asset in overview.asset_catalog %}
-            {{ inventory_asset_card.render(
-                asset.title,
-                asset.count,
-                asset.description,
-                url_for(asset.endpoint),
-                asset.icon
+            {{ inventory_asset_card.render(asset.title,
+                        asset.count,
+                        asset.description,
+                        url_for(asset.endpoint) ,
+            asset.icon
             ) }}
         {% endfor %}
     </div>

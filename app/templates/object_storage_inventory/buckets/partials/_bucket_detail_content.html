@@ -1,18 +1,24 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/details/_detail_content.html" as detail %}
 {% import "components/operational_callout.html" as operational_callout %}
-<div data-kaori-detail-variant="full-workspace-modal" class="{{ detail.expanded_workspace_outer_classes() }}">
+<div data-kaori-detail-variant="full-workspace-modal"
+     class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
-        <header data-resource-detail-header class="{{ detail.expanded_workspace_header_classes() }}">
+        <header data-resource-detail-header
+                class="{{ detail.expanded_workspace_header_classes() }}">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="{{ detail.expanded_workspace_icon_classes() }}"><i data-lucide="container" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2"><h3 class="break-all text-base font-semibold text-content-primary">{{ bucket.name }}</h3>{{ table_label.metadata_label(bucket.product_label) }}{{ table_label.metadata_label(bucket.system_name) }}</div>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Bucket identity and source-system evidence from the latest committed Full Validation snapshot.</p>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h3 class="break-all text-base font-semibold text-content-primary">{{ bucket.name }}</h3>
+                        {{ table_label.metadata_label(bucket.product_label) }}{{ table_label.metadata_label(bucket.system_name) }}
+                    </div>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Bucket identity and source-system evidence from the latest committed Object Storage Inventory Sync snapshot.</p>
                 </div>
             </div>
         </header>
-        <div data-resource-detail-summary class="grid gap-3 border-b border-outline-subtle bg-surface-card p-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div data-resource-detail-summary
+             class="grid gap-3 border-b border-outline-subtle bg-surface-card p-4 sm:grid-cols-2 xl:grid-cols-4">
             {{ detail.summary_metric('System', bucket.system_name, 'Owning object-storage system.', 'server', 'brand') }}
             {{ detail.summary_metric('Product', bucket.product_label, 'Detected provider product.', 'database', 'brand') }}
             {{ detail.summary_metric('Region', bucket.region, 'Configured S3 API region.', 'map-pin', 'brand') }}
@@ -22,7 +28,7 @@
             {% call detail.detail_card('Bucket Identity', 'container') %}
                 {{ detail.technical_row('Bucket Name', bucket.name) }}
                 {{ detail.detail_row('System', bucket.system_name) }}
-                {{ detail.detail_row('Environment', bucket.environment|environment_name(empty='Not Specified')) }}
+                {{ detail.detail_row('Environment', bucket.environment|environment_name(empty='Not Specified') ) }}
                 {{ detail.detail_row('Product', bucket.product_label) }}
                 {{ detail.detail_row('Provider Created', bucket.provider_created_at|user_datetime if bucket.provider_created_at else 'Not Reported') }}
             {% endcall %}

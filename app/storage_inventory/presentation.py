@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -24,6 +25,38 @@ _STATUS_LABELS = {
     'warning': ('Attention', 'warning'),
     'unknown': ('Not Observed', 'unknown'),
 }
+
+
+_RELEASE_TIMESTAMP_RE = re.compile(
+    r'^RELEASE\.(?P<date>\d{4}-\d{2}-\d{2})T\d{2}-\d{2}-\d{2}Z$',
+    re.IGNORECASE,
+)
+_PROFILE_RELEASE_RE = re.compile(
+    r'^(?P<product>minio|astor)-release-(?P<date>\d{4}-\d{2}-\d{2})$',
+    re.IGNORECASE,
+)
+
+
+def _release_display(value: str | None) -> str:
+    """Return a compact operator-facing object-storage release label."""
+    raw = str(value or '').strip()
+    if not raw:
+        return 'Not Declared'
+    match = _RELEASE_TIMESTAMP_RE.fullmatch(raw)
+    return match.group('date') if match else raw
+
+
+def _compatibility_profile_display(value: str | None) -> str:
+    """Convert compatibility profile keys into compact human-facing labels."""
+    raw = str(value or '').strip()
+    if not raw:
+        return 'Not Resolved'
+    match = _PROFILE_RELEASE_RE.fullmatch(raw)
+    if match:
+        product = 'MinIO' if match.group('product').lower() == 'minio' else 'AStor'
+        release_date = match.group('date')
+        return f'{product} {release_date}'
+    return raw.replace('_', ' ').replace('-', ' ').title()
 
 
 def _product_label(value: str | None) -> str:
@@ -75,7 +108,7 @@ def _inventory_signals(row: dict[str, Any]) -> list[dict[str, str]]:
                 'label': 'Inventory Not Collected',
                 'tone': 'warning',
                 'icon': 'database-zap',
-                'description': 'Run Full Validation on the provider connection to commit object-storage inventory.',
+                'description': 'Run Object Storage Inventory Sync from Job Execution to commit the first inventory snapshot.',
             }
         )
     elif _is_stale(row['last_inventory_at']):
@@ -97,21 +130,21 @@ def _inventory_guidance(row: dict[str, Any], signals: list[dict[str, str]]) -> d
     if 'Provider Attention' in labels:
         return {
             'title': 'Review Provider Readiness',
-            'description': 'Open the provider integration, resolve readiness issues, then rerun Full Validation.',
+            'description': 'Open the provider integration, resolve readiness issues with Full Validation, then run Inventory Sync.',
             'icon': 'triangle-alert',
             'tone': 'warning',
         }
     if 'Inventory Not Collected' in labels:
         return {
             'title': 'Collect Inventory',
-            'description': 'Run Full Validation to establish the first committed object-storage snapshot.',
+            'description': 'Run Object Storage Inventory Sync from Job Execution to establish the first committed snapshot.',
             'icon': 'scan-search',
             'tone': 'warning',
         }
     if 'Stale Snapshot' in labels:
         return {
             'title': 'Refresh Inventory',
-            'description': 'Run Full Validation to refresh the committed system and bucket inventory.',
+            'description': 'Run Object Storage Inventory Sync from Job Execution to refresh the committed snapshot.',
             'icon': 'refresh-cw',
             'tone': 'warning',
         }
@@ -149,6 +182,7 @@ def _system_row(system: ObjectStorageSystem) -> dict[str, Any]:
         'release': (
             connection.declared_release if connection is not None and connection.declared_release else 'Not Declared'
         ),
+        'release_label': _release_display(connection.declared_release if connection is not None else None),
         'endpoint': connection.endpoint if connection is not None else 'Not Configured',
         'region': connection.region if connection is not None else 'Not Observed',
         'addressing_style': (
@@ -160,6 +194,9 @@ def _system_row(system: ObjectStorageSystem) -> dict[str, Any]:
             connection.compatibility_profile
             if connection is not None and connection.compatibility_profile
             else 'Not Resolved'
+        ),
+        'compatibility_profile_label': _compatibility_profile_display(
+            connection.compatibility_profile if connection is not None else None
         ),
         'readiness_status': (
             connection.readiness_status
@@ -234,9 +271,7 @@ def _overview_snapshot(rows: list[dict[str, Any]]) -> dict[str, Any]:
         'description': description,
         'latest_collected_at': latest,
         'latest_supporting': (
-            f'{OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS}-hour freshness window'
-            if latest
-            else 'No committed timestamp'
+            f'{OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS}-hour freshness window' if latest else 'No committed timestamp'
         ),
         'scope_label': 'All Managed Systems',
         'scope_supporting': f'{total_systems} Systems Registered',
@@ -369,7 +404,7 @@ def _bucket_row(bucket: ObjectStorageBucket) -> dict[str, Any]:
         'observed_at': bucket.observed_at,
         'region': connection.region if connection is not None else 'Not Observed',
         'endpoint': connection.endpoint if connection is not None else 'Not Configured',
-        'source_label': 'Full Validation Snapshot',
+        'source_label': 'Object Storage Inventory Snapshot',
     }
 
 
@@ -387,15 +422,19 @@ def build_buckets(filters: BucketFilters) -> dict[str, Any]:
     systems = _system_query().all()
     system_rows = [_system_row(system) for system in systems]
     system_by_id = {system.id: system for system in systems}
-    buckets = ObjectStorageBucket.query.options(
-        joinedload(ObjectStorageBucket.object_storage_system).joinedload(ObjectStorageSystem.minio_connection)
-    ).order_by(ObjectStorageBucket.name.asc()).all()
+    buckets = (
+        ObjectStorageBucket.query.options(
+            joinedload(ObjectStorageBucket.object_storage_system).joinedload(ObjectStorageSystem.minio_connection)
+        )
+        .order_by(ObjectStorageBucket.name.asc())
+        .all()
+    )
     rows = [_bucket_row(bucket) for bucket in buckets]
     search = filters.search.strip().lower()
     filtered = [
         row
         for row in rows
-        if (not search or search in f"{row['name']} {row['system_name']} {row['product_label']}".lower())
+        if (not search or search in f'{row["name"]} {row["system_name"]} {row["product_label"]}'.lower())
         and (not filters.system_id or row['system_id'] == filters.system_id)
         and (not filters.product or row['product_key'] == filters.product)
         and (not filters.environment or row['environment'] == filters.environment)
@@ -411,15 +450,17 @@ def build_buckets(filters: BucketFilters) -> dict[str, Any]:
             (row['observed_at'] for row in filtered if row['observed_at'] is not None),
             default=None,
         ),
-        'systems': [
-            {'id': row['id'], 'name': row['name']} for row in system_rows if row['id'] in system_by_id
-        ],
+        'systems': [{'id': row['id'], 'name': row['name']} for row in system_rows if row['id'] in system_by_id],
         **_system_filter_options(system_rows),
     }
 
 
 def build_bucket_detail(bucket_id: int) -> dict[str, Any] | None:
-    bucket = ObjectStorageBucket.query.options(
-        joinedload(ObjectStorageBucket.object_storage_system).joinedload(ObjectStorageSystem.minio_connection)
-    ).filter(ObjectStorageBucket.id == bucket_id).first()
+    bucket = (
+        ObjectStorageBucket.query.options(
+            joinedload(ObjectStorageBucket.object_storage_system).joinedload(ObjectStorageSystem.minio_connection)
+        )
+        .filter(ObjectStorageBucket.id == bucket_id)
+        .first()
+    )
     return _bucket_row(bucket) if bucket is not None else None

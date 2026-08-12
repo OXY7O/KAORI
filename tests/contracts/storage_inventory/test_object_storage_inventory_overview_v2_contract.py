@@ -73,7 +73,7 @@ def test_overview_snapshot_and_signals_are_committed_inventory_only() -> None:
     presentation = read('app/storage_inventory/presentation.py')
     content = read('app/templates/object_storage_inventory/overview/partials/_systems_snapshot_content.html')
 
-    assert "OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS = 24" in presentation
+    assert 'OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS = 24' in presentation
     assert "'source_label': 'Committed Object Storage Snapshot'" in presentation
     assert "'snapshot_source': 'Committed Snapshot'" in presentation
     assert 'Inventory Not Collected' in presentation
@@ -91,3 +91,18 @@ def test_overview_asset_catalog_stays_vendor_neutral() -> None:
     assert "'title': 'Buckets'" in presentation
     assert 'MinIO' not in catalog
     assert 'AStor' not in catalog
+
+
+def test_object_storage_drawer_uses_compact_release_and_profile_labels() -> None:
+    presentation = read('app/storage_inventory/presentation.py')
+    overview = read('app/templates/object_storage_inventory/overview/partials/_systems_snapshot_content.html')
+    systems = read('app/templates/object_storage_inventory/systems/partials/_system_detail_content.html')
+
+    assert '_release_display' in presentation
+    assert '_compatibility_profile_display' in presentation
+    assert "'release_label': _release_display" in presentation
+    assert "'compatibility_profile_label': _compatibility_profile_display" in presentation
+    assert "detail_ui.detail_row('Release', system.release_label)" in overview
+    assert "detail_ui.detail_row('Profile', system.compatibility_profile_label)" in overview
+    assert "detail.detail_row('Release', system.release_label)" in systems
+    assert "detail.detail_row('Profile', system.compatibility_profile_label)" in systems

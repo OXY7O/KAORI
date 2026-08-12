@@ -3,5 +3,5 @@
 {% block dashboard_content %}
     {% import "components/resource_detail_modal.html" as resource_detail_modal %}
     {% include "object_storage_inventory/buckets/partials/_page_workspace.html" %}
-    {{ resource_detail_modal.host('Object Storage Bucket', url_for('object_storage_inventory.bucket_details', bucket_id=0), context_label='Object Storage Inventory', dialog_max_width='max-w-5xl', content_driven=true) }}
+    {{ resource_detail_modal.host('Object Storage Bucket', url_for('object_storage_inventory.bucket_details', bucket_id=0) , context_label='Object Storage Inventory', dialog_max_width='max-w-5xl', content_driven=true) }}
 {% endblock dashboard_content %}

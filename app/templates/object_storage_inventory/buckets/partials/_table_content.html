@@ -20,45 +20,81 @@
             {% for bucket in inventory.buckets %}
                 <tr class="{{ table_ui.row_classes() }}">
                     <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(bucket.name, 'Committed S3 bucket identity', 'container') }}</td>
-                    <td class="{{ table_ui.cell_classes() }}"><p class="text-sm font-semibold text-content-primary">{{ bucket.system_name }}</p></td>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        <p class="text-sm font-semibold text-content-primary">{{ bucket.system_name }}</p>
+                    </td>
                     <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(bucket.product_label) }}</td>
                     <td class="{{ table_ui.cell_classes() }}">{{ bucket.environment|environment_name(empty='Not Specified') }}</td>
                     <td class="{{ table_ui.cell_classes() }}"><span class="text-xs text-content-secondary">{{ bucket.provider_created_at|user_datetime if bucket.provider_created_at else 'Not Reported' }}</span></td>
                     <td class="{{ table_ui.cell_classes() }}"><span class="text-xs text-content-secondary">{{ bucket.observed_at|user_datetime }}</span></td>
-                    <td class="{{ table_ui.cell_classes(true) }}">{{ resource_detail_modal.detail_button(bucket.id, url_for('object_storage_inventory.bucket_details', bucket_id=bucket.id), bucket.name, 'Object Storage Bucket') }}</td>
+                    <td class="{{ table_ui.cell_classes(true) }}">{{ resource_detail_modal.detail_button(bucket.id, url_for('object_storage_inventory.bucket_details', bucket_id=bucket.id) , bucket.name, 'Object Storage Bucket') }}</td>
                 </tr>
             {% else %}
-                <tr><td colspan="7" class="p-0">
-                    {% set empty_state_icon = 'container' %}
-                    {% set empty_state_title = 'No Bucket Inventory Found' %}
-                    {% set empty_state_description = 'Adjust the active filters or run Full Validation on a Storage provider to commit bucket-discovery evidence.' %}
-                    {% set empty_state_min_height = 'min-h-[190px]' %}
-                    {% include 'components/states/_empty_state.html' %}
-                </td></tr>
+                <tr>
+                    <td colspan="7" class="p-0">
+                        {% set empty_state_icon = "container" %}
+                        {% set empty_state_title = "No Bucket Inventory Found" %}
+                        {% set empty_state_description = "Adjust the active filters or run Object Storage Inventory Sync from Job Configuration after the provider is Ready." %}
+                        {% set empty_state_min_height = "min-h-[190px]" %}
+                        {% include 'components/states/_empty_state.html' %}
+                    </td>
+                </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
 <footer class="{{ pagination_ui.footer_classes() }}">
     <div class="{{ pagination_ui.summary_group_classes() }}">
-        <p>Showing <span class="font-semibold text-content-primary">{{ inventory.pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ inventory.pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ inventory.pagination.total_items }}</span> {{ pagination_ui.resource_name('Buckets', inventory.pagination.total_items)|trim }}</p>
-        <form hx-get="{{ url_for('object_storage_inventory.buckets') }}" hx-target="#object-storage-buckets-table-content" hx-swap="innerHTML" hx-indicator="#object-storage-buckets-loading" class="flex items-center gap-2">
-            <input type="hidden" name="page" value="1"><input type="hidden" name="partial_mode" value="table_content">
-            <input type="hidden" name="system_id" value="{{ selected_system_id }}"><input type="hidden" name="product" value="{{ selected_product }}"><input type="hidden" name="environment" value="{{ selected_environment }}"><input type="hidden" name="search" value="{{ search }}">
-            <label for="object-storage-buckets-per-page" class="font-semibold text-content-secondary">Rows</label>
-            <select id="object-storage-buckets-per-page" name="per_page" data-kaori-auto-submit aria-label="Rows Per Page" class="{{ pagination_ui.page_size_classes() }}">{% for option in inventory.pagination.allowed_per_page %}<option value="{{ option }}" {% if inventory.pagination.per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}</select>
+        <p>Showing <span class="font-semibold text-content-primary">{{ inventory.pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ inventory.pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ inventory.pagination.total_items }}</span> {{ pagination_ui.resource_name('Buckets', inventory.pagination.total_items) |trim }}</p>
+        <form hx-get="{{ url_for('object_storage_inventory.buckets') }}"
+              hx-target="#object-storage-buckets-table-content"
+              hx-swap="innerHTML"
+              hx-indicator="#object-storage-buckets-loading"
+              class="flex items-center gap-2">
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="partial_mode" value="table_content">
+            <input type="hidden" name="system_id" value="{{ selected_system_id }}">
+            <input type="hidden" name="product" value="{{ selected_product }}">
+            <input type="hidden" name="environment" value="{{ selected_environment }}">
+            <input type="hidden" name="search" value="{{ search }}">
+            <label for="object-storage-buckets-per-page"
+                   class="font-semibold text-content-secondary">Rows</label>
+            <select id="object-storage-buckets-per-page"
+                    name="per_page"
+                    data-kaori-auto-submit
+                    aria-label="Rows Per Page"
+                    class="{{ pagination_ui.page_size_classes() }}">
+                {% for option in inventory.pagination.allowed_per_page %}
+                    <option value="{{ option }}"
+                            {% if inventory.pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
+            </select>
         </form>
     </div>
     <div class="{{ pagination_ui.navigation_group_classes() }}">
         {% set query_params = {'system_id': selected_system_id, 'product': selected_product, 'environment': selected_environment, 'search': search, 'per_page': inventory.pagination.per_page, 'partial_mode': 'table_content'} %}
         {% if inventory.pagination.has_prev %}
             {% set prev_url = url_for('object_storage_inventory.buckets', system_id=selected_system_id, product=selected_product, environment=selected_environment, search=search, page=inventory.pagination.prev_page, per_page=inventory.pagination.per_page, partial_mode='table_content') %}
-            <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#object-storage-buckets-table-content" hx-swap="innerHTML" hx-indicator="#object-storage-buckets-loading" class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
-        {% else %}<span class="{{ pagination_ui.navigation_classes(true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>{% endif %}
+            <a href="{{ prev_url }}"
+               hx-get="{{ prev_url }}"
+               hx-target="#object-storage-buckets-table-content"
+               hx-swap="innerHTML"
+               hx-indicator="#object-storage-buckets-loading"
+               class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+        {% else %}
+            <span class="{{ pagination_ui.navigation_classes(true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+        {% endif %}
         {{ pagination_ui.numeric_pages(inventory.pagination.page, inventory.pagination.total_pages, hx_target='#object-storage-buckets-table-content', hx_indicator='#object-storage-buckets-loading', query_params=query_params) }}
         {% if inventory.pagination.has_next %}
             {% set next_url = url_for('object_storage_inventory.buckets', system_id=selected_system_id, product=selected_product, environment=selected_environment, search=search, page=inventory.pagination.next_page, per_page=inventory.pagination.per_page, partial_mode='table_content') %}
-            <a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#object-storage-buckets-table-content" hx-swap="innerHTML" hx-indicator="#object-storage-buckets-loading" class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
-        {% else %}<span class="{{ pagination_ui.navigation_classes(true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>{% endif %}
+            <a href="{{ next_url }}"
+               hx-get="{{ next_url }}"
+               hx-target="#object-storage-buckets-table-content"
+               hx-swap="innerHTML"
+               hx-indicator="#object-storage-buckets-loading"
+               class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+        {% else %}
+            <span class="{{ pagination_ui.navigation_classes(true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+        {% endif %}
     </div>
 </footer>

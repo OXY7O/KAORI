@@ -5,8 +5,8 @@
         'Latest committed bucket discovery records. No live S3 query is issued by this page.',
         'object-storage-buckets-loading',
         'Refreshing Bucket Inventory',
-        url_for('integrations.storage'),
-        'Open Storage Integrations') }}
+        url_for('integrations.storage') ,
+    'Open Storage Integrations') }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form hx-get="{{ url_for('object_storage_inventory.buckets') }}"
               hx-target="#object-storage-buckets-workspace"
@@ -16,34 +16,57 @@
               aria-label="Bucket inventory filters"
               class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,0.75fr)_minmax(16rem,1.3fr)] lg:items-end">
             <input type="hidden" name="page" value="1">
-            <input type="hidden" name="per_page" value="{{ inventory.pagination.per_page }}">
+            <input type="hidden"
+                   name="per_page"
+                   value="{{ inventory.pagination.per_page }}">
             <input type="hidden" name="partial_mode" value="page_workspace">
             <div>
-                <label for="object-storage-buckets-system" class="{{ table_ui.filter_label_classes() }}">System</label>
-                <select id="object-storage-buckets-system" name="system_id" class="{{ table_ui.filter_select_classes() }}">
+                <label for="object-storage-buckets-system"
+                       class="{{ table_ui.filter_label_classes() }}">System</label>
+                <select id="object-storage-buckets-system"
+                        name="system_id"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Systems</option>
-                    {% for system in inventory.systems %}<option value="{{ system.id }}" {% if selected_system_id == system.id %}selected{% endif %}>{{ system.name }}</option>{% endfor %}
+                    {% for system in inventory.systems %}
+                        <option value="{{ system.id }}"
+                                {% if selected_system_id == system.id %}selected{% endif %}>{{ system.name }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div>
-                <label for="object-storage-buckets-product" class="{{ table_ui.filter_label_classes() }}">Product</label>
-                <select id="object-storage-buckets-product" name="product" class="{{ table_ui.filter_select_classes() }}">
+                <label for="object-storage-buckets-product"
+                       class="{{ table_ui.filter_label_classes() }}">Product</label>
+                <select id="object-storage-buckets-product"
+                        name="product"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Products</option>
-                    {% for option in inventory.products %}<option value="{{ option.value }}" {% if selected_product == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
+                    {% for option in inventory.products %}
+                        <option value="{{ option.value }}"
+                                {% if selected_product == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div>
-                <label for="object-storage-buckets-environment" class="{{ table_ui.filter_label_classes() }}">Environment</label>
-                <select id="object-storage-buckets-environment" name="environment" class="{{ table_ui.filter_select_classes() }}">
+                <label for="object-storage-buckets-environment"
+                       class="{{ table_ui.filter_label_classes() }}">Environment</label>
+                <select id="object-storage-buckets-environment"
+                        name="environment"
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Environments</option>
-                    {% for option in inventory.environments %}<option value="{{ option.value }}" {% if selected_environment == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
+                    {% for option in inventory.environments %}
+                        <option value="{{ option.value }}"
+                                {% if selected_environment == option.value %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div>
-                <label for="object-storage-buckets-search" class="{{ table_ui.filter_label_classes() }}">Search Buckets</label>
+                <label for="object-storage-buckets-search"
+                       class="{{ table_ui.filter_label_classes() }}">Search Buckets</label>
                 {{ table_ui.search_field('search', search, 'Search bucket, system, or product', id='object-storage-buckets-search') }}
             </div>
         </form>
     </div>
-    <div id="object-storage-buckets-table-content">{% include "object_storage_inventory/buckets/partials/_table_content.html" %}</div>
+    <div id="object-storage-buckets-table-content">
+        {% include "object_storage_inventory/buckets/partials/_table_content.html" %}
+    </div>
 </section>
