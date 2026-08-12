@@ -25,6 +25,7 @@ def register_blueprints(app: Flask) -> None:
     from app.prometheus.routes import prometheus_bp
     from app.reports.routes import reports_bp
     from app.settings import bp as settings_bp
+    from app.storage_inventory.routes import object_storage_inventory_bp
     from app.users.routes import bp as users_bp
     from app.welcome.routes import welcome_bp
 
@@ -35,6 +36,7 @@ def register_blueprints(app: Flask) -> None:
         kubernetes_dashboard_bp,
         cluster_bp,
         inventory_bp,
+        object_storage_inventory_bp,
         notifications_bp,
         analytics_bp,
         governance_bp,

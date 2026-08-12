@@ -35,7 +35,7 @@ This document is the entry point for KAORI's interface contract. New modules mus
 - `components/CONNECTION_VALIDATION_HEADER.md`
 - `components/OPERATIONAL_TOGGLE.md`
 - `components/OPERATIONAL_ACTION_FEEDBACK.md`
-- `components/SIDEBAR_NAVIGATION.md` — locked v1.2 sidebar hierarchy, geometry, and information architecture.
+- `components/SIDEBAR_NAVIGATION.md` — locked v1.3 sidebar hierarchy, geometry, and information architecture.
 
 ## Global guardrail
 

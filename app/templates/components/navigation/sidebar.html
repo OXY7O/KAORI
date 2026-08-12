@@ -86,6 +86,12 @@
                 </div>
             </div>
         {% endif %}
+        {% if can_inventory %}
+            <div class="sidebar-nav-section">
+                <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Storage</div>
+                <div class="space-y-1">{% include "components/navigation/object_storage_menu.html" %}</div>
+            </div>
+        {% endif %}
         {% if can_analytics or can_intelligence or can_reports %}
             <div class="sidebar-nav-section">
                 <div class="sidebar-expanded-only mb-1.5 px-3 sidebar-section-label text-xs font-extrabold uppercase tracking-widest">Insights &amp; Reporting</div>

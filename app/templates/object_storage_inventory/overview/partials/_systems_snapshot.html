@@ -1,0 +1,49 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/resource_detail_modal.html" as resource_detail_modal %}
+<section class="{{ table_ui.block_classes() }}">
+    <header class="{{ table_ui.block_header_classes() }}">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ table_ui.block_icon_classes() }}"><i data-lucide="server" class="h-4 w-4"></i></span>
+            <div class="min-w-0">
+                <h2 class="{{ table_ui.block_title_classes() }}">Managed Systems Snapshot</h2>
+                <p class="{{ table_ui.block_description_classes() }}">Latest committed provider and bucket coverage across managed object-storage systems.</p>
+            </div>
+        </div>
+        <a href="{{ url_for('object_storage_inventory.systems') }}" class="{{ table_ui.action_classes() }}">View Systems</a>
+    </header>
+    <div class="overflow-x-auto">
+        <table class="{{ table_ui.table_classes('min-w-[64rem]') }}">
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th class="{{ table_ui.header_cell_classes() }}">System</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Product</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Environment</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Buckets</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Status</th>
+                    <th class="{{ table_ui.header_cell_classes(true) }}">Details</th>
+                </tr>
+            </thead>
+            <tbody class="{{ table_ui.body_classes() }}">
+                {% for system in overview.systems %}
+                    <tr class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(system.name, system.endpoint, 'server') }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(system.product_label) }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ system.environment|environment_name(empty='Not Specified') }}</td>
+                        <td class="{{ table_ui.cell_classes() }}"><span class="font-semibold text-content-primary">{{ system.bucket_count }}</span></td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(system.status_label, system.status_tone) }}</td>
+                        <td class="{{ table_ui.cell_classes(true) }}">{{ resource_detail_modal.detail_button(system.id, url_for('object_storage_inventory.system_details', system_id=system.id), system.name, 'Object Storage System') }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="6" class="p-0">
+                        {% set empty_state_icon = 'database-zap' %}
+                        {% set empty_state_title = 'No Object Storage Systems Found' %}
+                        {% set empty_state_description = 'Register and validate a Storage integration to establish the first managed object-storage asset.' %}
+                        {% set empty_state_min_height = 'min-h-[190px]' %}
+                        {% include 'components/states/_empty_state.html' %}
+                    </td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>

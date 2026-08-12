@@ -1,0 +1,28 @@
+{% import "components/page_hero.html" as page_hero %}
+<section class="{{ page_hero.shell_classes() }}">
+    <div class="{{ page_hero.layout_classes() }}">
+        <div class="{{ page_hero.content_classes() }}">
+            {% call page_hero.intro('database-zap', 'Object Storage Inventory', 'database') %}
+                <h1 class="{{ page_hero.title_classes() }}">Object Storage Overview</h1>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review committed object-storage systems and buckets discovered by validated provider connections.</p>
+                <div class="{{ page_hero.metadata_row_classes() }}">
+                    {{ page_hero.meta_label('server', overview.total_systems ~ ' Systems') }}
+                    {{ page_hero.meta_label('container', overview.total_buckets ~ ' Buckets') }}
+                    {{ page_hero.meta_label('database', 'Database Snapshot') }}
+                </div>
+            {% endcall %}
+        </div>
+        {{ page_hero.context_card('Object Storage Inventory Posture',
+                'Inventory Posture',
+                'Managed Storage Coverage',
+                overview.posture_label,
+                overview.posture_tone,
+                [
+                    ('circle-check', 'Ready Systems', overview.ready_systems, 'Provider-ready systems'),
+                    ('scan-search', 'Inventory Coverage', overview.inventory_coverage ~ '%', overview.inventoried_systems ~ '/' ~ overview.total_systems ~ ' systems observed')
+                ],
+                'Open Storage Integrations',
+                url_for('integrations.storage'),
+                'blocks') }}
+    </div>
+</section>

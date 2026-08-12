@@ -4,7 +4,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, String, Text
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions.db import db
@@ -24,6 +24,7 @@ class ObjectStorageSystem(db.Model):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(30), nullable=False, default='unknown')
     last_check: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    inventory_observed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
     )
@@ -40,4 +41,36 @@ class ObjectStorageSystem(db.Model):
         cascade='all, delete-orphan',
         passive_deletes=True,
         uselist=False,
+    )
+    buckets: Mapped[list[ObjectStorageBucket]] = relationship(
+        'ObjectStorageBucket',
+        back_populates='object_storage_system',
+        cascade='all, delete-orphan',
+        passive_deletes=True,
+        order_by='ObjectStorageBucket.name',
+    )
+
+
+class ObjectStorageBucket(db.Model):
+    """Committed bucket discovery snapshot for one object-storage system."""
+
+    __tablename__ = 'object_storage_buckets'
+    __table_args__ = (
+        UniqueConstraint('object_storage_system_id', 'name', name='uq_object_storage_bucket_system_name'),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    object_storage_system_id: Mapped[str] = mapped_column(
+        ForeignKey('object_storage_systems.id', ondelete='CASCADE'),
+        nullable=False,
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    provider_created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    object_storage_system: Mapped[ObjectStorageSystem] = relationship(
+        'ObjectStorageSystem',
+        back_populates='buckets',
+        lazy='joined',
     )

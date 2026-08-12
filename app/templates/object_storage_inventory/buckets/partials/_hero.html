@@ -1,0 +1,28 @@
+{% import "components/page_hero.html" as page_hero %}
+<section class="{{ page_hero.shell_classes() }}">
+    <div class="{{ page_hero.layout_classes() }}">
+        <div class="{{ page_hero.content_classes() }}">
+            {% call page_hero.intro('container', 'Object Storage Inventory', 'container') %}
+                <h1 class="{{ page_hero.title_classes() }}">Bucket Inventory</h1>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review bucket identity, owning system, product context, and committed discovery timestamps.</p>
+                <div class="{{ page_hero.metadata_row_classes() }}">
+                    {{ page_hero.meta_label('container', inventory.total_buckets ~ ' Buckets in Scope') }}
+                    {{ page_hero.meta_label('server', inventory.systems_in_scope ~ ' Systems') }}
+                    {{ page_hero.meta_label('database', 'Committed Snapshot') }}
+                </div>
+            {% endcall %}
+        </div>
+        {{ page_hero.context_card('Object Storage Bucket Posture',
+                'Bucket Posture',
+                'Committed Discovery Coverage',
+                ('Observed' if inventory.total_buckets else 'No Buckets'),
+                ('normal' if inventory.total_buckets else 'unknown'),
+                [
+                    ('server', 'Systems', inventory.systems_in_scope, 'Systems represented'),
+                    ('database', 'Products', inventory.products_in_scope, 'Detected product families')
+                ],
+                'Open Object Storage Systems',
+                url_for('object_storage_inventory.systems'),
+                'server') }}
+    </div>
+</section>

@@ -17,6 +17,7 @@ MENU_TEMPLATES = (
     'integrations_menu.html',
     'intelligence_menu.html',
     'inventory_menu.html',
+    'object_storage_menu.html',
     'kubernetes_operations_menu.html',
     'platform_operations_menu.html',
     'reports_menu.html',
@@ -26,6 +27,7 @@ MENU_TEMPLATES = (
 EXPECTED_SECTION_ORDER = (
     'Main',
     'Kubernetes',
+    'Storage',
     'Insights &amp; Reporting',
     'Platform Extensions',
     'Platform Operations',
@@ -37,6 +39,7 @@ EXPECTED_INCLUDE_ORDER = (
     'inventory_menu.html',
     'kubernetes_operations_menu.html',
     'governance_menu.html',
+    'object_storage_menu.html',
     'analytics_menu.html',
     'intelligence_menu.html',
     'reports_menu.html',
@@ -225,7 +228,7 @@ def verify() -> None:
                 raise AssertionError(f'{filename} submenu #{index}: submenu typography must remain text-sm')
 
     doc_tokens = (
-        '# KAORI Sidebar Navigation Standard v1.2',
+        '# KAORI Sidebar Navigation Standard v1.3',
         'Status:** Locked application-shell and dark-mode contract',
         'Parent menu label | 16 px',
         'Submenu label | 14 px',
@@ -246,7 +249,7 @@ def verify() -> None:
 
     print(
         'KAORI sidebar navigation standard passed: '
-        f'{parent_count} parent blocks and {submenu_count} submenu links conform to v1.2; '
+        f'{parent_count} parent blocks and {submenu_count} submenu links conform to v1.3; '
         'section order, collapse behavior, accessibility, typography, and documentation are locked.'
     )
 

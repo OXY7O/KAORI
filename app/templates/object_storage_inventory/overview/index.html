@@ -1,0 +1,12 @@
+{% extends "layouts/app.html" %}
+{% block title %}Object Storage Overview{% endblock title %}
+{% block dashboard_content %}
+    {% import "components/resource_detail_modal.html" as resource_detail_modal %}
+    <div class="space-y-6">
+        {% include "object_storage_inventory/overview/partials/_hero.html" %}
+        {% include "object_storage_inventory/overview/partials/_summary_cards.html" %}
+        {% include "object_storage_inventory/overview/partials/_snapshot_boundary.html" %}
+        {% include "object_storage_inventory/overview/partials/_systems_snapshot.html" %}
+    </div>
+    {{ resource_detail_modal.host('Object Storage System', url_for('object_storage_inventory.system_details', system_id=0), context_label='Object Storage Inventory', dialog_max_width='max-w-6xl', content_driven=true) }}
+{% endblock dashboard_content %}

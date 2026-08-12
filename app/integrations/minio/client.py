@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from time import perf_counter
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
@@ -27,6 +28,12 @@ class MinioConnectionError(RuntimeError):
 
 
 @dataclass(frozen=True, slots=True)
+class MinioBucketSummary:
+    name: str
+    creation_date: datetime | None
+
+
+@dataclass(frozen=True, slots=True)
 class MinioConnectionResult:
     connected: bool
     latency_ms: int
@@ -36,6 +43,7 @@ class MinioConnectionResult:
     deployment_id: str | None
     product: str
     identity_evidence: str
+    bucket_inventory: tuple[MinioBucketSummary, ...] = ()
 
 
 def build_s3_client(
@@ -111,13 +119,20 @@ def test_connection_values(
         server_header=server_header,
         deployment_id=deployment_id,
     )
-    buckets = tuple(
+    bucket_inventory = tuple(
         sorted(
-            str(item.get('Name') or '').strip()
-            for item in payload.get('Buckets') or []
-            if str(item.get('Name') or '').strip()
+            (
+                MinioBucketSummary(
+                    name=str(item.get('Name') or '').strip(),
+                    creation_date=item.get('CreationDate') if isinstance(item.get('CreationDate'), datetime) else None,
+                )
+                for item in payload.get('Buckets') or []
+                if str(item.get('Name') or '').strip()
+            ),
+            key=lambda item: item.name,
         )
     )
+    buckets = tuple(item.name for item in bucket_inventory)
     return MinioConnectionResult(
         connected=True,
         latency_ms=latency_ms,
@@ -127,6 +142,7 @@ def test_connection_values(
         deployment_id=deployment_id,
         product=product,
         identity_evidence=identity_evidence,
+        bucket_inventory=bucket_inventory,
     )
 
 

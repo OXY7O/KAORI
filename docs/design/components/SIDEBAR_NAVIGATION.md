@@ -1,4 +1,4 @@
-# KAORI Sidebar Navigation Standard v1.2
+# KAORI Sidebar Navigation Standard v1.3
 
 **Status:** Locked application-shell and dark-mode contract. The source templates, this document, and `scripts/verify_sidebar_navigation_standard.py` must change together.
 
@@ -329,6 +329,12 @@ KUBERNETES
 ├── K8s Operations
 └── K8s Governance
 
+STORAGE
+└── Object Storage
+    ├── Overview
+    ├── Systems
+    └── Buckets
+
 INSIGHTS & REPORTING
 ├── K8s Analytics
 ├── Intelligence
@@ -344,6 +350,8 @@ ADMINISTRATION
 ├── Access
 └── Settings
 ```
+
+v1.3 adds the approved **Storage** section. `Object Storage` is a provider-neutral inventory parent; vendor connectors such as MinIO remain under Integrations and must not become sidebar inventory parents. The first locked children are Overview, Systems, and Buckets.
 
 Rules for adding navigation:
 

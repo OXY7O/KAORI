@@ -10,6 +10,7 @@ from app.integrations.minio.client import test_instance_connection
 from app.integrations.minio.compatibility import evaluate_minio_release
 from app.integrations.runtime.scoring import calculate_health
 from app.models.minio import MinioInstance
+from app.storage_inventory.sync import commit_bucket_inventory
 
 
 def _health_factors(instance: MinioInstance) -> tuple[HealthFactor, ...]:
@@ -121,6 +122,11 @@ class MinioRuntimeAdapter:
             'identity_evidence': result.identity_evidence,
             'compatibility_supported_range': compatibility.supported_range,
         }
+        commit_bucket_inventory(
+            instance.object_storage_system,
+            result.bucket_inventory,
+            observed_at=now,
+        )
 
         if not product_identified:
             instance.readiness_status = 'blocked'

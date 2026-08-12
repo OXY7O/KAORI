@@ -1,0 +1,7 @@
+{% import "components/operational_callout.html" as operational_callout %}
+{{ operational_callout.render(
+    'Committed Inventory Boundary',
+    'Object Storage Inventory reads PostgreSQL snapshots only. Full Validation owns S3 bucket discovery; inventory pages never query the provider API live.',
+    icon='database',
+    tone='info'
+) }}
