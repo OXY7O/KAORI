@@ -34,6 +34,7 @@ def main() -> int:
     workspace_standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
     shared_registration_hero = read('app/templates/integrations/components/_provider_registration_hero.html')
     shared_registration_context = read('app/templates/integrations/components/_provider_registration_context.html')
+    shared_registration_actions = read('app/templates/integrations/components/_provider_registration_actions.html')
     provider_registration_pages = {
         'Kubernetes': read('app/templates/cluster/add.html'),
         'Prometheus': read('app/templates/prometheus/instance_form.html'),
@@ -147,10 +148,21 @@ def main() -> int:
         'Alertmanager': provider_registration_pages['Alertmanager'],
         'MinIO': provider_registration_pages['MinIO'],
     }
+    for marker in (
+        'data-kaori-provider-registration-actions',
+        'Connection Test Required',
+        'Complete Test Connection before registration.',
+        'Connection Verified',
+        'Verified connection payload is ready to register.',
+        'Cancel',
+        'Register Connection',
+    ):
+        assert marker in shared_registration_actions
+
     for provider, form in registration_forms.items():
-        assert 'Cancel' in form, provider
-        assert 'Register Connection' in form, provider
-        assert 'Run Test Connection successfully before KAORI enables Register Connection.' in form, provider
+        assert 'integrations/components/_provider_registration_actions.html' in form, provider
+        assert 'provider_registration_actions.render(' in form, provider
+        assert 'Run Test Connection successfully before KAORI enables Register Connection.' not in form, provider
 
     assert 'placeholder="Alertmanager Production"' in registration_forms['Alertmanager']
     assert 'placeholder="Operational purpose and ownership context"' in registration_forms['Alertmanager']
@@ -176,7 +188,7 @@ def main() -> int:
     assert "if result.product != 'minio'" not in minio_service
 
     print(
-        'PASS — KAORI provider front pages and connection forms share DRY Hero, two-surface context, canonical field/action copy, coverage, and registry contracts.'
+        'PASS — KAORI provider front pages and connection forms share DRY Hero, two-surface context, gated registration actions, canonical field copy, coverage, and registry contracts.'
     )
     return 0
 

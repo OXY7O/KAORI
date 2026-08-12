@@ -140,6 +140,33 @@ Rules:
 - empty state, populated state, filters, table header, and pagination retain one geometry; an empty provider page must not replace the registry with a provider-specific onboarding card;
 - identity, endpoint, profile, selector, and source text uses controlled wrapping and a bounded horizontal table minimum rather than `table-fixed` truncation.
 
+## Provider Registration Action Footer Contract
+
+New Kubernetes, Prometheus, Alertmanager, and MinIO connection forms use one embedded registration-gate footer owned by:
+
+```text
+app/templates/integrations/components/_provider_registration_actions.html
+```
+
+The footer is part of the main connection form surface; it must not render as a detached rounded card below the form. Its desktop hierarchy is:
+
+```text
+Connection Test Required / Connection Verified        Cancel | Register Connection
+short gate explanation
+```
+
+Rules:
+
+- before a successful Test Connection, the state is `Connection Test Required` with `Complete Test Connection before registration.`;
+- after successful Test Connection, the state changes in place to `Connection Verified` with `Verified connection payload is ready to register.`;
+- the status block is a compact bordered surface with an operation-state icon, not a long plain helper sentence;
+- `Register Connection` remains disabled through the canonical disabled button tokens until the signed connection proof is valid;
+- `Cancel` and `Register Connection` use the shared action-button component and stack responsively on narrow viewports;
+- provider registration pages must call `provider_registration_actions.render(...)` instead of copying their own footer markup;
+- edit/save forms may retain their task-appropriate save action bar because the Test Connection registration gate applies only to new provider registration.
+
+The retired sentence `Run Test Connection successfully before KAORI enables Register Connection.` must not be reintroduced as registration-footer UI copy.
+
 ## Provider Registry Contract
 
 Prometheus and Alertmanager registries share:

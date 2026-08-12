@@ -8,6 +8,7 @@
 {% import "components/action_button.html" as action_button %}
 {% import "integrations/components/_provider_registration_hero.html" as provider_registration_hero %}
 {% import "integrations/components/_provider_registration_context.html" as provider_registration_context %}
+{% import "integrations/components/_provider_registration_actions.html" as provider_registration_actions %}
 {% block title %}{{ 'Edit' if instance else 'Register' }} Prometheus Connection · KAORI{% endblock title %}
 {% block dashboard_content %}
     <div id="prometheus-registration-workspace"
@@ -218,20 +219,24 @@
                          class="hidden"
                          aria-hidden="true"></div>
                 {% endif %}
-                {% call form_action_bar.render(
-                    'Save changes, then run Full Validation.' if instance else 'Run Test Connection successfully before KAORI enables Register Connection.',
-                    aria_label='Prometheus Connection Actions'
-                    ) %}
-                    <a href="{{ url_for('prometheus.instance_detail', instance_id=instance.id) if instance else url_for('integrations.prometheus') }}"
-                       class="{{ action_button.classes('secondary') }}">Cancel</a>
-                    <button type="submit"
-                            data-operation-submit
-                            data-loading-label="{{ 'Saving changes...' if instance else 'Registering connection...' }}"
-                            {% if not instance %}disabled x-bind:disabled="!connectionVerified" x-bind:title="connectionVerified ? 'Register this verified connection' : 'Run Test Connection successfully before registering'"{% endif %}
-                            class="{{ action_button.classes('primary') }} shrink-0">
-                        <i data-lucide="save" class="h-4 w-4"></i><span data-operation-submit-label>{{ 'Save Changes' if instance else 'Register Connection' }}</span>
-                    </button>
-                {% endcall %}
+                {% if instance %}
+                    {% call form_action_bar.render('Save changes, then run Full Validation.', aria_label='Prometheus Connection Actions') %}
+                        <a href="{{ url_for('prometheus.instance_detail', instance_id=instance.id) }}"
+                           class="{{ action_button.classes('secondary') }}">Cancel</a>
+                        <button type="submit"
+                                data-operation-submit
+                                data-loading-label="Saving changes..."
+                                class="{{ action_button.classes('primary') }} shrink-0">
+                            <i data-lucide="save" class="h-4 w-4"></i><span data-operation-submit-label>Save Changes</span>
+                        </button>
+                    {% endcall %}
+                {% else %}
+                    {{ provider_registration_actions.render(url_for('integrations.prometheus') ,
+                    aria_label='Prometheus Connection Actions',
+                    register_label='Register Connection',
+                    loading_label='Registering Connection...'
+                    ) }}
+                {% endif %}
             </section>
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
                 {% if instance %}

@@ -134,19 +134,31 @@ def test_provider_registration_actions_and_placeholders_are_consistent() -> None
     minio = read('app/templates/minio/instance_form.html')
     minio_form = read('app/minio/forms.py')
 
+    shared_actions = read('app/templates/integrations/components/_provider_registration_actions.html')
+    for marker in (
+        'data-kaori-provider-registration-actions',
+        'border-t border-outline-subtle bg-surface-subtle',
+        'rounded-lg border border-outline-subtle bg-surface-card',
+        'Connection Test Required',
+        'Complete Test Connection before registration.',
+        'Connection Verified',
+        'Verified connection payload is ready to register.',
+        'x-bind:disabled="!connectionVerified"',
+        'Cancel',
+        'Register Connection',
+    ):
+        assert marker in shared_actions
+    assert 'rounded-xl border border-outline-default bg-surface-card shadow-sm' not in shared_actions
+
     for provider, template in {
         'Kubernetes': kubernetes,
         'Prometheus': prometheus,
         'Alertmanager': alertmanager,
         'MinIO': minio,
     }.items():
-        assert 'Cancel' in template, provider
-        assert 'Register Connection' in template, provider
-
-    assert 'Run Test Connection successfully before KAORI enables Register Connection.' in kubernetes
-    assert 'Run Test Connection successfully before KAORI enables Register Connection.' in prometheus
-    assert 'Run Test Connection successfully before KAORI enables Register Connection.' in alertmanager
-    assert 'Run Test Connection successfully before KAORI enables Register Connection.' in minio
+        assert 'integrations/components/_provider_registration_actions.html' in template, provider
+        assert 'provider_registration_actions.render(' in template, provider
+        assert 'Run Test Connection successfully before KAORI enables Register Connection.' not in template, provider
 
     assert "'Connection Name'" in kubernetes_form
     assert "'placeholder': 'Kubernetes Production'" in kubernetes_form

@@ -1,0 +1,45 @@
+{% import "components/action_button.html" as action_button %}
+{% macro render(cancel_url, aria_label="Registration Actions", register_label="Register Connection", loading_label="Registering Connection...", submit_name=None, submit_value=None) -%}
+    <footer class="border-t border-outline-subtle bg-surface-subtle px-5 py-4 sm:px-6"
+            aria-label="{{ aria_label }}"
+            data-kaori-provider-registration-actions>
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex min-w-0 items-start gap-3 rounded-lg border border-outline-subtle bg-surface-card px-3.5 py-3 lg:max-w-xl"
+                 role="status"
+                 aria-live="polite">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border"
+                      :class="connectionVerified ? 'border-outline-subtle bg-status-normal-soft text-status-normal-text' : 'border-brand-outline bg-kaori-soft text-kaori-primary dark:text-kaori-accent'">
+                    <i data-lucide="circle-dashed"
+                       class="h-4 w-4"
+                       x-show="!connectionVerified"></i>
+                    <i data-lucide="circle-check"
+                       class="h-4 w-4"
+                       x-show="connectionVerified"
+                       x-cloak></i>
+                </span>
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-content-primary"
+                       x-text="connectionVerified ? 'Connection Verified' : 'Connection Test Required'">Connection Test Required</p>
+                    <p class="mt-0.5 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]"
+                       x-text="connectionVerified ? 'Verified connection payload is ready to register.' : 'Complete Test Connection before registration.'">Complete Test Connection before registration.</p>
+                </div>
+            </div>
+            <div class="flex w-full shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end lg:w-auto">
+                <a href="{{ cancel_url }}"
+                   class="{{ action_button.classes('secondary') }} w-full sm:w-auto">Cancel</a>
+                <button type="submit"
+                        {% if submit_name %}name="{{ submit_name }}"{% endif %}
+                        {% if submit_value %}value="{{ submit_value }}"{% endif %}
+                        data-operation-submit
+                        data-loading-label="{{ loading_label }}"
+                        disabled
+                        x-bind:disabled="!connectionVerified"
+                        x-bind:title="connectionVerified ? 'Register this verified connection' : 'Complete Test Connection before registration'"
+                        class="{{ action_button.classes('primary') }} w-full sm:w-auto">
+                    <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
+                    <span data-operation-submit-label>{{ register_label }}</span>
+                </button>
+            </div>
+        </div>
+    </footer>
+{%- endmacro %}

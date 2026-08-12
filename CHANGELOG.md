@@ -1,4 +1,5 @@
 # Changelog
+- Unified provider registration action footers on one embedded gate-state component: Test Connection readiness now renders as a compact status surface, Cancel/Register actions share one responsive geometry, and verified state enables the canonical primary CTA across Kubernetes, Prometheus, Alertmanager, and MinIO.
 - Standardized provider registration field labels, placeholders, Cancel actions, and helper-text density across Kubernetes, Prometheus, Alertmanager, and MinIO; hardened MinIO connection-test diagnostics and separated S3 reachability from product-identity Core Validation.
 - Simplified provider connection right rails to one shared Flow + Related Operational Workspace contract and fixed Kubernetes front-page typing/overview regressions detected by Pyright.
 - Unified Kubernetes, Prometheus, Alertmanager, and MinIO registration Heroes on one reusable contract; Kubernetes now uses `Register Kubernetes Connection`, the same Draft/Pre-save posture panel, and the same Test Connection → Core Validation progression as the other providers.
@@ -23,6 +24,7 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 - Repaired Integration domain route ownership so Flask application boot and `flask db upgrade` import `build_integration_domain_page` directly from `domain_service` instead of a removed `service.py` re-export.
 
 ### Changed
+- Unified provider registration action footers on one embedded gate-state component: Test Connection readiness now renders as a compact status surface, Cancel/Register actions share one responsive geometry, and verified state enables the canonical primary CTA across Kubernetes, Prometheus, Alertmanager, and MinIO.
 - Standardized provider front pages across Kubernetes, Prometheus, Alertmanager, and MinIO with shared overview geometry and framed Coverage/Registry tabs while preserving provider-specific evidence inside those tabs.
 - Generalized Alertmanager around consumer-neutral Core Validation and asset-scoped alert Consumer Profiles, including `kubernetes-alerts-v1` and `minio-alerts-v1`, so shared Alertmanager instances can segregate Kubernetes, MinIO, and future alert streams by binding selector without false provider degradation.
 - Aligned MinIO provider pages with the canonical Kubernetes/Prometheus/Alertmanager Integration workspace: `MinIO Integrations` + `Register Connection`, Integration Coverage/Connection Registry, shared registration workflow, and Configuration/Core Validation/Runtime & History/Bindings & Consumers detail tabs.

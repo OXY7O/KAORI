@@ -1,12 +1,11 @@
 {% extends "layouts/app.html" %}
-{% import "components/form_action_bar.html" as form_action_bar %}
 {% import "components/operational_toggle.html" as operational_toggle %}
-{% import "components/action_button.html" as action_button %}
 {% import "components/operational_callout.html" as operational_callout %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "integrations/components/_provider_registration_hero.html" as provider_registration_hero %}
 {% import "integrations/components/_provider_registration_context.html" as provider_registration_context %}
+{% import "integrations/components/_provider_registration_actions.html" as provider_registration_actions %}
 {% block title %}Register MinIO Connection · KAORI{% endblock title %}
 {% block dashboard_content %}
     <div id="minio-registration-workspace"
@@ -154,20 +153,13 @@
                         </div>
                     </section>
                 </div>
-                {% call form_action_bar.render("Run Test Connection successfully before KAORI enables Register Connection.", aria_label="MinIO Connection Actions") %}
-                    <a href="{{ url_for('minio.index') }}"
-                       class="{{ action_button.classes('secondary') }}">Cancel</a>
-                    <button type="submit"
-                            name="action"
-                            value="save"
-                            disabled
-                            x-bind:disabled="!connectionVerified"
-                            x-bind:title="connectionVerified ? 'Register this verified connection' : 'Run Test Connection successfully before registering'"
-                            class="{{ action_button.classes('primary') }} shrink-0">
-                        <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
-                        Register Connection
-                    </button>
-                {% endcall %}
+                {{ provider_registration_actions.render(url_for('minio.index') ,
+                aria_label='MinIO Connection Actions',
+                register_label='Register Connection',
+                loading_label='Registering Connection...',
+                submit_name='action',
+                submit_value='save'
+                ) }}
             </section>
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
                 {% set minio_flow_items = [('Define Connection Identity', 'Create the reusable KAORI identity for this MinIO endpoint and object-storage asset.'), ('Configure Endpoint Access', 'Set the S3 API endpoint, credentials, TLS behavior, and supported release contract.'), ('Test Connection', 'Verify MinIO identity and API reachability before registration is enabled.'), ('Register Connection', 'Create the provider identity before Core Validation and consumer binding.')] %}
