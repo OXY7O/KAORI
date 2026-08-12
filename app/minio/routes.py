@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import json
 import logging
 
 from celery.exceptions import CeleryError
-from flask import Blueprint, abort, redirect, render_template, request, url_for
+from flask import Blueprint, abort, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from kombu.exceptions import OperationalError as KombuOperationalError
@@ -144,6 +145,90 @@ def new_instance() -> ResponseReturnValue:
         connection_error=connection_error,
         notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
     )
+
+
+@minio_bp.post('/instances/test-connection')
+@permission_required('settings.manage_integrations')
+def test_new_instance_connection() -> ResponseReturnValue:
+    form = MinioInstanceForm()
+    connected = False
+    registration_proof = ''
+
+    if not form.validate_on_submit():
+        feedback = record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='minio_connection_test_failed',
+            status='error',
+            title='MinIO connection test failed',
+            message='Review the submitted MinIO connection fields before testing this source.',
+            detail='The submitted form did not satisfy the MinIO connection contract.',
+            action_url=url_for('minio.new_instance'),
+            action_label='Review MinIO form',
+            action_icon='database',
+            metadata={'fields': sorted(form.errors), 'draft_connection': True},
+            queue_feedback=False,
+        )
+    else:
+        values = form.to_input()
+        try:
+            result = test_minio_connection(values)
+        except (MinioConnectionError, ValueError) as exc:
+            feedback = record_operational_activity(
+                user_id=int(current_user.id),
+                event_type='minio_connection_test_failed',
+                status='error',
+                title='MinIO connection test failed',
+                message='KAORI could not verify the submitted MinIO S3 API endpoint.',
+                detail=str(exc),
+                action_url=url_for('minio.new_instance'),
+                action_label='Review MinIO form',
+                action_icon='database',
+                metadata={'draft_connection': True, 'submitted_name': values.name},
+                queue_feedback=False,
+            )
+        else:
+            connected = True
+            registration_proof = issue_registration_proof(values=values, user_id=int(current_user.id))
+            feedback = record_operational_activity(
+                user_id=int(current_user.id),
+                event_type='minio_connection_test',
+                status='success',
+                title='MinIO connection verified',
+                message='KAORI reached the submitted MinIO S3 API endpoint.',
+                detail=(
+                    f'MinIO returned {result.bucket_count} visible bucket(s) in {result.latency_ms} ms. '
+                    'Register the connection, then run Core Validation.'
+                ),
+                action_url=url_for('minio.new_instance'),
+                action_label='Review MinIO form',
+                action_icon='database',
+                metadata={
+                    'draft_connection': True,
+                    'submitted_name': values.name,
+                    'bucket_count': result.bucket_count,
+                    'latency_ms': result.latency_ms,
+                    'deployment_id': result.deployment_id,
+                },
+                queue_feedback=False,
+            )
+
+    response = make_response(
+        render_template(
+            'minio/partials/_connection_test_result.html',
+            connection_feedback=feedback,
+            notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
+        )
+    )
+    response.headers['HX-Trigger'] = json.dumps(
+        {
+            'minio-connection-tested': {
+                'connected': connected,
+                'proof': registration_proof,
+            }
+        },
+        separators=(',', ':'),
+    )
+    return response
 
 
 @minio_bp.get('/instances/<int:instance_id>')

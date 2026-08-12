@@ -1,20 +1,13 @@
 {% import "components/pagination.html" as pagination_ui %}
+{% import "components/table.html" as table_ui %}
 {% import "integrations/components/_provider_registry.html" as provider_registry %}
 {% import "components/table_label.html" as table_label %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% macro render(provider, rows, pagination, selected_query='', selected_readiness='', selected_compatibility='', selected_deployment_type='', registry_per_page=5, selected_coverage_query='', selected_coverage_environment='', selected_coverage_status='') -%}
     <div class="overflow-x-auto">
-        <table class="min-w-[980px] w-full text-left text-sm">
-            <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted">
-                <tr>
-                    <th class="px-5 py-3.5 sm:px-6">Operational Scope</th>
-                    <th class="px-4 py-3.5">Environment</th>
-                    <th class="px-4 py-3.5">{{ provider.label }} Source</th>
-                    <th class="px-4 py-3.5">Binding Contract</th>
-                    <th class="px-4 py-3.5">Coverage</th>
-                    <th class="px-5 py-3.5 text-right sm:px-6">Action</th>
-                </tr>
-            </thead>
+        <table class="{{ table_ui.table_classes('min-w-[1040px]') }}">
+            {{ provider_registry.scope_coverage_colgroup() }}
+            {{ provider_registry.scope_coverage_head() }}
             <tbody class="divide-y divide-outline-subtle">
                 {% for row in rows %}
                     <tr class="align-top transition hover:bg-surface-hover">
@@ -24,14 +17,14 @@
                                 <div class="min-w-0">
                                     <p class="truncate font-semibold text-content-primary"
                                        title="{{ row.scope_name }}">{{ row.scope_name }}</p>
-                                    <p class="mt-1 text-xs text-content-muted">Managed Kubernetes cluster</p>
+                                    <p class="mt-1 text-xs text-content-muted">{{ row.scope_type|replace('_', ' ') |title }}</p>
                                 </div>
                             </div>
                         </td>
                         <td class="px-4 py-4">{{ table_label.metadata_label(row.environment, 'layers-3') }}</td>
                         <td class="px-4 py-4">
                             {% if row.source %}
-                                <p class="font-semibold text-content-primary">{{ row.source_name }}</p>
+                                <p class="break-words font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.source_name }}</p>
                                 <p class="mt-1 text-xs text-content-muted">{{ row.binding_role|title }} · Priority {{ row.binding_priority }}</p>
                             {% else %}
                                 <p class="font-semibold text-content-muted">No source selected</p>
@@ -40,7 +33,7 @@
                         </td>
                         <td class="px-4 py-4">
                             {% if row.binding %}
-                                <p class="max-w-[16rem] truncate text-xs font-medium text-content-secondary"
+                                <p class="max-w-[18rem] break-words text-xs font-medium text-content-secondary [overflow-wrap:anywhere]"
                                    title="{{ row.selector_summary }}">{{ row.selector_summary }}</p>
                                 <p class="mt-1 text-xs text-content-muted">{{ 'Shared source' if row.shared_source else 'Dedicated or single-scope source' }}</p>
                             {% else %}
@@ -53,13 +46,13 @@
                                 <a href="{{ url_for(provider.detail_endpoint, instance_id=row.source_id) }}#scope"
                                    class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary">
                                     <i data-lucide="settings-2" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                    Review Binding
+                                    Manage
                                 </a>
                             {% else %}
                                 <a href="{{ url_for(provider.bind_endpoint, scope_key=row.scope_key) }}"
                                    class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2">
                                     <i data-lucide="link-2" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                    Bind Source
+                                    Create Binding
                                 </a>
                             {% endif %}
                         </td>
@@ -67,15 +60,14 @@
                 {% else %}
                     <tr>
                         <td colspan="6" class="p-0">
+                            {% set coverage_filters_active = selected_coverage_query or selected_coverage_environment or selected_coverage_status %}
                             {% set empty_state_icon = "route" %}
-                            {% set empty_state_label = 'Setup Required' if not selected_coverage_query and not selected_coverage_environment and not selected_coverage_status else 'No Results' %}
-                            {% set empty_state_title = "No Operational Scopes Found" %}
-                            {% set empty_state_description = "Adjust the coverage filters or register a Kubernetes connection." %}
-                            {% set empty_state_action_url = url_for('cluster.add_cluster') %}
-                            {% set empty_state_action_label = "Add Cluster" %}
+                            {% set empty_state_label = "No Results" if coverage_filters_active else "Setup Required" %}
+                            {% set empty_state_title = "No Consumer Coverage Matches the Active Filters" if coverage_filters_active else "No Consumer Coverage Found" %}
+                            {% set empty_state_description = "Adjust the coverage filters to review another consumer scope." if coverage_filters_active else "Register the provider connection and create a governed consumer binding when a managed asset requires this source." %}
+                            {% set empty_state_action_url = url_for(provider.register_endpoint) %}
+                            {% set empty_state_action_label = "Register Connection" %}
                             {% set empty_state_action_icon = "plus" %}
-                            {% set empty_state_permission = "clusters.manage" %}
-                            {% set empty_state_show_admin_required = true %}
                             {% set empty_state_min_height = "min-h-[210px]" %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
@@ -101,7 +93,7 @@
         '#' ~ provider.key ~ '-coverage-content',
         '#' ~ provider.key ~ '-coverage-loading',
         coverage_query_params,
-        item_label='Scopes',
+        item_label='Assets',
         swap='innerHTML',
         page_param='coverage_page',
         per_page_param='coverage_per_page') }}

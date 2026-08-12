@@ -1,5 +1,7 @@
 # Changelog
+- Standardized provider empty states and registration UX: consumer coverage now uses asset terminology, route-owned authorization avoids redundant `Admin Required` states, and MinIO Test Connection follows the same operation-scoped HTMX proof flow as Kubernetes, Prometheus, and Alertmanager.
 
+- Refactored Integration provider front pages to share one DRY Hero, Integration Overview, canonical Connection Registry column contract, and reusable direct/observability coverage table geometry across Kubernetes, Prometheus, Alertmanager, and MinIO.
 - Unified Kubernetes, Prometheus, Alertmanager, and MinIO provider landing pages on one canonical front-page hierarchy: Operational Integration Hero, shared Integration Overview, Integration Coverage, and Connection Registry; MinIO empty states now retain the same filter/table/pagination geometry as populated states.
 - Fixed Integration binding success-path type narrowing so Pyright no longer treats the resolved Kubernetes asset as optional after a successful binding create.
 - Cleaned active Alertmanager workspace djLint findings (T002/H037) and aligned capability pagination URL construction with the Prometheus registry pattern.

@@ -3,7 +3,7 @@
 <section id="alertmanager-inventory-card"
          class="{{ integration_ui.section_shell_classes() }}">
     {{ provider_registry.registry_header('Alertmanager Connection Registry',
-        'Manage reusable alert connections and the operational scopes that can use them.',
+        'Manage reusable Alertmanager connections and their downstream consumer bindings.',
         'database-zap',
         'alertmanager-inventory-loading') }}
     <div class="{{ integration_ui.filter_region_classes() }}"
@@ -36,7 +36,7 @@
                 {{ provider_registry.search_field('alertmanager-search', 'q', selected_query, 'Name, endpoint, deployment, version, or profile') }}
             </div>
             <div>
-                {{ provider_registry.select_field('alertmanager-readiness', 'readiness', selected_readiness, 'Readiness', readiness_options, 'All Readiness') }}
+                {{ provider_registry.select_field('alertmanager-readiness', 'readiness', selected_readiness, 'Core Readiness', readiness_options, 'All Readiness') }}
             </div>
             <div>
                 {{ provider_registry.select_field('alertmanager-compatibility', 'compatibility', selected_compatibility, 'Compatibility', compatibility_options, 'All Compatibility States') }}

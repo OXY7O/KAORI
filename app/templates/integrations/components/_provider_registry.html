@@ -1,4 +1,5 @@
 {% import "components/pagination.html" as pagination_ui %}
+{% import "components/table.html" as table_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% macro registry_header(title, description, icon, loading_id, title_id=None, tone='brand') -%}
@@ -127,4 +128,76 @@
             {% endif %}
         </nav>
     </footer>
+{%- endmacro %}
+{% macro connection_registry_colgroup() -%}
+    <colgroup>
+        <col class="w-[26%]">
+        <col class="w-[24%]">
+        <col class="w-[15%]">
+        <col class="w-[19%]">
+        <col class="w-[8%]">
+        <col class="w-[8%]">
+    </colgroup>
+{%- endmacro %}
+{% macro connection_registry_head() -%}
+    <thead class="{{ table_ui.head_classes() }}">
+        <tr>
+            <th class="{{ table_ui.header_cell_classes() }}">Connection</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Endpoint / Scope</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Core Readiness</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Compatibility</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Bindings</th>
+            <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
+        </tr>
+    </thead>
+{%- endmacro %}
+{% macro asset_coverage_colgroup() -%}
+    <colgroup>
+        <col class="w-[24%]">
+        <col class="w-[16%]">
+        <col class="w-[17%]">
+        <col class="w-[17%]">
+        <col class="w-[12%]">
+        <col class="w-[14%]">
+    </colgroup>
+{%- endmacro %}
+{% macro asset_coverage_head(asset_label, api_label) -%}
+    <thead class="{{ table_ui.head_classes() }}">
+        <tr>
+            <th class="{{ table_ui.header_cell_classes() }}">{{ asset_label }}</th>
+            <th class="{{ table_ui.header_cell_classes() }}">{{ api_label }}</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Metrics Source</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Alert Source</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Coverage</th>
+            <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
+        </tr>
+    </thead>
+{%- endmacro %}
+{% macro scope_coverage_colgroup() -%}
+    <colgroup>
+        <col class="w-[24%]">
+        <col class="w-[14%]">
+        <col class="w-[20%]">
+        <col class="w-[20%]">
+        <col class="w-[10%]">
+        <col class="w-[12%]">
+    </colgroup>
+{%- endmacro %}
+{% macro scope_coverage_head() -%}
+    <thead class="{{ table_ui.head_classes() }}">
+        <tr>
+            <th class="{{ table_ui.header_cell_classes() }}">Consumer Asset</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Environment</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Primary Source</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Consumer Binding</th>
+            <th class="{{ table_ui.header_cell_classes() }}">Coverage</th>
+            <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
+        </tr>
+    </thead>
+{%- endmacro %}
+{% macro connection_registry_table_classes() -%}
+    {{ table_ui.table_classes() }}
+{%- endmacro %}
+{% macro asset_coverage_table_classes() -%}
+    {{ table_ui.table_classes() }}
 {%- endmacro %}

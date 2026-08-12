@@ -3,25 +3,9 @@
 {% import "components/table_label.html" as table_label %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 <div class="overflow-hidden">
-    <table class="{{ table_ui.table_classes() }} table-fixed">
-        <colgroup>
-            <col class="w-[24%]">
-            <col class="w-[23%]">
-            <col class="w-[21%]">
-            <col class="w-[14%]">
-            <col class="w-[8%]">
-            <col class="w-[10%]">
-        </colgroup>
-        <thead class="{{ table_ui.head_classes() }}">
-            <tr>
-                <th class="{{ table_ui.header_cell_classes() }}">Connection</th>
-                <th class="{{ table_ui.header_cell_classes() }}">Endpoint Contract</th>
-                <th class="{{ table_ui.header_cell_classes() }}">Runtime &amp; Compatibility</th>
-                <th class="{{ table_ui.header_cell_classes() }}">Readiness</th>
-                <th class="{{ table_ui.header_cell_classes() }}">Bindings</th>
-                <th class="{{ table_ui.header_cell_classes(action=true) }}">Action</th>
-            </tr>
-        </thead>
+    <table class="{{ provider_registry.connection_registry_table_classes() }}">
+        {{ provider_registry.connection_registry_colgroup() }}
+        {{ provider_registry.connection_registry_head() }}
         <tbody class="{{ table_ui.body_classes() }}">
             {% for row in rows %}
                 <tr class="{{ table_ui.row_classes() }}">
@@ -39,20 +23,18 @@
                         </div>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
-                        <p class="max-w-[250px] truncate text-sm text-content-secondary"
+                        <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]"
                            title="{{ row.endpoint }}">{{ row.endpoint }}</p>
-                        <div class="mt-1.5">{{ table_label.metadata_label((row.endpoint_product or 'prometheus') |replace('_', ' ')|title, 'server-cog') }}</div>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ (row.endpoint_product or "prometheus")|replace('_', ' ') |title }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
-                        <p class="truncate text-sm font-semibold text-content-primary"
-                           title="{{ row.version or 'Not Detected' }}">{{ row.version or 'Not Detected' }}</p>
-                        <div class="mt-1">{{ integration_status(row.compatibility, display='indicator') }}</div>
-                        <p class="mt-1 truncate text-xs leading-5 text-content-muted"
-                           title="{{ row.profile or row.capability_profile or row.query_profile or 'Capability profile pending' }}">{{ row.profile or row.capability_profile or row.query_profile or 'Capability profile pending' }}</p>
-                    </td>
-                    <td class="{{ table_ui.cell_classes() }}">
-                        {{ integration_status(row.readiness, display='indicator') }}
+                        {{ integration_status(row.readiness, display="indicator") }}
                         <p class="mt-1 text-xs leading-5 text-content-muted">Validated {{ row.validated_at }}</p>
+                    </td>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        {{ integration_status(row.compatibility, display="indicator") }}
+                        <p class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.profile or row.capability_profile or row.query_profile or "Capability profile pending" }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ row.version or "Version not detected" }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
                         <p class="text-sm font-semibold tabular-nums text-content-primary">{{ row.binding_count }}</p>
@@ -70,12 +52,13 @@
                 <tr>
                     <td colspan="6" class="p-0">
                         {% set empty_state_icon = "activity" %}
-                        {% set empty_state_title = "No Prometheus Connections Found" %}
-                        {% set empty_state_description = "Register a Prometheus connection or adjust the active filters." %}
+                        {% set empty_state_label = "No Results" if selected_query or selected_readiness or selected_compatibility else "Setup Required" %}
+                        {% set empty_state_title = "No Prometheus Connections Match the Active Filters" if selected_query or selected_readiness or selected_compatibility else "No Prometheus Connections Found" %}
+                        {% set empty_state_description = "Adjust the registry filters to review another Prometheus connection." if selected_query or selected_readiness or selected_compatibility else "Register a Prometheus connection to establish Core Validation and downstream consumer coverage." %}
                         {% set empty_state_min_height = "min-h-[190px]" %}
                         {% set empty_state_action_url = url_for('prometheus.new_instance') if not selected_query and not selected_readiness and not selected_compatibility else none %}
                         {% set empty_state_action_label = 'Register Connection' if empty_state_action_url else none %}
-                        {% set empty_state_permission = "settings.manage_integrations" %}
+                        {% set empty_state_action_icon = "plus" %}
                         {% include 'components/states/_empty_state.html' %}
                     </td>
                 </tr>
@@ -99,5 +82,5 @@
 '#prometheus-inventory-content',
 '#prometheus-inventory-loading',
 registry_query_params,
-item_label='Integration',
+item_label='Connections',
 swap='innerHTML') }}

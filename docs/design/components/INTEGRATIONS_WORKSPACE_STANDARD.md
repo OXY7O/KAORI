@@ -90,11 +90,40 @@ Provider Workspace
 └── Connection Registry
 ```
 
-The shared overview geometry is owned by:
+Shared ownership is deliberate rather than visual copy/paste:
 
 ```text
 app/templates/integrations/components/_provider_frontpage.html
+  ├── provider Hero
+  └── Integration Overview
+
 app/templates/components/integration_workspace_tabs.html
+  └── Integration Coverage / Connection Registry tabs
+
+app/templates/integrations/components/_provider_registry.html
+  ├── canonical Connection Registry geometry
+  ├── direct-provider Asset Coverage geometry
+  └── observability Scope Coverage geometry
+```
+
+Provider pages supply provider-specific copy, routes, evidence, and row data. They must not duplicate the shared Hero, overview metrics, registry headers, `colgroup`, or table-width contract.
+
+Canonical Connection Registry columns for Kubernetes, Prometheus, Alertmanager, and MinIO are:
+
+```text
+Connection | Endpoint / Scope | Core Readiness | Compatibility | Bindings | Actions
+```
+
+Canonical direct-provider coverage columns for Kubernetes and MinIO are:
+
+```text
+Asset / Scope | Provider API | Metrics Source | Alert Source | Coverage | Actions
+```
+
+Canonical observability-provider coverage columns for Prometheus and Alertmanager are:
+
+```text
+Operational Scope | Environment | Primary Source | Consumer Binding | Coverage | Actions
 ```
 
 Rules:
@@ -106,9 +135,10 @@ Rules:
 - `Integration Contract`, `Consumer Resolution`, and `Authority Boundary` retain the same three-column geometry;
 - every provider front page exposes `Integration Coverage` and `Connection Registry` through the shared framed workspace tabs;
 - provider-specific evidence belongs inside those two tabs rather than replacing the front-page hierarchy;
-- Kubernetes `Operational Readiness Paths` remains valid provider-specific coverage evidence, but it lives inside the `Integration Coverage` tab;
-- MinIO keeps object-storage-specific API, metrics, and alert columns, but its empty state must retain the same filter, table-header, and pagination geometry as a populated registry;
-- empty provider pages must not replace the registry/table with a provider-specific onboarding card; the empty-state message renders inside the canonical table surface.
+- Kubernetes and MinIO use the same direct-provider asset coverage table contract; their API labels and consumer evidence may differ, but their geometry may not;
+- Prometheus and Alertmanager use the same observability scope coverage component and only supply provider-specific semantics;
+- empty state, populated state, filters, table header, and pagination retain one geometry; an empty provider page must not replace the registry with a provider-specific onboarding card;
+- identity, endpoint, profile, selector, and source text uses controlled wrapping and a bounded horizontal table minimum rather than `table-fixed` truncation.
 
 ## Provider Registry Contract
 
@@ -245,11 +275,11 @@ Source Readiness, Binding Validation, and Effective Resolution are separate evid
 
 Long selectors, source identities, and scope keys use controlled wrapping. Unexpected persistence failures must record sanitized user-facing Activity Audit evidence and preserve the original stack trace with application exception logging.
 
-## Kubernetes Operational Readiness Layout Contract
+## Kubernetes Front-Page Coverage Contract
 
-`Operational Readiness Paths` uses a professional three-column desktop comparison: Kubernetes Inventory, Kubernetes Analytics, and Alert Intelligence are equal peer cards in one row at `xl` width. Each card uses the same four-stage readiness model (`Direct Cluster Authority`, provider resolution, `Cluster Binding`, `Effective Consumer`) so the three paths stay visually aligned and can be compared without interaction. For the direct Inventory path, provider resolution and Cluster Binding are explicitly presented as `Direct Path` rather than omitted.
+Kubernetes front-page `Integration Coverage` follows the same direct-provider asset coverage table used by MinIO. It reports the Kubernetes API plane and downstream metrics/alert consumer coverage without introducing a provider-only card hierarchy.
 
-Simple readiness evidence is always visible. Do not add `View Evidence`, accordions, disclosure buttons, or hidden evidence panels to this workspace unless the evidence becomes materially more complex than the four-stage comparison. Each card ends with an `Operational Outcome` footer; the Provider Resolution Boundary remains a quiet full-width explanatory band below the three cards.
+Detailed readiness-path evidence remains valid Kubernetes-specific evidence, but belongs to Kubernetes connection detail, capability, validation, or runtime workspaces where it does not alter the front-page information architecture. The front page must not introduce a provider-only giant card layout.
 
 ## Kubernetes Registry Navigation Contract
 
@@ -504,3 +534,11 @@ Provider labels shown to operators use the canonical provider family name. Prome
 Loading feedback is operation-scoped. Full/Core Validation may animate only its validation loader; Runtime Refresh may animate only its runtime loader; capability registry filters/pagination may animate only the capability-registry loader; binding validation may animate only the binding loader. A parent validation job MUST NOT automatically activate nested registry loading bars.
 
 Validation and Runtime HTMX responses MUST refresh their framed-tab status badge out-of-band so newly persisted readiness/health labels are visible without a full page refresh. Provider-level labels remain derived from provider evidence; consumer-binding labels remain derived from binding evidence.
+
+### Provider empty-state and registration consistency
+
+- Provider front pages are already protected by `settings.manage_integrations`; registry and coverage empty states MUST NOT repeat the same authorization decision inside the template. If the page is renderable, the canonical `Register Connection` action is renderable when no filters suppress it.
+- Cross-provider consumer coverage uses the asset-centric term **Consumer Asset** and pagination uses **Assets**, not provider-specific `Scopes`.
+- Registration workspaces share the same interaction hierarchy: Hero → `Connection Configuration` → `Connection Identity` → `Endpoint & Access` with operation-scoped `Test Connection` → compatibility/request controls → action bar.
+- `Test Connection` MUST be an HTMX operation with its own loading indicator and signed registration proof; it MUST NOT submit or refresh the entire registration workspace.
+- Provider-specific fields may differ, but MinIO, Prometheus, Alertmanager, and Kubernetes must keep the same visual and interaction hierarchy.

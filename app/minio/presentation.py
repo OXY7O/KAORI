@@ -70,6 +70,7 @@ def build_index_context(query: MinioIndexQuery | None = None) -> dict[str, Any]:
                 'id': instance.id,
                 'name': instance.name,
                 'environment': instance.environment,
+                'endpoint': instance.endpoint,
                 'asset_name': instance.object_storage_system.name,
                 'readiness_status': instance.readiness_status or 'validation_required',
                 'compatibility_profile': instance.compatibility_profile,

@@ -13,7 +13,8 @@ def test_minio_index_uses_canonical_provider_registry_shell() -> None:
     registry = read('app/templates/minio/partials/_registry_content.html')
 
     assert 'MinIO Integrations' in index
-    assert 'Register Connection' in index
+    assert 'provider_front.hero(' in index
+    assert 'Register Connection' in read('app/templates/integrations/components/_provider_frontpage.html')
     assert 'MinIO Integration Overview' in index
     assert 'integration_workspace_tabs' in index
     assert 'Integration Coverage' in tabs

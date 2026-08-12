@@ -37,27 +37,27 @@ def test_tab_v2_is_shared_by_kubernetes_and_integration_overview() -> None:
 def test_kubernetes_registry_uses_one_line_htmx_filters_and_inventory_table() -> None:
     registry = read('app/templates/integrations/kubernetes/partials/_registry.html')
     routes = read('app/integrations/routes.py')
-    service = read('app/integrations/service.py')
+    frontpage_service = read('app/integrations/kubernetes_frontpage.py')
 
     assert 'components/table.html' in registry
     assert 'data-kaori-one-line-filters' in registry
     assert 'min-w-[840px]' not in registry
     assert 'xl:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,1fr))]' in registry
-    assert 'table-fixed' in registry
-    assert "table_ui.table_classes('min-w-[1040px]')" not in registry
+    assert 'table-fixed' not in registry
+    assert 'provider_registry.connection_registry_table_classes()' in registry
     assert '[overflow-wrap:anywhere]' in registry
     assert 'input changed delay:300ms' in registry
     assert 'change delay:100ms from:select' in registry
     assert 'Apply Filters' not in registry
     assert '>Reset<' not in registry
-    assert "item_label='Integration'" in registry
+    assert 'item_label="Connections"' in registry
     assert 'table_ui.row_classes()' in registry
     assert 'hover:bg-surface-hover' not in registry
     for name in ('q', 'environment', 'readiness', 'coverage'):
         assert f"request.args.get('{name}'" in routes
-    assert "request.headers.get('HX-Target') == 'kubernetes-connection-registry'" in routes
-    assert 'normalized_query' in service
-    assert "row.get('coverage_summary')" in service
+    assert "target == 'kubernetes-connection-registry'" in routes
+    assert 'normalized_query' in frontpage_service
+    assert "row.get('coverage_summary')" in frontpage_service
 
 
 def test_kubernetes_activity_is_navigation_and_capability_modal_scope_isolated() -> None:
@@ -71,7 +71,7 @@ def test_kubernetes_activity_is_navigation_and_capability_modal_scope_isolated()
     controller = read('app/static/js/native_dialogs.js')
 
     assert "url_for('integrations.kubernetes_detail', cluster_id=row.cluster_id)" in registry
-    assert '>Activity<' in registry or 'Activity\n' in registry
+    assert '>Manage<' in registry or 'Manage\n' in registry
     activity_link = registry[registry.index("url_for('integrations.kubernetes_detail', cluster_id=row.cluster_id)") :]
     assert '@click=' not in activity_link.split('</a>', 1)[0]
 
@@ -167,49 +167,25 @@ def test_inventory_freshness_and_capability_dimensions_are_explicit() -> None:
     assert 'Validated Features' in detail
 
 
-def test_kubernetes_coverage_uses_compact_operational_path_cards() -> None:
+def test_kubernetes_coverage_uses_canonical_asset_coverage_registry() -> None:
     coverage = read('app/templates/integrations/kubernetes/partials/_integration_coverage.html')
 
-    assert 'Operational Readiness Paths' in coverage
-    assert 'data-kaori-coverage-summary' in coverage
-    assert 'data-kaori-operational-readiness-paths' in coverage
-    assert 'data-kaori-operational-path-card' in coverage
-    assert 'data-kaori-readiness-step' in coverage
-    assert 'data-kaori-operational-outcome' in coverage
-    assert 'Kubernetes Inventory' in coverage
-    assert 'Kubernetes Analytics' in coverage
-    assert 'Alert Intelligence' in coverage
-    assert 'Readiness Path' in coverage
-    assert '4 Stages' in coverage
-    assert 'Direct Cluster Authority' in coverage
-    assert 'Provider Resolution' in coverage
-    assert 'Prometheus Source' in coverage
-    assert 'Alertmanager Source' in coverage
-    assert 'Cluster Binding' in coverage
-    assert 'Effective Consumer' in coverage
-    assert 'Operational Outcome' in coverage
-    assert 'Direct Path' in coverage
-    assert 'Provider Resolution Boundary' in coverage
-    assert 'xl:grid-cols-3' in coverage
-    assert 'xl:col-span-3' in coverage
-    assert 'items-stretch' in coverage
-    assert 'flex h-full min-w-0 flex-col' in coverage
-    assert "'steps': [" in coverage
-    assert 'grid-cols-[2rem_minmax(0,1fr)_auto]' in coverage
-    assert 'View Evidence' not in coverage
-    assert 'x-data="{ openPath: null }"' not in coverage
-    assert 'x-show="openPath ===' not in coverage
-    assert '@click="openPath' not in coverage
-    assert 'chevron-down' not in coverage
-    assert 'xl:grid-cols-2' not in coverage
-    assert '{% if loop.last %}xl:col-span-2{% endif %}' not in coverage
-    assert 'data-lucide="arrow-right"' not in coverage
-    assert 'Operational Coverage Lanes' not in coverage
-    assert 'data-kaori-operational-coverage-lanes' not in coverage
-    assert 'KAORI Consumer' not in coverage
-    assert 'Operational Provider Coverage' not in coverage
-    assert 'data-kaori-provider-coverage' not in coverage
-    assert 'min-h-[260px]' not in coverage
+    assert 'Kubernetes Integration Coverage' in coverage
+    assert 'kubernetes-coverage-filter-form' in coverage
+    assert 'provider_registry.asset_coverage_colgroup()' in coverage
+    assert 'provider_registry.asset_coverage_head(' in coverage
+    assert 'Kubernetes Cluster' in coverage
+    assert 'Kubernetes API' in coverage
+    assert 'Metrics Source' not in coverage  # owned by shared head
+    assert 'Alert Source' not in coverage  # owned by shared head
+    assert 'row.inventory_coverage.status' in coverage
+    assert 'row.prometheus_operational.status' in coverage
+    assert 'row.alertmanager_operational.status' in coverage
+    assert 'row.coverage_summary.status' in coverage
+    assert 'components/states/_empty_state.html' in coverage
+    assert 'provider_registry.pagination_footer(' in coverage
+    assert 'Operational Readiness Paths' not in coverage
+    assert 'data-kaori-operational-path-card' not in coverage
 
 
 def test_secret_capability_is_optional_and_kept_out_of_baseline_readiness() -> None:
@@ -409,15 +385,15 @@ def test_connection_contract_uses_controlled_kaori_icon_palette() -> None:
 
 def test_kubernetes_registry_bulk_loads_provider_bindings() -> None:
     coverage = read('app/integrations/coverage.py')
-    service = read('app/integrations/service.py')
+    frontpage_service = read('app/integrations/kubernetes_frontpage.py')
 
     assert 'def bound_sources_for_scopes(' in coverage
     assert 'contains_eager(IntegrationBinding.instance)' in coverage
     assert 'source_maps = {' in coverage
-    assert 'bound_sources_for_scopes(' in service
-    assert "('prometheus', 'alertmanager')" in service
-    assert 'contains_eager(KubernetesConnection.cluster)' in service
-    assert '_build_kubernetes_registry_row(connection, bound_sources=bound_sources)' in service
+    assert 'bound_sources_for_scopes(' in frontpage_service
+    assert "('prometheus', 'alertmanager')" in frontpage_service
+    assert 'contains_eager(KubernetesConnection.cluster)' in frontpage_service
+    assert '_build_registry_row(connection, bound_sources=bound_sources)' in frontpage_service
 
 
 def test_kubernetes_integration_overview_uses_controlled_kaori_icon_palette() -> None:
@@ -427,22 +403,23 @@ def test_kubernetes_integration_overview_uses_controlled_kaori_icon_palette() ->
     provider_registry = read('app/templates/integrations/components/_provider_registry.html')
 
     assert 'data-kaori-kubernetes-integration-icon-palette' in page
-    assert "palette_icon('workflow', 'brand'" in coverage
-    assert "palette_icon(path.icon, 'brand')" in coverage
-    assert "palette_icon_classes('brand'" in coverage
-    assert "else 'neutral'" in coverage
-    assert "palette_icon('route', 'brand'" in coverage
+    assert 'provider_registry.asset_coverage_head(' in coverage
+    assert 'Kubernetes Cluster' in coverage
+    assert 'Kubernetes API' in coverage
+    assert 'registry_header("Kubernetes Integration Coverage"' in coverage
+    assert 'palette_icon("boxes", "brand")' in coverage
     assert "'tone': 'info'" not in coverage
     assert "'tone': 'warning'" not in coverage
     assert "'provider_tone'" not in coverage
     assert 'data-kaori-kubernetes-registry-icon-palette' in registry
-    assert "connection_icon_tone = 'success' if row.readiness == 'ready'" in registry
-    assert "palette_icon('server-cog', connection_icon_tone)" in registry
+    assert 'connection_icon_tone = "success" if row.readiness == "ready"' in registry
+    assert 'palette_icon("server-cog", connection_icon_tone)' in registry
     assert "registry_header(title, description, icon, loading_id, title_id=None, tone='brand')" in provider_registry
 
 
 def test_kubernetes_integration_uses_canonical_compact_label_roles() -> None:
     page = read('app/templates/integrations/kubernetes.html')
+    provider_frontpage = read('app/templates/integrations/components/_provider_frontpage.html')
     detail = read('app/templates/integrations/kubernetes/detail.html')
     coverage = read('app/templates/integrations/kubernetes/partials/_integration_coverage.html')
     registry = read('app/templates/integrations/kubernetes/partials/_registry.html')
@@ -458,11 +435,11 @@ def test_kubernetes_integration_uses_canonical_compact_label_roles() -> None:
     labels = read('app/templates/components/table_label.html')
     standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
 
-    assert 'display="text"' in page
+    assert 'provider_front.hero(' in page
+    assert 'display="text"' in provider_frontpage
     assert "display='text'" in detail
-    assert "display='text'" in coverage
-    assert "display='indicator'" in coverage
-    assert "display='indicator'" in registry
+    assert 'display="indicator"' in coverage
+    assert 'display="indicator"' in registry
     assert "display='special'" in connection
     assert 'components/table_label.html' in capability
     assert "display='text'" in capability

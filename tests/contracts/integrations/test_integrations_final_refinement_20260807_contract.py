@@ -49,7 +49,7 @@ def test_integration_scope_pagination_uses_title_case_item_label() -> None:
     coverage = read('app/templates/components/integration_coverage_content.html')
     provider_registry = read('app/templates/integrations/components/_provider_registry.html')
 
-    assert "item_label='Scopes'" in coverage
+    assert "item_label='Assets'" in coverage
     assert "item_label='Connections'" in provider_registry
 
 

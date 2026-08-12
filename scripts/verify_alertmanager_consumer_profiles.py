@@ -23,6 +23,7 @@ def main() -> int:
     validation_template = read('app/templates/alertmanager/partials/_detail_validation_content.html')
     scope_template = read('app/templates/alertmanager/partials/_detail_scope.html')
     minio_index = read('app/templates/minio/index.html')
+    provider_frontpage = read('app/templates/integrations/components/_provider_frontpage.html')
     provider_tabs = read('app/templates/components/integration_workspace_tabs.html')
     minio_detail = read('app/templates/minio/instance_detail.html')
     alertmanager_readme = read('app/integrations/alertmanager/README.md')
@@ -58,7 +59,8 @@ def main() -> int:
     assert 'Consumer Profile' in scope_template
 
     assert 'MinIO Integrations' in minio_index
-    assert 'Register Connection' in minio_index
+    assert 'provider_front.hero(' in minio_index
+    assert 'Register Connection' in provider_frontpage
     assert 'Integration Coverage' in provider_tabs
     assert 'Connection Registry' in provider_tabs
     assert 'Core Validation' in minio_detail

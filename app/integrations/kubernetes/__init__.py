@@ -19,9 +19,7 @@ integration_module = IntegrationModule(
     domain_key='orchestration',
     capability_key='cluster_orchestration',
     icon='boxes',
-    description=(
-        'Canonical Kubernetes API connections, asset identity, discovery, readiness, and operational access.'
-    ),
+    description=('Canonical Kubernetes API connections, asset identity, discovery, readiness, and operational access.'),
     workspace_endpoint='integrations.kubernetes',
     adapter=runtime_adapter,
     instance_loader=model_loader(KubernetesConnection),
@@ -39,6 +37,7 @@ integration_module = IntegrationModule(
     operations=frozenset({'client.build', 'runtime.validate', 'runtime.health', 'runtime.state', 'inventory.sync'}),
     capability_keys=CAPABILITY_KEYS,
     compatibility_profiles=COMPATIBILITY_PROFILES,
+    navigation_endpoint_prefixes=('integrations.kubernetes', 'cluster.'),
     detail_url_builder=_detail_url,
 )
 

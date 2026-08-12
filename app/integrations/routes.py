@@ -6,6 +6,13 @@ from app.common.http import htmx_target, is_htmx_request
 from app.integrations.binding_service import create_cluster_source_binding
 from app.integrations.coverage import build_binding_workspace
 from app.integrations.domain_service import build_integration_domain_page
+from app.integrations.kubernetes_frontpage import (
+    KubernetesCoverageFilters,
+    KubernetesFrontPageFilters,
+    KubernetesRegistryFilters,
+    build_kubernetes_page,
+    build_kubernetes_registry_row,
+)
 from app.integrations.repository import get_kubernetes_connection_by_cluster_id
 from app.integrations.runtime.presentation import runtime_history_view
 from app.integrations.runtime.repository import paginate_runtime_history
@@ -15,8 +22,6 @@ from app.integrations.service import (
     build_integrations_overview,
     build_kubernetes_capability_registry,
     build_kubernetes_detail,
-    build_kubernetes_page,
-    build_kubernetes_registry_row,
     build_prometheus_page,
 )
 from app.integrations.validation.state import (
@@ -45,6 +50,11 @@ def overview() -> ResponseReturnValue:
         readiness=request.args.get('readiness', '').strip(),
         page=request.args.get('page', 1, type=int) or 1,
         per_page=request.args.get('per_page', 5, type=int) or 5,
+        coverage_query=request.args.get('coverage_q', '').strip(),
+        coverage_environment=request.args.get('coverage_environment', '').strip(),
+        coverage_status=request.args.get('coverage_status', '').strip(),
+        coverage_page=request.args.get('coverage_page', 1, type=int) or 1,
+        coverage_per_page=request.args.get('coverage_per_page', 5, type=int) or 5,
     )
     is_runtime_partial = (
         is_htmx_request() and htmx_target() == 'integration-runtime-overview' and context['active_tab'] == 'runtime'
@@ -105,21 +115,32 @@ def runtime_overview_details(detail_key: str) -> ResponseReturnValue:
 @permission_required('settings.manage_integrations')
 def kubernetes() -> ResponseReturnValue:
     context = build_kubernetes_page(
-        query=request.args.get('q', '').strip(),
-        environment=request.args.get('environment', '').strip(),
-        readiness=request.args.get('readiness', '').strip(),
-        coverage=request.args.get('coverage', '').strip(),
-        page=request.args.get('page', 1, type=int) or 1,
-        per_page=request.args.get('per_page', 5, type=int) or 5,
+        KubernetesFrontPageFilters(
+            registry=KubernetesRegistryFilters(
+                query=request.args.get('q', '').strip(),
+                environment=request.args.get('environment', '').strip(),
+                readiness=request.args.get('readiness', '').strip(),
+                coverage=request.args.get('coverage', '').strip(),
+                page=request.args.get('page', 1, type=int) or 1,
+                per_page=request.args.get('per_page', 5, type=int) or 5,
+            ),
+            coverage=KubernetesCoverageFilters(
+                query=request.args.get('coverage_q', '').strip(),
+                environment=request.args.get('coverage_environment', '').strip(),
+                status=request.args.get('coverage_status', '').strip(),
+                page=request.args.get('coverage_page', 1, type=int) or 1,
+                per_page=request.args.get('coverage_per_page', 5, type=int) or 5,
+            ),
+        )
     )
     requested_tab = request.args.get('tab', 'coverage').strip()
     context['active_tab'] = requested_tab if requested_tab in {'coverage', 'registry'} else 'coverage'
-    is_registry_partial = (
-        request.headers.get('HX-Request') == 'true'
-        and request.headers.get('HX-Target') == 'kubernetes-connection-registry'
-    )
-    if is_registry_partial:
-        return render_template('integrations/kubernetes/partials/_registry.html', **context)
+    if request.headers.get('HX-Request') == 'true':
+        target = request.headers.get('HX-Target')
+        if target == 'kubernetes-integration-coverage':
+            return render_template('integrations/kubernetes/partials/_integration_coverage.html', **context)
+        if target == 'kubernetes-connection-registry':
+            return render_template('integrations/kubernetes/partials/_registry.html', **context)
     return render_template('integrations/kubernetes.html', **context)
 
 

@@ -112,7 +112,8 @@ def test_minio_workspace_is_nested_under_integrations_storage() -> None:
     assert 'def integration_endpoint_owner(' in integration_navigation
     assert "'domain_label': module.domain.label" in integration_navigation
     assert 'MinIO Integrations' in index
-    assert 'Register Connection' in index
+    assert 'provider_front.hero(' in index
+    assert 'Register Connection' in read('app/templates/integrations/components/_provider_frontpage.html')
     assert 'Integration Coverage' in tabs
     assert 'Connection Registry' in tabs
     assert 'framed_workspace_tabs.render' in detail

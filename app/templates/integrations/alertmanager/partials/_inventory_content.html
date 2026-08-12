@@ -11,25 +11,9 @@
     "global": "Global operational scope"
 } %}
 <div class="overflow-hidden">
-    <table class="{{ table_ui.table_classes() }} table-fixed">
-        <colgroup>
-            <col class="w-[25%]">
-            <col class="w-[24%]">
-            <col class="w-[19%]">
-            <col class="w-[14%]">
-            <col class="w-[8%]">
-            <col class="w-[10%]">
-        </colgroup>
-        <thead class="{{ table_ui.head_classes() }}">
-            <tr>
-                <th class="{{ table_ui.header_cell_classes() }}">Connection</th>
-                <th class="{{ table_ui.header_cell_classes() }}">Endpoint Contract</th>
-                <th class="{{ table_ui.header_cell_classes() }}">Deployment &amp; Runtime</th>
-                <th class="{{ table_ui.header_cell_classes() }}">Readiness</th>
-                <th class="{{ table_ui.header_cell_classes() }}">Bindings</th>
-                <th class="{{ table_ui.header_cell_classes(action=true) }}">Action</th>
-            </tr>
-        </thead>
+    <table class="{{ provider_registry.connection_registry_table_classes() }}">
+        {{ provider_registry.connection_registry_colgroup() }}
+        {{ provider_registry.connection_registry_head() }}
         <tbody class="{{ table_ui.body_classes() }}">
             {% for row in rows %}
                 <tr class="{{ table_ui.row_classes() }}">
@@ -48,16 +32,16 @@
                         </div>
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">
-                        <p class="max-w-[260px] truncate text-sm text-content-secondary"
+                        <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]"
                            title="{{ row.endpoint }}">{{ row.endpoint }}</p>
-                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Alertmanager API v2</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ row.deployment_type|replace('_', ' ') |title }}</p>
                     </td>
+                    <td class="{{ table_ui.cell_classes() }}">{{ integration_status(row.readiness, display="indicator") }}</td>
                     <td class="{{ table_ui.cell_classes() }}">
-                        {{ table_label.metadata_label(row.deployment_type|replace('_', ' ') |title, 'boxes') }}
-                        <p class="mt-1 truncate text-xs leading-5 text-content-muted"
-                           title="{{ row.version or 'Not Detected' }}">Runtime · {{ row.version or 'Not Detected' }}</p>
+                        {{ integration_status(row.compatibility, display="indicator") }}
+                        <p class="mt-1 break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.profile or "Capability profile pending" }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ row.version or "Version not detected" }}</p>
                     </td>
-                    <td class="{{ table_ui.cell_classes() }}">{{ integration_status(row.readiness, display='indicator') }}</td>
                     <td class="{{ table_ui.cell_classes() }}">
                         <p class="text-sm font-semibold tabular-nums text-content-primary">{{ row.binding_count }}</p>
                         <p class="mt-0.5 max-w-[190px] truncate text-xs leading-5 text-content-muted"
@@ -84,12 +68,13 @@
                 <tr>
                     <td colspan="6" class="p-0">
                         {% set empty_state_icon = "siren" %}
-                        {% set empty_state_title = "No Alertmanager Connections Found" %}
-                        {% set empty_state_description = "Register an Alertmanager connection or adjust the active filters." %}
+                        {% set empty_state_label = "No Results" if selected_query or selected_readiness or selected_compatibility or selected_deployment_type else "Setup Required" %}
+                        {% set empty_state_title = "No Alertmanager Connections Match the Active Filters" if selected_query or selected_readiness or selected_compatibility or selected_deployment_type else "No Alertmanager Connections Found" %}
+                        {% set empty_state_description = "Adjust the registry filters to review another Alertmanager connection." if selected_query or selected_readiness or selected_compatibility or selected_deployment_type else "Register an Alertmanager connection to establish Core Validation and downstream consumer coverage." %}
                         {% set empty_state_min_height = "min-h-[190px]" %}
                         {% set empty_state_action_url = url_for('alertmanager.new_instance') if not selected_query and not selected_readiness and not selected_deployment_type else none %}
                         {% set empty_state_action_label = 'Register Connection' if empty_state_action_url else none %}
-                        {% set empty_state_permission = "settings.manage_integrations" %}
+                        {% set empty_state_action_icon = "plus" %}
                         {% include 'components/states/_empty_state.html' %}
                     </td>
                 </tr>
@@ -114,5 +99,5 @@
 '#alertmanager-inventory-content',
 '#alertmanager-inventory-loading',
 registry_query_params,
-item_label='Integration',
+item_label='Connections',
 swap='innerHTML') }}

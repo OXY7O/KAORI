@@ -70,18 +70,18 @@
         {{ capability_readiness.render("Alertmanager Provider Readiness",
                 "Provider readiness is established only from Alertmanager compatibility and core API evidence. Consumer alert labels and payload semantics belong to bindings.",
                 readiness,
-                readiness|replace("_", " ")|title,
-                "Validated core capability coverage",
-                validated_count ~ " / " ~ total_count,
-                readiness_percent,
-                capability_metadata,
-                capability_metrics,
-                "Provider Core Ready" if required_ready else "Remediation Required",
-                "Status, Alerts, and Silences API contracts are usable; consumer binding validation remains an independent gate." if required_ready else "Restore the required Alertmanager API contract before treating this provider as ready.",
-                "normal" if required_ready else "critical",
-                "Full Validation owns provider compatibility and core API evidence only. Binding Validation owns consumer profiles, selectors, alert identity, and payload evidence. Runtime Refresh owns current endpoint health.",
-                next_action
-                ) }}
+                readiness|replace("_", " ") |title,
+        "Validated core capability coverage",
+        validated_count ~ " / " ~ total_count,
+        readiness_percent,
+        capability_metadata,
+        capability_metrics,
+        "Provider Core Ready" if required_ready else "Remediation Required",
+        "Status, Alerts, and Silences API contracts are usable; consumer binding validation remains an independent gate." if required_ready else "Restore the required Alertmanager API contract before treating this provider as ready.",
+        "normal" if required_ready else "critical",
+        "Full Validation owns provider compatibility and core API evidence only. Binding Validation owns consumer profiles, selectors, alert identity, and payload evidence. Runtime Refresh owns current endpoint health.",
+        next_action
+        ) }}
         <div class="rounded-xl border border-brand-outline bg-kaori-soft px-4 py-3"
              data-kaori-alertmanager-consumer-validation-boundary>
             <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">Consumer Validation Boundary</p>
@@ -90,7 +90,7 @@
         {% include "alertmanager/partials/_capability_registry.html" %}
     </div>
 </section>
-{{ framed_workspace_tabs.badge_oob("alertmanager", "validation", (instance.readiness_status or "validation_required")|replace("_", " ")|title) }}
+{{ framed_workspace_tabs.badge_oob("alertmanager", "validation", (instance.readiness_status or "validation_required") |replace("_", " ")|title) }}
 {% include "components/operation_feedback_oob.html" %}
 {% if validation_scope_oob is defined and validation_scope_oob %}
     {% with scope_oob=true %}

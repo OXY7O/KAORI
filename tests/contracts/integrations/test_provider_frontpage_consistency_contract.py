@@ -18,11 +18,7 @@ def test_provider_front_pages_share_one_canonical_hierarchy() -> None:
     for provider, template in templates.items():
         assert 'integrations/components/_provider_frontpage.html' in template, provider
         assert 'components/integration_workspace_tabs.html' in template, provider
-        assert 'Operational Integration' in template, provider
-        assert 'Registered Connections' in template, provider
-        assert 'Ready Connections' in template, provider
-        assert 'Consumer Bindings' in template, provider
-        assert 'Register Connection' in template, provider
+        assert 'provider_front.hero(' in template, provider
         assert 'provider_front.overview(' in template, provider
         assert 'integration_tabs.render(' in template, provider
 
@@ -30,6 +26,11 @@ def test_provider_front_pages_share_one_canonical_hierarchy() -> None:
 def test_shared_overview_owns_summary_and_boundary_geometry() -> None:
     overview = read('app/templates/integrations/components/_provider_frontpage.html')
 
+    assert 'data-kaori-provider-frontpage-hero' in overview
+    assert 'Registered Connections' in overview
+    assert 'Ready Connections' in overview
+    assert 'Consumer Bindings' in overview
+    assert 'Register Connection' in overview
     assert 'data-kaori-provider-integration-overview' in overview
     assert 'integration_ui.metric_grid_classes(4)' in overview
     assert 'Integration Contract' in overview
@@ -38,26 +39,27 @@ def test_shared_overview_owns_summary_and_boundary_geometry() -> None:
     assert 'md:grid-cols-3' in overview
 
 
-def test_kubernetes_specialized_readiness_stays_inside_coverage_tab() -> None:
+def test_kubernetes_frontpage_uses_same_coverage_and_registry_contract() -> None:
     page = read('app/templates/integrations/kubernetes.html')
     coverage = read('app/templates/integrations/kubernetes/partials/_integration_coverage.html')
     registry = read('app/templates/integrations/kubernetes/partials/_registry.html')
     routes = read('app/integrations/routes.py')
-    service = read('app/integrations/service.py')
+    frontpage_service = read('app/integrations/kubernetes_frontpage.py')
 
     assert 'Kubernetes Integration Overview' in page
     assert 'integration_tabs.render("kubernetes"' in page
     assert '{% include "integrations/kubernetes/partials/_integration_coverage.html" %}' in page
     assert '{% include "integrations/kubernetes/partials/_registry.html" %}' in page
-    assert 'Operational Readiness Paths' in coverage
+    assert 'provider_registry.asset_coverage_head(' in coverage
+    assert 'Kubernetes Cluster' in coverage
+    assert 'Kubernetes API' in coverage
+    assert 'provider_registry.connection_registry_head()' in registry
     assert '<input type="hidden" name="tab" value="registry">' in registry
-    assert "'tab': 'registry'" in registry
-    assert "context['active_tab']" in routes
-    assert "request.args.get('tab', 'coverage')" in routes
-    kubernetes_builder = service.split('def build_kubernetes_page', 1)[1].split(
-        'def build_kubernetes_capability_registry', 1
-    )[0]
-    assert "'active_tab'" not in kubernetes_builder
+    assert "target == 'kubernetes-integration-coverage'" in routes
+    assert "request.args.get('coverage_q', '')" in routes
+    kubernetes_builder = frontpage_service.split('def build_kubernetes_page', 1)[1]
+    assert "'coverage_rows': coverage_page_rows" in kubernetes_builder
+    assert "'coverage_pagination': coverage_pagination" in kubernetes_builder
 
 
 def test_minio_empty_and_populated_states_keep_registry_geometry() -> None:
@@ -79,7 +81,8 @@ def test_minio_empty_and_populated_states_keep_registry_geometry() -> None:
     assert 'minio-registry-content' in registry
 
     for content in (coverage_content, registry_content):
-        assert 'table_ui.table_classes(' in content
+        assert 'provider_registry.' in content
+        assert '_table_classes()' in content
         assert 'components/states/_empty_state.html' in content
         assert 'provider_registry.pagination_footer(' in content
 
@@ -87,3 +90,34 @@ def test_minio_empty_and_populated_states_keep_registry_geometry() -> None:
     assert "target == 'minio-registry-content'" in routes
     assert 'coverage_query:' in presentation
     assert 'compatibility:' in presentation
+
+
+def test_provider_connection_registries_share_one_column_contract() -> None:
+    registry_component = read('app/templates/integrations/components/_provider_registry.html')
+    registries = [
+        read('app/templates/integrations/kubernetes/partials/_registry.html'),
+        read('app/templates/integrations/prometheus/partials/_inventory_content.html'),
+        read('app/templates/integrations/alertmanager/partials/_inventory_content.html'),
+        read('app/templates/minio/partials/_registry_content.html'),
+    ]
+
+    for label in ('Connection', 'Endpoint / Scope', 'Core Readiness', 'Compatibility', 'Bindings', 'Actions'):
+        assert label in registry_component
+    for template in registries:
+        assert 'provider_registry.connection_registry_colgroup()' in template
+        assert 'provider_registry.connection_registry_head()' in template
+
+
+def test_asset_provider_coverage_tables_share_one_column_contract() -> None:
+    registry_component = read('app/templates/integrations/components/_provider_registry.html')
+    kubernetes = read('app/templates/integrations/kubernetes/partials/_integration_coverage.html')
+    minio = read('app/templates/minio/partials/_coverage_content.html')
+
+    for label in ('Metrics Source', 'Alert Source', 'Coverage', 'Actions'):
+        assert label in registry_component
+    assert 'provider_registry.asset_coverage_head(' in kubernetes
+    assert 'Kubernetes Cluster' in kubernetes
+    assert 'Kubernetes API' in kubernetes
+    assert 'provider_registry.asset_coverage_head(' in minio
+    assert 'Object Storage Asset' in minio
+    assert 'MinIO API' in minio

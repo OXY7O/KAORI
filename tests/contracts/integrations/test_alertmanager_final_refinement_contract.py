@@ -82,3 +82,12 @@ def test_alertmanager_binding_workspace_is_full_width_and_lifecycle_action_is_se
     assert 'min-w-[76rem]' not in content
     assert 'table-fixed' in content
     assert 'table_ui.action_classes(true)' in content
+
+
+def test_alertmanager_capability_pagination_precomputes_hx_urls() -> None:
+    registry = ALERT_REGISTRY.read_text(encoding='utf-8')
+
+    assert 'previous_registry_url = url_for(registry_endpoint' in registry
+    assert 'next_registry_url = url_for(registry_endpoint' in registry
+    assert 'hx-get="{{ previous_registry_url }}"' in registry
+    assert 'hx-get="{{ next_registry_url }}"' in registry

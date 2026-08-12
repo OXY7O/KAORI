@@ -62,7 +62,11 @@ def test_runtime_overview_uses_modal_and_registry_tables_avoid_forced_scroll() -
         ('app/templates/integrations/prometheus/partials/_inventory_content.html', 'min-w-[1080px]'),
         ('app/templates/integrations/alertmanager/partials/_inventory_content.html', 'min-w-[1040px]'),
     ]
+    registry_component = read('app/templates/integrations/components/_provider_registry.html')
+    assert 'connection_registry_head()' in registry_component
     for path, legacy_width in pairs:
         source = read(path)
-        assert 'table-fixed' in source
+        assert 'table-fixed' not in source
         assert legacy_width not in source
+        assert 'provider_registry.connection_registry_table_classes()' in source
+        assert 'provider_registry.connection_registry_head()' in source

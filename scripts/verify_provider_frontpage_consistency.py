@@ -16,42 +16,100 @@ def main() -> int:
         'Alertmanager': read('app/templates/integrations/alertmanager.html'),
         'MinIO': read('app/templates/minio/index.html'),
     }
-    shared_overview = read('app/templates/integrations/components/_provider_frontpage.html')
+    shared_frontpage = read('app/templates/integrations/components/_provider_frontpage.html')
+    shared_registry = read('app/templates/integrations/components/_provider_registry.html')
     shared_tabs = read('app/templates/components/integration_workspace_tabs.html')
-    minio_coverage = read('app/templates/minio/partials/_coverage_content.html')
-    minio_registry = read('app/templates/minio/partials/_registry_content.html')
-    kubernetes_registry = read('app/templates/integrations/kubernetes/partials/_registry.html')
+
+    connection_registries = {
+        'Kubernetes': read('app/templates/integrations/kubernetes/partials/_registry.html'),
+        'Prometheus': read('app/templates/integrations/prometheus/partials/_inventory_content.html'),
+        'Alertmanager': read('app/templates/integrations/alertmanager/partials/_inventory_content.html'),
+        'MinIO': read('app/templates/minio/partials/_registry_content.html'),
+    }
+    direct_coverage = {
+        'Kubernetes': read('app/templates/integrations/kubernetes/partials/_integration_coverage.html'),
+        'MinIO': read('app/templates/minio/partials/_coverage_content.html'),
+    }
+    observability_coverage = read('app/templates/components/integration_coverage_content.html')
     workspace_standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')
 
     for provider, page in provider_pages.items():
         assert 'integrations/components/_provider_frontpage.html' in page, provider
         assert 'components/integration_workspace_tabs.html' in page, provider
-        assert 'Operational Integration' in page, provider
-        assert 'Registered Connections' in page, provider
-        assert 'Ready Connections' in page, provider
-        assert 'Consumer Bindings' in page, provider
-        assert 'Register Connection' in page, provider
+        assert 'provider_front.hero(' in page, provider
         assert 'provider_front.overview(' in page, provider
         assert 'integration_tabs.render(' in page, provider
 
-    for marker in ('Integration Contract', 'Consumer Resolution', 'Authority Boundary'):
-        assert marker in shared_overview
+    for marker in (
+        'data-kaori-provider-frontpage-hero',
+        'Operational Integration',
+        'Registered Connections',
+        'Ready Connections',
+        'Consumer Bindings',
+        'Register Connection',
+        'Integration Contract',
+        'Consumer Resolution',
+        'Authority Boundary',
+    ):
+        assert marker in shared_frontpage
+
     for marker in ('Integration Coverage', 'Connection Registry'):
         assert marker in shared_tabs
 
-    for content in (minio_coverage, minio_registry):
-        assert 'components/states/_empty_state.html' in content
-        assert 'provider_registry.pagination_footer(' in content
-        assert 'table_ui.table_classes(' in content
+    for marker in (
+        'connection_registry_table_classes',
+        'connection_registry_colgroup',
+        'connection_registry_head',
+        'Endpoint / Scope',
+        'Core Readiness',
+        'Compatibility',
+        'Bindings',
+        'Actions',
+        'asset_coverage_table_classes',
+        'asset_coverage_colgroup',
+        'asset_coverage_head',
+        'scope_coverage_colgroup',
+        'scope_coverage_head',
+    ):
+        assert marker in shared_registry
 
-    assert '<input type="hidden" name="tab" value="registry">' in kubernetes_registry
+    for provider, content in connection_registries.items():
+        assert 'provider_registry.connection_registry_table_classes()' in content, provider
+        assert 'provider_registry.connection_registry_colgroup()' in content, provider
+        assert 'provider_registry.connection_registry_head()' in content, provider
+        assert 'table-fixed' not in content, provider
+
+    for provider, content in direct_coverage.items():
+        assert 'provider_registry.asset_coverage_table_classes()' in content, provider
+        assert 'provider_registry.asset_coverage_colgroup()' in content, provider
+        assert 'provider_registry.asset_coverage_head(' in content, provider
+        assert 'table-fixed' not in content, provider
+
+    assert 'Operational Readiness Paths' not in direct_coverage['Kubernetes']
+    assert 'provider_registry.scope_coverage_colgroup()' in observability_coverage
+    assert 'provider_registry.scope_coverage_head()' in observability_coverage
+    assert 'table-fixed' not in observability_coverage
+
     assert '## Provider Front Page Contract' in workspace_standard
+    assert 'Connection | Endpoint / Scope | Core Readiness | Compatibility | Bindings | Actions' in workspace_standard
+    assert 'Asset / Scope | Provider API | Metrics Source | Alert Source | Coverage | Actions' in workspace_standard
     assert (
-        'Kubernetes `Operational Readiness Paths` remains valid provider-specific coverage evidence'
-        in workspace_standard
+        'Operational Scope | Environment | Primary Source | Consumer Binding | Coverage | Actions' in workspace_standard
     )
+    assert 'front page must not introduce a provider-only giant card layout' in workspace_standard
 
-    print('PASS — KAORI provider front pages share one canonical Hero, overview, coverage, and registry hierarchy.')
+    coverage = (ROOT / 'app/templates/components/integration_coverage_content.html').read_text()
+    registry = (ROOT / 'app/templates/integrations/components/_provider_registry.html').read_text()
+    minio_form = (ROOT / 'app/templates/minio/instance_form.html').read_text()
+    minio_routes = (ROOT / 'app/minio/routes.py').read_text()
+    assert 'Consumer Asset' in registry
+    assert "item_label='Assets'" in coverage or 'item_label="Assets"' in coverage
+    assert 'empty_state_show_admin_required' not in coverage
+    assert 'connection_validation_header.render(' in minio_form
+    assert 'minio.test_new_instance_connection' in minio_form
+    assert 'minio-connection-tested' in minio_routes
+
+    print('PASS — KAORI provider front pages share DRY Hero, coverage, and connection-registry contracts.')
     return 0
 
 

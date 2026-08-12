@@ -3,25 +3,9 @@
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 <div class="overflow-x-auto">
-    <table class="{{ table_ui.table_classes('min-w-[1040px]') }}">
-        <colgroup>
-            <col class="w-[26%]">
-            <col class="w-[14%]">
-            <col class="w-[16%]">
-            <col class="w-[20%]">
-            <col class="w-[12%]">
-            <col class="w-[12%]">
-        </colgroup>
-        <thead class="{{ table_ui.head_classes() }}">
-            <tr>
-                <th class="{{ table_ui.header_cell_classes() }}">Connection</th>
-                <th class="{{ table_ui.header_cell_classes() }}">Environment</th>
-                <th class="{{ table_ui.header_cell_classes() }}">Core Readiness</th>
-                <th class="{{ table_ui.header_cell_classes() }}">Compatibility</th>
-                <th class="{{ table_ui.header_cell_classes() }}">Bindings</th>
-                <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
-            </tr>
-        </thead>
+    <table class="{{ provider_registry.connection_registry_table_classes() }}">
+        {{ provider_registry.connection_registry_colgroup() }}
+        {{ provider_registry.connection_registry_head() }}
         <tbody class="{{ table_ui.body_classes() }}">
             {% for row in rows %}
                 <tr class="{{ table_ui.row_classes() }}">
@@ -34,7 +18,10 @@
                             </div>
                         </div>
                     </td>
-                    <td class="{{ table_ui.cell_classes() }}">{{ row.environment|replace('_', ' ') |title }}</td>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.endpoint }}</p>
+                        <p class="mt-1 text-xs text-content-muted">{{ row.environment|replace('_', ' ') |title }}</p>
+                    </td>
                     <td class="{{ table_ui.cell_classes() }}">
                         {{ integration_status(row.readiness_status or "validation_required", "Ready" if row.readiness_status == "ready" else ("Blocked" if row.readiness_status == "blocked" else "Validation Required") , display="indicator") }}
                     </td>
@@ -50,7 +37,7 @@
                         <a href="{{ url_for('minio.instance_detail', instance_id=row.id) }}"
                            class="{{ table_ui.action_classes() }}">
                             <i data-lucide="activity" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                            View Details
+                            Manage
                         </a>
                     </td>
                 </tr>

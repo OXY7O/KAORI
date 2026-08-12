@@ -8,6 +8,7 @@
 {% import "components/operational_toggle.html" as operational_toggle %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/operational_callout.html" as operational_callout %}
+{% import "components/connection_validation_header.html" as connection_validation_header %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% block title %}Register MinIO Connection · KAORI{% endblock title %}
@@ -22,7 +23,7 @@
                         <p class="mt-2 {{ page_hero.description_classes() }}">Create a reusable object-storage API connection before Core Validation and independent metrics or alert consumer bindings.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('database-zap', 'MinIO-Compatible S3 API') }}
-                            {{ page_hero.meta_label('shield-check', 'Core Provider Validation') }}
+                            {{ page_hero.meta_label('shield-check', 'Capability-Aware Validation') }}
                             {{ page_hero.meta_label('link-2', 'Governed Consumer Binding') }}
                         </div>
                     {% endcall %}
@@ -53,9 +54,10 @@
         <form id="minio-registration-form"
               method="post"
               class="grid gap-6 xl:grid-cols-12 xl:items-start"
-              x-data="{ connectionVerified: {{ 'true' if registration_proof else 'false' }}, invalidateConnectionTest(event) { const fieldName = event.target?.name || ''; if (['csrf_token', 'connection_test_proof', 'action'].includes(fieldName)) return; this.connectionVerified = false; this.$refs.connectionProof.value = ''; } }"
+              x-data="{ connectionVerified: {{ 'true' if registration_proof else 'false' }}, invalidateConnectionTest(event) { const fieldName = event.target?.name || ''; if (['csrf_token', 'connection_test_proof', 'action'].includes(fieldName)) return; this.connectionVerified = false; this.$refs.connectionProof.value = ''; }, applyConnectionTest(event) { this.connectionVerified = event.detail?.connected === true; this.$refs.connectionProof.value = event.detail?.proof || ''; } }"
               x-on:input.capture="invalidateConnectionTest($event)"
-              x-on:change.capture="invalidateConnectionTest($event)">
+              x-on:change.capture="invalidateConnectionTest($event)"
+              x-on:minio-connection-tested.window="applyConnectionTest($event)">
             {{ form.hidden_tag() }}
             <input x-ref="connectionProof"
                    type="hidden"
@@ -102,35 +104,50 @@
                             {{ form.description(class_="min-h-24 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 py-2.5 text-sm text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", placeholder="Operational purpose, ownership, and storage role") }}
                         </label>
                     </section>
-                    <section class="border-t border-outline-subtle pt-6">
-                        <div class="mb-4 flex items-start gap-3">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
-                                <i data-lucide="plug-zap" class="h-4 w-4" aria-hidden="true"></i>
-                            </span>
-                            <div>
-                                <h3 class="text-sm font-semibold text-content-primary">Endpoint &amp; Access</h3>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Credentials in this connection are used only for the MinIO S3 API plane; observability providers keep their own credentials.</p>
+                    <section class="relative overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated">
+                        {% call connection_validation_header.render(
+                            "Endpoint & Access",
+                            "Define MinIO S3 API credentials and transport trust, then verify reachability before registration.",
+                            icon="network",
+                            loading_id="minio-connection-test-loading",
+                            loading_label="Testing MinIO connection"
+                            ) %}
+                            <button type="button"
+                                    hx-post="{{ url_for('minio.test_new_instance_connection') }}"
+                                    hx-include="#minio-registration-form"
+                                    hx-target="#minio-connection-test-result"
+                                    hx-swap="innerHTML"
+                                    hx-indicator="#minio-connection-test-loading"
+                                    hx-disabled-elt="this"
+                                    x-on:click="const form = $el.closest('form'); if (!form.reportValidity()) { $event.preventDefault(); $event.stopImmediatePropagation(); }"
+                                    class="group {{ action_button.classes('secondary') }} disabled:cursor-wait disabled:opacity-70">
+                                <i data-lucide="plug-zap"
+                                   class="h-4 w-4 group-[.htmx-request]:animate-pulse"></i>
+                                Test Connection
+                            </button>
+                        {% endcall %}
+                        <div class="space-y-4 p-4 sm:p-5">
+                            <label class="block">
+                                <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.endpoint.label.text }}</span>
+                                {{ form.endpoint(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20") }}
+                                {% for error in form.endpoint.errors %}
+                                    <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
+                                {% endfor %}
+                                <p class="mt-1.5 text-xs leading-5 text-content-muted">Use the MinIO S3 API base URL reachable from KAORI. Do not use the Console URL or embed credentials.</p>
+                            </label>
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <label class="block">
+                                    <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.access_key.label.text }}</span>
+                                    {{ form.access_key(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="off") }}
+                                </label>
+                                <label class="block">
+                                    <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.secret_key.label.text }}</span>
+                                    {{ form.secret_key(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="new-password") }}
+                                </label>
                             </div>
                         </div>
-                        <label class="block">
-                            <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.endpoint.label.text }}</span>
-                            {{ form.endpoint(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 font-mono text-sm text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20") }}
-                            {% for error in form.endpoint.errors %}
-                                <p class="mt-1.5 text-xs font-medium text-status-critical-text">{{ error }}</p>
-                            {% endfor %}
-                            <p class="mt-1.5 text-xs leading-5 text-content-muted">Use the S3 API endpoint reachable from KAORI, not the MinIO Console URL.</p>
-                        </label>
-                        <div class="mt-4 grid gap-4 md:grid-cols-2">
-                            <label class="block">
-                                <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.access_key.label.text }}</span>
-                                {{ form.access_key(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="off") }}
-                            </label>
-                            <label class="block">
-                                <span class="mb-1.5 block text-sm font-semibold text-content-primary">{{ form.secret_key.label.text }}</span>
-                                {{ form.secret_key(class_="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20", autocomplete="new-password") }}
-                            </label>
-                        </div>
                     </section>
+                    <div id="minio-connection-test-result" class="sr-only" aria-live="polite"></div>
                     <section class="border-t border-outline-subtle pt-6">
                         <div class="mb-4 flex items-start gap-3">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
@@ -168,41 +185,10 @@
                             {% endcall %}
                         </div>
                     </section>
-                    <section class="border-t border-outline-subtle pt-6">
-                        <div class="mb-4 flex items-start gap-3">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary dark:text-kaori-accent">
-                                <i data-lucide="scan-search" class="h-4 w-4" aria-hidden="true"></i>
-                            </span>
-                            <div>
-                                <h3 class="text-sm font-semibold text-content-primary">Connection Test</h3>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">The exact registration payload must pass a MinIO S3 API test before the connection can be registered.</p>
-                            </div>
-                        </div>
-                        {% if connection_result %}
-                            {% call operational_callout.render("S3 API Connection Verified", connection_result.bucket_count ~ " bucket(s) are visible. Response time: " ~ connection_result.latency_ms ~ " ms.", icon="circle-check", tone="normal", variant="semantic") %}
-                                Observed product: {{ connection_result.product|replace('_', ' ') |title }}
-                                {% if connection_result.server_header %}· Server: {{ connection_result.server_header }}{% endif %}
-                            {% endcall %}
-                        {% elif connection_error %}
-                            {{ operational_callout.render("Connection Test Failed", connection_error, icon="circle-x", tone="critical", variant="semantic") }}
-                        {% else %}
-                            <div class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
-                                <p class="text-sm font-semibold text-content-primary">Test the exact registration payload</p>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Changing any connection field invalidates the signed test proof. Registration remains disabled until the next successful test.</p>
-                            </div>
-                        {% endif %}
-                        <div class="mt-4 flex justify-end">
-                            <button type="submit"
-                                    name="action"
-                                    value="test"
-                                    class="{{ action_button.classes('secondary') }}">
-                                <i data-lucide="plug-zap" class="h-4 w-4" aria-hidden="true"></i>
-                                Test Connection
-                            </button>
-                        </div>
-                    </section>
                 </div>
-                {% call form_action_bar.render("Register after Test Connection succeeds.", aria_label="MinIO Connection Actions") %}
+                {% call form_action_bar.render("Run Test Connection successfully before KAORI enables Register Connection.", aria_label="MinIO Connection Actions") %}
+                    <a href="{{ url_for('minio.index') }}"
+                       class="{{ action_button.classes('secondary') }}">Cancel</a>
                     <button type="submit"
                             name="action"
                             value="save"

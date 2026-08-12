@@ -1,17 +1,17 @@
 <div class="space-y-4 font-sans">
-    {% include 'prometheus/partials/_runtime_panel.html' %}
+    {% include "prometheus/partials/_runtime_panel.html" %}
     {% with
-        runtime_history_id='prometheus-runtime-history',
-        runtime_history_loading_id='prometheus-history-loading',
-        runtime_history_url=url_for('prometheus.instance_runtime_history', instance_id=instance.id),
-        runtime_history_endpoint='prometheus.instance_runtime_history',
-        runtime_history_route_args={'instance_id': instance.id},
-        runtime_history_detail_url=url_for('prometheus.instance_detail', instance_id=instance.id),
-        runtime_history_detail_endpoint='prometheus.instance_detail',
-        runtime_history_tab='runtime',
+        runtime_history_id="prometheus-runtime-history",
+        runtime_history_loading_id="prometheus-history-loading",
+        runtime_history_url=url_for("prometheus.instance_runtime_history", instance_id=instance.id),
+        runtime_history_endpoint="prometheus.instance_runtime_history",
+        runtime_history_route_args={"instance_id": instance.id},
+        runtime_history_detail_url=url_for("prometheus.instance_detail", instance_id=instance.id),
+        runtime_history_detail_endpoint="prometheus.instance_detail",
+        runtime_history_tab="runtime",
         runtime_history_filters_enabled=true,
-        provider_label='Prometheus'
+        provider_label="Prometheus"
         %}
-        {% include 'integrations/partials/_runtime_history.html' %}
+        {% include "integrations/partials/_runtime_history.html" %}
     {% endwith %}
 </div>

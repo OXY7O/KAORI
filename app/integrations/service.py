@@ -4,15 +4,12 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import contains_eager, selectinload
 
-from app.cluster.constants import get_environment_label
 from app.common.presentation import present_key_label, present_user_datetime
 from app.extensions.db import db
 from app.integrations.contracts import IntegrationNotRegistered
 from app.integrations.coverage import (
     bound_source_for_scope,
-    bound_sources_for_scopes,
     build_provider_coverage,
 )
 from app.integrations.deletion import kubernetes_deletion_guard
@@ -24,7 +21,7 @@ from app.integrations.overview_extensions import (
     sort_runtime_rows,
 )
 from app.integrations.prometheus.scope import cluster_bindings_for_instance
-from app.integrations.readiness import resolve_binding_operational_status, resolve_cluster_coverage
+from app.integrations.readiness import resolve_binding_operational_status
 from app.integrations.registry import get_integration, registry
 from app.integrations.taxonomy import (
     capability_definitions_for_domain,
@@ -161,255 +158,6 @@ def build_integrations_overview(
 
 def _kubernetes_readiness(connection: KubernetesConnection) -> str:
     return connection.readiness_status or 'validation_required'
-
-
-def _build_kubernetes_registry_row(
-    connection: KubernetesConnection,
-    *,
-    bound_sources: dict[tuple[str, str], tuple[Any | None, Any | None]] | None = None,
-) -> dict[str, Any]:
-    cluster = connection.cluster
-    if bound_sources is None:
-        prometheus, prometheus_binding = bound_source_for_scope(
-            'prometheus',
-            scope_type='kubernetes_cluster',
-            scope_key=cluster.id,
-        )
-        alertmanager, alertmanager_binding = bound_source_for_scope(
-            'alertmanager',
-            scope_type='kubernetes_cluster',
-            scope_key=cluster.id,
-        )
-    else:
-        prometheus, prometheus_binding = bound_sources.get(
-            ('prometheus', str(cluster.id)),
-            (None, None),
-        )
-        alertmanager, alertmanager_binding = bound_sources.get(
-            ('alertmanager', str(cluster.id)),
-            (None, None),
-        )
-    metrics_operational = (
-        resolve_binding_operational_status(
-            source_readiness=getattr(prometheus, 'readiness_status', None),
-            binding_validation=getattr(prometheus_binding, 'validation_status', None),
-            source_enabled=bool(getattr(prometheus, 'enabled', True)),
-            binding_enabled=bool(getattr(prometheus_binding, 'enabled', True)),
-        )
-        if prometheus and prometheus_binding
-        else {'status': 'not_configured', 'label': 'Not Configured'}
-    )
-
-    alerts_operational = (
-        resolve_binding_operational_status(
-            source_readiness=getattr(alertmanager, 'readiness_status', None),
-            binding_validation=getattr(alertmanager_binding, 'validation_status', None),
-            source_enabled=bool(getattr(alertmanager, 'enabled', True)),
-            binding_enabled=bool(getattr(alertmanager_binding, 'enabled', True)),
-        )
-        if alertmanager and alertmanager_binding
-        else {'status': 'not_configured', 'label': 'Not Configured'}
-    )
-
-    metrics_coverage = resolve_cluster_coverage(
-        kubernetes_readiness=connection.readiness_status,
-        source=prometheus,
-        binding=prometheus_binding,
-    )
-    alerts_coverage = resolve_cluster_coverage(
-        kubernetes_readiness=connection.readiness_status,
-        source=alertmanager,
-        binding=alertmanager_binding,
-    )
-
-    readiness = connection.readiness_status or 'validation_required'
-    if readiness == 'ready':
-        inventory_coverage = {'status': 'ready', 'label': 'Ready'}
-    elif readiness == 'degraded':
-        inventory_coverage = {'status': 'degraded', 'label': 'Degraded'}
-    elif readiness == 'blocked':
-        inventory_coverage = {'status': 'blocked', 'label': 'Blocked'}
-    else:
-        inventory_coverage = {
-            'status': 'validation_required',
-            'label': 'Validation Required',
-        }
-
-    coverage_items = (inventory_coverage, metrics_coverage, alerts_coverage)
-    coverage_ready_count = sum(1 for item in coverage_items if item['status'] == 'ready')
-
-    if readiness == 'blocked':
-        coverage_summary = {'status': 'blocked', 'label': 'Blocked'}
-    elif readiness == 'degraded':
-        coverage_summary = {'status': 'degraded', 'label': 'Degraded'}
-    elif readiness != 'ready':
-        coverage_summary = {
-            'status': 'validation_required',
-            'label': 'Validation Required',
-        }
-    elif coverage_ready_count == 3:
-        coverage_summary = {'status': 'ready', 'label': 'Operational'}
-    elif any(item['status'] == 'not_configured' for item in coverage_items):
-        coverage_summary = {'status': 'not_configured', 'label': 'Setup Required'}
-    elif coverage_ready_count > 0:
-        coverage_summary = {
-            'status': 'degraded',
-            'label': f'{coverage_ready_count} of 3 Ready',
-        }
-    else:
-        coverage_summary = {
-            'status': 'validation_required',
-            'label': 'Validation Required',
-        }
-
-    source_binding_count = sum(
-        1
-        for binding in (prometheus_binding, alertmanager_binding)
-        if binding is not None and bool(getattr(binding, 'enabled', True))
-    )
-    source_operational_count = sum(
-        1 for posture in (metrics_operational, alerts_operational) if posture['status'] == 'ready'
-    )
-
-    return {
-        'connection_id': connection.id,
-        'integration_instance_id': connection.integration_instance_id,
-        'cluster_id': cluster.id,
-        'cluster_name': cluster.name,
-        'environment': get_environment_label(cluster.environment),
-        'server': connection.server or 'Not discovered',
-        'readiness': readiness,
-        'inventory_coverage': inventory_coverage,
-        'metrics_coverage': metrics_coverage,
-        'alerts_coverage': alerts_coverage,
-        'coverage_summary': coverage_summary,
-        'coverage_ready_count': coverage_ready_count,
-        'compatibility_profile': connection.compatibility_profile,
-        'version': connection.detected_version,
-        'source_binding_count': source_binding_count,
-        'source_operational_count': source_operational_count,
-        'prometheus_instance_id': prometheus.id if prometheus else None,
-        'prometheus_name': prometheus.name if prometheus else None,
-        'prometheus_source_status': getattr(prometheus, 'readiness_status', None),
-        'prometheus_binding_status': prometheus_binding.validation_status if prometheus_binding else None,
-        'prometheus_operational': metrics_operational,
-        'alertmanager_instance_id': alertmanager.id if alertmanager else None,
-        'alertmanager_name': alertmanager.name if alertmanager else None,
-        'alertmanager_source_status': getattr(alertmanager, 'readiness_status', None),
-        'alertmanager_binding_status': alertmanager_binding.validation_status if alertmanager_binding else None,
-        'alertmanager_operational': alerts_operational,
-        'last_validated_at': present_user_datetime(connection.last_validated_at, empty='Not validated'),
-    }
-
-
-def build_kubernetes_registry_row(cluster_id: str) -> dict[str, Any] | None:
-    connection = KubernetesConnection.query.filter_by(cluster_id=cluster_id).first()
-    if connection is None:
-        return None
-    return _build_kubernetes_registry_row(connection)
-
-
-def build_kubernetes_page(
-    *,
-    query: str = '',
-    environment: str = '',
-    readiness: str = '',
-    coverage: str = '',
-    page: int = 1,
-    per_page: int = 5,
-) -> dict[str, Any]:
-    connections = (
-        KubernetesConnection.query.join(Cluster)
-        .options(contains_eager(KubernetesConnection.cluster))
-        .order_by(Cluster.created_at.asc(), Cluster.id.asc())
-        .all()
-    )
-    bound_sources = bound_sources_for_scopes(
-        ('prometheus', 'alertmanager'),
-        scope_type='kubernetes_cluster',
-        scope_keys=[str(connection.cluster_id) for connection in connections],
-    )
-    rows = [_build_kubernetes_registry_row(connection, bound_sources=bound_sources) for connection in connections]
-    total = len(rows)
-    normalized_query = str(query or '').strip().lower()
-    filtered_rows = rows
-    if normalized_query:
-        filtered_rows = [
-            row
-            for row in filtered_rows
-            if normalized_query
-            in ' '.join(
-                str(value or '')
-                for value in (
-                    row.get('cluster_name'),
-                    row.get('environment'),
-                    row.get('server'),
-                    row.get('version'),
-                    row.get('compatibility_profile'),
-                )
-            ).lower()
-        ]
-    if environment:
-        filtered_rows = [row for row in filtered_rows if row.get('environment') == environment]
-    if readiness:
-        filtered_rows = [row for row in filtered_rows if row.get('readiness') == readiness]
-    if coverage:
-        filtered_rows = [row for row in filtered_rows if (row.get('coverage_summary') or {}).get('status') == coverage]
-    page_rows, pagination = _paginate(filtered_rows, page=page, per_page=per_page)
-    kubernetes_ready = sum(1 for row in rows if row['readiness'] == 'ready')
-    kubernetes_attention = total - kubernetes_ready
-
-    prometheus_configured = sum(1 for row in rows if row['prometheus_instance_id'])
-    prometheus_source_ready = sum(1 for row in rows if row['prometheus_source_status'] == 'ready')
-    prometheus_binding_ready = sum(1 for row in rows if row['prometheus_binding_status'] == 'ready')
-    prometheus_operational = sum(1 for row in rows if row['prometheus_operational']['status'] == 'ready')
-
-    alertmanager_configured = sum(1 for row in rows if row['alertmanager_instance_id'])
-    alertmanager_source_ready = sum(1 for row in rows if row['alertmanager_source_status'] == 'ready')
-    alertmanager_binding_ready = sum(1 for row in rows if row['alertmanager_binding_status'] == 'ready')
-    alertmanager_operational = sum(1 for row in rows if row['alertmanager_operational']['status'] == 'ready')
-
-    fully_operational = sum(1 for row in rows if row['coverage_summary']['status'] == 'ready')
-    source_bindings = sum(row['source_binding_count'] for row in rows)
-
-    return {
-        'rows': page_rows,
-        'pagination': pagination,
-        'selected_query': query,
-        'selected_environment': environment,
-        'selected_readiness': readiness,
-        'selected_coverage': coverage,
-        'registry_has_active_filters': bool(normalized_query or environment or readiness or coverage),
-        'environment_options': sorted({row['environment'] for row in rows if row.get('environment')}),
-        'readiness_options': [
-            {'value': 'ready', 'label': 'Ready'},
-            {'value': 'degraded', 'label': 'Degraded'},
-            {'value': 'blocked', 'label': 'Blocked'},
-            {'value': 'validation_required', 'label': 'Validation Required'},
-        ],
-        'coverage_options': [
-            {'value': 'ready', 'label': 'Operational'},
-            {'value': 'degraded', 'label': 'Partial Coverage'},
-            {'value': 'not_configured', 'label': 'Setup Required'},
-            {'value': 'blocked', 'label': 'Blocked'},
-            {'value': 'validation_required', 'label': 'Validation Required'},
-        ],
-        'stats': {
-            'total': total,
-            'ready': kubernetes_ready,
-            'attention': kubernetes_attention,
-            'bindings': source_bindings,
-            'fully_operational': fully_operational,
-            'prometheus_configured': prometheus_configured,
-            'prometheus_source_ready': prometheus_source_ready,
-            'prometheus_binding_ready': prometheus_binding_ready,
-            'prometheus_operational': prometheus_operational,
-            'alertmanager_configured': alertmanager_configured,
-            'alertmanager_source_ready': alertmanager_source_ready,
-            'alertmanager_binding_ready': alertmanager_binding_ready,
-            'alertmanager_operational': alertmanager_operational,
-        },
-    }
 
 
 def build_kubernetes_capability_registry(
@@ -1121,7 +869,6 @@ def _runtime_overview_rows(
                 or instance.last_error,
             }
         )
-
 
     sort_runtime_rows(rows)
     return rows

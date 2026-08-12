@@ -19,12 +19,15 @@ def test_prometheus_registry_uses_one_line_filters_and_kaori_table():
     table = read('app/templates/integrations/prometheus/partials/_inventory_content.html')
     assert 'data-kaori-one-line-filters' in card
     assert 'min-w-[820px]' not in card
-    assert 'table-fixed' in table
+    assert 'table-fixed' not in table
     assert "table_ui.table_classes('min-w-[1080px]')" not in table
-    assert 'table_ui.table_classes' in table
-    assert 'table_ui.head_classes' in table
-    assert "display='indicator'" in table
-    assert "item_label='Integration'" in table
+    assert 'provider_registry.connection_registry_table_classes()' in table
+    assert 'provider_registry.connection_registry_table_classes()' in table
+    registry_component = read('app/templates/integrations/components/_provider_registry.html')
+    assert 'table_ui.head_classes' in registry_component
+    assert 'provider_registry.connection_registry_head()' in table
+    assert 'display="indicator"' in table
+    assert "item_label='Connections'" in table
 
 
 def test_alertmanager_registry_uses_one_line_filters_and_kaori_table():
@@ -32,11 +35,12 @@ def test_alertmanager_registry_uses_one_line_filters_and_kaori_table():
     table = read('app/templates/integrations/alertmanager/partials/_inventory_content.html')
     assert 'data-kaori-one-line-filters' in card
     assert 'min-w-[960px]' not in card
-    assert 'table-fixed' in table
+    assert 'table-fixed' not in table
     assert "table_ui.table_classes('min-w-[1040px]')" not in table
-    assert 'table_ui.table_classes' in table
-    assert "display='indicator'" in table
-    assert "item_label='Integration'" in table
+    assert 'provider_registry.connection_registry_table_classes()' in table
+    assert 'provider_registry.connection_registry_table_classes()' in table
+    assert 'display="indicator"' in table
+    assert "item_label='Connections'" in table
 
 
 def test_provider_detail_pages_use_shared_tab_style_v2_controller():

@@ -3,25 +3,9 @@
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 <div class="overflow-x-auto">
-    <table class="{{ table_ui.table_classes('min-w-[1040px]') }}">
-        <colgroup>
-            <col class="w-[24%]">
-            <col class="w-[16%]">
-            <col class="w-[17%]">
-            <col class="w-[17%]">
-            <col class="w-[12%]">
-            <col class="w-[14%]">
-        </colgroup>
-        <thead class="{{ table_ui.head_classes() }}">
-            <tr>
-                <th class="{{ table_ui.header_cell_classes() }}">Object Storage Asset</th>
-                <th class="{{ table_ui.header_cell_classes() }}">MinIO API</th>
-                <th class="{{ table_ui.header_cell_classes() }}">Metrics Source</th>
-                <th class="{{ table_ui.header_cell_classes() }}">Alert Source</th>
-                <th class="{{ table_ui.header_cell_classes() }}">Coverage</th>
-                <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
-            </tr>
-        </thead>
+    <table class="{{ provider_registry.asset_coverage_table_classes() }}">
+        {{ provider_registry.asset_coverage_colgroup() }}
+        {{ provider_registry.asset_coverage_head('Object Storage Asset', 'MinIO API') }}
         <tbody class="{{ table_ui.body_classes() }}">
             {% for row in coverage_rows %}
                 <tr class="{{ table_ui.row_classes() }}">
@@ -51,7 +35,7 @@
                         <a href="{{ url_for('minio.instance_detail', instance_id=row.instance.id) }}"
                            class="{{ table_ui.action_classes() }}">
                             <i data-lucide="activity" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                            View Details
+                            Manage
                         </a>
                     </td>
                 </tr>

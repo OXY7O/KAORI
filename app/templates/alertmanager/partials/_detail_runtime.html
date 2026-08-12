@@ -1,6 +1,6 @@
 <div class="space-y-4 font-sans">
-    {% include 'alertmanager/partials/_runtime_panel.html' %}
-    {% with runtime_history_id='alertmanager-runtime-history', runtime_history_loading_id='alertmanager-history-loading', runtime_history_url=url_for('alertmanager.runtime_history', instance_id=instance.id), provider_label='Alertmanager', runtime_history_filters_enabled=true, runtime_history_detail_url=url_for('alertmanager.instance_detail', instance_id=instance.id), runtime_history_tab='runtime' %}
-        {% include 'integrations/partials/_runtime_history.html' %}
+    {% include "alertmanager/partials/_runtime_panel.html" %}
+    {% with runtime_history_id="alertmanager-runtime-history", runtime_history_loading_id="alertmanager-history-loading", runtime_history_url=url_for("alertmanager.runtime_history", instance_id=instance.id), provider_label="Alertmanager", runtime_history_filters_enabled=true, runtime_history_detail_url=url_for("alertmanager.instance_detail", instance_id=instance.id), runtime_history_tab="runtime" %}
+        {% include "integrations/partials/_runtime_history.html" %}
     {% endwith %}
 </div>

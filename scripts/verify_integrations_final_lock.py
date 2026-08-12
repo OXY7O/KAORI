@@ -313,17 +313,35 @@ def main() -> int:
             errors,
         )
 
-    # Top-level registries stay scan-friendly and do not force desktop horizontal scrolling.
-    registry_width_checks = (
-        ('app/templates/integrations/kubernetes/partials/_registry.html', ('min-w-[1040px]', 'min-w-[840px]')),
-        ('app/templates/integrations/prometheus/partials/_inventory_content.html', ('min-w-[1080px]',)),
-        ('app/templates/integrations/alertmanager/partials/_inventory_content.html', ('min-w-[1040px]',)),
+    # Top-level provider registries share one DRY proportional-column contract.
+    # Provider pages must not reintroduce page-local fixed layouts or forced desktop widths.
+    shared_registry = read('app/templates/integrations/components/_provider_registry.html')
+    require(
+        'connection_registry_colgroup' in shared_registry and 'connection_registry_head' in shared_registry,
+        'Shared provider registry must own the canonical proportional columns and headers',
+        errors,
     )
-    for relative, forbidden_widths in registry_width_checks:
+    require(
+        'table_ui.table_classes()' in shared_registry,
+        'Shared provider registry must use the responsive canonical table contract',
+        errors,
+    )
+    registry_templates = (
+        'app/templates/integrations/kubernetes/partials/_registry.html',
+        'app/templates/integrations/prometheus/partials/_inventory_content.html',
+        'app/templates/integrations/alertmanager/partials/_inventory_content.html',
+        'app/templates/minio/partials/_registry_content.html',
+    )
+    for relative in registry_templates:
         source = read(relative)
-        require('table-fixed' in source, f'{relative}: top-level registry must use fixed proportional columns', errors)
-        for token in forbidden_widths:
-            require(token not in source, f'{relative}: forced desktop registry width is forbidden ({token})', errors)
+        require(
+            'provider_registry.connection_registry_colgroup()' in source
+            and 'provider_registry.connection_registry_head()' in source,
+            f'{relative}: registry must consume the shared connection column contract',
+            errors,
+        )
+        require('table-fixed' not in source, f'{relative}: page-local table-fixed layout is forbidden', errors)
+        require('min-w-[10' not in source, f'{relative}: forced desktop registry width is forbidden', errors)
 
     # RBAC baseline and optional Secret access remain separate by design.
     rbac = read('app/templates/integrations/kubernetes/partials/_minimum_validation_rbac.html')
