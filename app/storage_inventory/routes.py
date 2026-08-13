@@ -55,7 +55,6 @@ def systems() -> ResponseReturnValue:
     filters = SystemFilters(
         search=request.args.get('search', '', type=str),
         product=request.args.get('product', '', type=str),
-        native_type=request.args.get('native_type', '', type=str),
         environment=request.args.get('environment', '', type=str),
         status=request.args.get('status', '', type=str),
         page=request.args.get('page', 1, type=int) or 1,
@@ -67,7 +66,6 @@ def systems() -> ResponseReturnValue:
         inventory=inventory,
         search=filters.search,
         selected_product=filters.product,
-        selected_native_type=filters.native_type,
         selected_environment=filters.environment,
         selected_status=filters.status,
     )
