@@ -21,7 +21,7 @@
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for system in overview.systems %}
                     <tr class="{{ table_ui.row_classes() }}">
-                        <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(system.name, system.environment|environment_name(empty='Not Specified') , 'server') }}</td>
+                        <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(system.name, system.environment|environment_name(empty='Not Specified'), 'server') }}</td>
                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(system.status_label, system.status_tone) }}</td>
                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(system.product_label) }}</td>
                         <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ system.bucket_count }}</span></td>
@@ -85,16 +85,14 @@
                   hx-disabled-elt="find select"
                   class="flex items-center gap-2">
                 <input type="hidden" name="system_page" value="1">
-                <label for="object_storage_system_per_page"
-                       class="text-xs font-semibold text-content-secondary">Rows</label>
+                <label for="object_storage_system_per_page" class="text-xs font-semibold text-content-secondary">Rows</label>
                 <select id="object_storage_system_per_page"
                         name="system_per_page"
                         aria-label="Rows per page"
                         data-kaori-auto-submit
                         class="{{ pagination_ui.page_size_classes() }}">
                     {% for option in overview.systems_pagination.allowed_per_page %}
-                        <option value="{{ option }}"
-                                {% if overview.systems_pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                        <option value="{{ option }}" {% if overview.systems_pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
                     {% endfor %}
                 </select>
             </form>
@@ -154,7 +152,7 @@
             action_href=provider_action_url,
             action_label='Open Provider Integration',
             action_icon='external-link',
-            width='xl'
+            width='2xl'
             ) %}
             <div class="space-y-5">
                 {% call side_drawer.section(
@@ -174,7 +172,7 @@
                 <div class="grid gap-4 sm:grid-cols-2">
                     {% call side_drawer.section('System Identity', '', 'server', density='compact') %}
                         <div class="space-y-3">
-                            {{ detail_ui.detail_row('Environment', system.environment|environment_name(empty='Not Specified') ) }}
+                            {{ detail_ui.detail_row('Environment', system.environment|environment_name(empty='Not Specified')) }}
                             {{ detail_ui.detail_row('Product', system.product_label) }}
                             {{ detail_ui.detail_row('Release', system.release_label) }}
                             {{ detail_ui.detail_row('Registered System', system.name) }}

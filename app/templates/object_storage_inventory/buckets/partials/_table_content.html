@@ -24,7 +24,7 @@
                 {% for asset in inventory.assets %}
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }}">
-                            {{ table_ui.title_cell(asset.name, asset.environment|environment_name(empty='Not Specified') , 'container') }}
+                            {{ table_ui.title_cell(asset.name, asset.environment|environment_name(empty='Not Specified'), 'container') }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
                             <p class="text-sm font-semibold text-content-primary">{{ asset.system_name }}</p>
@@ -73,7 +73,7 @@
             <p>
                 Showing <span class="font-semibold text-content-primary">{{ inventory.pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ inventory.pagination.end_item }}</span>
                 of <span class="font-semibold text-content-primary">{{ inventory.pagination.total_items }}</span>
-                {{ pagination_ui.resource_name('Assets', inventory.pagination.total_items) |trim }}
+                {{ pagination_ui.resource_name('Assets', inventory.pagination.total_items)|trim }}
             </p>
             <form hx-get="{{ url_for('object_storage_inventory.buckets') }}"
                   hx-target="#object-storage-buckets-table-content"
@@ -155,8 +155,8 @@
             action_href=provider_action_url,
             action_label='Open Provider Integration',
             action_icon='external-link',
-            width='xl'
-            ) %}
+            width='2xl'
+        ) %}
             <div class="space-y-5">
                 {% call side_drawer.section(
                     'Object Snapshot Summary',
@@ -165,7 +165,7 @@
                     badge=protection_badge,
                     variant='highlight',
                     density='compact'
-                    ) %}
+                ) %}
                     <dl class="grid gap-4 border-t border-outline-subtle pt-3 sm:grid-cols-4 sm:divide-x sm:divide-outline-subtle">
                         <div class="sm:pr-4">{{ side_drawer.metric('Provider', asset.provider_label, 'database-zap', 'Managed Provider', variant='plain') }}</div>
                         <div class="sm:px-4">{{ side_drawer.metric('Type', asset.native_type_label, 'box', 'Native Namespace Type', variant='plain') }}</div>
@@ -189,9 +189,9 @@
                     {% endset %}
                     {% call side_drawer.section('Snapshot Context', '', 'clock-3', badge=snapshot_badge, density='compact') %}
                         <div class="space-y-3">
-                            {{ detail_ui.detail_row('Last Collected', asset.observed_at|user_datetime(date_format='day_month_numeric') , nowrap=True) }}
+                            {{ detail_ui.detail_row('Last Collected', asset.observed_at|user_datetime(date_format='day_month_numeric'), nowrap=True) }}
                             {{ detail_ui.detail_row('Snapshot Source', asset.source_label, nowrap=True) }}
-                            {{ detail_ui.detail_row('Environment', asset.environment|environment_name(empty='Not Specified') ) }}
+                            {{ detail_ui.detail_row('Environment', asset.environment|environment_name(empty='Not Specified')) }}
                         </div>
                     {% endcall %}
                 </div>
@@ -209,8 +209,12 @@
                 {% endcall %}
                 {% call side_drawer.section('Lifecycle & Replication', 'Canonical lifecycle and data-copy posture across providers.', 'git-branch') %}
                     <div class="grid gap-4 sm:grid-cols-2">
-                        <div class="space-y-3">{{ detail_ui.status_row('Lifecycle', asset.lifecycle.label, asset.lifecycle.tone) }}</div>
-                        <div class="space-y-3">{{ detail_ui.status_row('Replication', asset.replication.label, asset.replication.tone) }}</div>
+                        <div class="space-y-3">
+                            {{ detail_ui.status_row('Lifecycle', asset.lifecycle.label, asset.lifecycle.tone) }}
+                        </div>
+                        <div class="space-y-3">
+                            {{ detail_ui.status_row('Replication', asset.replication.label, asset.replication.tone) }}
+                        </div>
                     </div>
                 {% endcall %}
                 {% call side_drawer.section('Access Posture', 'Normalized access evidence without exposing credentials or policy contents.', 'key-round') %}
@@ -218,7 +222,9 @@
                         <div class="space-y-3">
                             {{ detail_ui.status_row('Access Policy', asset.access_policy.label, asset.access_policy.tone) }}
                         </div>
-                        <div class="space-y-3">{{ detail_ui.status_row('Public Exposure', asset.exposure.label, asset.exposure.tone) }}</div>
+                        <div class="space-y-3">
+                            {{ detail_ui.status_row('Public Exposure', asset.exposure.label, asset.exposure.tone) }}
+                        </div>
                     </div>
                 {% endcall %}
                 {% for section in asset.provider_detail_sections %}
@@ -226,7 +232,7 @@
                         <div class="grid gap-4 sm:grid-cols-2">
                             {% for row in section.rows %}
                                 {% if row.technical|default(false) %}
-                                    {{ detail_ui.stacked_detail_row(row.label, row.value, break_all=true) }}
+                                    <div class="sm:col-span-2">{{ detail_ui.stacked_detail_row(row.label, row.value, break_all=true) }}</div>
                                 {% else %}
                                     {{ detail_ui.detail_row(row.label, row.value) }}
                                 {% endif %}

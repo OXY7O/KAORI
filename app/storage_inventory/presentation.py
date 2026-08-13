@@ -395,13 +395,15 @@ def _overview_snapshot(rows: list[dict[str, Any]]) -> dict[str, Any]:
         else ('No committed data' if not inventoried else 'Partially committed')
     )
     return {
-        'source_label': 'Committed Object Storage Snapshot',
+        'source_label': 'Committed Snapshot',
         'status': status,
         'tone': tone,
         'description': description,
         'latest_collected_at': latest,
         'latest_supporting': (
-            f'{OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS}-hour freshness window' if latest else 'No committed timestamp'
+            f'{OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS}-hour freshness window'
+            if latest
+            else 'No committed timestamp'
         ),
         'scope_label': 'All Managed Systems',
         'scope_supporting': f'{total_systems} Systems Registered',
@@ -525,9 +527,7 @@ def _bucket_row(bucket: ObjectStorageBucket) -> dict[str, Any]:
     provider_key = str(connection.detected_product or '') if connection is not None else ''
     provider_label = _product_label(connection.detected_product if connection is not None else None)
     native_type = str(bucket.native_type or 'bucket').strip().lower()
-    location = (
-        str(bucket.location or '').strip() or (connection.region if connection is not None else '') or 'Not Observed'
-    )
+    location = str(bucket.location or '').strip() or (connection.region if connection is not None else '') or 'Not Observed'
     addressing_style = (
         str(connection.addressing_style or 'path').replace('_', ' ').title()
         if connection is not None
@@ -593,7 +593,7 @@ def _bucket_row(bucket: ObjectStorageBucket) -> dict[str, Any]:
             endpoint=endpoint,
             provider_metadata=dict(bucket.provider_metadata or {}),
         ),
-        'source_label': 'Committed Object Storage Snapshot',
+        'source_label': 'Committed Snapshot',
     }
 
 
@@ -612,13 +612,9 @@ def build_buckets(filters: BucketFilters) -> dict[str, Any]:
     systems = _system_query().all()
     system_rows = [_system_row(system) for system in systems]
     system_by_id = {system.id: system for system in systems}
-    buckets = (
-        ObjectStorageBucket.query.options(
-            joinedload(ObjectStorageBucket.object_storage_system).joinedload(ObjectStorageSystem.minio_connection)
-        )
-        .order_by(ObjectStorageBucket.name.asc())
-        .all()
-    )
+    buckets = ObjectStorageBucket.query.options(
+        joinedload(ObjectStorageBucket.object_storage_system).joinedload(ObjectStorageSystem.minio_connection)
+    ).order_by(ObjectStorageBucket.name.asc()).all()
     rows = [_bucket_row(bucket) for bucket in buckets]
     search = filters.search.strip().lower()
     filtered = [
@@ -627,7 +623,7 @@ def build_buckets(filters: BucketFilters) -> dict[str, Any]:
         if (
             not search
             or search
-            in f'{row["name"]} {row["system_name"]} {row["provider_label"]} {row["native_type_label"]} {row["location"]}'.lower()
+            in f"{row['name']} {row['system_name']} {row['provider_label']} {row['native_type_label']} {row['location']}".lower()
         )
         and (not filters.system_id or row['system_id'] == filters.system_id)
         and (not filters.product or row['provider_key'] == filters.product)
@@ -655,17 +651,15 @@ def build_buckets(filters: BucketFilters) -> dict[str, Any]:
             (row['observed_at'] for row in filtered if row['observed_at'] is not None),
             default=None,
         ),
-        'systems': [{'id': row['id'], 'name': row['name']} for row in system_rows if row['id'] in system_by_id],
+        'systems': [
+            {'id': row['id'], 'name': row['name']} for row in system_rows if row['id'] in system_by_id
+        ],
         **_system_filter_options(system_rows),
     }
 
 
 def build_bucket_detail(bucket_id: int) -> dict[str, Any] | None:
-    bucket = (
-        ObjectStorageBucket.query.options(
-            joinedload(ObjectStorageBucket.object_storage_system).joinedload(ObjectStorageSystem.minio_connection)
-        )
-        .filter(ObjectStorageBucket.id == bucket_id)
-        .first()
-    )
+    bucket = ObjectStorageBucket.query.options(
+        joinedload(ObjectStorageBucket.object_storage_system).joinedload(ObjectStorageSystem.minio_connection)
+    ).filter(ObjectStorageBucket.id == bucket_id).first()
     return _bucket_row(bucket) if bucket is not None else None
