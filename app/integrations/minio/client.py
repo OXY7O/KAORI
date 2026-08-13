@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from time import perf_counter
 from typing import Any
@@ -29,8 +29,25 @@ class MinioConnectionError(RuntimeError):
 
 @dataclass(frozen=True, slots=True)
 class MinioBucketSummary:
+    """Provider-neutral inventory payload emitted by the MinIO/S3 collector.
+
+    Identity discovery is intentionally lightweight. Provider-specific enrichers may
+    populate the normalized states and provider_metadata without changing the page
+    contract or Job Execution ownership.
+    """
+
     name: str
     creation_date: datetime | None
+    native_type: str = 'bucket'
+    location: str | None = None
+    versioning_state: str = 'not_collected'
+    immutability_state: str = 'not_collected'
+    encryption_state: str = 'not_collected'
+    lifecycle_state: str = 'not_collected'
+    replication_state: str = 'not_collected'
+    access_policy_state: str = 'not_collected'
+    exposure_state: str = 'not_collected'
+    provider_metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -125,13 +142,19 @@ def _list_buckets_values(
     return payload, latency_ms
 
 
-def _bucket_inventory(payload: dict[str, Any]) -> tuple[MinioBucketSummary, ...]:
+def _bucket_inventory(
+    payload: dict[str, Any],
+    *,
+    location: str | None = None,
+) -> tuple[MinioBucketSummary, ...]:
     return tuple(
         sorted(
             (
                 MinioBucketSummary(
                     name=str(item.get('Name') or '').strip(),
                     creation_date=item.get('CreationDate') if isinstance(item.get('CreationDate'), datetime) else None,
+                    native_type='bucket',
+                    location=location or None,
                 )
                 for item in payload.get('Buckets') or []
                 if str(item.get('Name') or '').strip()
@@ -171,7 +194,7 @@ def test_connection_values(
         server_header=server_header,
         deployment_id=deployment_id,
     )
-    bucket_inventory = _bucket_inventory(payload)
+    bucket_inventory = _bucket_inventory(payload, location=region)
     buckets = tuple(item.name for item in bucket_inventory)
     return MinioConnectionResult(
         connected=True,
@@ -208,7 +231,7 @@ def collect_bucket_inventory_values(
     )
     return MinioInventoryResult(
         latency_ms=latency_ms,
-        buckets=_bucket_inventory(payload),
+        buckets=_bucket_inventory(payload, location=region),
     )
 
 

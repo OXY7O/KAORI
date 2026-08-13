@@ -15,7 +15,7 @@ def test_storage_navigation_is_domain_first_and_vendor_neutral() -> None:
     assert 'Object Storage' in menu
     assert '>Overview<' in menu
     assert '>Systems<' in menu
-    assert '>Buckets<' in menu
+    assert 'Buckets &amp; Containers' in menu
     assert 'MinIO' not in menu
     assert 'object_storage_inventory.overview' in menu
     assert 'object_storage_inventory.systems' in menu
@@ -51,7 +51,7 @@ def test_bucket_inventory_is_committed_snapshot_not_live_page_discovery() -> Non
     assert 'sync_object_storage_inventory' in sync
     assert 'snapshot_context_bar.render' in overview
     assert 'overview.snapshot.source_label' in overview
-    assert 'No live S3 query' in buckets
+    assert 'No live provider query' in buckets
 
 
 def test_object_storage_inventory_keeps_kaori_table_and_pagination_standard() -> None:
@@ -66,18 +66,23 @@ def test_object_storage_inventory_keeps_kaori_table_and_pagination_standard() ->
         assert 'pagination_ui.numeric_pages(' in template
         assert 'Rows Per Page' in template
         assert 'components/states/_empty_state.html' in template
-        assert 'resource_detail_modal.detail_button' in template
+        if template is systems:
+            assert 'resource_detail_modal.detail_button' in template
+        else:
+            assert 'side_drawer.render(' in template
+            assert 'resource_detail_modal' not in template
     assert 'object-storage-systems-loading' in systems_filters
     assert 'object-storage-buckets-loading' in buckets_filters
 
 
-def test_v1_bucket_scope_is_explicitly_identity_first() -> None:
+def test_bucket_container_detail_is_provider_aware_and_canonical() -> None:
     detail = read('app/templates/object_storage_inventory/buckets/partials/_bucket_detail_content.html')
 
-    assert 'Bucket Identity' in detail
-    assert 'Discovery Evidence' in detail
-    assert 'Versioning, lifecycle, policy, retention, encryption, and replication evidence' in detail
-    assert 'will be added as dedicated inventory contracts' in detail
+    assert 'Identity & Location' in detail
+    assert 'Data Protection' in detail
+    assert 'Lifecycle & Access' in detail
+    assert 'provider_detail_sections' in detail
+    assert 'Inventory Boundary' in detail
 
 
 def test_object_storage_bucket_migration_follows_minio_provider_branch() -> None:

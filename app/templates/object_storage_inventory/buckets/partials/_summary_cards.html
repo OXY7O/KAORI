@@ -1,12 +1,17 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/resource_posture_grid.html" as posture_grid %}
-{% set latest_label = inventory.latest_observed_at|user_datetime if inventory.latest_observed_at else 'Not Observed' %}
+{% set latest_label = inventory.latest_observed_at|user_datetime if inventory.latest_observed_at else 'Not Collected' %}
 {% set metrics = [
-    ('container', 'Buckets in Scope', inventory.total_buckets, 'Committed bucket records matching the active filters.', 'brand'),
-    ('server', 'Systems Represented', inventory.systems_in_scope, 'Managed object-storage systems represented in the current results.', 'brand'),
-    ('database', 'Products Represented', inventory.products_in_scope, 'Detected object-storage product families in the current results.', 'brand'),
-    ('clock-3', 'Latest Observation', latest_label, 'Most recent committed ListBuckets observation in scope.', 'normal' if inventory.latest_observed_at else 'unknown')
+    ('boxes', 'Assets in Scope', inventory.total_assets, 'Buckets and containers matching the active filters.', 'brand'),
+    ('container', 'Buckets', inventory.total_buckets, 'Bucket-native object-storage namespaces.', 'brand'),
+    ('box', 'Containers', inventory.total_containers, 'Container-native object-storage namespaces.', 'brand'),
+    ('clock-3', 'Latest Snapshot', latest_label, 'Most recent committed inventory observation in scope.', 'normal' if inventory.latest_observed_at else 'unknown')
 ] %}
-{% call operational_section_card.render('Bucket Discovery Posture', 'Identity and observation evidence for the active Bucket Inventory filters.', 'container', body_classes='p-0') %}
+{% call operational_section_card.render(
+    'Object Storage Namespace Posture',
+    'Canonical inventory coverage across provider-specific bucket and container implementations.',
+    'boxes',
+    body_classes='p-0'
+    ) %}
     {{ posture_grid.render(metrics, columns=4) }}
 {% endcall %}

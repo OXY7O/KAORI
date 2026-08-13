@@ -69,6 +69,136 @@ def _status(value: str | None) -> tuple[str, str]:
     return _STATUS_LABELS.get(key, (key.replace('_', ' ').title(), 'info'))
 
 
+_NATIVE_TYPE_LABELS = {
+    'bucket': 'Bucket',
+    'container': 'Container',
+}
+
+_STATE_PRESENTATION = {
+    'enabled': ('Enabled', 'normal'),
+    'configured': ('Configured', 'normal'),
+    'enforced': ('Enforced', 'normal'),
+    'private': ('Private', 'normal'),
+    'disabled': ('Disabled', 'warning'),
+    'suspended': ('Suspended', 'warning'),
+    'not_configured': ('Not Configured', 'warning'),
+    'public': ('Public', 'critical'),
+    'not_collected': ('Not Assessed', 'unknown'),
+    'not_supported': ('Not Supported', 'info'),
+    'unknown': ('Unknown', 'unknown'),
+}
+
+
+def _native_type_label(value: str | None) -> str:
+    key = str(value or 'bucket').strip().lower().replace('-', '_')
+    return _NATIVE_TYPE_LABELS.get(key, key.replace('_', ' ').title())
+
+
+def _state_view(value: str | None) -> dict[str, str]:
+    key = str(value or 'not_collected').strip().lower().replace('-', '_')
+    label, tone = _STATE_PRESENTATION.get(key, (key.replace('_', ' ').title(), 'info'))
+    return {'key': key, 'label': label, 'tone': tone}
+
+
+def _protection_posture(
+    *,
+    versioning_state: str | None,
+    immutability_state: str | None,
+    encryption_state: str | None,
+    exposure_state: str | None,
+) -> dict[str, str]:
+    exposure = _state_view(exposure_state)
+    if exposure['key'] == 'public':
+        return {'label': 'Attention', 'tone': 'critical'}
+
+    states = [
+        _state_view(versioning_state),
+        _state_view(immutability_state),
+        _state_view(encryption_state),
+    ]
+    observed = [state for state in states if state['key'] not in {'not_collected', 'not_supported', 'unknown'}]
+    if not observed:
+        return {'label': 'Not Assessed', 'tone': 'unknown'}
+
+    positive = {'enabled', 'configured', 'enforced'}
+    negative = {'disabled', 'suspended', 'not_configured'}
+    if all(state['key'] in positive for state in observed) and len(observed) == len(states):
+        return {'label': 'Protected', 'tone': 'normal'}
+    if any(state['key'] in negative for state in observed):
+        return {'label': 'Attention', 'tone': 'warning'}
+    return {'label': 'Partial', 'tone': 'info'}
+
+
+def _provider_metadata_rows(metadata: dict[str, Any] | None) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    for key, value in sorted((metadata or {}).items()):
+        if key == 'sections' or value is None:
+            continue
+        if isinstance(value, (dict, list, tuple, set)):
+            count = len(value)
+            display = f'{count} {"Item" if count == 1 else "Items"}'
+        else:
+            display = str(value)
+        rows.append(
+            {
+                'label': str(key).replace('_', ' ').replace('-', ' ').title(),
+                'value': display,
+            }
+        )
+    return rows
+
+
+def _provider_detail_sections(
+    *,
+    provider_label: str,
+    release_label: str,
+    compatibility_profile_label: str,
+    addressing_style: str,
+    endpoint: str,
+    provider_metadata: dict[str, Any] | None,
+) -> list[dict[str, Any]]:
+    sections: list[dict[str, Any]] = [
+        {
+            'title': f'{provider_label} Provider Details',
+            'icon': 'database-zap',
+            'rows': [
+                {'label': 'Profile', 'value': compatibility_profile_label},
+                {'label': 'Release', 'value': release_label},
+                {'label': 'Addressing', 'value': addressing_style},
+                {'label': 'API Endpoint', 'value': endpoint, 'technical': True},
+            ],
+        }
+    ]
+
+    metadata_rows = _provider_metadata_rows(provider_metadata)
+    if metadata_rows:
+        sections.append(
+            {
+                'title': 'Native Provider Evidence',
+                'icon': 'braces',
+                'rows': metadata_rows,
+            }
+        )
+
+    for section in (provider_metadata or {}).get('sections', []):
+        if not isinstance(section, dict):
+            continue
+        title = str(section.get('title') or '').strip()
+        raw_rows = section.get('rows')
+        if not title or not isinstance(raw_rows, list):
+            continue
+        rows = [row for row in raw_rows if isinstance(row, dict) and row.get('label') and row.get('value') is not None]
+        if rows:
+            sections.append(
+                {
+                    'title': title,
+                    'icon': str(section.get('icon') or 'braces'),
+                    'rows': rows,
+                }
+            )
+    return sections
+
+
 def _aware(value: datetime | None) -> datetime | None:
     if value is None:
         return None
@@ -298,9 +428,9 @@ def _overview_asset_catalog(total_systems: int, total_buckets: int) -> list[dict
             'icon': 'server',
         },
         {
-            'title': 'Buckets',
+            'title': 'Buckets & Containers',
             'count': total_buckets,
-            'description': 'Buckets discovered from committed snapshots.',
+            'description': 'Object-storage namespaces discovered from committed snapshots.',
             'endpoint': 'object_storage_inventory.buckets',
             'icon': 'container',
         },
@@ -392,19 +522,78 @@ def build_system_detail(system_id: str) -> dict[str, Any] | None:
 def _bucket_row(bucket: ObjectStorageBucket) -> dict[str, Any]:
     system = bucket.object_storage_system
     connection = system.minio_connection
+    provider_key = str(connection.detected_product or '') if connection is not None else ''
+    provider_label = _product_label(connection.detected_product if connection is not None else None)
+    native_type = str(bucket.native_type or 'bucket').strip().lower()
+    location = (
+        str(bucket.location or '').strip() or (connection.region if connection is not None else '') or 'Not Observed'
+    )
+    addressing_style = (
+        str(connection.addressing_style or 'path').replace('_', ' ').title()
+        if connection is not None
+        else 'Not Observed'
+    )
+    release_label = _release_display(connection.declared_release if connection is not None else None)
+    compatibility_profile_label = _compatibility_profile_display(
+        connection.compatibility_profile if connection is not None else None
+    )
+    endpoint = connection.endpoint if connection is not None else 'Not Configured'
+    versioning = _state_view(bucket.versioning_state)
+    immutability = _state_view(bucket.immutability_state)
+    encryption = _state_view(bucket.encryption_state)
+    lifecycle = _state_view(bucket.lifecycle_state)
+    replication = _state_view(bucket.replication_state)
+    access_policy = _state_view(bucket.access_policy_state)
+    exposure = _state_view(bucket.exposure_state)
+    protection = _protection_posture(
+        versioning_state=bucket.versioning_state,
+        immutability_state=bucket.immutability_state,
+        encryption_state=bucket.encryption_state,
+        exposure_state=bucket.exposure_state,
+    )
+    snapshot_status_label, snapshot_status_tone = _snapshot_status(bucket.observed_at)
     return {
         'id': bucket.id,
         'name': bucket.name,
         'system_id': system.id,
         'system_name': system.name,
         'environment': system.environment,
-        'product_key': str(connection.detected_product or '') if connection is not None else '',
-        'product_label': _product_label(connection.detected_product if connection is not None else None),
+        'provider_key': provider_key,
+        'provider_label': provider_label,
+        # Compatibility aliases retained while downstream contracts move to provider terminology.
+        'product_key': provider_key,
+        'product_label': provider_label,
+        'native_type': native_type,
+        'native_type_label': _native_type_label(native_type),
+        'location': location,
+        'protection': protection,
+        'versioning': versioning,
+        'immutability': immutability,
+        'encryption': encryption,
+        'lifecycle': lifecycle,
+        'replication': replication,
+        'access_policy': access_policy,
+        'exposure': exposure,
         'provider_created_at': bucket.provider_created_at,
         'observed_at': bucket.observed_at,
+        'snapshot_status_label': snapshot_status_label,
+        'snapshot_status_tone': snapshot_status_tone,
         'region': connection.region if connection is not None else 'Not Observed',
-        'endpoint': connection.endpoint if connection is not None else 'Not Configured',
-        'source_label': 'Object Storage Inventory Snapshot',
+        'endpoint': endpoint,
+        'addressing_style': addressing_style,
+        'release_label': release_label,
+        'compatibility_profile_label': compatibility_profile_label,
+        'provider_connection_id': connection.id if connection is not None else None,
+        'provider_metadata': dict(bucket.provider_metadata or {}),
+        'provider_detail_sections': _provider_detail_sections(
+            provider_label=provider_label,
+            release_label=release_label,
+            compatibility_profile_label=compatibility_profile_label,
+            addressing_style=addressing_style,
+            endpoint=endpoint,
+            provider_metadata=dict(bucket.provider_metadata or {}),
+        ),
+        'source_label': 'Committed Object Storage Snapshot',
     }
 
 
@@ -413,6 +602,7 @@ class BucketFilters:
     search: str = ''
     system_id: str = ''
     product: str = ''
+    native_type: str = ''
     environment: str = ''
     page: int = 1
     per_page: int = 5
@@ -434,18 +624,33 @@ def build_buckets(filters: BucketFilters) -> dict[str, Any]:
     filtered = [
         row
         for row in rows
-        if (not search or search in f'{row["name"]} {row["system_name"]} {row["product_label"]}'.lower())
+        if (
+            not search
+            or search
+            in f'{row["name"]} {row["system_name"]} {row["provider_label"]} {row["native_type_label"]} {row["location"]}'.lower()
+        )
         and (not filters.system_id or row['system_id'] == filters.system_id)
-        and (not filters.product or row['product_key'] == filters.product)
+        and (not filters.product or row['provider_key'] == filters.product)
+        and (not filters.native_type or row['native_type'] == filters.native_type)
         and (not filters.environment or row['environment'] == filters.environment)
     ]
     paged, pagination = paginate_sequence(filtered, page=filters.page, per_page=filters.per_page)
+    bucket_count = sum(1 for row in filtered if row['native_type'] == 'bucket')
+    container_count = sum(1 for row in filtered if row['native_type'] == 'container')
     return {
+        'assets': paged,
         'buckets': paged,
         'pagination': pagination,
-        'total_buckets': len(filtered),
+        'total_assets': len(filtered),
+        'total_buckets': bucket_count,
+        'total_containers': container_count,
         'systems_in_scope': len({row['system_id'] for row in filtered}),
-        'products_in_scope': len({row['product_key'] for row in filtered if row['product_key']}),
+        'providers_in_scope': len({row['provider_key'] for row in filtered if row['provider_key']}),
+        'products_in_scope': len({row['provider_key'] for row in filtered if row['provider_key']}),
+        'types': [
+            {'value': value, 'label': _native_type_label(value)}
+            for value in sorted({row['native_type'] for row in rows if row['native_type']})
+        ],
         'latest_observed_at': max(
             (row['observed_at'] for row in filtered if row['observed_at'] is not None),
             default=None,

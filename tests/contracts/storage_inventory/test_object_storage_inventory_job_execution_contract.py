@@ -86,7 +86,7 @@ def test_inventory_pages_and_minio_lifecycle_read_only_committed_job_snapshot() 
     assert "job_key='object_storage.inventory.sync'" in scope
     assert 'latest completed MinIO Full Validation' not in scope
     assert 'Run Object Storage Inventory Sync from Job Execution' in storage_presentation
-    assert "'source_label': 'Object Storage Inventory Snapshot'" in storage_presentation
+    assert "'source_label': 'Committed Object Storage Snapshot'" in storage_presentation
     bucket_detail = read('app/templates/object_storage_inventory/buckets/partials/_bucket_detail_content.html')
     bucket_table = read('app/templates/object_storage_inventory/buckets/partials/_table_content.html')
     assert 'Object Storage Inventory Sync snapshot' in bucket_detail

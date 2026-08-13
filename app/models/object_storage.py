@@ -52,7 +52,11 @@ class ObjectStorageSystem(db.Model):
 
 
 class ObjectStorageBucket(db.Model):
-    """Committed bucket discovery snapshot for one object-storage system."""
+    """Committed bucket/container namespace snapshot for one object-storage system.
+
+    The historical class/table name stays stable for migration compatibility; native_type
+    carries the provider-specific namespace concept (for example bucket or container).
+    """
 
     __tablename__ = 'object_storage_buckets'
     __table_args__ = (
@@ -66,6 +70,16 @@ class ObjectStorageBucket(db.Model):
         index=True,
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
+    native_type: Mapped[str] = mapped_column(String(32), nullable=False, default='bucket')
+    location: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    versioning_state: Mapped[str] = mapped_column(String(30), nullable=False, default='not_collected')
+    immutability_state: Mapped[str] = mapped_column(String(30), nullable=False, default='not_collected')
+    encryption_state: Mapped[str] = mapped_column(String(30), nullable=False, default='not_collected')
+    lifecycle_state: Mapped[str] = mapped_column(String(30), nullable=False, default='not_collected')
+    replication_state: Mapped[str] = mapped_column(String(30), nullable=False, default='not_collected')
+    access_policy_state: Mapped[str] = mapped_column(String(30), nullable=False, default='not_collected')
+    exposure_state: Mapped[str] = mapped_column(String(30), nullable=False, default='not_collected')
+    provider_metadata: Mapped[dict | None] = mapped_column(db.JSON, nullable=True, default=dict)
     provider_created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 

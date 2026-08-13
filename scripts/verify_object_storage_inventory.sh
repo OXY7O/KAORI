@@ -22,6 +22,7 @@ python -m ruff check \
   app/rbac/defaults.py \
   app/rbac/service.py \
   migrations/versions/20260813_object_storage_inventory_jobs.py \
+  migrations/versions/20260813_object_storage_bucket_container_contract.py \
   app/bootstrap/blueprints.py \
   scripts/verify_sidebar_navigation_standard.py \
   tests/contracts/storage_inventory \

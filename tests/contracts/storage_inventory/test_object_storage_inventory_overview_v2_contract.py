@@ -88,7 +88,7 @@ def test_overview_asset_catalog_stays_vendor_neutral() -> None:
     catalog = read('app/templates/object_storage_inventory/overview/partials/_summary_cards.html')
 
     assert "'title': 'Systems'" in presentation
-    assert "'title': 'Buckets'" in presentation
+    assert "'title': 'Buckets & Containers'" in presentation
     assert 'MinIO' not in catalog
     assert 'AStor' not in catalog
 

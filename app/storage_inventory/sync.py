@@ -48,6 +48,16 @@ def commit_bucket_inventory(
             created += 1
         else:
             updated += 1
+        bucket.native_type = summary.native_type or 'bucket'
+        bucket.location = summary.location
+        bucket.versioning_state = summary.versioning_state or 'not_collected'
+        bucket.immutability_state = summary.immutability_state or 'not_collected'
+        bucket.encryption_state = summary.encryption_state or 'not_collected'
+        bucket.lifecycle_state = summary.lifecycle_state or 'not_collected'
+        bucket.replication_state = summary.replication_state or 'not_collected'
+        bucket.access_policy_state = summary.access_policy_state or 'not_collected'
+        bucket.exposure_state = summary.exposure_state or 'not_collected'
+        bucket.provider_metadata = dict(summary.provider_metadata or {})
         bucket.provider_created_at = summary.creation_date
         bucket.observed_at = observed_at
 

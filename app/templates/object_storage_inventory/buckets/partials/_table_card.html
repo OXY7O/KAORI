@@ -1,20 +1,21 @@
 {% import "components/table.html" as table_ui %}
 <section class="{{ table_ui.block_classes() }}">
-    {{ table_ui.inventory_block_header('container',
-        'Bucket Inventory',
-        'Latest committed bucket discovery records. No live S3 query is issued by this page.',
+    {{ table_ui.inventory_block_header('boxes',
+        'Buckets & Containers',
+        'Canonical fields stay comparable across providers; provider-native evidence is available in View Details. No live provider query is issued by this page.',
         'object-storage-buckets-loading',
-        'Refreshing Bucket Inventory',
-        url_for('integrations.storage') ,
-    'Open Storage Integrations') }}
+        'Refreshing Object Storage Inventory',
+        url_for('jobs.configuration', job_key='object_storage.inventory.sync') ,
+    'Manage Inventory Jobs'
+    ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form hx-get="{{ url_for('object_storage_inventory.buckets') }}"
               hx-target="#object-storage-buckets-workspace"
               hx-swap="outerHTML"
               hx-trigger="change, keyup changed delay:500ms from:find input[name='search']"
               hx-indicator="#object-storage-buckets-loading"
-              aria-label="Bucket inventory filters"
-              class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,0.75fr)_minmax(16rem,1.3fr)] lg:items-end">
+              aria-label="Object storage namespace filters"
+              class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(16rem,1.3fr)] lg:items-end">
             <input type="hidden" name="page" value="1">
             <input type="hidden"
                    name="per_page"
@@ -34,12 +35,12 @@
                 </select>
             </div>
             <div>
-                <label for="object-storage-buckets-product"
-                       class="{{ table_ui.filter_label_classes() }}">Product</label>
-                <select id="object-storage-buckets-product"
+                <label for="object-storage-buckets-provider"
+                       class="{{ table_ui.filter_label_classes() }}">Provider</label>
+                <select id="object-storage-buckets-provider"
                         name="product"
                         class="{{ table_ui.filter_select_classes() }}">
-                    <option value="">All Products</option>
+                    <option value="">All Providers</option>
                     {% for option in inventory.products %}
                         <option value="{{ option.value }}"
                                 {% if selected_product == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -47,22 +48,22 @@
                 </select>
             </div>
             <div>
-                <label for="object-storage-buckets-environment"
-                       class="{{ table_ui.filter_label_classes() }}">Environment</label>
-                <select id="object-storage-buckets-environment"
-                        name="environment"
+                <label for="object-storage-buckets-type"
+                       class="{{ table_ui.filter_label_classes() }}">Type</label>
+                <select id="object-storage-buckets-type"
+                        name="native_type"
                         class="{{ table_ui.filter_select_classes() }}">
-                    <option value="">All Environments</option>
-                    {% for option in inventory.environments %}
+                    <option value="">All Types</option>
+                    {% for option in inventory.types %}
                         <option value="{{ option.value }}"
-                                {% if selected_environment == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                {% if selected_native_type == option.value %}selected{% endif %}>{{ option.label }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
                 <label for="object-storage-buckets-search"
-                       class="{{ table_ui.filter_label_classes() }}">Search Buckets</label>
-                {{ table_ui.search_field('search', search, 'Search bucket, system, or product', id='object-storage-buckets-search') }}
+                       class="{{ table_ui.filter_label_classes() }}">Search Assets</label>
+                {{ table_ui.search_field('search', search, 'Search name, system, provider, type, or location', id='object-storage-buckets-search') }}
             </div>
         </form>
     </div>

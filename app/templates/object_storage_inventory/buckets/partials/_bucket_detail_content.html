@@ -1,47 +1,76 @@
-{% import "components/table_label.html" as table_label %}
 {% import "components/details/_detail_content.html" as detail %}
 {% import "components/operational_callout.html" as operational_callout %}
-<div data-kaori-detail-variant="full-workspace-modal"
+{% import "components/table_label.html" as table_label %}
+<div data-kaori-detail-variant="provider-aware-object-storage"
      class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         <header data-resource-detail-header
                 class="{{ detail.expanded_workspace_header_classes() }}">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ detail.expanded_workspace_icon_classes() }}"><i data-lucide="container" class="h-5 w-5"></i></span>
+                <span class="{{ detail.expanded_workspace_icon_classes() }}">
+                    <i data-lucide="container" class="h-5 w-5" aria-hidden="true"></i>
+                </span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h3 class="break-all text-base font-semibold text-content-primary">{{ bucket.name }}</h3>
-                        {{ table_label.metadata_label(bucket.product_label) }}{{ table_label.metadata_label(bucket.system_name) }}
+                        {{ table_label.metadata_label(bucket.provider_label) }}
+                        {{ table_label.metadata_label(bucket.native_type_label) }}
+                        {{ table_label.status_label(bucket.protection.label, bucket.protection.tone, none, 'detail') }}
                     </div>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Bucket identity and source-system evidence from the latest committed Object Storage Inventory Sync snapshot.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Canonical object-storage fields with provider-aware evidence from the latest committed Object Storage Inventory Sync snapshot.</p>
                 </div>
             </div>
         </header>
         <div data-resource-detail-summary
              class="grid gap-3 border-b border-outline-subtle bg-surface-card p-4 sm:grid-cols-2 xl:grid-cols-4">
             {{ detail.summary_metric('System', bucket.system_name, 'Owning object-storage system.', 'server', 'brand') }}
-            {{ detail.summary_metric('Product', bucket.product_label, 'Detected provider product.', 'database', 'brand') }}
-            {{ detail.summary_metric('Region', bucket.region, 'Configured S3 API region.', 'map-pin', 'brand') }}
-            {{ detail.summary_metric('Observation', 'Observed', 'Present in the committed snapshot.', 'circle-check', 'normal') }}
+            {{ detail.summary_metric('Provider', bucket.provider_label, 'Detected provider family.', 'database-zap', 'brand') }}
+            {{ detail.summary_metric('Location', bucket.location, 'Provider location or region.', 'map-pin', 'brand') }}
+            {{ detail.summary_metric('Protection', bucket.protection.label, 'Normalized protection posture.', 'shield-check', bucket.protection.tone) }}
         </div>
         <div class="grid gap-4 p-5 md:grid-cols-2">
-            {% call detail.detail_card('Bucket Identity', 'container') %}
-                {{ detail.technical_row('Bucket Name', bucket.name) }}
+            {% call detail.detail_card('Identity & Location', 'badge-info') %}
+                {{ detail.technical_row('Name', bucket.name) }}
                 {{ detail.detail_row('System', bucket.system_name) }}
-                {{ detail.detail_row('Environment', bucket.environment|environment_name(empty='Not Specified') ) }}
-                {{ detail.detail_row('Product', bucket.product_label) }}
-                {{ detail.detail_row('Provider Created', bucket.provider_created_at|user_datetime if bucket.provider_created_at else 'Not Reported') }}
+                {{ detail.detail_row('Provider', bucket.provider_label) }}
+                {{ detail.detail_row('Native Type', bucket.native_type_label) }}
+                {{ detail.detail_row('Location', bucket.location) }}
+                {{ detail.detail_row('Created', bucket.provider_created_at|user_datetime if bucket.provider_created_at else 'Not Reported') }}
             {% endcall %}
-            {% call detail.detail_card('Discovery Evidence', 'scan-search') %}
-                {{ detail.technical_row('Endpoint', bucket.endpoint) }}
-                {{ detail.detail_row('Region', bucket.region) }}
-                {{ detail.detail_row('Source', bucket.source_label) }}
-                {{ detail.detail_row('Observed', bucket.observed_at|user_datetime) }}
-                {{ detail.detail_row('Inventory State', 'Committed') }}
+            {% call detail.detail_card('Snapshot Context', 'clock-3') %}
+                {{ detail.detail_row('Last Collected', bucket.observed_at|user_datetime) }}
+                {{ detail.detail_row('Snapshot Source', bucket.source_label) }}
+                {{ detail.detail_row('Environment', bucket.environment|environment_name(empty='Not Specified') ) }}
+                {{ detail.status_row('Snapshot State', bucket.snapshot_status_label, bucket.snapshot_status_tone) }}
+            {% endcall %}
+            {% call detail.detail_card('Data Protection', 'shield-check') %}
+                {{ detail.status_row('Versioning', bucket.versioning.label, bucket.versioning.tone) }}
+                {{ detail.status_row('Immutability', bucket.immutability.label, bucket.immutability.tone) }}
+                {{ detail.status_row('Encryption', bucket.encryption.label, bucket.encryption.tone) }}
+                {{ detail.status_row('Protection Posture', bucket.protection.label, bucket.protection.tone) }}
+            {% endcall %}
+            {% call detail.detail_card('Lifecycle & Access', 'git-branch') %}
+                {{ detail.status_row('Lifecycle', bucket.lifecycle.label, bucket.lifecycle.tone) }}
+                {{ detail.status_row('Replication', bucket.replication.label, bucket.replication.tone) }}
+                {{ detail.status_row('Access Policy', bucket.access_policy.label, bucket.access_policy.tone) }}
+                {{ detail.status_row('Public Exposure', bucket.exposure.label, bucket.exposure.tone) }}
             {% endcall %}
         </div>
+        <div class="grid gap-4 border-t border-outline-subtle bg-surface-elevated p-5 md:grid-cols-2">
+            {% for section in bucket.provider_detail_sections %}
+                {% call detail.detail_card(section.title, section.icon) %}
+                    {% for row in section.rows %}
+                        {% if row.technical|default(false) %}
+                            {{ detail.stacked_detail_row(row.label, row.value, break_all=true) }}
+                        {% else %}
+                            {{ detail.detail_row(row.label, row.value) }}
+                        {% endif %}
+                    {% endfor %}
+                {% endcall %}
+            {% endfor %}
+        </div>
         <section class="border-t border-outline-subtle bg-surface-elevated p-5">
-            {{ operational_callout.render('Inventory Scope', 'This v1 snapshot records bucket identity and discovery timestamps only. Versioning, lifecycle, policy, retention, encryption, and replication evidence will be added as dedicated inventory contracts.', icon='info', tone='info') }}
+            {{ operational_callout.render('Inventory Boundary', 'Canonical fields support cross-provider comparison. Provider-specific evidence stays in provider-aware sections and is collected only by Object Storage Inventory Sync.', icon='info', tone='info') }}
         </section>
     </div>
 </div>

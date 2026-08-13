@@ -333,7 +333,7 @@ STORAGE
 └── Object Storage
     ├── Overview
     ├── Systems
-    └── Buckets
+    └── Buckets & Containers
 
 INSIGHTS & REPORTING
 ├── K8s Analytics
@@ -351,7 +351,9 @@ ADMINISTRATION
 └── Settings
 ```
 
-v1.3 adds the approved **Storage** section. `Object Storage` is a provider-neutral inventory parent; vendor connectors such as MinIO remain under Integrations and must not become sidebar inventory parents. The first locked children are Overview, Systems, and Buckets.
+v1.3 adds the approved **Storage** section. `Object Storage` is a provider-neutral inventory parent; vendor connectors such as MinIO remain under Integrations and must not become sidebar inventory parents. The first locked children are Overview, Systems, and Buckets & Containers.
+
+`Buckets & Containers` is intentionally provider-neutral: the list surface uses canonical object-storage fields, while provider-native attributes remain in the detail drawer. This prevents MinIO, AWS S3, Azure Blob, Ceph RGW, or future providers from creating vendor-specific sidebar branches.
 
 Rules for adding navigation:
 
