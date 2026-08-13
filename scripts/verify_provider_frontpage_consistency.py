@@ -51,6 +51,12 @@ def main() -> int:
         assert 'provider_front.hero(' in page, provider
         assert 'provider_front.overview(' in page, provider
         assert 'integration_tabs.render(' in page, provider
+        assert 'Coverage Gaps' in page, provider
+        assert 'Uncovered Assets' not in page, provider
+        assert 'Uncovered Scopes' not in page, provider
+
+    assert 'stats.ready == stats.total' in provider_pages['Alertmanager']
+    assert 'stats.ready == stats.configured' not in provider_pages['Alertmanager']
 
     for marker in (
         'data-kaori-provider-frontpage-hero',
@@ -64,6 +70,27 @@ def main() -> int:
         'Authority Boundary',
     ):
         assert marker in shared_frontpage
+
+    overview = read('app/templates/integrations/overview.html')
+    overview_service = read('app/integrations/service.py')
+    for marker in (
+        "available_provider_count ~ ' Providers'",
+        'item.posture_state',
+        'item.posture_label',
+        'item.readiness_percent',
+        'Operational Readiness',
+        'progress_bar.bar(item.readiness_percent',
+    ):
+        assert marker in overview
+    for marker in (
+        "'ready': ready",
+        "'total': total",
+        "'attention': attention",
+        "'readiness_percent':",
+        "'posture_state': posture_state",
+        "'posture_label': posture_label",
+    ):
+        assert marker in overview_service
 
     for marker in ('Integration Coverage', 'Connection Registry'):
         assert marker in shared_tabs
@@ -111,7 +138,7 @@ def main() -> int:
     for marker in (
         'data-kaori-provider-registration-hero',
         'Registration Posture',
-        'Pre-save Requirements',
+        'Pre-Save Requirements',
         'Draft',
         'Before Save',
         'Test Connection',

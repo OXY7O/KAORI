@@ -4,12 +4,12 @@
 {% import "integrations/components/_provider_frontpage.html" as provider_front %}
 {% block title %}Alertmanager Integrations · KAORI{% endblock title %}
 {% block dashboard_content %}
-    {% set posture_status = "Healthy" if stats.total > 0 and stats.ready == stats.configured else ("Attention" if stats.total > 0 else "Not Configured") %}
+    {% set posture_status = "Healthy" if stats.total > 0 and stats.ready == stats.total else ("Attention" if stats.total > 0 else "Not Configured") %}
     {% set overview_metrics = [
             {"label": "Registered Connections", "value": stats.total, "description": "Reusable Alertmanager endpoints", "icon": "server-cog"},
             {"label": "Validated Connections", "value": stats.ready, "description": "Ready for operational use", "icon": "badge-check"},
             {"label": "Needs Attention", "value": stats.attention, "description": "Validation or runtime review", "icon": "triangle-alert"},
-            {"label": "Uncovered Scopes", "value": coverage_stats.uncovered, "description": "Scopes without an eligible source", "icon": "unlink"}
+            {"label": "Coverage Gaps", "value": coverage_stats.uncovered, "description": "Scopes without an eligible source", "icon": "unlink"}
         ] %}
     <div class="kaori-integration-semantic space-y-6">
         {{ provider_front.hero("siren", "server-cog",

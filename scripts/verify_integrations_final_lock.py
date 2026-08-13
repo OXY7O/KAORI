@@ -416,6 +416,53 @@ def main() -> int:
             'components/loading_bar.html' in registry, f'{provider}: binding loading bar must remain shared', errors
         )
 
+    # Integrations Overview and provider front-page final-lock contract.
+    provider_front_pages = {
+        'Kubernetes': read('app/templates/integrations/kubernetes.html'),
+        'Prometheus': read('app/templates/integrations/prometheus.html'),
+        'Alertmanager': read('app/templates/integrations/alertmanager.html'),
+        'MinIO': read('app/templates/minio/index.html'),
+    }
+    for provider, source in provider_front_pages.items():
+        require('Coverage Gaps' in source, f'{provider}: fourth overview metric must be Coverage Gaps', errors)
+        require('Uncovered Assets' not in source, f'{provider}: retired Uncovered Assets label returned', errors)
+        require('Uncovered Scopes' not in source, f'{provider}: retired Uncovered Scopes label returned', errors)
+        require(
+            'provider_front.hero(' in source and 'provider_front.overview(' in source,
+            f'{provider}: provider front page must remain shared-component owned',
+            errors,
+        )
+    alertmanager_front = provider_front_pages['Alertmanager']
+    require(
+        'stats.ready == stats.total' in alertmanager_front,
+        'Alertmanager provider posture must compare ready connections against all registered connections',
+        errors,
+    )
+    require(
+        'stats.ready == stats.configured' not in alertmanager_front,
+        'Alertmanager provider posture must not report Healthy when an unconfigured record exists',
+        errors,
+    )
+
+    integration_overview = read('app/templates/integrations/overview.html')
+    integration_service = read('app/integrations/service.py')
+    for marker in (
+        "available_provider_count ~ ' Providers'",
+        'integration_status(item.posture_state, item.posture_label',
+        'Operational Readiness',
+        'progress_bar.bar(item.readiness_percent',
+    ):
+        require(marker in integration_overview, f'Integrations Overview provider catalog missing: {marker}', errors)
+    for marker in (
+        "'ready': ready",
+        "'total': total",
+        "'attention': attention",
+        "'readiness_percent':",
+        "'posture_state': posture_state",
+        "'posture_label': posture_label",
+    ):
+        require(marker in integration_service, f'Integrations provider catalog evidence missing: {marker}', errors)
+
     # The final lock documentation is itself part of the contract.
     lock_doc = read('docs/design/KAORI_INTEGRATIONS_LOCK_V1.md')
     refinement_doc = read('docs/design/KAORI_INTEGRATIONS_LOCK_V1_1.md')
@@ -455,5 +502,4 @@ def main() -> int:
     return 0
 
 
-if __name__ == '__main__':
-    raise SystemExit(main())
+if __name__ 

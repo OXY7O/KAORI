@@ -8,7 +8,7 @@
             {"label": "Registered Connections", "value": stats.total, "description": "Reusable MinIO S3 API endpoints", "icon": "server-cog"},
             {"label": "Validated Connections", "value": stats.ready, "description": "Core MinIO API validation ready", "icon": "badge-check"},
             {"label": "Needs Attention", "value": stats.attention, "description": "Validation or runtime review", "icon": "triangle-alert"},
-            {"label": "Uncovered Assets", "value": stats.uncovered, "description": "Assets missing metrics or alert coverage", "icon": "unlink"}
+            {"label": "Coverage Gaps", "value": stats.uncovered, "description": "Assets missing metrics or alert coverage", "icon": "unlink"}
         ] %}
     <div class="kaori-integration-semantic space-y-6">
         {{ provider_front.hero("database", "database-zap",

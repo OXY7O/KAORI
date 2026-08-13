@@ -82,7 +82,7 @@ Operational Integration Hero
 ├── Registered Connections
 ├── Validated Connections
 ├── Needs Attention
-├── Uncovered Assets / Scopes
+├── Coverage Gaps
 ├── Integration Contract
 ├── Consumer Resolution
 └── Authority Boundary
@@ -133,7 +133,8 @@ Rules:
 - the Hero eyebrow is `Operational Integration`;
 - the primary action is `Register Connection`;
 - Hero metadata uses `Registered Connections`, `Ready Connections`, and `Consumer Bindings`;
-- the four overview metrics retain the same order on every provider;
+- the four overview metrics retain the same order on every provider and the fourth metric is always `Coverage Gaps`;
+- the Integrations landing-page Provider Catalog shows registered count, ready count, real readiness percentage, and provider posture from persisted evidence;
 - `Integration Contract`, `Consumer Resolution`, and `Authority Boundary` retain the same three-column geometry;
 - every provider front page exposes `Integration Coverage` and `Connection Registry` through the shared framed workspace tabs;
 - provider-specific evidence belongs inside those two tabs rather than replacing the front-page hierarchy;

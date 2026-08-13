@@ -9,7 +9,7 @@
             {"label": "Registered Connections", "value": stats.total, "description": "Reusable Prometheus endpoints", "icon": "server-cog"},
             {"label": "Validated Connections", "value": stats.ready, "description": "Ready for operational use", "icon": "badge-check"},
             {"label": "Needs Attention", "value": stats.attention, "description": "Validation or runtime review", "icon": "triangle-alert"},
-            {"label": "Uncovered Scopes", "value": coverage_stats.uncovered, "description": "Scopes without an eligible source", "icon": "unlink"}
+            {"label": "Coverage Gaps", "value": coverage_stats.uncovered, "description": "Scopes without an eligible source", "icon": "unlink"}
         ] %}
     <div class="kaori-integration-semantic space-y-6">
         {{ provider_front.hero("activity", "chart-no-axes-combined",

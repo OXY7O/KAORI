@@ -82,7 +82,7 @@
                                         <p class="mt-1 text-sm leading-6 text-content-secondary">Open registered provider workspaces grouped by operational domain and capability.</p>
                                     </div>
                                 </div>
-                                {{ table_label.metadata_label(available_provider_count ~ ' Registered', size='compact') }}
+                                {{ table_label.metadata_label(available_provider_count ~ ' Providers', size='compact') }}
                             </div>
                         </header>
                         <div class="grid gap-4 p-5 sm:p-6 lg:grid-cols-3">
@@ -90,18 +90,31 @@
                                 <article class="flex flex-col rounded-xl border border-outline-subtle bg-surface-card p-5 transition hover:border-outline-strong">
                                     <div class="flex items-start justify-between gap-3">
                                         {{ integration_ui.palette_icon(item.icon, 'brand', size='lg') }}
-                                        {{ integration_status('ready', 'Available', display='indicator') }}
+                                        {{ integration_status(item.posture_state, item.posture_label, display='indicator') }}
                                     </div>
                                     <p class="mt-4 text-xs font-semibold uppercase tracking-wide text-content-muted">{{ item.category }} · {{ item.capability }}</p>
                                     <h3 class="mt-1 text-base font-semibold text-content-primary">{{ item.name }}</h3>
                                     <p class="mt-2 text-sm leading-6 text-content-secondary">{{ item.description }}</p>
-                                    <div class="mt-4 flex items-center justify-between gap-3 border-t border-outline-subtle pt-4">
-                                        <div>
-                                            <p class="text-lg font-semibold text-content-primary">{{ item.configured }}</p>
-                                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Configured</p>
+                                    <div class="mt-auto pt-5">
+                                        <div class="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle">
+                                            <div class="bg-surface-card px-3 py-2.5">
+                                                <p class="text-xs font-semibold text-content-muted">Registered</p>
+                                                <p class="mt-1 text-lg font-semibold tabular-nums text-content-primary">{{ item.total }}</p>
+                                            </div>
+                                            <div class="bg-surface-card px-3 py-2.5">
+                                                <p class="text-xs font-semibold text-content-muted">Ready</p>
+                                                <p class="mt-1 text-lg font-semibold tabular-nums text-content-primary">{{ item.ready }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <div class="mb-1.5 flex items-center justify-between gap-3 text-xs">
+                                                <span class="font-semibold text-content-secondary">Operational Readiness</span>
+                                                <span class="font-semibold tabular-nums text-kaori-primary dark:text-kaori-accent">{{ item.readiness_percent|round|int }}%</span>
+                                            </div>
+                                            {{ progress_bar.bar(item.readiness_percent, 'h-1.5 overflow-hidden rounded-full bg-surface-hover', 'h-full rounded-full bg-kaori-primary', item.name ~ ' operational readiness') }}
                                         </div>
                                         <a href="{{ url_for(item.workspace_endpoint) }}"
-                                           class="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover">
+                                           class="mt-4 inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover">
                                             Open Workspace
                                             <i data-lucide="arrow-right" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                         </a>

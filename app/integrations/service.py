@@ -611,6 +611,19 @@ def _catalog(
     rows: list[dict[str, Any]] = []
     for module in registry.all():
         counts = provider_counts.get(module.provider_type, {})
+        configured = int(counts.get('configured') or 0)
+        ready = int(counts.get('ready') or 0)
+        total = int(counts.get('total') or 0)
+        attention = max(total - ready, 0)
+        if total <= 0:
+            posture_state = 'not_configured'
+            posture_label = 'Not Configured'
+        elif attention > 0:
+            posture_state = 'validation_required'
+            posture_label = 'Needs Review'
+        else:
+            posture_state = 'ready'
+            posture_label = 'Ready'
         rows.append(
             {
                 'key': module.provider_type,
@@ -619,7 +632,13 @@ def _catalog(
                 'capability': module.capability.label,
                 'icon': module.icon,
                 'availability': 'available',
-                'configured': int(counts.get('configured') or 0),
+                'configured': configured,
+                'ready': ready,
+                'total': total,
+                'attention': attention,
+                'readiness_percent': round((ready / total) * 100, 1) if total else 0.0,
+                'posture_state': posture_state,
+                'posture_label': posture_label,
                 'description': module.description,
                 'workspace_endpoint': module.workspace_endpoint,
             }
