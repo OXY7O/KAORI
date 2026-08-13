@@ -173,10 +173,12 @@ def test_activity_panel_uses_stable_local_and_server_slots() -> None:
 
 def test_queued_jobs_do_not_look_like_a_never_ending_refresh() -> None:
     component = read('app/templates/notifications/components/_activity_center_items.html')
+    progress = read('app/templates/components/progress_bar.html')
     presentation = read('app/common/job_execution_presentation.py')
 
-    assert "job.progress_mode == 'queued'" in component
-    assert 'w-1/3 rounded-full bg-kaori-primary/60' in component
+    assert 'progress_bar.job_progress(' in component
+    assert "job.progress_mode == 'queued'" in progress
+    assert 'w-1/4 rounded-full bg-kaori-primary/55' in progress
     assert "if job.status == 'queued':\n        return 'Waiting'" in presentation
     assert 'job.queue_health.show_warning' in component
 
@@ -237,13 +239,14 @@ def test_refresh_standard_is_documented() -> None:
 
 def test_inventory_quick_action_relies_on_canonical_auto_refresh() -> None:
     navbar = read('app/templates/components/navigation/navbar.html')
-    jobs_routes = read('app/jobs/routes.py')
+    quick_sync = read('app/cluster/quick_sync.py')
     queries = read('app/notifications/queries.py')
 
     assert 'hx-swap="none"' in navbar
     assert 'hx-target="#quick-sync-feedback"' not in navbar
     assert 'quick-sync-feedback' not in navbar
     assert 'data-operational-progress-title="Inventory Sync"' not in navbar
+    assert 'data-operational-progress-message="Registering the fleet inventory job' not in navbar
     assert '@click="quickOpen = false"' in navbar
     assert (
         'notificationDeckOpen = true'
@@ -252,13 +255,22 @@ def test_inventory_quick_action_relies_on_canonical_auto_refresh() -> None:
         ]
     )
 
-    assert "@bp.post('/quick-actions/inventory/sync-all')" in jobs_routes
-    assert "job_keys.append('kubernetes.inventory.sync')" in jobs_routes
-    assert "job_keys.append('object_storage.inventory.sync')" in jobs_routes
-    assert "response.headers['HX-Trigger']" not in jobs_routes
-    assert 'HX-Trigger-After-Swap' not in jobs_routes
-    assert 'SYNC_ALL_INVENTORY_ACTION' in jobs_routes
-    assert "event_type=f'{SYNC_ALL_INVENTORY_ACTION}_quick_action'" in jobs_routes
+    assert 'def _htmx_dispatch_response(' in quick_sync
+    assert "response.headers['HX-Trigger']" not in quick_sync
+    assert 'HX-Trigger-After-Swap' not in quick_sync
+    assert "'source': 'inventory_quick_action'" not in quick_sync
+    assert 'def _activity_center_response(' not in quick_sync
+    assert 'def _trigger_notification_snapshot(' not in quick_sync
+
+    # Success is represented only by the canonical JobExecution row.
+    success_block = quick_sync[
+        quick_sync.index('outcome = dispatch_registered_job(') : quick_sync.index(
+            '    except (', quick_sync.index('outcome = dispatch_registered_job(')
+        )
+    ]
+    assert "title='Inventory Sync Queued'" not in success_block
+    assert "'job_execution_id': job.id" not in success_block
+    assert "event_type='kubernetes_inventory_sync'" in quick_sync  # blocked/error notifications remain
 
     assert 'JobExecution.requested_by_user_id == user_id' in queries
     assert 'JobExecutionSubscriber.user_id == user_id' in queries

@@ -5,9 +5,10 @@
     url_for('cluster.individual_sync_status', task_id=sync.task_id),
     'load delay:2s',
     'Cluster Inventory Sync',
-    'Synchronizing Kubernetes inventory for ' ~ sync.cluster_name ~ '.',
+    sync.message or ('Synchronizing Kubernetes inventory for ' ~ sync.cluster_name ~ '.'),
     sync.state_label,
-    progress_text='Running for ' ~ sync.elapsed_seconds ~ 's · Celery continues after navigation',
+    progress_percent=sync.progress_percent,
+    progress_text=(sync.progress_stage ~ ' · ' if sync.progress_stage else '') ~ 'Running for ' ~ sync.elapsed_seconds ~ 's · Celery continues after navigation',
     view_url=url_for('jobs.executions', queue='inventory', search=sync.task_id),
     action_label='View Job'
     ) %}

@@ -40,8 +40,9 @@ def test_tls_worker_progress_is_owned_by_inventory_operations_loading_bar() -> N
     assert 'class="htmx-indicator hidden"' in scope
     live_state = (ROOT / 'app/templates/governance/tls_certificates/partials/_sync_live_state.html').read_text()
     assert '{% import "components/progress_bar.html" as progress_bar %}' not in sync_panel
-    assert '<progress class=' in live_state
-    assert 'value="{{ payload.sync_state.progress_percent }}"' in live_state
+    assert '{% import "components/progress_bar.html" as progress_bar %}' in live_state
+    assert 'progress_bar.bar(payload.sync_state.progress_percent' in live_state
+    assert "label='TLS Secret synchronization progress'" in live_state
     assert "url_for('governance.tls_certificates_sync_status'" in live_state
     assert 'payload.sync_state.progress_message' in live_state
     assert 'hx-trigger="every 1s"' in live_state

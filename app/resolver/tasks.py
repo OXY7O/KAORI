@@ -207,7 +207,14 @@ def _execute_with_lease(
     decision = journal.decision
     try:
         if execution is not None:
-            execution.checkpoint(current=1, total=3, message='Executing the authorized resolver action.')
+            execution.checkpoint(
+                current=1,
+                total=3,
+                percent=45,
+                stage='Executing Resolver Action',
+                target=f'Execution {execution_journal_id}',
+                message='Executing the authorized resolver action.',
+            )
         result = dispatch_resolver_execution(
             decision,
             token,
@@ -296,7 +303,13 @@ def execute_authorized_resolution(
     if journal is None:
         _fail_missing_journal(execution, 'Execution journal does not exist.')
     if execution is not None:
-        execution.start(message='Validating resolver policy and production readiness.', total=3)
+        execution.start(
+            message='Validating resolver policy and production readiness.',
+            total=3,
+            percent=5,
+            stage='Validating Resolver Policy',
+            target=f'Execution {execution_journal_id}',
+        )
 
     try:
         state = _prepare_execution(execution_journal_id, owner=owner)

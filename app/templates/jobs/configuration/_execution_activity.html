@@ -56,14 +56,8 @@
                     </div>
                 </div>
                 {% if active_job %}
-                    <div class="w-full lg:max-w-sm">
-                        <div class="flex items-center justify-between gap-3 text-xs">
-                            <span class="font-medium text-content-secondary">Execution Progress</span>
-                            <span class="font-semibold text-kaori-primary">{{ active_job.progress }}%</span>
-                        </div>
-                        {{ progress_bar.determinate(active_job.progress,
-                                                label=definition.name ~ ' execution progress',
-                                                classes='mt-2 block h-2 w-full overflow-hidden rounded-full accent-kaori-primary') }}
+                    <div class="w-full lg:max-w-md">
+                        {{ progress_bar.job_progress(active_job, label=definition.name ~ ' execution progress') }}
                     </div>
                 {% else %}
                     <div class="self-start lg:self-center">{{ table_label.status_indicator_label('Ready for Execution', 'normal') }}</div>
@@ -141,15 +135,7 @@
                     <div class="lg:col-span-2">
                         {{ table_label.status_indicator_label(job.status_label, job.status_tone, job.status_icon) }}
                     </div>
-                    <div class="lg:col-span-3">
-                        <div class="flex items-center justify-between gap-3 text-xs">
-                            <span class="text-content-muted">Progress</span>
-                            <span class="font-semibold text-content-primary">{{ job.progress }}%</span>
-                        </div>
-                        {{ progress_bar.determinate(job.progress,
-                                                label='Recent execution progress',
-                                                classes='mt-2 block h-1.5 w-full overflow-hidden rounded-full accent-kaori-primary') }}
-                    </div>
+                    <div class="lg:col-span-3">{{ progress_bar.job_progress(job, label='Recent execution progress', compact=true) }}</div>
                     <div class="text-xs lg:col-span-3 lg:text-right">
                         <p class="font-semibold text-content-primary">{{ job.queued_at }}</p>
                         <p class="mt-1 text-content-muted">{{ job.duration|default(job.completed_at, true) }}</p>

@@ -95,37 +95,83 @@ def sync_all_object_storage_task(
     failed_systems: list[str] = []
     failure_evidence: list[dict[str, str]] = []
     context.start(
-        message='Synchronizing object-storage inventory for all eligible managed systems.',
+        message='Preparing object-storage inventory synchronization.',
         total=total_count,
+        percent=1,
+        stage='Preparing Inventory',
+        target='Object Storage Estate',
     )
 
     try:
         for index, target in enumerate(targets, start=1):
             instance_id = int(target['instance_id'])
             system_name = target['system_name']
+            progress_meta = {
+                'requested_by_user_id': requested_by_user_id,
+                'job_execution_id': job_execution_id,
+                'total_count': total_count,
+                'processed_count': index - 1,
+                'synced_count': synced_count,
+                'failed_count': len(failed_systems),
+                'current_system_name': system_name,
+                'heartbeat_at': _now_iso(),
+            }
+            last_reported_percent = -1
+
+            def report_bucket_progress(bucket_current: int, bucket_total: int, bucket_name: str) -> None:
+                nonlocal last_reported_percent
+                local_fraction = (bucket_current / max(bucket_total, 1)) if bucket_total else 0
+                completed_fraction = (index - 1) + local_fraction
+                overall_percent = min(3 + int((completed_fraction / max(total_count, 1)) * 93), 96)
+                is_boundary = bucket_current in {0, bucket_total}
+                if not is_boundary and overall_percent <= last_reported_percent:
+                    return
+                last_reported_percent = overall_percent
+                stage = 'Discovering Buckets' if bucket_total == 0 else 'Enriching Bucket Inventory'
+                message = (
+                    f'Collecting provider evidence for {bucket_name} ({bucket_current} of {bucket_total} buckets).'
+                    if bucket_total
+                    else f'Discovering buckets for {system_name}.'
+                )
+                context.checkpoint(
+                    current=index - 1,
+                    total=total_count,
+                    percent=overall_percent,
+                    stage=stage,
+                    target=f'{system_name} · {bucket_name}' if bucket_name else system_name,
+                    message=message,
+                )
+                progress_meta.update(
+                    {
+                        'progress_percent': overall_percent,
+                        'progress_stage': stage,
+                        'message': message,
+                        'current_bucket_name': bucket_name,
+                        'bucket_processed_count': bucket_current,
+                        'bucket_total_count': bucket_total,
+                        'heartbeat_at': _now_iso(),
+                    }
+                )
+                self.update_state(state='PROGRESS', meta=progress_meta)
+
             context.checkpoint(
                 current=index - 1,
                 total=total_count,
-                message=f'Synchronizing {system_name}.',
+                percent=max(2, min(3 + int(((index - 1) / max(total_count, 1)) * 93), 96)),
+                stage='Preparing Object Storage System',
+                target=system_name,
+                message=f'Preparing provider inventory collection for {system_name}.',
             )
-            self.update_state(
-                state='PROGRESS',
-                meta={
-                    'requested_by_user_id': requested_by_user_id,
-                    'job_execution_id': job_execution_id,
-                    'total_count': total_count,
-                    'processed_count': index - 1,
-                    'synced_count': synced_count,
-                    'failed_count': len(failed_systems),
-                    'current_system_name': system_name,
-                    'heartbeat_at': _now_iso(),
-                },
-            )
+            self.update_state(state='PROGRESS', meta=progress_meta)
             try:
                 instance = db.session.get(MinioInstance, instance_id)
                 if instance is None:
                     raise LookupError('The MinIO connection was deleted after the inventory job was admitted.')
-                result = get_integration('minio').execute('inventory.sync', instance)
+                result = get_integration('minio').execute(
+                    'inventory.sync',
+                    instance,
+                    progress_callback=report_bucket_progress,
+                )
                 synced_count += 1
                 bucket_count += int(result.get('total') or 0)
             except Exception as exc:
@@ -141,9 +187,13 @@ def sync_all_object_storage_task(
                 )
                 logger.exception('Object-storage inventory synchronization failed for %s.', system_name)
 
+            completed_percent = min(3 + int((index / max(total_count, 1)) * 93), 96)
             context.checkpoint(
                 current=index,
                 total=total_count,
+                percent=completed_percent,
+                stage='System Snapshot Completed',
+                target=system_name,
                 message=(
                     f'Synchronized {system_name}.'
                     if system_name not in failed_systems
@@ -151,6 +201,14 @@ def sync_all_object_storage_task(
                 ),
             )
 
+        context.checkpoint(
+            current=total_count,
+            total=total_count,
+            percent=98,
+            stage='Finalizing Inventory',
+            target='Object Storage Estate',
+            message='Finalizing object-storage inventory execution evidence.',
+        )
         result = _build_result(
             requested_by_user_id=requested_by_user_id,
             total_count=total_count,

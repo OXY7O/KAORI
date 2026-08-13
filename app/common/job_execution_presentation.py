@@ -51,8 +51,20 @@ def present_job_execution_row(job: JobExecution) -> dict[str, Any]:
     """Build canonical job identity, state, timing, and progress presentation."""
     total = max(job.progress_total, 0)
     current = max(job.progress_current, 0)
-    progress = min(int((current / total) * 100), 100) if total else (100 if job.is_terminal else 0)
-    if total > 0 or job.is_terminal:
+    payload = dict(job.payload_json or {})
+    progress_metadata = payload.get('_progress') if isinstance(payload.get('_progress'), dict) else {}
+    stored_percent = progress_metadata.get('percent') if isinstance(progress_metadata, dict) else None
+    try:
+        stored_percent = max(0, min(int(stored_percent), 100)) if stored_percent is not None else None
+    except (TypeError, ValueError):
+        stored_percent = None
+    derived_percent = min(int((current / total) * 100), 100) if total else 0
+    progress = (
+        100
+        if job.status in {'succeeded', 'partially_succeeded'}
+        else (stored_percent if stored_percent is not None else derived_percent)
+    )
+    if total > 0 or stored_percent is not None or job.is_terminal:
         progress_mode = 'determinate'
         progress_label = f'{progress}%'
     elif job.status == 'queued':
@@ -98,6 +110,15 @@ def present_job_execution_row(job: JobExecution) -> dict[str, Any]:
         'progress_current': current,
         'progress_total': total,
         'progress_message': job.progress_message or 'Waiting for worker',
+        'progress_stage': (
+            str(progress_metadata.get('stage') or '').strip() if isinstance(progress_metadata, dict) else ''
+        )
+        or (job.progress_message or 'Waiting for worker'),
+        'progress_target': (
+            str(progress_metadata.get('target') or '').strip() if isinstance(progress_metadata, dict) else ''
+        ),
+        'progress_count_label': f'{current} / {total}' if total > 1 else '',
+        'progress_updated_at': present_user_datetime(job.heartbeat_at, empty='Waiting for worker'),
         'attempt_count': job.attempt_count,
         'max_attempts': job.max_attempts,
         'queued_at': present_user_datetime(job.queued_at, empty='Not queued'),

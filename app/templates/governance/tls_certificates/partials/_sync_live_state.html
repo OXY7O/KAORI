@@ -1,3 +1,4 @@
+{% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
 <div id="tls-sync-live-state"
      class="min-w-0"
@@ -28,12 +29,12 @@
                 {% endif %}
             </div>
             {% if payload.sync_state.is_active %}
-                <progress class="mt-3 h-1.5 w-full overflow-hidden rounded-full accent-kaori-primary"
-                          value="{{ payload.sync_state.progress_percent }}"
-                          max="100"
-                          aria-label="TLS Secret synchronization progress">
-                    {{ payload.sync_state.progress_percent }}%
-                </progress>
+                <div class="mt-3">
+                    {{ progress_bar.bar(payload.sync_state.progress_percent,
+                                        track_classes='h-1.5 overflow-hidden rounded-full bg-kaori-soft/70 dark:bg-kaori-primary/15',
+                                        fill_classes='h-full rounded-full bg-kaori-primary transition-all duration-500 ease-out',
+                                        label='TLS Secret synchronization progress') }}
+                </div>
             {% endif %}
         </div>
     </div>

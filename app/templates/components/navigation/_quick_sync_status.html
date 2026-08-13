@@ -1,5 +1,5 @@
 {% import "components/operational_progress_toast.html" as progress_toast %}
-{% set progress_message = 'Synchronizing ' ~ sync.current_cluster_name ~ '.' if sync.current_cluster_name else 'Waiting for the Celery inventory worker.' if sync.celery_state == 'PENDING' else 'Preparing the next registered cluster.' %}
+{% set progress_message = sync.message or ('Synchronizing ' ~ sync.current_cluster_name ~ '.' if sync.current_cluster_name else 'Waiting for the Celery inventory worker.' if sync.celery_state == 'PENDING' else 'Preparing the next registered cluster.') %}
 {% call progress_toast.render(
     'quick-sync-task-' ~ sync.task_id,
     'inventory-sync-' ~ sync.task_id,
@@ -9,7 +9,7 @@
     progress_message,
     sync.state_label,
     progress_percent=sync.progress_percent,
-    progress_text=sync.processed_count ~ ' of ' ~ sync.total_count ~ ' clusters · ' ~ sync.elapsed_seconds ~ 's elapsed',
+    progress_text=(sync.progress_stage ~ ' · ' if sync.progress_stage else '') ~ sync.processed_count ~ ' of ' ~ sync.total_count ~ ' clusters · ' ~ sync.elapsed_seconds ~ 's elapsed',
     view_url=url_for('jobs.executions', queue='inventory', search=sync.task_id),
     action_label='View Job',
     hx_sync='this:replace'

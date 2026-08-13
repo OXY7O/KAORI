@@ -248,7 +248,54 @@ def _terminalize(job: JobExecution, status: str) -> None:
     job.heartbeat_at = job.completed_at
 
 
-def mark_job_running(task_id: str, *, message: str | None = None, total: int | None = None) -> JobExecution | None:
+def _clamp_progress_percent(value: int | float | None) -> int:
+    try:
+        return max(0, min(int(value or 0), 100))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _progress_metadata(job: JobExecution) -> dict[str, Any]:
+    payload = dict(job.payload_json or {})
+    metadata = payload.get('_progress')
+    return dict(metadata) if isinstance(metadata, dict) else {}
+
+
+def _set_progress_metadata(
+    job: JobExecution,
+    *,
+    percent: int | float | None = None,
+    stage: str | None = None,
+    target: str | None = None,
+) -> None:
+    payload = dict(job.payload_json or {})
+    metadata = _progress_metadata(job)
+    if percent is not None:
+        metadata['percent'] = _clamp_progress_percent(percent)
+    if stage is not None:
+        metadata['stage'] = str(stage)[:120]
+    if target is not None:
+        metadata['target'] = str(target)[:255]
+    metadata['updated_at'] = _now().isoformat()
+    payload['_progress'] = metadata
+    job.payload_json = to_json_compatible(payload)
+
+
+def _derived_progress_percent(job: JobExecution) -> int:
+    if job.progress_total > 0:
+        return _clamp_progress_percent((max(job.progress_current, 0) / job.progress_total) * 100)
+    return 0
+
+
+def mark_job_running(
+    task_id: str,
+    *,
+    message: str | None = None,
+    total: int | None = None,
+    percent: int | None = None,
+    stage: str | None = None,
+    target: str | None = None,
+) -> JobExecution | None:
     job = get_job_by_task_id(task_id)
     if job is None:
         return None
@@ -263,6 +310,12 @@ def mark_job_running(task_id: str, *, message: str | None = None, total: int | N
         job.progress_message = message[:255]
     if total is not None:
         job.progress_total = max(total, 0)
+    _set_progress_metadata(
+        job,
+        percent=percent if percent is not None else _derived_progress_percent(job),
+        stage=stage,
+        target=target,
+    )
     db.session.commit()
     return job
 
@@ -273,6 +326,9 @@ def update_job_progress(
     current: int | None = None,
     total: int | None = None,
     message: str | None = None,
+    percent: int | None = None,
+    stage: str | None = None,
+    target: str | None = None,
 ) -> JobExecution | None:
     job = get_job_by_task_id(task_id)
     if job is None:
@@ -284,6 +340,12 @@ def update_job_progress(
     if message is not None:
         job.progress_message = message[:255]
     job.heartbeat_at = _now()
+    _set_progress_metadata(
+        job,
+        percent=percent if percent is not None else _derived_progress_percent(job),
+        stage=stage,
+        target=target,
+    )
     db.session.commit()
     return job
 
@@ -340,6 +402,7 @@ def mark_job_succeeded(
     if job.progress_total:
         job.progress_current = job.progress_total
     job.progress_message = 'Completed'
+    _set_progress_metadata(job, percent=100, stage='Completed', target='')
     _append_automatic_terminal_audit(job)
     db.session.commit()
     return job
@@ -361,6 +424,7 @@ def mark_job_failed(task_id: str, *, error: Exception | str, error_code: str | N
     job.error_code = error_code or (type(error).__name__ if isinstance(error, Exception) else 'job_failed')
     job.error_message = str(error)[:4000]
     job.progress_message = 'Failed'
+    _set_progress_metadata(job, stage='Failed')
     _append_automatic_terminal_audit(job)
     db.session.commit()
     return job
@@ -387,6 +451,7 @@ def mark_job_retrying(task_id: str, *, message: str, error: Exception | str | No
     job.status = 'retrying'
     job.heartbeat_at = _now()
     job.progress_message = message[:255]
+    _set_progress_metadata(job, stage='Retrying')
     if error is not None:
         job.error_code = type(error).__name__ if isinstance(error, Exception) else 'retrying'
         job.error_message = str(error)[:4000]
@@ -402,6 +467,7 @@ def mark_job_canceled(task_id: str, *, message: str = 'Canceled') -> JobExecutio
         return job
     _terminalize(job, 'canceled')
     job.progress_message = message[:255]
+    _set_progress_metadata(job, stage='Canceled')
     _append_automatic_terminal_audit(job)
     db.session.commit()
     return job

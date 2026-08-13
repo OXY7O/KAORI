@@ -10,7 +10,8 @@ def read(relative: str) -> str:
 def test_background_progress_uses_shared_operational_toast_contract() -> None:
     shared = read('app/templates/components/operational_progress_toast.html')
     assert 'components/progress_bar.html' in shared
-    assert 'progress_bar.determinate' in shared
+    assert 'progress_bar.bar' in shared
+    assert 'progress_bar.determinate' not in shared
     assert 'data-operational-toast' in shared
 
     for relative in (

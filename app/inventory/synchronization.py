@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Callable
 from datetime import UTC, datetime
 
 from kubernetes.client import BatchV1Api, DiscoveryV1Api
@@ -25,6 +26,18 @@ from app.models.kubernetes import KubernetesConnection
 
 logger = logging.getLogger(__name__)
 
+ProgressCallback = Callable[[int, str, str], None]
+
+
+def _report_progress(
+    callback: ProgressCallback | None,
+    percent: int,
+    stage: str,
+    message: str,
+) -> None:
+    if callback is not None:
+        callback(max(0, min(int(percent), 100)), stage, message)
+
 
 def _lock_cluster_inventory_sync(
     cluster_id: str,
@@ -42,6 +55,8 @@ def _lock_cluster_inventory_sync(
 def sync_inventory(
     cluster: Cluster,
     connection: KubernetesConnection,
+    *,
+    progress_callback: ProgressCallback | None = None,
 ) -> None:
     if connection.cluster_id != cluster.id:
         raise ValueError('The canonical Kubernetes connection does not belong to the selected cluster.')
@@ -52,6 +67,7 @@ def sync_inventory(
     collected_at = datetime.now(UTC)
 
     current_stage = 'cluster lock'
+    _report_progress(progress_callback, 2, 'Preparing Cluster', 'Locking the committed inventory boundary.')
 
     try:
         _lock_cluster_inventory_sync(
@@ -61,6 +77,9 @@ def sync_inventory(
         with weak_tls_context(
             enabled=allow_weak_tls,
         ):
+            _report_progress(
+                progress_callback, 6, 'Preparing Kubernetes Client', 'Building the canonical Kubernetes API client.'
+            )
             client = get_integration('kubernetes').execute('client.build', connection)
 
             core_api = client.core_api()
@@ -78,6 +97,12 @@ def sync_inventory(
             storage_api = client.storage_api()
 
             current_stage = 'API discovery'
+            _report_progress(
+                progress_callback,
+                12,
+                'Discovering Kubernetes APIs',
+                'Resolving supported API adapters and compatibility evidence.',
+            )
             discovery = KubernetesDiscovery(core_api.api_client).discover()
             adapters = discovery['selected_adapters']
             connection.compatibility_profile = discovery['api_profile']
@@ -96,6 +121,12 @@ def sync_inventory(
                 ingress_items = list_cluster_resource(core_api.api_client, ingress_adapter)
 
             current_stage = 'cluster information'
+            _report_progress(
+                progress_callback,
+                20,
+                'Collecting Cluster Metadata',
+                'Collecting canonical cluster identity and platform metadata.',
+            )
             save_cluster_info(
                 cluster,
                 collected_at,
@@ -104,6 +135,9 @@ def sync_inventory(
             db.session.flush()
 
             current_stage = 'nodes'
+            _report_progress(
+                progress_callback, 28, 'Collecting Nodes', 'Collecting node capacity, readiness, and runtime metadata.'
+            )
             save_nodes(
                 cluster,
                 collected_at,
@@ -112,6 +146,12 @@ def sync_inventory(
             db.session.flush()
 
             current_stage = 'namespaces'
+            _report_progress(
+                progress_callback,
+                36,
+                'Collecting Namespaces',
+                'Collecting namespaces and policy-related inventory evidence.',
+            )
             save_namespaces(
                 cluster,
                 collected_at,
@@ -121,6 +161,12 @@ def sync_inventory(
             db.session.flush()
 
             current_stage = 'workloads'
+            _report_progress(
+                progress_callback,
+                46,
+                'Collecting Workloads',
+                'Collecting deployments, stateful workloads, jobs, and workload configuration.',
+            )
             save_workloads(
                 cluster,
                 collected_at,
@@ -131,6 +177,12 @@ def sync_inventory(
             db.session.flush()
 
             current_stage = 'pods'
+            _report_progress(
+                progress_callback,
+                58,
+                'Collecting Pods',
+                'Collecting pod placement, readiness, image, and runtime evidence.',
+            )
             save_pods(
                 cluster,
                 collected_at,
@@ -141,6 +193,9 @@ def sync_inventory(
             db.session.flush()
 
             current_stage = 'services'
+            _report_progress(
+                progress_callback, 67, 'Collecting Services', 'Collecting Service and endpoint inventory evidence.'
+            )
             save_services(
                 cluster,
                 collected_at,
@@ -150,6 +205,9 @@ def sync_inventory(
             db.session.flush()
 
             current_stage = 'ingresses'
+            _report_progress(
+                progress_callback, 74, 'Collecting Ingresses', 'Collecting ingress routing and TLS exposure evidence.'
+            )
             if ingress_adapter:
                 save_ingresses(
                     cluster,
@@ -160,6 +218,12 @@ def sync_inventory(
             db.session.flush()
 
             current_stage = 'storage'
+            _report_progress(
+                progress_callback,
+                81,
+                'Collecting Storage',
+                'Collecting persistent volume, claim, and storage-class inventory.',
+            )
             save_storage_inventory(
                 cluster,
                 collected_at,
@@ -169,6 +233,12 @@ def sync_inventory(
             db.session.flush()
 
             current_stage = 'configuration'
+            _report_progress(
+                progress_callback,
+                88,
+                'Collecting Configuration Metadata',
+                'Collecting ConfigMap and Secret key-index metadata without persisting secret values.',
+            )
             save_configuration_inventory(
                 cluster,
                 collected_at,
@@ -179,6 +249,12 @@ def sync_inventory(
             db.session.flush()
 
             current_stage = 'resource quotas'
+            _report_progress(
+                progress_callback,
+                94,
+                'Collecting Resource Quotas',
+                'Collecting namespace resource quota configuration and observed usage.',
+            )
             save_resource_quotas(
                 cluster,
                 collected_at,
@@ -187,7 +263,19 @@ def sync_inventory(
             db.session.flush()
 
         current_stage = 'commit'
+        _report_progress(
+            progress_callback,
+            98,
+            'Committing Inventory Snapshot',
+            'Promoting the complete Kubernetes inventory generation atomically.',
+        )
         db.session.commit()
+        _report_progress(
+            progress_callback,
+            100,
+            'Cluster Snapshot Committed',
+            'The committed Kubernetes inventory snapshot is current.',
+        )
 
     except Exception:
         logger.exception(

@@ -99,7 +99,13 @@ def generate_report_job(
     job_execution_id: int | None = None,
 ) -> dict[str, Any]:
     lifecycle = JobExecutionContext(str(self.request.id), job_execution_id)
-    lifecycle.start(message='Validating report scope and data boundary.', total=4)
+    lifecycle.start(
+        message='Validating report scope and data boundary.',
+        total=4,
+        percent=5,
+        stage='Validating Report Scope',
+        target=f'Report {report_id}',
+    )
     report = db.session.get(Report, report_id)
     if report is None:
         exc = LookupError(f'Report {report_id} was not found.')
@@ -109,14 +115,35 @@ def generate_report_job(
     public_failure_message = _PUBLIC_WORKER_FAILURE_MESSAGE
 
     try:
-        lifecycle.checkpoint(current=1, total=4, message='Resolving selected-cluster evidence boundary.')
-        lifecycle.checkpoint(current=2, total=4, message='Rendering the governed report artifact.')
+        lifecycle.checkpoint(
+            current=1,
+            total=4,
+            percent=20,
+            stage='Resolving Evidence Boundary',
+            target=f'Report {report_id}',
+            message='Resolving selected-cluster evidence boundary.',
+        )
+        lifecycle.checkpoint(
+            current=2,
+            total=4,
+            percent=55,
+            stage='Rendering Report Artifact',
+            target=f'Report {report_id}',
+            message='Rendering the governed report artifact.',
+        )
         success, message = generate_report_artifact(report_id)
         report = db.session.get(Report, report_id) or report
         if not success:
             public_failure_message = message
             raise RuntimeError(message)
-        lifecycle.checkpoint(current=3, total=4, message='Committing artifact metadata and delivery state.')
+        lifecycle.checkpoint(
+            current=3,
+            total=4,
+            percent=90,
+            stage='Committing Report Artifact',
+            target=f'Report {report_id}',
+            message='Committing artifact metadata and delivery state.',
+        )
         _finalize_schedule(
             report,
             schedule_run_id=schedule_run_id,

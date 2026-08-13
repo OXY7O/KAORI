@@ -38,8 +38,21 @@ def run_domain_retention_task(
     execution = JobExecutionContext(self.request.id) if job_execution_id is not None else None
     try:
         if execution is not None:
-            execution.start(message=f'Building {domain_name} archive boundary', total=4)
-            execution.checkpoint(current=1, total=4, message='Writing archive data and manifest')
+            execution.start(
+                message=f'Building {domain_name} archive boundary.',
+                total=4,
+                percent=5,
+                stage='Preparing Retention Boundary',
+                target=domain_name.replace('_', ' ').title(),
+            )
+            execution.checkpoint(
+                current=1,
+                total=4,
+                percent=25,
+                stage='Writing Archive',
+                target=domain_name.replace('_', ' ').title(),
+                message='Writing archive data and manifest.',
+            )
         result = run_retention_archive(
             domain_name=domain_name,
             trigger_type=trigger_type,
@@ -54,7 +67,14 @@ def run_domain_retention_task(
             dry_run=False,
         )
         if execution is not None:
-            execution.checkpoint(current=3, total=4, message='Archive verified; finalizing lifecycle result')
+            execution.checkpoint(
+                current=3,
+                total=4,
+                percent=90,
+                stage='Finalizing Retention Result',
+                target=domain_name.replace('_', ' ').title(),
+                message='Archive verified; finalizing lifecycle result.',
+            )
             execution.succeed(
                 result_summary=result,
                 result_type='archive_artifact',

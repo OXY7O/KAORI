@@ -36,7 +36,8 @@ def test_registry_is_responsive_without_horizontal_table_scroll() -> None:
 def test_active_execution_progress_is_stable_and_compact() -> None:
     source = _read('partials/_active_jobs.html')
 
-    assert 'progress_bar.determinate' in source
+    assert 'progress_bar.job_progress' in source
+    assert 'progress_bar.determinate' not in source
     assert 'hx-sync="this:replace"' in source
     assert 'notification-progress-indeterminate' not in source
     assert 'transition-[width]' not in source

@@ -58,7 +58,7 @@ Additional jobs must be added through a new definition rather than a parallel sc
 - `jobs.configure`: update automatic job policies.
 - `jobs.cancel`: request cancellation for eligible executions.
 
-A definition may require an additional domain permission. Kubernetes Inventory Sync requires `jobs.execute` + `clusters.sync`; Object Storage Inventory Sync requires `jobs.execute` + `storage.sync` for manual execution.
+A definition may require an additional domain permission. Inventory Sync requires both `jobs.execute` and `clusters.sync` for manual execution.
 
 ## Scheduler
 
@@ -76,3 +76,21 @@ Analytics and Forecast policies are freshness-aware. A due policy check may comp
 existing inventory worker. It defaults to a six-hour database-backed interval, supports manual execution,
 and uses the same canonical deduplication and terminal audit behavior as other registered jobs. The owning
 domain permission is `tls_certificates.sync`. User-facing execution, Notification Deck, cancellation, and automatic-audit labels resolve from the registered definition name, so the acronym remains **TLS Certificate Sync** rather than being reconstructed as `Tls Certificate Sync`.
+
+## Job Progress Contract
+
+All asynchronous job progress uses one canonical `JobExecution` progress contract and one shared UI renderer.
+Domain workers keep `progress_current` / `progress_total` for completed work-item counts, while the reserved
+`payload_json._progress` namespace carries a smooth 0–100 percentage plus the current stage and target.
+This avoids overloading resource counts just to make a progress bar move.
+
+Workers should report progress at meaningful boundaries only: stage transitions, resource-group boundaries,
+or coarse percentage changes. High-cardinality collectors must not commit one `JobExecution` update per
+individual object. Object Storage therefore reports bucket-level progress with percentage throttling, while
+Kubernetes reports resource-family stages inside each cluster. Terminal success always normalizes progress
+to 100%.
+
+The shared `components/progress_bar.html::job_progress` renderer is the only progress presentation for
+Jobs & Executions, Job Configuration, Activity Center, report execution details, and other JobExecution-backed
+surfaces. Domain-specific progress toasts may wrap the same low-level violet bar primitive, but must not
+introduce a second visual or percentage contract.

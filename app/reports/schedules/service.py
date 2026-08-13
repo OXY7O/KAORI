@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from calendar import monthrange
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from datetime import (
     UTC,
     datetime,
@@ -350,6 +350,7 @@ def run_due_schedules(
     limit: int = 20,
     dry_run: bool = False,
     now: datetime | None = None,
+    progress_callback: Callable[[int, int, str], None] | None = None,
 ) -> dict[str, Any]:
     now_utc = _ensure_utc(now or datetime.now(UTC))
     due_schedules = db.session.scalars(
@@ -365,7 +366,10 @@ def run_due_schedules(
 
     results: list[dict[str, Any]] = []
 
-    for schedule in due_schedules:
+    total_due = len(due_schedules)
+    for index, schedule in enumerate(due_schedules, start=1):
+        if progress_callback is not None:
+            progress_callback(index - 1, total_due, schedule.name)
         if dry_run:
             results.append(
                 {
@@ -387,6 +391,8 @@ def run_due_schedules(
                 'report_id': report_id,
             }
         )
+        if progress_callback is not None:
+            progress_callback(index, total_due, schedule.name)
 
     return {
         'checked_at': now_utc.isoformat(),

@@ -143,11 +143,21 @@ def _materialize(
 ) -> dict[str, Any]:
     task_id = _task_id(job_execution_id, fallback_task_id)
     lifecycle = JobExecutionContext(task_id)
-    lifecycle.start(message='Preparing analytics materialization', total=len(work_items))
+    lifecycle.start(
+        message='Preparing analytics materialization.',
+        total=len(work_items),
+        percent=1,
+        stage='Preparing Analytics',
+        target='Analytics Snapshot Batch',
+    )
     succeeded = 0
     failed = 0
     failures: list[dict[str, str]] = []
     current_index = 0
+
+    def batch_percent(index: int, local_percent: int) -> int:
+        completed_fraction = (index - 1) + (max(0, min(local_percent, 100)) / 100)
+        return min(2 + int((completed_fraction / max(len(work_items), 1)) * 96), 98)
 
     try:
         for index, item in enumerate(work_items, start=1):
@@ -162,7 +172,10 @@ def _materialize(
             lifecycle.checkpoint(
                 current=index - 1,
                 total=len(work_items),
-                message=f'Generating {dataset.label} for {cluster_name}',
+                percent=batch_percent(index, 0),
+                stage='Preparing Analytics Dataset',
+                target=f'{dataset.label} · {cluster_name}',
+                message=f'Preparing {dataset.label} for {cluster_name}.',
             )
             mark_snapshot_pending(
                 cluster_id=cluster_id,
@@ -201,7 +214,10 @@ def _materialize(
                             lifecycle.checkpoint(
                                 current=index - 1,
                                 total=len(work_items),
-                                message=f'Waiting for the shared metrics source before generating {dataset.label}',
+                                percent=batch_percent(index, 15),
+                                stage='Waiting for Metrics Source',
+                                target=f'{dataset.label} · {cluster_name}',
+                                message=f'Waiting for the shared metrics source before generating {dataset.label}.',
                             )
                             current_app.logger.info(
                                 'Analytics dataset waited for a shared provider query slot.',
@@ -212,6 +228,14 @@ def _materialize(
                                     'source_lock_wait_ms': source_lock_wait_ms,
                                 },
                             )
+                        lifecycle.checkpoint(
+                            current=index - 1,
+                            total=len(work_items),
+                            percent=batch_percent(index, 35),
+                            stage='Querying Analytics Sources',
+                            target=f'{dataset.label} · {cluster_name}',
+                            message=f'Collecting source data for {dataset.label}.',
+                        )
                         with _dataset_time_limit(
                             dataset_key=dataset_key,
                             timeout_seconds=timeout_seconds,
@@ -224,6 +248,14 @@ def _materialize(
                     if blocker:
                         raise AnalyticsDependencyError(_dependency_blocker_message(blocker))
                     context['analytics_runtime'] = query_runtime.summary()
+                    lifecycle.checkpoint(
+                        current=index - 1,
+                        total=len(work_items),
+                        percent=batch_percent(index, 78),
+                        stage='Committing Analytics Snapshot',
+                        target=f'{dataset.label} · {cluster_name}',
+                        message=f'Persisting the committed {dataset.label} snapshot.',
+                    )
                     store_snapshot(
                         cluster_id=cluster_id,
                         dataset_key=dataset_key,
@@ -293,7 +325,10 @@ def _materialize(
             lifecycle.checkpoint(
                 current=index,
                 total=len(work_items),
-                message=f'Generated {index} of {len(work_items)} analytics snapshots',
+                percent=batch_percent(index, 100),
+                stage='Analytics Snapshot Completed',
+                target=f'{dataset.label} · {cluster_name}',
+                message=f'Generated {index} of {len(work_items)} analytics snapshots.',
             )
     except JobCancellationRequested:
         lifecycle.canceled()

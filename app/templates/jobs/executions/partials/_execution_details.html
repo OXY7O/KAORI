@@ -1,3 +1,4 @@
+{% import "components/progress_bar.html" as progress_bar %}
 {% import "components/details/_detail_content.html" as detail %}
 {% import "components/table_label.html" as table_label %}
 <div class="{{ detail.expanded_workspace_outer_classes() }}"
@@ -51,8 +52,9 @@
                 {{ detail.detail_row('Attempt', execution.attempt_count ~ ' / ' ~ execution.max_attempts) }}
             {% endcall %}
             {% call detail.detail_card('Result & Failure Evidence', 'clipboard-check', badge=execution.result_type, density='compact') %}
-                {{ detail.detail_row('Progress', execution.progress_label) }}
-                {{ detail.stacked_detail_row('Progress Message', execution.progress_message) }}
+                <div class="mb-3 rounded-lg border border-brand-outline bg-kaori-soft/35 p-3">
+                    {{ progress_bar.job_progress(execution, label=execution.operation_label ~ ' progress') }}
+                </div>
                 {{ detail.detail_row('Result Reference', execution.result_reference, break_all=true) }}
                 {{ detail.detail_row('Error Code', execution.error_code, break_all=true) }}
                 {{ detail.stacked_detail_row('Error Message', execution.error_message) }}

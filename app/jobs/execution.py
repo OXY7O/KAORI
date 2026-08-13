@@ -41,8 +41,23 @@ class JobExecutionContext:
             return self.task_id
         return str(job.celery_task_id)
 
-    def start(self, *, message: str, total: int = 0) -> None:
-        mark_job_running(self._task_id(), message=message, total=total)
+    def start(
+        self,
+        *,
+        message: str,
+        total: int = 0,
+        percent: int = 0,
+        stage: str | None = None,
+        target: str | None = None,
+    ) -> None:
+        mark_job_running(
+            self._task_id(),
+            message=message,
+            total=total,
+            percent=percent,
+            stage=stage,
+            target=target,
+        )
 
     def checkpoint(
         self,
@@ -50,6 +65,9 @@ class JobExecutionContext:
         current: int | None = None,
         total: int | None = None,
         message: str | None = None,
+        percent: int | None = None,
+        stage: str | None = None,
+        target: str | None = None,
     ) -> None:
         if is_cancel_requested(self._task_id()):
             raise JobCancellationRequested('The job was canceled by an operator.')
@@ -58,6 +76,9 @@ class JobExecutionContext:
             current=current,
             total=total,
             message=message,
+            percent=percent,
+            stage=stage,
+            target=target,
         )
 
     def succeed(

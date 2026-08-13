@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from datetime import UTC, datetime
 
 from flask import current_app
@@ -16,6 +16,8 @@ from app.models.minio import MinioInstance
 from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
 
 logger = logging.getLogger(__name__)
+
+InventoryProgressCallback = Callable[[int, int, str], None]
 
 
 def _lock_system_inventory_sync(system_id: str) -> None:
@@ -81,7 +83,11 @@ def commit_bucket_inventory(
     return {'created': created, 'updated': updated, 'deleted': deleted, 'total': len(observed)}
 
 
-def sync_object_storage_inventory(instance: MinioInstance) -> dict[str, object]:
+def sync_object_storage_inventory(
+    instance: MinioInstance,
+    *,
+    progress_callback: InventoryProgressCallback | None = None,
+) -> dict[str, object]:
     """Collect and atomically commit one managed object-storage inventory snapshot.
 
     Job Execution owns this operation. Full Validation proves provider capability and
@@ -105,6 +111,7 @@ def sync_object_storage_inventory(instance: MinioInstance) -> dict[str, object]:
         collected = collect_instance_bucket_inventory(
             instance,
             collect_usage_stats=usage_stats_mode == 'full_scan',
+            progress_callback=progress_callback,
         )
         current_stage = 'snapshot persistence'
         summary = commit_bucket_inventory(

@@ -112,17 +112,18 @@ def sync_all_clusters_task(
     synced_count = 0
     failed_clusters: list[str] = []
     failure_evidence: list[dict[str, str]] = []
-    context.start(message='Synchronizing Kubernetes inventory for all registered clusters.', total=total_count)
+    context.start(
+        message='Preparing Kubernetes inventory synchronization.',
+        total=total_count,
+        percent=1,
+        stage='Preparing Inventory',
+        target='Kubernetes Fleet',
+    )
 
     try:
         for index, target in enumerate(targets, start=1):
             cluster_id = str(target['cluster_id'])
             cluster_name = target['cluster_name']
-            context.checkpoint(
-                current=index - 1,
-                total=total_count,
-                message=f'Synchronizing {cluster_name}.',
-            )
             progress = {
                 'requested_by_user_id': requested_by_user_id,
                 'job_execution_id': job_execution_id,
@@ -135,14 +136,48 @@ def sync_all_clusters_task(
                 'current_cluster_name': cluster_name,
                 'heartbeat_at': _now_iso(),
             }
-            _store_global(task_id, progress)
-            self.update_state(state='PROGRESS', meta=progress)
+            last_reported_percent = -1
+
+            def report_cluster_progress(local_percent: int, stage: str, message: str) -> None:
+                nonlocal last_reported_percent
+                normalized_local = max(0, min(int(local_percent), 100))
+                completed_fraction = (index - 1) + (normalized_local / 100)
+                overall_percent = min(2 + int((completed_fraction / max(total_count, 1)) * 96), 98)
+                if normalized_local not in {0, 100} and overall_percent <= last_reported_percent:
+                    return
+                last_reported_percent = overall_percent
+                context.checkpoint(
+                    current=index - 1,
+                    total=total_count,
+                    percent=overall_percent,
+                    stage=stage,
+                    target=cluster_name,
+                    message=message,
+                )
+                progress.update(
+                    {
+                        'processed_count': index - 1,
+                        'progress_percent': overall_percent,
+                        'progress_stage': stage,
+                        'message': message,
+                        'current_cluster_name': cluster_name,
+                        'heartbeat_at': _now_iso(),
+                    }
+                )
+                _store_global(task_id, progress)
+                self.update_state(state='PROGRESS', meta=progress)
+
+            report_cluster_progress(0, 'Preparing Cluster', f'Preparing inventory collection for {cluster_name}.')
             try:
                 cluster = db.session.get(Cluster, cluster_id)
                 if cluster is None:
                     raise LookupError('The cluster was deleted after the fleet job was admitted.')
                 connection = connection_for_cluster(cluster)
-                get_integration('kubernetes').execute('inventory.sync', connection)
+                get_integration('kubernetes').execute(
+                    'inventory.sync',
+                    connection,
+                    progress_callback=report_cluster_progress,
+                )
                 synced_count += 1
             except Exception as exc:
                 db.session.rollback()
@@ -157,9 +192,13 @@ def sync_all_clusters_task(
                 )
                 logger.exception('Cluster inventory synchronization failed for %s.', cluster_name)
 
+            completed_percent = min(2 + int((index / max(total_count, 1)) * 96), 98)
             context.checkpoint(
                 current=index,
                 total=total_count,
+                percent=completed_percent,
+                stage='Cluster Completed',
+                target=cluster_name,
                 message=(
                     f'Synchronized {cluster_name}.'
                     if cluster_name not in failed_clusters
@@ -263,8 +302,21 @@ def sync_single_cluster_task(
         'title': 'Cluster inventory sync in progress',
         'message': f'Synchronizing Kubernetes inventory for {cluster_name}.',
     }
-    context.start(message=progress['message'], total=1)
-    context.checkpoint(current=0, total=1, message=progress['message'])
+    context.start(
+        message=progress['message'],
+        total=1,
+        percent=1,
+        stage='Preparing Inventory',
+        target=cluster_name,
+    )
+    context.checkpoint(
+        current=0,
+        total=1,
+        percent=2,
+        stage='Preparing Cluster',
+        target=cluster_name,
+        message=progress['message'],
+    )
     _store_single(task_id, progress)
     self.update_state(state='PROGRESS', meta=progress)
 
@@ -272,7 +324,41 @@ def sync_single_cluster_task(
         if cluster is None:
             raise LookupError('The selected Kubernetes cluster no longer exists.')
         connection = connection_for_cluster(cluster)
-        get_integration('kubernetes').execute('inventory.sync', connection)
+
+        def report_single_cluster_progress(local_percent: int, stage: str, message: str) -> None:
+            normalized = max(2, min(int(local_percent), 98))
+            context.checkpoint(
+                current=0,
+                total=1,
+                percent=normalized,
+                stage=stage,
+                target=cluster_name,
+                message=message,
+            )
+            progress.update(
+                {
+                    'progress_percent': normalized,
+                    'progress_stage': stage,
+                    'message': message,
+                    'heartbeat_at': _now_iso(),
+                }
+            )
+            _store_single(task_id, progress)
+            self.update_state(state='PROGRESS', meta=progress)
+
+        get_integration('kubernetes').execute(
+            'inventory.sync',
+            connection,
+            progress_callback=report_single_cluster_progress,
+        )
+        context.checkpoint(
+            current=1,
+            total=1,
+            percent=99,
+            stage='Finalizing Inventory',
+            target=cluster_name,
+            message=f'Finalizing committed inventory state for {cluster_name}.',
+        )
         result = {
             **progress,
             'status': 'success',

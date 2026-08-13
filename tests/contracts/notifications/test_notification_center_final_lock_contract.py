@@ -78,7 +78,8 @@ def test_notification_center_uses_quiet_kaori_surfaces() -> None:
     assert 'role="tablist"' not in content
     assert 'border-outline-default bg-surface-hover px-4 pt-4' in framed_tabs
     assert 'components/progress_bar.html' in items
-    assert 'progress_bar.determinate(' in items
+    assert 'progress_bar.job_progress(' in items
+    assert 'progress_bar.determinate(' not in items
     assert 'rounded-xl border border-outline-default bg-surface-hover p-1' in deck
     assert 'Active Work' in deck
 

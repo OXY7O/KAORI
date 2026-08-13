@@ -339,6 +339,11 @@ def build_cluster_sync_snapshot(task_id: str) -> dict[str, Any]:
         payload = {}
     job = JobExecution.query.filter_by(celery_task_id=task_id).first()
     if job is not None:
+        progress_metadata = (job.payload_json or {}).get('_progress')
+        progress_metadata = progress_metadata if isinstance(progress_metadata, dict) else {}
+        payload.setdefault('progress_percent', progress_metadata.get('percent'))
+        payload.setdefault('progress_stage', progress_metadata.get('stage'))
+        payload.setdefault('progress_target', progress_metadata.get('target'))
         payload.setdefault('created_at', job.queued_at.isoformat() if job.queued_at else None)
         payload.setdefault('started_at', job.started_at.isoformat() if job.started_at else None)
         payload.setdefault('finished_at', job.completed_at.isoformat() if job.completed_at else None)
@@ -381,8 +386,11 @@ def build_cluster_sync_snapshot(task_id: str) -> dict[str, Any]:
         0,
     )
 
+    reported_progress_percent = max(_safe_int(payload.get('progress_percent')), 0)
     progress_percent = 0
-    if total_count > 0:
+    if reported_progress_percent:
+        progress_percent = min(reported_progress_percent, 100)
+    elif total_count > 0:
         progress_percent = min(
             int((processed_count / total_count) * 100),
             100,
@@ -443,6 +451,8 @@ def build_cluster_sync_snapshot(task_id: str) -> dict[str, Any]:
         'duration_seconds': payload.get('duration_seconds'),
         'elapsed_seconds': _elapsed_seconds(payload),
         'progress_percent': progress_percent,
+        'progress_stage': payload.get('progress_stage'),
+        'progress_target': payload.get('progress_target'),
         'requested_by_user_id': payload.get('requested_by_user_id'),
         'created_at': payload.get('created_at'),
         'started_at': payload.get('started_at'),

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from time import perf_counter
@@ -29,6 +30,9 @@ from app.models.minio import MinioInstance
 
 class MinioConnectionError(RuntimeError):
     pass
+
+
+InventoryProgressCallback = Callable[[int, int, str], None]
 
 
 @dataclass(frozen=True, slots=True)
@@ -831,6 +835,7 @@ def collect_bucket_inventory_values(
     verify_ssl: bool = True,
     collect_quota: bool = True,
     collect_usage_stats: bool = False,
+    progress_callback: InventoryProgressCallback | None = None,
 ) -> MinioInventoryResult:
     """Collect and enrich bucket inventory without mutating provider validation state."""
     started = perf_counter()
@@ -853,21 +858,28 @@ def collect_bucket_inventory_values(
         verify_ssl=verify_ssl,
     )
     base_buckets = _bucket_inventory(payload, location=region)
-    buckets = tuple(
-        _enrich_bucket_summary(
-            client,
-            summary,
-            endpoint=endpoint,
-            access_key=access_key,
-            secret_key=secret_key,
-            region=region,
-            timeout=timeout,
-            verify_ssl=verify_ssl,
-            collect_quota=collect_quota,
-            collect_usage_stats=collect_usage_stats,
+    total_buckets = len(base_buckets)
+    enriched_buckets: list[MinioBucketSummary] = []
+    for index, summary in enumerate(base_buckets, start=1):
+        if progress_callback is not None:
+            progress_callback(index - 1, total_buckets, summary.name)
+        enriched_buckets.append(
+            _enrich_bucket_summary(
+                client,
+                summary,
+                endpoint=endpoint,
+                access_key=access_key,
+                secret_key=secret_key,
+                region=region,
+                timeout=timeout,
+                verify_ssl=verify_ssl,
+                collect_quota=collect_quota,
+                collect_usage_stats=collect_usage_stats,
+            )
         )
-        for summary in base_buckets
-    )
+        if progress_callback is not None:
+            progress_callback(index, total_buckets, summary.name)
+    buckets = tuple(enriched_buckets)
     warning_count = sum(len(bucket.provider_metadata.get('enrichment_gaps') or ()) for bucket in buckets)
     total_latency_ms = max(int((perf_counter() - started) * 1000), list_latency_ms)
     return MinioInventoryResult(
@@ -882,6 +894,7 @@ def collect_instance_bucket_inventory(
     instance: MinioInstance,
     *,
     collect_usage_stats: bool = False,
+    progress_callback: InventoryProgressCallback | None = None,
 ) -> MinioInventoryResult:
     provider_key = str(instance.detected_product or '').strip().lower().replace('-', '_')
     return collect_bucket_inventory_values(
@@ -894,6 +907,7 @@ def collect_instance_bucket_inventory(
         verify_ssl=instance.verify_ssl,
         collect_quota=provider_key == 'minio',
         collect_usage_stats=collect_usage_stats,
+        progress_callback=progress_callback,
     )
 
 

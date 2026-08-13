@@ -102,6 +102,13 @@ def is_individual_sync_result_dismissed(*, task_id: str, user_id: int) -> bool:
     return bool(_redis_client().exists(_dismissed_key(task_id=task_id, user_id=user_id)))
 
 
+def _safe_int(value: Any, default: int = 0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def _elapsed_seconds(payload: dict[str, Any]) -> int:
     started_value = payload.get('started_at') or payload.get('created_at')
     if not isinstance(started_value, str):
@@ -130,12 +137,17 @@ def build_individual_sync_snapshot(task_id: str) -> dict[str, Any]:
         payload = {}
     job = JobExecution.query.filter_by(celery_task_id=task_id).first()
     if job is not None:
+        progress_metadata = (job.payload_json or {}).get('_progress')
+        progress_metadata = progress_metadata if isinstance(progress_metadata, dict) else {}
         payload.setdefault('created_at', job.queued_at.isoformat() if job.queued_at else None)
         payload.setdefault('started_at', job.started_at.isoformat() if job.started_at else None)
         payload.setdefault('finished_at', job.completed_at.isoformat() if job.completed_at else None)
         payload.setdefault('requested_by_user_id', job.requested_by_user_id)
         payload.setdefault('cluster_id', job.scope_key)
         payload.setdefault('message', job.progress_message)
+        payload.setdefault('progress_percent', progress_metadata.get('percent'))
+        payload.setdefault('progress_stage', progress_metadata.get('stage'))
+        payload.setdefault('progress_target', progress_metadata.get('target'))
         if job.result_summary_json:
             for key, value in job.result_summary_json.items():
                 payload.setdefault(key, value)
@@ -179,4 +191,7 @@ def build_individual_sync_snapshot(task_id: str) -> dict[str, Any]:
         'finished_at': payload.get('finished_at'),
         'duration_seconds': payload.get('duration_seconds'),
         'elapsed_seconds': _elapsed_seconds(payload),
+        'progress_percent': max(0, min(_safe_int(payload.get('progress_percent')), 100)),
+        'progress_stage': payload.get('progress_stage'),
+        'progress_target': payload.get('progress_target'),
     }

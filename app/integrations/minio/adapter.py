@@ -213,7 +213,10 @@ class MinioRuntimeAdapter:
         if operation == 'runtime.state':
             return self.get_state(instance, validation_result=kwargs.get('validation_result'))
         if operation == 'inventory.sync':
-            return sync_object_storage_inventory(instance)
+            return sync_object_storage_inventory(
+                instance,
+                progress_callback=kwargs.get('progress_callback'),
+            )
         raise ValueError(f'Unsupported MinIO integration operation: {operation}')
 
     def get_state(

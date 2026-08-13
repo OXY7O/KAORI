@@ -31,12 +31,9 @@ def _job_progress(job: JobExecution) -> tuple[int, str]:
 
 def present_object_storage_inventory_job(job: JobExecution) -> dict[str, Any]:
     payload = job.payload_json or {}
-    progress, progress_label = _job_progress(job)
     row = present_job_execution(job)
     row.update(
         {
-            'progress': progress,
-            'progress_label': progress_label,
             'target_count': int(payload.get('total_count') or job.progress_total or 0),
             'progress_message': job.progress_message or 'Waiting for the inventory worker.',
         }

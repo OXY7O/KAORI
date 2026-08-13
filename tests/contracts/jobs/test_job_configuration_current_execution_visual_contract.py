@@ -7,14 +7,15 @@ def test_current_execution_uses_visual_status_workspace():
     source = TEMPLATE.read_text(encoding='utf-8')
     assert 'Current Execution' in source
     assert 'bg-kaori-soft/40' in source
-    assert 'Execution Progress' in source
+    assert 'progress_bar.job_progress' in source
     assert 'Ready for Execution' in source
 
 
 def test_current_execution_keeps_single_determinate_progress_bar():
     source = TEMPLATE.read_text(encoding='utf-8')
     current_block = source.split('Current Execution', 1)[1].split('Manual runs use', 1)[0]
-    assert current_block.count('progress_bar.determinate') == 1
+    assert current_block.count('progress_bar.job_progress') == 1
+    assert 'progress_bar.determinate' not in current_block
     assert 'animate-pulse' not in current_block
 
 
