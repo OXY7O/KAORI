@@ -4,7 +4,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions.db import db
@@ -80,6 +80,10 @@ class ObjectStorageBucket(db.Model):
     access_policy_state: Mapped[str] = mapped_column(String(30), nullable=False, default='not_collected')
     exposure_state: Mapped[str] = mapped_column(String(30), nullable=False, default='not_collected')
     provider_metadata: Mapped[dict | None] = mapped_column(db.JSON, nullable=True, default=dict)
+    size_bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    object_count: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    usage_stats_state: Mapped[str] = mapped_column(String(30), nullable=False, default='not_collected')
+    usage_observed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     provider_created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 

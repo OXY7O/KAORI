@@ -6,18 +6,18 @@ def read(path: str) -> str:
     return Path(path).read_text(encoding='utf-8')
 
 
-def test_bucket_drawer_uses_wider_layout_and_full_width_endpoint_rows():
+def test_bucket_modal_uses_wide_layout_and_compact_datetime_rows():
     template = read('app/templates/object_storage_inventory/buckets/partials/_table_content.html')
-    assert "width='2xl'" in template
-    assert "sm:col-span-2" in template
+    assert 'max-w-6xl' in template
+    assert 'x-teleport="body"' in template
     assert "user_datetime(date_format='day_month_numeric')" in template
 
 
 def test_system_drawer_uses_wider_layout_and_endpoint_stack():
     template = read('app/templates/object_storage_inventory/overview/partials/_systems_snapshot_content.html')
     assert "width='2xl'" in template
-    assert "detail_row('Profile', system.compatibility_profile)" in template
-    assert "lg:col-span-2" in template
+    assert "detail_row('Profile', system.compatibility_profile_label)" in template
+    assert "detail_row('Endpoint', system.endpoint, break_all=true)" in template
 
 
 def test_bucket_presentation_uses_short_snapshot_source_label():

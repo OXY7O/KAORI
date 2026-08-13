@@ -1,0 +1,76 @@
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[3]
+
+
+def read(path: str) -> str:
+    return (ROOT / path).read_text(encoding='utf-8')
+
+
+def test_minio_inventory_collects_normalized_bucket_configuration_evidence() -> None:
+    client = read('app/integrations/minio/client.py')
+    sync = read('app/storage_inventory/sync.py')
+    model = read('app/models/object_storage.py')
+
+    for method in (
+        'get_bucket_versioning',
+        'get_bucket_encryption',
+        'get_object_lock_configuration',
+        'get_bucket_lifecycle_configuration',
+        'get_bucket_replication',
+        'get_bucket_policy',
+    ):
+        assert method in client
+    for field in (
+        'versioning_state',
+        'immutability_state',
+        'encryption_state',
+        'lifecycle_state',
+        'replication_state',
+        'access_policy_state',
+        'exposure_state',
+    ):
+        assert field in model
+        assert f'bucket.{field} = summary.{field}' in sync
+    assert 'MinIO Bucket Configuration' in client
+    assert 'enrichment_gaps' in client
+
+
+def test_bucket_usage_stats_are_optional_and_persisted_canonically() -> None:
+    client = read('app/integrations/minio/client.py')
+    config = read('app/config/default.py')
+    model = read('app/models/object_storage.py')
+    presentation = read('app/storage_inventory/presentation.py')
+    template = read('app/templates/object_storage_inventory/buckets/partials/_table_content.html')
+
+    assert "OBJECT_STORAGE_INVENTORY_USAGE_STATS_MODE" in config
+    assert "{'disabled', 'full_scan'}" in config
+    assert "get_paginator('list_objects_v2')" in client
+    assert 'size_bytes' in model
+    assert 'object_count' in model
+    assert 'usage_stats_state' in model
+    assert "'size_label': _format_bytes(bucket.size_bytes)" in presentation
+    assert "'object_count_label': _format_count(bucket.object_count)" in presentation
+    assert '>Size<' in template
+    assert '>Objects<' in template
+    assert 'Usage Snapshot' in template
+    assert 'Current Objects' in template
+
+
+def test_bucket_detail_surface_is_modal_and_system_detail_surface_is_drawer() -> None:
+    buckets = read('app/templates/object_storage_inventory/buckets/partials/_table_content.html')
+    systems = read('app/templates/object_storage_inventory/systems/partials/_table_content.html')
+    assert 'x-teleport="body"' in buckets
+    assert 'max-w-6xl' in buckets
+    assert 'side_drawer.render(' not in buckets
+    assert 'side_drawer.render(' in systems
+    assert "width='2xl'" in systems
+
+
+def test_enrichment_migration_extends_current_bucket_container_head() -> None:
+    migration = read('migrations/versions/20260813_object_storage_bucket_enrichment.py')
+    assert "revision = '20260813_obj_bucket_enrichment'" in migration
+    assert "down_revision = '20260813_obj_asset_contract'" in migration
+    assert "'size_bytes'" in migration
+    assert "'object_count'" in migration
+    assert "'usage_stats_state'" in migration

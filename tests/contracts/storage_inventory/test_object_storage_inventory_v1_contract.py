@@ -17,9 +17,9 @@ def test_storage_navigation_is_domain_first_and_vendor_neutral() -> None:
     assert '>Systems<' in menu
     assert 'Buckets &amp; Containers' in menu
     assert 'MinIO' not in menu
-    assert 'object_storage_inventory.overview' in menu
-    assert 'object_storage_inventory.systems' in menu
-    assert 'object_storage_inventory.buckets' in menu
+    assert "object_storage_inventory.overview" in menu
+    assert "object_storage_inventory.systems" in menu
+    assert "object_storage_inventory.buckets" in menu
 
 
 def test_object_storage_inventory_is_registered_as_read_only_inventory_domain() -> None:
@@ -65,11 +65,13 @@ def test_object_storage_inventory_keeps_kaori_table_and_pagination_standard() ->
         assert 'pagination_ui.footer_classes()' in template
         assert 'pagination_ui.numeric_pages(' in template
         assert 'Rows Per Page' in template
-        assert 'components/states/_empty_state.html' in template
+        assert "components/states/_empty_state.html" in template
         if template is systems:
-            assert 'resource_detail_modal.detail_button' in template
-        else:
             assert 'side_drawer.render(' in template
+            assert 'resource_detail_modal' not in template
+        else:
+            assert 'x-teleport="body"' in template
+            assert 'max-w-6xl' in template
             assert 'resource_detail_modal' not in template
     assert 'object-storage-systems-loading' in systems_filters
     assert 'object-storage-buckets-loading' in buckets_filters

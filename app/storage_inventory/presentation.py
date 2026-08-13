@@ -88,6 +88,7 @@ _STATE_PRESENTATION = {
     'configured': ('Configured', 'normal'),
     'enforced': ('Enforced', 'normal'),
     'private': ('Private', 'normal'),
+    'restricted': ('Restricted', 'info'),
     'disabled': ('Disabled', 'warning'),
     'suspended': ('Suspended', 'warning'),
     'not_configured': ('Not Configured', 'warning'),
@@ -95,7 +96,27 @@ _STATE_PRESENTATION = {
     'not_collected': ('Not Assessed', 'unknown'),
     'not_supported': ('Not Supported', 'info'),
     'unknown': ('Unknown', 'unknown'),
+    'collected': ('Collected', 'normal'),
 }
+
+
+
+def _format_bytes(value: int | None) -> str:
+    if value is None:
+        return 'Not Collected'
+    units = ('B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB')
+    size = float(max(value, 0))
+    unit_index = 0
+    while size >= 1024 and unit_index < len(units) - 1:
+        size /= 1024
+        unit_index += 1
+    if unit_index == 0:
+        return f'{int(size)} B'
+    return f'{size:.2f} {units[unit_index]}'
+
+
+def _format_count(value: int | None) -> str:
+    return 'Not Collected' if value is None else f'{max(value, 0):,}'
 
 
 def _native_type_label(value: str | None) -> str:
@@ -588,6 +609,12 @@ def _bucket_row(bucket: ObjectStorageBucket) -> dict[str, Any]:
         'access_policy': access_policy,
         'exposure': exposure,
         'public_exposure': exposure,
+        'size_bytes': bucket.size_bytes,
+        'size_label': _format_bytes(bucket.size_bytes),
+        'object_count': bucket.object_count,
+        'object_count_label': _format_count(bucket.object_count),
+        'usage_state': _state_view(bucket.usage_stats_state),
+        'usage_observed_at': bucket.usage_observed_at,
         'provider_created_at': bucket.provider_created_at,
         'observed_at': bucket.observed_at,
         'snapshot_status_label': snapshot_status_label,

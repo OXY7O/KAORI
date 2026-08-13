@@ -4,6 +4,7 @@ import logging
 from collections.abc import Iterable
 from datetime import UTC, datetime
 
+from flask import current_app
 from sqlalchemy import select
 
 from app.extensions.db import db
@@ -20,7 +21,9 @@ logger = logging.getLogger(__name__)
 def _lock_system_inventory_sync(system_id: str) -> None:
     """Serialize one object-storage snapshot replacement inside its transaction."""
     db.session.execute(
-        select(ObjectStorageSystem.id).where(ObjectStorageSystem.id == system_id).with_for_update()
+        select(ObjectStorageSystem.id)
+        .where(ObjectStorageSystem.id == system_id)
+        .with_for_update()
     ).scalar_one()
 
 
@@ -58,6 +61,10 @@ def commit_bucket_inventory(
         bucket.access_policy_state = summary.access_policy_state or 'not_collected'
         bucket.exposure_state = summary.exposure_state or 'not_collected'
         bucket.provider_metadata = dict(summary.provider_metadata or {})
+        bucket.size_bytes = summary.size_bytes
+        bucket.object_count = summary.object_count
+        bucket.usage_stats_state = summary.usage_state or 'not_collected'
+        bucket.usage_observed_at = summary.usage_observed_at
         bucket.provider_created_at = summary.creation_date
         bucket.observed_at = observed_at
 
@@ -88,7 +95,13 @@ def sync_object_storage_inventory(instance: MinioInstance) -> dict[str, object]:
     try:
         _lock_system_inventory_sync(system.id)
         current_stage = 'bucket discovery'
-        collected = collect_instance_bucket_inventory(instance)
+        usage_stats_mode = str(
+            current_app.config.get('OBJECT_STORAGE_INVENTORY_USAGE_STATS_MODE', 'disabled')
+        ).strip().lower()
+        collected = collect_instance_bucket_inventory(
+            instance,
+            collect_usage_stats=usage_stats_mode == 'full_scan',
+        )
         current_stage = 'snapshot persistence'
         summary = commit_bucket_inventory(
             system,
@@ -103,6 +116,8 @@ def sync_object_storage_inventory(instance: MinioInstance) -> dict[str, object]:
             'system_name': system.name,
             'observed_at': observed_at.isoformat(),
             'latency_ms': collected.latency_ms,
+            'warning_count': collected.warning_count,
+            'usage_stats_mode': collected.usage_stats_mode,
         }
     except Exception:
         logger.exception(

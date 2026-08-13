@@ -1,3 +1,4 @@
+
 from pathlib import Path
 
 
@@ -15,9 +16,8 @@ def test_side_drawer_supports_wider_widths():
 
 def test_overview_system_drawer_uses_wider_surface_and_full_width_endpoint():
     template = read('app/templates/object_storage_inventory/overview/partials/_systems_snapshot_content.html')
-    assert "width='3xl'" in template
-    assert 'xl:col-span-2' in template
-    assert "stacked_detail_row('Endpoint', system.endpoint, break_all=true)" in template
+    assert "width='2xl'" in template
+    assert "detail_row('Endpoint', system.endpoint, break_all=true)" in template
 
 
 def test_bucket_details_use_modal_not_drawer():

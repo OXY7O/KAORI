@@ -22,14 +22,15 @@ def test_bucket_container_page_keeps_one_vendor_neutral_inventory_surface() -> N
         assert heading in table
 
 
-def test_list_table_stays_canonical_while_drawer_is_provider_aware() -> None:
+def test_list_table_stays_canonical_while_modal_is_provider_aware() -> None:
     index = read('app/templates/object_storage_inventory/buckets/index.html')
     table = read('app/templates/object_storage_inventory/buckets/partials/_table_content.html')
     presentation = read('app/storage_inventory/presentation.py')
 
     assert 'resource_detail_modal' not in index
     assert 'resource_detail_modal' not in table
-    assert 'side_drawer.render(' in table
+    assert 'x-teleport="body"' in table
+    assert 'max-w-6xl' in table
     assert 'View Details' in table
     assert 'Object Snapshot Summary' in table
     assert 'Identity & Location' in table
@@ -72,7 +73,7 @@ def test_minio_inventory_collector_emits_provider_neutral_namespace_contract() -
     assert "native_type: str = 'bucket'" in client
     assert 'location: str | None = None' in client
     assert "versioning_state: str = 'not_collected'" in client
-    assert 'provider_metadata: dict[str, Any] = field(default_factory=dict)' in client
+    assert "provider_metadata: dict[str, Any] = field(default_factory=dict)" in client
     assert "bucket.native_type = summary.native_type or 'bucket'" in sync
     assert 'bucket.location = summary.location' in sync
     assert 'bucket.provider_metadata = dict(summary.provider_metadata or {})' in sync

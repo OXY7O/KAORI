@@ -62,7 +62,8 @@ def test_minio_validation_runtime_and_inventory_ownership_are_separated() -> Non
     assert 'probe_instance_runtime_health(instance)' in adapter
     assert "instance.object_storage_system.status = 'connected'" in adapter
     assert "if operation == 'inventory.sync'" in adapter
-    assert 'collect_instance_bucket_inventory(instance)' in sync
+    assert 'collect_instance_bucket_inventory(' in sync
+    assert "collect_usage_stats=usage_stats_mode == 'full_scan'" in sync
     assert '_lock_system_inventory_sync(' in sync
     assert 'db.session.commit()' in sync
     assert 'db.session.rollback()' in sync
@@ -78,7 +79,7 @@ def test_inventory_pages_and_minio_lifecycle_read_only_committed_job_snapshot() 
     scope = read('app/templates/minio/partials/_detail_scope.html')
     storage_presentation = read('app/storage_inventory/presentation.py')
 
-    assert 'len(instance.object_storage_system.buckets or ())' in minio_presentation
+    assert "len(instance.object_storage_system.buckets or ())" in minio_presentation
     assert 'instance.object_storage_system.inventory_observed_at' in minio_presentation
     assert 'Inventory Snapshot · ' in scope
     assert 'Object Storage Inventory Sync' in scope
@@ -86,7 +87,7 @@ def test_inventory_pages_and_minio_lifecycle_read_only_committed_job_snapshot() 
     assert "job_key='object_storage.inventory.sync'" in scope
     assert 'latest completed MinIO Full Validation' not in scope
     assert 'Run Object Storage Inventory Sync from Job Execution' in storage_presentation
-    assert "'source_label': 'Committed Object Storage Snapshot'" in storage_presentation
+    assert "'source_label': 'Committed Snapshot'" in storage_presentation
     bucket_detail = read('app/templates/object_storage_inventory/buckets/partials/_bucket_detail_content.html')
     bucket_table = read('app/templates/object_storage_inventory/buckets/partials/_table_content.html')
     assert 'Object Storage Inventory Sync snapshot' in bucket_detail
@@ -102,7 +103,7 @@ def test_object_storage_manual_execution_has_domain_permission_and_migration() -
 
     assert "'storage.sync'" in defaults
     assert "'operator': {" in defaults and "'editor': {" in defaults
-    role_defaults = defaults.split('DEFAULT_ROLE_PERMISSIONS = {', 1)[1]
+    role_defaults = defaults.split("DEFAULT_ROLE_PERMISSIONS = {", 1)[1]
     assert role_defaults.count("        'storage.sync',") == 2
     assert "'storage.sync': {'inventory.view', 'jobs.execute'}" in service
     assert "revision = '20260813_obj_storage_jobs'" in migration
