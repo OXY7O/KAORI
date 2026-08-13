@@ -132,7 +132,7 @@
             drawer_id,
             system.name,
             system.product_label ~ ' · committed system inventory',
-            x_show="openDrawer === '" ~ system.id ~ "'",
+            x_show='openDrawer === ' ~ (system.id|tojson),
             close_expression='openDrawer = null',
             action_href=provider_action_url,
             action_label='Open Provider Integration',
@@ -182,19 +182,23 @@
                         {{ side_drawer.metric('System Record', 1, 'server', 'Canonical Managed Asset') }}
                     </div>
                 {% endcall %}
-                {% call side_drawer.section('Operational Signals', 'Current conditions derived from committed provider and inventory state.', 'scan-search') %}
-                    <div class="grid gap-3">
-                        {% for signal in system.signals %}
-                            {{ operational_callout.render(signal.label, signal.description, icon=signal.icon, tone=signal.tone, variant='semantic', extra_classes='w-full') }}
-                        {% else %}
-                            {{ operational_callout.render('No Active Inventory Signals', 'The current committed snapshot has no inventory exceptions requiring attention.', icon='circle-check', tone='normal', variant='semantic', extra_classes='w-full') }}
-                        {% endfor %}
+                {% set provider_reading_title = 'Provider Ready' if system.status_tone == 'normal' else 'Provider Attention' %}
+                {% set provider_reading_description = 'Provider readiness is healthy for inventory operations.' if system.status_tone == 'normal' else 'Review provider readiness before relying on the next inventory refresh.' %}
+                {% set provider_reading_tone = 'normal' if system.status_tone == 'normal' else ('critical' if system.status_tone == 'critical' else 'warning') %}
+                {% set snapshot_reading_title = 'Snapshot Current' if system.sync_status_label == 'Current' else ('Snapshot Stale' if system.sync_status_label == 'Stale' else 'Inventory Not Collected') %}
+                {% set snapshot_reading_description = 'The committed inventory snapshot is within the configured freshness window.' if system.sync_status_label == 'Current' else ('Run Object Storage Inventory Sync to refresh the committed snapshot.' if system.sync_status_label == 'Stale' else 'Run Object Storage Inventory Sync to establish the first committed snapshot.') %}
+                {% set snapshot_reading_tone = 'normal' if system.sync_status_label == 'Current' else 'warning' %}
+                {% call side_drawer.section('Operational Reading', 'Prioritized interpretation of provider readiness, snapshot freshness, and inventory coverage.', 'sparkles', density='compact') %}
+                    <div class="grid gap-3 xl:grid-cols-3">
+                        {{ operational_callout.render(provider_reading_title, provider_reading_description, icon='circle-check' if system.status_tone == 'normal' else 'triangle-alert', tone=provider_reading_tone, variant='semantic', extra_classes='w-full') }}
+                        {{ operational_callout.render(snapshot_reading_title, snapshot_reading_description, icon='database-backup', tone=snapshot_reading_tone, variant='semantic', extra_classes='w-full') }}
+                        {{ operational_callout.render('Inventory Coverage', system.bucket_count ~ ' committed bucket/container asset(s) are associated with this system.', icon='boxes', tone='info', variant='semantic', extra_classes='w-full') }}
                     </div>
                 {% endcall %}
-                {% call side_drawer.section('Operational Context', 'Inventory ownership and recommended next action.', 'compass') %}
+                {% call side_drawer.section('Operational Context', 'Authority boundary and related operational workspace.', 'compass', density='compact') %}
                     <div class="grid gap-3 sm:grid-cols-2">
-                        {{ operational_callout.render('Data Boundary', 'This drawer reads committed Object Storage Inventory data and does not query the provider API live.', icon='database', tone='info', extra_classes='w-full') }}
-                        {{ operational_callout.render(system.guidance.title, system.guidance.description, icon=system.guidance.icon, tone=system.guidance.tone, variant='semantic', extra_classes='w-full') }}
+                        {{ operational_callout.render('Authority Boundary', 'This drawer reads committed Object Storage Inventory data. Provider configuration, validation, and runtime health remain integration-owned.', icon='database', tone='info', extra_classes='w-full') }}
+                        {{ operational_callout.render('Related Operational Workspace', 'Use Jobs & Executions for manual Object Storage Inventory Sync runs, progress, and execution history.', icon='workflow', tone='info', extra_classes='w-full', action_href=url_for('jobs.configuration', job_key='object_storage.inventory.sync') , action_label='Open Inventory Job', action_icon='arrow-up-right') }}
                     </div>
                 {% endcall %}
             </div>

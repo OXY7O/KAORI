@@ -1,5 +1,6 @@
 {% import "components/details/_detail_content.html" as detail_ui %}
 {% import "components/operational_callout.html" as operational_callout %}
+{% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/side_drawer.html" as side_drawer %}
 {% import "components/table.html" as table_ui %}
@@ -247,27 +248,23 @@
                                 {% set protection_reading_tone = "warning" %}
                             {% endif %}
                             {% set protection_reading_description = 'Normalized protection posture is ' ~ asset.protection.label ~ '. Review versioning, encryption, immutability, and exposure evidence below.' %}
-                            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
-                                     aria-label="Operational reading">
-                                <div class="flex min-w-0 items-start justify-between gap-4 border-b border-brand-outline bg-kaori-mist/40 px-4 py-3.5">
-                                    <div class="flex min-w-0 items-start gap-3">
-                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary"
-                                              aria-hidden="true">
-                                            <i data-lucide="sparkles" class="h-4 w-4"></i>
-                                        </span>
-                                        <div class="min-w-0">
-                                            <h3 class="text-sm font-semibold text-content-primary">Operational Reading</h3>
-                                            <p class="mt-1 text-xs leading-5 text-content-muted">Prioritized interpretation of quota, usage collection, and protection evidence from the committed snapshot.</p>
-                                        </div>
-                                    </div>
-                                    <span class="hidden shrink-0 rounded-md border border-brand-outline bg-surface-card px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-kaori-primary sm:inline-flex">Snapshot Guidance</span>
-                                </div>
-                                <div class="grid gap-3 p-4 xl:grid-cols-3">
+                            {% set operational_reading_badge %}
+                                {{ table_label.metadata_label('Snapshot Guidance', 'sparkles', size='detail') }}
+                            {% endset %}
+                            {% call operational_section_card.render(
+                                'Operational Reading',
+                                'Prioritized interpretation of quota, usage collection, and protection evidence from the committed snapshot.',
+                                'sparkles',
+                                header_badge=operational_reading_badge,
+                                body_classes='p-4',
+                                aria_label='Operational reading'
+                                ) %}
+                                <div class="grid gap-3 xl:grid-cols-3">
                                     {{ operational_callout.render(quota_reading_title, quota_reading_description, icon='gauge', tone=quota_reading_tone, variant='semantic', extra_classes='w-full') }}
                                     {{ operational_callout.render(usage_reading_title, usage_reading_description, icon='chart-no-axes-column', tone=usage_reading_tone, variant='semantic', extra_classes='w-full') }}
                                     {{ operational_callout.render(protection_reading_title, protection_reading_description, icon='shield-check', tone=protection_reading_tone, variant='semantic', extra_classes='w-full') }}
                                 </div>
-                            </section>
+                            {% endcall %}
                             {% if asset.quota.key in ['not_collected', 'not_supported'] %}
                                 {{ operational_callout.render('Quota Collection Diagnostic',
                                                                 asset.quota_evidence.guidance,
