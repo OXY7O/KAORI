@@ -1,4 +1,3 @@
-
 from pathlib import Path
 
 
@@ -8,7 +7,7 @@ def read(path: str) -> str:
 
 def test_bucket_modal_uses_wide_layout_and_compact_datetime_rows():
     template = read('app/templates/object_storage_inventory/buckets/partials/_table_content.html')
-    assert 'max-w-6xl' in template
+    assert 'max-w-[88rem]' in template
     assert 'x-teleport="body"' in template
     assert "user_datetime(date_format='day_month_numeric')" in template
 

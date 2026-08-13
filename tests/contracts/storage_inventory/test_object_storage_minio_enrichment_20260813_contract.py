@@ -62,7 +62,7 @@ def test_bucket_detail_surface_is_modal_and_system_detail_surface_is_drawer() ->
     buckets = read('app/templates/object_storage_inventory/buckets/partials/_table_content.html')
     systems = read('app/templates/object_storage_inventory/systems/partials/_table_content.html')
     assert 'x-teleport="body"' in buckets
-    assert 'max-w-6xl' in buckets
+    assert 'max-w-[88rem]' in buckets
     assert 'side_drawer.render(' not in buckets
     assert 'side_drawer.render(' in systems
     assert "width='2xl'" in systems

@@ -1,4 +1,3 @@
-
 from pathlib import Path
 
 
@@ -22,7 +21,7 @@ def test_overview_system_drawer_uses_wider_surface_and_full_width_endpoint():
 
 def test_bucket_details_use_modal_not_drawer():
     template = read('app/templates/object_storage_inventory/buckets/partials/_table_content.html')
-    assert 'max-w-6xl' in template
+    assert 'max-w-[88rem]' in template
     assert 'x-teleport="body"' in template
     assert 'openDetail' in template
     assert 'role="dialog"' in template

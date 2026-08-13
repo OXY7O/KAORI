@@ -20,7 +20,7 @@ def test_bucket_table_prefers_quota_over_usage_metrics() -> None:
 def test_bucket_detail_modal_uses_dense_operational_information_architecture() -> None:
     template = read('app/templates/object_storage_inventory/buckets/partials/_table_content.html')
 
-    assert 'max-w-6xl' in template
+    assert 'max-w-[88rem]' in template
     assert 'Inventory Snapshot' in template
     assert 'Asset Context' in template
     assert 'Provider Context' in template

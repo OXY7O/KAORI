@@ -40,7 +40,7 @@ def test_list_table_stays_canonical_while_modal_is_provider_aware() -> None:
     assert 'resource_detail_modal' not in index
     assert 'resource_detail_modal' not in table
     assert 'x-teleport="body"' in table
-    assert 'max-w-6xl' in table
+    assert 'max-w-[88rem]' in table
     assert 'View Details' in table
     assert 'Inventory Snapshot' in table
     assert 'Asset Context' in table
