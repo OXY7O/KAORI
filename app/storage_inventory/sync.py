@@ -21,9 +21,7 @@ logger = logging.getLogger(__name__)
 def _lock_system_inventory_sync(system_id: str) -> None:
     """Serialize one object-storage snapshot replacement inside its transaction."""
     db.session.execute(
-        select(ObjectStorageSystem.id)
-        .where(ObjectStorageSystem.id == system_id)
-        .with_for_update()
+        select(ObjectStorageSystem.id).where(ObjectStorageSystem.id == system_id).with_for_update()
     ).scalar_one()
 
 
@@ -101,9 +99,9 @@ def sync_object_storage_inventory(instance: MinioInstance) -> dict[str, object]:
     try:
         _lock_system_inventory_sync(system.id)
         current_stage = 'bucket discovery'
-        usage_stats_mode = str(
-            current_app.config.get('OBJECT_STORAGE_INVENTORY_USAGE_STATS_MODE', 'disabled')
-        ).strip().lower()
+        usage_stats_mode = (
+            str(current_app.config.get('OBJECT_STORAGE_INVENTORY_USAGE_STATS_MODE', 'disabled')).strip().lower()
+        )
         collected = collect_instance_bucket_inventory(
             instance,
             collect_usage_stats=usage_stats_mode == 'full_scan',

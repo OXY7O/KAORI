@@ -23,7 +23,9 @@ def test_minio_quota_collector_distinguishes_operational_failure_modes() -> None
     client = read('app/integrations/minio/client.py')
 
     assert "api_versions = ('v3', 'v4')" in client
-    assert "payload.get('size', payload.get('quota', 0))" in client
+    assert "for field_name in ('size', 'quota')" in client
+    assert "field_name == 'size' and value > 0" in client
+    assert "field_name == 'quota' and value > 0" in client
     for code in (
         'access_denied',
         'signature_mismatch',

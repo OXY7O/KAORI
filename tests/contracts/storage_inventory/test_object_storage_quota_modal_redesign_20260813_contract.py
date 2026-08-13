@@ -42,7 +42,9 @@ def test_quota_collection_is_minio_specific_and_optional_to_snapshot_success() -
     assert 'admin:GetBucketQuota' in presentation
     assert 'MinioQuotaEvidence' in client
     assert "collect_quota=provider_key == 'minio'" in client
-    assert "payload.get('size', payload.get('quota', 0))" in client
+    assert "for field_name in ('size', 'quota')" in client
+    assert "field_name == 'size' and value > 0" in client
+    assert "field_name == 'quota' and value > 0" in client
     assert "'No Quota'" in presentation
     assert 'MinIO Admin API v3' in presentation
     assert 'MinIO Admin API v4' in presentation

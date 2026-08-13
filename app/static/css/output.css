@@ -1212,6 +1212,9 @@
   .max-w-\[15rem\] {
     max-width: 15rem;
   }
+  .max-w-\[16rem\] {
+    max-width: 16rem;
+  }
   .max-w-\[18rem\] {
     max-width: 18rem;
   }
@@ -1235,6 +1238,9 @@
   }
   .max-w-\[65\%\] {
     max-width: 65%;
+  }
+  .max-w-\[88rem\] {
+    max-width: 88rem;
   }
   .max-w-\[100rem\] {
     max-width: 100rem;
@@ -1398,8 +1404,8 @@
   .min-w-\[78rem\] {
     min-width: 78rem;
   }
-  .min-w-\[82rem\] {
-    min-width: 82rem;
+  .min-w-\[80rem\] {
+    min-width: 80rem;
   }
   .min-w-\[135px\] {
     min-width: 135px;
@@ -3052,12 +3058,6 @@
     --tw-shadow-color: var(--kaori-brand-primary);
     @supports (color: color-mix(in lab, red, red)) {
       --tw-shadow-color: color-mix(in oklab, color-mix(in oklab, var(--kaori-brand-primary) 20%, transparent) var(--tw-shadow-alpha), transparent);
-    }
-  }
-  .shadow-status-warning\/20 {
-    --tw-shadow-color: var(--kaori-status-warning);
-    @supports (color: color-mix(in lab, red, red)) {
-      --tw-shadow-color: color-mix(in oklab, color-mix(in oklab, var(--kaori-status-warning) 20%, transparent) var(--tw-shadow-alpha), transparent);
     }
   }
   .ring-brand-outline {
@@ -5339,6 +5339,11 @@
       grid-template-columns: minmax(0,1fr) minmax(0,0.8fr) minmax(0,0.8fr) auto;
     }
   }
+  .lg\:grid-cols-\[minmax\(0\,1fr\)_minmax\(0\,0\.8fr\)_minmax\(0\,0\.8fr\)_minmax\(16rem\,1\.3fr\)\] {
+    @media (width >= 64rem) {
+      grid-template-columns: minmax(0,1fr) minmax(0,0.8fr) minmax(0,0.8fr) minmax(16rem,1.3fr);
+    }
+  }
   .lg\:grid-cols-\[minmax\(0\,1fr\)_minmax\(0\,0\.8fr\)_minmax\(0\,0\.8fr\)_minmax\(16rem\,1\.35fr\)\] {
     @media (width >= 64rem) {
       grid-template-columns: minmax(0,1fr) minmax(0,0.8fr) minmax(0,0.8fr) minmax(16rem,1.35fr);
@@ -5352,11 +5357,6 @@
   .lg\:grid-cols-\[minmax\(0\,1fr\)_minmax\(0\,0\.9fr\)_minmax\(18rem\,1\.4fr\)\] {
     @media (width >= 64rem) {
       grid-template-columns: minmax(0,1fr) minmax(0,0.9fr) minmax(18rem,1.4fr);
-    }
-  }
-  .lg\:grid-cols-\[minmax\(0\,1fr\)_minmax\(0\,0\.75fr\)_minmax\(0\,0\.75fr\)_minmax\(16rem\,1\.3fr\)\] {
-    @media (width >= 64rem) {
-      grid-template-columns: minmax(0,1fr) minmax(0,0.75fr) minmax(0,0.75fr) minmax(16rem,1.3fr);
     }
   }
   .lg\:grid-cols-\[minmax\(0\,1fr\)_minmax\(0\,1fr\)_auto\] {
@@ -5534,6 +5534,11 @@
   .lg\:border-outline-subtle {
     @media (width >= 64rem) {
       border-color: var(--kaori-outline-subtle);
+    }
+  }
+  .lg\:p-5 {
+    @media (width >= 64rem) {
+      padding: calc(var(--spacing) * 5);
     }
   }
   .lg\:p-6 {
@@ -6026,6 +6031,11 @@
   .xl\:pt-0 {
     @media (width >= 80rem) {
       padding-top: 0;
+    }
+  }
+  .xl\:pr-4 {
+    @media (width >= 80rem) {
+      padding-right: calc(var(--spacing) * 4);
     }
   }
   .xl\:pr-5 {

@@ -227,7 +227,6 @@ def _resolve_path(
     )
 
 
-
 def _object_storage_usage_stats_mode() -> str:
     mode = _env_str('OBJECT_STORAGE_INVENTORY_USAGE_STATS_MODE', 'disabled').strip().lower()
     return mode if mode in {'disabled', 'full_scan'} else 'disabled'

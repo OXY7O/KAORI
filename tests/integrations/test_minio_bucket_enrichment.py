@@ -66,6 +66,34 @@ def test_minio_admin_bucket_quota_keeps_legacy_quota_key_fallback(monkeypatch) -
     assert _quota().quota_bytes == 10 * 1024**3
 
 
+def test_minio_admin_bucket_quota_uses_legacy_value_when_size_is_zero(monkeypatch) -> None:
+    monkeypatch.setattr(
+        'app.integrations.minio.client.requests.get',
+        lambda *args, **kwargs: _QuotaResponse(
+            200,
+            {'quota': 25 * 1024**3, 'size': 0, 'quotatype': 'hard'},
+        ),
+    )
+
+    evidence = _quota()
+
+    assert evidence.quota_bytes == 25 * 1024**3
+    assert evidence.state == 'configured'
+    assert evidence.code == 'collected'
+
+
+def test_minio_admin_bucket_quota_prefers_positive_size_over_legacy_value(monkeypatch) -> None:
+    monkeypatch.setattr(
+        'app.integrations.minio.client.requests.get',
+        lambda *args, **kwargs: _QuotaResponse(
+            200,
+            {'quota': 10 * 1024**3, 'size': 40 * 1024**3, 'quotatype': 'hard'},
+        ),
+    )
+
+    assert _quota().quota_bytes == 40 * 1024**3
+
+
 def test_minio_admin_bucket_quota_maps_zero_to_not_configured(monkeypatch) -> None:
     monkeypatch.setattr(
         'app.integrations.minio.client.requests.get',

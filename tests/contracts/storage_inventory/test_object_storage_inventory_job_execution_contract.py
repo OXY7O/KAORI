@@ -79,7 +79,7 @@ def test_inventory_pages_and_minio_lifecycle_read_only_committed_job_snapshot() 
     scope = read('app/templates/minio/partials/_detail_scope.html')
     storage_presentation = read('app/storage_inventory/presentation.py')
 
-    assert "len(instance.object_storage_system.buckets or ())" in minio_presentation
+    assert 'len(instance.object_storage_system.buckets or ())' in minio_presentation
     assert 'instance.object_storage_system.inventory_observed_at' in minio_presentation
     assert 'Inventory Snapshot · ' in scope
     assert 'Object Storage Inventory Sync' in scope
@@ -103,7 +103,7 @@ def test_object_storage_manual_execution_has_domain_permission_and_migration() -
 
     assert "'storage.sync'" in defaults
     assert "'operator': {" in defaults and "'editor': {" in defaults
-    role_defaults = defaults.split("DEFAULT_ROLE_PERMISSIONS = {", 1)[1]
+    role_defaults = defaults.split('DEFAULT_ROLE_PERMISSIONS = {', 1)[1]
     assert role_defaults.count("        'storage.sync',") == 2
     assert "'storage.sync': {'inventory.view', 'jobs.execute'}" in service
     assert "revision = '20260813_obj_storage_jobs'" in migration

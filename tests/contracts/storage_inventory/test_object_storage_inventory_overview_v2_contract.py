@@ -73,7 +73,7 @@ def test_overview_snapshot_and_signals_are_committed_inventory_only() -> None:
     presentation = read('app/storage_inventory/presentation.py')
     content = read('app/templates/object_storage_inventory/overview/partials/_systems_snapshot_content.html')
 
-    assert "OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS = 24" in presentation
+    assert 'OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS = 24' in presentation
     assert "'source_label': 'Committed Snapshot'" in presentation
     assert "'snapshot_source': 'Committed Snapshot'" in presentation
     assert 'Inventory Not Collected' in presentation

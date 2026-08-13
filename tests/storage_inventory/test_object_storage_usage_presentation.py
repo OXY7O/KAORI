@@ -8,7 +8,6 @@ def test_bucket_usage_formatters_are_compact() -> None:
     assert _format_count(1234567) == '1,234,567'
 
 
-
 def test_bucket_quota_presentation_distinguishes_configuration_states() -> None:
     configured = _quota_view(10 * 1024**3, 'configured')
     assert configured['label'] == '10.00 GiB'

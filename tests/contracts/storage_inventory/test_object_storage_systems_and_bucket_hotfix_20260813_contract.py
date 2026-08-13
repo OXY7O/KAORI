@@ -1,4 +1,3 @@
-
 from pathlib import Path
 
 
@@ -32,7 +31,17 @@ def test_systems_page_uses_drawer_not_resource_detail_modal():
 
 def test_systems_table_uses_canonical_provider_and_snapshot_columns():
     table = read('app/templates/object_storage_inventory/systems/partials/_table_content.html')
-    for heading in ('System', 'Provider', 'Environment', 'Release', 'Endpoint', 'Inventory Assets', 'Snapshot', 'Status', 'Details'):
+    for heading in (
+        'System',
+        'Provider',
+        'Environment',
+        'Release',
+        'Endpoint',
+        'Inventory Assets',
+        'Snapshot',
+        'Status',
+        'Details',
+    ):
         assert f'>{heading}<' in table
     assert 'system.endpoint_display' in table
     assert 'Buckets & Containers' in table

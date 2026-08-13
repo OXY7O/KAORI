@@ -236,7 +236,6 @@ def test_connection_values(
     )
 
 
-
 _OPTIONAL_ACCESS_DENIED_CODES = {'AccessDenied', 'AllAccessDisabled'}
 _OPTIONAL_UNSUPPORTED_CODES = {'NotImplemented', 'NotSupported', 'MethodNotAllowed', 'XNotImplemented'}
 
@@ -383,9 +382,7 @@ def _minio_admin_bucket_quota(
     last_unsupported: MinioQuotaEvidence | None = None
     for api_version in api_versions:
         source = f'minio_admin_api_{api_version}'
-        admin_url = urlunsplit(
-            (parsed.scheme, parsed.netloc, f'/minio/admin/{api_version}/get-bucket-quota', '', '')
-        )
+        admin_url = urlunsplit((parsed.scheme, parsed.netloc, f'/minio/admin/{api_version}/get-bucket-quota', '', ''))
         prepared = requests.Request('GET', admin_url, params={'bucket': bucket_name}).prepare()
         if not prepared.url:
             return _quota_error_evidence(
@@ -515,12 +512,34 @@ def _minio_admin_bucket_quota(
                 status_code=status_code,
             )
 
-        # MinIO madmin BucketQuota serializes the configured ceiling as `size`.
-        # Keep the historical `quota` key as a compatibility fallback.
-        raw_quota = payload.get('size', payload.get('quota', 0))
-        try:
-            quota_bytes = int(raw_quota or 0)
-        except (TypeError, ValueError):
+        # MinIO releases around 2024 can serialize both fields at once. The newer
+        # `size` field may be zero while the deprecated `quota` field still carries
+        # the configured hard-quota ceiling. Prefer a positive `size`, then fall
+        # back to a positive legacy `quota`; only treat the bucket as unconfigured
+        # when neither field carries a positive value.
+        parsed_quota_values: list[tuple[str, int]] = []
+        invalid_quota_value = False
+        for field_name in ('size', 'quota'):
+            if field_name not in payload:
+                continue
+            try:
+                parsed_value = int(payload.get(field_name) or 0)
+            except (TypeError, ValueError):
+                invalid_quota_value = True
+                continue
+            parsed_quota_values.append((field_name, parsed_value))
+
+        quota_bytes = next(
+            (value for field_name, value in parsed_quota_values if field_name == 'size' and value > 0),
+            0,
+        )
+        if quota_bytes <= 0:
+            quota_bytes = next(
+                (value for field_name, value in parsed_quota_values if field_name == 'quota' and value > 0),
+                0,
+            )
+
+        if not parsed_quota_values and invalid_quota_value:
             return _quota_error_evidence(
                 code='invalid_response',
                 source=source,
@@ -683,13 +702,13 @@ def _enrich_bucket_summary(
     else:
         lock_config = (lock_payload or {}).get('ObjectLockConfiguration') or {}
         immutability_state = 'enabled' if lock_config.get('ObjectLockEnabled') == 'Enabled' else 'not_configured'
-        default_retention = ((lock_config.get('Rule') or {}).get('DefaultRetention') or {})
+        default_retention = (lock_config.get('Rule') or {}).get('DefaultRetention') or {}
         lock_value = 'Enabled' if immutability_state == 'enabled' else 'Not Configured'
         if default_retention:
             retention_parts = [
                 str(default_retention.get('Mode') or '').strip(),
-                f"{default_retention.get('Days')} Days" if default_retention.get('Days') else '',
-                f"{default_retention.get('Years')} Years" if default_retention.get('Years') else '',
+                f'{default_retention.get("Days")} Days' if default_retention.get('Days') else '',
+                f'{default_retention.get("Years")} Years' if default_retention.get('Years') else '',
             ]
             retention_label = ' · '.join(part for part in retention_parts if part)
             if retention_label:
@@ -849,10 +868,7 @@ def collect_bucket_inventory_values(
         )
         for summary in base_buckets
     )
-    warning_count = sum(
-        len(bucket.provider_metadata.get('enrichment_gaps') or ())
-        for bucket in buckets
-    )
+    warning_count = sum(len(bucket.provider_metadata.get('enrichment_gaps') or ()) for bucket in buckets)
     total_latency_ms = max(int((perf_counter() - started) * 1000), list_latency_ms)
     return MinioInventoryResult(
         latency_ms=total_latency_ms,
@@ -913,9 +929,7 @@ def probe_runtime_values(
             allow_redirects=False,
         )
     except requests.exceptions.SSLError as exc:
-        raise MinioConnectionError(
-            'TLS validation failed during the object-storage runtime health probe.'
-        ) from exc
+        raise MinioConnectionError('TLS validation failed during the object-storage runtime health probe.') from exc
     except RequestException as exc:
         raise MinioConnectionError(
             'KAORI could not reach the object-storage endpoint during the lightweight runtime health probe.'
@@ -923,13 +937,9 @@ def probe_runtime_values(
 
     latency_ms = max(int((perf_counter() - started) * 1000), 0)
     if product_key == 'minio' and response.status_code != 200:
-        raise MinioConnectionError(
-            f'MinIO runtime health endpoint returned HTTP {response.status_code}.'
-        )
+        raise MinioConnectionError(f'MinIO runtime health endpoint returned HTTP {response.status_code}.')
     if product_key != 'minio' and response.status_code >= 500:
-        raise MinioConnectionError(
-            f'Object-storage runtime endpoint returned HTTP {response.status_code}.'
-        )
+        raise MinioConnectionError(f'Object-storage runtime endpoint returned HTTP {response.status_code}.')
     return MinioRuntimeProbeResult(
         connected=True,
         latency_ms=latency_ms,

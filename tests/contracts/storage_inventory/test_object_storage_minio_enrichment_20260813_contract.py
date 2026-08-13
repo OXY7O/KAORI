@@ -43,7 +43,7 @@ def test_bucket_usage_stats_are_optional_and_persisted_canonically() -> None:
     presentation = read('app/storage_inventory/presentation.py')
     template = read('app/templates/object_storage_inventory/buckets/partials/_table_content.html')
 
-    assert "OBJECT_STORAGE_INVENTORY_USAGE_STATS_MODE" in config
+    assert 'OBJECT_STORAGE_INVENTORY_USAGE_STATS_MODE' in config
     assert "{'disabled', 'full_scan'}" in config
     assert "get_paginator('list_objects_v2')" in client
     assert 'size_bytes' in model
