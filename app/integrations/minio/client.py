@@ -271,10 +271,15 @@ def _minio_admin_bucket_quota(
     verify_ssl: bool,
 ) -> MinioQuotaEvidence:
     """Collect optional MinIO quota evidence; requires admin:GetBucketQuota."""
-    from app.integrations.minio.admin import collect_bucket_quota
+    from app.integrations.minio.admin import MinioQuotaCollectorHooks, collect_bucket_quota
 
     evidence = collect_bucket_quota(
-        request_get=requests.get,
+        hooks=MinioQuotaCollectorHooks(
+            request_get=requests.get,
+            api_versions=_minio_quota_api_versions,
+            quota_path=_minio_quota_path,
+            parse_payload=_parse_minio_quota_payload,
+        ),
         endpoint=endpoint,
         access_key=access_key,
         secret_key=secret_key,

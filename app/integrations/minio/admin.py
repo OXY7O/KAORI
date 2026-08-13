@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
 import requests
@@ -14,6 +16,17 @@ from requests import Response
 from app.integrations.minio.contracts import MinioQuotaEvidence, MinioUsageEvidence
 
 RequestGet = Callable[..., Response]
+QuotaApiVersions = Callable[[], tuple[str, str]]
+QuotaPath = Callable[[str], str]
+QuotaPayloadParser = Callable[[dict[str, Any]], tuple[int | None, bool]]
+
+
+@dataclass(frozen=True, slots=True)
+class MinioQuotaCollectorHooks:
+    request_get: RequestGet
+    api_versions: QuotaApiVersions
+    quota_path: QuotaPath
+    parse_payload: QuotaPayloadParser
 
 
 def _quota_error_evidence(
@@ -133,7 +146,7 @@ def _quota_http_error(
 
 def collect_bucket_quota(
     *,
-    request_get: RequestGet,
+    hooks: MinioQuotaCollectorHooks,
     endpoint: str,
     access_key: str,
     secret_key: str,
@@ -142,23 +155,17 @@ def collect_bucket_quota(
     timeout: int,
     verify_ssl: bool,
 ) -> MinioQuotaEvidence:
-    from app.integrations.minio.client import (
-        _minio_quota_api_versions,
-        _minio_quota_path,
-        _parse_minio_quota_payload,
-    )
-
     checked_at = datetime.now(UTC)
     parsed = urlsplit(endpoint)
     if parsed.scheme not in {'http', 'https'} or not parsed.netloc:
         return _quota_error_evidence(code='invalid_endpoint', source='minio_admin_api_v3', checked_at=checked_at)
 
     last_unsupported: MinioQuotaEvidence | None = None
-    for api_version in _minio_quota_api_versions():
+    for api_version in hooks.api_versions():
         source = f'minio_admin_api_{api_version}'
-        admin_url = urlunsplit((parsed.scheme, parsed.netloc, _minio_quota_path(api_version), '', ''))
+        admin_url = urlunsplit((parsed.scheme, parsed.netloc, hooks.quota_path(api_version), '', ''))
         response, request_error = _signed_admin_get(
-            request_get=request_get,
+            request_get=hooks.request_get,
             url=admin_url,
             params={'bucket': bucket_name},
             access_key=access_key,
@@ -184,7 +191,7 @@ def collect_bucket_quota(
             return _quota_error_evidence(
                 code='invalid_response', source=source, checked_at=checked_at, status_code=int(response.status_code)
             )
-        quota_bytes, invalid_payload = _parse_minio_quota_payload(payload)
+        quota_bytes, invalid_payload = hooks.parse_payload(payload)
         if invalid_payload:
             return _quota_error_evidence(
                 code='invalid_response', source=source, checked_at=checked_at, status_code=int(response.status_code)
