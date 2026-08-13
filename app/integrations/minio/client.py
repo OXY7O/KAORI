@@ -213,9 +213,19 @@ def _bucket_policy_exposure(policy_text: str | None) -> str:
 
 _MINIO_QUOTA_EVIDENCE_CODES = frozenset(
     {
-        'collected', 'not_configured', 'access_denied', 'signature_mismatch', 'invalid_credentials',
-        'admin_api_unreachable', 'admin_api_timeout', 'tls_validation_failed', 'rate_limited',
-        'invalid_response', 'provider_error', 'not_supported', 'invalid_endpoint',
+        'collected',
+        'not_configured',
+        'access_denied',
+        'signature_mismatch',
+        'invalid_credentials',
+        'admin_api_unreachable',
+        'admin_api_timeout',
+        'tls_validation_failed',
+        'rate_limited',
+        'invalid_response',
+        'provider_error',
+        'not_supported',
+        'invalid_endpoint',
     }
 )
 
@@ -241,9 +251,7 @@ def _parse_minio_quota_payload(payload: dict[str, Any]) -> tuple[int | None, boo
             invalid_quota_value = True
             continue
         parsed_quota_values.append((field_name, value))
-    quota_bytes = next(
-        (value for field_name, value in parsed_quota_values if field_name == 'size' and value > 0), 0
-    )
+    quota_bytes = next((value for field_name, value in parsed_quota_values if field_name == 'size' and value > 0), 0)
     if quota_bytes <= 0:
         quota_bytes = next(
             (value for field_name, value in parsed_quota_values if field_name == 'quota' and value > 0), 0
@@ -266,13 +274,24 @@ def _minio_admin_bucket_quota(
     from app.integrations.minio.admin import collect_bucket_quota
 
     evidence = collect_bucket_quota(
-        request_get=requests.get, endpoint=endpoint, access_key=access_key, secret_key=secret_key, region=region,
-        bucket_name=bucket_name, timeout=timeout, verify_ssl=verify_ssl,
+        request_get=requests.get,
+        endpoint=endpoint,
+        access_key=access_key,
+        secret_key=secret_key,
+        region=region,
+        bucket_name=bucket_name,
+        timeout=timeout,
+        verify_ssl=verify_ssl,
     )
     if evidence.code not in _MINIO_QUOTA_EVIDENCE_CODES:
         return MinioQuotaEvidence(
-            quota_bytes=None, state='not_collected', code='provider_error', source=evidence.source,
-            checked_at=evidence.checked_at, status_code=evidence.status_code, provider_code=evidence.provider_code,
+            quota_bytes=None,
+            state='not_collected',
+            code='provider_error',
+            source=evidence.source,
+            checked_at=evidence.checked_at,
+            status_code=evidence.status_code,
+            provider_code=evidence.provider_code,
         )
     return evidence
 
@@ -346,9 +365,7 @@ def _minio_admin_data_usage(
     checked_at = datetime.now(UTC)
     parsed = urlsplit(endpoint)
     if parsed.scheme not in {'http', 'https'} or not parsed.netloc:
-        return _usage_error_evidence(
-            code='invalid_endpoint', source='minio_admin_data_usage_v3', checked_at=checked_at
-        )
+        return _usage_error_evidence(code='invalid_endpoint', source='minio_admin_data_usage_v3', checked_at=checked_at)
 
     last_unsupported: MinioUsageEvidence | None = None
     for api_version in ('v3', 'v4'):
@@ -414,8 +431,6 @@ def _minio_admin_data_usage(
     )
 
 
-
-
 def _collect_bucket_usage_stats(client, bucket_name: str) -> tuple[int, int]:
     """Return logical bytes and current object count by scanning ListObjectsV2.
 
@@ -470,9 +485,7 @@ def _enrich_bucket_summary(
             source='not_supported',
             checked_at=datetime.now(UTC),
         )
-    quota_observed_at = (
-        quota_evidence.checked_at if quota_evidence.state in {'configured', 'not_configured'} else None
-    )
+    quota_observed_at = quota_evidence.checked_at if quota_evidence.state in {'configured', 'not_configured'} else None
     if quota_evidence.state in {'not_collected', 'not_supported'} and collect_quota:
         gaps.append('Bucket Quota')
 
@@ -643,7 +656,6 @@ def collect_bucket_inventory_values(
         warning_count=warning_count,
         usage_stats_mode=resolved_usage_mode,
     )
-
 
 
 def collect_instance_bucket_inventory(

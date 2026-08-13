@@ -68,8 +68,6 @@ def _lock_cluster_inventory_sync(
     ).scalar_one()
 
 
-
-
 def _discover_inventory(
     connection: KubernetesConnection,
     progress_callback: ProgressCallback | None,
@@ -137,37 +135,75 @@ def _persist_inventory_resources(
     ingress_items = inventory.ingress_items
 
     steps = (
-        ('cluster information', 20, 'Collecting Cluster Metadata',
-         'Collecting canonical cluster identity and platform metadata.',
-         lambda: save_cluster_info(cluster, collected_at, core_api)),
-        ('nodes', 28, 'Collecting Nodes',
-         'Collecting node capacity, readiness, and runtime metadata.',
-         lambda: save_nodes(cluster, collected_at, core_api)),
-        ('namespaces', 36, 'Collecting Namespaces',
-         'Collecting namespaces and policy-related inventory evidence.',
-         lambda: save_namespaces(cluster, collected_at, core_api, networking_api)),
-        ('workloads', 46, 'Collecting Workloads',
-         'Collecting deployments, stateful workloads, jobs, and workload configuration.',
-         lambda: save_workloads(cluster, collected_at, apps_api, batch_api, cronjob_items=cronjob_items)),
-        ('pods', 58, 'Collecting Pods',
-         'Collecting pod placement, readiness, image, and runtime evidence.',
-         lambda: save_pods(cluster, collected_at, core_api, apps_api, batch_api)),
-        ('services', 67, 'Collecting Services',
-         'Collecting Service and endpoint inventory evidence.',
-         lambda: save_services(cluster, collected_at, core_api, discovery_api)),
-        ('storage', 81, 'Collecting Storage',
-         'Collecting persistent volume, claim, and storage-class inventory.',
-         lambda: save_storage_inventory(cluster, collected_at, core_api, storage_api)),
-        ('configuration', 88, 'Collecting Configuration Metadata',
-         'Collecting ConfigMap and Secret key-index metadata without persisting secret values.',
-         lambda: save_configuration_inventory(
-             cluster, collected_at, core_api,
-             include_configmaps='inventory.configmaps' in adapters,
-             include_secrets='inventory.secrets' in adapters,
-         )),
-        ('resource quotas', 94, 'Collecting Resource Quotas',
-         'Collecting namespace resource quota configuration and observed usage.',
-         lambda: save_resource_quotas(cluster, collected_at, core_api)),
+        (
+            'cluster information',
+            20,
+            'Collecting Cluster Metadata',
+            'Collecting canonical cluster identity and platform metadata.',
+            lambda: save_cluster_info(cluster, collected_at, core_api),
+        ),
+        (
+            'nodes',
+            28,
+            'Collecting Nodes',
+            'Collecting node capacity, readiness, and runtime metadata.',
+            lambda: save_nodes(cluster, collected_at, core_api),
+        ),
+        (
+            'namespaces',
+            36,
+            'Collecting Namespaces',
+            'Collecting namespaces and policy-related inventory evidence.',
+            lambda: save_namespaces(cluster, collected_at, core_api, networking_api),
+        ),
+        (
+            'workloads',
+            46,
+            'Collecting Workloads',
+            'Collecting deployments, stateful workloads, jobs, and workload configuration.',
+            lambda: save_workloads(cluster, collected_at, apps_api, batch_api, cronjob_items=cronjob_items),
+        ),
+        (
+            'pods',
+            58,
+            'Collecting Pods',
+            'Collecting pod placement, readiness, image, and runtime evidence.',
+            lambda: save_pods(cluster, collected_at, core_api, apps_api, batch_api),
+        ),
+        (
+            'services',
+            67,
+            'Collecting Services',
+            'Collecting Service and endpoint inventory evidence.',
+            lambda: save_services(cluster, collected_at, core_api, discovery_api),
+        ),
+        (
+            'storage',
+            81,
+            'Collecting Storage',
+            'Collecting persistent volume, claim, and storage-class inventory.',
+            lambda: save_storage_inventory(cluster, collected_at, core_api, storage_api),
+        ),
+        (
+            'configuration',
+            88,
+            'Collecting Configuration Metadata',
+            'Collecting ConfigMap and Secret key-index metadata without persisting secret values.',
+            lambda: save_configuration_inventory(
+                cluster,
+                collected_at,
+                core_api,
+                include_configmaps='inventory.configmaps' in adapters,
+                include_secrets='inventory.secrets' in adapters,
+            ),
+        ),
+        (
+            'resource quotas',
+            94,
+            'Collecting Resource Quotas',
+            'Collecting namespace resource quota configuration and observed usage.',
+            lambda: save_resource_quotas(cluster, collected_at, core_api),
+        ),
     )
     for stage, percent, title, message, persist in steps:
         current_stage[0] = stage
@@ -220,7 +256,10 @@ def sync_inventory(
         )
         db.session.commit()
         _report_progress(
-            progress_callback, 100, 'Cluster Snapshot Committed', 'The committed Kubernetes inventory snapshot is current.'
+            progress_callback,
+            100,
+            'Cluster Snapshot Committed',
+            'The committed Kubernetes inventory snapshot is current.',
         )
     except Exception:
         logger.exception(

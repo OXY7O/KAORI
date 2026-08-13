@@ -288,4 +288,3 @@ def sync_all_object_storage_task(
             'current_system_name': None,
             'error_type': type(exc).__name__,
         }
-

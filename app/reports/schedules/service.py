@@ -494,26 +494,20 @@ def execute_schedule(
 
 def validate_schedule_form_state(form_state: dict[str, Any]) -> list[str]:
     errors = validate_form_state(form_state)
-
     if not form_state['name']:
         errors.append('Schedule name is required.')
-
     if form_state['cadence'] not in {item['value'] for item in CADENCE_OPTIONS}:
         errors.append('Please select a valid schedule cadence.')
-
     if not _is_valid_run_time(form_state['run_time']):
         errors.append('Run time must use HH:MM format.')
-
     if form_state['cadence'] == 'weekly':
         day_of_week = _parse_optional_int(form_state['day_of_week'])
         if day_of_week is None or day_of_week < 0 or day_of_week > 6:
             errors.append('Weekly schedules require a valid day of week.')
-
     if form_state['cadence'] == 'monthly':
         day_of_month = _parse_optional_int(form_state['day_of_month'])
         if day_of_month is None or day_of_month < 1 or day_of_month > 28:
             errors.append('Monthly schedules currently support day 1 through 28 to avoid invalid calendar dates.')
-
     if not _is_valid_timezone(form_state['timezone']):
         errors.append('Please use a valid IANA timezone, for example Asia/Jakarta.')
 
@@ -1184,12 +1178,14 @@ def _get_storage_context() -> dict[str, Any]:
 def _get_default_timezone() -> str:
     return str(current_app.config.get('REPORT_SCHEDULE_TIMEZONE', DEFAULT_TIMEZONE) or DEFAULT_TIMEZONE)
 
+
 def _is_valid_run_time(value: str) -> bool:
     try:
         _parse_run_time(value)
         return True
     except ValueError:
         return False
+
 
 def _parse_run_time(value: str) -> tuple[int, int]:
     hour_raw, minute_raw = value.split(':', maxsplit=1)
@@ -1207,6 +1203,8 @@ def _parse_optional_int(value: Any) -> int | None:
         return int(value)
     except (TypeError, ValueError):
         return None
+
+
 def _is_valid_timezone(value: str) -> bool:
     try:
         ZoneInfo(value)
@@ -1214,11 +1212,13 @@ def _is_valid_timezone(value: str) -> bool:
     except ZoneInfoNotFoundError:
         return False
 
+
 def _get_timezone(value: str) -> ZoneInfo:
     try:
         return ZoneInfo(value)
     except ZoneInfoNotFoundError:
         return ZoneInfo(DEFAULT_TIMEZONE)
+
 
 def _ensure_utc(value: datetime) -> datetime:
     return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)

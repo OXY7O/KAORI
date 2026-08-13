@@ -325,8 +325,6 @@ def _provider_detail_sections(
     return sections
 
 
-
-
 def _system_query():
     return ObjectStorageSystem.query.options(
         joinedload(ObjectStorageSystem.minio_connection),
@@ -383,8 +381,10 @@ def _overview_bucket_posture(buckets: list[ObjectStorageBucket]) -> dict[str, An
         quota_assessed += int(quota_key in {'configured', 'not_configured'})
         quota_configured += int(quota_key == 'configured')
         protection = _protection_posture(
-            versioning_state=bucket.versioning_state, immutability_state=bucket.immutability_state,
-            encryption_state=bucket.encryption_state, exposure_state=bucket.exposure_state,
+            versioning_state=bucket.versioning_state,
+            immutability_state=bucket.immutability_state,
+            encryption_state=bucket.encryption_state,
+            exposure_state=bucket.exposure_state,
         )
         protection_attention += int(protection['tone'] in {'warning', 'critical'})
         public_exposure += int(str(bucket.exposure_state or '').strip().lower() == 'public')
@@ -413,35 +413,45 @@ def _overview_fleet_readings(posture: dict[str, Any]) -> list[dict[str, str]]:
         quota_description = 'No committed bucket or container assets are available yet.'
     elif quota_gaps:
         quota_title, quota_tone = f'{quota_assessed}/{total} Quota Assessed', 'warning'
-        quota_description = f'{quota_configured} asset(s) have configured quota; {quota_gaps} still require provider evidence.'
+        quota_description = (
+            f'{quota_configured} asset(s) have configured quota; {quota_gaps} still require provider evidence.'
+        )
     else:
         quota_title, quota_tone = f'{quota_assessed}/{total} Quota Assessed', 'normal'
         quota_description = f'Quota evidence is complete; {quota_configured} asset(s) have a configured quota ceiling.'
     return [
         {'title': quota_title, 'description': quota_description, 'icon': 'gauge', 'tone': quota_tone},
         {
-            'title': f'{protection_attention} Protection Attention' if protection_attention else 'No Protection Attention',
+            'title': f'{protection_attention} Protection Attention'
+            if protection_attention
+            else 'No Protection Attention',
             'description': (
                 'Review versioning, encryption, immutability, and exposure posture for the affected assets.'
-                if protection_attention else 'No committed bucket or container currently requires normalized protection review.'
+                if protection_attention
+                else 'No committed bucket or container currently requires normalized protection review.'
             ),
-            'icon': 'shield-check', 'tone': 'warning' if protection_attention else 'normal',
+            'icon': 'shield-check',
+            'tone': 'warning' if protection_attention else 'normal',
         },
         {
             'title': f'{public_exposure} Public Exposure' if public_exposure else 'No Public Exposure',
             'description': (
                 'Review provider access policy evidence for publicly exposed assets.'
-                if public_exposure else 'No committed asset is currently classified as public.'
+                if public_exposure
+                else 'No committed asset is currently classified as public.'
             ),
-            'icon': 'key-round', 'tone': 'critical' if public_exposure else 'normal',
+            'icon': 'key-round',
+            'tone': 'critical' if public_exposure else 'normal',
         },
         {
             'title': f'{usage_collected}/{total} Usage Collected' if total else 'No Usage Evidence',
             'description': (
                 'Used size and current object count are optional inventory evidence collected by the configured usage strategy.'
-                if total else 'No committed bucket or container assets are available for usage collection.'
+                if total
+                else 'No committed bucket or container assets are available for usage collection.'
             ),
-            'icon': 'chart-no-axes-column', 'tone': 'info',
+            'icon': 'chart-no-axes-column',
+            'tone': 'info',
         },
     ]
 
@@ -477,16 +487,24 @@ def build_overview(*, system_page: int = 1, system_per_page: int = 5) -> dict[st
     paged_rows, pagination = paginate_sequence(rows, page=system_page, per_page=system_per_page)
     latest_inventory_at = max((row['last_inventory_at'] for row in rows if row['last_inventory_at']), default=None)
     return {
-        'total_systems': total_systems, 'total_buckets': total_buckets,
-        'inventory_records': total_systems + total_buckets, 'ready_systems': ready_systems,
-        'blocked_systems': blocked_systems, 'inventoried_systems': inventoried_systems,
+        'total_systems': total_systems,
+        'total_buckets': total_buckets,
+        'inventory_records': total_systems + total_buckets,
+        'ready_systems': ready_systems,
+        'blocked_systems': blocked_systems,
+        'inventoried_systems': inventoried_systems,
         'inventory_coverage': round((inventoried_systems / total_systems) * 100) if total_systems else 0,
-        'latest_inventory_at': latest_inventory_at, 'posture_label': posture_label, 'posture_tone': posture_tone,
-        'active_signal_count': active_signal_count, 'asset_catalog': _overview_asset_catalog(total_systems, total_buckets),
+        'latest_inventory_at': latest_inventory_at,
+        'posture_label': posture_label,
+        'posture_tone': posture_tone,
+        'active_signal_count': active_signal_count,
+        'asset_catalog': _overview_asset_catalog(total_systems, total_buckets),
         'bucket_posture': bucket_posture,
         'fleet_readings': _overview_fleet_readings(bucket_posture),
         'provider_distribution': _overview_provider_distribution(rows),
-        'snapshot': _overview_snapshot(rows), 'systems': paged_rows, 'systems_pagination': pagination,
+        'snapshot': _overview_snapshot(rows),
+        'systems': paged_rows,
+        'systems_pagination': pagination,
     }
 
 
@@ -655,8 +673,7 @@ class BucketFilters:
 
 def _bucket_matches_filters(row: dict[str, Any], filters: BucketFilters, search: str) -> bool:
     searchable = (
-        f'{row["name"]} {row["system_name"]} {row["provider_label"]} '
-        f'{row["native_type_label"]} {row["location"]}'
+        f'{row["name"]} {row["system_name"]} {row["provider_label"]} {row["native_type_label"]} {row["location"]}'
     ).lower()
     return (
         (not search or search in searchable)

@@ -76,11 +76,9 @@ def new_instance() -> ResponseReturnValue:
     operation_feedback = None
     registration_proof = None
     is_htmx = is_htmx_request()
-
     if request.method == 'GET':
         form.enabled.data = True
         form.verify_ssl.data = True
-
     if request.method == 'POST':
         if form.validate_on_submit():
             submitted_proof = str(request.form.get('connection_test_proof') or '').strip()
@@ -215,7 +213,6 @@ def new_instance() -> ResponseReturnValue:
                 },
                 queue_feedback=not is_htmx,
             )
-
     return render_template(
         'prometheus/instance_form.html',
         form=form,
@@ -1134,6 +1131,7 @@ def runtime_refresh_status(instance_id: int, task_id: str) -> ResponseReturnValu
         runtime_refresh_job=snapshot,
     )
 
+
 @prometheus_bp.get('/instances/<int:instance_id>/runtime/history')
 @permission_required('settings.manage_integrations')
 def instance_runtime_history(instance_id: int) -> ResponseReturnValue:
@@ -1153,4 +1151,6 @@ def instance_runtime_history(instance_id: int) -> ResponseReturnValue:
         readiness=history_readiness,
     )
     runtime_history = runtime_history_view(rows, pagination=pagination)
-    return render_template('prometheus/partials/_runtime_history.html', instance=instance, runtime_history=runtime_history)
+    return render_template(
+        'prometheus/partials/_runtime_history.html', instance=instance, runtime_history=runtime_history
+    )

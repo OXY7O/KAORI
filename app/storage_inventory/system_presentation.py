@@ -75,6 +75,7 @@ def _status(value: str | None) -> tuple[str, str]:
     key = str(value or 'unknown').strip().lower()
     return _STATUS_LABELS.get(key, (key.replace('_', ' ').title(), 'info'))
 
+
 def _aware(value: datetime | None) -> datetime | None:
     if value is None:
         return None

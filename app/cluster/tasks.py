@@ -283,7 +283,6 @@ def sync_all_clusters_task(
         return result
 
 
-
 @shared_task(
     bind=True,
     name='app.cluster.tasks.sync_single_cluster',

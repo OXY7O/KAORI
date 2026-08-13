@@ -81,7 +81,10 @@ def _encryption(client, name: str) -> tuple[str, dict[str, Any], list[str]]:
         client,
         'get_bucket_encryption',
         name,
-        not_configured_codes={'ServerSideEncryptionConfigurationNotFoundError', 'NoSuchServerSideEncryptionConfiguration'},
+        not_configured_codes={
+            'ServerSideEncryptionConfigurationNotFoundError',
+            'NoSuchServerSideEncryptionConfiguration',
+        },
     )
     if gap:
         gaps = ['Encryption'] if gap == 'not_collected' else []
@@ -125,7 +128,9 @@ def _immutability(client, name: str) -> tuple[str, dict[str, Any], list[str]]:
     return state, {'label': 'Object Lock', 'value': value}, []
 
 
-def _rules_state(client, name: str, method: str, key: str, missing: set[str], label: str) -> tuple[str, dict[str, Any], list[str]]:
+def _rules_state(
+    client, name: str, method: str, key: str, missing: set[str], label: str
+) -> tuple[str, dict[str, Any], list[str]]:
     payload, gap = optional_bucket_call(client, method, name, not_configured_codes=missing)
     data = payload or {}
     if key == 'ReplicationConfiguration':

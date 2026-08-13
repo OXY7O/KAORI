@@ -103,8 +103,12 @@ def _quota_http_error(
     status_code = int(response.status_code)
     if status_code in {404, 405, 501}:
         return _quota_error_evidence(
-            code='not_supported', source=source, checked_at=checked_at,
-            status_code=status_code, provider_code=provider_code, state='not_supported'
+            code='not_supported',
+            source=source,
+            checked_at=checked_at,
+            status_code=status_code,
+            provider_code=provider_code,
+            state='not_supported',
         )
     if normalized in {'signaturedoesnotmatch', 'authorizationheadermalformed'}:
         code = 'signature_mismatch'
@@ -187,17 +191,26 @@ def collect_bucket_quota(
             )
         if quota_bytes is None:
             return MinioQuotaEvidence(
-                quota_bytes=None, state='not_configured', code='not_configured', source=source,
-                checked_at=checked_at, status_code=int(response.status_code)
+                quota_bytes=None,
+                state='not_configured',
+                code='not_configured',
+                source=source,
+                checked_at=checked_at,
+                status_code=int(response.status_code),
             )
         return MinioQuotaEvidence(
-            quota_bytes=quota_bytes, state='configured', code='collected', source=source,
-            checked_at=checked_at, status_code=int(response.status_code)
+            quota_bytes=quota_bytes,
+            state='configured',
+            code='collected',
+            source=source,
+            checked_at=checked_at,
+            status_code=int(response.status_code),
         )
 
     return last_unsupported or _quota_error_evidence(
         code='not_supported', source='minio_admin_api_v3', checked_at=checked_at, state='not_supported'
     )
+
 
 # Shared request/status helpers used by the provider-metrics collector in client.py.
 def signed_admin_get(
@@ -223,9 +236,7 @@ def signed_admin_get(
     )
 
 
-def usage_response_error(
-    response: Response, *, source: str, checked_at: datetime
-) -> MinioUsageEvidence | None:
+def usage_response_error(response: Response, *, source: str, checked_at: datetime) -> MinioUsageEvidence | None:
     provider_code = _admin_error_code(response)
     normalized = str(provider_code or '').strip().lower()
     status_code = int(response.status_code)

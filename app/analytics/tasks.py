@@ -226,6 +226,11 @@ def _finish_materialization_batch(
     return summary
 
 
+def _batch_percent(index: int, total: int, local_percent: int) -> int:
+    completed_fraction = (index - 1) + (max(0, min(local_percent, 100)) / 100)
+    return min(2 + int((completed_fraction / max(total, 1)) * 96), 98)
+
+
 def _materialize(
     *,
     job_execution_id: int,
@@ -245,11 +250,6 @@ def _materialize(
     failed = 0
     failures: list[dict[str, str]] = []
     current_index = 0
-
-    def batch_percent(index: int, local_percent: int) -> int:
-        completed_fraction = (index - 1) + (max(0, min(local_percent, 100)) / 100)
-        return min(2 + int((completed_fraction / max(len(work_items), 1)) * 96), 98)
-
     try:
         for index, item in enumerate(work_items, start=1):
             current_index = index
@@ -263,7 +263,7 @@ def _materialize(
             lifecycle.checkpoint(
                 current=index - 1,
                 total=len(work_items),
-                percent=batch_percent(index, 0),
+                percent=_batch_percent(index, len(work_items), 0),
                 stage='Preparing Analytics Dataset',
                 target=f'{dataset.label} · {cluster_name}',
                 message=f'Preparing {dataset.label} for {cluster_name}.',
@@ -305,7 +305,7 @@ def _materialize(
                             lifecycle.checkpoint(
                                 current=index - 1,
                                 total=len(work_items),
-                                percent=batch_percent(index, 15),
+                                percent=_batch_percent(index, len(work_items), 15),
                                 stage='Waiting for Metrics Source',
                                 target=f'{dataset.label} · {cluster_name}',
                                 message=f'Waiting for the shared metrics source before generating {dataset.label}.',
@@ -322,7 +322,7 @@ def _materialize(
                         lifecycle.checkpoint(
                             current=index - 1,
                             total=len(work_items),
-                            percent=batch_percent(index, 35),
+                            percent=_batch_percent(index, len(work_items), 35),
                             stage='Querying Analytics Sources',
                             target=f'{dataset.label} · {cluster_name}',
                             message=f'Collecting source data for {dataset.label}.',
@@ -342,7 +342,7 @@ def _materialize(
                     lifecycle.checkpoint(
                         current=index - 1,
                         total=len(work_items),
-                        percent=batch_percent(index, 78),
+                        percent=_batch_percent(index, len(work_items), 78),
                         stage='Committing Analytics Snapshot',
                         target=f'{dataset.label} · {cluster_name}',
                         message=f'Persisting the committed {dataset.label} snapshot.',
@@ -371,14 +371,20 @@ def _materialize(
                 failed += 1
                 failures.append(
                     _record_materialization_failure(
-                        exc, dataset, cluster_name, dataset_key, cluster_id,
-                        job_execution_id, parameters, query_runtime,
+                        exc,
+                        dataset,
+                        cluster_name,
+                        dataset_key,
+                        cluster_id,
+                        job_execution_id,
+                        parameters,
+                        query_runtime,
                     )
                 )
             lifecycle.checkpoint(
                 current=index,
                 total=len(work_items),
-                percent=batch_percent(index, 100),
+                percent=_batch_percent(index, len(work_items), 100),
                 stage='Analytics Snapshot Completed',
                 target=f'{dataset.label} · {cluster_name}',
                 message=f'Generated {index} of {len(work_items)} analytics snapshots.',
@@ -398,7 +404,6 @@ def _materialize(
     except Exception as exc:
         lifecycle.fail(exc, error_code='analytics_materialization_failed')
         raise
-
     return _finish_materialization_batch(
         lifecycle=lifecycle,
         work_items=work_items,
@@ -407,7 +412,6 @@ def _materialize(
         failures=failures,
         job_execution_id=job_execution_id,
     )
-
 
 
 @shared_task(
