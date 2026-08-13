@@ -152,7 +152,7 @@
             action_href=provider_action_url,
             action_label='Open Provider Integration',
             action_icon='external-link',
-            width='2xl'
+            width='3xl'
             ) %}
             <div class="space-y-5">
                 {% call side_drawer.section(
@@ -169,7 +169,7 @@
                         <div class="sm:pl-4">{{ side_drawer.metric('Inventory Coverage', system.sync_status_label, 'database-backup', 'Committed Snapshot', variant='plain') }}</div>
                     </dl>
                 {% endcall %}
-                <div class="grid gap-4 sm:grid-cols-2">
+                <div class="grid gap-4 xl:grid-cols-2">
                     {% call side_drawer.section('System Identity', '', 'server', density='compact') %}
                         <div class="space-y-3">
                             {{ detail_ui.detail_row('Environment', system.environment|environment_name(empty='Not Specified')) }}
@@ -190,15 +190,15 @@
                     {% endcall %}
                 </div>
                 {% call side_drawer.section('Provider Context', 'Connection details behind this managed storage asset.', 'plug-zap') %}
-                    <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="grid gap-4 xl:grid-cols-2">
                         <div class="space-y-3">
                             {{ detail_ui.detail_row('Region', system.region) }}
-                            {{ detail_ui.detail_row('Addressing', system.addressing_style) }}
+                            {{ detail_ui.detail_row('Profile', system.compatibility_profile_label) }}
                         </div>
                         <div class="space-y-3">
-                            {{ detail_ui.detail_row('Profile', system.compatibility_profile_label) }}
-                            {{ detail_ui.stacked_detail_row('Endpoint', system.endpoint, break_all=true) }}
+                            {{ detail_ui.detail_row('Addressing', system.addressing_style) }}
                         </div>
+                        <div class="xl:col-span-2">{{ detail_ui.stacked_detail_row('Endpoint', system.endpoint, break_all=true) }}</div>
                     </div>
                 {% endcall %}
                 {% call side_drawer.section('Inventory Breakdown', 'Committed records currently available for this system.', 'boxes') %}

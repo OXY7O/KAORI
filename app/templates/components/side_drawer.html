@@ -16,7 +16,7 @@
     action_icon='arrow-up-right',
     width='lg'
     ) -%}
-    {% set width_classes = 'max-w-2xl' if width == 'xl' else 'max-w-xl' if width == 'lg' else 'max-w-lg' %}
+    {% set width_classes = 'max-w-5xl' if width == '3xl' else 'max-w-4xl' if width == '2xl' else 'max-w-2xl' if width == 'xl' else 'max-w-xl' if width == 'lg' else 'max-w-lg' %}
     <div x-cloak
          x-show="{{ x_show }}"
          class="fixed inset-0 z-50"
