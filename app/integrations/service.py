@@ -870,50 +870,31 @@ def _runtime_overview_rows(
 
 
 def build_integration_runtime_detail(provider: str, instance_id: str) -> dict[str, Any] | None:
-    if provider == 'kubernetes':
-        try:
-            target_id = int(instance_id)
-        except (TypeError, ValueError):
+    try:
+        target_id = int(instance_id)
+    except (TypeError, ValueError):
+        return None
+    known = {
+        'kubernetes': (KubernetesConnection, 'kubernetes_connections'),
+        'prometheus': (PrometheusInstance, 'prometheus_instances'),
+        'alertmanager': (AlertmanagerInstance, 'alertmanager_instances'),
+    }
+    if provider in known:
+        model, collection_key = known[provider]
+        target = db.session.get(model, target_id)
+        if target is None:
             return None
-        connection = db.session.get(KubernetesConnection, target_id)
-        if connection is None:
-            return None
-        rows = _runtime_overview_rows(
-            kubernetes_connections=[connection],
-            prometheus_instances=[],
-            alertmanager_instances=[],
-        )
-    elif provider == 'prometheus':
-        try:
-            target_id = int(instance_id)
-        except (TypeError, ValueError):
-            return None
-        instance = db.session.get(PrometheusInstance, target_id)
-        if instance is None:
-            return None
-        rows = _runtime_overview_rows(
-            kubernetes_connections=[],
-            prometheus_instances=[instance],
-            alertmanager_instances=[],
-        )
-    elif provider == 'alertmanager':
-        try:
-            target_id = int(instance_id)
-        except (TypeError, ValueError):
-            return None
-        instance = db.session.get(AlertmanagerInstance, target_id)
-        if instance is None:
-            return None
-        rows = _runtime_overview_rows(
-            kubernetes_connections=[],
-            prometheus_instances=[],
-            alertmanager_instances=[instance],
-        )
+        runtime_args: dict[str, Any] = {
+            'kubernetes_connections': [],
+            'prometheus_instances': [],
+            'alertmanager_instances': [],
+        }
+        runtime_args[collection_key] = [target]
+        rows = _runtime_overview_rows(**runtime_args)
     else:
         try:
-            target_id = int(instance_id)
             module = get_integration(provider)
-        except (TypeError, ValueError, IntegrationNotRegistered):
+        except IntegrationNotRegistered:
             return None
         if module.runtime_overview_builder is None:
             return None

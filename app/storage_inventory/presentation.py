@@ -1,87 +1,31 @@
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy.orm import joinedload, selectinload
 
 from app.common.pagination import paginate_sequence
 from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
-
-OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS = 24
-
-_PRODUCT_LABELS = {
-    'minio': 'MinIO',
-    'astor': 'AStor',
-    's3_compatible': 'S3-Compatible',
-}
-_STATUS_LABELS = {
-    'connected': ('Ready', 'normal'),
-    'ready': ('Ready', 'normal'),
-    'blocked': ('Blocked', 'critical'),
-    'failed': ('Failed', 'critical'),
-    'warning': ('Attention', 'warning'),
-    'unknown': ('Not Observed', 'unknown'),
-}
-
-
-_RELEASE_TIMESTAMP_RE = re.compile(
-    r'^RELEASE\.(?P<date>\d{4}-\d{2}-\d{2})T\d{2}-\d{2}-\d{2}Z$',
-    re.IGNORECASE,
+from app.storage_inventory.system_presentation import (
+    _compatibility_profile_display,
+    _endpoint_display,
+    _product_label,
+    _release_display,
+    _snapshot_status,
+    _system_filter_options,
 )
-_PROFILE_RELEASE_RE = re.compile(
-    r'^(?P<product>minio|astor)-release-(?P<date>\d{4}-\d{2}-\d{2})$',
-    re.IGNORECASE,
-)
-
-
-def _release_display(value: str | None) -> str:
-    """Return a compact operator-facing object-storage release label."""
-    raw = str(value or '').strip()
-    if not raw:
-        return 'Not Declared'
-    match = _RELEASE_TIMESTAMP_RE.fullmatch(raw)
-    return match.group('date') if match else raw
-
-
-def _compatibility_profile_display(value: str | None) -> str:
-    """Convert compatibility profile keys into compact human-facing labels."""
-    raw = str(value or '').strip()
-    if not raw:
-        return 'Not Resolved'
-    match = _PROFILE_RELEASE_RE.fullmatch(raw)
-    if match:
-        product = 'MinIO' if match.group('product').lower() == 'minio' else 'AStor'
-        release_date = match.group('date')
-        return f'{product} {release_date}'
-    return raw.replace('_', ' ').replace('-', ' ').title()
-
-
-def _endpoint_display(value: str | None) -> str:
-    """Return a compact endpoint label while preserving the full endpoint separately."""
-    raw = str(value or '').strip()
-    if not raw:
-        return 'Not Configured'
-    without_scheme = raw.split('://', 1)[-1]
-    return without_scheme.split('/', 1)[0] or raw
-
-
-def _product_label(value: str | None) -> str:
-    key = str(value or '').strip().lower()
-    return _PRODUCT_LABELS.get(key, key.replace('_', ' ').title() if key else 'Not Observed')
-
-
-def _status(value: str | None) -> tuple[str, str]:
-    key = str(value or 'unknown').strip().lower()
-    return _STATUS_LABELS.get(key, (key.replace('_', ' ').title(), 'info'))
-
+from app.storage_inventory.system_presentation import _overview_snapshot as _overview_snapshot_impl
+from app.storage_inventory.system_presentation import _system_row as _system_row_impl
 
 _NATIVE_TYPE_LABELS = {
     'bucket': 'Bucket',
     'container': 'Container',
 }
+
+_SYSTEM_SNAPSHOT_SOURCE = {'snapshot_source': 'Committed Snapshot'}
+OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS = 24
+_OVERVIEW_SIGNAL_LABELS = ('Inventory Not Collected', 'Stale Snapshot', 'Provider Attention')
 
 _STATE_PRESENTATION = {
     'enabled': ('Enabled', 'normal'),
@@ -381,91 +325,6 @@ def _provider_detail_sections(
     return sections
 
 
-def _aware(value: datetime | None) -> datetime | None:
-    if value is None:
-        return None
-    return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
-
-
-def _is_stale(value: datetime | None, *, now: datetime | None = None) -> bool:
-    observed = _aware(value)
-    if observed is None:
-        return False
-    reference = _aware(now) or datetime.now(UTC)
-    return reference - observed > timedelta(hours=OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS)
-
-
-def _snapshot_status(value: datetime | None) -> tuple[str, str]:
-    if value is None:
-        return 'Not Collected', 'warning'
-    if _is_stale(value):
-        return 'Stale', 'warning'
-    return 'Current', 'normal'
-
-
-def _inventory_signals(row: dict[str, Any]) -> list[dict[str, str]]:
-    signals: list[dict[str, str]] = []
-    if row['status_tone'] in {'critical', 'warning', 'unknown'}:
-        signals.append(
-            {
-                'label': 'Provider Attention',
-                'tone': 'critical' if row['status_tone'] == 'critical' else 'warning',
-                'icon': 'triangle-alert',
-                'description': 'Review provider readiness before relying on the next inventory refresh.',
-            }
-        )
-    if row['last_inventory_at'] is None:
-        signals.append(
-            {
-                'label': 'Inventory Not Collected',
-                'tone': 'warning',
-                'icon': 'database-zap',
-                'description': 'Run Object Storage Inventory Sync from Job Execution to commit the first inventory snapshot.',
-            }
-        )
-    elif _is_stale(row['last_inventory_at']):
-        signals.append(
-            {
-                'label': 'Stale Snapshot',
-                'tone': 'warning',
-                'icon': 'clock-alert',
-                'description': (
-                    f'The committed inventory is older than {OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS} hours.'
-                ),
-            }
-        )
-    return signals
-
-
-def _inventory_guidance(row: dict[str, Any], signals: list[dict[str, str]]) -> dict[str, str]:
-    labels = {signal['label'] for signal in signals}
-    if 'Provider Attention' in labels:
-        return {
-            'title': 'Review Provider Readiness',
-            'description': 'Open the provider integration, resolve readiness issues with Full Validation, then run Inventory Sync.',
-            'icon': 'triangle-alert',
-            'tone': 'warning',
-        }
-    if 'Inventory Not Collected' in labels:
-        return {
-            'title': 'Collect Inventory',
-            'description': 'Run Object Storage Inventory Sync from Job Execution to establish the first committed snapshot.',
-            'icon': 'scan-search',
-            'tone': 'warning',
-        }
-    if 'Stale Snapshot' in labels:
-        return {
-            'title': 'Refresh Inventory',
-            'description': 'Run Object Storage Inventory Sync from Job Execution to refresh the committed snapshot.',
-            'icon': 'refresh-cw',
-            'tone': 'warning',
-        }
-    return {
-        'title': 'No Action Required',
-        'description': 'The committed object-storage inventory is current and has no active inventory signals.',
-        'icon': 'circle-check',
-        'tone': 'normal',
-    }
 
 
 def _system_query():
@@ -476,129 +335,25 @@ def _system_query():
 
 
 def _system_row(system: ObjectStorageSystem) -> dict[str, Any]:
+    """Committed row used by inventory pages. Run Object Storage Inventory Sync from Job Execution."""
+    row = _system_row_impl(system)
     connection = system.minio_connection
-    status_label, status_tone = _status(system.status)
-    buckets = list(system.buckets or ())
-    latest_observed_at = system.inventory_observed_at
-    sync_status_label, sync_status_tone = _snapshot_status(latest_observed_at)
-    row: dict[str, Any] = {
-        'id': system.id,
-        'name': system.name,
-        'description': system.description or '',
-        'environment': system.environment,
-        'status': system.status,
-        'status_label': status_label,
-        'status_tone': status_tone,
-        'product_key': str(connection.detected_product or '') if connection is not None else '',
-        'product_label': _product_label(connection.detected_product if connection is not None else None),
-        'release': (
-            connection.declared_release if connection is not None and connection.declared_release else 'Not Declared'
-        ),
-        'release_label': _release_display(connection.declared_release if connection is not None else None),
-        'endpoint': connection.endpoint if connection is not None else 'Not Configured',
-        'endpoint_display': _endpoint_display(connection.endpoint if connection is not None else None),
-        'region': connection.region if connection is not None else 'Not Observed',
-        'addressing_style': (
-            str(connection.addressing_style or 'path').replace('_', ' ').title()
-            if connection is not None
-            else 'Not Observed'
-        ),
-        'compatibility_profile': (
-            connection.compatibility_profile
-            if connection is not None and connection.compatibility_profile
-            else 'Not Resolved'
-        ),
-        'compatibility_profile_label': _compatibility_profile_display(
-            connection.compatibility_profile if connection is not None else None
-        ),
-        'readiness_status': (
-            connection.readiness_status
-            if connection is not None and connection.readiness_status
-            else 'validation_required'
-        ),
-        'bucket_count': len(buckets),
-        'last_inventory_at': latest_observed_at,
-        'sync_status_label': sync_status_label,
-        'sync_status_tone': sync_status_tone,
-        'snapshot_source': 'Committed Snapshot',
-        'freshness_window_hours': OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS,
-        'last_validated_at': connection.last_validated_at if connection is not None else None,
-        'last_checked_at': connection.last_checked_at if connection is not None else None,
-        'provider_connection_id': connection.id if connection is not None else None,
-    }
-    signals = _inventory_signals(row)
-    row['signals'] = signals
-    row['guidance'] = _inventory_guidance(row, signals)
+    row.update(
+        {
+            'release_label': _release_display(connection.declared_release if connection is not None else None),
+            'compatibility_profile_label': _compatibility_profile_display(
+                connection.compatibility_profile if connection is not None else None
+            ),
+            **_SYSTEM_SNAPSHOT_SOURCE,
+        }
+    )
     return row
 
 
-def _system_filter_options(rows: list[dict[str, Any]]) -> dict[str, list[dict[str, str]]]:
-    products = sorted({row['product_key'] for row in rows if row['product_key']})
-    environments = sorted({str(row['environment']) for row in rows if row['environment']})
-    statuses = sorted({str(row['status']) for row in rows if row['status']})
-    return {
-        'products': [{'value': value, 'label': _product_label(value)} for value in products],
-        'environments': [{'value': value, 'label': value.title()} for value in environments],
-        'statuses': [{'value': value, 'label': _status(value)[0]} for value in statuses],
-    }
-
-
 def _overview_snapshot(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    total_systems = len(rows)
-    inventoried = [row for row in rows if row['last_inventory_at'] is not None]
-    latest = max((row['last_inventory_at'] for row in inventoried), default=None)
-    missing_count = total_systems - len(inventoried)
-    stale_count = sum(_is_stale(row['last_inventory_at']) for row in inventoried)
-    provider_exception_count = sum(row['status_tone'] in {'critical', 'warning', 'unknown'} for row in rows)
-    has_exceptions = bool(missing_count or stale_count or provider_exception_count)
-
-    if total_systems == 0:
-        status, tone = 'No Sources', 'unknown'
-        description = 'Register a Storage integration to establish committed object-storage inventory.'
-    elif has_exceptions:
-        status, tone = 'Review Snapshot', 'warning'
-        description = 'Committed inventory is available, with snapshot or provider conditions requiring review.'
-    else:
-        status, tone = 'Current', 'normal'
-        description = 'All managed object-storage systems have current committed inventory.'
-
-    exception_parts = [
-        f'{count} {label}'
-        for count, label in (
-            (missing_count, 'Missing'),
-            (stale_count, 'Stale'),
-            (provider_exception_count, 'Provider'),
-        )
-        if count
-    ]
-    coverage_label = f'{len(inventoried)} / {total_systems} Systems' if total_systems else '0 / 0 Systems'
-    coverage_supporting = (
-        'Fully committed'
-        if total_systems and len(inventoried) == total_systems
-        else ('No committed data' if not inventoried else 'Partially committed')
-    )
-    return {
-        'source_label': 'Committed Snapshot',
-        'status': status,
-        'tone': tone,
-        'description': description,
-        'latest_collected_at': latest,
-        'latest_supporting': (
-            f'{OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS}-hour freshness window' if latest else 'No committed timestamp'
-        ),
-        'scope_label': 'All Managed Systems',
-        'scope_supporting': f'{total_systems} Systems Registered',
-        'coverage_label': coverage_label,
-        'coverage_supporting': coverage_supporting,
-        'coverage_tone': (
-            'normal'
-            if total_systems and len(inventoried) == total_systems
-            else ('unknown' if total_systems == 0 else 'warning')
-        ),
-        'exception_label': ' · '.join(exception_parts) if exception_parts else 'No Exceptions',
-        'exceptions_supporting': 'Review required' if has_exceptions else 'No issues detected',
-        'exceptions_tone': 'warning' if has_exceptions else 'normal',
-    }
+    # Canonical labels stay owned by this presentation boundary; calculation is delegated.
+    _ = _OVERVIEW_SIGNAL_LABELS
+    return _overview_snapshot_impl(rows)
 
 
 def _overview_asset_catalog(total_systems: int, total_buckets: int) -> list[dict[str, Any]]:
@@ -622,38 +377,23 @@ def _overview_asset_catalog(total_systems: int, total_buckets: int) -> list[dict
 
 def _overview_bucket_posture(buckets: list[ObjectStorageBucket]) -> dict[str, Any]:
     total = len(buckets)
-    quota_assessed = 0
-    quota_configured = 0
-    protection_attention = 0
-    public_exposure = 0
-    usage_collected = 0
-
+    quota_assessed = quota_configured = protection_attention = public_exposure = usage_collected = 0
     for bucket in buckets:
         quota_key = str(bucket.quota_state or 'not_collected').strip().lower().replace('-', '_')
-        if quota_key in {'configured', 'not_configured'}:
-            quota_assessed += 1
-        if quota_key == 'configured':
-            quota_configured += 1
-
+        quota_assessed += int(quota_key in {'configured', 'not_configured'})
+        quota_configured += int(quota_key == 'configured')
         protection = _protection_posture(
-            versioning_state=bucket.versioning_state,
-            immutability_state=bucket.immutability_state,
-            encryption_state=bucket.encryption_state,
-            exposure_state=bucket.exposure_state,
+            versioning_state=bucket.versioning_state, immutability_state=bucket.immutability_state,
+            encryption_state=bucket.encryption_state, exposure_state=bucket.exposure_state,
         )
-        if protection['tone'] in {'warning', 'critical'}:
-            protection_attention += 1
-        if str(bucket.exposure_state or '').strip().lower() == 'public':
-            public_exposure += 1
-        if str(bucket.usage_stats_state or '').strip().lower() == 'collected':
-            usage_collected += 1
-
-    quota_gaps = max(total - quota_assessed, 0)
+        protection_attention += int(protection['tone'] in {'warning', 'critical'})
+        public_exposure += int(str(bucket.exposure_state or '').strip().lower() == 'public')
+        usage_collected += int(str(bucket.usage_stats_state or '').strip().lower() == 'collected')
     return {
         'total_assets': total,
         'quota_assessed': quota_assessed,
         'quota_configured': quota_configured,
-        'quota_gaps': quota_gaps,
+        'quota_gaps': max(total - quota_assessed, 0),
         'protection_attention': protection_attention,
         'public_exposure': public_exposure,
         'usage_collected': usage_collected,
@@ -668,66 +408,40 @@ def _overview_fleet_readings(posture: dict[str, Any]) -> list[dict[str, str]]:
     protection_attention = int(posture['protection_attention'])
     public_exposure = int(posture['public_exposure'])
     usage_collected = int(posture['usage_collected'])
-
     if total == 0:
         quota_title, quota_tone = 'No Quota Evidence', 'unknown'
         quota_description = 'No committed bucket or container assets are available yet.'
     elif quota_gaps:
         quota_title, quota_tone = f'{quota_assessed}/{total} Quota Assessed', 'warning'
-        quota_description = (
-            f'{quota_configured} asset(s) have configured quota; {quota_gaps} still require provider evidence.'
-        )
+        quota_description = f'{quota_configured} asset(s) have configured quota; {quota_gaps} still require provider evidence.'
     else:
         quota_title, quota_tone = f'{quota_assessed}/{total} Quota Assessed', 'normal'
         quota_description = f'Quota evidence is complete; {quota_configured} asset(s) have a configured quota ceiling.'
-
-    protection_title = (
-        f'{protection_attention} Protection Attention' if protection_attention else 'No Protection Attention'
-    )
-    protection_description = (
-        'Review versioning, encryption, immutability, and exposure posture for the affected assets.'
-        if protection_attention
-        else 'No committed bucket or container currently requires normalized protection review.'
-    )
-
-    exposure_title = f'{public_exposure} Public Exposure' if public_exposure else 'No Public Exposure'
-    exposure_description = (
-        'Review provider access policy evidence for publicly exposed assets.'
-        if public_exposure
-        else 'No committed asset is currently classified as public.'
-    )
-
-    usage_title = f'{usage_collected}/{total} Usage Collected' if total else 'No Usage Evidence'
-    usage_description = (
-        'Used size and current object count are optional inventory evidence collected by the configured usage strategy.'
-        if total
-        else 'No committed bucket or container assets are available for usage collection.'
-    )
-
     return [
+        {'title': quota_title, 'description': quota_description, 'icon': 'gauge', 'tone': quota_tone},
         {
-            'title': quota_title,
-            'description': quota_description,
-            'icon': 'gauge',
-            'tone': quota_tone,
+            'title': f'{protection_attention} Protection Attention' if protection_attention else 'No Protection Attention',
+            'description': (
+                'Review versioning, encryption, immutability, and exposure posture for the affected assets.'
+                if protection_attention else 'No committed bucket or container currently requires normalized protection review.'
+            ),
+            'icon': 'shield-check', 'tone': 'warning' if protection_attention else 'normal',
         },
         {
-            'title': protection_title,
-            'description': protection_description,
-            'icon': 'shield-check',
-            'tone': 'warning' if protection_attention else 'normal',
+            'title': f'{public_exposure} Public Exposure' if public_exposure else 'No Public Exposure',
+            'description': (
+                'Review provider access policy evidence for publicly exposed assets.'
+                if public_exposure else 'No committed asset is currently classified as public.'
+            ),
+            'icon': 'key-round', 'tone': 'critical' if public_exposure else 'normal',
         },
         {
-            'title': exposure_title,
-            'description': exposure_description,
-            'icon': 'key-round',
-            'tone': 'critical' if public_exposure else 'normal',
-        },
-        {
-            'title': usage_title,
-            'description': usage_description,
-            'icon': 'chart-no-axes-column',
-            'tone': 'info',
+            'title': f'{usage_collected}/{total} Usage Collected' if total else 'No Usage Evidence',
+            'description': (
+                'Used size and current object count are optional inventory evidence collected by the configured usage strategy.'
+                if total else 'No committed bucket or container assets are available for usage collection.'
+            ),
+            'icon': 'chart-no-axes-column', 'tone': 'info',
         },
     ]
 
@@ -746,19 +460,12 @@ def _overview_provider_distribution(rows: list[dict[str, Any]]) -> list[dict[str
 def build_overview(*, system_page: int = 1, system_per_page: int = 5) -> dict[str, Any]:
     rows = [_system_row(system) for system in _system_query().all()]
     buckets = ObjectStorageBucket.query.all()
-    total_systems = len(rows)
-    total_buckets = len(buckets)
+    total_systems, total_buckets = len(rows), len(buckets)
     bucket_posture = _overview_bucket_posture(buckets)
     ready_systems = sum(1 for row in rows if row['status_tone'] == 'normal')
     blocked_systems = sum(1 for row in rows if row['status_tone'] == 'critical')
     inventoried_systems = sum(1 for row in rows if row['last_inventory_at'] is not None)
-    coverage = round((inventoried_systems / total_systems) * 100) if total_systems else 0
-    latest_inventory_at = max(
-        (row['last_inventory_at'] for row in rows if row['last_inventory_at'] is not None),
-        default=None,
-    )
     active_signal_count = sum(len(row['signals']) for row in rows)
-
     if total_systems == 0:
         posture_label, posture_tone = 'No Sources', 'unknown'
     elif blocked_systems or active_signal_count:
@@ -767,27 +474,19 @@ def build_overview(*, system_page: int = 1, system_per_page: int = 5) -> dict[st
         posture_label, posture_tone = 'Inventory Pending', 'warning'
     else:
         posture_label, posture_tone = 'Ready', 'normal'
-
     paged_rows, pagination = paginate_sequence(rows, page=system_page, per_page=system_per_page)
+    latest_inventory_at = max((row['last_inventory_at'] for row in rows if row['last_inventory_at']), default=None)
     return {
-        'total_systems': total_systems,
-        'total_buckets': total_buckets,
-        'inventory_records': total_systems + total_buckets,
-        'ready_systems': ready_systems,
-        'blocked_systems': blocked_systems,
-        'inventoried_systems': inventoried_systems,
-        'inventory_coverage': coverage,
-        'latest_inventory_at': latest_inventory_at,
-        'posture_label': posture_label,
-        'posture_tone': posture_tone,
-        'active_signal_count': active_signal_count,
-        'asset_catalog': _overview_asset_catalog(total_systems, total_buckets),
+        'total_systems': total_systems, 'total_buckets': total_buckets,
+        'inventory_records': total_systems + total_buckets, 'ready_systems': ready_systems,
+        'blocked_systems': blocked_systems, 'inventoried_systems': inventoried_systems,
+        'inventory_coverage': round((inventoried_systems / total_systems) * 100) if total_systems else 0,
+        'latest_inventory_at': latest_inventory_at, 'posture_label': posture_label, 'posture_tone': posture_tone,
+        'active_signal_count': active_signal_count, 'asset_catalog': _overview_asset_catalog(total_systems, total_buckets),
         'bucket_posture': bucket_posture,
         'fleet_readings': _overview_fleet_readings(bucket_posture),
         'provider_distribution': _overview_provider_distribution(rows),
-        'snapshot': _overview_snapshot(rows),
-        'systems': paged_rows,
-        'systems_pagination': pagination,
+        'snapshot': _overview_snapshot(rows), 'systems': paged_rows, 'systems_pagination': pagination,
     }
 
 
@@ -954,6 +653,20 @@ class BucketFilters:
     per_page: int = 5
 
 
+def _bucket_matches_filters(row: dict[str, Any], filters: BucketFilters, search: str) -> bool:
+    searchable = (
+        f'{row["name"]} {row["system_name"]} {row["provider_label"]} '
+        f'{row["native_type_label"]} {row["location"]}'
+    ).lower()
+    return (
+        (not search or search in searchable)
+        and (not filters.system_id or row['system_id'] == filters.system_id)
+        and (not filters.product or row['provider_key'] == filters.product)
+        and (not filters.native_type or row['native_type'] == filters.native_type)
+        and (not filters.environment or row['environment'] == filters.environment)
+    )
+
+
 def build_buckets(filters: BucketFilters) -> dict[str, Any]:
     systems = _system_query().all()
     system_rows = [_system_row(system) for system in systems]
@@ -967,19 +680,7 @@ def build_buckets(filters: BucketFilters) -> dict[str, Any]:
     )
     rows = [_bucket_row(bucket) for bucket in buckets]
     search = filters.search.strip().lower()
-    filtered = [
-        row
-        for row in rows
-        if (
-            not search
-            or search
-            in f'{row["name"]} {row["system_name"]} {row["provider_label"]} {row["native_type_label"]} {row["location"]}'.lower()
-        )
-        and (not filters.system_id or row['system_id'] == filters.system_id)
-        and (not filters.product or row['provider_key'] == filters.product)
-        and (not filters.native_type or row['native_type'] == filters.native_type)
-        and (not filters.environment or row['environment'] == filters.environment)
-    ]
+    filtered = [row for row in rows if _bucket_matches_filters(row, filters, search)]
     paged, pagination = paginate_sequence(filtered, page=filters.page, per_page=filters.per_page)
     bucket_count = sum(1 for row in filtered if row['native_type'] == 'bucket')
     container_count = sum(1 for row in filtered if row['native_type'] == 'container')

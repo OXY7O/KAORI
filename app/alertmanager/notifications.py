@@ -1,11 +1,18 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, TypedDict, Unpack
 
 from flask import url_for
 
 from app.models.alertmanager import AlertmanagerInstance
 from app.notifications.service import record_operational_activity
+
+
+class _ActivityOptions(TypedDict, total=False):
+    action_url: str | None
+    action_label: str
+    action_icon: str
+    queue_feedback: bool
 
 
 def record_instance_activity(
@@ -18,11 +25,12 @@ def record_instance_activity(
     message: str,
     detail: str,
     metadata: dict[str, Any] | None = None,
-    action_url: str | None = None,
-    action_label: str = 'Open Alertmanager Integration',
-    action_icon: str = 'siren',
-    queue_feedback: bool = True,
+    **options: Unpack[_ActivityOptions],
 ) -> dict[str, Any]:
+    action_url = options.get('action_url')
+    action_label = options.get('action_label', 'Open Alertmanager Integration')
+    action_icon = options.get('action_icon', 'siren')
+    queue_feedback = options.get('queue_feedback', True)
     resolved_action_url = action_url or (
         url_for('alertmanager.instance_detail', instance_id=instance.id)
         if instance is not None and instance.id is not None

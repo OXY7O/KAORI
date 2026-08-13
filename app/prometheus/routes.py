@@ -1134,7 +1134,6 @@ def runtime_refresh_status(instance_id: int, task_id: str) -> ResponseReturnValu
         runtime_refresh_job=snapshot,
     )
 
-
 @prometheus_bp.get('/instances/<int:instance_id>/runtime/history')
 @permission_required('settings.manage_integrations')
 def instance_runtime_history(instance_id: int) -> ResponseReturnValue:
@@ -1153,8 +1152,5 @@ def instance_runtime_history(instance_id: int) -> ResponseReturnValue:
         health_status=history_health,
         readiness=history_readiness,
     )
-    return render_template(
-        'prometheus/partials/_runtime_history.html',
-        instance=instance,
-        runtime_history=runtime_history_view(rows, pagination=pagination),
-    )
+    runtime_history = runtime_history_view(rows, pagination=pagination)
+    return render_template('prometheus/partials/_runtime_history.html', instance=instance, runtime_history=runtime_history)

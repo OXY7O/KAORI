@@ -795,32 +795,9 @@ class Config:
     # Report artifact retention and cleanup policy. MVP2 defines the policy and
     # exposes dry-run visibility in the UI; destructive deletion remains guarded
     # unless REPORT_DESTRUCTIVE_CLEANUP_ENABLED is explicitly enabled later.
-    REPORT_RETENTION_DAYS = _env_int(
-        'REPORT_RETENTION_DAYS',
-        90,
-    )
-
-    REPORT_ARCHIVE_RETENTION_DAYS = _env_int(
-        'REPORT_ARCHIVE_RETENTION_DAYS',
-        180,
-    )
-
-    REPORT_CLEANUP_MODE = _env_str(
-        'REPORT_CLEANUP_MODE',
-        'dry-run-only',
-    )
-
-    REPORT_CLEANUP_SCOPE = _env_str(
-        'REPORT_CLEANUP_SCOPE',
-        'ready-and-archived-artifacts',
-    )
-
-    REPORT_ORPHAN_DETECTION_ENABLED = _env_bool(
-        'REPORT_ORPHAN_DETECTION_ENABLED',
-        True,
-    )
-
-    REPORT_DESTRUCTIVE_CLEANUP_ENABLED = _env_bool(
-        'REPORT_DESTRUCTIVE_CLEANUP_ENABLED',
-        False,
-    )
+    REPORT_RETENTION_DAYS = _env_int('REPORT_RETENTION_DAYS', 90)
+    REPORT_ARCHIVE_RETENTION_DAYS = _env_int('REPORT_ARCHIVE_RETENTION_DAYS', 180)
+    REPORT_CLEANUP_MODE = _env_str('REPORT_CLEANUP_MODE', 'dry-run-only')
+    REPORT_CLEANUP_SCOPE = _env_str('REPORT_CLEANUP_SCOPE', 'ready-and-archived-artifacts')
+    REPORT_ORPHAN_DETECTION_ENABLED = _env_bool('REPORT_ORPHAN_DETECTION_ENABLED', True)
+    REPORT_DESTRUCTIVE_CLEANUP_ENABLED = _env_bool('REPORT_DESTRUCTIVE_CLEANUP_ENABLED', False)

@@ -1184,14 +1184,12 @@ def _get_storage_context() -> dict[str, Any]:
 def _get_default_timezone() -> str:
     return str(current_app.config.get('REPORT_SCHEDULE_TIMEZONE', DEFAULT_TIMEZONE) or DEFAULT_TIMEZONE)
 
-
 def _is_valid_run_time(value: str) -> bool:
     try:
         _parse_run_time(value)
         return True
     except ValueError:
         return False
-
 
 def _parse_run_time(value: str) -> tuple[int, int]:
     hour_raw, minute_raw = value.split(':', maxsplit=1)
@@ -1203,14 +1201,12 @@ def _parse_run_time(value: str) -> tuple[int, int]:
 
 
 def _parse_optional_int(value: Any) -> int | None:
+    if value in [None, '']:
+        return None
     try:
-        if value in [None, '']:
-            return None
         return int(value)
     except (TypeError, ValueError):
         return None
-
-
 def _is_valid_timezone(value: str) -> bool:
     try:
         ZoneInfo(value)
@@ -1218,13 +1214,11 @@ def _is_valid_timezone(value: str) -> bool:
     except ZoneInfoNotFoundError:
         return False
 
-
 def _get_timezone(value: str) -> ZoneInfo:
     try:
         return ZoneInfo(value)
     except ZoneInfoNotFoundError:
         return ZoneInfo(DEFAULT_TIMEZONE)
-
 
 def _ensure_utc(value: datetime) -> datetime:
     return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)

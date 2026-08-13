@@ -71,6 +71,57 @@ def _build_result(
     }
 
 
+def _complete_object_storage_sync(
+    context: JobExecutionContext,
+    state: dict[str, Any],
+) -> dict[str, Any]:
+    context.checkpoint(
+        current=state['total_count'],
+        total=state['total_count'],
+        percent=98,
+        stage='Finalizing Inventory',
+        target='Object Storage Estate',
+        message='Finalizing object-storage inventory execution evidence.',
+    )
+    result = _build_result(
+        requested_by_user_id=state['requested_by_user_id'],
+        total_count=state['total_count'],
+        synced_count=state['synced_count'],
+        bucket_count=state['bucket_count'],
+        failed_systems=state['failed_systems'],
+        started_at=state['started_at'],
+        duration_seconds=round(perf_counter() - state['started_timer'], 1),
+    )
+    result['failure_evidence'] = state['failure_evidence']
+    if state['requested_by_user_id'] is not None:
+        create_notification(
+            user_id=state['requested_by_user_id'],
+            event_type='object_storage_inventory_sync',
+            status=result['status'],
+            title=result['title'],
+            message=result['message'],
+            detail=result['detail'],
+            action_url='/storage/object-storage/',
+            metadata={
+                'task_id': state['task_id'],
+                'job_execution_id': state['job_execution_id'],
+                'total_count': state['total_count'],
+                'synced_count': state['synced_count'],
+                'failed_count': len(state['failed_systems']),
+                'bucket_count': state['bucket_count'],
+                'failed_systems': state['failed_systems'],
+                'failure_evidence': state['failure_evidence'],
+                'duration_seconds': result['duration_seconds'],
+            },
+        )
+    context.succeed(
+        result_summary=result,
+        result_type='object_storage_inventory_sync',
+        partial=bool(state['failed_systems']),
+    )
+    return result
+
+
 @shared_task(
     bind=True,
     name='app.storage_inventory.tasks.sync_all_object_storage',
@@ -101,7 +152,6 @@ def sync_all_object_storage_task(
         stage='Preparing Inventory',
         target='Object Storage Estate',
     )
-
     try:
         for index, target in enumerate(targets, start=1):
             instance_id = int(target['instance_id'])
@@ -200,51 +250,21 @@ def sync_all_object_storage_task(
                 ),
             )
 
-        context.checkpoint(
-            current=total_count,
-            total=total_count,
-            percent=98,
-            stage='Finalizing Inventory',
-            target='Object Storage Estate',
-            message='Finalizing object-storage inventory execution evidence.',
+        return _complete_object_storage_sync(
+            context,
+            {
+                'task_id': task_id,
+                'job_execution_id': job_execution_id,
+                'requested_by_user_id': requested_by_user_id,
+                'total_count': total_count,
+                'synced_count': synced_count,
+                'bucket_count': bucket_count,
+                'failed_systems': failed_systems,
+                'failure_evidence': failure_evidence,
+                'started_at': started_at,
+                'started_timer': started_timer,
+            },
         )
-        result = _build_result(
-            requested_by_user_id=requested_by_user_id,
-            total_count=total_count,
-            synced_count=synced_count,
-            bucket_count=bucket_count,
-            failed_systems=failed_systems,
-            started_at=started_at,
-            duration_seconds=round(perf_counter() - started_timer, 1),
-        )
-        result['failure_evidence'] = failure_evidence
-        if requested_by_user_id is not None:
-            create_notification(
-                user_id=requested_by_user_id,
-                event_type='object_storage_inventory_sync',
-                status=result['status'],
-                title=result['title'],
-                message=result['message'],
-                detail=result['detail'],
-                action_url='/storage/object-storage/',
-                metadata={
-                    'task_id': task_id,
-                    'job_execution_id': job_execution_id,
-                    'total_count': total_count,
-                    'synced_count': synced_count,
-                    'failed_count': len(failed_systems),
-                    'bucket_count': bucket_count,
-                    'failed_systems': failed_systems,
-                    'failure_evidence': failure_evidence,
-                    'duration_seconds': result['duration_seconds'],
-                },
-            )
-        context.succeed(
-            result_summary=result,
-            result_type='object_storage_inventory_sync',
-            partial=bool(failed_systems),
-        )
-        return result
     except Exception as exc:
         db.session.rollback()
         context.fail(exc, error_code='object_storage_inventory_sync_failed')
@@ -268,3 +288,4 @@ def sync_all_object_storage_task(
             'current_system_name': None,
             'error_type': type(exc).__name__,
         }
+

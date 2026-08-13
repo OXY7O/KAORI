@@ -135,6 +135,97 @@ def _dependency_blocker_message(blocker: Any) -> str:
     return f'{title}: {detail}'.rstrip(': ')
 
 
+def _record_materialization_failure(
+    exc: Exception,
+    dataset: Any,
+    cluster_name: str,
+    dataset_key: str,
+    cluster_id: str,
+    job_execution_id: int,
+    parameters: dict[str, Any],
+    query_runtime: Any,
+) -> dict[str, str]:
+    db.session.rollback()
+    failure = classify_analytics_failure(exc, dataset_label=dataset.label, cluster_name=cluster_name)
+    runtime_summary = query_runtime.summary() if query_runtime is not None else {}
+    current_app.logger.exception(
+        'Analytics materialization failed [%s] for %s on cluster %s: %s',
+        failure.code,
+        dataset_key,
+        cluster_id,
+        failure.detail,
+        extra={
+            'analytics_failure_code': failure.code,
+            'analytics_failure_retryable': failure.retryable,
+            'analytics_failure_remediation': failure.remediation,
+            'dataset_key': dataset_key,
+            'cluster_id': cluster_id,
+            'job_execution_id': job_execution_id,
+            **runtime_summary,
+        },
+    )
+    fail_snapshot(
+        cluster_id=cluster_id,
+        dataset_key=dataset_key,
+        parameters=parameters,
+        error=failure.log_message(),
+        job_execution_id=job_execution_id,
+    )
+    return {
+        'dataset_key': dataset_key,
+        'cluster_id': cluster_id,
+        'code': failure.code,
+        'title': failure.title,
+        'error': failure.detail[:1000],
+        'remediation': failure.remediation,
+        'retryable': str(failure.retryable).lower(),
+        'query_count': str(runtime_summary.get('query_count', 0)),
+        'retry_count': str(runtime_summary.get('retry_count', 0)),
+        'query_duration_ms': str(runtime_summary.get('query_duration_ms', 0)),
+    }
+
+
+def _finish_materialization_batch(
+    *,
+    lifecycle: JobExecutionContext,
+    work_items: list[dict[str, Any]],
+    succeeded: int,
+    failed: int,
+    failures: list[dict[str, str]],
+    job_execution_id: int,
+) -> dict[str, Any]:
+    summary = {
+        'total': len(work_items),
+        'succeeded': succeeded,
+        'failed': failed,
+        'failures': failures[:20],
+    }
+    current_app.logger.info(
+        'Analytics materialization batch finished.',
+        extra={
+            'job_execution_id': job_execution_id,
+            'total': len(work_items),
+            'succeeded': succeeded,
+            'failed': failed,
+            'status': ('failed' if failed and not succeeded else ('partially_succeeded' if failed else 'succeeded')),
+        },
+    )
+    if failed and not succeeded:
+        first_failure = failures[0] if failures else {}
+        lifecycle.fail(
+            RuntimeError(str(first_failure.get('title') or 'All analytics snapshot requests failed.')),
+            error_code=str(first_failure.get('code') or 'analytics_materialization_all_failed'),
+        )
+        return summary
+    lifecycle.succeed(
+        result_summary=summary,
+        result_type='analytics_snapshots',
+        result_reference='analytics_snapshots',
+        partial=failed > 0,
+    )
+    return summary
+
+
 def _materialize(
     *,
     job_execution_id: int,
@@ -277,50 +368,12 @@ def _materialize(
             except SoftTimeLimitExceeded:
                 raise
             except Exception as exc:
-                db.session.rollback()
-                failure = classify_analytics_failure(
-                    exc,
-                    dataset_label=dataset.label,
-                    cluster_name=cluster_name,
-                )
-                runtime_summary = query_runtime.summary() if query_runtime is not None else {}
-                current_app.logger.exception(
-                    'Analytics materialization failed [%s] for %s on cluster %s: %s',
-                    failure.code,
-                    dataset_key,
-                    cluster_id,
-                    failure.detail,
-                    extra={
-                        'analytics_failure_code': failure.code,
-                        'analytics_failure_retryable': failure.retryable,
-                        'analytics_failure_remediation': failure.remediation,
-                        'dataset_key': dataset_key,
-                        'cluster_id': cluster_id,
-                        'job_execution_id': job_execution_id,
-                        **runtime_summary,
-                    },
-                )
-                fail_snapshot(
-                    cluster_id=cluster_id,
-                    dataset_key=dataset_key,
-                    parameters=parameters,
-                    error=failure.log_message(),
-                    job_execution_id=job_execution_id,
-                )
                 failed += 1
                 failures.append(
-                    {
-                        'dataset_key': dataset_key,
-                        'cluster_id': cluster_id,
-                        'code': failure.code,
-                        'title': failure.title,
-                        'error': failure.detail[:1000],
-                        'remediation': failure.remediation,
-                        'retryable': str(failure.retryable).lower(),
-                        'query_count': str(runtime_summary.get('query_count', 0)),
-                        'retry_count': str(runtime_summary.get('retry_count', 0)),
-                        'query_duration_ms': str(runtime_summary.get('query_duration_ms', 0)),
-                    }
+                    _record_materialization_failure(
+                        exc, dataset, cluster_name, dataset_key, cluster_id,
+                        job_execution_id, parameters, query_runtime,
+                    )
                 )
             lifecycle.checkpoint(
                 current=index,
@@ -346,36 +399,15 @@ def _materialize(
         lifecycle.fail(exc, error_code='analytics_materialization_failed')
         raise
 
-    summary = {
-        'total': len(work_items),
-        'succeeded': succeeded,
-        'failed': failed,
-        'failures': failures[:20],
-    }
-    current_app.logger.info(
-        'Analytics materialization batch finished.',
-        extra={
-            'job_execution_id': job_execution_id,
-            'total': len(work_items),
-            'succeeded': succeeded,
-            'failed': failed,
-            'status': ('failed' if failed and not succeeded else ('partially_succeeded' if failed else 'succeeded')),
-        },
+    return _finish_materialization_batch(
+        lifecycle=lifecycle,
+        work_items=work_items,
+        succeeded=succeeded,
+        failed=failed,
+        failures=failures,
+        job_execution_id=job_execution_id,
     )
-    if failed and not succeeded:
-        first_failure = failures[0] if failures else {}
-        lifecycle.fail(
-            RuntimeError(str(first_failure.get('title') or 'All analytics snapshot requests failed.')),
-            error_code=str(first_failure.get('code') or 'analytics_materialization_all_failed'),
-        )
-        return summary
-    lifecycle.succeed(
-        result_summary=summary,
-        result_type='analytics_snapshots',
-        result_reference='analytics_snapshots',
-        partial=failed > 0,
-    )
-    return summary
+
 
 
 @shared_task(

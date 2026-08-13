@@ -6,6 +6,7 @@ from time import perf_counter
 from typing import Any
 
 from celery import shared_task
+from redis.exceptions import RedisError
 
 from app.cluster.individual_sync_state import store_individual_sync_metadata
 from app.cluster.sync_state import mark_cluster_sync_completed, store_cluster_sync_metadata
@@ -26,14 +27,14 @@ def _now_iso() -> str:
 def _store_global(task_id: str, payload: dict[str, Any]) -> None:
     try:
         store_cluster_sync_metadata(task_id=task_id, metadata=payload)
-    except Exception:
+    except (RedisError, RuntimeError, TypeError, ValueError):
         logger.exception('Could not persist supplemental global inventory-sync metadata.')
 
 
 def _store_single(task_id: str, payload: dict[str, Any]) -> None:
     try:
         store_individual_sync_metadata(task_id=task_id, metadata=payload)
-    except Exception:
+    except (RedisError, RuntimeError, TypeError, ValueError):
         logger.exception('Could not persist supplemental cluster inventory-sync metadata.')
 
 
@@ -84,6 +85,45 @@ def _build_result(
         'duration_seconds': duration_seconds,
         'current_cluster_name': None,
     }
+
+
+def _finish_global_sync(
+    context: JobExecutionContext,
+    result: dict[str, Any],
+    task_id: str,
+    job_execution_id: int | None,
+) -> None:
+    requested_by_user_id = result.get('requested_by_user_id')
+    if requested_by_user_id is not None:
+        create_notification(
+            user_id=int(requested_by_user_id),
+            event_type='kubernetes_inventory_sync',
+            status=result['status'],
+            title=result['title'],
+            message=result['message'],
+            detail=result['detail'],
+            action_url='/integrations/kubernetes',
+            metadata={
+                'task_id': task_id,
+                'job_execution_id': job_execution_id,
+                'total_count': result['total_count'],
+                'synced_count': result['synced_count'],
+                'failed_count': result['failed_count'],
+                'failed_clusters': result['failed_clusters'],
+                'failure_evidence': result.get('failure_evidence', []),
+                'duration_seconds': result['duration_seconds'],
+            },
+        )
+    context.succeed(
+        result_summary=result,
+        result_type='kubernetes_inventory_sync',
+        partial=bool(result['failed_clusters']),
+    )
+    _store_global(task_id, result)
+    try:
+        mark_cluster_sync_completed(task_id)
+    except (RedisError, RuntimeError, TypeError, ValueError):
+        logger.exception('Could not expire supplemental global inventory-sync lock metadata.')
 
 
 @shared_task(
@@ -215,36 +255,7 @@ def sync_all_clusters_task(
             duration_seconds=round(perf_counter() - started_timer, 1),
         )
         result['failure_evidence'] = failure_evidence
-        if requested_by_user_id is not None:
-            create_notification(
-                user_id=requested_by_user_id,
-                event_type='kubernetes_inventory_sync',
-                status=result['status'],
-                title=result['title'],
-                message=result['message'],
-                detail=result['detail'],
-                action_url='/integrations/kubernetes',
-                metadata={
-                    'task_id': task_id,
-                    'job_execution_id': job_execution_id,
-                    'total_count': total_count,
-                    'synced_count': synced_count,
-                    'failed_count': len(failed_clusters),
-                    'failed_clusters': failed_clusters,
-                    'failure_evidence': failure_evidence,
-                    'duration_seconds': result['duration_seconds'],
-                },
-            )
-        context.succeed(
-            result_summary=result,
-            result_type='kubernetes_inventory_sync',
-            partial=bool(failed_clusters),
-        )
-        _store_global(task_id, result)
-        try:
-            mark_cluster_sync_completed(task_id)
-        except Exception:
-            logger.exception('Could not expire supplemental global inventory-sync lock metadata.')
+        _finish_global_sync(context, result, task_id, job_execution_id)
         return result
     except Exception as exc:
         db.session.rollback()
@@ -270,6 +281,7 @@ def sync_all_clusters_task(
         }
         _store_global(task_id, result)
         return result
+
 
 
 @shared_task(
