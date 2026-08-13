@@ -188,6 +188,9 @@ Storage Analysis uses mixed but explicit scope ownership: Cluster and Namespace 
 - Status-bearing utilization, pressure, risk, and headroom bars use `progress_bar.semantic_bar(...)`; composition, ranking contribution, loading, and materialization bars remain KAORI Violet.
 - Category icons use `resource_icon_classes(...)`; domain templates must not duplicate Brand icon geometry or introduce local color maps.
 - Analytics heroes use `page_hero.context_card(...)` or `context_card_body(...)` with exactly two metrics and one `Manage Clusters` action. Interpretation and attention messages belong below the hero in shared Analytics content surfaces.
+- Final Lock v2 uses the precise `View Details` label for Analytics record-detail actions. Workload Request Fit/Runtime Demand, Top Consumer records, Alerts, and Anomalies keep dense evidence in the shared teleported record-detail modal rather than inline expansion.
+- All eight Analytics domains own hero markup through dedicated hero partials; Forecast no longer keeps page-local hero geometry in `index.html`.
+- Top Consumer summary cards render missing committed evidence as `No Evidence` / `N/A`; absent evidence must never look like a real consumer identity or a zero-valued operational signal.
 
 ## Analytics Overview runtime and evidence flow
 

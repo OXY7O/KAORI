@@ -79,7 +79,7 @@ The two collections use independent page state: `alerts_page`/`alerts_per_page` 
 - HTMX requests use the owning partial endpoint.
 - Filters retain Cluster, Source, Severity, State, Namespace, Search, active tab, and both page-size values.
 - Default page size is 5 with 5/10/25/50 options.
-- Alert and anomaly record actions use the shared Analytics record-detail modal with the canonical `View More` label. Detail evidence must not expand inline inside either record collection. The shared modal is content-sized and defaults to `max-w-4xl`; dense Workload and Top Consumers evidence explicitly opt into the `wide` (`max-w-5xl`) variant. Viewport height is only a maximum guardrail, never a forced height. Alert details use Signal Context + Routing Metadata + Triage Decision/Readiness; Anomaly details use Observed Deviation + Review Decision + Investigation Sequence.
+- Alert and anomaly record actions use the shared Analytics record-detail modal with the canonical `View Details` label. Detail evidence must not expand inline inside either record collection. The shared modal is content-sized and defaults to `max-w-4xl`; dense Workload and Top Consumers evidence explicitly opt into the `wide` (`max-w-5xl`) variant. Viewport height is only a maximum guardrail, never a forced height. Alert details use Signal Context + Routing Metadata + Triage Decision/Readiness; Anomaly details use Observed Deviation + Review Decision + Investigation Sequence.
 - Long labels and technical identifiers use controlled wrapping, not unconditional `break-all`.
 
 ## Routing, Suppression, Ownership, and Readiness
@@ -134,7 +134,7 @@ The legacy `/analytics/alerts-anomalies` route is not part of the canonical cont
 - No dark fill around primary signal records or metrics.
 - No red or amber readiness progress fill.
 - No arbitrary micro typography in Alerts templates.
-- No inline expandable Alert or Anomaly evidence rows; `View More` must open the shared Analytics modal.
+- No inline expandable Alert or Anomaly evidence rows; `View Details` must open the shared Analytics modal.
 - No fixed viewport-height Analytics record modal. Content should determine modal height until the viewport-safe maximum is reached.
 - No six-column Cluster Signal Overview metric wall. Use Signal Posture + Alert Severity Profile + Investigation Focus + Operator Decision/Evidence Boundary.
 - No six-column Incident Readiness metric wall. Use Readiness Posture + Response Control Readiness + Signal Pressure + Incident Decision/Escalation Gate.

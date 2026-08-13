@@ -62,7 +62,7 @@ def test_workload_detail_actions_open_contextual_modals_from_the_action_column()
         assert 'w-full whitespace-nowrap sm:w-auto' in content
         assert 'aria-haspopup="dialog"' in content
         assert 'data-lucide="panel-top-open"' in content
-        assert '<span>View More</span>' in content
+        assert '<span>View Details</span>' in content
         assert 'x-data="{ detailOpen: false }"' in content
         assert '@click="detailOpen = true"' in content
         assert 'expanded ?' not in content

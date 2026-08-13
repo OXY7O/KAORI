@@ -86,11 +86,11 @@ def test_top_consumers_records_use_shared_pagination_and_modal_details() -> None
     assert '@kaori:analytics-collapse-details.window="detailOpen = false"' in results
     assert 'record_detail_modal.render(' in results
     assert 'aria-haspopup="dialog"' in results
-    assert '<span>View More</span>' in results
+    assert '<span>View Details</span>' in results
     assert 'panel-top-open' in results
     assert 'expanded = false' not in results
     assert 'x-bind:hidden="!expanded"' not in results
-    assert 'View Details' not in results
+    assert 'View More' not in results
     assert 'Hide Details' not in results
     assert 'chevron-down' not in results
     assert 'href_endpoint' in shared

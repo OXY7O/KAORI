@@ -12,6 +12,7 @@ Implementation:
 - `app/analytics/forecast/service.py`
 - `app/analytics/forecast/routes.py`
 - `app/templates/analytics/forecast/index.html`
+- `app/templates/analytics/forecast/partials/_hero.html`
 - `app/templates/analytics/forecast/partials/_controls_readiness.html`
 - `app/templates/analytics/forecast/partials/_overview_methodology.html`
 - `app/templates/analytics/forecast/partials/_forecast_section.html`

@@ -35,6 +35,10 @@ def main() -> int:
     workspace = read('app/templates/analytics/components/_analysis_workspace.html')
     overview = read('app/templates/analytics/overview/index.html')
     top_consumers = read('app/templates/analytics/top_consumers/partials/_top_consumers_section.html')
+    top_consumer_summary = read('app/templates/analytics/top_consumers/partials/_summary.html')
+    record_detail_modal = read('app/templates/analytics/components/_record_detail_modal.html')
+    forecast_index = read('app/templates/analytics/forecast/index.html')
+    forecast_hero = read('app/templates/analytics/forecast/partials/_hero.html')
     quality_gate = read('scripts/quality_gate.sh')
     coverage = read('scripts/verify_feature_test_coverage.py')
     analytics_readme = read('app/analytics/README.md')
@@ -144,6 +148,73 @@ def main() -> int:
         errors,
     )
 
+    # Final Lock v2: one precise Analytics record-detail vocabulary and one hero ownership model.
+    require(
+        'View More' not in combined_templates,
+        'Analytics record actions must use the precise View Details label instead of ambiguous View More copy.',
+        errors,
+    )
+    for token in (
+        'x-teleport="body"',
+        "size == 'wide'",
+        'max-w-5xl',
+        'max-w-4xl',
+        '@keydown.escape.window="detailOpen = false"',
+    ):
+        require(token in record_detail_modal, f'Analytics record-detail modal contract missing: {token}', errors)
+
+    require(
+        '{% include "analytics/forecast/partials/_hero.html" %}' in forecast_index,
+        'Forecast page must consume the canonical Forecast hero partial.',
+        errors,
+    )
+    require(
+        'page_hero.shell_classes()' not in forecast_index,
+        'Forecast page must not duplicate hero geometry inline.',
+        errors,
+    )
+    for token in (
+        'page_hero.shell_classes()',
+        "page_hero.intro('sparkles', 'Kubernetes Analytics', 'line-chart')",
+        "'All Namespaces'",
+        "url_for('integrations.kubernetes')",
+    ):
+        require(token in forecast_hero, f'Forecast hero partial missing canonical token: {token}', errors)
+
+    for token in (
+        'card.value|default("N/A", true)',
+        "identity.entity_label|default('No Evidence', true)",
+        "identity.primary|default('No Evidence', true)",
+    ):
+        require(
+            token in top_consumer_summary,
+            f'Top Consumer summary must preserve explicit missing-evidence semantics: {token}',
+            errors,
+        )
+
+    top_level_pages = (
+        'app/templates/analytics/overview/index.html',
+        'app/templates/analytics/utilization/index.html',
+        'app/templates/analytics/capacity/index.html',
+        'app/templates/analytics/storage/index.html',
+        'app/templates/analytics/workload/index.html',
+        'app/templates/analytics/forecast/index.html',
+        'app/templates/analytics/top_consumers/index.html',
+        'app/templates/analytics/alerts/index.html',
+    )
+    for relative in top_level_pages:
+        source = read(relative)
+        require(
+            'kaori-analytics-page' in source,
+            f'Analytics top-level page must use canonical page spacing: {relative}',
+            errors,
+        )
+        require(
+            'dependency_blocker' in source,
+            f'Analytics top-level page must preserve selected-cluster dependency guardrail: {relative}',
+            errors,
+        )
+
     permission_guards = sum(
         read(str(path.relative_to(ROOT))).count("@permission_required('analytics.view')") for path in ROUTE_FILES
     )
@@ -248,7 +319,7 @@ def main() -> int:
         return 1
 
     template_count = sum(1 for _ in ANALYTICS_TEMPLATES.rglob('*.html'))
-    print(f'PASS — KAORI Kubernetes Analytics Final Lock v1 · {template_count} templates')
+    print(f'PASS — KAORI Kubernetes Analytics Final Lock v2 · {template_count} templates')
     return 0
 
 

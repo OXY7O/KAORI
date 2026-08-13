@@ -7,7 +7,7 @@ ANALYTICS_HERO_FILES = [
     Path('app/templates/analytics/workload/partials/_hero.html'),
     Path('app/templates/analytics/top_consumers/partials/_hero.html'),
     Path('app/templates/analytics/alerts/partials/_hero.html'),
-    Path('app/templates/analytics/forecast/index.html'),
+    Path('app/templates/analytics/forecast/partials/_hero.html'),
 ]
 
 

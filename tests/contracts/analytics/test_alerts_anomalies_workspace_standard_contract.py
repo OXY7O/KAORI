@@ -101,7 +101,7 @@ def test_alert_records_use_shared_view_more_modals_and_controlled_wrapping() -> 
         assert '@kaori:alerts-collapse.window="detailOpen = false"' in row
         assert 'record_detail_modal.render(' in row
         assert 'aria-haspopup="dialog"' in row
-        assert '<span>View More</span>' in row
+        assert '<span>View Details</span>' in row
         assert 'panel-top-open' in row
         assert 'expanded = false' not in row
         assert 'x-bind:hidden="!expanded"' not in row

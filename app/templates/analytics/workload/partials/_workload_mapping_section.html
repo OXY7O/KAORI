@@ -126,7 +126,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <p class="mt-2 text-xs font-medium text-content-muted">Interpretation in View More</p>
+                                <p class="mt-2 text-xs font-medium text-content-muted">Interpretation in View Details</p>
                             {% endcall %}
                             {% call evidence_list.cell(2) %}
                                 {{ evidence_list.mobile_label("Evidence & QoS") }}
@@ -134,7 +134,7 @@
                                     {{ table_label.status_indicator_label(row.metrics_coverage.label, row.metrics_coverage.tone, size='compact') }}
                                     {{ table_label.metadata_label(row.qos.label, size='compact') }}
                                 </div>
-                                <p class="mt-2 text-xs font-medium text-content-muted">{{ row.detail.pods|length }} Pods · Evidence narrative in View More</p>
+                                <p class="mt-2 text-xs font-medium text-content-muted">{{ row.detail.pods|length }} Pods · Evidence narrative in View Details</p>
                             {% endcall %}
                             {% call evidence_list.cell(2, 'right') %}
                                 {{ evidence_list.mobile_label("Action") }}
@@ -145,7 +145,7 @@
                                         aria-controls="workload-mapping-modal-{{ loop.index }}"
                                         @click="detailOpen = true">
                                     <i data-lucide="panel-top-open" class="h-4 w-4"></i>
-                                    <span>View More</span>
+                                    <span>View Details</span>
                                 </button>
                             {% endcall %}
                         {% endcall %}

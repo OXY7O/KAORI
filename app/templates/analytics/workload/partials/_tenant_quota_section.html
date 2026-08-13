@@ -117,12 +117,12 @@
                                     {{ row.actual_usage_percent_display }}
                                     {% if row.runtime_demand_available %}%{% endif %}
                                 </p>
-                                <p class="mt-1 text-xs font-medium text-content-muted">Demand basis in View More</p>
+                                <p class="mt-1 text-xs font-medium text-content-muted">Demand basis in View Details</p>
                             {% endcall %}
                             {% call evidence_list.cell(2) %}
                                 {{ evidence_list.mobile_label("Risk") }}
                                 {{ table_label.status_label(row.risk.label, row.risk.tone, size='compact') }}
-                                <p class="mt-2 text-xs font-medium text-content-muted">Recommended action in View More</p>
+                                <p class="mt-2 text-xs font-medium text-content-muted">Recommended action in View Details</p>
                             {% endcall %}
                             {% call evidence_list.cell(2, 'right') %}
                                 {{ evidence_list.mobile_label("Action") }}
@@ -133,7 +133,7 @@
                                         aria-controls="tenant-quota-modal-{{ loop.index }}"
                                         @click="detailOpen = true">
                                     <i data-lucide="panel-top-open" class="h-4 w-4"></i>
-                                    <span>View More</span>
+                                    <span>View Details</span>
                                 </button>
                             {% endcall %}
                         {% endcall %}

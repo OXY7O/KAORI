@@ -1,0 +1,41 @@
+{% import "components/page_hero.html" as page_hero %}
+<section class="{{ page_hero.shell_classes() }}">
+    <div class="{{ page_hero.layout_classes() }}">
+        <div class="{{ page_hero.content_classes() }}">
+            {% call page_hero.intro('sparkles', 'Kubernetes Analytics', 'line-chart') %}
+                <h1 class="{{ page_hero.title_classes() }}">Resource Forecast</h1>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review projected demand, threshold timing, and future capacity risk.</p>
+                <div class="{{ page_hero.metadata_row_classes() }}">
+                    {{ page_hero.meta_label('server', selected_cluster_name) }}
+                    {% if dependency_blocker %}
+                        {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
+                    {% else %}
+                        {{ page_hero.meta_label('filter', ('Namespace ' ~ selected_namespace) if selected_namespace else 'All Namespaces') }}
+                        {{ page_hero.meta_label('calendar-range', selected_history_window ~ ' History') }}
+                    {% endif %}
+                </div>
+            {% endcall %}
+        </div>
+        {% if dependency_blocker %}
+            <aside class="{{ page_hero.aside_classes() }}"
+                   aria-label="Forecast Readiness">
+                {% set analytics_posture_label = "Forecast Posture" %}
+                {% include 'analytics/components/_blocked_posture.html' %}
+            </aside>
+        {% else %}
+            {{ page_hero.context_card('Forecast Posture',
+                                'Forecast Posture',
+                                'Forecast Outlook',
+                                posture_status,
+                                posture_tone,
+                                [
+                                ('gauge', 'Highest Projection', highest_projection, summary.highest_projected_label|default('No Evidence', true) ),
+            ('list-checks', 'Actionable', recommendation_count, 'Forecast recommendations')
+            ],
+            'Manage Clusters',
+            url_for('integrations.kubernetes'),
+            'server-cog'
+            ) }}
+        {% endif %}
+    </div>
+</section>

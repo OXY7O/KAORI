@@ -8,7 +8,7 @@ HERO_FILES = [
     'app/templates/analytics/workload/partials/_hero.html',
     'app/templates/analytics/top_consumers/partials/_hero.html',
     'app/templates/analytics/alerts/partials/_hero.html',
-    'app/templates/analytics/forecast/index.html',
+    'app/templates/analytics/forecast/partials/_hero.html',
 ]
 
 
@@ -41,7 +41,7 @@ def test_analytics_hero_metadata_remains_capped_at_three() -> None:
         'app/templates/analytics/workload/partials/_hero.html',
         'app/templates/analytics/top_consumers/partials/_hero.html',
         'app/templates/analytics/alerts/partials/_hero.html',
-        'app/templates/analytics/forecast/index.html',
+        'app/templates/analytics/forecast/partials/_hero.html',
     ]
     for filename in intro_files:
         template = Path(filename).read_text()

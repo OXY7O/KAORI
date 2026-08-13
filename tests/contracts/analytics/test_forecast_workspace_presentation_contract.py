@@ -20,7 +20,8 @@ def test_forecast_controls_separate_scope_and_projection_configuration() -> None
 
 
 def test_forecast_hero_uses_canonical_context_card() -> None:
-    content = read('app/templates/analytics/forecast/index.html')
+    content = read('app/templates/analytics/forecast/partials/_hero.html')
+    index = read('app/templates/analytics/forecast/index.html')
     assert 'page_hero.context_card(' in content
     assert "('gauge', 'Highest Projection'" in content
     assert "('list-checks', 'Actionable'" in content
@@ -28,8 +29,8 @@ def test_forecast_hero_uses_canonical_context_card() -> None:
     assert 'context_posture_header' not in content
     assert 'context_posture_note' not in content
     assert 'context_bottom_notice' not in content
-    assert 'analytics_forecast_chart.js' in content
-    assert 'analytics_forecast.js' not in content
+    assert 'analytics_forecast_chart.js' in index
+    assert 'analytics_forecast.js' not in index
 
 
 def test_forecast_workspace_uses_capacity_surface_grammar() -> None:
@@ -86,6 +87,7 @@ def test_forecast_direct_cutover_removes_legacy_assets_and_methodology() -> None
 def test_forecast_templates_have_no_page_local_arbitrary_microcopy() -> None:
     for relative in (
         'app/templates/analytics/forecast/index.html',
+        'app/templates/analytics/forecast/partials/_hero.html',
         'app/templates/analytics/forecast/partials/_controls_readiness.html',
         'app/templates/analytics/forecast/partials/_overview_methodology.html',
         'app/templates/analytics/forecast/partials/_forecast_section.html',

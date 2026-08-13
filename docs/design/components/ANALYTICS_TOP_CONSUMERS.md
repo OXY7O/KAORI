@@ -196,7 +196,7 @@ Consumer Records use `_evidence_record_list.html`, `_record_filter_bar.html`, an
 
 Normal links always resolve to the full page. `/analytics/top-consumers/table` is HTMX-only; direct navigation redirects to the full workspace with `tab=records`. Fragment responses are `no-store`, vary on `HX-Request`, and push the canonical full-page URL.
 
-Page size follows 5/10/25/50. Consumer record actions use the shared Analytics record-detail modal and the canonical `View More` label. Record evidence must not expand inline inside the collection; the modal is teleported to `body` so table and HTMX overflow boundaries cannot clip the detail surface. Top Consumers explicitly uses the shared modal `wide` variant (`max-w-5xl`) because its evidence matrix is denser than alert/anomaly triage. The modal remains content-sized with a viewport-safe maximum height; short record evidence must not stretch to full-screen height.
+Page size follows 5/10/25/50. Consumer record actions use the shared Analytics record-detail modal and the canonical `View Details` label. Record evidence must not expand inline inside the collection; the modal is teleported to `body` so table and HTMX overflow boundaries cannot clip the detail surface. Top Consumers explicitly uses the shared modal `wide` variant (`max-w-5xl`) because its evidence matrix is denser than alert/anomaly triage. The modal remains content-sized with a viewport-safe maximum height; short record evidence must not stretch to full-screen height.
 
 ## Report Contract
 
@@ -215,4 +215,4 @@ The Top Consumers report uses `TopConsumersSelection` and the same service/domai
 - No domain-local record pagination copies.
 - No direct fragment endpoint as a normal `href`.
 - No compatibility `/top-consumers/section` route.
-- No inline expandable Consumer Record detail bodies; `View More` must open the shared Analytics modal.
+- No inline expandable Consumer Record detail bodies; `View Details` must open the shared Analytics modal.

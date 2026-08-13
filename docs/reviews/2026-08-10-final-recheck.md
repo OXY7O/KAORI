@@ -181,7 +181,7 @@ Governance becomes **PASS — LOCKED** only after authoritative Static Quality, 
 
 ## 05 — Kubernetes Operations
 
-Current verdict: **TARGETED FIX — AUTHORITATIVE VALIDATION PENDING**
+Current verdict: **FINAL LOCK V2 CANDIDATE — AUTHORITATIVE VALIDATION PENDING**
 
 The final recheck intentionally reopens presentation composition because retiring the former content right rail left ConfigMap and Secret CRUD workspaces stretched across the available width. Browser review rejected both blanket full-width and custom task-rail experiments. `Create Kubernetes ConfigMap` established the approved **Form + Right Context** reference derived from the existing Kubernetes, Prometheus, and Alertmanager registration forms. The same shared geometry is now applied to ConfigMap Update/Delete, Secret Create/Replace/Delete, and the Protected Reveal `New Request` task.
 
@@ -205,6 +205,8 @@ Operations becomes **PASS — LOCKED** only after authoritative Static Quality, 
 Current verdict: **TARGETED FIX — AUTHORITATIVE VALIDATION PENDING**
 
 Final recheck covers Overview, Utilization, Capacity, Storage, Workload, Forecast, Top Consumers, and Alerts & Anomalies. Review proceeded by explicit user direction while the remaining Kubernetes Operations release-gate confirmation is still pending. Analytics removes dual tab ownership, stops internal snapshot identifiers leaking into Overview navigation, formalizes shared Content Tabs, retires dead compatibility surfaces, makes materialized decode ORM-free, and adds permanent L0–L7 release evidence.
+
+Final Lock v2 additionally standardizes Analytics record actions on `View Details`, extracts Forecast hero ownership into a dedicated partial, preserves explicit missing-evidence semantics for Top Consumers, and extends the final-lock verifier across all eight top-level Analytics workspaces.
 
 ### Lock condition
 

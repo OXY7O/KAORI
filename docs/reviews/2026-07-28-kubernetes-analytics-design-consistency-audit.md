@@ -115,7 +115,7 @@ This removes nested horizontal scrolling and keeps actions usable on smaller scr
 
 ### Expandable content
 
-Overview recommendation expanders using `<details>/<summary>` were removed. Operational recommendations are presented as compact static rows. View More remains only where row-level detail genuinely benefits from progressive disclosure.
+Overview recommendation expanders using `<details>/<summary>` were removed. Operational recommendations are presented as compact static rows. View Details remains only where row-level detail genuinely benefits from progressive disclosure.
 
 ### Semantic styling
 

@@ -192,7 +192,7 @@ The normalized guards now explicitly retain:
 - the `Not Recorded` Prometheus checked-at fallback through `user_datetime`;
 - PVC pressure used/capacity `N/A` fallbacks under partial evidence;
 - CPU/Memory/Pods Utilization legend role and tone ownership independent of formatter spacing; and
-- Workload table boundaries that keep long recommendation/evidence descriptions in View More instead of dense record cells.
+- Workload table boundaries that keep long recommendation/evidence descriptions in View Details instead of dense record cells.
 
 After normalization, the full Analytics contract suite passes **271/271** and the dedicated Unit/Security/Rendering source evidence passes **8/8**. Functional, Integration, and E2E execution remains authoritative in the project devcontainer because the audit runtime does not include Flask/Flask-Login.
 

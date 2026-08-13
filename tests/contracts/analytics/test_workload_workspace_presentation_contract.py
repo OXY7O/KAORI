@@ -83,8 +83,8 @@ def test_workload_sections_use_inventory_aligned_overview_and_record_cards() -> 
     assert 'embedded=true' in mapping
     assert 'Runtime Demand Interpretation' in tenant
     assert 'Request Fit Interpretation' in mapping
-    assert 'Demand basis in View More' in tenant
-    assert 'Interpretation in View More' in mapping
+    assert 'Demand basis in View Details' in tenant
+    assert 'Interpretation in View Details' in mapping
     normalized_tenant = tenant.replace('"', "'")
     normalized_mapping = mapping.replace('"', "'")
     assert (
