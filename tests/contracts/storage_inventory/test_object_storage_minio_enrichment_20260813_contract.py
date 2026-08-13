@@ -43,7 +43,7 @@ def test_bucket_usage_stats_are_optional_and_persisted_canonically() -> None:
     presentation = read('app/storage_inventory/presentation.py')
     template = read('app/templates/object_storage_inventory/buckets/partials/_table_content.html')
 
-    assert 'OBJECT_STORAGE_INVENTORY_USAGE_STATS_MODE' in config
+    assert "OBJECT_STORAGE_INVENTORY_USAGE_STATS_MODE" in config
     assert "{'disabled', 'full_scan'}" in config
     assert "get_paginator('list_objects_v2')" in client
     assert 'size_bytes' in model
@@ -84,9 +84,16 @@ def test_minio_bucket_quota_is_canonical_inventory_evidence() -> None:
     presentation = read('app/storage_inventory/presentation.py')
     migration = read('migrations/versions/20260813_object_storage_bucket_quota.py')
 
-    assert '/minio/admin/v3/get-bucket-quota' in client
+    assert "f'/minio/admin/{api_version}/get-bucket-quota'" in client
     assert 'admin:GetBucketQuota' in client
-    for field in ('quota_bytes', 'quota_state', 'quota_observed_at'):
+    for field in (
+        'quota_bytes',
+        'quota_state',
+        'quota_source',
+        'quota_evidence_code',
+        'quota_checked_at',
+        'quota_observed_at',
+    ):
         assert field in model
         assert f'bucket.{field} = summary.{field}' in sync
     assert 'def _quota_view' in presentation

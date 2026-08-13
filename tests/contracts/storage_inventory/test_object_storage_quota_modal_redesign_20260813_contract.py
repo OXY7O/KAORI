@@ -38,12 +38,14 @@ def test_quota_collection_is_minio_specific_and_optional_to_snapshot_success() -
     client = read('app/integrations/minio/client.py')
     presentation = read('app/storage_inventory/presentation.py')
 
-    assert '/minio/admin/v3/get-bucket-quota' in client
-    assert 'admin:GetBucketQuota' in client
-    assert "return None, 'not_collected'" in client
+    assert "f'/minio/admin/{api_version}/get-bucket-quota'" in client
+    assert 'admin:GetBucketQuota' in presentation
+    assert 'MinioQuotaEvidence' in client
     assert "collect_quota=provider_key == 'minio'" in client
+    assert "payload.get('size', payload.get('quota', 0))" in client
     assert "'No Quota'" in presentation
     assert 'MinIO Admin API v3' in presentation
+    assert 'MinIO Admin API v4' in presentation
 
 
 def test_usage_full_scan_remains_separate_from_quota_collection() -> None:

@@ -54,11 +54,25 @@ class MinioBucketSummary:
     provider_metadata: dict[str, Any] = field(default_factory=dict)
     quota_bytes: int | None = None
     quota_state: str = 'not_collected'
+    quota_source: str | None = None
+    quota_evidence_code: str = 'not_collected'
+    quota_checked_at: datetime | None = None
     quota_observed_at: datetime | None = None
     size_bytes: int | None = None
     object_count: int | None = None
     usage_state: str = 'not_collected'
     usage_observed_at: datetime | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class MinioQuotaEvidence:
+    quota_bytes: int | None
+    state: str
+    code: str
+    source: str
+    checked_at: datetime
+    status_code: int | None = None
+    provider_code: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -222,6 +236,7 @@ def test_connection_values(
     )
 
 
+
 _OPTIONAL_ACCESS_DENIED_CODES = {'AccessDenied', 'AllAccessDisabled'}
 _OPTIONAL_UNSUPPORTED_CODES = {'NotImplemented', 'NotSupported', 'MethodNotAllowed', 'XNotImplemented'}
 
@@ -293,6 +308,49 @@ def _bucket_policy_exposure(policy_text: str | None) -> str:
     return 'restricted' if restricted_wildcard else 'private'
 
 
+def _minio_admin_error_code(response) -> str | None:
+    """Return a sanitized MinIO/S3-style provider error code when available."""
+    try:
+        payload = response.json()
+    except (TypeError, ValueError, json.JSONDecodeError):
+        payload = None
+    if isinstance(payload, dict):
+        for key in ('Code', 'code', 'error', 'Error'):
+            value = payload.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+            if isinstance(value, dict):
+                nested = value.get('Code') or value.get('code')
+                if isinstance(nested, str) and nested.strip():
+                    return nested.strip()
+    body = str(getattr(response, 'text', '') or '')
+    for marker in ('<Code>', '<code>'):
+        if marker in body:
+            closing = '</Code>' if marker == '<Code>' else '</code>'
+            return body.split(marker, 1)[1].split(closing, 1)[0].strip() or None
+    return None
+
+
+def _quota_error_evidence(
+    *,
+    code: str,
+    source: str,
+    checked_at: datetime,
+    status_code: int | None = None,
+    provider_code: str | None = None,
+    state: str = 'not_collected',
+) -> MinioQuotaEvidence:
+    return MinioQuotaEvidence(
+        quota_bytes=None,
+        state=state,
+        code=code,
+        source=source,
+        checked_at=checked_at,
+        status_code=status_code,
+        provider_code=provider_code,
+    )
+
+
 def _minio_admin_bucket_quota(
     *,
     endpoint: str,
@@ -302,63 +360,197 @@ def _minio_admin_bucket_quota(
     bucket_name: str,
     timeout: int,
     verify_ssl: bool,
-) -> tuple[int | None, str]:
-    """Read MinIO bucket quota from the signed Admin API without making it a hard dependency.
+) -> MinioQuotaEvidence:
+    """Read MinIO bucket quota and retain operator-safe diagnostic evidence.
 
-    The endpoint is MinIO-specific and requires admin:GetBucketQuota. A missing
-    permission or unavailable Admin API is represented as inventory evidence rather
-    than failing the whole Object Storage Inventory Sync.
+    MinIO quota is optional provider enrichment. Reading quota requires the
+    admin:GetBucketQuota permission. Permission, routing, TLS, or Admin API failures
+    are recorded on the inventory snapshot and never abort the whole Object Storage
+    Inventory Sync.
     """
+    checked_at = datetime.now(UTC)
     parsed = urlsplit(endpoint)
     if parsed.scheme not in {'http', 'https'} or not parsed.netloc:
-        return None, 'not_collected'
-
-    admin_url = urlunsplit((parsed.scheme, parsed.netloc, '/minio/admin/v3/get-bucket-quota', '', ''))
-    prepared = requests.Request('GET', admin_url, params={'bucket': bucket_name}).prepare()
-    if not prepared.url:
-        return None, 'not_collected'
-
-    aws_request = AWSRequest(method='GET', url=prepared.url)
-    S3SigV4Auth(
-        Credentials(access_key, secret_key),
-        's3',
-        region or 'us-east-1',
-    ).add_auth(aws_request)
-    headers = {str(key): str(value) for key, value in aws_request.headers.items()}
-
-    try:
-        response = requests.get(
-            prepared.url,
-            headers=headers,
-            timeout=max(int(timeout), 1),
-            verify=verify_ssl,
-            allow_redirects=False,
+        return _quota_error_evidence(
+            code='invalid_endpoint',
+            source='minio_admin_api_v3',
+            checked_at=checked_at,
         )
-    except requests.exceptions.SSLError:
-        return None, 'not_collected'
-    except RequestException:
-        return None, 'not_collected'
 
-    if response.status_code in {404, 405, 501}:
-        return None, 'not_supported'
-    if response.status_code in {401, 403}:
-        return None, 'not_collected'
-    if not response.ok:
-        return None, 'not_collected'
+    # Prefer Admin API v3 for legacy MinIO compatibility and fall forward to v4
+    # only when the requested API generation is genuinely absent.
+    api_versions = ('v3', 'v4')
+    last_unsupported: MinioQuotaEvidence | None = None
+    for api_version in api_versions:
+        source = f'minio_admin_api_{api_version}'
+        admin_url = urlunsplit(
+            (parsed.scheme, parsed.netloc, f'/minio/admin/{api_version}/get-bucket-quota', '', '')
+        )
+        prepared = requests.Request('GET', admin_url, params={'bucket': bucket_name}).prepare()
+        if not prepared.url:
+            return _quota_error_evidence(
+                code='invalid_endpoint',
+                source=source,
+                checked_at=checked_at,
+            )
 
-    try:
-        payload = response.json()
-    except (TypeError, ValueError, json.JSONDecodeError):
-        return None, 'not_collected'
+        aws_request = AWSRequest(method='GET', url=prepared.url)
+        S3SigV4Auth(
+            Credentials(access_key, secret_key),
+            's3',
+            region or 'us-east-1',
+        ).add_auth(aws_request)
+        headers = {str(key): str(value) for key, value in aws_request.headers.items()}
 
-    raw_quota = payload.get('quota') if isinstance(payload, dict) else None
-    try:
-        quota_bytes = int(raw_quota or 0)
-    except (TypeError, ValueError):
-        return None, 'not_collected'
-    if quota_bytes <= 0:
-        return None, 'not_configured'
-    return quota_bytes, 'configured'
+        try:
+            response = requests.get(
+                prepared.url,
+                headers=headers,
+                timeout=max(int(timeout), 1),
+                verify=verify_ssl,
+                allow_redirects=False,
+            )
+        except requests.exceptions.SSLError:
+            return _quota_error_evidence(
+                code='tls_validation_failed',
+                source=source,
+                checked_at=checked_at,
+            )
+        except requests.exceptions.Timeout:
+            return _quota_error_evidence(
+                code='admin_api_timeout',
+                source=source,
+                checked_at=checked_at,
+            )
+        except requests.exceptions.ConnectionError:
+            return _quota_error_evidence(
+                code='admin_api_unreachable',
+                source=source,
+                checked_at=checked_at,
+            )
+        except RequestException:
+            return _quota_error_evidence(
+                code='admin_api_unreachable',
+                source=source,
+                checked_at=checked_at,
+            )
+
+        provider_code = _minio_admin_error_code(response)
+        normalized_provider_code = str(provider_code or '').strip().lower()
+        status_code = int(response.status_code)
+
+        if status_code in {404, 405, 501}:
+            last_unsupported = _quota_error_evidence(
+                code='not_supported',
+                source=source,
+                checked_at=checked_at,
+                status_code=status_code,
+                provider_code=provider_code,
+                state='not_supported',
+            )
+            continue
+        if normalized_provider_code in {'signaturedoesnotmatch', 'authorizationheadermalformed'}:
+            return _quota_error_evidence(
+                code='signature_mismatch',
+                source=source,
+                checked_at=checked_at,
+                status_code=status_code,
+                provider_code=provider_code,
+            )
+        if status_code == 401:
+            return _quota_error_evidence(
+                code='invalid_credentials',
+                source=source,
+                checked_at=checked_at,
+                status_code=status_code,
+                provider_code=provider_code,
+            )
+        if status_code == 403:
+            return _quota_error_evidence(
+                code='access_denied',
+                source=source,
+                checked_at=checked_at,
+                status_code=status_code,
+                provider_code=provider_code,
+            )
+        if status_code == 429:
+            return _quota_error_evidence(
+                code='rate_limited',
+                source=source,
+                checked_at=checked_at,
+                status_code=status_code,
+                provider_code=provider_code,
+            )
+        if status_code >= 500:
+            return _quota_error_evidence(
+                code='provider_error',
+                source=source,
+                checked_at=checked_at,
+                status_code=status_code,
+                provider_code=provider_code,
+            )
+        if not response.ok:
+            return _quota_error_evidence(
+                code='provider_error',
+                source=source,
+                checked_at=checked_at,
+                status_code=status_code,
+                provider_code=provider_code,
+            )
+
+        try:
+            payload = response.json()
+        except (TypeError, ValueError, json.JSONDecodeError):
+            return _quota_error_evidence(
+                code='invalid_response',
+                source=source,
+                checked_at=checked_at,
+                status_code=status_code,
+            )
+        if not isinstance(payload, dict):
+            return _quota_error_evidence(
+                code='invalid_response',
+                source=source,
+                checked_at=checked_at,
+                status_code=status_code,
+            )
+
+        # MinIO madmin BucketQuota serializes the configured ceiling as `size`.
+        # Keep the historical `quota` key as a compatibility fallback.
+        raw_quota = payload.get('size', payload.get('quota', 0))
+        try:
+            quota_bytes = int(raw_quota or 0)
+        except (TypeError, ValueError):
+            return _quota_error_evidence(
+                code='invalid_response',
+                source=source,
+                checked_at=checked_at,
+                status_code=status_code,
+            )
+        if quota_bytes <= 0:
+            return MinioQuotaEvidence(
+                quota_bytes=None,
+                state='not_configured',
+                code='not_configured',
+                source=source,
+                checked_at=checked_at,
+                status_code=status_code,
+            )
+        return MinioQuotaEvidence(
+            quota_bytes=quota_bytes,
+            state='configured',
+            code='collected',
+            source=source,
+            checked_at=checked_at,
+            status_code=status_code,
+        )
+
+    return last_unsupported or _quota_error_evidence(
+        code='not_supported',
+        source='minio_admin_api_v3',
+        checked_at=checked_at,
+        state='not_supported',
+    )
 
 
 def _collect_bucket_usage_stats(client, bucket_name: str) -> tuple[int, int]:
@@ -396,7 +588,7 @@ def _enrich_bucket_summary(
 
     quota_observed_at: datetime | None = None
     if collect_quota:
-        quota_bytes, quota_state = _minio_admin_bucket_quota(
+        quota_evidence = _minio_admin_bucket_quota(
             endpoint=endpoint,
             access_key=access_key,
             secret_key=secret_key,
@@ -405,13 +597,28 @@ def _enrich_bucket_summary(
             timeout=timeout,
             verify_ssl=verify_ssl,
         )
+        quota_bytes = quota_evidence.quota_bytes
+        quota_state = quota_evidence.state
+        quota_source = quota_evidence.source
+        quota_evidence_code = quota_evidence.code
+        quota_checked_at = quota_evidence.checked_at
         if quota_state in {'configured', 'not_configured'}:
-            quota_observed_at = datetime.now(UTC)
-        elif quota_state == 'not_collected':
+            quota_observed_at = quota_checked_at
+        elif quota_state in {'not_collected', 'not_supported'}:
             gaps.append('Bucket Quota')
     else:
         quota_bytes = None
         quota_state = 'not_supported'
+        quota_source = 'not_supported'
+        quota_evidence_code = 'not_supported'
+        quota_checked_at = datetime.now(UTC)
+        quota_evidence = MinioQuotaEvidence(
+            quota_bytes=None,
+            state=quota_state,
+            code=quota_evidence_code,
+            source=quota_source,
+            checked_at=quota_checked_at,
+        )
 
     versioning_payload, versioning_gap = _optional_bucket_call(
         client,
@@ -476,13 +683,13 @@ def _enrich_bucket_summary(
     else:
         lock_config = (lock_payload or {}).get('ObjectLockConfiguration') or {}
         immutability_state = 'enabled' if lock_config.get('ObjectLockEnabled') == 'Enabled' else 'not_configured'
-        default_retention = (lock_config.get('Rule') or {}).get('DefaultRetention') or {}
+        default_retention = ((lock_config.get('Rule') or {}).get('DefaultRetention') or {})
         lock_value = 'Enabled' if immutability_state == 'enabled' else 'Not Configured'
         if default_retention:
             retention_parts = [
                 str(default_retention.get('Mode') or '').strip(),
-                f'{default_retention.get("Days")} Days' if default_retention.get('Days') else '',
-                f'{default_retention.get("Years")} Years' if default_retention.get('Years') else '',
+                f"{default_retention.get('Days')} Days" if default_retention.get('Days') else '',
+                f"{default_retention.get('Years')} Years" if default_retention.get('Years') else '',
             ]
             retention_label = ' · '.join(part for part in retention_parts if part)
             if retention_label:
@@ -549,7 +756,12 @@ def _enrich_bucket_summary(
     provider_metadata: dict[str, Any] = {
         'enrichment_profile': 'minio-s3-bucket-v1',
         'enrichment_profile_label': 'MinIO S3 Bucket v1',
-        'quota_collection': 'minio-admin-v3' if collect_quota else 'not_supported',
+        'quota_collection': quota_source,
+        'quota_evidence': {
+            'code': quota_evidence.code,
+            'status_code': quota_evidence.status_code,
+            'provider_code': quota_evidence.provider_code,
+        },
         'usage_stats_mode': 'full_scan' if collect_usage_stats else 'disabled',
         'sections': [
             {
@@ -578,6 +790,9 @@ def _enrich_bucket_summary(
         provider_metadata=provider_metadata,
         quota_bytes=quota_bytes,
         quota_state=quota_state,
+        quota_source=quota_source,
+        quota_evidence_code=quota_evidence_code,
+        quota_checked_at=quota_checked_at,
         quota_observed_at=quota_observed_at,
         size_bytes=size_bytes,
         object_count=object_count,
@@ -634,7 +849,10 @@ def collect_bucket_inventory_values(
         )
         for summary in base_buckets
     )
-    warning_count = sum(len(bucket.provider_metadata.get('enrichment_gaps') or ()) for bucket in buckets)
+    warning_count = sum(
+        len(bucket.provider_metadata.get('enrichment_gaps') or ())
+        for bucket in buckets
+    )
     total_latency_ms = max(int((perf_counter() - started) * 1000), list_latency_ms)
     return MinioInventoryResult(
         latency_ms=total_latency_ms,
@@ -695,7 +913,9 @@ def probe_runtime_values(
             allow_redirects=False,
         )
     except requests.exceptions.SSLError as exc:
-        raise MinioConnectionError('TLS validation failed during the object-storage runtime health probe.') from exc
+        raise MinioConnectionError(
+            'TLS validation failed during the object-storage runtime health probe.'
+        ) from exc
     except RequestException as exc:
         raise MinioConnectionError(
             'KAORI could not reach the object-storage endpoint during the lightweight runtime health probe.'
@@ -703,9 +923,13 @@ def probe_runtime_values(
 
     latency_ms = max(int((perf_counter() - started) * 1000), 0)
     if product_key == 'minio' and response.status_code != 200:
-        raise MinioConnectionError(f'MinIO runtime health endpoint returned HTTP {response.status_code}.')
+        raise MinioConnectionError(
+            f'MinIO runtime health endpoint returned HTTP {response.status_code}.'
+        )
     if product_key != 'minio' and response.status_code >= 500:
-        raise MinioConnectionError(f'Object-storage runtime endpoint returned HTTP {response.status_code}.')
+        raise MinioConnectionError(
+            f'Object-storage runtime endpoint returned HTTP {response.status_code}.'
+        )
     return MinioRuntimeProbeResult(
         connected=True,
         latency_ms=latency_ms,

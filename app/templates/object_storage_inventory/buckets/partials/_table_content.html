@@ -215,23 +215,9 @@
                                 </dl>
                             {% endcall %}
 
-                            {% if asset.quota.key == 'configured' %}
-                                {% set quota_reading_title = 'Quota Captured' %}
-                                {% set quota_reading_description = 'A provider quota ceiling of ' ~ asset.quota.label ~ ' is committed in this inventory snapshot.' %}
-                                {% set quota_reading_tone = 'normal' %}
-                            {% elif asset.quota.key == 'not_configured' %}
-                                {% set quota_reading_title = 'No Quota Configured' %}
-                                {% set quota_reading_description = 'The provider returned no bucket-level quota. Capacity is not constrained by a configured bucket quota.' %}
-                                {% set quota_reading_tone = 'info' %}
-                            {% elif asset.quota.key == 'not_supported' %}
-                                {% set quota_reading_title = 'Quota Not Supported' %}
-                                {% set quota_reading_description = 'This provider profile does not expose quota evidence through the current inventory collector.' %}
-                                {% set quota_reading_tone = 'info' %}
-                            {% else %}
-                                {% set quota_reading_title = 'Quota Evidence Missing' %}
-                                {% set quota_reading_description = 'KAORI could not collect quota evidence. Verify admin:GetBucketQuota access and MinIO Admin API routing.' %}
-                                {% set quota_reading_tone = 'warning' %}
-                            {% endif %}
+                            {% set quota_reading_title = asset.quota_evidence.label %}
+                            {% set quota_reading_description = asset.quota_evidence.guidance %}
+                            {% set quota_reading_tone = asset.quota_evidence.tone %}
 
                             {% if asset.usage_state.key == 'collected' %}
                                 {% set usage_reading_title = 'Usage Collected' %}
@@ -278,6 +264,17 @@
                                 </div>
                             </section>
 
+                            {% if asset.quota.key in ['not_collected', 'not_supported'] %}
+                                {{ operational_callout.render(
+                                    'Quota Collection Diagnostic',
+                                    asset.quota_evidence.guidance,
+                                    icon='gauge',
+                                    tone=asset.quota_evidence.tone,
+                                    variant='semantic',
+                                    extra_classes='w-full'
+                                ) }}
+                            {% endif %}
+
                             <div class="grid gap-4 xl:grid-cols-2">
                                 {% call side_drawer.section('Asset Context', 'Canonical identity and committed snapshot context.', 'badge-info', density='compact') %}
                                     <div class="space-y-3">
@@ -300,6 +297,11 @@
                                         {{ detail_ui.detail_row('Enrichment Profile', asset.enrichment_profile_label) }}
                                         {{ detail_ui.detail_row('Usage Stats Mode', asset.usage_stats_mode_label) }}
                                         {{ detail_ui.detail_row('Quota Source', asset.quota_collection_label) }}
+                                        {{ detail_ui.status_row('Quota Evidence', asset.quota_evidence.label, asset.quota_evidence.tone) }}
+                                        {% if asset.quota_evidence.supporting %}
+                                            {{ detail_ui.detail_row('Provider Result', asset.quota_evidence.supporting) }}
+                                        {% endif %}
+                                        {{ detail_ui.detail_row('Quota Checked', asset.quota_checked_at|user_datetime(date_format='day_month_numeric') if asset.quota_checked_at else 'Not Observed', nowrap=True) }}
                                         <div class="border-t border-outline-subtle pt-3">{{ detail_ui.detail_row('API Endpoint', asset.endpoint, break_all=true) }}</div>
                                     </div>
                                 {% endcall %}
@@ -321,7 +323,7 @@
                                     <div class="space-y-3">
                                         {{ detail_ui.status_row('Lifecycle', asset.lifecycle.label, asset.lifecycle.tone) }}
                                         {{ detail_ui.status_row('Replication', asset.replication.label, asset.replication.tone) }}
-                                        {{ detail_ui.detail_row('Quota State', asset.quota.state_label) }}
+                                        {{ detail_ui.status_row('Quota State', asset.quota.state_label, asset.quota.tone) }}
                                         {{ detail_ui.detail_row('Usage Evidence', asset.usage_state.label) }}
                                     </div>
                                     <div class="mt-4 border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">

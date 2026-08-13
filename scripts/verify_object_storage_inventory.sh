@@ -23,10 +23,14 @@ python -m ruff check \
   app/rbac/service.py \
   migrations/versions/20260813_object_storage_inventory_jobs.py \
   migrations/versions/20260813_object_storage_bucket_container_contract.py \
+  migrations/versions/20260813_object_storage_bucket_enrichment.py \
+  migrations/versions/20260813_object_storage_bucket_quota.py \
+  migrations/versions/20260813_object_storage_quota_diagnostics.py \
   app/bootstrap/blueprints.py \
   scripts/verify_sidebar_navigation_standard.py \
   tests/contracts/storage_inventory \
-  tests/storage_inventory
+  tests/storage_inventory \
+  tests/integrations/test_minio_bucket_enrichment.py
 
 printf '\n[2/6] djLint\n'
 python -m djlint \
@@ -46,7 +50,7 @@ printf '\n[4/6] Object Storage Inventory Contracts\n'
 pytest -q tests/contracts/storage_inventory
 
 printf '\n[5/6] Object Storage Inventory Unit Tests\n'
-pytest -q tests/storage_inventory
+pytest -q tests/storage_inventory tests/integrations/test_minio_bucket_enrichment.py
 
 printf '\n[6/6] Regression Contracts\n'
 if [[ "$FULL" == "true" ]]; then

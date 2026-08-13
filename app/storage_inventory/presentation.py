@@ -100,6 +100,7 @@ _STATE_PRESENTATION = {
 }
 
 
+
 def _format_bytes(value: int | None) -> str:
     if value is None:
         return 'Not Collected'
@@ -202,13 +203,124 @@ def _usage_mode_label(metadata: dict[str, Any]) -> str:
     return 'Full Scan' if mode == 'full_scan' else 'Disabled'
 
 
-def _quota_collection_label(metadata: dict[str, Any]) -> str:
-    source = str(metadata.get('quota_collection') or '').strip().lower()
-    if source == 'minio-admin-v3':
+def _quota_collection_label(source: str | None, metadata: dict[str, Any]) -> str:
+    resolved = str(source or metadata.get('quota_collection') or '').strip().lower()
+    if resolved == 'minio_admin_api_v3':
         return 'MinIO Admin API v3'
-    if source == 'not_supported':
+    if resolved == 'minio_admin_api_v4':
+        return 'MinIO Admin API v4'
+    if resolved == 'not_supported':
         return 'Not Supported'
-    return 'Not Collected'
+    return 'Not Observed'
+
+
+_QUOTA_EVIDENCE_PRESENTATION: dict[str, tuple[str, str, str]] = {
+    'collected': (
+        'Collected',
+        'normal',
+        'Bucket quota was collected successfully from the provider Admin API.',
+    ),
+    'not_configured': (
+        'No Quota Configured',
+        'info',
+        'The provider returned no configured bucket-level quota ceiling.',
+    ),
+    'access_denied': (
+        'Access Denied',
+        'warning',
+        'Grant the inventory credential admin:GetBucketQuota access, then run Object Storage Inventory Sync again.',
+    ),
+    'invalid_credentials': (
+        'Invalid Credentials',
+        'critical',
+        'Verify the configured MinIO access key and secret key before retrying quota collection.',
+    ),
+    'signature_mismatch': (
+        'Signature Mismatch',
+        'warning',
+        'Verify endpoint routing, request signing, proxy rewriting, and the configured MinIO region.',
+    ),
+    'admin_api_unreachable': (
+        'Admin API Unreachable',
+        'warning',
+        'Verify that the MinIO API endpoint and reverse proxy allow '
+        '/minio/admin/* requests from the inventory worker.',
+    ),
+    'admin_api_timeout': (
+        'Admin API Timeout',
+        'warning',
+        'The provider Admin API did not respond before the inventory timeout. '
+        'Review provider health and network latency.',
+    ),
+    'tls_validation_failed': (
+        'TLS Validation Failed',
+        'critical',
+        'Verify the certificate chain presented by the MinIO API endpoint before retrying quota collection.',
+    ),
+    'rate_limited': (
+        'Rate Limited',
+        'warning',
+        'The provider throttled quota collection. Retry later or reduce inventory concurrency.',
+    ),
+    'invalid_response': (
+        'Invalid Admin API Response',
+        'warning',
+        'The Admin API responded but did not return a valid bucket quota payload. Review provider compatibility.',
+    ),
+    'provider_error': (
+        'Provider Error',
+        'warning',
+        'The MinIO Admin API returned an unexpected provider error. '
+        'Review provider health and retry the inventory job.',
+    ),
+    'invalid_endpoint': (
+        'Invalid Endpoint',
+        'critical',
+        'Correct the configured MinIO API endpoint before running object-storage inventory again.',
+    ),
+    'not_supported': (
+        'Not Supported',
+        'info',
+        'The provider Admin API generation required for quota collection is not available through this endpoint.',
+    ),
+    'not_collected': (
+        'Not Collected',
+        'unknown',
+        'Quota evidence was not collected during the latest inventory snapshot.',
+    ),
+}
+
+
+def _quota_evidence_view(
+    evidence_code: str | None,
+    *,
+    quota_state: str | None,
+    metadata: dict[str, Any],
+) -> dict[str, Any]:
+    key = str(evidence_code or '').strip().lower().replace('-', '_')
+    if not key:
+        state = str(quota_state or '').strip().lower().replace('-', '_')
+        key = 'collected' if state == 'configured' else state or 'not_collected'
+    label, tone, guidance = _QUOTA_EVIDENCE_PRESENTATION.get(
+        key,
+        _QUOTA_EVIDENCE_PRESENTATION['not_collected'],
+    )
+    raw = metadata.get('quota_evidence') if isinstance(metadata, dict) else None
+    raw = raw if isinstance(raw, dict) else {}
+    status_code = raw.get('status_code')
+    provider_code = str(raw.get('provider_code') or '').strip()
+    supporting_parts: list[str] = []
+    if status_code:
+        supporting_parts.append(f'HTTP {status_code}')
+    if provider_code:
+        supporting_parts.append(provider_code)
+    return {
+        'key': key,
+        'label': label,
+        'tone': tone,
+        'guidance': guidance,
+        'supporting': ' · '.join(supporting_parts),
+    }
 
 
 def _provider_detail_sections(
@@ -246,13 +358,14 @@ def _provider_detail_sections(
             sections.append(
                 {
                     'title': title,
-                    'description': str(section.get('description') or 'Provider-specific inventory evidence.'),
+                    'description': str(
+                        section.get('description') or 'Provider-specific inventory evidence.'
+                    ),
                     'icon': str(section.get('icon') or 'braces'),
                     'rows': rows,
                 }
             )
     return sections
-
 
 def _aware(value: datetime | None) -> datetime | None:
     if value is None:
@@ -457,7 +570,9 @@ def _overview_snapshot(rows: list[dict[str, Any]]) -> dict[str, Any]:
         'description': description,
         'latest_collected_at': latest,
         'latest_supporting': (
-            f'{OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS}-hour freshness window' if latest else 'No committed timestamp'
+            f'{OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS}-hour freshness window'
+            if latest
+            else 'No committed timestamp'
         ),
         'scope_label': 'All Managed Systems',
         'scope_supporting': f'{total_systems} Systems Registered',
@@ -581,9 +696,7 @@ def _bucket_row(bucket: ObjectStorageBucket) -> dict[str, Any]:
     provider_key = str(connection.detected_product or '') if connection is not None else ''
     provider_label = _product_label(connection.detected_product if connection is not None else None)
     native_type = str(bucket.native_type or 'bucket').strip().lower()
-    location = (
-        str(bucket.location or '').strip() or (connection.region if connection is not None else '') or 'Not Observed'
-    )
+    location = str(bucket.location or '').strip() or (connection.region if connection is not None else '') or 'Not Observed'
     addressing_style = (
         str(connection.addressing_style or 'path').replace('_', ' ').title()
         if connection is not None
@@ -654,15 +767,26 @@ def _bucket_row(bucket: ObjectStorageBucket) -> dict[str, Any]:
         'provider_metadata': provider_metadata,
         'enrichment_profile_label': _collector_profile_label(provider_metadata),
         'usage_stats_mode_label': _usage_mode_label(provider_metadata),
-        'quota_collection_label': _quota_collection_label(provider_metadata),
+        'quota_collection_label': _quota_collection_label(bucket.quota_source, provider_metadata),
+        'quota_evidence': _quota_evidence_view(
+            bucket.quota_evidence_code,
+            quota_state=bucket.quota_state,
+            metadata=provider_metadata,
+        ),
         'enrichment_gaps': tuple(provider_metadata.get('enrichment_gaps') or ()),
         'quota_bytes': bucket.quota_bytes,
         'quota': quota,
+        'quota_source': bucket.quota_source,
+        'quota_checked_at': bucket.quota_checked_at,
         'quota_observed_at': bucket.quota_observed_at,
         'data_boundary': 'Latest committed Object Storage Inventory Sync snapshot; no live provider query is issued.',
         'recommended_action': (
-            'Review optional admin:GetBucketQuota access when MinIO quota inventory is required.'
-            if provider_key == 'minio' and quota['key'] == 'not_collected'
+            _quota_evidence_view(
+                bucket.quota_evidence_code,
+                quota_state=bucket.quota_state,
+                metadata=provider_metadata,
+            )['guidance']
+            if provider_key == 'minio' and quota['key'] in {'not_collected', 'not_supported'}
             else (
                 'Review provider-specific enrichment when protection or access evidence is required.'
                 if protection['label'] == 'Not Assessed'
@@ -691,13 +815,9 @@ def build_buckets(filters: BucketFilters) -> dict[str, Any]:
     systems = _system_query().all()
     system_rows = [_system_row(system) for system in systems]
     system_by_id = {system.id: system for system in systems}
-    buckets = (
-        ObjectStorageBucket.query.options(
-            joinedload(ObjectStorageBucket.object_storage_system).joinedload(ObjectStorageSystem.minio_connection)
-        )
-        .order_by(ObjectStorageBucket.name.asc())
-        .all()
-    )
+    buckets = ObjectStorageBucket.query.options(
+        joinedload(ObjectStorageBucket.object_storage_system).joinedload(ObjectStorageSystem.minio_connection)
+    ).order_by(ObjectStorageBucket.name.asc()).all()
     rows = [_bucket_row(bucket) for bucket in buckets]
     search = filters.search.strip().lower()
     filtered = [
@@ -706,7 +826,7 @@ def build_buckets(filters: BucketFilters) -> dict[str, Any]:
         if (
             not search
             or search
-            in f'{row["name"]} {row["system_name"]} {row["provider_label"]} {row["native_type_label"]} {row["location"]}'.lower()
+            in f"{row['name']} {row['system_name']} {row['provider_label']} {row['native_type_label']} {row['location']}".lower()
         )
         and (not filters.system_id or row['system_id'] == filters.system_id)
         and (not filters.product or row['provider_key'] == filters.product)
@@ -734,17 +854,15 @@ def build_buckets(filters: BucketFilters) -> dict[str, Any]:
             (row['observed_at'] for row in filtered if row['observed_at'] is not None),
             default=None,
         ),
-        'systems': [{'id': row['id'], 'name': row['name']} for row in system_rows if row['id'] in system_by_id],
+        'systems': [
+            {'id': row['id'], 'name': row['name']} for row in system_rows if row['id'] in system_by_id
+        ],
         **_system_filter_options(system_rows),
     }
 
 
 def build_bucket_detail(bucket_id: int) -> dict[str, Any] | None:
-    bucket = (
-        ObjectStorageBucket.query.options(
-            joinedload(ObjectStorageBucket.object_storage_system).joinedload(ObjectStorageSystem.minio_connection)
-        )
-        .filter(ObjectStorageBucket.id == bucket_id)
-        .first()
-    )
+    bucket = ObjectStorageBucket.query.options(
+        joinedload(ObjectStorageBucket.object_storage_system).joinedload(ObjectStorageSystem.minio_connection)
+    ).filter(ObjectStorageBucket.id == bucket_id).first()
     return _bucket_row(bucket) if bucket is not None else None
