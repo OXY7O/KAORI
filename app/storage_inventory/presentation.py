@@ -603,10 +603,135 @@ def _overview_asset_catalog(total_systems: int, total_buckets: int) -> list[dict
     ]
 
 
+def _overview_bucket_posture(buckets: list[ObjectStorageBucket]) -> dict[str, Any]:
+    total = len(buckets)
+    quota_assessed = 0
+    quota_configured = 0
+    protection_attention = 0
+    public_exposure = 0
+    usage_collected = 0
+
+    for bucket in buckets:
+        quota_key = str(bucket.quota_state or 'not_collected').strip().lower().replace('-', '_')
+        if quota_key in {'configured', 'not_configured'}:
+            quota_assessed += 1
+        if quota_key == 'configured':
+            quota_configured += 1
+
+        protection = _protection_posture(
+            versioning_state=bucket.versioning_state,
+            immutability_state=bucket.immutability_state,
+            encryption_state=bucket.encryption_state,
+            exposure_state=bucket.exposure_state,
+        )
+        if protection['tone'] in {'warning', 'critical'}:
+            protection_attention += 1
+        if str(bucket.exposure_state or '').strip().lower() == 'public':
+            public_exposure += 1
+        if str(bucket.usage_stats_state or '').strip().lower() == 'collected':
+            usage_collected += 1
+
+    quota_gaps = max(total - quota_assessed, 0)
+    return {
+        'total_assets': total,
+        'quota_assessed': quota_assessed,
+        'quota_configured': quota_configured,
+        'quota_gaps': quota_gaps,
+        'protection_attention': protection_attention,
+        'public_exposure': public_exposure,
+        'usage_collected': usage_collected,
+    }
+
+
+def _overview_fleet_readings(posture: dict[str, Any]) -> list[dict[str, str]]:
+    total = int(posture['total_assets'])
+    quota_assessed = int(posture['quota_assessed'])
+    quota_configured = int(posture['quota_configured'])
+    quota_gaps = int(posture['quota_gaps'])
+    protection_attention = int(posture['protection_attention'])
+    public_exposure = int(posture['public_exposure'])
+    usage_collected = int(posture['usage_collected'])
+
+    if total == 0:
+        quota_title, quota_tone = 'No Quota Evidence', 'unknown'
+        quota_description = 'No committed bucket or container assets are available yet.'
+    elif quota_gaps:
+        quota_title, quota_tone = f'{quota_assessed}/{total} Quota Assessed', 'warning'
+        quota_description = (
+            f'{quota_configured} asset(s) have configured quota; {quota_gaps} still require provider evidence.'
+        )
+    else:
+        quota_title, quota_tone = f'{quota_assessed}/{total} Quota Assessed', 'normal'
+        quota_description = f'Quota evidence is complete; {quota_configured} asset(s) have a configured quota ceiling.'
+
+    protection_title = (
+        f'{protection_attention} Protection Attention' if protection_attention else 'No Protection Attention'
+    )
+    protection_description = (
+        'Review versioning, encryption, immutability, and exposure posture for the affected assets.'
+        if protection_attention
+        else 'No committed bucket or container currently requires normalized protection review.'
+    )
+
+    exposure_title = f'{public_exposure} Public Exposure' if public_exposure else 'No Public Exposure'
+    exposure_description = (
+        'Review provider access policy evidence for publicly exposed assets.'
+        if public_exposure
+        else 'No committed asset is currently classified as public.'
+    )
+
+    usage_title = f'{usage_collected}/{total} Usage Collected' if total else 'No Usage Evidence'
+    usage_description = (
+        'Used size and current object count are optional inventory evidence collected by the configured usage strategy.'
+        if total
+        else 'No committed bucket or container assets are available for usage collection.'
+    )
+
+    return [
+        {
+            'title': quota_title,
+            'description': quota_description,
+            'icon': 'gauge',
+            'tone': quota_tone,
+        },
+        {
+            'title': protection_title,
+            'description': protection_description,
+            'icon': 'shield-check',
+            'tone': 'warning' if protection_attention else 'normal',
+        },
+        {
+            'title': exposure_title,
+            'description': exposure_description,
+            'icon': 'key-round',
+            'tone': 'critical' if public_exposure else 'normal',
+        },
+        {
+            'title': usage_title,
+            'description': usage_description,
+            'icon': 'chart-no-axes-column',
+            'tone': 'info',
+        },
+    ]
+
+
+def _overview_provider_distribution(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    counts: dict[str, int] = {}
+    for row in rows:
+        label = str(row.get('product_label') or 'Not Observed')
+        counts[label] = counts.get(label, 0) + 1
+    return [
+        {'label': label, 'count': count}
+        for label, count in sorted(counts.items(), key=lambda item: (-item[1], item[0]))
+    ]
+
+
 def build_overview(*, system_page: int = 1, system_per_page: int = 5) -> dict[str, Any]:
     rows = [_system_row(system) for system in _system_query().all()]
+    buckets = ObjectStorageBucket.query.all()
     total_systems = len(rows)
-    total_buckets = sum(int(row['bucket_count']) for row in rows)
+    total_buckets = len(buckets)
+    bucket_posture = _overview_bucket_posture(buckets)
     ready_systems = sum(1 for row in rows if row['status_tone'] == 'normal')
     blocked_systems = sum(1 for row in rows if row['status_tone'] == 'critical')
     inventoried_systems = sum(1 for row in rows if row['last_inventory_at'] is not None)
@@ -640,6 +765,9 @@ def build_overview(*, system_page: int = 1, system_per_page: int = 5) -> dict[st
         'posture_tone': posture_tone,
         'active_signal_count': active_signal_count,
         'asset_catalog': _overview_asset_catalog(total_systems, total_buckets),
+        'bucket_posture': bucket_posture,
+        'fleet_readings': _overview_fleet_readings(bucket_posture),
+        'provider_distribution': _overview_provider_distribution(rows),
         'snapshot': _overview_snapshot(rows),
         'systems': paged_rows,
         'systems_pagination': pagination,

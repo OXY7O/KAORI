@@ -1,0 +1,25 @@
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/table_label.html" as table_label %}
+{% set posture_badge %}
+    {{ table_label.metadata_label(overview.provider_distribution|length ~ (' Provider' if overview.provider_distribution|length == 1 else ' Providers') , 'database-zap') }}
+{% endset %}
+{% call operational_section_card.render(
+    'Fleet Inventory Posture',
+    'Prioritized committed-snapshot signals across quota, protection, exposure, and optional usage evidence.',
+    'sparkles',
+    id='object-storage-fleet-posture',
+    header_badge=posture_badge,
+    body_classes='p-4'
+    ) %}
+    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {% for reading in overview.fleet_readings %}
+            {{ operational_callout.render(reading.title,
+                        reading.description,
+                        icon=reading.icon,
+                        tone=reading.tone,
+                        variant='semantic',
+                        extra_classes='w-full') }}
+        {% endfor %}
+    </div>
+{% endcall %}

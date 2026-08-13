@@ -2,11 +2,11 @@ from datetime import UTC, datetime, timedelta
 
 from app.storage_inventory.presentation import (
     OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS,
-    _compatibility_profile_display,
     _inventory_guidance,
     _inventory_signals,
     _is_stale,
-    _release_display,
+    _overview_bucket_posture,
+    _overview_fleet_readings,
     _snapshot_status,
 )
 
@@ -39,12 +39,41 @@ def test_inventory_signals_keep_provider_and_snapshot_conditions_explicit() -> N
     assert guidance['title'] == 'Review Provider Readiness'
 
 
-def test_object_storage_release_and_profile_labels_are_operator_friendly() -> None:
-    assert _release_display('RELEASE.2024-08-03T04-33-23Z') == '2024-08-03'
-    assert _compatibility_profile_display('minio-release-2024-08-03') == 'MinIO 2024-08-03'
-    assert _compatibility_profile_display('astor-release-2025-01-16') == 'AStor 2025-01-16'
+def test_overview_bucket_posture_separates_quota_protection_exposure_and_usage() -> None:
+    from types import SimpleNamespace
 
+    buckets = [
+        SimpleNamespace(
+            quota_state='configured',
+            versioning_state='enabled',
+            immutability_state='enabled',
+            encryption_state='configured',
+            exposure_state='private',
+            usage_stats_state='collected',
+        ),
+        SimpleNamespace(
+            quota_state='not_configured',
+            versioning_state='enabled',
+            immutability_state='not_configured',
+            encryption_state='not_configured',
+            exposure_state='public',
+            usage_stats_state='not_collected',
+        ),
+    ]
 
-def test_unknown_release_and_profile_values_remain_visible() -> None:
-    assert _release_display('2026.1') == '2026.1'
-    assert _compatibility_profile_display('vendor_profile_v2') == 'Vendor Profile V2'
+    posture = _overview_bucket_posture(buckets)
+    assert posture == {
+        'total_assets': 2,
+        'quota_assessed': 2,
+        'quota_configured': 1,
+        'quota_gaps': 0,
+        'protection_attention': 1,
+        'public_exposure': 1,
+        'usage_collected': 1,
+    }
+
+    readings = _overview_fleet_readings(posture)
+    assert readings[0]['title'] == '2/2 Quota Assessed'
+    assert readings[1]['title'] == '1 Protection Attention'
+    assert readings[2]['title'] == '1 Public Exposure'
+    assert readings[3]['title'] == '1/2 Usage Collected'
