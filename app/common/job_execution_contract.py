@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+KUBERNETES_INVENTORY_SYNC_OPERATION = 'sync_kubernetes_inventory'
+OBJECT_STORAGE_INVENTORY_SYNC_OPERATION = 'sync_object_storage_inventory'
+SYNC_ALL_INVENTORY_ACTION = 'sync_all_inventory'
+
 _REGISTERED_OPERATION_LABELS = {
-    'inventory_sync_all': 'Kubernetes Inventory Sync',
-    'object_storage_inventory_sync_all': 'Object Storage Inventory Sync',
+    KUBERNETES_INVENTORY_SYNC_OPERATION: 'Kubernetes Inventory Sync',
+    OBJECT_STORAGE_INVENTORY_SYNC_OPERATION: 'Object Storage Inventory Sync',
     'dispatch_due_reports': 'Report Schedule Dispatcher',
     'tls_certificate_sync': 'TLS Certificate Sync',
     'materialize_analytics': 'Analytics Data Refresh',

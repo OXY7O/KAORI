@@ -257,7 +257,8 @@ def test_inventory_quick_action_relies_on_canonical_auto_refresh() -> None:
     assert "job_keys.append('object_storage.inventory.sync')" in jobs_routes
     assert "response.headers['HX-Trigger']" not in jobs_routes
     assert 'HX-Trigger-After-Swap' not in jobs_routes
-    assert "event_type='inventory_sync_all_quick_action'" in jobs_routes
+    assert 'SYNC_ALL_INVENTORY_ACTION' in jobs_routes
+    assert "event_type=f'{SYNC_ALL_INVENTORY_ACTION}_quick_action'" in jobs_routes
 
     assert 'JobExecution.requested_by_user_id == user_id' in queries
     assert 'JobExecutionSubscriber.user_id == user_id' in queries

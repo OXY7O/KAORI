@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.common.job_execution_contract import OBJECT_STORAGE_INVENTORY_SYNC_OPERATION
 from app.common.job_execution_presentation import present_job_execution
 from app.jobs.constants import ACTIVE_JOB_STATUSES
 from app.jobs.definitions.base import RegisteredJobDispatchResult
@@ -77,7 +78,7 @@ def build_object_storage_inventory_sync_context(policy: JobPolicy) -> dict[str, 
 
     jobs_query = JobExecution.query.filter(
         JobExecution.job_type == 'object_storage_inventory',
-        JobExecution.operation == 'object_storage_inventory_sync_all',
+        JobExecution.operation == OBJECT_STORAGE_INVENTORY_SYNC_OPERATION,
     )
     active_job = (
         jobs_query.filter(

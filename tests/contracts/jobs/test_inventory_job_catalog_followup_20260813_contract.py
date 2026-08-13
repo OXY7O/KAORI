@@ -4,11 +4,11 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 def read(path: str) -> str:
-    return (ROOT / path).read_text(encoding="utf-8")
+    return (ROOT / path).read_text(encoding='utf-8')
 
 
 def test_job_catalog_uses_page_scroll_instead_of_nested_scroll() -> None:
-    workspace = read("app/templates/jobs/configuration/_workspace.html")
+    workspace = read('app/templates/jobs/configuration/_workspace.html')
 
     assert 'max-h-[620px]' not in workspace
     assert 'overflow-y-auto' not in workspace
@@ -16,19 +16,20 @@ def test_job_catalog_uses_page_scroll_instead_of_nested_scroll() -> None:
 
 
 def test_kubernetes_inventory_job_is_named_explicitly() -> None:
-    labels = read("app/common/job_execution_contract.py")
-    template = read("app/templates/jobs/configuration/definitions/inventory_sync.html")
-    configuration = read("app/jobs/configuration.py")
+    labels = read('app/common/job_execution_contract.py')
+    template = read('app/templates/jobs/configuration/definitions/inventory_sync.html')
+    configuration = read('app/jobs/configuration.py')
 
-    assert "'inventory_sync_all': 'Kubernetes Inventory Sync'" in labels
+    assert "KUBERNETES_INVENTORY_SYNC_OPERATION = 'sync_kubernetes_inventory'" in labels
+    assert "KUBERNETES_INVENTORY_SYNC_OPERATION: 'Kubernetes Inventory Sync'" in labels
     assert 'Kubernetes Inventory Sync Policy' in template
     assert 'Automatic Kubernetes Inventory Sync' in template
     assert "'manual_action_label': 'Sync Kubernetes Inventory'" in configuration
 
 
 def test_quick_sync_all_inventory_dispatches_all_authorized_inventory_domains() -> None:
-    navbar = read("app/templates/components/navigation/navbar.html")
-    routes = read("app/jobs/routes.py")
+    navbar = read('app/templates/components/navigation/navbar.html')
+    routes = read('app/jobs/routes.py')
 
     assert "url_for('jobs.quick_sync_all_inventory')" in navbar
     assert 'Sync All Inventory' in navbar

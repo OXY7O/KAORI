@@ -8,6 +8,7 @@ from app.cluster.sync_jobs import (
     enqueue_all_cluster_inventory_sync,
     enqueue_cluster_inventory_sync,
 )
+from app.common.job_execution_contract import KUBERNETES_INVENTORY_SYNC_OPERATION
 from app.common.job_execution_presentation import present_job_execution
 from app.jobs.constants import ACTIVE_JOB_STATUSES
 from app.jobs.definitions.base import RegisteredJobDispatchResult
@@ -107,7 +108,7 @@ def build_inventory_sync_context(policy: JobPolicy) -> dict[str, Any]:
 
     jobs_query = JobExecution.query.filter(
         JobExecution.job_type == 'kubernetes_inventory',
-        JobExecution.operation == 'inventory_sync_all',
+        JobExecution.operation == KUBERNETES_INVENTORY_SYNC_OPERATION,
     )
     active_job = (
         jobs_query.filter(

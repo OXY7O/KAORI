@@ -43,7 +43,7 @@ flask db upgrade
 bash scripts/quality_gate.sh --all
 ```
 
-Verify **Platform Operations → Jobs & Executions → Job Configuration** shows Inventory Sync, the expected eligible fleet, and a future next-run time. Run one manual sync and confirm the same operation appears in the Executions registry with queue `inventory` and operation `inventory_sync_all`.
+Verify **Platform Operations → Jobs & Executions → Job Configuration** shows Kubernetes Inventory Sync, the expected eligible fleet, and a future next-run time. Run one manual sync and confirm the same operation appears in the Executions registry with queue `inventory` and operation `sync_kubernetes_inventory`.
 
 ## Migration Rollback Boundary
 

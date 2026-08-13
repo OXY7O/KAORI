@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from app.common.job_execution_contract import OBJECT_STORAGE_INVENTORY_SYNC_OPERATION
 from app.jobs.constants import WORKLOAD_STANDARD
 from app.jobs.dispatcher import enqueue_canonical_job
 from app.models.job import JobExecution
@@ -50,7 +51,7 @@ def enqueue_all_object_storage_inventory_sync(
             'targets': targets,
         },
         job_type='object_storage_inventory',
-        operation='object_storage_inventory_sync_all',
+        operation=OBJECT_STORAGE_INVENTORY_SYNC_OPERATION,
         queue_name=INVENTORY_QUEUE,
         workload_class=WORKLOAD_STANDARD,
         requested_by_user_id=requested_by_user_id,

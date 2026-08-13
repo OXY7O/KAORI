@@ -85,7 +85,7 @@ Operational validation:
 2. Confirm Inventory Sync is enabled and the eligible fleet is correct.
 3. Change the interval and confirm the next-run time resets without restarting Beat.
 4. Run **Sync All Inventory**.
-5. Confirm `inventory_sync_all` appears in Executions on queue `inventory`.
+5. Confirm `sync_kubernetes_inventory` appears in Executions on queue `inventory`.
 6. Confirm a concurrent manual or scheduled request attaches to the active execution.
 7. Disable a Kubernetes binding and confirm the cluster is excluded before admission.
 

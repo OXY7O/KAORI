@@ -34,7 +34,8 @@ def test_object_storage_job_uses_canonical_job_execution_and_inventory_worker() 
 
     assert 'enqueue_canonical_job(' in sync_jobs
     assert "job_type='object_storage_inventory'" in sync_jobs
-    assert "operation='object_storage_inventory_sync_all'" in sync_jobs
+    assert 'OBJECT_STORAGE_INVENTORY_SYNC_OPERATION' in sync_jobs
+    assert 'operation=OBJECT_STORAGE_INVENTORY_SYNC_OPERATION' in sync_jobs
     assert "resource_group='object-storage-inventory:global'" in sync_jobs
     assert "instance.readiness_status != 'ready'" in sync_jobs
     assert "name='app.storage_inventory.tasks.sync_all_object_storage'" in tasks

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from sqlalchemy import or_
 
+from app.common.job_execution_contract import KUBERNETES_INVENTORY_SYNC_OPERATION
 from app.jobs.constants import ACTIVE_JOB_STATUSES
 from app.models.job import JobExecution
 from app.models.secret_reveal import SecretRevealRequest
@@ -77,7 +78,10 @@ def kubernetes_active_job_count(*, connection_id: int, cluster_id: str) -> int:
             or_(
                 ((JobExecution.provider_type == 'kubernetes') & (JobExecution.provider_instance_id == connection_id)),
                 ((JobExecution.scope_type == 'kubernetes_cluster') & (JobExecution.scope_key == cluster_id)),
-                ((JobExecution.provider_type == 'kubernetes') & (JobExecution.operation == 'inventory_sync_all')),
+                (
+                    (JobExecution.provider_type == 'kubernetes')
+                    & (JobExecution.operation == KUBERNETES_INVENTORY_SYNC_OPERATION)
+                ),
                 JobExecution.resource_group == f'kubernetes-cluster:{cluster_id}',
                 JobExecution.resource_group == f'integration:kubernetes:{connection_id}',
             )

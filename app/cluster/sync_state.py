@@ -8,6 +8,7 @@ from celery.result import AsyncResult
 from flask import current_app
 from redis import Redis
 
+from app.common.job_execution_contract import KUBERNETES_INVENTORY_SYNC_OPERATION
 from app.jobs.constants import ACTIVE_JOB_STATUSES
 from app.models.job import JobExecution
 
@@ -119,7 +120,7 @@ def acquire_cluster_sync_lock(
 def get_active_cluster_sync_task_id() -> str | None:
     job = (
         JobExecution.query.filter(
-            JobExecution.operation == 'inventory_sync_all',
+            JobExecution.operation == KUBERNETES_INVENTORY_SYNC_OPERATION,
             JobExecution.status.in_(ACTIVE_JOB_STATUSES),
         )
         .order_by(JobExecution.created_at.desc())

@@ -19,7 +19,7 @@ from flask_login import current_user
 from kombu.exceptions import OperationalError as KombuOperationalError
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.common.job_execution_contract import job_operation_label
+from app.common.job_execution_contract import SYNC_ALL_INVENTORY_ACTION, job_operation_label
 from app.common.job_execution_presentation import present_job_execution_detail
 from app.extensions.db import db
 from app.jobs.configuration import build_job_configuration_context
@@ -392,7 +392,7 @@ def quick_sync_all_inventory() -> ResponseReturnValue:
 
     record_operational_activity(
         user_id=int(current_user.id),
-        event_type='inventory_sync_all_quick_action',
+        event_type=f'{SYNC_ALL_INVENTORY_ACTION}_quick_action',
         status=feedback_status,
         title=feedback_title,
         message='. '.join(message_parts) + '.',
@@ -406,6 +406,7 @@ def quick_sync_all_inventory() -> ResponseReturnValue:
             'active_jobs': active_names,
             'blocked_jobs': blocked_messages,
             'failed_jobs': failed_names,
+            'operation': SYNC_ALL_INVENTORY_ACTION,
             'feedback_delivery': 'activity_center',
         },
         queue_feedback=True,

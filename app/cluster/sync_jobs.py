@@ -7,6 +7,7 @@ from typing import Any
 from app.cluster.individual_sync_state import register_individual_sync_task
 from app.cluster.sync_state import store_cluster_sync_metadata
 from app.cluster.tasks import sync_all_clusters_task, sync_single_cluster_task
+from app.common.job_execution_contract import KUBERNETES_INVENTORY_SYNC_OPERATION
 from app.integrations.kubernetes.resolver import connection_for_cluster
 from app.jobs.constants import WORKLOAD_STANDARD
 from app.jobs.dispatcher import enqueue_canonical_job
@@ -59,7 +60,7 @@ def enqueue_all_cluster_inventory_sync(
         task=sync_all_clusters_task,
         task_kwargs={'requested_by_user_id': requested_by_user_id, 'targets': targets},
         job_type='kubernetes_inventory',
-        operation='inventory_sync_all',
+        operation=KUBERNETES_INVENTORY_SYNC_OPERATION,
         queue_name=INVENTORY_QUEUE,
         workload_class=WORKLOAD_STANDARD,
         requested_by_user_id=requested_by_user_id,

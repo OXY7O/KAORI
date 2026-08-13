@@ -1,4 +1,7 @@
-from app.common.job_execution_contract import registered_job_operation_label
+from app.common.job_execution_contract import (
+    KUBERNETES_INVENTORY_SYNC_OPERATION,
+    registered_job_operation_label,
+)
 from app.jobs.definitions.base import JobDefinition
 
 JOB_KEY = 'kubernetes.inventory.sync'
@@ -6,14 +9,14 @@ ADAPTER_MODULE = 'app.inventory.job_adapter'
 
 INVENTORY_SYNC_DEFINITION = JobDefinition(
     key=JOB_KEY,
-    name=registered_job_operation_label('inventory_sync_all'),
+    name=registered_job_operation_label(KUBERNETES_INVENTORY_SYNC_OPERATION),
     domain='Kubernetes Inventory',
     description='Refresh Kubernetes inventory across eligible clusters.',
     icon='database-zap',
     queue_name='inventory',
     workload_class='standard',
     job_type='kubernetes_inventory',
-    operation='inventory_sync_all',
+    operation=KUBERNETES_INVENTORY_SYNC_OPERATION,
     scope_type='kubernetes_fleet',
     scope_key='all',
     configure_permission='jobs.configure',
