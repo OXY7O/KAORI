@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable, Iterable
 from datetime import UTC, datetime
+from typing import TypedDict
 
 from flask import current_app
 from sqlalchemy import select
@@ -18,6 +19,19 @@ from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
 logger = logging.getLogger(__name__)
 
 InventoryProgressCallback = Callable[[int, int, str], None]
+
+
+class ObjectStorageInventorySyncResult(TypedDict):
+    created: int
+    updated: int
+    deleted: int
+    total: int
+    system_id: str
+    system_name: str
+    observed_at: str
+    latency_ms: int
+    warning_count: int
+    usage_stats_mode: str
 
 
 def _lock_system_inventory_sync(system_id: str) -> None:
@@ -87,7 +101,7 @@ def sync_object_storage_inventory(
     instance: MinioInstance,
     *,
     progress_callback: InventoryProgressCallback | None = None,
-) -> dict[str, object]:
+) -> ObjectStorageInventorySyncResult:
     """Collect and atomically commit one managed object-storage inventory snapshot.
 
     Job Execution owns this operation. Full Validation proves provider capability and
@@ -122,7 +136,10 @@ def sync_object_storage_inventory(
         current_stage = 'commit'
         db.session.commit()
         return {
-            **summary,
+            'created': summary['created'],
+            'updated': summary['updated'],
+            'deleted': summary['deleted'],
+            'total': summary['total'],
             'system_id': system.id,
             'system_name': system.name,
             'observed_at': observed_at.isoformat(),
