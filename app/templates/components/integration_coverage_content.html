@@ -42,16 +42,16 @@
                             {% endif %}
                         </td>
                         <td class="px-4 py-4">{{ integration_status(row.coverage_status, row.coverage_label) }}</td>
-                        <td class="px-5 py-4 text-right sm:px-6">
+                        <td class="whitespace-nowrap px-5 py-4 text-right sm:px-6">
                             {% if row.source_id %}
                                 <a href="{{ url_for(provider.detail_endpoint, instance_id=row.source_id) }}#scope"
-                                   class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary">
+                                   class="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary">
                                     <i data-lucide="settings-2" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                     Manage Binding
                                 </a>
                             {% else %}
                                 <a href="{{ url_for(provider.registry_endpoint, tab='registry') }}"
-                                   class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2">
+                                   class="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2">
                                     <i data-lucide="database-zap" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                     Choose Source
                                 </a>

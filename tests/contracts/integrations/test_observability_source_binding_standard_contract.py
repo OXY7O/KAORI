@@ -133,3 +133,18 @@ def test_workspace_standard_locks_source_owned_observability_binding_and_future_
 
     assert 'consumer-source relationships only' in integrations_readme
     assert 'Prometheus and Alertmanager own binding mutation' in integrations_readme
+
+
+def test_binding_actions_keep_canonical_single_line_geometry() -> None:
+    coverage = read('app/templates/components/integration_coverage_content.html')
+    modal = read('app/templates/integrations/components/_observability_binding_modal.html')
+
+    assert 'whitespace-nowrap px-5 py-4 text-right sm:px-6' in coverage
+    assert 'shrink-0 items-center gap-1.5 whitespace-nowrap' in coverage
+    assert 'Manage Binding' in coverage
+    assert 'Choose Source' in coverage
+
+    assert 'min-w-0 flex-1 text-xs leading-5 text-content-muted' in modal
+    assert 'flex shrink-0 items-center justify-end gap-2' in modal
+    assert 'shrink-0 items-center justify-center whitespace-nowrap' in modal
+    assert 'gap-2 whitespace-nowrap rounded-lg bg-kaori-primary' in modal

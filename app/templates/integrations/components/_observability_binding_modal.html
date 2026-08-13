@@ -154,14 +154,14 @@
                 {% endif %}
             </div>
             <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-subtle px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
-                <p class="text-xs leading-5 text-content-muted">Saving creates asset-scoped evidence in Validation Required. Validate the binding before consumer eligibility is granted.</p>
-                <div class="flex items-center justify-end gap-2">
+                <p class="min-w-0 flex-1 text-xs leading-5 text-content-muted">Saving creates asset-scoped evidence in Validation Required. Validate the binding before consumer eligibility is granted.</p>
+                <div class="flex shrink-0 items-center justify-end gap-2">
                     <button type="button"
                             data-kaori-dialog-close
-                            class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:bg-surface-hover">Cancel</button>
+                            class="inline-flex h-10 shrink-0 items-center justify-center whitespace-nowrap rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:bg-surface-hover">Cancel</button>
                     <button type="submit"
                             {% if not consumer_asset_groups %}disabled{% endif %}
-                            class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
+                            class="inline-flex h-10 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
                         <i data-lucide="link" class="h-4 w-4" aria-hidden="true"></i>
                         Create Binding
                     </button>
