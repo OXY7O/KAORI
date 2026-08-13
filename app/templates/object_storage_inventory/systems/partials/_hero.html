@@ -4,25 +4,27 @@
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('database-zap', 'Object Storage Inventory', 'server') %}
                 <h1 class="{{ page_hero.title_classes() }}">Object Storage Systems</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Review provider identity, endpoint, release, bucket coverage, and readiness for managed object-storage systems.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review managed storage systems, provider identity, committed inventory coverage, and operational readiness.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('server', inventory.total_systems ~ ' Systems in Scope') }}
+                    {{ page_hero.meta_label('database-backup', inventory.inventoried_systems ~ ' Inventoried') }}
                     {{ page_hero.meta_label('circle-check', inventory.ready_systems ~ ' Ready') }}
-                    {{ page_hero.meta_label('database', 'Committed Snapshot') }}
                 </div>
             {% endcall %}
         </div>
-        {{ page_hero.context_card('Object Storage Systems Posture',
-                'System Posture',
-                'Managed Storage Systems',
-                ('Ready' if inventory.total_systems and inventory.blocked_systems == 0 else ('Attention Required' if inventory.blocked_systems else 'No Systems') ),
-        ('normal' if inventory.total_systems and inventory.blocked_systems == 0 else ('warning' if inventory.blocked_systems else 'unknown')),
-        [
-        ('container', 'Inventoried', inventory.inventoried_systems, 'Systems with discovery evidence'),
-        ('triangle-alert', 'Blocked', inventory.blocked_systems, 'Systems requiring remediation')
-        ],
-        'Open Storage Integrations',
-        url_for('integrations.storage'),
-        'blocks') }}
+        {{ page_hero.context_card(
+            'Object Storage Systems Posture',
+            'System Posture',
+            'Committed Inventory Coverage',
+            ('Ready' if inventory.total_systems and inventory.blocked_systems == 0 else ('Attention Required' if inventory.blocked_systems else 'No Systems')),
+            ('normal' if inventory.total_systems and inventory.blocked_systems == 0 else ('warning' if inventory.blocked_systems else 'unknown')),
+            [
+                ('database-backup', 'Inventoried', inventory.inventoried_systems, 'Systems with committed inventory'),
+                ('triangle-alert', 'Attention', inventory.blocked_systems, 'Systems requiring remediation')
+            ],
+            'Manage Storage',
+            url_for('integrations.storage'),
+            'database-zap'
+        ) }}
     </div>
 </section>

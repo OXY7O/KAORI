@@ -2,10 +2,15 @@
 {% import "components/resource_posture_grid.html" as posture_grid %}
 {% set metrics = [
     ('server', 'Systems in Scope', inventory.total_systems, 'Managed object-storage systems matching the active filters.', 'brand'),
-    ('circle-check', 'Ready Systems', inventory.ready_systems, 'Systems with provider-ready operational posture.', 'normal' if inventory.total_systems and inventory.ready_systems == inventory.total_systems else ('unknown' if inventory.total_systems == 0 else 'warning')),
-    ('triangle-alert', 'Blocked Systems', inventory.blocked_systems, 'Systems with blocked provider readiness.', 'critical' if inventory.blocked_systems else ('unknown' if inventory.total_systems == 0 else 'normal')),
-    ('scan-search', 'Inventoried Systems', inventory.inventoried_systems, 'Systems with committed bucket-discovery evidence.', 'normal' if inventory.total_systems and inventory.inventoried_systems == inventory.total_systems else ('unknown' if inventory.total_systems == 0 else 'warning'))
+    ('circle-check', 'Ready Systems', inventory.ready_systems, 'Provider-ready systems available for inventory operations.', 'normal' if inventory.total_systems and inventory.ready_systems == inventory.total_systems else ('unknown' if inventory.total_systems == 0 else 'warning')),
+    ('database-backup', 'Inventoried Systems', inventory.inventoried_systems, 'Systems with a committed Object Storage Inventory Sync snapshot.', 'normal' if inventory.total_systems and inventory.inventoried_systems == inventory.total_systems else ('unknown' if inventory.total_systems == 0 else 'warning')),
+    ('triangle-alert', 'Blocked Systems', inventory.blocked_systems, 'Systems with provider conditions that require attention.', 'critical' if inventory.blocked_systems else ('unknown' if inventory.total_systems == 0 else 'normal'))
 ] %}
-{% call operational_section_card.render('System Inventory Posture', 'Identity, readiness, and discovery coverage for the active Object Storage Systems filters.', 'server', body_classes='p-0') %}
+{% call operational_section_card.render(
+    'System Inventory Posture',
+    'Provider readiness and committed inventory coverage for the active Object Storage Systems scope.',
+    'server',
+    body_classes='p-0'
+) %}
     {{ posture_grid.render(metrics, columns=4) }}
 {% endcall %}

@@ -99,7 +99,7 @@
                                 </div>
                             {% endcall %}
                             {% set snapshot_badge %}
-                                {{ table_label.status_label(asset.snapshot_state.label, asset.snapshot_state.tone, none, 'detail') }}
+                                {{ table_label.status_label(asset.snapshot_status_label, asset.snapshot_status_tone, none, 'detail') }}
                             {% endset %}
                             {% call side_drawer.section('Snapshot Context', '', 'clock-3', badge=snapshot_badge, density='compact') %}
                                 <div class="space-y-3">
@@ -129,7 +129,7 @@
                             {% call side_drawer.section('Access Posture', 'Normalized access evidence without exposing credentials or policy contents.', 'key-round', density='compact') %}
                                 <div class="grid gap-3 sm:grid-cols-2">
                                     {{ detail_ui.status_row('Access Policy', asset.access_policy.label, asset.access_policy.tone) }}
-                                    {{ detail_ui.status_row('Public Exposure', asset.public_exposure.label, asset.public_exposure.tone) }}
+                                    {{ detail_ui.status_row('Public Exposure', asset.exposure.label, asset.exposure.tone) }}
                                 </div>
                             {% endcall %}
                             {% for section in asset.provider_detail_sections %}
