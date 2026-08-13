@@ -49,14 +49,20 @@ def test_state_view_distinguishes_not_supported_from_not_assessed() -> None:
 
 def test_provider_detail_sections_keep_native_evidence_outside_canonical_fields() -> None:
     sections = _provider_detail_sections(
-        provider_label='MinIO',
-        release_label='2024-08-03',
-        compatibility_profile_label='MinIO 2024-08-03',
-        addressing_style='Path',
-        endpoint='https://minio.example.internal',
-        provider_metadata={'quota_mode': 'hard', 'native_rule_count': 3},
+        provider_metadata={
+            'sections': [
+                {
+                    'title': 'MinIO Bucket Configuration',
+                    'description': 'Provider-native S3 configuration evidence.',
+                    'icon': 'settings-2',
+                    'rows': [
+                        {'label': 'Quota Mode', 'value': 'Hard'},
+                        {'label': 'Native Rule Count', 'value': 3},
+                    ],
+                }
+            ]
+        },
     )
-    assert sections[0]['title'] == 'MinIO Provider Details'
-    assert sections[1]['title'] == 'Native Provider Evidence'
-    labels = {row['label'] for row in sections[1]['rows']}
+    assert sections[0]['title'] == 'MinIO Bucket Configuration'
+    labels = {row['label'] for row in sections[0]['rows']}
     assert {'Quota Mode', 'Native Rule Count'} <= labels

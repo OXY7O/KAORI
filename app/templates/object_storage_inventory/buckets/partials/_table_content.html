@@ -160,7 +160,7 @@
         <template x-teleport="body">
             <div x-cloak
                  x-show="openDetail === {{ asset.id|tojson }}"
-                 class="fixed inset-0 z-[85] flex items-center justify-center p-3 sm:p-5 lg:p-6"
+                 class="fixed inset-0 z-[85] flex items-center justify-center p-2 sm:p-4 lg:p-5"
                  role="presentation"
                  @keydown.escape.window="openDetail = null">
                 <button type="button"
@@ -175,7 +175,7 @@
                          tabindex="-1"
                          x-show="openDetail === {{ asset.id|tojson }}"
                          x-effect="if (openDetail === {{ asset.id|tojson }}) { $nextTick(() => $el.focus()) }"
-                         class="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-2xl sm:max-h-[calc(100dvh-3rem)]">
+                         class="relative flex max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-[88rem] flex-col overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-2xl sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100vw-2rem)]">
                     <header class="shrink-0 border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
                         <div class="flex min-w-0 items-start justify-between gap-4">
                             <div class="min-w-0">
@@ -216,7 +216,7 @@
                             {% endcall %}
                             <div class="grid gap-4 xl:grid-cols-2">
                                 {% call side_drawer.section('Asset Context', 'Canonical identity and committed snapshot context.', 'badge-info', density='compact') %}
-                                    <div class="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+                                    <div class="space-y-3">
                                         {{ detail_ui.detail_row('System', asset.system_name) }}
                                         {{ detail_ui.detail_row('Environment', asset.environment|environment_name(empty='Not Specified') ) }}
                                         {{ detail_ui.detail_row('Native Type', asset.native_type_label) }}
@@ -228,20 +228,20 @@
                                     </div>
                                 {% endcall %}
                                 {% call side_drawer.section('Provider Context', 'Provider identity, collector profile, and connection evidence.', 'database-zap', density='compact') %}
-                                    <div class="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+                                    <div class="space-y-3">
                                         {{ detail_ui.detail_row('Profile', asset.compatibility_profile_label) }}
                                         {{ detail_ui.detail_row('Release', asset.release_label) }}
                                         {{ detail_ui.detail_row('Addressing', asset.addressing_style) }}
                                         {{ detail_ui.detail_row('Enrichment Profile', asset.enrichment_profile_label) }}
                                         {{ detail_ui.detail_row('Usage Stats Mode', asset.usage_stats_mode_label) }}
                                         {{ detail_ui.detail_row('Quota Source', asset.quota_collection_label) }}
-                                        <div class="sm:col-span-2">{{ detail_ui.detail_row('API Endpoint', asset.endpoint, break_all=true) }}</div>
+                                        <div class="border-t border-outline-subtle pt-3">{{ detail_ui.detail_row('API Endpoint', asset.endpoint, break_all=true) }}</div>
                                     </div>
                                 {% endcall %}
                             </div>
                             <div class="grid gap-4 xl:grid-cols-2">
                                 {% call side_drawer.section('Protection & Access', 'Normalized controls used for cross-provider governance.', 'shield-check', density='compact') %}
-                                    <div class="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+                                    <div class="space-y-3">
                                         {{ detail_ui.status_row('Versioning', asset.versioning.label, asset.versioning.tone) }}
                                         {{ detail_ui.status_row('Encryption', asset.encryption.label, asset.encryption.tone) }}
                                         {{ detail_ui.status_row('Immutability', asset.immutability.label, asset.immutability.tone) }}
@@ -251,7 +251,7 @@
                                     </div>
                                 {% endcall %}
                                 {% call side_drawer.section('Lifecycle & Replication', 'Lifecycle and data-copy posture kept separate from protection controls.', 'git-branch', density='compact') %}
-                                    <div class="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+                                    <div class="space-y-3">
                                         {{ detail_ui.status_row('Lifecycle', asset.lifecycle.label, asset.lifecycle.tone) }}
                                         {{ detail_ui.status_row('Replication', asset.replication.label, asset.replication.tone) }}
                                         {{ detail_ui.detail_row('Quota State', asset.quota.state_label) }}
@@ -264,13 +264,13 @@
                             </div>
                             {% for section in asset.provider_detail_sections %}
                                 {% call side_drawer.section(section.title, section.description, section.icon, density='compact') %}
-                                    <div class="grid gap-x-6 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">
+                                    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                                         {% for row in section.rows %}
-                                            {% if row.technical|default(false) %}
-                                                <div class="sm:col-span-2 xl:col-span-3">{{ detail_ui.detail_row(row.label, row.value, break_all=true) }}</div>
-                                            {% else %}
-                                                {{ detail_ui.detail_row(row.label, row.value) }}
-                                            {% endif %}
+                                            <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5 {% if row.technical|default(false) %}sm:col-span-2 xl:col-span-4{% endif %}">
+                                                <p class="text-xs leading-5 text-content-muted">{{ row.label }}</p>
+                                                <p class="mt-1 min-w-0 text-sm font-semibold leading-5 text-content-primary {% if row.technical|default(false) %}break-all{% else %}break-words{% endif %} [overflow-wrap:anywhere]"
+                                                   title="{{ row.value }}">{{ row.value }}</p>
+                                            </div>
                                         {% endfor %}
                                     </div>
                                 {% endcall %}
