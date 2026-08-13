@@ -1,4 +1,10 @@
-from app.storage_inventory.presentation import _format_bytes, _format_count, _quota_view
+from app.storage_inventory.presentation import (
+    _format_bytes,
+    _format_count,
+    _quota_view,
+    _usage_collection_label,
+    _usage_mode_label,
+)
 
 
 def test_bucket_usage_formatters_are_compact() -> None:
@@ -48,3 +54,19 @@ def test_quota_evidence_presentation_maps_provider_routing_failure() -> None:
 
     assert evidence['label'] == 'Admin API Unreachable'
     assert '/minio/admin/*' in evidence['guidance']
+
+
+def test_usage_presentation_distinguishes_provider_metrics_source() -> None:
+    metadata = {
+        'usage_stats_mode': 'provider_metrics',
+        'usage_collection': 'minio_admin_data_usage_v3',
+    }
+    assert _usage_mode_label(metadata) == 'Provider Metrics'
+    assert _usage_collection_label(metadata) == 'MinIO Admin Data Usage v3'
+
+    fallback = {
+        'usage_stats_mode': 'full_scan',
+        'usage_collection': 's3_list_objects_v2',
+    }
+    assert _usage_mode_label(fallback) == 'Full Scan'
+    assert _usage_collection_label(fallback) == 'S3 ListObjectsV2'

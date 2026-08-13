@@ -199,7 +199,24 @@ def _collector_profile_label(metadata: dict[str, Any]) -> str:
 
 def _usage_mode_label(metadata: dict[str, Any]) -> str:
     mode = str(metadata.get('usage_stats_mode') or 'disabled').strip().lower()
-    return 'Full Scan' if mode == 'full_scan' else 'Disabled'
+    if mode == 'provider_metrics':
+        return 'Provider Metrics'
+    if mode == 'full_scan':
+        return 'Full Scan'
+    return 'Disabled'
+
+
+def _usage_collection_label(metadata: dict[str, Any]) -> str:
+    source = str(metadata.get('usage_collection') or '').strip().lower()
+    if source == 'minio_admin_data_usage_v3':
+        return 'MinIO Admin Data Usage v3'
+    if source == 'minio_admin_data_usage_v4':
+        return 'MinIO Admin Data Usage v4'
+    if source == 's3_list_objects_v2':
+        return 'S3 ListObjectsV2'
+    if source == 'disabled':
+        return 'Disabled'
+    return 'Not Observed'
 
 
 def _quota_collection_label(source: str | None, metadata: dict[str, Any]) -> str:
@@ -892,6 +909,7 @@ def _bucket_row(bucket: ObjectStorageBucket) -> dict[str, Any]:
         'provider_metadata': provider_metadata,
         'enrichment_profile_label': _collector_profile_label(provider_metadata),
         'usage_stats_mode_label': _usage_mode_label(provider_metadata),
+        'usage_collection_label': _usage_collection_label(provider_metadata),
         'quota_collection_label': _quota_collection_label(bucket.quota_source, provider_metadata),
         'quota_evidence': _quota_evidence_view(
             bucket.quota_evidence_code,

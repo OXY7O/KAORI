@@ -9,5 +9,7 @@ def test_object_storage_usage_stats_mode_is_documented_in_environment_examples()
     for path in ('.env.example', '.env.production.example'):
         content = read(path)
         assert 'OBJECT_STORAGE_INVENTORY_USAGE_STATS_MODE=disabled' in content
+        assert 'provider_metrics' in content
+        assert 'admin:DataUsageInfo' in content
         assert 'full_scan' in content
-        assert 'logical size and object count' in content
+        assert 'used size or object count' in content

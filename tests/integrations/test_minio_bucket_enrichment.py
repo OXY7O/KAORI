@@ -1,4 +1,8 @@
-from app.integrations.minio.client import _bucket_policy_exposure, _minio_admin_bucket_quota
+from app.integrations.minio.client import (
+    _bucket_policy_exposure,
+    _minio_admin_bucket_quota,
+    _minio_admin_data_usage,
+)
 
 
 def test_bucket_policy_exposure_detects_unrestricted_public_allow() -> None:
@@ -157,3 +161,79 @@ def test_minio_admin_bucket_quota_marks_both_admin_generations_unsupported(monke
     assert evidence.state == 'not_supported'
     assert evidence.code == 'not_supported'
     assert evidence.source == 'minio_admin_api_v4'
+
+
+def _usage(**overrides):
+    params = {
+        'endpoint': 'https://minio.example.test',
+        'access_key': 'access-key',
+        'secret_key': 'secret-key',
+        'region': 'us-east-1',
+        'timeout': 5,
+        'verify_ssl': True,
+    }
+    params.update(overrides)
+    return _minio_admin_data_usage(**params)
+
+
+def test_minio_admin_data_usage_collects_per_bucket_usage(monkeypatch) -> None:
+    monkeypatch.setattr(
+        'app.integrations.minio.client.requests.get',
+        lambda *args, **kwargs: _QuotaResponse(
+            200,
+            {
+                'lastUpdate': '2026-08-13T05:20:00Z',
+                'bucketsUsageInfo': {
+                    'documents': {'size': 12 * 1024**3, 'objectsCount': 1234},
+                    'empty': {'size': 0, 'objectsCount': 0},
+                },
+            },
+        ),
+    )
+
+    evidence = _usage()
+
+    assert evidence.state == 'collected'
+    assert evidence.code == 'collected'
+    assert evidence.source == 'minio_admin_data_usage_v3'
+    assert evidence.buckets['documents'] == (12 * 1024**3, 1234)
+    assert evidence.buckets['empty'] == (0, 0)
+    assert evidence.observed_at is not None
+
+
+def test_minio_admin_data_usage_records_access_denied_without_full_scan(monkeypatch) -> None:
+    monkeypatch.setattr(
+        'app.integrations.minio.client.requests.get',
+        lambda *args, **kwargs: _QuotaResponse(403, {'Code': 'AccessDenied'}),
+    )
+
+    evidence = _usage()
+
+    assert evidence.state == 'not_collected'
+    assert evidence.code == 'access_denied'
+    assert evidence.status_code == 403
+    assert evidence.buckets == {}
+
+
+def test_minio_admin_data_usage_falls_forward_to_v4_when_v3_is_absent(monkeypatch) -> None:
+    responses = iter(
+        [
+            _QuotaResponse(404, {'Code': 'NotFound'}),
+            _QuotaResponse(
+                200,
+                {
+                    'lastUpdate': '2026-08-13T05:20:00Z',
+                    'bucketsUsageInfo': {'documents': {'size': 1024, 'objectsCount': 1}},
+                },
+            ),
+        ]
+    )
+    monkeypatch.setattr(
+        'app.integrations.minio.client.requests.get',
+        lambda *args, **kwargs: next(responses),
+    )
+
+    evidence = _usage()
+
+    assert evidence.source == 'minio_admin_data_usage_v4'
+    assert evidence.buckets['documents'] == (1024, 1)

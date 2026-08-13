@@ -110,7 +110,7 @@ def sync_object_storage_inventory(
         )
         collected = collect_instance_bucket_inventory(
             instance,
-            collect_usage_stats=usage_stats_mode == 'full_scan',
+            usage_stats_mode=usage_stats_mode,
             progress_callback=progress_callback,
         )
         current_stage = 'snapshot persistence'

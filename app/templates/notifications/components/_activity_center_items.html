@@ -18,7 +18,7 @@
                         {{ job.status_label }}
                     </span>
                 </div>
-                <div class="mt-2">{{ progress_bar.job_progress(job, label=job.operation_label ~ ' progress', compact=compact) }}</div>
+                <div class="mt-2 w-full">{{ progress_bar.job_progress(job, label=job.operation_label ~ ' progress', compact=compact) }}</div>
                 {% if job.queue_health and job.queue_health.show_warning %}
                     <div class="mt-2 flex items-start gap-1.5 rounded-lg border border-status-warning-border bg-status-warning-soft px-2.5 py-2 text-xs leading-5 text-status-warning-text">
                         <i data-lucide="triangle-alert"

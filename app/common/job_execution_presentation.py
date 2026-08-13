@@ -15,6 +15,31 @@ _JOB_ICONS = {
     'standard': 'workflow',
 }
 
+
+_PROVIDER_LABELS = {
+    'minio': 'MinIO',
+    'kubernetes': 'Kubernetes',
+    'prometheus': 'Prometheus',
+    'alertmanager': 'Alertmanager',
+}
+
+
+def _provider_label(value: str | None) -> str:
+    key = str(value or 'kaori').strip().lower().replace('-', '_')
+    if key == 'kaori':
+        return 'KAORI'
+    return _PROVIDER_LABELS.get(key, key.replace('_', ' ').title())
+
+
+def _scope_label(value: str | None) -> str:
+    raw = str(value or 'Global').strip() or 'Global'
+    if raw.lower() == 'all':
+        return 'All'
+    if raw.lower() == 'global':
+        return 'Global'
+    return raw
+
+
 _STATUS_PRESENTATION = {
     'queued': ('Queued', 'pending', 'clock-3'),
     'running': ('Running', 'pending', 'loader-circle'),
@@ -79,11 +104,12 @@ def present_job_execution_row(job: JobExecution) -> dict[str, Any]:
         job.status,
         (job.status.replace('_', ' ').title(), 'unknown', 'circle-help'),
     )
-    scope = job.scope_key or (
+    raw_scope = job.scope_key or (
         f'{job.provider_type}:{job.provider_instance_id}'
         if job.provider_type and job.provider_instance_id is not None
         else job.resource_group or 'Global'
     )
+    scope = _scope_label(raw_scope)
     return {
         'public_id': job.public_id,
         'task_id': job.celery_task_id,
@@ -100,7 +126,7 @@ def present_job_execution_row(job: JobExecution) -> dict[str, Any]:
         'status_tone': status_tone,
         'status_icon': status_icon,
         'provider_type': job.provider_type,
-        'provider_label': (job.provider_type or 'KAORI').replace('_', ' ').title(),
+        'provider_label': _provider_label(job.provider_type),
         'scope': scope,
         'resource_group': job.resource_group,
         'requester': requester,

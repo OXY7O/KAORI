@@ -65,7 +65,7 @@ def test_minio_validation_runtime_and_inventory_ownership_are_separated() -> Non
     assert "instance.object_storage_system.status = 'connected'" in adapter
     assert "if operation == 'inventory.sync'" in adapter
     assert 'collect_instance_bucket_inventory(' in sync
-    assert "collect_usage_stats=usage_stats_mode == 'full_scan'" in sync
+    assert 'usage_stats_mode=usage_stats_mode' in sync
     assert '_lock_system_inventory_sync(' in sync
     assert 'db.session.commit()' in sync
     assert 'db.session.rollback()' in sync

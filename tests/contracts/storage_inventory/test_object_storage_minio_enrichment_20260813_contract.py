@@ -44,8 +44,10 @@ def test_bucket_usage_stats_are_optional_and_persisted_canonically() -> None:
     template = read('app/templates/object_storage_inventory/buckets/partials/_table_content.html')
 
     assert 'OBJECT_STORAGE_INVENTORY_USAGE_STATS_MODE' in config
-    assert "{'disabled', 'full_scan'}" in config
+    assert "{'disabled', 'provider_metrics', 'full_scan'}" in config
     assert "get_paginator('list_objects_v2')" in client
+    assert "f'/minio/admin/{api_version}/datausageinfo'" in client
+    assert "payload.get('bucketsUsageInfo')" in client
     assert 'size_bytes' in model
     assert 'object_count' in model
     assert 'usage_stats_state' in model

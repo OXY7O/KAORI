@@ -57,4 +57,5 @@ def test_usage_full_scan_remains_separate_from_quota_collection() -> None:
     assert 'collect_quota: bool = True' in client
     assert 'collect_usage_stats: bool = False' in client
     assert "get_paginator('list_objects_v2')" in client
-    assert 'quota collection does not' in template
+    assert 'Quota collection is independent.' in template
+    assert 'provider_metrics' in template

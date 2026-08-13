@@ -80,6 +80,18 @@ class MinioQuotaEvidence:
 
 
 @dataclass(frozen=True, slots=True)
+class MinioUsageEvidence:
+    buckets: dict[str, tuple[int, int]]
+    state: str
+    code: str
+    source: str
+    checked_at: datetime
+    observed_at: datetime | None = None
+    status_code: int | None = None
+    provider_code: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class MinioConnectionResult:
     connected: bool
     latency_ms: int
@@ -576,6 +588,222 @@ def _minio_admin_bucket_quota(
     )
 
 
+def _usage_error_evidence(
+    *,
+    code: str,
+    source: str,
+    checked_at: datetime,
+    status_code: int | None = None,
+    provider_code: str | None = None,
+    state: str = 'not_collected',
+) -> MinioUsageEvidence:
+    return MinioUsageEvidence(
+        buckets={},
+        state=state,
+        code=code,
+        source=source,
+        checked_at=checked_at,
+        status_code=status_code,
+        provider_code=provider_code,
+    )
+
+
+def _parse_minio_timestamp(value: object) -> datetime | None:
+    raw = str(value or '').strip()
+    if not raw:
+        return None
+    try:
+        parsed = datetime.fromisoformat(raw.replace('Z', '+00:00'))
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=UTC)
+
+
+def _minio_admin_data_usage(
+    *,
+    endpoint: str,
+    access_key: str,
+    secret_key: str,
+    region: str,
+    timeout: int,
+    verify_ssl: bool,
+) -> MinioUsageEvidence:
+    """Read provider-aggregated per-bucket usage once per MinIO system.
+
+    The request uses MinIO Admin DataUsageInfo instead of enumerating every S3
+    object. Failures remain optional inventory evidence and never trigger an
+    implicit full scan; operators must select ``full_scan`` explicitly.
+    """
+    checked_at = datetime.now(UTC)
+    parsed = urlsplit(endpoint)
+    if parsed.scheme not in {'http', 'https'} or not parsed.netloc:
+        return _usage_error_evidence(
+            code='invalid_endpoint',
+            source='minio_admin_data_usage_v3',
+            checked_at=checked_at,
+        )
+
+    last_unsupported: MinioUsageEvidence | None = None
+    for api_version in ('v3', 'v4'):
+        source = f'minio_admin_data_usage_{api_version}'
+        admin_url = urlunsplit((parsed.scheme, parsed.netloc, f'/minio/admin/{api_version}/datausageinfo', '', ''))
+        prepared = requests.Request('GET', admin_url, params={'capacity': 'true'}).prepare()
+        if not prepared.url:
+            return _usage_error_evidence(
+                code='invalid_endpoint',
+                source=source,
+                checked_at=checked_at,
+            )
+
+        aws_request = AWSRequest(method='GET', url=prepared.url)
+        S3SigV4Auth(
+            Credentials(access_key, secret_key),
+            's3',
+            region or 'us-east-1',
+        ).add_auth(aws_request)
+        headers = {str(key): str(value) for key, value in aws_request.headers.items()}
+
+        try:
+            response = requests.get(
+                prepared.url,
+                headers=headers,
+                timeout=max(int(timeout), 1),
+                verify=verify_ssl,
+                allow_redirects=False,
+            )
+        except requests.exceptions.SSLError:
+            return _usage_error_evidence(
+                code='tls_validation_failed',
+                source=source,
+                checked_at=checked_at,
+            )
+        except requests.exceptions.Timeout:
+            return _usage_error_evidence(
+                code='admin_api_timeout',
+                source=source,
+                checked_at=checked_at,
+            )
+        except requests.exceptions.ConnectionError:
+            return _usage_error_evidence(
+                code='admin_api_unreachable',
+                source=source,
+                checked_at=checked_at,
+            )
+        except RequestException:
+            return _usage_error_evidence(
+                code='admin_api_unreachable',
+                source=source,
+                checked_at=checked_at,
+            )
+
+        provider_code = _minio_admin_error_code(response)
+        normalized_provider_code = str(provider_code or '').strip().lower()
+        status_code = int(response.status_code)
+        if status_code in {404, 405, 501}:
+            last_unsupported = _usage_error_evidence(
+                code='not_supported',
+                source=source,
+                checked_at=checked_at,
+                status_code=status_code,
+                provider_code=provider_code,
+                state='not_supported',
+            )
+            continue
+        if normalized_provider_code in {'signaturedoesnotmatch', 'authorizationheadermalformed'}:
+            return _usage_error_evidence(
+                code='signature_mismatch',
+                source=source,
+                checked_at=checked_at,
+                status_code=status_code,
+                provider_code=provider_code,
+            )
+        if status_code == 401:
+            return _usage_error_evidence(
+                code='invalid_credentials',
+                source=source,
+                checked_at=checked_at,
+                status_code=status_code,
+                provider_code=provider_code,
+            )
+        if status_code == 403:
+            return _usage_error_evidence(
+                code='access_denied',
+                source=source,
+                checked_at=checked_at,
+                status_code=status_code,
+                provider_code=provider_code,
+            )
+        if status_code == 429:
+            return _usage_error_evidence(
+                code='rate_limited',
+                source=source,
+                checked_at=checked_at,
+                status_code=status_code,
+                provider_code=provider_code,
+            )
+        if status_code >= 500 or not response.ok:
+            return _usage_error_evidence(
+                code='provider_error',
+                source=source,
+                checked_at=checked_at,
+                status_code=status_code,
+                provider_code=provider_code,
+            )
+
+        try:
+            payload = response.json()
+        except (TypeError, ValueError, json.JSONDecodeError):
+            return _usage_error_evidence(
+                code='invalid_response',
+                source=source,
+                checked_at=checked_at,
+                status_code=status_code,
+            )
+        if not isinstance(payload, dict):
+            return _usage_error_evidence(
+                code='invalid_response',
+                source=source,
+                checked_at=checked_at,
+                status_code=status_code,
+            )
+
+        buckets_usage = payload.get('bucketsUsageInfo')
+        if not isinstance(buckets_usage, dict):
+            buckets_usage = {}
+        normalized: dict[str, tuple[int, int]] = {}
+        for bucket_name, raw_usage in buckets_usage.items():
+            if not isinstance(raw_usage, dict):
+                continue
+            if 'size' not in raw_usage or 'objectsCount' not in raw_usage:
+                continue
+            try:
+                size_bytes = int(raw_usage.get('size'))
+                object_count = int(raw_usage.get('objectsCount'))
+            except (TypeError, ValueError):
+                continue
+            if size_bytes < 0 or object_count < 0:
+                continue
+            normalized[str(bucket_name)] = (size_bytes, object_count)
+
+        observed_at = _parse_minio_timestamp(payload.get('lastUpdate'))
+        return MinioUsageEvidence(
+            buckets=normalized,
+            state='collected',
+            code='collected',
+            source=source,
+            checked_at=checked_at,
+            observed_at=observed_at,
+            status_code=status_code,
+        )
+
+    return last_unsupported or _usage_error_evidence(
+        code='not_supported',
+        source='minio_admin_data_usage_v3',
+        checked_at=checked_at,
+        state='not_supported',
+    )
+
+
 def _collect_bucket_usage_stats(client, bucket_name: str) -> tuple[int, int]:
     """Return logical bytes and current object count by scanning ListObjectsV2.
 
@@ -603,7 +831,8 @@ def _enrich_bucket_summary(
     timeout: int,
     verify_ssl: bool,
     collect_quota: bool,
-    collect_usage_stats: bool,
+    usage_stats_mode: str,
+    provider_usage: MinioUsageEvidence | None,
 ) -> MinioBucketSummary:
     name = summary.name
     gaps: list[str] = []
@@ -768,12 +997,39 @@ def _enrich_bucket_summary(
     object_count: int | None = None
     usage_state = 'disabled'
     usage_observed_at: datetime | None = None
-    if collect_usage_stats:
+    usage_collection = 'disabled'
+    usage_evidence = {
+        'code': 'disabled',
+        'status_code': None,
+        'provider_code': None,
+    }
+    if usage_stats_mode == 'provider_metrics':
         usage_state = 'not_collected'
+        usage_collection = provider_usage.source if provider_usage is not None else 'minio_admin_data_usage_v3'
+        if provider_usage is not None:
+            usage_evidence = {
+                'code': provider_usage.code,
+                'status_code': provider_usage.status_code,
+                'provider_code': provider_usage.provider_code,
+            }
+            bucket_usage = provider_usage.buckets.get(name)
+            if provider_usage.state == 'collected' and bucket_usage is not None:
+                size_bytes, object_count = bucket_usage
+                usage_state = 'collected'
+                usage_observed_at = provider_usage.observed_at or provider_usage.checked_at
+    elif usage_stats_mode == 'full_scan':
+        usage_state = 'not_collected'
+        usage_collection = 's3_list_objects_v2'
+        usage_evidence = {
+            'code': 'not_collected',
+            'status_code': None,
+            'provider_code': None,
+        }
         try:
             size_bytes, object_count = _collect_bucket_usage_stats(client, name)
             usage_state = 'collected'
             usage_observed_at = datetime.now(UTC)
+            usage_evidence['code'] = 'collected'
         except (ClientError, BotoCoreError, OSError):
             gaps.append('Usage Statistics')
     provider_metadata: dict[str, Any] = {
@@ -785,7 +1041,9 @@ def _enrich_bucket_summary(
             'status_code': quota_evidence.status_code,
             'provider_code': quota_evidence.provider_code,
         },
-        'usage_stats_mode': 'full_scan' if collect_usage_stats else 'disabled',
+        'usage_stats_mode': usage_stats_mode,
+        'usage_collection': usage_collection,
+        'usage_evidence': usage_evidence,
         'sections': [
             {
                 'title': 'MinIO Bucket Configuration',
@@ -835,10 +1093,14 @@ def collect_bucket_inventory_values(
     verify_ssl: bool = True,
     collect_quota: bool = True,
     collect_usage_stats: bool = False,
+    usage_stats_mode: str | None = None,
     progress_callback: InventoryProgressCallback | None = None,
 ) -> MinioInventoryResult:
     """Collect and enrich bucket inventory without mutating provider validation state."""
     started = perf_counter()
+    resolved_usage_mode = str(usage_stats_mode or ('full_scan' if collect_usage_stats else 'disabled')).strip().lower()
+    if resolved_usage_mode not in {'disabled', 'provider_metrics', 'full_scan'}:
+        resolved_usage_mode = 'disabled'
     payload, list_latency_ms = _list_buckets_values(
         endpoint=endpoint,
         access_key=access_key,
@@ -858,6 +1120,16 @@ def collect_bucket_inventory_values(
         verify_ssl=verify_ssl,
     )
     base_buckets = _bucket_inventory(payload, location=region)
+    provider_usage: MinioUsageEvidence | None = None
+    if resolved_usage_mode == 'provider_metrics':
+        provider_usage = _minio_admin_data_usage(
+            endpoint=endpoint,
+            access_key=access_key,
+            secret_key=secret_key,
+            region=region,
+            timeout=timeout,
+            verify_ssl=verify_ssl,
+        )
     total_buckets = len(base_buckets)
     enriched_buckets: list[MinioBucketSummary] = []
     for index, summary in enumerate(base_buckets, start=1):
@@ -874,7 +1146,8 @@ def collect_bucket_inventory_values(
                 timeout=timeout,
                 verify_ssl=verify_ssl,
                 collect_quota=collect_quota,
-                collect_usage_stats=collect_usage_stats,
+                usage_stats_mode=resolved_usage_mode,
+                provider_usage=provider_usage,
             )
         )
         if progress_callback is not None:
@@ -886,7 +1159,7 @@ def collect_bucket_inventory_values(
         latency_ms=total_latency_ms,
         buckets=buckets,
         warning_count=warning_count,
-        usage_stats_mode='full_scan' if collect_usage_stats else 'disabled',
+        usage_stats_mode=resolved_usage_mode,
     )
 
 
@@ -894,6 +1167,7 @@ def collect_instance_bucket_inventory(
     instance: MinioInstance,
     *,
     collect_usage_stats: bool = False,
+    usage_stats_mode: str | None = None,
     progress_callback: InventoryProgressCallback | None = None,
 ) -> MinioInventoryResult:
     provider_key = str(instance.detected_product or '').strip().lower().replace('-', '_')
@@ -907,6 +1181,7 @@ def collect_instance_bucket_inventory(
         verify_ssl=instance.verify_ssl,
         collect_quota=provider_key == 'minio',
         collect_usage_stats=collect_usage_stats,
+        usage_stats_mode=usage_stats_mode,
         progress_callback=progress_callback,
     )
 

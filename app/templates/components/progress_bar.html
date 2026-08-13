@@ -97,8 +97,9 @@
     label=label
     ) }}
 {%- endmacro %}
+
 {% macro job_progress(job, label='Job progress', compact=false) -%}
-    <div class="min-w-0">
+    <div class="w-full min-w-0">
         <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
                 <p class="break-words text-xs font-semibold leading-5 text-content-secondary">
@@ -115,12 +116,13 @@
         {% if job.progress_mode == 'determinate' %}
             <div class="mt-2">
                 {{ bar(job.progress,
-                                track_classes='h-1.5 overflow-hidden rounded-full bg-kaori-soft/70 dark:bg-kaori-primary/15',
-                                fill_classes='h-full rounded-full bg-kaori-primary transition-all duration-500 ease-out',
-                                label=label) }}
+                    track_classes='h-1.5 w-full overflow-hidden rounded-full bg-kaori-soft/70 dark:bg-kaori-primary/15',
+                    fill_classes='h-full rounded-full bg-kaori-primary transition-all duration-500 ease-out',
+                    label=label
+                ) }}
             </div>
         {% else %}
-            <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-kaori-soft/70 dark:bg-kaori-primary/15"
+            <div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-kaori-soft/70 dark:bg-kaori-primary/15"
                  role="progressbar"
                  aria-label="{{ label }}"
                  aria-valuemin="0"
@@ -135,11 +137,7 @@
         {% if not compact %}
             <div class="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-content-muted">
                 <span>
-                    {% if job.progress_count_label %}
-                        {{ job.progress_count_label }} work units
-                    {% else %}
-                        Worker progress
-                    {% endif %}
+                    {% if job.progress_count_label %}{{ job.progress_count_label }} work units{% else %}Worker progress{% endif %}
                 </span>
                 <span>Updated {{ job.progress_updated_at }}</span>
             </div>
