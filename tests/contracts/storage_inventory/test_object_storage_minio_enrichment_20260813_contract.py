@@ -43,7 +43,7 @@ def test_bucket_usage_stats_are_optional_and_persisted_canonically() -> None:
     presentation = read('app/storage_inventory/presentation.py')
     template = read('app/templates/object_storage_inventory/buckets/partials/_table_content.html')
 
-    assert "OBJECT_STORAGE_INVENTORY_USAGE_STATS_MODE" in config
+    assert 'OBJECT_STORAGE_INVENTORY_USAGE_STATS_MODE' in config
     assert "{'disabled', 'full_scan'}" in config
     assert "get_paginator('list_objects_v2')" in client
     assert 'size_bytes' in model
@@ -51,9 +51,10 @@ def test_bucket_usage_stats_are_optional_and_persisted_canonically() -> None:
     assert 'usage_stats_state' in model
     assert "'size_label': _format_bytes(bucket.size_bytes)" in presentation
     assert "'object_count_label': _format_count(bucket.object_count)" in presentation
-    assert '>Size<' in template
-    assert '>Objects<' in template
-    assert 'Usage Snapshot' in template
+    assert '>Quota<' in template
+    assert '>Size<' not in template.split('<thead', 1)[1].split('</thead>', 1)[0]
+    assert '>Objects<' not in template.split('<thead', 1)[1].split('</thead>', 1)[0]
+    assert 'Used Size' in template
     assert 'Current Objects' in template
 
 
@@ -74,3 +75,20 @@ def test_enrichment_migration_extends_current_bucket_container_head() -> None:
     assert "'size_bytes'" in migration
     assert "'object_count'" in migration
     assert "'usage_stats_state'" in migration
+
+
+def test_minio_bucket_quota_is_canonical_inventory_evidence() -> None:
+    client = read('app/integrations/minio/client.py')
+    model = read('app/models/object_storage.py')
+    sync = read('app/storage_inventory/sync.py')
+    presentation = read('app/storage_inventory/presentation.py')
+    migration = read('migrations/versions/20260813_object_storage_bucket_quota.py')
+
+    assert '/minio/admin/v3/get-bucket-quota' in client
+    assert 'admin:GetBucketQuota' in client
+    for field in ('quota_bytes', 'quota_state', 'quota_observed_at'):
+        assert field in model
+        assert f'bucket.{field} = summary.{field}' in sync
+    assert 'def _quota_view' in presentation
+    assert "revision = '20260813_obj_bucket_quota'" in migration
+    assert "down_revision = '20260813_obj_bucket_enrichment'" in migration

@@ -21,9 +21,7 @@ logger = logging.getLogger(__name__)
 def _lock_system_inventory_sync(system_id: str) -> None:
     """Serialize one object-storage snapshot replacement inside its transaction."""
     db.session.execute(
-        select(ObjectStorageSystem.id)
-        .where(ObjectStorageSystem.id == system_id)
-        .with_for_update()
+        select(ObjectStorageSystem.id).where(ObjectStorageSystem.id == system_id).with_for_update()
     ).scalar_one()
 
 
@@ -61,6 +59,9 @@ def commit_bucket_inventory(
         bucket.access_policy_state = summary.access_policy_state or 'not_collected'
         bucket.exposure_state = summary.exposure_state or 'not_collected'
         bucket.provider_metadata = dict(summary.provider_metadata or {})
+        bucket.quota_bytes = summary.quota_bytes
+        bucket.quota_state = summary.quota_state or 'not_collected'
+        bucket.quota_observed_at = summary.quota_observed_at
         bucket.size_bytes = summary.size_bytes
         bucket.object_count = summary.object_count
         bucket.usage_stats_state = summary.usage_state or 'not_collected'
@@ -95,9 +96,9 @@ def sync_object_storage_inventory(instance: MinioInstance) -> dict[str, object]:
     try:
         _lock_system_inventory_sync(system.id)
         current_stage = 'bucket discovery'
-        usage_stats_mode = str(
-            current_app.config.get('OBJECT_STORAGE_INVENTORY_USAGE_STATS_MODE', 'disabled')
-        ).strip().lower()
+        usage_stats_mode = (
+            str(current_app.config.get('OBJECT_STORAGE_INVENTORY_USAGE_STATS_MODE', 'disabled')).strip().lower()
+        )
         collected = collect_instance_bucket_inventory(
             instance,
             collect_usage_stats=usage_stats_mode == 'full_scan',

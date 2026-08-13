@@ -18,7 +18,17 @@ def test_bucket_container_page_keeps_one_vendor_neutral_inventory_surface() -> N
     assert 'AWS' not in menu
     assert 'Azure' not in menu
     assert 'Ceph' not in menu
-    for heading in ('Name', 'System', 'Provider', 'Type', 'Location', 'Protection', 'Last Snapshot', 'Details'):
+    for heading in (
+        'Name',
+        'System',
+        'Provider',
+        'Type',
+        'Location',
+        'Quota',
+        'Protection',
+        'Last Snapshot',
+        'Details',
+    ):
         assert heading in table
 
 
@@ -32,14 +42,15 @@ def test_list_table_stays_canonical_while_modal_is_provider_aware() -> None:
     assert 'x-teleport="body"' in table
     assert 'max-w-6xl' in table
     assert 'View Details' in table
-    assert 'Object Snapshot Summary' in table
-    assert 'Identity & Location' in table
-    assert 'Data Protection' in table
+    assert 'Inventory Snapshot' in table
+    assert 'Asset Context' in table
+    assert 'Provider Context' in table
+    assert 'Protection & Access' in table
     assert 'Lifecycle & Replication' in table
-    assert 'Access Posture' in table
+    assert 'Used Size' in table
     assert 'provider_detail_sections' in table
     assert '_provider_detail_sections' in presentation
-    assert 'Native Provider Evidence' in presentation
+    assert 'Native Provider Evidence' not in presentation
 
 
 def test_provider_specific_metadata_does_not_leak_into_the_general_table_contract() -> None:
@@ -58,9 +69,12 @@ def test_provider_specific_metadata_does_not_leak_into_the_general_table_contrac
         'access_policy_state',
         'exposure_state',
         'provider_metadata',
+        'quota_bytes',
+        'quota_state',
+        'quota_observed_at',
     ):
         assert field in model
-    assert "'provider_metadata': dict(bucket.provider_metadata or {})" in presentation
+    assert "'provider_metadata': provider_metadata" in presentation
     assert 'provider_metadata' not in table
     assert 'API Endpoint' not in table.split('<thead', 1)[1].split('</thead>', 1)[0]
     assert 'Compatibility Profile' not in table.split('<thead', 1)[1].split('</thead>', 1)[0]
@@ -73,7 +87,7 @@ def test_minio_inventory_collector_emits_provider_neutral_namespace_contract() -
     assert "native_type: str = 'bucket'" in client
     assert 'location: str | None = None' in client
     assert "versioning_state: str = 'not_collected'" in client
-    assert "provider_metadata: dict[str, Any] = field(default_factory=dict)" in client
+    assert 'provider_metadata: dict[str, Any] = field(default_factory=dict)' in client
     assert "bucket.native_type = summary.native_type or 'bucket'" in sync
     assert 'bucket.location = summary.location' in sync
     assert 'bucket.provider_metadata = dict(summary.provider_metadata or {})' in sync

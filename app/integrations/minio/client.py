@@ -9,7 +9,10 @@ from urllib.parse import urlsplit, urlunsplit
 
 import boto3
 import requests
+from botocore.auth import S3SigV4Auth
+from botocore.awsrequest import AWSRequest
 from botocore.config import Config as BotoCoreConfig
+from botocore.credentials import Credentials
 from botocore.exceptions import (
     BotoCoreError,
     ClientError,
@@ -49,6 +52,9 @@ class MinioBucketSummary:
     access_policy_state: str = 'not_collected'
     exposure_state: str = 'not_collected'
     provider_metadata: dict[str, Any] = field(default_factory=dict)
+    quota_bytes: int | None = None
+    quota_state: str = 'not_collected'
+    quota_observed_at: datetime | None = None
     size_bytes: int | None = None
     object_count: int | None = None
     usage_state: str = 'not_collected'
@@ -216,7 +222,6 @@ def test_connection_values(
     )
 
 
-
 _OPTIONAL_ACCESS_DENIED_CODES = {'AccessDenied', 'AllAccessDisabled'}
 _OPTIONAL_UNSUPPORTED_CODES = {'NotImplemented', 'NotSupported', 'MethodNotAllowed', 'XNotImplemented'}
 
@@ -288,6 +293,74 @@ def _bucket_policy_exposure(policy_text: str | None) -> str:
     return 'restricted' if restricted_wildcard else 'private'
 
 
+def _minio_admin_bucket_quota(
+    *,
+    endpoint: str,
+    access_key: str,
+    secret_key: str,
+    region: str,
+    bucket_name: str,
+    timeout: int,
+    verify_ssl: bool,
+) -> tuple[int | None, str]:
+    """Read MinIO bucket quota from the signed Admin API without making it a hard dependency.
+
+    The endpoint is MinIO-specific and requires admin:GetBucketQuota. A missing
+    permission or unavailable Admin API is represented as inventory evidence rather
+    than failing the whole Object Storage Inventory Sync.
+    """
+    parsed = urlsplit(endpoint)
+    if parsed.scheme not in {'http', 'https'} or not parsed.netloc:
+        return None, 'not_collected'
+
+    admin_url = urlunsplit((parsed.scheme, parsed.netloc, '/minio/admin/v3/get-bucket-quota', '', ''))
+    prepared = requests.Request('GET', admin_url, params={'bucket': bucket_name}).prepare()
+    if not prepared.url:
+        return None, 'not_collected'
+
+    aws_request = AWSRequest(method='GET', url=prepared.url)
+    S3SigV4Auth(
+        Credentials(access_key, secret_key),
+        's3',
+        region or 'us-east-1',
+    ).add_auth(aws_request)
+    headers = {str(key): str(value) for key, value in aws_request.headers.items()}
+
+    try:
+        response = requests.get(
+            prepared.url,
+            headers=headers,
+            timeout=max(int(timeout), 1),
+            verify=verify_ssl,
+            allow_redirects=False,
+        )
+    except requests.exceptions.SSLError:
+        return None, 'not_collected'
+    except RequestException:
+        return None, 'not_collected'
+
+    if response.status_code in {404, 405, 501}:
+        return None, 'not_supported'
+    if response.status_code in {401, 403}:
+        return None, 'not_collected'
+    if not response.ok:
+        return None, 'not_collected'
+
+    try:
+        payload = response.json()
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return None, 'not_collected'
+
+    raw_quota = payload.get('quota') if isinstance(payload, dict) else None
+    try:
+        quota_bytes = int(raw_quota or 0)
+    except (TypeError, ValueError):
+        return None, 'not_collected'
+    if quota_bytes <= 0:
+        return None, 'not_configured'
+    return quota_bytes, 'configured'
+
+
 def _collect_bucket_usage_stats(client, bucket_name: str) -> tuple[int, int]:
     """Return logical bytes and current object count by scanning ListObjectsV2.
 
@@ -308,11 +381,37 @@ def _enrich_bucket_summary(
     client,
     summary: MinioBucketSummary,
     *,
+    endpoint: str,
+    access_key: str,
+    secret_key: str,
+    region: str,
+    timeout: int,
+    verify_ssl: bool,
+    collect_quota: bool,
     collect_usage_stats: bool,
 ) -> MinioBucketSummary:
     name = summary.name
     gaps: list[str] = []
     native_rows: list[dict[str, Any]] = []
+
+    quota_observed_at: datetime | None = None
+    if collect_quota:
+        quota_bytes, quota_state = _minio_admin_bucket_quota(
+            endpoint=endpoint,
+            access_key=access_key,
+            secret_key=secret_key,
+            region=region,
+            bucket_name=name,
+            timeout=timeout,
+            verify_ssl=verify_ssl,
+        )
+        if quota_state in {'configured', 'not_configured'}:
+            quota_observed_at = datetime.now(UTC)
+        elif quota_state == 'not_collected':
+            gaps.append('Bucket Quota')
+    else:
+        quota_bytes = None
+        quota_state = 'not_supported'
 
     versioning_payload, versioning_gap = _optional_bucket_call(
         client,
@@ -377,13 +476,13 @@ def _enrich_bucket_summary(
     else:
         lock_config = (lock_payload or {}).get('ObjectLockConfiguration') or {}
         immutability_state = 'enabled' if lock_config.get('ObjectLockEnabled') == 'Enabled' else 'not_configured'
-        default_retention = ((lock_config.get('Rule') or {}).get('DefaultRetention') or {})
+        default_retention = (lock_config.get('Rule') or {}).get('DefaultRetention') or {}
         lock_value = 'Enabled' if immutability_state == 'enabled' else 'Not Configured'
         if default_retention:
             retention_parts = [
                 str(default_retention.get('Mode') or '').strip(),
-                f"{default_retention.get('Days')} Days" if default_retention.get('Days') else '',
-                f"{default_retention.get('Years')} Years" if default_retention.get('Years') else '',
+                f'{default_retention.get("Days")} Days' if default_retention.get('Days') else '',
+                f'{default_retention.get("Years")} Years' if default_retention.get('Years') else '',
             ]
             retention_label = ' · '.join(part for part in retention_parts if part)
             if retention_label:
@@ -437,28 +536,20 @@ def _enrich_bucket_summary(
 
     size_bytes: int | None = None
     object_count: int | None = None
-    usage_state = 'not_collected'
+    usage_state = 'disabled'
     usage_observed_at: datetime | None = None
     if collect_usage_stats:
+        usage_state = 'not_collected'
         try:
             size_bytes, object_count = _collect_bucket_usage_stats(client, name)
             usage_state = 'collected'
             usage_observed_at = datetime.now(UTC)
         except (ClientError, BotoCoreError, OSError):
             gaps.append('Usage Statistics')
-    native_rows.append(
-        {
-            'label': 'Usage Statistics',
-            'value': (
-                'Collected'
-                if usage_state == 'collected'
-                else ('Not Collected' if collect_usage_stats else 'Disabled')
-            ),
-        }
-    )
-
     provider_metadata: dict[str, Any] = {
         'enrichment_profile': 'minio-s3-bucket-v1',
+        'enrichment_profile_label': 'MinIO S3 Bucket v1',
+        'quota_collection': 'minio-admin-v3' if collect_quota else 'not_supported',
         'usage_stats_mode': 'full_scan' if collect_usage_stats else 'disabled',
         'sections': [
             {
@@ -485,6 +576,9 @@ def _enrich_bucket_summary(
         access_policy_state=access_policy_state,
         exposure_state=exposure_state,
         provider_metadata=provider_metadata,
+        quota_bytes=quota_bytes,
+        quota_state=quota_state,
+        quota_observed_at=quota_observed_at,
         size_bytes=size_bytes,
         object_count=object_count,
         usage_state=usage_state,
@@ -501,6 +595,7 @@ def collect_bucket_inventory_values(
     addressing_style: str = 'path',
     timeout: int = 5,
     verify_ssl: bool = True,
+    collect_quota: bool = True,
     collect_usage_stats: bool = False,
 ) -> MinioInventoryResult:
     """Collect and enrich bucket inventory without mutating provider validation state."""
@@ -525,13 +620,21 @@ def collect_bucket_inventory_values(
     )
     base_buckets = _bucket_inventory(payload, location=region)
     buckets = tuple(
-        _enrich_bucket_summary(client, summary, collect_usage_stats=collect_usage_stats)
+        _enrich_bucket_summary(
+            client,
+            summary,
+            endpoint=endpoint,
+            access_key=access_key,
+            secret_key=secret_key,
+            region=region,
+            timeout=timeout,
+            verify_ssl=verify_ssl,
+            collect_quota=collect_quota,
+            collect_usage_stats=collect_usage_stats,
+        )
         for summary in base_buckets
     )
-    warning_count = sum(
-        len(bucket.provider_metadata.get('enrichment_gaps') or ())
-        for bucket in buckets
-    )
+    warning_count = sum(len(bucket.provider_metadata.get('enrichment_gaps') or ()) for bucket in buckets)
     total_latency_ms = max(int((perf_counter() - started) * 1000), list_latency_ms)
     return MinioInventoryResult(
         latency_ms=total_latency_ms,
@@ -546,6 +649,7 @@ def collect_instance_bucket_inventory(
     *,
     collect_usage_stats: bool = False,
 ) -> MinioInventoryResult:
+    provider_key = str(instance.detected_product or '').strip().lower().replace('-', '_')
     return collect_bucket_inventory_values(
         endpoint=instance.endpoint,
         access_key=instance.access_key,
@@ -554,6 +658,7 @@ def collect_instance_bucket_inventory(
         addressing_style=instance.addressing_style,
         timeout=instance.timeout,
         verify_ssl=instance.verify_ssl,
+        collect_quota=provider_key == 'minio',
         collect_usage_stats=collect_usage_stats,
     )
 
@@ -590,9 +695,7 @@ def probe_runtime_values(
             allow_redirects=False,
         )
     except requests.exceptions.SSLError as exc:
-        raise MinioConnectionError(
-            'TLS validation failed during the object-storage runtime health probe.'
-        ) from exc
+        raise MinioConnectionError('TLS validation failed during the object-storage runtime health probe.') from exc
     except RequestException as exc:
         raise MinioConnectionError(
             'KAORI could not reach the object-storage endpoint during the lightweight runtime health probe.'
@@ -600,13 +703,9 @@ def probe_runtime_values(
 
     latency_ms = max(int((perf_counter() - started) * 1000), 0)
     if product_key == 'minio' and response.status_code != 200:
-        raise MinioConnectionError(
-            f'MinIO runtime health endpoint returned HTTP {response.status_code}.'
-        )
+        raise MinioConnectionError(f'MinIO runtime health endpoint returned HTTP {response.status_code}.')
     if product_key != 'minio' and response.status_code >= 500:
-        raise MinioConnectionError(
-            f'Object-storage runtime endpoint returned HTTP {response.status_code}.'
-        )
+        raise MinioConnectionError(f'Object-storage runtime endpoint returned HTTP {response.status_code}.')
     return MinioRuntimeProbeResult(
         connected=True,
         latency_ms=latency_ms,

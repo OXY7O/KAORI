@@ -6,7 +6,7 @@
 {% import "components/table_label.html" as table_label %}
 <div x-data="{ openDetail: null }">
     <div class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[88rem]') }}">
+        <table class="{{ table_ui.table_classes('min-w-[80rem]') }}">
             <caption class="sr-only">Committed object-storage bucket and container inventory.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
@@ -15,8 +15,7 @@
                     <th class="{{ table_ui.header_cell_classes() }}">Provider</th>
                     <th class="{{ table_ui.header_cell_classes() }}">Type</th>
                     <th class="{{ table_ui.header_cell_classes() }} min-w-[10rem]">Location</th>
-                    <th class="{{ table_ui.header_cell_classes() }} min-w-[9rem]">Size</th>
-                    <th class="{{ table_ui.header_cell_classes() }} min-w-[8rem]">Objects</th>
+                    <th class="{{ table_ui.header_cell_classes() }} min-w-[10rem]">Quota</th>
                     <th class="{{ table_ui.header_cell_classes() }}">Protection</th>
                     <th class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Last Snapshot</th>
                     <th class="{{ table_ui.header_cell_classes(true) }}">Details</th>
@@ -26,7 +25,7 @@
                 {% for asset in inventory.assets %}
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }}">
-                            {{ table_ui.title_cell(asset.name, asset.environment|environment_name(empty='Not Specified'), 'container') }}
+                            {{ table_ui.title_cell(asset.name, asset.environment|environment_name(empty='Not Specified') , 'container') }}
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
                             <p class="text-sm font-semibold text-content-primary">{{ asset.system_name }}</p>
@@ -37,10 +36,11 @@
                             <span class="text-xs font-medium text-content-secondary">{{ asset.location }}</span>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            <span class="text-xs font-semibold text-content-primary">{{ asset.size_label }}</span>
-                        </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <span class="text-xs font-semibold text-content-primary">{{ asset.object_count_label }}</span>
+                            {% if asset.quota.key == 'configured' %}
+                                <span class="text-xs font-semibold text-content-primary">{{ asset.quota.label }}</span>
+                            {% else %}
+                                {{ table_label.metadata_label(asset.quota.label) }}
+                            {% endif %}
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
                             {{ table_label.status_label(asset.protection.label, asset.protection.tone) }}
@@ -63,7 +63,7 @@
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="10" class="p-0">
+                        <td colspan="9" class="p-0">
                             {% set empty_state_icon = "boxes" %}
                             {% set empty_state_label = "Inventory Required" %}
                             {% set empty_state_title = "No Buckets or Containers Found" %}
@@ -81,7 +81,7 @@
             <p>
                 Showing <span class="font-semibold text-content-primary">{{ inventory.pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ inventory.pagination.end_item }}</span>
                 of <span class="font-semibold text-content-primary">{{ inventory.pagination.total_items }}</span>
-                {{ pagination_ui.resource_name('Assets', inventory.pagination.total_items)|trim }}
+                {{ pagination_ui.resource_name('Assets', inventory.pagination.total_items) |trim }}
             </p>
             <form hx-get="{{ url_for('object_storage_inventory.buckets') }}"
                   hx-target="#object-storage-buckets-table-content"
@@ -154,6 +154,9 @@
         {% set protection_badge %}
             {{ table_label.status_indicator_label(asset.protection.label, asset.protection.tone, none, 'detail') }}
         {% endset %}
+        {% set snapshot_badge %}
+            {{ table_label.status_label(asset.snapshot_status_label, asset.snapshot_status_tone, none, 'detail') }}
+        {% endset %}
         <template x-teleport="body">
             <div x-cloak
                  x-show="openDetail === {{ asset.id|tojson }}"
@@ -172,15 +175,19 @@
                          tabindex="-1"
                          x-show="openDetail === {{ asset.id|tojson }}"
                          x-effect="if (openDetail === {{ asset.id|tojson }}) { $nextTick(() => $el.focus()) }"
-                         class="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-6xl flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-2xl sm:max-h-[calc(100dvh-3rem)]">
-                    <header class="shrink-0 border-b border-outline-subtle bg-surface-card px-4 py-4 sm:px-5">
+                         class="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-2xl sm:max-h-[calc(100dvh-3rem)]">
+                    <header class="shrink-0 border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
                         <div class="flex min-w-0 items-start justify-between gap-4">
                             <div class="min-w-0">
-                                <p class="text-xs font-semibold text-kaori-primary">Details</p>
+                                <p class="text-xs font-semibold text-kaori-primary">Object Storage Asset</p>
                                 <h2 id="{{ modal_id }}-title"
                                     class="mt-1 break-words text-lg font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ asset.name }}</h2>
-                                <p id="{{ modal_id }}-description"
-                                   class="mt-1 text-sm leading-5 text-content-secondary">{{ asset.provider_label }} · {{ asset.native_type_label }} · committed inventory</p>
+                                <div id="{{ modal_id }}-description"
+                                     class="mt-2 flex flex-wrap items-center gap-2 text-xs text-content-muted">
+                                    {{ table_label.metadata_label(asset.provider_label) }}
+                                    {{ table_label.metadata_label(asset.native_type_label) }}
+                                    {{ snapshot_badge }}
+                                </div>
                             </div>
                             <button type="button"
                                     class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-secondary transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
@@ -190,94 +197,100 @@
                             </button>
                         </div>
                     </header>
-                    <div class="min-h-0 overflow-y-auto bg-surface-page px-4 py-4 sm:px-5 sm:py-5">
-                        <div class="space-y-5">
-                            {% call side_drawer.section('Object Snapshot Summary', 'Canonical fields shared across object-storage providers.', 'layout-dashboard', badge=protection_badge, variant='highlight', density='compact') %}
+                    <div class="min-h-0 overflow-y-auto bg-surface-page px-4 py-4 sm:px-6 sm:py-5">
+                        <div class="space-y-4">
+                            {% call side_drawer.section(
+                                'Inventory Snapshot',
+                                'Capacity, usage, and protection posture from the latest committed Object Storage Inventory Sync.',
+                                'layout-dashboard',
+                                badge=protection_badge,
+                                variant='highlight',
+                                density='compact'
+                                ) %}
                                 <dl class="grid gap-4 border-t border-outline-subtle pt-3 sm:grid-cols-2 xl:grid-cols-4 xl:divide-x xl:divide-outline-subtle">
-                                    <div class="xl:pr-4">{{ side_drawer.metric('Provider', asset.provider_label, 'database-zap', 'Managed Provider', variant='plain') }}</div>
-                                    <div class="xl:px-4">{{ side_drawer.metric('Type', asset.native_type_label, 'box', 'Native Namespace Type', variant='plain') }}</div>
-                                    <div class="xl:px-4">{{ side_drawer.metric('Location', asset.location, 'map-pin', 'Provider Location', variant='plain') }}</div>
+                                    <div class="xl:pr-4">{{ side_drawer.metric('Quota', asset.quota.label, 'gauge', asset.quota.state_label, variant='plain') }}</div>
+                                    <div class="xl:px-4">{{ side_drawer.metric('Used Size', asset.size_label, 'hard-drive', 'Logical Current Objects', variant='plain') }}</div>
+                                    <div class="xl:px-4">{{ side_drawer.metric('Current Objects', asset.object_count_label, 'files', 'Current Object Count', variant='plain') }}</div>
                                     <div class="xl:pl-4">{{ side_drawer.metric('Protection', asset.protection.label, 'shield-check', 'Normalized Posture', variant='plain') }}</div>
                                 </dl>
                             {% endcall %}
                             <div class="grid gap-4 xl:grid-cols-2">
-                                {% call side_drawer.section('Identity & Location', '', 'badge-info', density='compact') %}
-                                    <div class="space-y-3">
-                                        {{ detail_ui.technical_row('Name', asset.name) }}
+                                {% call side_drawer.section('Asset Context', 'Canonical identity and committed snapshot context.', 'badge-info', density='compact') %}
+                                    <div class="grid gap-x-6 gap-y-3 sm:grid-cols-2">
                                         {{ detail_ui.detail_row('System', asset.system_name) }}
-                                        {{ detail_ui.detail_row('Provider', asset.provider_label) }}
+                                        {{ detail_ui.detail_row('Environment', asset.environment|environment_name(empty='Not Specified') ) }}
                                         {{ detail_ui.detail_row('Native Type', asset.native_type_label) }}
                                         {{ detail_ui.detail_row('Location', asset.location) }}
-                                        {{ detail_ui.detail_row('Created', asset.provider_created_at|user_datetime(date_format='day_month_numeric'), nowrap=True) }}
+                                        {{ detail_ui.detail_row('Created', asset.provider_created_at|user_datetime(date_format='day_month_numeric') , nowrap=True) }}
+                                        {{ detail_ui.detail_row('Last Collected', asset.observed_at|user_datetime(date_format='day_month_numeric') , nowrap=True) }}
+                                        {{ detail_ui.detail_row('Snapshot Source', asset.source_label, nowrap=True) }}
+                                        {{ detail_ui.status_row('Snapshot State', asset.snapshot_status_label, asset.snapshot_status_tone) }}
                                     </div>
                                 {% endcall %}
-                                {% set snapshot_badge %}
-                                    {{ table_label.status_label(asset.snapshot_status_label, asset.snapshot_status_tone, none, 'detail') }}
-                                {% endset %}
-                                {% call side_drawer.section('Snapshot Context', '', 'clock-3', badge=snapshot_badge, density='compact') %}
-                                    <div class="space-y-3">
-                                        {{ detail_ui.detail_row('Last Collected', asset.observed_at|user_datetime(date_format='day_month_numeric'), nowrap=True) }}
-                                        {{ detail_ui.detail_row('Snapshot Source', asset.source_label, nowrap=True) }}
-                                        {{ detail_ui.detail_row('Environment', asset.environment|environment_name(empty='Not Specified')) }}
+                                {% call side_drawer.section('Provider Context', 'Provider identity, collector profile, and connection evidence.', 'database-zap', density='compact') %}
+                                    <div class="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+                                        {{ detail_ui.detail_row('Profile', asset.compatibility_profile_label) }}
+                                        {{ detail_ui.detail_row('Release', asset.release_label) }}
+                                        {{ detail_ui.detail_row('Addressing', asset.addressing_style) }}
+                                        {{ detail_ui.detail_row('Enrichment Profile', asset.enrichment_profile_label) }}
+                                        {{ detail_ui.detail_row('Usage Stats Mode', asset.usage_stats_mode_label) }}
+                                        {{ detail_ui.detail_row('Quota Source', asset.quota_collection_label) }}
+                                        <div class="sm:col-span-2">{{ detail_ui.detail_row('API Endpoint', asset.endpoint, break_all=true) }}</div>
                                     </div>
                                 {% endcall %}
                             </div>
-                            {% set usage_badge %}
-                                {{ table_label.status_label(asset.usage_state.label, asset.usage_state.tone, none, 'detail') }}
-                            {% endset %}
-                            {% call side_drawer.section('Usage Snapshot', 'Logical current-object usage collected by the inventory job when the full-scan profile is enabled.', 'chart-no-axes-column', badge=usage_badge, density='compact') %}
-                                <dl class="grid gap-4 border-t border-outline-subtle pt-3 sm:grid-cols-3 sm:divide-x sm:divide-outline-subtle">
-                                    <div class="sm:pr-4">{{ side_drawer.metric('Size', asset.size_label, 'hard-drive', 'Logical Bytes', variant='plain') }}</div>
-                                    <div class="sm:px-4">{{ side_drawer.metric('Current Objects', asset.object_count_label, 'files', 'Current Versions', variant='plain') }}</div>
-                                    <div class="sm:pl-4">{{ side_drawer.metric('Usage Evidence', asset.usage_state.label, 'scan-search', 'Inventory Collection', variant='plain') }}</div>
-                                </dl>
-                            {% endcall %}
                             <div class="grid gap-4 xl:grid-cols-2">
-                                {% call side_drawer.section('Data Protection', 'Normalized protection concepts; provider-native implementation details remain provider-owned.', 'shield-check', density='compact') %}
-                                    <div class="grid gap-3 sm:grid-cols-2">
+                                {% call side_drawer.section('Protection & Access', 'Normalized controls used for cross-provider governance.', 'shield-check', density='compact') %}
+                                    <div class="grid gap-x-6 gap-y-3 sm:grid-cols-2">
                                         {{ detail_ui.status_row('Versioning', asset.versioning.label, asset.versioning.tone) }}
                                         {{ detail_ui.status_row('Encryption', asset.encryption.label, asset.encryption.tone) }}
                                         {{ detail_ui.status_row('Immutability', asset.immutability.label, asset.immutability.tone) }}
+                                        {{ detail_ui.status_row('Access Policy', asset.access_policy.label, asset.access_policy.tone) }}
+                                        {{ detail_ui.status_row('Public Exposure', asset.public_exposure.label, asset.public_exposure.tone) }}
                                         {{ detail_ui.status_row('Protection Posture', asset.protection.label, asset.protection.tone) }}
                                     </div>
                                 {% endcall %}
-                                {% call side_drawer.section('Lifecycle & Replication', 'Canonical lifecycle and data-copy posture across providers.', 'git-branch', density='compact') %}
-                                    <div class="grid gap-3 sm:grid-cols-2">
+                                {% call side_drawer.section('Lifecycle & Replication', 'Lifecycle and data-copy posture kept separate from protection controls.', 'git-branch', density='compact') %}
+                                    <div class="grid gap-x-6 gap-y-3 sm:grid-cols-2">
                                         {{ detail_ui.status_row('Lifecycle', asset.lifecycle.label, asset.lifecycle.tone) }}
                                         {{ detail_ui.status_row('Replication', asset.replication.label, asset.replication.tone) }}
+                                        {{ detail_ui.detail_row('Quota State', asset.quota.state_label) }}
+                                        {{ detail_ui.detail_row('Usage Evidence', asset.usage_state.label) }}
+                                    </div>
+                                    <div class="mt-4 border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">
+                                        Used Size and Current Objects require the optional <span class="font-semibold text-content-secondary">full_scan</span> profile; quota collection does not.
                                     </div>
                                 {% endcall %}
                             </div>
-                            <div class="grid gap-4 xl:grid-cols-2">
-                                {% call side_drawer.section('Access Posture', 'Normalized access evidence without exposing credentials or policy contents.', 'key-round', density='compact') %}
-                                    <div class="grid gap-3 sm:grid-cols-2">
-                                        {{ detail_ui.status_row('Access Policy', asset.access_policy.label, asset.access_policy.tone) }}
-                                        {{ detail_ui.status_row('Public Exposure', asset.public_exposure.label, asset.public_exposure.tone) }}
+                            {% for section in asset.provider_detail_sections %}
+                                {% call side_drawer.section(section.title, section.description, section.icon, density='compact') %}
+                                    <div class="grid gap-x-6 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">
+                                        {% for row in section.rows %}
+                                            {% if row.technical|default(false) %}
+                                                <div class="sm:col-span-2 xl:col-span-3">{{ detail_ui.detail_row(row.label, row.value, break_all=true) }}</div>
+                                            {% else %}
+                                                {{ detail_ui.detail_row(row.label, row.value) }}
+                                            {% endif %}
+                                        {% endfor %}
                                     </div>
                                 {% endcall %}
-                                {% for section in asset.provider_detail_sections %}
-                                    {% call side_drawer.section(section.title, section.description, section.icon) %}
-                                        <div class="grid gap-3 sm:grid-cols-2">
-                                            {% for row in section.rows %}
-                                                {% if row.technical|default(false) %}
-                                                    <div class="sm:col-span-2">{{ detail_ui.stacked_detail_row(row.label, row.value, break_all=true) }}</div>
-                                                {% else %}
-                                                    {{ detail_ui.detail_row(row.label, row.value) }}
-                                                {% endif %}
-                                            {% endfor %}
-                                        </div>
-                                    {% endcall %}
-                                {% endfor %}
+                            {% endfor %}
+                            {% if asset.enrichment_gaps %}
+                                {{ operational_callout.render('Partial Provider Evidence',
+                                                                'Some optional provider evidence could not be collected: ' ~ (asset.enrichment_gaps|join(', ') ) ~ '. The committed inventory snapshot remains usable.',
+                                icon='triangle-alert',
+                                tone='warning',
+                                variant='semantic',
+                                extra_classes='w-full'
+                                ) }}
+                            {% endif %}
+                            <div class="grid gap-3 xl:grid-cols-2">
+                                {{ operational_callout.render('Data Boundary', asset.data_boundary, icon='database', tone='info', extra_classes='w-full') }}
+                                {{ operational_callout.render('Recommended Action', asset.recommended_action, icon='compass', tone='info', extra_classes='w-full') }}
                             </div>
-                            {% call side_drawer.section('Operational Context', 'Committed snapshot ownership and recommended next action.', 'compass') %}
-                                <div class="grid gap-3 sm:grid-cols-2">
-                                    {{ detail_ui.stacked_detail_row('Data Boundary', asset.data_boundary) }}
-                                    {{ detail_ui.stacked_detail_row('Recommended Action', asset.recommended_action) }}
-                                </div>
-                            {% endcall %}
                         </div>
                     </div>
-                    <footer class="flex shrink-0 items-center justify-end gap-2 border-t border-outline-subtle bg-surface-card px-4 py-3 sm:px-5">
+                    <footer class="flex shrink-0 items-center justify-end gap-2 border-t border-outline-subtle bg-surface-card px-5 py-3 sm:px-6">
                         <button type="button"
                                 class="inline-flex min-h-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 py-2 text-sm font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary"
                                 @click="openDetail = null">Close</button>

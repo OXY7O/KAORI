@@ -99,14 +99,24 @@
             {% set query_params = {'product': selected_product, 'environment': selected_environment, 'status': selected_status, 'search': search, 'per_page': inventory.pagination.per_page, 'partial_mode': 'table_content'} %}
             {% if inventory.pagination.has_prev %}
                 {% set prev_url = url_for('object_storage_inventory.systems', product=selected_product, environment=selected_environment, status=selected_status, search=search, page=inventory.pagination.prev_page, per_page=inventory.pagination.per_page, partial_mode='table_content') %}
-                <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#object-storage-systems-table-content" hx-swap="innerHTML" hx-indicator="#object-storage-systems-loading" class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+                <a href="{{ prev_url }}"
+                   hx-get="{{ prev_url }}"
+                   hx-target="#object-storage-systems-table-content"
+                   hx-swap="innerHTML"
+                   hx-indicator="#object-storage-systems-loading"
+                   class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
             {% else %}
                 <span class="{{ pagination_ui.navigation_classes(true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
             {% endif %}
             {{ pagination_ui.numeric_pages(inventory.pagination.page, inventory.pagination.total_pages, hx_target='#object-storage-systems-table-content', hx_indicator='#object-storage-systems-loading', query_params=query_params) }}
             {% if inventory.pagination.has_next %}
                 {% set next_url = url_for('object_storage_inventory.systems', product=selected_product, environment=selected_environment, status=selected_status, search=search, page=inventory.pagination.next_page, per_page=inventory.pagination.per_page, partial_mode='table_content') %}
-                <a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#object-storage-systems-table-content" hx-swap="innerHTML" hx-indicator="#object-storage-systems-loading" class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+                <a href="{{ next_url }}"
+                   hx-get="{{ next_url }}"
+                   hx-target="#object-storage-systems-table-content"
+                   hx-swap="innerHTML"
+                   hx-indicator="#object-storage-systems-loading"
+                   class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
             {% else %}
                 <span class="{{ pagination_ui.navigation_classes(true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
             {% endif %}
@@ -128,7 +138,7 @@
             action_label='Open Provider Integration',
             action_icon='external-link',
             width='2xl'
-        ) %}
+            ) %}
             <div class="space-y-5">
                 {% call side_drawer.section('System Snapshot Summary', 'Canonical system and inventory posture.', 'layout-dashboard', badge=readiness_badge, variant='highlight', density='compact') %}
                     <dl class="grid gap-4 border-t border-outline-subtle pt-3 sm:grid-cols-2 xl:grid-cols-4 xl:divide-x xl:divide-outline-subtle">

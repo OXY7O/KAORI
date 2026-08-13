@@ -100,7 +100,6 @@ _STATE_PRESENTATION = {
 }
 
 
-
 def _format_bytes(value: int | None) -> str:
     if value is None:
         return 'Not Collected'
@@ -159,59 +158,64 @@ def _protection_posture(
     return {'label': 'Partial', 'tone': 'info'}
 
 
-def _provider_metadata_rows(metadata: dict[str, Any] | None) -> list[dict[str, str]]:
-    rows: list[dict[str, str]] = []
-    for key, value in sorted((metadata or {}).items()):
-        if key == 'sections' or value is None:
-            continue
-        if isinstance(value, (dict, list, tuple, set)):
-            count = len(value)
-            display = f'{count} {"Item" if count == 1 else "Items"}'
-        else:
-            display = str(value)
-        rows.append(
-            {
-                'label': str(key).replace('_', ' ').replace('-', ' ').title(),
-                'value': display,
-            }
-        )
-    return rows
+def _quota_view(quota_bytes: int | None, quota_state: str | None) -> dict[str, str]:
+    key = str(quota_state or 'not_collected').strip().lower().replace('-', '_')
+    if key == 'configured' and quota_bytes is not None:
+        return {
+            'key': 'configured',
+            'label': _format_bytes(quota_bytes),
+            'state_label': 'Configured',
+            'tone': 'normal',
+        }
+    if key == 'not_configured':
+        return {
+            'key': key,
+            'label': 'No Quota',
+            'state_label': 'Not Configured',
+            'tone': 'info',
+        }
+    if key == 'not_supported':
+        return {
+            'key': key,
+            'label': 'Not Supported',
+            'state_label': 'Not Supported',
+            'tone': 'info',
+        }
+    return {
+        'key': 'not_collected',
+        'label': 'Not Collected',
+        'state_label': 'Not Collected',
+        'tone': 'unknown',
+    }
+
+
+def _collector_profile_label(metadata: dict[str, Any]) -> str:
+    declared = str(metadata.get('enrichment_profile_label') or '').strip()
+    if declared:
+        return declared
+    raw = str(metadata.get('enrichment_profile') or '').strip()
+    return raw.replace('-', ' ').replace('_', ' ').title() if raw else 'Base Inventory'
+
+
+def _usage_mode_label(metadata: dict[str, Any]) -> str:
+    mode = str(metadata.get('usage_stats_mode') or 'disabled').strip().lower()
+    return 'Full Scan' if mode == 'full_scan' else 'Disabled'
+
+
+def _quota_collection_label(metadata: dict[str, Any]) -> str:
+    source = str(metadata.get('quota_collection') or '').strip().lower()
+    if source == 'minio-admin-v3':
+        return 'MinIO Admin API v3'
+    if source == 'not_supported':
+        return 'Not Supported'
+    return 'Not Collected'
 
 
 def _provider_detail_sections(
     *,
-    provider_label: str,
-    release_label: str,
-    compatibility_profile_label: str,
-    addressing_style: str,
-    endpoint: str,
     provider_metadata: dict[str, Any] | None,
 ) -> list[dict[str, Any]]:
-    sections: list[dict[str, Any]] = [
-        {
-            'title': f'{provider_label} Provider Details',
-            'description': 'Provider-native connection and compatibility evidence.',
-            'icon': 'database-zap',
-            'rows': [
-                {'label': 'Profile', 'value': compatibility_profile_label},
-                {'label': 'Release', 'value': release_label},
-                {'label': 'Addressing', 'value': addressing_style},
-                {'label': 'API Endpoint', 'value': endpoint, 'technical': True},
-            ],
-        }
-    ]
-
-    metadata_rows = _provider_metadata_rows(provider_metadata)
-    if metadata_rows:
-        sections.append(
-            {
-                'title': 'Native Provider Evidence',
-                'description': 'Additional provider metadata retained outside the canonical inventory contract.',
-                'icon': 'braces',
-                'rows': metadata_rows,
-            }
-        )
-
+    sections: list[dict[str, Any]] = []
     for section in (provider_metadata or {}).get('sections', []):
         if not isinstance(section, dict):
             continue
@@ -219,7 +223,25 @@ def _provider_detail_sections(
         raw_rows = section.get('rows')
         if not title or not isinstance(raw_rows, list):
             continue
-        rows = [row for row in raw_rows if isinstance(row, dict) and row.get('label') and row.get('value') is not None]
+        rows: list[dict[str, Any]] = []
+        for raw_row in raw_rows:
+            if not isinstance(raw_row, dict) or not raw_row.get('label'):
+                continue
+            value = raw_row.get('value')
+            if value is None:
+                continue
+            if raw_row.get('value_type') == 'bytes':
+                try:
+                    value = _format_bytes(int(value))
+                except (TypeError, ValueError):
+                    value = 'Not Collected'
+            rows.append(
+                {
+                    'label': str(raw_row.get('label')),
+                    'value': value,
+                    'technical': bool(raw_row.get('technical')),
+                }
+            )
         if rows:
             sections.append(
                 {
@@ -435,9 +457,7 @@ def _overview_snapshot(rows: list[dict[str, Any]]) -> dict[str, Any]:
         'description': description,
         'latest_collected_at': latest,
         'latest_supporting': (
-            f'{OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS}-hour freshness window'
-            if latest
-            else 'No committed timestamp'
+            f'{OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS}-hour freshness window' if latest else 'No committed timestamp'
         ),
         'scope_label': 'All Managed Systems',
         'scope_supporting': f'{total_systems} Systems Registered',
@@ -561,7 +581,9 @@ def _bucket_row(bucket: ObjectStorageBucket) -> dict[str, Any]:
     provider_key = str(connection.detected_product or '') if connection is not None else ''
     provider_label = _product_label(connection.detected_product if connection is not None else None)
     native_type = str(bucket.native_type or 'bucket').strip().lower()
-    location = str(bucket.location or '').strip() or (connection.region if connection is not None else '') or 'Not Observed'
+    location = (
+        str(bucket.location or '').strip() or (connection.region if connection is not None else '') or 'Not Observed'
+    )
     addressing_style = (
         str(connection.addressing_style or 'path').replace('_', ' ').title()
         if connection is not None
@@ -572,6 +594,7 @@ def _bucket_row(bucket: ObjectStorageBucket) -> dict[str, Any]:
         connection.compatibility_profile if connection is not None else None
     )
     endpoint = connection.endpoint if connection is not None else 'Not Configured'
+    provider_metadata = dict(bucket.provider_metadata or {})
     versioning = _state_view(bucket.versioning_state)
     immutability = _state_view(bucket.immutability_state)
     encryption = _state_view(bucket.encryption_state)
@@ -585,6 +608,7 @@ def _bucket_row(bucket: ObjectStorageBucket) -> dict[str, Any]:
         encryption_state=bucket.encryption_state,
         exposure_state=bucket.exposure_state,
     )
+    quota = _quota_view(bucket.quota_bytes, bucket.quota_state)
     snapshot_status_label, snapshot_status_tone = _snapshot_status(bucket.observed_at)
     return {
         'id': bucket.id,
@@ -627,20 +651,26 @@ def _bucket_row(bucket: ObjectStorageBucket) -> dict[str, Any]:
         'release_label': release_label,
         'compatibility_profile_label': compatibility_profile_label,
         'provider_connection_id': connection.id if connection is not None else None,
-        'provider_metadata': dict(bucket.provider_metadata or {}),
+        'provider_metadata': provider_metadata,
+        'enrichment_profile_label': _collector_profile_label(provider_metadata),
+        'usage_stats_mode_label': _usage_mode_label(provider_metadata),
+        'quota_collection_label': _quota_collection_label(provider_metadata),
+        'enrichment_gaps': tuple(provider_metadata.get('enrichment_gaps') or ()),
+        'quota_bytes': bucket.quota_bytes,
+        'quota': quota,
+        'quota_observed_at': bucket.quota_observed_at,
         'data_boundary': 'Latest committed Object Storage Inventory Sync snapshot; no live provider query is issued.',
         'recommended_action': (
-            'Review provider-specific enrichment when protection or access evidence is required.'
-            if protection['label'] == 'Not Assessed'
-            else 'Review normalized posture and provider-native evidence before making storage changes.'
+            'Review optional admin:GetBucketQuota access when MinIO quota inventory is required.'
+            if provider_key == 'minio' and quota['key'] == 'not_collected'
+            else (
+                'Review provider-specific enrichment when protection or access evidence is required.'
+                if protection['label'] == 'Not Assessed'
+                else 'Review normalized posture and provider-native evidence before making storage changes.'
+            )
         ),
         'provider_detail_sections': _provider_detail_sections(
-            provider_label=provider_label,
-            release_label=release_label,
-            compatibility_profile_label=compatibility_profile_label,
-            addressing_style=addressing_style,
-            endpoint=endpoint,
-            provider_metadata=dict(bucket.provider_metadata or {}),
+            provider_metadata=provider_metadata,
         ),
         'source_label': 'Committed Snapshot',
     }
@@ -661,9 +691,13 @@ def build_buckets(filters: BucketFilters) -> dict[str, Any]:
     systems = _system_query().all()
     system_rows = [_system_row(system) for system in systems]
     system_by_id = {system.id: system for system in systems}
-    buckets = ObjectStorageBucket.query.options(
-        joinedload(ObjectStorageBucket.object_storage_system).joinedload(ObjectStorageSystem.minio_connection)
-    ).order_by(ObjectStorageBucket.name.asc()).all()
+    buckets = (
+        ObjectStorageBucket.query.options(
+            joinedload(ObjectStorageBucket.object_storage_system).joinedload(ObjectStorageSystem.minio_connection)
+        )
+        .order_by(ObjectStorageBucket.name.asc())
+        .all()
+    )
     rows = [_bucket_row(bucket) for bucket in buckets]
     search = filters.search.strip().lower()
     filtered = [
@@ -672,7 +706,7 @@ def build_buckets(filters: BucketFilters) -> dict[str, Any]:
         if (
             not search
             or search
-            in f"{row['name']} {row['system_name']} {row['provider_label']} {row['native_type_label']} {row['location']}".lower()
+            in f'{row["name"]} {row["system_name"]} {row["provider_label"]} {row["native_type_label"]} {row["location"]}'.lower()
         )
         and (not filters.system_id or row['system_id'] == filters.system_id)
         and (not filters.product or row['provider_key'] == filters.product)
@@ -700,15 +734,17 @@ def build_buckets(filters: BucketFilters) -> dict[str, Any]:
             (row['observed_at'] for row in filtered if row['observed_at'] is not None),
             default=None,
         ),
-        'systems': [
-            {'id': row['id'], 'name': row['name']} for row in system_rows if row['id'] in system_by_id
-        ],
+        'systems': [{'id': row['id'], 'name': row['name']} for row in system_rows if row['id'] in system_by_id],
         **_system_filter_options(system_rows),
     }
 
 
 def build_bucket_detail(bucket_id: int) -> dict[str, Any] | None:
-    bucket = ObjectStorageBucket.query.options(
-        joinedload(ObjectStorageBucket.object_storage_system).joinedload(ObjectStorageSystem.minio_connection)
-    ).filter(ObjectStorageBucket.id == bucket_id).first()
+    bucket = (
+        ObjectStorageBucket.query.options(
+            joinedload(ObjectStorageBucket.object_storage_system).joinedload(ObjectStorageSystem.minio_connection)
+        )
+        .filter(ObjectStorageBucket.id == bucket_id)
+        .first()
+    )
     return _bucket_row(bucket) if bucket is not None else None
