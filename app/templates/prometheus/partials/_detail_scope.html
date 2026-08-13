@@ -3,6 +3,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "integrations/components/_observability_binding_modal.html" as observability_binding_modal %}
+{% import "integrations/components/_binding_readiness_boundary.html" as binding_readiness_boundary %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set ready_binding_count = binding_rows|selectattr('operational_status', 'equalto', 'ready')|list|length %}
 {% set validated_binding_count = binding_rows|selectattr('validation_status', 'equalto', 'ready')|list|length %}
@@ -65,70 +66,18 @@
         </div>
     </section>
     {% include "prometheus/partials/_binding_registry.html" %}
-    <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
-             aria-labelledby="prometheus-binding-decision-title"
-             data-kaori-binding-decision-horizontal>
-        <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
-            <div class="flex min-w-0 items-start gap-3">
-                {{ integration_ui.palette_icon('waypoints', 'brand', size='md') }}
-                <div class="min-w-0">
-                    <h3 id="prometheus-binding-decision-title"
-                        class="text-sm font-semibold text-content-primary">Binding Decision</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">Source readiness, binding coverage, resolver policy, metrics identity, and the next controlled action in one full-width decision surface.</p>
-                </div>
-            </div>
-            {{ integration_status(instance.readiness_status or 'validation_required', display='text') }}
-        </header>
-        <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
-            {% for label, value, helper in [
-                ('Source Readiness', (instance.readiness_status or 'validation_required')|replace('_', ' ')|title, 'Provider validation state'),
-                ('Consumer Bindings', binding_rows|length, 'Managed asset mappings'),
-                ('Validated Bindings', validated_binding_count, 'Binding checks currently Ready'),
-                ('Operational Bindings', ready_binding_count, 'Effective resolver paths')
-                ] %}
-                <div class="bg-surface-card px-4 py-4 sm:px-5">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
-                    <p class="mt-2 text-lg font-semibold tabular-nums text-content-primary [overflow-wrap:anywhere]">{{ value }}</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</p>
-                </div>
-            {% endfor %}
-        </div>
-        <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle lg:grid-cols-3">
-            <section class="bg-surface-subtle px-4 py-4 sm:px-5">
-                <div class="flex items-start gap-3">
-                    {{ integration_ui.palette_icon('git-branch', 'brand', size='sm') }}
-                    <div class="min-w-0">
-                        <p class="text-xs font-semibold text-content-primary">Resolver Contract</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Primary, secondary, and fallback roles establish preference. Lower priority resolves first within the same role.</p>
-                    </div>
-                </div>
-            </section>
-            <section class="bg-surface-subtle px-4 py-4 sm:px-5">
-                <div class="flex items-start gap-3">
-                    {{ integration_ui.palette_icon('scan-line', 'brand', size='sm') }}
-                    <div class="min-w-0">
-                        <p class="text-xs font-semibold text-content-primary">Consumer Identity Boundary</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Shared-source bindings use stable asset selectors so Kubernetes, MinIO, and future consumer evidence remains isolated.</p>
-                    </div>
-                </div>
-            </section>
-            <section class="bg-surface-subtle px-4 py-4 sm:px-5">
-                <div class="flex items-start gap-3">
-                    {{ integration_ui.palette_icon('target', 'brand', size='sm') }}
-                    <div class="min-w-0">
-                        <p class="text-xs font-semibold text-content-primary">Next Operational Action</p>
-                        {% if not binding_rows %}
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Create the first consumer binding, configure its asset identity selector, then run Binding Validation.</p>
-                        {% elif ready_binding_count < binding_rows|length %}
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">Validate non-operational bindings and resolve source-readiness, selector, or capability gaps.</p>
-                        {% else %}
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">All registered bindings are operational. Revalidate after resolver or Prometheus label-schema changes.</p>
-                        {% endif %}
-                    </div>
-                </div>
-            </section>
-        </div>
-    </section>
+    {{ binding_readiness_boundary.render(
+        'Prometheus',
+        instance.readiness_status or 'validation_required',
+        binding_rows|length,
+        validated_binding_count,
+        ready_binding_count,
+        title='Binding Decision',
+        description='Source readiness, binding validation, resolver preference, metrics identity, and operational eligibility remain independent evidence dimensions.',
+        marker='data-kaori-binding-decision-horizontal',
+        identity_title='Consumer Identity Boundary',
+        identity_copy='Shared-source bindings use stable metrics selectors so Kubernetes, Object Storage, and future consumer evidence remains isolated.'
+    ) }}
     <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
              aria-labelledby="prometheus-consumer-resolution-title"
              data-kaori-consumer-resolution-full-width>

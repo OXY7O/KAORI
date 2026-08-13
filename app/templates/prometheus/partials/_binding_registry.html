@@ -1,36 +1,49 @@
+{% import "components/action_button.html" as action_button %}
+{% import "components/loading_bar.html" as loading_bar %}
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table.html" as table_ui %}
-{% import "components/loading_bar.html" as loading_bar %}
-{% import "components/action_button.html" as action_button %}
 {% import "components/table_label.html" as table_label %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 <section id="prometheus-binding-registry"
          class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
          aria-labelledby="prometheus-bound-scopes-title"
-         data-kaori-bound-scopes-full-width>
-    <header class="flex flex-col gap-2 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
-        <div class="flex min-w-0 items-start gap-3">
-            {{ integration_ui.palette_icon('boxes', 'brand', size='md') }}
-            <div class="min-w-0">
-                <h3 id="prometheus-bound-scopes-title"
-                    class="text-sm font-semibold text-content-primary">Consumer Binding Registry</h3>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Each row represents one governed asset binding, its auto-selected consumer validation profile, and independent operational state.</p>
+         data-kaori-bound-scopes-full-width
+         data-kaori-binding-registry-final-lock>
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                {{ integration_ui.palette_icon('boxes', 'brand', size='md') }}
+                <div class="min-w-0">
+                    <h3 id="prometheus-bound-scopes-title"
+                        class="text-sm font-semibold text-content-primary">Consumer Binding Registry</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">One row per governed consumer asset. Consumer Profile, resolver preference, binding validation, and effective resolution remain explicit and independently reviewable.</p>
+                </div>
             </div>
+            {{ table_label.metadata_label(binding_rows|length ~ (' Binding' if binding_rows|length == 1 else ' Bindings'), 'link-2') }}
         </div>
-        {{ table_label.metadata_label(binding_rows|length ~ (' binding' if binding_rows|length == 1 else ' bindings') ) }}
         {{ loading_bar.render("prometheus-binding-registry-loading", label="Refreshing Prometheus Consumer Bindings") }}
     </header>
     <div x-data="{ selectorEditor: null }" class="overflow-x-auto">
-        <table class="{{ table_ui.table_classes('min-w-[72rem]') }}">
+        <table class="{{ table_ui.table_classes('min-w-[78rem]') }} table-fixed">
+            <colgroup>
+                <col class="w-[16%]">
+                <col class="w-[17%]">
+                <col class="w-[18%]">
+                <col class="w-[10%]">
+                <col class="w-[12%]">
+                <col class="w-[12%]">
+                <col class="w-[15%]">
+            </colgroup>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
                     <th class="{{ table_ui.header_cell_classes() }}">Consumer Asset</th>
                     <th class="{{ table_ui.header_cell_classes() }}">Metrics Identity</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Preference</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Consumer Profile</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Resolver Preference</th>
                     <th class="{{ table_ui.header_cell_classes() }}">Binding Validation</th>
                     <th class="{{ table_ui.header_cell_classes() }}">Effective Resolution</th>
-                    <th class="{{ table_ui.header_cell_classes(action=true) }}">Action</th>
+                    <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -38,106 +51,120 @@
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }}">
                             <div class="flex min-w-0 items-start gap-3">
-                                {{ integration_ui.palette_icon('boxes', 'brand', size='sm') }}
+                                {{ integration_ui.palette_icon('database' if row.binding.asset_type == 'object_storage_system' else 'boxes', 'brand', size='sm') }}
                                 <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-content-primary">{{ row.scope_label }}</p>
-                                    <p class="mt-0.5 text-xs font-medium text-content-secondary">{{ row.scope_type_label }} · {{ row.consumer_profile_label }}</p>
+                                    <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]"
+                                       title="{{ row.scope_label }}">{{ row.scope_label }}</p>
+                                    <p class="mt-0.5 text-xs font-medium text-content-secondary">{{ row.scope_type_label }}</p>
                                     <p class="mt-0.5 max-w-[18rem] truncate text-xs text-content-muted"
                                        title="{{ row.binding.asset_key }}">{{ row.binding.asset_key }}</p>
                                 </div>
                             </div>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            <p class="max-w-[18rem] text-sm font-semibold text-content-primary [overflow-wrap:anywhere]">{{ row.selector_summary }}</p>
-                            <p class="mt-0.5 text-xs text-content-muted">{{ 'Scoped query isolation' if row.selector_configured else 'Dedicated source identity' }}</p>
+                            <p class="max-w-[18rem] break-words text-xs font-semibold text-content-primary [overflow-wrap:anywhere]"
+                               title="{{ row.selector_summary }}">{{ row.selector_summary }}</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ 'Scoped query isolation' if row.selector_configured else 'Selector Required' }}</p>
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            <p class="text-sm font-semibold text-content-primary">{{ row.binding.binding_role|title }}</p>
-                            <p class="mt-0.5 text-xs text-content-muted">Priority {{ row.binding.priority }}</p>
+                            <p class="break-words text-xs font-semibold text-content-primary [overflow-wrap:anywhere]"
+                               title="{{ row.consumer_profile_label }}">{{ row.consumer_profile_label }}</p>
+                            <p class="mt-1 break-words font-mono text-xs text-content-muted [overflow-wrap:anywhere]"
+                               title="{{ row.consumer_profile }}">{{ row.consumer_profile }}</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">{{ integration_status(row.validation_status, display='indicator') }}</td>
-                        <td class="{{ table_ui.cell_classes() }}">{{ integration_status(row.operational_status, row.operational_label, display='indicator') }}</td>
-                        <td class="{{ table_ui.cell_classes(action=true) }}">
-                            <div class="flex items-center justify-end gap-2">
+                        <td class="{{ table_ui.cell_classes() }}">
+                            <p class="text-xs font-semibold text-content-primary">{{ row.binding.binding_role|title }}</p>
+                            <p class="mt-1 text-xs text-content-muted">Priority {{ row.binding.priority }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status(row.validation_status, display='indicator') }}
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ 'Current binding evidence' if row.validation_status == 'ready' else 'Validate before eligibility' }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status(row.operational_status, row.operational_label, display='indicator') }}
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ 'Resolver eligible' if row.operational_status == 'ready' else 'Source or binding gate' }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes(action=true) }} whitespace-nowrap">
+                            <div class="flex flex-nowrap items-center justify-end gap-1.5 whitespace-nowrap">
                                 <button type="button"
                                         @click="selectorEditor = selectorEditor === {{ row.binding.id }} ? null : {{ row.binding.id }}"
-                                        class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:bg-kaori-soft hover:text-kaori-primary"><i data-lucide="settings-2" class="h-3.5 w-3.5" aria-hidden="true"></i>Configure</button>
+                                        class="{{ table_ui.action_classes() }} whitespace-nowrap"><i data-lucide="settings-2" class="h-3.5 w-3.5" aria-hidden="true"></i>Manage</button>
                                 <form method="post"
                                       action="{{ url_for('prometheus.validate_instance_binding', instance_id=instance.id, binding_id=row.binding.id) }}"
                                       hx-post="{{ url_for('prometheus.validate_instance_binding', instance_id=instance.id, binding_id=row.binding.id) }}"
                                       hx-target="#prometheus-scope-workspace"
                                       hx-swap="outerHTML">
-                                    {% if csrf_token is defined %}
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    {% endif %}
+                                    {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                     <button type="submit"
                                             {% if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id %}disabled{% endif %}
-                                            class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:bg-kaori-soft hover:text-kaori-primary disabled:cursor-wait disabled:opacity-60"><i data-lucide="{{ 'loader-circle' if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id else 'scan-search' }}"
-   class="h-3.5 w-3.5{% if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id %} animate-spin{% endif %}"
-   aria-hidden="true"></i>{{ 'Validating' if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id else 'Validate' }}</button>
+                                            class="{{ table_ui.action_classes() }} whitespace-nowrap disabled:cursor-wait">
+                                        <i data-lucide="{{ 'loader-circle' if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id else 'scan-search' }}"
+                                           class="h-3.5 w-3.5{% if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id %} animate-spin{% endif %}"
+                                           aria-hidden="true"></i>{{ 'Validating' if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id else 'Validate' }}
+                                    </button>
                                 </form>
                                 <button type="button"
                                         data-prometheus-delete-button
                                         data-delete-url="{{ url_for('prometheus.delete_instance_binding', instance_id=instance.id, binding_id=row.binding.id) }}"
-                                        data-delete-title="Remove Scope Binding?"
+                                        data-delete-title="Remove Consumer Binding?"
                                         data-delete-name="{{ row.scope_label }}"
-                                        data-delete-detail="This Prometheus connection will no longer be eligible for the selected managed cluster. Historical runtime and Activity Audit records remain available."
+                                        data-delete-detail="This Prometheus source will no longer be eligible for the selected consumer asset. Historical runtime and Activity Audit evidence remains available."
                                         data-delete-action-label="Remove Binding"
-                                        class="inline-flex h-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-2.5 text-status-critical-text transition hover:bg-status-critical-soft"
+                                        class="{{ table_ui.action_classes(true) }} whitespace-nowrap"
                                         aria-label="Remove {{ row.scope_label }} binding">
                                     <i data-lucide="unlink" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                    Remove
                                 </button>
                             </div>
                         </td>
                     </tr>
-                    <tr x-cloak
-                        x-show="selectorEditor === {{ row.binding.id }}"
-                        class="bg-surface-subtle">
-                        <td colspan="6" class="px-4 py-4">
+                    <tr x-cloak x-show="selectorEditor === {{ row.binding.id }}" class="bg-surface-subtle">
+                        <td colspan="7" class="px-4 py-4 sm:px-5">
+                            <div class="mb-3 flex items-start gap-3">
+                                {{ integration_ui.palette_icon('scan-line', 'info', size='sm') }}
+                                <div class="min-w-0">
+                                    <p class="text-xs font-semibold text-content-primary">Manage Metrics Identity</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">Selector changes clear previous binding evidence and return this binding to Validation Required.</p>
+                                </div>
+                            </div>
                             <form method="post"
                                   action="{{ url_for('prometheus.update_instance_binding_selector', instance_id=instance.id, binding_id=row.binding.id) }}"
                                   hx-post="{{ url_for('prometheus.update_instance_binding_selector', instance_id=instance.id, binding_id=row.binding.id) }}"
                                   hx-target="#prometheus-scope-workspace"
                                   hx-swap="outerHTML"
                                   class="grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_7rem_1fr_auto] xl:items-end">
-                                {% if csrf_token is defined %}
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                {% endif %}
+                                {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                 <div>
-                                    <label class="mb-1.5 block text-xs font-semibold text-content-primary">Metrics Label</label>
+                                    <label class="{{ table_ui.filter_label_classes() }}">Metrics Label</label>
                                     <input name="selector_label"
                                            value="{{ row.selector_label or 'cluster' }}"
                                            required
                                            maxlength="100"
-                                           class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                                           class="{{ table_ui.filter_input_classes() }}">
                                 </div>
                                 <div>
-                                    <label class="mb-1.5 block text-xs font-semibold text-content-primary">Operator</label>
-                                    <select name="selector_operator"
-                                            class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                                    <label class="{{ table_ui.filter_label_classes() }}">Operator</label>
+                                    <select name="selector_operator" class="{{ table_ui.filter_select_classes() }}">
                                         {% for operator in ['=', '=~', '!=', '!~'] %}
-                                            <option value="{{ operator }}"
-                                                    {% if row.selector_operator == operator %}selected{% endif %}>{{ operator }}</option>
+                                            <option value="{{ operator }}" {% if row.selector_operator == operator %}selected{% endif %}>{{ operator }}</option>
                                         {% endfor %}
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="mb-1.5 block text-xs font-semibold text-content-primary">Metrics Value</label>
+                                    <label class="{{ table_ui.filter_label_classes() }}">Metrics Value</label>
                                     <input name="selector_value"
                                            value="{{ row.selector_value }}"
                                            required
                                            maxlength="255"
-                                           class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                                           class="{{ table_ui.filter_input_classes() }}">
                                 </div>
-                                <button type="submit"
-                                        class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="save" class="h-3.5 w-3.5" aria-hidden="true"></i>Save Identity</button>
+                                <button type="submit" class="{{ action_button.classes('primary') }} whitespace-nowrap"><i data-lucide="save" class="h-3.5 w-3.5" aria-hidden="true"></i>Save Identity</button>
                             </form>
-                            <p class="mt-2 text-xs leading-5 text-content-muted">Saving the selector returns this binding to Validation Required until binding validation succeeds again.</p>
                         </td>
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="6" class="px-5 py-10 text-center">
+                        <td colspan="7" class="px-5 py-10 text-center">
                             <p class="text-sm font-semibold text-content-primary">No Consumer Bindings</p>
                             <p class="mt-1 text-xs leading-5 text-content-secondary">Create a binding to authorize this reusable Prometheus source for one managed consumer asset.</p>
                         </td>
@@ -157,44 +184,30 @@
                   hx-indicator="#prometheus-binding-registry-loading"
                   class="{{ pagination_ui.rows_group_classes() }}">
                 <input type="hidden" name="binding_page" value="1">
-                <label for="prometheus-binding-per-page"
-                       class="font-semibold text-content-secondary">Rows</label>
-                <select id="prometheus-binding-per-page"
-                        name="binding_per_page"
-                        data-kaori-auto-submit
-                        class="{{ pagination_ui.page_size_classes() }}">
-                    {% for option in binding_registry_pagination.allowed_per_page %}
-                        <option value="{{ option }}"
-                                {% if option == binding_registry_pagination.per_page %}selected{% endif %}>{{ option }}</option>
-                    {% endfor %}
+                <label for="prometheus-binding-per-page" class="font-semibold text-content-secondary">Rows</label>
+                <select id="prometheus-binding-per-page" name="binding_per_page" data-kaori-auto-submit class="{{ pagination_ui.page_size_classes() }}">
+                    {% for option in binding_registry_pagination.allowed_per_page %}<option value="{{ option }}" {% if option == binding_registry_pagination.per_page %}selected{% endif %}>{{ option }}</option>{% endfor %}
                 </select>
             </form>
         </div>
-        <nav class="{{ pagination_ui.navigation_group_classes() }}"
-             aria-label="Prometheus consumer binding pagination">
+        <nav class="{{ pagination_ui.navigation_group_classes() }}" aria-label="Prometheus consumer binding pagination">
             {% set binding_query = {"binding_per_page": binding_registry_pagination.per_page} %}
             {% if binding_registry_pagination.has_prev %}
                 <a href="{{ url_for('prometheus.instance_detail', instance_id=instance.id, binding_page=binding_registry_pagination.prev_page, **binding_query) }}#scope"
                    hx-get="{{ url_for('prometheus.instance_binding_registry', instance_id=instance.id, binding_page=binding_registry_pagination.prev_page, **binding_query) }}"
-                   hx-target="#prometheus-binding-registry"
-                   hx-swap="outerHTML"
-                   hx-indicator="#prometheus-binding-registry-loading"
+                   hx-target="#prometheus-binding-registry" hx-swap="outerHTML" hx-indicator="#prometheus-binding-registry-loading"
                    class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
             {% else %}
-                <span class="{{ pagination_ui.navigation_classes(true) }}"
-                      aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+                <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
             {% endif %}
             {{ pagination_ui.numeric_pages(binding_registry_pagination.page, binding_registry_pagination.total_pages, "binding_page", hx_target="#prometheus-binding-registry", hx_indicator="#prometheus-binding-registry-loading", endpoint="prometheus.instance_binding_registry", query_params={"instance_id": instance.id, "binding_per_page": binding_registry_pagination.per_page}, hx_swap="outerHTML", href_endpoint="prometheus.instance_detail") }}
             {% if binding_registry_pagination.has_next %}
                 <a href="{{ url_for('prometheus.instance_detail', instance_id=instance.id, binding_page=binding_registry_pagination.next_page, **binding_query) }}#scope"
                    hx-get="{{ url_for('prometheus.instance_binding_registry', instance_id=instance.id, binding_page=binding_registry_pagination.next_page, **binding_query) }}"
-                   hx-target="#prometheus-binding-registry"
-                   hx-swap="outerHTML"
-                   hx-indicator="#prometheus-binding-registry-loading"
+                   hx-target="#prometheus-binding-registry" hx-swap="outerHTML" hx-indicator="#prometheus-binding-registry-loading"
                    class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
             {% else %}
-                <span class="{{ pagination_ui.navigation_classes(true) }}"
-                      aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+                <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
             {% endif %}
         </nav>
     </footer>

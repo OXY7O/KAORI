@@ -4,6 +4,7 @@
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "integrations/components/_observability_binding_modal.html" as observability_binding_modal %}
+{% import "integrations/components/_binding_readiness_boundary.html" as binding_readiness_boundary %}
 {% from "integrations/components/_semantic_status.html" import integration_status %}
 {% set validated_binding_count = binding_rows|selectattr('validation_status', 'equalto', 'ready')|list|length %}
 {% set operational_binding_count = binding_rows|selectattr('operational_status', 'equalto', 'ready')|list|length %}
@@ -59,78 +60,16 @@
         </div>
     </section>
     {% include "alertmanager/partials/_binding_registry.html" %}
-    <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
-             aria-labelledby="alertmanager-binding-decision-title"
-             data-kaori-alertmanager-binding-decision-horizontal>
-        <header class="border-b border-outline-subtle px-5 py-4">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div class="flex items-start gap-3">
-                    {{ integration_ui.palette_icon('gauge', 'brand', size='md') }}
-                    <div>
-                        <h3 id="alertmanager-binding-decision-title"
-                            class="text-sm font-semibold text-content-primary">Binding Decision</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">One horizontal decision surface for source readiness, binding posture, resolver boundaries, and the next controlled action.</p>
-                    </div>
-                </div>
-                {{ integration_status('ready' if operational_binding_count == binding_rows|length and binding_rows else ('validation_required' if not binding_rows else 'degraded') , 'Ready' if operational_binding_count == binding_rows|length and binding_rows else ('Binding Required' if not binding_rows else 'Attention'), display='text') }}
-            </div>
-        </header>
-        <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
-            <div class="px-5 py-4">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Source Readiness</p>
-                <div class="mt-2">{{ integration_status(instance.readiness_status or 'validation_required', (instance.readiness_status or 'validation_required') |replace('_',' ')|title, display='indicator') }}</div>
-            </div>
-            <div class="px-5 py-4">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Consumer Bindings</p>
-                <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ binding_rows|length }}</p>
-            </div>
-            <div class="px-5 py-4">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Validated Bindings</p>
-                <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ validated_binding_count }}</p>
-            </div>
-            <div class="px-5 py-4">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Operational Bindings</p>
-                <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ operational_binding_count }}</p>
-            </div>
-        </div>
-        <div class="grid gap-px bg-outline-subtle lg:grid-cols-3">
-            <div class="bg-surface-subtle px-5 py-4">
-                <div class="flex items-start gap-3">
-                    {{ integration_ui.palette_icon('route', 'brand', size='sm') }}
-                    <div>
-                        <p class="text-xs font-semibold text-content-primary">Resolver Contract</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Primary, secondary, and fallback roles establish preference. Provider Core Readiness, consumer-profile validation, selector identity, and current health remain independent gates.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="bg-surface-subtle px-5 py-4">
-                <div class="flex items-start gap-3">
-                    {{ integration_ui.palette_icon('scan-line', 'brand', size='sm') }}
-                    <div>
-                        <p class="text-xs font-semibold text-content-primary">Alert Identity Boundary</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">Non-global bindings require a stable selector so one shared Alertmanager can segregate Kubernetes, MinIO, infrastructure, and future consumer alert streams.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="bg-surface-subtle px-5 py-4">
-                <div class="flex items-start gap-3">
-                    {{ integration_ui.palette_icon('target', 'brand', size='sm') }}
-                    <div>
-                        <p class="text-xs font-semibold text-content-primary">Next Operational Action</p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">
-                            {% if not binding_rows %}
-                                Create the first consumer binding, confirm its profile and alert identity selector, then run Binding Validation.
-                            {% elif operational_binding_count < binding_rows|length %}
-                                Resolve selector, provider-readiness, consumer-profile, or validation gaps on bindings that are not operational.
-                            {% else %}
-                                All registered consumer bindings are operational. Revalidate after selector, role, priority, consumer-profile, or Alertmanager API changes.
-                            {% endif %}
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+    {{ binding_readiness_boundary.render('Alertmanager',
+        instance.readiness_status or 'validation_required',
+        binding_rows|length,
+        validated_binding_count,
+        operational_binding_count,
+        title='Binding Decision',
+        description='Source readiness, binding validation, resolver preference, alert identity, and operational eligibility remain independent evidence dimensions.',
+        marker='data-kaori-alertmanager-binding-decision-horizontal',
+        identity_title='Alert Identity Boundary',
+        identity_copy='Shared-source bindings use stable alert selectors so Kubernetes, Object Storage, and future consumer alert streams remain isolated.') }}
     <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
              aria-labelledby="alertmanager-consumer-resolution-title"
              data-kaori-alertmanager-consumer-resolution-full-width>

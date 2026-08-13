@@ -1,3 +1,4 @@
+{% import "components/operational_callout.html" as operational_callout %}
 {% import "integrations/components/_workspace.html" as integration_ui %}
 {% macro render(dialog_id,
     source_label,
@@ -50,69 +51,104 @@
                     <div class="mb-4 rounded-lg border border-status-critical-border bg-status-critical-soft p-3 text-xs leading-5 text-status-critical-text">{{ binding_error }}</div>
                 {% endif %}
                 {% if consumer_asset_groups %}
-                    <div class="grid gap-4 sm:grid-cols-2">
-                        <label class="block">
-                            <span class="{{ integration_ui.control_label_classes() }}">Consumer Type</span>
-                            <select name="asset_type"
-                                    x-model="assetType"
-                                    @change="selectorLabel = selectorLabels[assetType] || ''; selectorValue = ''"
-                                    required
-                                    class="{{ integration_ui.control_classes() }}">
-                                {% for group in consumer_asset_groups %}<option value="{{ group.asset_type }}">{{ group.label }}</option>{% endfor %}
-                            </select>
-                        </label>
-                        {% for group in consumer_asset_groups %}
-                            <label class="block"
-                                   x-show="assetType === '{{ group.asset_type }}'"
-                                   {% if not loop.first %}x-cloak{% endif %}>
-                                <span class="{{ integration_ui.control_label_classes() }}">{{ group.label }}</span>
-                                <select name="asset_key"
-                                        :disabled="assetType !== '{{ group.asset_type }}'"
-                                        :required="assetType === '{{ group.asset_type }}'"
+                    <section class="rounded-xl border border-brand-outline bg-kaori-soft p-4"
+                             data-kaori-binding-workflow>
+                        <div class="flex items-start gap-3">
+                            {{ integration_ui.palette_icon("workflow", "brand", size="sm") }}
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">Binding Workflow</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">Select the consumer, establish resolver preference and identity isolation, then validate the asset-scoped evidence before the binding becomes eligible.</p>
+                            </div>
+                        </div>
+                        <div class="mt-3 grid gap-2 sm:grid-cols-3">
+                            {% for step, label, helper in [
+                                ('1', 'Consumer', 'Choose the managed asset'),
+                                ('2', 'Preference & Identity', 'Set role, priority, selector'),
+                                ('3', 'Validation', 'Validate before eligibility')
+                                ] %}
+                                <div class="rounded-lg border border-brand-outline bg-surface-card px-3 py-2.5">
+                                    <p class="text-xs font-semibold text-kaori-primary dark:text-kaori-accent">{{ step }} · {{ label }}</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ helper }}</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </section>
+                    <section class="mt-5 rounded-xl border border-outline-subtle bg-surface-subtle p-4"
+                             data-kaori-binding-consumer-preference>
+                        <div class="flex items-start gap-3">
+                            {{ integration_ui.palette_icon("route", "brand", size="sm") }}
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">Consumer &amp; Resolver Preference</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">The binding is asset-scoped. Resolver role and priority express preference; they do not bypass source readiness or binding validation.</p>
+                            </div>
+                        </div>
+                        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                            <label class="block">
+                                <span class="{{ integration_ui.control_label_classes() }}">Consumer Type</span>
+                                <select name="asset_type"
+                                        x-model="assetType"
+                                        @change="selectorLabel = selectorLabels[assetType] || ''; selectorValue = ''"
+                                        required
                                         class="{{ integration_ui.control_classes() }}">
-                                    <option value="">Select {{ group.label }}</option>
-                                    {% for asset in group.assets %}
-                                        <option value="{{ asset.key }}">
-                                            {{ asset.name }}
-                                            {% if asset.environment %}· {{ asset.environment|title }}{% endif %}
-                                        </option>
-                                    {% endfor %}
+                                    {% for group in consumer_asset_groups %}<option value="{{ group.asset_type }}">{{ group.label }}</option>{% endfor %}
                                 </select>
                             </label>
-                        {% endfor %}
-                        <label class="block">
-                            <span class="{{ integration_ui.control_label_classes() }}">Source Role</span>
-                            <select name="binding_role"
-                                    required
-                                    class="{{ integration_ui.control_classes() }}">
-                                <option value="primary">Primary</option>
-                                <option value="secondary">Secondary</option>
-                                <option value="fallback">Fallback</option>
-                            </select>
-                        </label>
-                        <label class="block">
-                            <span class="{{ integration_ui.control_label_classes() }}">Priority</span>
-                            <input type="number"
-                                   name="priority"
-                                   min="1"
-                                   max="1000"
-                                   value="100"
-                                   required
-                                   class="{{ integration_ui.control_classes() }}">
-                        </label>
-                    </div>
-                    <div class="mt-5 rounded-xl border border-brand-outline bg-kaori-soft px-4 py-3">
+                            {% for group in consumer_asset_groups %}
+                                <label class="block"
+                                       x-show="assetType === '{{ group.asset_type }}'"
+                                       {% if not loop.first %}x-cloak{% endif %}>
+                                    <span class="{{ integration_ui.control_label_classes() }}">{{ group.label }}</span>
+                                    <select name="asset_key"
+                                            :disabled="assetType !== '{{ group.asset_type }}'"
+                                            :required="assetType === '{{ group.asset_type }}'"
+                                            class="{{ integration_ui.control_classes() }}">
+                                        <option value="">Select {{ group.label }}</option>
+                                        {% for asset in group.assets %}
+                                            <option value="{{ asset.key }}">
+                                                {{ asset.name }}
+                                                {% if asset.environment %}· {{ asset.environment|title }}{% endif %}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </label>
+                            {% endfor %}
+                            <label class="block">
+                                <span class="{{ integration_ui.control_label_classes() }}">Source Role</span>
+                                <select name="binding_role"
+                                        required
+                                        class="{{ integration_ui.control_classes() }}">
+                                    <option value="primary">Primary</option>
+                                    <option value="secondary">Secondary</option>
+                                    <option value="fallback">Fallback</option>
+                                </select>
+                            </label>
+                            <label class="block">
+                                <span class="{{ integration_ui.control_label_classes() }}">Priority</span>
+                                <input type="number"
+                                       name="priority"
+                                       min="1"
+                                       max="1000"
+                                       value="100"
+                                       required
+                                       class="{{ integration_ui.control_classes() }}">
+                            </label>
+                        </div>
+                        <p class="mt-3 text-xs leading-5 text-content-muted"><span class="font-semibold text-content-secondary">Preference contract:</span> Primary resolves before Secondary, then Fallback. Lower priority wins within the same role.</p>
+                    </section>
+                    <div class="mt-5 rounded-xl border border-brand-outline bg-kaori-soft px-4 py-3"
+                         data-kaori-resolved-consumer-profile>
                         <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary dark:text-kaori-accent">Resolved Consumer Profile</p>
                         <p class="mt-1 font-mono text-sm font-semibold text-content-primary"
                            x-text="profiles[assetType] || 'Profile unavailable'"></p>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">The source remains reusable. Asset-specific readiness is recorded on this binding, not on the shared provider runtime.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">Provider Core Validation stays source-owned. Consumer readiness is recorded on this binding and must be validated independently.</p>
                     </div>
-                    <section class="mt-5 rounded-xl border border-outline-subtle bg-surface-subtle p-4">
+                    <section class="mt-5 rounded-xl border border-outline-subtle bg-surface-subtle p-4"
+                             data-kaori-binding-identity-boundary>
                         <div class="flex items-start gap-3">
                             {{ integration_ui.palette_icon("scan-line", "brand", size="sm") }}
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">{{ source_family|title }} Identity Selector</p>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Use the stable label that isolates this managed asset inside the shared {{ source_label }} source.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">Use the stable provider label that isolates this managed asset inside the shared {{ source_label }} source.</p>
                             </div>
                         </div>
                         <div class="mt-4 grid gap-3 sm:grid-cols-[1fr_7rem_1fr]">
@@ -144,7 +180,14 @@
                                        class="{{ integration_ui.control_classes() }}">
                             </label>
                         </div>
+                        <p class="mt-3 text-xs leading-5 text-content-muted">Changing this identity later returns the binding to Validation Required and clears stale binding evidence.</p>
                     </section>
+                    <div class="mt-5">
+                        {{ operational_callout.render('Source-Owned Mutation Boundary',
+                                                'Create, update, validate, and remove this binding from the Observability source workspace. Kubernetes and Object Storage asset-owner pages expose binding evidence read-only.',
+                                                'shield-check',
+                                                tone='info') }}
+                    </div>
                     <input type="hidden" name="enabled" value="1">
                 {% else %}
                     <div class="rounded-xl border border-outline-subtle bg-surface-subtle px-4 py-5">

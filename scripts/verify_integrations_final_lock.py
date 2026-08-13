@@ -377,6 +377,45 @@ def main() -> int:
             errors,
         )
 
+    # Observability Bindings & Consumers final-lock contract.
+    binding_boundary = read('app/templates/integrations/components/_binding_readiness_boundary.html')
+    binding_modal = read('app/templates/integrations/components/_observability_binding_modal.html')
+    require(
+        'data-kaori-binding-readiness-boundary' in binding_boundary
+        and 'Source-Owned Mutation' in binding_boundary
+        and 'Primary resolves before Secondary, then Fallback' in binding_boundary,
+        'Bindings & Consumers must keep the shared readiness and resolver boundary',
+        errors,
+    )
+    require(
+        'data-kaori-binding-workflow' in binding_modal
+        and 'Consumer &amp; Resolver Preference' in binding_modal
+        and 'Source-Owned Mutation Boundary' in binding_modal
+        and 'Validation Required' in binding_modal,
+        'Shared Observability Add Binding dialog must keep workflow and validation ownership guidance',
+        errors,
+    )
+    for provider, identity_column in (('prometheus', 'Metrics Identity'), ('alertmanager', 'Alert Identity')):
+        registry = read(f'app/templates/{provider}/partials/_binding_registry.html')
+        for marker in (
+            'data-kaori-binding-registry-final-lock',
+            'Consumer Asset',
+            identity_column,
+            'Consumer Profile',
+            'Resolver Preference',
+            'Binding Validation',
+            'Effective Resolution',
+            'Actions',
+            'Validate before eligibility',
+        ):
+            require(marker in registry, f'{provider}: binding registry final-lock marker missing: {marker}', errors)
+        require(
+            'components/pagination.html' in registry, f'{provider}: binding pagination must remain canonical', errors
+        )
+        require(
+            'components/loading_bar.html' in registry, f'{provider}: binding loading bar must remain shared', errors
+        )
+
     # The final lock documentation is itself part of the contract.
     lock_doc = read('docs/design/KAORI_INTEGRATIONS_LOCK_V1.md')
     refinement_doc = read('docs/design/KAORI_INTEGRATIONS_LOCK_V1_1.md')

@@ -8,7 +8,8 @@
 <section id="alertmanager-binding-registry"
          class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
          aria-labelledby="alertmanager-bound-scopes-title"
-         data-kaori-bound-scopes-full-width>
+         data-kaori-bound-scopes-full-width
+         data-kaori-binding-registry-final-lock>
     <header class="border-b border-outline-subtle px-5 py-4">
         <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div class="flex items-start gap-3">
@@ -39,7 +40,7 @@
                     <th class="{{ table_ui.header_cell_classes() }}">Consumer Asset</th>
                     <th class="{{ table_ui.header_cell_classes() }}">Alert Identity</th>
                     <th class="{{ table_ui.header_cell_classes() }}">Consumer Profile</th>
-                    <th class="{{ table_ui.header_cell_classes() }}">Preference</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Resolver Preference</th>
                     <th class="{{ table_ui.header_cell_classes() }}">Binding Validation</th>
                     <th class="{{ table_ui.header_cell_classes() }}">Effective Resolution</th>
                     <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
@@ -50,7 +51,7 @@
                     <tr class="{{ table_ui.row_classes() }}">
                         <td class="{{ table_ui.cell_classes() }}">
                             <div class="flex min-w-0 items-start gap-3">
-                                {{ integration_ui.palette_icon("route", "brand", size="sm") }}
+                                {{ integration_ui.palette_icon("database" if row.binding.asset_type == "object_storage_system" else "boxes", "brand", size="sm") }}
                                 <div class="min-w-0">
                                     <p class="break-words text-sm font-semibold text-content-primary [overflow-wrap:anywhere]"
                                        title="{{ row.scope_label }}">{{ row.scope_label }}</p>
@@ -77,14 +78,20 @@
                             <p class="text-xs font-semibold text-content-primary">{{ row.binding.binding_role|title }}</p>
                             <p class="mt-1 text-xs text-content-muted">Priority {{ row.binding.priority }}</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">{{ integration_status(row.validation_status, row.validation_status|replace("_", " ") |title, display="indicator") }}</td>
-                        <td class="{{ table_ui.cell_classes() }}">{{ integration_status(row.operational_status, row.operational_label, display="indicator") }}</td>
                         <td class="{{ table_ui.cell_classes() }}">
-                            <div class="flex flex-wrap justify-end gap-1.5">
+                            {{ integration_status(row.validation_status, row.validation_status|replace("_", " ") |title, display="indicator") }}
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ "Current binding evidence" if row.validation_status == "ready" else "Validate before eligibility" }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ integration_status(row.operational_status, row.operational_label, display="indicator") }}
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ "Resolver eligible" if row.operational_status == "ready" else "Source or binding gate" }}</p>
+                        </td>
+                        <td class="{{ table_ui.cell_classes(action=true) }} whitespace-nowrap">
+                            <div class="flex flex-nowrap items-center justify-end gap-1.5 whitespace-nowrap">
                                 {% if row.binding.asset_type != "global" %}
                                     <button type="button"
                                             @click="selectorEditor = selectorEditor === {{ row.binding.id }} ? null : {{ row.binding.id }}"
-                                            class="{{ table_ui.action_classes() }}">Configure</button>
+                                            class="{{ table_ui.action_classes() }} whitespace-nowrap"><i data-lucide="settings-2" class="h-3.5 w-3.5" aria-hidden="true"></i>Manage</button>
                                 {% endif %}
                                 <form method="post"
                                       action="{{ url_for('alertmanager.validate_binding', instance_id=instance.id, binding_id=row.binding.id) }}"
@@ -95,7 +102,8 @@
                                     {% if csrf_token is defined %}
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     {% endif %}
-                                    <button type="submit" class="{{ table_ui.action_classes() }}">Validate</button>
+                                    <button type="submit"
+                                            class="{{ table_ui.action_classes() }} whitespace-nowrap"><i data-lucide="scan-search" class="h-3.5 w-3.5" aria-hidden="true"></i>Validate</button>
                                 </form>
                                 <button type="button"
                                         data-alertmanager-delete-button
@@ -104,7 +112,7 @@
                                         data-delete-name="{{ row.scope_label }}"
                                         data-delete-detail="This connection will no longer be eligible for the selected consumer asset."
                                         data-delete-action-label="Remove Binding"
-                                        class="{{ table_ui.action_classes(true) }}">Remove</button>
+                                        class="{{ table_ui.action_classes(true) }} whitespace-nowrap"><i data-lucide="unlink" class="h-3.5 w-3.5" aria-hidden="true"></i>Remove</button>
                             </div>
                         </td>
                     </tr>
@@ -112,6 +120,13 @@
                         <tr x-show="selectorEditor === {{ row.binding.id }}" x-cloak>
                             <td colspan="7"
                                 class="border-t border-outline-subtle bg-surface-subtle px-5 py-4">
+                                <div class="mb-3 flex items-start gap-3">
+                                    {{ integration_ui.palette_icon("scan-line", "info", size="sm") }}
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-semibold text-content-primary">Manage Alert Identity</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">Selector changes clear previous binding evidence and return this binding to Validation Required.</p>
+                                    </div>
+                                </div>
                                 <form method="post"
                                       action="{{ url_for('alertmanager.update_binding_selector', instance_id=instance.id, binding_id=row.binding.id) }}"
                                       hx-post="{{ url_for('alertmanager.update_binding_selector', instance_id=instance.id, binding_id=row.binding.id) }}"
@@ -143,7 +158,8 @@
                                                value="{{ row.selector_value }}"
                                                class="{{ table_ui.filter_input_classes() }}">
                                     </div>
-                                    <button type="submit" class="{{ action_button.classes('primary') }}">Save Selector</button>
+                                    <button type="submit"
+                                            class="{{ action_button.classes('primary') }} whitespace-nowrap"><i data-lucide="save" class="h-3.5 w-3.5" aria-hidden="true"></i>Save Identity</button>
                                 </form>
                             </td>
                         </tr>

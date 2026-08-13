@@ -186,3 +186,10 @@ The Provider Registry is built from canonical `IntegrationInstance` rows. The Bi
 
 Prometheus and Alertmanager own binding mutation for their respective source families. Kubernetes and MinIO surface bound observability sources as read-only lifecycle inventory. Eligible asset families are registered centrally in `app/integrations/consumer_assets.py`, so adding a future asset such as Vault extends source binding/coverage by adding the asset definition plus compatible consumer profiles instead of a new binding table or product-specific source form.
 
+
+
+## Bindings & Consumers Final Lock
+
+Prometheus and Alertmanager are source-owned mutation workspaces. Their binding registries expose Consumer Asset, provider identity selector, Consumer Profile, Resolver Preference, Binding Validation, Effective Resolution, and Actions with canonical pagination/loading behavior. Resolver preference is `Primary → Secondary → Fallback`, with lower numeric priority winning within the same role.
+
+A saved binding starts in `Validation Required`. Selector changes clear stale binding evidence and return the record to `Validation Required`; a successful `binding.validate` operation grants binding eligibility. Provider Full Validation does not implicitly validate consumer bindings. Kubernetes and Object Storage inventory/lifecycle pages show the relationship read-only and link operators back to the source workspace for mutation.
