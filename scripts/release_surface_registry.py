@@ -192,7 +192,10 @@ SURFACES: tuple[ReleaseSurface, ...] = (
             'platform_operations.kubernetes.index',
         ),
         blueprint_vars=('platform_operations_bp', 'jobs_bp'),
-        verifiers=('scripts/verify_platform_operations_final_lock.py',),
+        verifiers=(
+            'scripts/verify_platform_operations_final_lock.py',
+            'scripts/verify_job_progress_final_lock.py',
+        ),
         contract_paths=('tests/contracts/platform_operations', 'tests/contracts/jobs'),
     ),
     ReleaseSurface(
@@ -240,7 +243,10 @@ SURFACES: tuple[ReleaseSurface, ...] = (
         navigation_source=None,
         navigation_endpoints=(),
         blueprint_vars=('notifications_bp',),
-        verifiers=('scripts/verify_notification_center_final_lock.py',),
+        verifiers=(
+            'scripts/verify_notification_center_final_lock.py',
+            'scripts/verify_notification_activity_center.py',
+        ),
         contract_paths=('tests/contracts/notifications',),
         notes='Application-shell surface; Activity Audit is separately linked under Access.',
     ),

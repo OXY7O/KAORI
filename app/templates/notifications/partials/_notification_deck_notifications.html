@@ -7,7 +7,7 @@
 <div class="space-y-2" data-notification-deck-notifications-body>
     <div class="flex items-center justify-between gap-3 px-1 pb-1">
         <div>
-            <p class="text-xs font-semibold text-content-primary">Recent notifications</p>
+            <p class="text-xs font-semibold text-content-primary">Recent Notifications</p>
             <p class="mt-0.5 text-xs text-content-muted">The same records shown on the Notifications page.</p>
         </div>
         {% if unread_count %}
@@ -18,12 +18,12 @@
                         hx-post="{{ url_for('notifications.mark_all_read', surface='panel') }}"
                         hx-target="#notification-deck-notifications-content"
                         hx-swap="innerHTML"
-                        class="text-xs font-semibold text-content-muted hover:text-content-primary">Mark all read</button>
+                        class="text-xs font-semibold text-content-muted hover:text-content-primary">Mark All Read</button>
             </form>
         {% endif %}
     </div>
     {% if attention_count %}
-        {{ operational_callout.render(attention_count ~ ' notification' ~ ('' if attention_count == 1 else 's') ~ ' need attention',
+        {{ operational_callout.render(attention_count ~ ' Notification' ~ ('' if attention_count == 1 else 's') ~ (' Needs Attention' if attention_count == 1 else ' Need Attention'),
         'Unread warnings and failed operations are highlighted.',
         icon='triangle-alert',
         tone='warning',

@@ -96,6 +96,7 @@ def main() -> int:
     require('data-password-toggle' in login, 'Password visibility control missing', errors)
     require('aria-label="Show password"' in login, 'Password visibility control must be accessible', errors)
     require('id="auth-theme-toggle"' in login, 'Authentication theme control missing', errors)
+    require('aria-label="Switch to Dark Mode"' in login, 'Authentication theme action label missing', errors)
     require('Remember Me' in login, 'Remember Me control missing', errors)
     require(
         'provider_login_url' in login and 'next=form.next.data' in login,
@@ -105,7 +106,20 @@ def main() -> int:
     require('aria-live="polite"' in alerts, 'Login feedback must expose an aria-live region', errors)
     require('role="alert"' in alerts and 'role="status"' in alerts, 'Login feedback semantics drifted', errors)
     require('aria-label="KAORI sign in"' in index, 'Login shell accessibility label missing', errors)
+    require(
+        '{% block title %}Sign In · KAORI{% endblock title %}' in index,
+        'Login document title must use KAORI Title Case',
+        errors,
+    )
     require('aria-labelledby="setup-required-title"' in setup, 'Setup-required accessibility contract missing', errors)
+    for required in (
+        'Run the Initial KAORI Database Bootstrap',
+        'Manual Initialization Commands',
+        'Encryption Key Requirement',
+        'Missing Schema Objects',
+        'PostgreSQL Is Unavailable',
+    ):
+        require(required in setup, f'Setup Required Title Case contract missing: {required}', errors)
 
     require('username = StringField' in forms and 'Length(max=100)' in forms, 'Username input bound missing', errors)
     require('password = PasswordField' in forms and 'Length(max=1024)' in forms, 'Password input bound missing', errors)
@@ -147,6 +161,16 @@ def main() -> int:
     require("localStorage.getItem('theme')" in layout, 'Pre-paint theme bootstrap missing', errors)
     require("querySelector('[data-password-input]')" in login_js, 'External password-toggle runtime missing', errors)
     require("getElementById('auth-theme-toggle')" in login_js, 'External theme-toggle runtime missing', errors)
+    require(
+        'const actionLabel = `Switch to ${nextTheme} Mode`' in login_js,
+        'Theme-toggle accessible state label missing',
+        errors,
+    )
+    require(
+        "themeToggle.setAttribute('aria-label', actionLabel)" in login_js,
+        'Theme-toggle aria-label update missing',
+        errors,
+    )
     require("localStorage.setItem('theme'" in login_js, 'Theme preference persistence missing', errors)
 
     for relative in LOCK_DOCS:

@@ -34,6 +34,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const dark = document.documentElement.classList.contains('dark')
         themeIcon.setAttribute('data-lucide', dark ? 'sun' : 'moon')
+        if (themeToggle) {
+            const nextTheme = dark ? 'Light' : 'Dark'
+            const actionLabel = `Switch to ${nextTheme} Mode`
+            themeToggle.setAttribute('aria-label', actionLabel)
+            themeToggle.setAttribute('title', actionLabel)
+        }
         renderIcons()
     }
 

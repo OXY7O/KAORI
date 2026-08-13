@@ -43,7 +43,7 @@
                 </button>
             </div>
         </div>
-        {{ loading_bar.render('active-job-loading', label='Refreshing active work') }}
+        {{ loading_bar.render('active-job-loading', label='Refreshing Active Work') }}
     </header>
     <div class="grid grid-cols-2 border-b border-outline-subtle bg-surface-hover sm:grid-cols-4">
         {% for label, value in [('Active', job_stats.active), ('Running', job_stats.running), ('Queued', job_stats.queued), ('Active Attention', job_stats.active_attention)] %}

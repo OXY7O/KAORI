@@ -18,6 +18,7 @@ required_files = (
     'app/templates/notifications/partials/_notification_deck_notifications.html',
     'app/templates/notifications/partials/_notification_deck_oob.html',
     'app/templates/notifications/components/_activity_center_items.html',
+    'app/templates/components/progress_bar.html',
     'app/notifications/routes.py',
     'app/notifications/queries.py',
     'app/notifications/service.py',
@@ -27,17 +28,20 @@ required_files = (
     'app/templates/notifications/partials/_center_page_content.html',
     'app/templates/layouts/app.html',
     'app/templates/components/navigation/navbar.html',
+    'app/static/js/navbar.js',
 )
 for relative in required_files:
     read(relative)
 
 shell = read('app/templates/components/navigation/_notification_center.html')
 navbar = read('app/templates/components/navigation/navbar.html')
+navbar_js = read('app/static/js/navbar.js')
 activity = read('app/templates/notifications/partials/_notification_deck_activity.html')
 activity_jobs = read('app/templates/notifications/partials/_notification_deck_activity_jobs.html')
 notifications = read('app/templates/notifications/partials/_notification_deck_notifications.html')
 oob = read('app/templates/notifications/partials/_notification_deck_oob.html')
 component = read('app/templates/notifications/components/_activity_center_items.html')
+progress_component = read('app/templates/components/progress_bar.html')
 routes = read('app/notifications/routes.py')
 presentation = read('app/common/job_execution_presentation.py')
 layout = read('app/templates/layouts/app.html')
@@ -63,13 +67,13 @@ for needle in (
 
 for needle in (
     'role="tablist"',
-    'rounded-xl border border-kaori-primary/20 bg-kaori-soft p-1',
-    "notificationDeckTab === 'activity' ? 'bg-surface-card text-kaori-primary shadow-sm'",
+    'rounded-xl border border-outline-default bg-surface-hover p-1',
+    "notificationDeckTab === 'activity'",
+    'bg-surface-card text-kaori-primary shadow-sm dark:text-kaori-accent',
     ":class=\"notificationDeckTab === 'activity' ? 'block' : 'hidden'\"",
     'Auto refresh every 15 seconds',
     'Connection issue · retrying automatically',
     'Updated ${notificationDeckLastChecked}',
-    'queueNotificationDeckRefresh()"',
 ):
     if needle not in shell:
         raise SystemExit(f'Notification Deck is missing automatic refresh/tab contract: {needle}')
@@ -106,11 +110,13 @@ for needle in (
     'const payload = await response.json()',
     'this.applyNotificationDeckSnapshot(payload)',
     'this.notificationDeckSnapshotInFlight = false',
-    '@kaori:notifications-changed.window="if ($event.detail?.tab',
     'window.queueMicrotask(() => this.refreshNotificationDeck())',
 ):
-    if needle not in navbar:
-        raise SystemExit(f'Navbar is missing bounded automatic snapshot lifecycle: {needle}')
+    if needle not in navbar_js:
+        raise SystemExit(f'Navbar runtime is missing bounded automatic snapshot lifecycle: {needle}')
+
+if '@kaori:notifications-changed.window="if ($event.detail?.tab' not in navbar:
+    raise SystemExit('Navbar template is missing the Notification Deck change-event bridge.')
 
 for forbidden in (
     "response.headers['HX-Trigger']",
@@ -169,8 +175,8 @@ for forbidden in (
     'await Promise.race([request, timeout])',
     "window.htmx.trigger(document.body, 'kaori:notification-deck-refresh')",
 ):
-    if forbidden in navbar:
-        raise SystemExit(f'Legacy/manual refresh state remains in navbar: {forbidden}')
+    if forbidden in navbar_js:
+        raise SystemExit(f'Legacy/manual refresh state remains in navbar runtime: {forbidden}')
 
 for needle in (
     "document.getElementById('notification-deck-active-job-list')",
@@ -180,15 +186,17 @@ for needle in (
     'window.htmx?.process(notificationsTarget)',
     'window.renderLocalOperationalActivities?.()',
 ):
-    if needle not in navbar:
+    if needle not in navbar_js:
         raise SystemExit(f'Snapshot application is missing stable-slot update: {needle}')
 
 for needle in (
-    'from flask import Blueprint, jsonify,',
+    'from flask import (',
+    'Blueprint,',
+    'jsonify,',
     'def _render_status_snapshot()',
     'never wait for queued workers to finish',
-    "'active_count': int(context.get('active_count', 0))",
-    "'unread_count': int(context.get('unread_count', 0))",
+    "'active_count': _count_value(context.get('active_count', 0))",
+    "'unread_count': _count_value(context.get('unread_count', 0))",
     "'activity_html': render_template(",
     "'notifications_html': render_template(",
     "@notifications_bp.get('/panel/snapshot')",
@@ -223,9 +231,29 @@ for needle in (
 if 'data-server-activity-item' not in activity_jobs:
     raise SystemExit('Activity job fragment does not expose stable server activity items.')
 
-if "elif job.progress_mode == 'queued'" not in component:
+for source, required in (
+    (activity, ('Processes in Progress', 'Active', 'No Process Is Running')),
+    (notifications, ('Recent Notifications', 'Mark All Read', 'Needs Attention', 'Need Attention')),
+    (component, ('View Details', 'Mark Read')),
+    (shell, ('View All',)),
+):
+    for needle in required:
+        if needle not in source:
+            raise SystemExit(f'Notification Deck Title Case contract missing: {needle}')
+
+for source, forbidden in (
+    (activity, ('Processes in progress', 'No process is running', '&nbsp;active')),
+    (notifications, ('Recent notifications', 'Mark all read', ' need attention')),
+    (component, ('View details', 'Mark read')),
+    (shell, ('View all <i',)),
+):
+    for needle in forbidden:
+        if needle in source:
+            raise SystemExit(f'Notification Deck legacy casing remains: {needle}')
+
+if "if job.progress_mode == 'queued'" not in progress_component:
     raise SystemExit('Queued jobs must use a static progress marker.')
-if 'w-1/3 rounded-full bg-kaori-primary/60' not in component:
+if 'w-1/4 rounded-full bg-kaori-primary/55' not in progress_component:
     raise SystemExit('Queued job marker is missing the non-animated KAORI style.')
 if "if job.status == 'queued':\n        return 'Waiting'" not in presentation:
     raise SystemExit('Queued duration must read Waiting instead of In progress.')
@@ -247,8 +275,9 @@ for needle in (
         raise SystemExit(f'Activity surface reconciliation is missing: {needle}')
 
 for needle in (
-    'aria-label="Notification center sections"',
-    'rounded-xl border border-kaori-primary/20 bg-kaori-soft p-1',
+    'components/framed_workspace_tabs.html',
+    'framed_workspace_tabs.render_navigation(',
+    "aria_label='Notification Center sections'",
     "selected_view == 'activity'",
     "selected_view == 'notifications'",
     'data-server-activity-item',
