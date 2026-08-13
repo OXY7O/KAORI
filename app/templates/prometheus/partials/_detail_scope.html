@@ -66,8 +66,7 @@
         </div>
     </section>
     {% include "prometheus/partials/_binding_registry.html" %}
-    {{ binding_readiness_boundary.render(
-        'Prometheus',
+    {{ binding_readiness_boundary.render('Prometheus',
         instance.readiness_status or 'validation_required',
         binding_rows|length,
         validated_binding_count,
@@ -76,8 +75,7 @@
         description='Source readiness, binding validation, resolver preference, metrics identity, and operational eligibility remain independent evidence dimensions.',
         marker='data-kaori-binding-decision-horizontal',
         identity_title='Consumer Identity Boundary',
-        identity_copy='Shared-source bindings use stable metrics selectors so Kubernetes, Object Storage, and future consumer evidence remains isolated.'
-    ) }}
+        identity_copy='Shared-source bindings use stable metrics selectors so Kubernetes, Object Storage, and future consumer evidence remains isolated.') }}
     <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
              aria-labelledby="prometheus-consumer-resolution-title"
              data-kaori-consumer-resolution-full-width>

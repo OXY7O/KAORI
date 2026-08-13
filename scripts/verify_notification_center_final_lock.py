@@ -99,8 +99,10 @@ def main() -> int:
         errors.append(
             'shared framed workspace component must own server-backed Notification Center navigation geometry'
         )
-    if 'components/progress_bar.html' not in items or 'progress_bar.determinate(' not in items:
-        errors.append('Notification Center Active Work must use shared determinate progress presentation')
+    if 'components/progress_bar.html' not in items or 'progress_bar.job_progress(' not in items:
+        errors.append('Notification Center Active Work must use shared Job Progress v2 presentation')
+    if 'progress_bar.determinate(' in items:
+        errors.append('Notification Center Active Work must not restore the retired determinate progress API')
 
     for required in (
         'Active Work',

@@ -20,7 +20,7 @@
                     <p class="mt-1 text-xs leading-5 text-content-secondary">One row per governed consumer asset. Consumer Profile, resolver preference, binding validation, and effective resolution remain explicit and independently reviewable.</p>
                 </div>
             </div>
-            {{ table_label.metadata_label(binding_rows|length ~ (' Binding' if binding_rows|length == 1 else ' Bindings'), 'link-2') }}
+            {{ table_label.metadata_label(binding_rows|length ~ (' Binding' if binding_rows|length == 1 else ' Bindings') , 'link-2') }}
         </div>
         {{ loading_bar.render("prometheus-binding-registry-loading", label="Refreshing Prometheus Consumer Bindings") }}
     </header>
@@ -118,7 +118,9 @@
                             </div>
                         </td>
                     </tr>
-                    <tr x-cloak x-show="selectorEditor === {{ row.binding.id }}" class="bg-surface-subtle">
+                    <tr x-cloak
+                        x-show="selectorEditor === {{ row.binding.id }}"
+                        class="bg-surface-subtle">
                         <td colspan="7" class="px-4 py-4 sm:px-5">
                             <div class="mb-3 flex items-start gap-3">
                                 {{ integration_ui.palette_icon('scan-line', 'info', size='sm') }}
@@ -144,9 +146,11 @@
                                 </div>
                                 <div>
                                     <label class="{{ table_ui.filter_label_classes() }}">Operator</label>
-                                    <select name="selector_operator" class="{{ table_ui.filter_select_classes() }}">
+                                    <select name="selector_operator"
+                                            class="{{ table_ui.filter_select_classes() }}">
                                         {% for operator in ['=', '=~', '!=', '!~'] %}
-                                            <option value="{{ operator }}" {% if row.selector_operator == operator %}selected{% endif %}>{{ operator }}</option>
+                                            <option value="{{ operator }}"
+                                                    {% if row.selector_operator == operator %}selected{% endif %}>{{ operator }}</option>
                                         {% endfor %}
                                     </select>
                                 </div>
@@ -158,7 +162,8 @@
                                            maxlength="255"
                                            class="{{ table_ui.filter_input_classes() }}">
                                 </div>
-                                <button type="submit" class="{{ action_button.classes('primary') }} whitespace-nowrap"><i data-lucide="save" class="h-3.5 w-3.5" aria-hidden="true"></i>Save Identity</button>
+                                <button type="submit"
+                                        class="{{ action_button.classes('primary') }} whitespace-nowrap"><i data-lucide="save" class="h-3.5 w-3.5" aria-hidden="true"></i>Save Identity</button>
                             </form>
                         </td>
                     </tr>
@@ -184,30 +189,44 @@
                   hx-indicator="#prometheus-binding-registry-loading"
                   class="{{ pagination_ui.rows_group_classes() }}">
                 <input type="hidden" name="binding_page" value="1">
-                <label for="prometheus-binding-per-page" class="font-semibold text-content-secondary">Rows</label>
-                <select id="prometheus-binding-per-page" name="binding_per_page" data-kaori-auto-submit class="{{ pagination_ui.page_size_classes() }}">
-                    {% for option in binding_registry_pagination.allowed_per_page %}<option value="{{ option }}" {% if option == binding_registry_pagination.per_page %}selected{% endif %}>{{ option }}</option>{% endfor %}
+                <label for="prometheus-binding-per-page"
+                       class="font-semibold text-content-secondary">Rows</label>
+                <select id="prometheus-binding-per-page"
+                        name="binding_per_page"
+                        data-kaori-auto-submit
+                        class="{{ pagination_ui.page_size_classes() }}">
+                    {% for option in binding_registry_pagination.allowed_per_page %}
+                        <option value="{{ option }}"
+                                {% if option == binding_registry_pagination.per_page %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
                 </select>
             </form>
         </div>
-        <nav class="{{ pagination_ui.navigation_group_classes() }}" aria-label="Prometheus consumer binding pagination">
+        <nav class="{{ pagination_ui.navigation_group_classes() }}"
+             aria-label="Prometheus consumer binding pagination">
             {% set binding_query = {"binding_per_page": binding_registry_pagination.per_page} %}
             {% if binding_registry_pagination.has_prev %}
                 <a href="{{ url_for('prometheus.instance_detail', instance_id=instance.id, binding_page=binding_registry_pagination.prev_page, **binding_query) }}#scope"
                    hx-get="{{ url_for('prometheus.instance_binding_registry', instance_id=instance.id, binding_page=binding_registry_pagination.prev_page, **binding_query) }}"
-                   hx-target="#prometheus-binding-registry" hx-swap="outerHTML" hx-indicator="#prometheus-binding-registry-loading"
+                   hx-target="#prometheus-binding-registry"
+                   hx-swap="outerHTML"
+                   hx-indicator="#prometheus-binding-registry-loading"
                    class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
             {% else %}
-                <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+                <span class="{{ pagination_ui.navigation_classes(true) }}"
+                      aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
             {% endif %}
             {{ pagination_ui.numeric_pages(binding_registry_pagination.page, binding_registry_pagination.total_pages, "binding_page", hx_target="#prometheus-binding-registry", hx_indicator="#prometheus-binding-registry-loading", endpoint="prometheus.instance_binding_registry", query_params={"instance_id": instance.id, "binding_per_page": binding_registry_pagination.per_page}, hx_swap="outerHTML", href_endpoint="prometheus.instance_detail") }}
             {% if binding_registry_pagination.has_next %}
                 <a href="{{ url_for('prometheus.instance_detail', instance_id=instance.id, binding_page=binding_registry_pagination.next_page, **binding_query) }}#scope"
                    hx-get="{{ url_for('prometheus.instance_binding_registry', instance_id=instance.id, binding_page=binding_registry_pagination.next_page, **binding_query) }}"
-                   hx-target="#prometheus-binding-registry" hx-swap="outerHTML" hx-indicator="#prometheus-binding-registry-loading"
+                   hx-target="#prometheus-binding-registry"
+                   hx-swap="outerHTML"
+                   hx-indicator="#prometheus-binding-registry-loading"
                    class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
             {% else %}
-                <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+                <span class="{{ pagination_ui.navigation_classes(true) }}"
+                      aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
             {% endif %}
         </nav>
     </footer>

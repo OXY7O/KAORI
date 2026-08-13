@@ -50,7 +50,6 @@ def test_integrations_provider_catalog_surfaces_real_persisted_readiness() -> No
         assert marker in overview
 
 
-
 def test_provider_frontpage_consistency_verifier_uses_current_title_case_contract() -> None:
     verifier = read('scripts/verify_provider_frontpage_consistency.py')
     standard = read('docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md')

@@ -25,6 +25,7 @@ EXPECTED_MENU_TEMPLATES = {
     'intelligence_menu.html',
     'inventory_menu.html',
     'kubernetes_operations_menu.html',
+    'object_storage_menu.html',
     'platform_operations_menu.html',
     'reports_menu.html',
     'settings_menu.html',
@@ -181,8 +182,8 @@ def verify() -> None:
             if surface.title not in documentation or surface.lock_state not in documentation:
                 errors.append(f'{surface.title}: release coverage documentation is incomplete')
         for token in (
-            '49 navigation links',
-            '22 registered blueprints',
+            '52 navigation links',
+            '23 registered blueprints',
             'Cluster Management',
             'Integrations → Orchestration → Kubernetes',
         ):
@@ -195,7 +196,7 @@ def verify() -> None:
             print(f'- {error}')
         raise SystemExit(1)
 
-    print('PASS — KAORI Release Coverage · 49 links / 22 blueprints')
+    print('PASS — KAORI Release Coverage · 52 links / 23 blueprints')
 
 
 if __name__ == '__main__':

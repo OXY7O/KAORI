@@ -24,12 +24,12 @@
             </aside>
         {% else %}
             {{ page_hero.context_card('Forecast Posture',
-                                'Forecast Posture',
-                                'Forecast Outlook',
-                                posture_status,
-                                posture_tone,
-                                [
-                                ('gauge', 'Highest Projection', highest_projection, summary.highest_projected_label|default('No Evidence', true) ),
+                        'Forecast Posture',
+                        'Forecast Outlook',
+                        posture_status,
+                        posture_tone,
+                        [
+                        ('gauge', 'Highest Projection', highest_projection, summary.highest_projected_label|default('No Evidence', true) ),
             ('list-checks', 'Actionable', recommendation_count, 'Forecast recommendations')
             ],
             'Manage Clusters',

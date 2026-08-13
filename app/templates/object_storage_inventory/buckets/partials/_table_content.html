@@ -207,7 +207,7 @@
                                 badge=protection_badge,
                                 variant='highlight',
                                 density='compact'
-                            ) %}
+                                ) %}
                                 <dl class="grid gap-4 border-t border-outline-subtle pt-3 sm:grid-cols-2 xl:grid-cols-4 xl:divide-x xl:divide-outline-subtle">
                                     <div class="xl:pr-4">{{ side_drawer.metric('Quota', asset.quota.label, 'gauge', asset.quota.state_label, variant='plain') }}</div>
                                     <div class="xl:px-4">{{ side_drawer.metric('Used Size', asset.size_label, 'hard-drive', 'Logical Current Objects', variant='plain') }}</div>
@@ -215,51 +215,47 @@
                                     <div class="xl:pl-4">{{ side_drawer.metric('Protection', asset.protection.label, 'shield-check', 'Normalized Posture', variant='plain') }}</div>
                                 </dl>
                             {% endcall %}
-
                             {% if asset.quota.key == 'configured' %}
-                                {% set quota_reading_title = 'Quota Collected' %}
+                                {% set quota_reading_title = "Quota Collected" %}
                             {% elif asset.quota.key == 'not_configured' %}
-                                {% set quota_reading_title = 'No Quota Configured' %}
+                                {% set quota_reading_title = "No Quota Configured" %}
                             {% else %}
                                 {% set quota_reading_title = asset.quota_evidence.label %}
                             {% endif %}
                             {% set quota_reading_description = asset.quota_evidence.guidance %}
                             {% set quota_reading_tone = asset.quota_evidence.tone %}
-
                             {% if asset.usage_state.key == 'collected' and asset.usage_stats_mode_label == 'Provider Metrics' %}
-                                {% set usage_reading_title = 'Provider Usage Collected' %}
-                                {% set usage_reading_description = 'Provider-native aggregated usage supplied logical used size and current object count without enumerating every object.' %}
-                                {% set usage_reading_tone = 'normal' %}
+                                {% set usage_reading_title = "Provider Usage Collected" %}
+                                {% set usage_reading_description = "Provider-native aggregated usage supplied logical used size and current object count without enumerating every object." %}
+                                {% set usage_reading_tone = "normal" %}
                             {% elif asset.usage_state.key == 'collected' %}
-                                {% set usage_reading_title = 'Usage Collected' %}
-                                {% set usage_reading_description = 'Full-scan inventory enumerated current S3 objects to calculate logical used size and current object count.' %}
-                                {% set usage_reading_tone = 'normal' %}
+                                {% set usage_reading_title = "Usage Collected" %}
+                                {% set usage_reading_description = "Full-scan inventory enumerated current S3 objects to calculate logical used size and current object count." %}
+                                {% set usage_reading_tone = "normal" %}
                             {% elif asset.usage_state.key == 'disabled' %}
-                                {% set usage_reading_title = 'Usage Collection Disabled' %}
-                                {% set usage_reading_description = 'Quota and configuration inventory still run normally. Prefer provider_metrics for scalable usage collection; use full_scan only as an explicit fallback.' %}
-                                {% set usage_reading_tone = 'info' %}
+                                {% set usage_reading_title = "Usage Collection Disabled" %}
+                                {% set usage_reading_description = "Quota and configuration inventory still run normally. Prefer provider_metrics for scalable usage collection; use full_scan only as an explicit fallback." %}
+                                {% set usage_reading_tone = "info" %}
                             {% elif asset.usage_stats_mode_label == 'Provider Metrics' %}
-                                {% set usage_reading_title = 'Provider Usage Incomplete' %}
-                                {% set usage_reading_description = 'Provider-native usage evidence was unavailable or did not contain this asset. Grant admin:DataUsageInfo access or select full_scan explicitly when exact usage is required.' %}
-                                {% set usage_reading_tone = 'warning' %}
+                                {% set usage_reading_title = "Provider Usage Incomplete" %}
+                                {% set usage_reading_description = "Provider-native usage evidence was unavailable or did not contain this asset. Grant admin:DataUsageInfo access or select full_scan explicitly when exact usage is required." %}
+                                {% set usage_reading_tone = "warning" %}
                             {% else %}
-                                {% set usage_reading_title = 'Usage Evidence Incomplete' %}
-                                {% set usage_reading_description = 'The full-scan profile was requested, but exact used size or object-count evidence was not fully collected.' %}
-                                {% set usage_reading_tone = 'warning' %}
+                                {% set usage_reading_title = "Usage Evidence Incomplete" %}
+                                {% set usage_reading_description = "The full-scan profile was requested, but exact used size or object-count evidence was not fully collected." %}
+                                {% set usage_reading_tone = "warning" %}
                             {% endif %}
-
                             {% if asset.protection.tone == 'normal' %}
-                                {% set protection_reading_title = 'Protection Posture Healthy' %}
-                                {% set protection_reading_tone = 'normal' %}
+                                {% set protection_reading_title = "Protection Posture Healthy" %}
+                                {% set protection_reading_tone = "normal" %}
                             {% elif asset.protection.tone == 'critical' %}
-                                {% set protection_reading_title = 'Protection Review Required' %}
-                                {% set protection_reading_tone = 'critical' %}
+                                {% set protection_reading_title = "Protection Review Required" %}
+                                {% set protection_reading_tone = "critical" %}
                             {% else %}
-                                {% set protection_reading_title = 'Protection Review Recommended' %}
-                                {% set protection_reading_tone = 'warning' %}
+                                {% set protection_reading_title = "Protection Review Recommended" %}
+                                {% set protection_reading_tone = "warning" %}
                             {% endif %}
                             {% set protection_reading_description = 'Normalized protection posture is ' ~ asset.protection.label ~ '. Review versioning, encryption, immutability, and exposure evidence below.' %}
-
                             {% set operational_reading_badge %}
                                 {{ table_label.metadata_label('Snapshot Guidance', 'sparkles', size='detail') }}
                             {% endset %}
@@ -270,25 +266,21 @@
                                 header_badge=operational_reading_badge,
                                 body_classes='p-4',
                                 aria_label='Operational reading'
-                            ) %}
+                                ) %}
                                 <div class="grid gap-3 xl:grid-cols-3">
                                     {{ operational_callout.render(quota_reading_title, quota_reading_description, icon='gauge', tone=quota_reading_tone, variant='semantic', extra_classes='w-full') }}
                                     {{ operational_callout.render(usage_reading_title, usage_reading_description, icon='chart-no-axes-column', tone=usage_reading_tone, variant='semantic', extra_classes='w-full') }}
                                     {{ operational_callout.render(protection_reading_title, protection_reading_description, icon='shield-check', tone=protection_reading_tone, variant='semantic', extra_classes='w-full') }}
                                 </div>
                             {% endcall %}
-
                             {% if asset.quota.key in ['not_collected', 'not_supported'] %}
-                                {{ operational_callout.render(
-                                    'Quota Collection Diagnostic',
-                                    asset.quota_evidence.guidance,
-                                    icon='gauge',
-                                    tone=asset.quota_evidence.tone,
-                                    variant='semantic',
-                                    extra_classes='w-full'
-                                ) }}
+                                {{ operational_callout.render('Quota Collection Diagnostic',
+                                                                asset.quota_evidence.guidance,
+                                                                icon='gauge',
+                                                                tone=asset.quota_evidence.tone,
+                                                                variant='semantic',
+                                                                extra_classes='w-full') }}
                             {% endif %}
-
                             <div class="grid gap-4 xl:grid-cols-2">
                                 {% call side_drawer.section('Asset Context', 'Canonical identity and committed snapshot context.', 'badge-info', density='compact') %}
                                     <div class="space-y-3">
@@ -302,7 +294,6 @@
                                         {{ detail_ui.status_row('Snapshot State', asset.snapshot_status_label, asset.snapshot_status_tone) }}
                                     </div>
                                 {% endcall %}
-
                                 {% call side_drawer.section('Provider Context', 'Provider identity, collector profile, and connection evidence.', 'database-zap', density='compact') %}
                                     <div class="space-y-3">
                                         {{ detail_ui.detail_row('Profile', asset.compatibility_profile_label) }}
@@ -321,7 +312,6 @@
                                     </div>
                                 {% endcall %}
                             </div>
-
                             <div class="grid gap-4 xl:grid-cols-2">
                                 {% call side_drawer.section('Protection & Access', 'Normalized controls used for cross-provider governance.', 'shield-check', density='compact') %}
                                     <div class="space-y-3">
@@ -333,7 +323,6 @@
                                         {{ detail_ui.status_row('Protection Posture', asset.protection.label, asset.protection.tone) }}
                                     </div>
                                 {% endcall %}
-
                                 {% call side_drawer.section('Lifecycle & Replication', 'Lifecycle and data-copy posture kept separate from protection controls.', 'git-branch', density='compact') %}
                                     <div class="space-y-3">
                                         {{ detail_ui.status_row('Lifecycle', asset.lifecycle.label, asset.lifecycle.tone) }}
@@ -346,7 +335,6 @@
                                     </div>
                                 {% endcall %}
                             </div>
-
                             {% for section in asset.provider_detail_sections %}
                                 {% call side_drawer.section(section.title, section.description, section.icon, density='compact') %}
                                     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -360,18 +348,15 @@
                                     </div>
                                 {% endcall %}
                             {% endfor %}
-
                             {% if asset.enrichment_gaps %}
-                                {{ operational_callout.render(
-                                    'Partial Provider Evidence',
-                                    'Some optional provider evidence could not be collected: ' ~ (asset.enrichment_gaps|join(', ')) ~ '. The committed inventory snapshot remains usable.',
-                                    icon='triangle-alert',
-                                    tone='warning',
-                                    variant='semantic',
-                                    extra_classes='w-full'
+                                {{ operational_callout.render('Partial Provider Evidence',
+                                                                'Some optional provider evidence could not be collected: ' ~ (asset.enrichment_gaps|join(', ') ) ~ '. The committed inventory snapshot remains usable.',
+                                icon='triangle-alert',
+                                tone='warning',
+                                variant='semantic',
+                                extra_classes='w-full'
                                 ) }}
                             {% endif %}
-
                             <div class="grid gap-3 xl:grid-cols-2">
                                 {{ operational_callout.render('Data Boundary', asset.data_boundary, icon='database', tone='info', extra_classes='w-full') }}
                                 {{ operational_callout.render('Recommended Action', asset.recommended_action, icon='compass', tone='info', extra_classes='w-full') }}

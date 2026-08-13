@@ -59,6 +59,9 @@ def main() -> None:
     domain_template = read('app/templates/integrations/domain.html')
     minio_detail = read('app/templates/minio/instance_detail.html')
     minio_configuration = read('app/templates/minio/partials/_detail_configuration.html')
+    provider_configuration_contract = read(
+        'app/templates/integrations/components/_provider_configuration_contract.html'
+    )
     minio_scope = read('app/templates/minio/partials/_detail_scope.html')
     minio_runtime = read('app/templates/minio/partials/_detail_runtime.html')
     minio_validation = read('app/templates/minio/partials/_detail_validation.html')
@@ -182,18 +185,23 @@ def main() -> None:
         'MinIO fourth workspace must match the asset-owner inventory/lifecycle model',
     )
     require(
-        'Configure Connection' in minio_configuration,
-        'MinIO configuration must expose the managed connection lifecycle action',
+        'provider_configuration_contract.render(' in minio_configuration
+        and 'Configure Connection' in provider_configuration_contract,
+        'MinIO configuration must expose the shared managed connection lifecycle action',
     )
-    require("url_for('minio.edit_instance'" in minio_configuration, 'MinIO configuration edit route is missing')
+    require(
+        "url_for('minio.edit_instance'" in minio_configuration
+        or 'url_for("minio.edit_instance"' in minio_configuration,
+        'MinIO configuration edit route is missing',
+    )
     require('Lifecycle Gate' in minio_scope, 'MinIO asset lifecycle gate is missing')
     require('Next Lifecycle Action' in minio_scope, 'MinIO lifecycle action summary is missing')
     require('Open Observability' in minio_scope, 'MinIO asset owner must direct binding mutation to Observability')
     require('Delete Connection' in minio_scope, 'MinIO delete action is missing')
     require("url_for('minio.delete_instance'" in minio_scope, 'MinIO delete route wiring is missing')
     require(
-        'Compatibility & Capability Matrix' in minio_validation,
-        'MinIO validation workspace must use the canonical capability header',
+        'Validated Capabilities' in minio_validation,
+        'MinIO validation workspace must expose the canonical validated-capability presentation',
     )
     require('minio-capability-registry' in minio_capability_registry, 'MinIO capability registry is missing')
     require('capability_per_page' in minio_capability_registry, 'MinIO capability registry pagination is missing')

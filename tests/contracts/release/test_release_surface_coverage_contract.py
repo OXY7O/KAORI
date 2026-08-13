@@ -17,11 +17,11 @@ def read(relative: str) -> str:
 
 
 def test_release_registry_closes_navigation_and_blueprint_inventory() -> None:
-    assert len(navigation_endpoints()) == 49
-    assert len(set(navigation_endpoints())) == 49
-    assert len(blueprint_vars()) == 22
-    assert len(set(blueprint_vars())) == 22
-    assert len(SURFACES) == 15
+    assert len(navigation_endpoints()) == 52
+    assert len(set(navigation_endpoints())) == 52
+    assert len(blueprint_vars()) == 23
+    assert len(set(blueprint_vars())) == 23
+    assert len(SURFACES) == 16
 
     assert {surface.lock_state for surface in SURFACES} == {'LOCKED', 'BASELINE LOCKED', 'SYSTEM LOCKED'}
     assert next(surface for surface in SURFACES if surface.key == 'intelligence').lock_state == 'BASELINE LOCKED'
@@ -83,8 +83,8 @@ def test_cluster_listing_legacy_chain_is_retired_and_guarded() -> None:
 def test_release_coverage_documentation_keeps_explicit_incomplete_feature_state() -> None:
     documentation = read('docs/architecture/RELEASE_SURFACE_COVERAGE.md')
     for token in (
-        '49 navigation links',
-        '22 registered blueprints',
+        '52 navigation links',
+        '23 registered blueprints',
         'Intelligence | BASELINE LOCKED',
         'Runtime Health | SYSTEM LOCKED',
         'Cluster Management is intentionally not a separate sidebar menu',

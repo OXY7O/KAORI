@@ -62,6 +62,24 @@ SURFACES: tuple[ReleaseSurface, ...] = (
         contract_paths=('tests/contracts/kubernetes/test_inventory_final_release_contract.py',),
     ),
     ReleaseSurface(
+        key='object_storage_inventory',
+        title='Object Storage Inventory',
+        lock_state='LOCKED',
+        navigation_source='app/templates/components/navigation/object_storage_menu.html',
+        navigation_endpoints=(
+            'object_storage_inventory.overview',
+            'object_storage_inventory.systems',
+            'object_storage_inventory.buckets',
+        ),
+        blueprint_vars=('object_storage_inventory_bp',),
+        verifiers=('scripts/verify_object_storage_inventory_final_lock.py',),
+        contract_paths=('tests/contracts/storage_inventory',),
+        notes=(
+            'Provider-neutral committed inventory. Live provider configuration, validation, and runtime health '
+            'remain integration-owned.'
+        ),
+    ),
+    ReleaseSurface(
         key='kubernetes_operations',
         title='Kubernetes Operations',
         lock_state='LOCKED',

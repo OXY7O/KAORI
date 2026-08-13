@@ -21,6 +21,7 @@ run_static() {
     python scripts/verify_report_storage_resilience.py
     python scripts/verify_tabular_export_standard.py
     python scripts/verify_inventory_final_lock.py
+    python scripts/verify_object_storage_inventory_final_lock.py
     python scripts/verify_governance_final_lock.py
     python scripts/verify_kubernetes_operations_final_lock.py
     python scripts/verify_node_inventory_standard.py
