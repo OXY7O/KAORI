@@ -60,7 +60,14 @@ def test_report_progress_uses_shared_progress_component() -> None:
     detail = read(REPORTS / 'generated' / 'detail.html')
     templates = read(REPORTS / 'report_templates' / 'index.html')
 
-    for source in (detail, templates):
-        assert 'components/progress_bar.html' in source
-        assert 'progress_bar.bar(' in source
-        assert 'style="width:' not in source
+    assert 'components/progress_bar.html' in detail
+    assert 'progress_bar.job_progress(' in detail
+    assert 'progress_bar.determinate(' not in detail
+
+    assert 'components/progress_bar.html' in templates
+    assert 'progress_bar.bar(' in templates
+
+    # Dynamic width remains owned by the approved shared progress component,
+    # never by report-specific templates.
+    assert 'style="width:' not in detail
+    assert 'style="width:' not in templates

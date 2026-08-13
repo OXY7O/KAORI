@@ -13,7 +13,8 @@
          aria-valuemax="100"
          aria-valuenow="{{ safe_value }}">
         <div class="kaori-progress-fill {{ fill_classes }}"
-             data-progress="{{ safe_value }}"></div>
+             data-progress="{{ safe_value }}"
+             style="width: {{ safe_value }}%"></div>
     </div>
 {%- endmacro %}
 {% macro stacked_bar(primary_value, secondary_value, track_classes, primary_classes, secondary_classes, label='Progress') -%}
@@ -36,9 +37,11 @@
          aria-valuemax="100"
          aria-valuenow="{{ safe_primary_value }}">
         <div class="kaori-progress-fill {{ primary_classes }}"
-             data-progress="{{ safe_primary_value }}"></div>
+             data-progress="{{ safe_primary_value }}"
+             style="width: {{ safe_primary_value }}%"></div>
         <div class="kaori-progress-fill {{ secondary_classes }}"
-             data-progress="{{ safe_secondary_value }}"></div>
+             data-progress="{{ safe_secondary_value }}"
+             style="width: {{ safe_secondary_value }}%"></div>
     </div>
 {%- endmacro %}
 {% macro determinate(value, label='Progress', classes='h-1.5 w-full overflow-hidden rounded-full accent-kaori-primary') -%}

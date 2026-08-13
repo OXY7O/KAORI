@@ -5,6 +5,7 @@ from typing import Any
 
 from app.integrations.compatibility import kubernetes_lifecycle_policy
 from app.integrations.contracts import CapabilitySnapshot, DiagnosticResult, HealthFactor, RuntimeState
+from app.integrations.kubernetes.messages import compact_readiness_reasons
 from app.integrations.runtime.scoring import calculate_health
 from app.models.kubernetes import KubernetesConnection
 
@@ -80,7 +81,7 @@ class KubernetesRuntimeAdapter:
         optional_blocked = tuple(discovery.get('optional_blocked_features') or ())
         lifecycle = str(discovery.get('lifecycle_status') or 'unknown')
         lifecycle_policy = kubernetes_lifecycle_policy(connection.detected_version)
-        readiness_reasons = tuple(str(item) for item in (discovery.get('readiness_reasons') or ()) if item)
+        readiness_reasons = tuple(compact_readiness_reasons(discovery.get('readiness_reasons') or ()))
         selected_adapters = discovery.get('selected_adapters') or {}
         capabilities = tuple(sorted({key.split('.', 1)[0] for key in selected_adapters}))
         if connected:

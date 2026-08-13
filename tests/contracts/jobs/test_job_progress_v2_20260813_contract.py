@@ -28,6 +28,10 @@ def test_all_job_execution_surfaces_use_shared_progress_renderer() -> None:
     component = read('app/templates/components/progress_bar.html')
     assert 'macro job_progress(' in component
     assert 'transition-all duration-500 ease-out' in component
+    assert 'style="width: {{ safe_value }}%"' in component
+    assert 'data-progress="{{ safe_value }}"' in component
+    assert 'style="width: {{ safe_primary_value }}%"' in component
+    assert 'style="width: {{ safe_secondary_value }}%"' in component
 
     for relative in (
         'app/templates/jobs/configuration/_execution_activity.html',
