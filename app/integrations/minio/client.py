@@ -619,6 +619,29 @@ def _parse_minio_timestamp(value: object) -> datetime | None:
     return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=UTC)
 
 
+def _coerce_non_negative_usage_counter(value: object) -> int | None:
+    """Normalize provider usage counters without relying on untyped JSON values."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value if value >= 0 else None
+    if isinstance(value, float):
+        if not value.is_integer():
+            return None
+        parsed = int(value)
+        return parsed if parsed >= 0 else None
+    if isinstance(value, str):
+        raw = value.strip()
+        if not raw:
+            return None
+        try:
+            parsed = int(raw)
+        except ValueError:
+            return None
+        return parsed if parsed >= 0 else None
+    return None
+
+
 def _minio_admin_data_usage(
     *,
     endpoint: str,
@@ -776,12 +799,9 @@ def _minio_admin_data_usage(
                 continue
             if 'size' not in raw_usage or 'objectsCount' not in raw_usage:
                 continue
-            try:
-                size_bytes = int(raw_usage.get('size'))
-                object_count = int(raw_usage.get('objectsCount'))
-            except (TypeError, ValueError):
-                continue
-            if size_bytes < 0 or object_count < 0:
+            size_bytes = _coerce_non_negative_usage_counter(raw_usage.get('size'))
+            object_count = _coerce_non_negative_usage_counter(raw_usage.get('objectsCount'))
+            if size_bytes is None or object_count is None:
                 continue
             normalized[str(bucket_name)] = (size_bytes, object_count)
 

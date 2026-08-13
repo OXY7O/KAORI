@@ -26,6 +26,11 @@ def test_minio_provider_metrics_uses_one_admin_data_usage_snapshot() -> None:
     assert "params={'capacity': 'true'}" in client
     assert "payload.get('bucketsUsageInfo')" in client
     assert "'objectsCount' not in raw_usage" in client
+    assert 'def _coerce_non_negative_usage_counter(value: object) -> int | None:' in client
+    assert "_coerce_non_negative_usage_counter(raw_usage.get('size'))" in client
+    assert "_coerce_non_negative_usage_counter(raw_usage.get('objectsCount'))" in client
+    assert "int(raw_usage.get('size'))" not in client
+    assert "int(raw_usage.get('objectsCount'))" not in client
     assert "source = f'minio_admin_data_usage_{api_version}'" in client
     assert "usage_collection = 's3_list_objects_v2'" in client
     assert 'provider_usage = _minio_admin_data_usage(' in client

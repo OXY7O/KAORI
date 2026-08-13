@@ -201,6 +201,28 @@ def test_minio_admin_data_usage_collects_per_bucket_usage(monkeypatch) -> None:
     assert evidence.observed_at is not None
 
 
+def test_minio_admin_data_usage_skips_invalid_usage_counters(monkeypatch) -> None:
+    monkeypatch.setattr(
+        'app.integrations.minio.client.requests.get',
+        lambda *args, **kwargs: _QuotaResponse(
+            200,
+            {
+                'bucketsUsageInfo': {
+                    'valid-string': {'size': '1024', 'objectsCount': '2'},
+                    'missing-size': {'size': None, 'objectsCount': 1},
+                    'negative': {'size': -1, 'objectsCount': 1},
+                    'fractional': {'size': 1.5, 'objectsCount': 1},
+                    'boolean': {'size': True, 'objectsCount': 1},
+                }
+            },
+        ),
+    )
+
+    evidence = _usage()
+
+    assert evidence.buckets == {'valid-string': (1024, 2)}
+
+
 def test_minio_admin_data_usage_records_access_denied_without_full_scan(monkeypatch) -> None:
     monkeypatch.setattr(
         'app.integrations.minio.client.requests.get',
