@@ -256,7 +256,7 @@ def _clamp_progress_percent(value: int | float | None) -> int:
 
 
 def _progress_metadata(job: JobExecution) -> dict[str, Any]:
-    payload = dict(job.payload_json or {})
+    payload = dict(getattr(job, 'payload_json', None) or {})
     metadata = payload.get('_progress')
     return dict(metadata) if isinstance(metadata, dict) else {}
 
@@ -268,7 +268,7 @@ def _set_progress_metadata(
     stage: str | None = None,
     target: str | None = None,
 ) -> None:
-    payload = dict(job.payload_json or {})
+    payload = dict(getattr(job, 'payload_json', None) or {})
     metadata = _progress_metadata(job)
     if percent is not None:
         metadata['percent'] = _clamp_progress_percent(percent)

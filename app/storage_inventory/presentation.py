@@ -10,12 +10,12 @@ from app.common.pagination import paginate_sequence
 from app.models.object_storage import ObjectStorageBucket, ObjectStorageSystem
 from app.storage_inventory.system_presentation import (
     _compatibility_profile_display,
-    _endpoint_display,
     _product_label,
     _release_display,
     _snapshot_status,
     _system_filter_options,
 )
+from app.storage_inventory.system_presentation import _endpoint_display as _system_endpoint_display
 from app.storage_inventory.system_presentation import _inventory_guidance as _inventory_guidance
 from app.storage_inventory.system_presentation import _inventory_signals as _inventory_signals
 from app.storage_inventory.system_presentation import _is_stale as _is_stale
@@ -57,6 +57,10 @@ _STATE_PRESENTATION = {
     'unknown': ('Unknown', 'unknown'),
     'collected': ('Collected', 'normal'),
 }
+
+
+def _endpoint_display(value: str | None) -> str:
+    return _system_endpoint_display(value)
 
 
 def _format_bytes(value: int | None) -> str:
