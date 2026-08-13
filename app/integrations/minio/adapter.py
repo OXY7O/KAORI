@@ -10,7 +10,6 @@ from app.integrations.minio.client import probe_instance_runtime_health, test_in
 from app.integrations.minio.compatibility import evaluate_minio_release
 from app.integrations.runtime.scoring import calculate_health
 from app.models.minio import MinioInstance
-from app.storage_inventory.sync import sync_object_storage_inventory
 
 
 def _health_factors(instance: MinioInstance) -> tuple[HealthFactor, ...]:
@@ -212,11 +211,6 @@ class MinioRuntimeAdapter:
             return self.refresh_health(instance)
         if operation == 'runtime.state':
             return self.get_state(instance, validation_result=kwargs.get('validation_result'))
-        if operation == 'inventory.sync':
-            return sync_object_storage_inventory(
-                instance,
-                progress_callback=kwargs.get('progress_callback'),
-            )
         raise ValueError(f'Unsupported MinIO integration operation: {operation}')
 
     def get_state(

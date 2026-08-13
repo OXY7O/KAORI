@@ -45,7 +45,8 @@ def test_bucket_inventory_is_committed_snapshot_not_live_page_discovery() -> Non
     assert 'object_storage_buckets' in model
     assert 'inventory_observed_at' in model
     assert 'commit_bucket_inventory' in sync
-    assert "if operation == 'inventory.sync'" in adapter
+    assert "if operation == 'inventory.sync'" not in adapter
+    assert 'app.storage_inventory' not in adapter
     assert 'commit_bucket_inventory(' not in adapter
     assert 'Job Execution owns this operation' in sync
     assert 'sync_object_storage_inventory' in sync

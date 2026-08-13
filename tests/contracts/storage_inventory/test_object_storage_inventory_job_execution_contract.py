@@ -39,8 +39,8 @@ def test_object_storage_job_uses_canonical_job_execution_and_inventory_worker() 
     assert "resource_group='object-storage-inventory:global'" in sync_jobs
     assert "instance.readiness_status != 'ready'" in sync_jobs
     assert "name='app.storage_inventory.tasks.sync_all_object_storage'" in tasks
-    assert "get_integration('minio').execute(" in tasks
-    assert "'inventory.sync'," in tasks
+    assert 'sync_object_storage_inventory(' in tasks
+    assert "get_integration('minio').execute(" not in tasks
     assert 'progress_callback=report_bucket_progress' in tasks
     assert "'app.storage_inventory.tasks'" in config
     assert "'app.storage_inventory.tasks.sync_all_object_storage'" in config
@@ -58,12 +58,13 @@ def test_minio_validation_runtime_and_inventory_ownership_are_separated() -> Non
 
     assert "'runtime.validate': 'integration-validation'" in integration
     assert "'runtime.health': 'integration-runtime'" in integration
-    assert "'inventory.sync': 'inventory'" in integration
+    assert "'inventory.sync': 'inventory'" not in integration
     assert 'commit_bucket_inventory(' not in adapter
     assert "'inventory_owner': 'job_execution'" in adapter
     assert 'probe_instance_runtime_health(instance)' in adapter
     assert "instance.object_storage_system.status = 'connected'" in adapter
-    assert "if operation == 'inventory.sync'" in adapter
+    assert "if operation == 'inventory.sync'" not in adapter
+    assert 'app.storage_inventory' not in adapter
     assert 'collect_instance_bucket_inventory(' in sync
     assert 'usage_stats_mode=usage_stats_mode' in sync
     assert '_lock_system_inventory_sync(' in sync

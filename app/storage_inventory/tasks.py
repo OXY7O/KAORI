@@ -8,10 +8,10 @@ from typing import Any
 from celery import shared_task
 
 from app.extensions.db import db
-from app.integrations.registry import get_integration
 from app.jobs.execution import JobExecutionContext
 from app.models.minio import MinioInstance
 from app.notifications.service import create_notification
+from app.storage_inventory.sync import sync_object_storage_inventory
 
 logger = logging.getLogger(__name__)
 
@@ -167,8 +167,7 @@ def sync_all_object_storage_task(
                 instance = db.session.get(MinioInstance, instance_id)
                 if instance is None:
                     raise LookupError('The MinIO connection was deleted after the inventory job was admitted.')
-                result = get_integration('minio').execute(
-                    'inventory.sync',
+                result = sync_object_storage_inventory(
                     instance,
                     progress_callback=report_bucket_progress,
                 )
