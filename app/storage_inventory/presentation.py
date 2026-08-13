@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Protocol
 
 from sqlalchemy.orm import joinedload, selectinload
 
@@ -15,7 +16,11 @@ from app.storage_inventory.system_presentation import (
     _snapshot_status,
     _system_filter_options,
 )
+from app.storage_inventory.system_presentation import _inventory_guidance as _inventory_guidance
+from app.storage_inventory.system_presentation import _inventory_signals as _inventory_signals
+from app.storage_inventory.system_presentation import _is_stale as _is_stale
 from app.storage_inventory.system_presentation import _overview_snapshot as _overview_snapshot_impl
+from app.storage_inventory.system_presentation import _status as _status
 from app.storage_inventory.system_presentation import _system_row as _system_row_impl
 
 _NATIVE_TYPE_LABELS = {
@@ -26,6 +31,16 @@ _NATIVE_TYPE_LABELS = {
 _SYSTEM_SNAPSHOT_SOURCE = {'snapshot_source': 'Committed Snapshot'}
 OBJECT_STORAGE_INVENTORY_FRESHNESS_HOURS = 24
 _OVERVIEW_SIGNAL_LABELS = ('Inventory Not Collected', 'Stale Snapshot', 'Provider Attention')
+
+
+class _BucketPostureSource(Protocol):
+    quota_state: str
+    versioning_state: str
+    immutability_state: str
+    encryption_state: str
+    exposure_state: str
+    usage_stats_state: str
+
 
 _STATE_PRESENTATION = {
     'enabled': ('Enabled', 'normal'),
@@ -75,10 +90,10 @@ def _state_view(value: str | None) -> dict[str, str]:
 
 def _protection_posture(
     *,
-    versioning_state: str | None,
-    immutability_state: str | None,
-    encryption_state: str | None,
-    exposure_state: str | None,
+    versioning_state: str,
+    immutability_state: str,
+    encryption_state: str,
+    exposure_state: str,
 ) -> dict[str, str]:
     exposure = _state_view(exposure_state)
     if exposure['key'] == 'public':
@@ -253,7 +268,7 @@ _QUOTA_EVIDENCE_PRESENTATION: dict[str, tuple[str, str, str]] = {
 def _quota_evidence_view(
     evidence_code: str | None,
     *,
-    quota_state: str | None,
+    quota_state: str,
     metadata: dict[str, Any],
 ) -> dict[str, Any]:
     key = str(evidence_code or '').strip().lower().replace('-', '_')
@@ -373,7 +388,7 @@ def _overview_asset_catalog(total_systems: int, total_buckets: int) -> list[dict
     ]
 
 
-def _overview_bucket_posture(buckets: list[ObjectStorageBucket]) -> dict[str, Any]:
+def _overview_bucket_posture(buckets: Sequence[_BucketPostureSource]) -> dict[str, Any]:
     total = len(buckets)
     quota_assessed = quota_configured = protection_attention = public_exposure = usage_collected = 0
     for bucket in buckets:

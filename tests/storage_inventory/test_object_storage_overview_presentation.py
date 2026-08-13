@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 from app.storage_inventory.presentation import (
@@ -9,6 +10,16 @@ from app.storage_inventory.presentation import (
     _overview_fleet_readings,
     _snapshot_status,
 )
+
+
+@dataclass(frozen=True)
+class _BucketPostureStub:
+    quota_state: str
+    versioning_state: str
+    immutability_state: str
+    encryption_state: str
+    exposure_state: str
+    usage_stats_state: str
 
 
 def test_snapshot_status_distinguishes_current_stale_and_missing() -> None:
@@ -40,10 +51,8 @@ def test_inventory_signals_keep_provider_and_snapshot_conditions_explicit() -> N
 
 
 def test_overview_bucket_posture_separates_quota_protection_exposure_and_usage() -> None:
-    from types import SimpleNamespace
-
     buckets = [
-        SimpleNamespace(
+        _BucketPostureStub(
             quota_state='configured',
             versioning_state='enabled',
             immutability_state='enabled',
@@ -51,7 +60,7 @@ def test_overview_bucket_posture_separates_quota_protection_exposure_and_usage()
             exposure_state='private',
             usage_stats_state='collected',
         ),
-        SimpleNamespace(
+        _BucketPostureStub(
             quota_state='not_configured',
             versioning_state='enabled',
             immutability_state='not_configured',
