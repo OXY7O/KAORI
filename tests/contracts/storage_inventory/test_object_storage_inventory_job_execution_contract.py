@@ -39,7 +39,9 @@ def test_object_storage_job_uses_canonical_job_execution_and_inventory_worker() 
     assert "resource_group='object-storage-inventory:global'" in sync_jobs
     assert "instance.readiness_status != 'ready'" in sync_jobs
     assert "name='app.storage_inventory.tasks.sync_all_object_storage'" in tasks
-    assert "get_integration('minio').execute('inventory.sync', instance)" in tasks
+    assert "get_integration('minio').execute(" in tasks
+    assert "'inventory.sync'," in tasks
+    assert 'progress_callback=report_bucket_progress' in tasks
     assert "'app.storage_inventory.tasks'" in config
     assert "'app.storage_inventory.tasks.sync_all_object_storage'" in config
     assert "'queue': 'inventory'" in config

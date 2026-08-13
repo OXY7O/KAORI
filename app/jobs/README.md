@@ -51,6 +51,19 @@ The first registered definition is `kubernetes.inventory.sync`:
 
 Additional jobs must be added through a new definition rather than a parallel scheduler or settings page.
 
+
+Object Storage inventory is registered as `object_storage.inventory.sync`:
+
+- queue: `inventory`
+- scope: `object-storage-inventory:global`
+- schedule: enabled by default every 60 minutes
+- manual execution: supported
+- domain execution permission: `storage.sync`
+- manual authorization: `jobs.execute` + `storage.sync`
+- deduplication group: `object-storage-inventory:global`
+
+The Object Storage executor remains owned by `app.storage_inventory`. It resolves the provider through the integration registry and may pass a domain progress callback to `inventory.sync`; `app.jobs` owns orchestration and lifecycle only.
+
 ## RBAC
 
 - `jobs.view`: view executions, queues, and configuration catalog.
