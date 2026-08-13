@@ -25,7 +25,10 @@ def test_bucket_modal_adds_kaori_operational_reading_with_semantic_guidance() ->
     template = read('app/templates/object_storage_inventory/buckets/partials/_table_content.html')
 
     assert 'Operational Reading' in template
-    assert 'bg-kaori-mist/40' in template
+    assert 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' in template
+    assert 'border-b border-brand-outline bg-kaori-mist/40' in template
+    assert 'Snapshot Guidance' in template
+    assert 'Quota Collected' in template
     assert 'operational_callout.render(quota_reading_title' in template
     assert 'operational_callout.render(usage_reading_title' in template
     assert 'operational_callout.render(protection_reading_title' in template
