@@ -34,7 +34,7 @@ Celery Beat
 - Data Lifecycle retention defaults to `RETENTION_CELERY_QUEUE=maintenance`, so it uses the existing `maintenance-worker`; do not deploy a second retention worker unless the retention queue is intentionally separated.
 - `RETENTION_RETRY_DELAY_SECONDS` controls the single bounded retry delay for transient retention connectivity failures (default `60`). Exhausted or non-retryable failures remain visible in Jobs & Executions and require operator review.
 - Analytics materialization rows use the `analytics_snapshot` lifecycle domain by default: 30-day hot retention, 180-day verified archive retention, and a 04:15 schedule. Pending/current/stale-but-serveable snapshots remain protected until stale grace and hot retention have both elapsed.
-- Default inventory worker tuning is concurrency `1`, max tasks per child `50`, CPU `1.0`, and memory `1g`. Adjust only after measuring sync duration, Kubernetes API pressure, and peak inventory memory.
+- Default inventory worker tuning is concurrency `2`, prefetch multiplier `1`, and max tasks per child `50`. Two execution slots prevent a long Kubernetes inventory sync from blocking Object Storage Inventory Sync (or vice versa) when **Sync All Inventory** dispatches both domains to the shared `inventory` queue. Adjust only after measuring sync duration, Kubernetes API pressure, and peak inventory memory.
 
 After deploying this change:
 

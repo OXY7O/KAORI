@@ -85,7 +85,10 @@ services:
         exec celery --app celery_worker:celery_app worker
         --queues=inventory
         --loglevel="$${CELERY_LOG_LEVEL:-INFO}"
-        --concurrency="$${CELERY_WORKER_CONCURRENCY:-1}"
+        --concurrency="$${INVENTORY_WORKER_CONCURRENCY:-2}"
+        --prefetch-multiplier="$${INVENTORY_WORKER_PREFETCH_MULTIPLIER:-1}"
+        --max-tasks-per-child="$${INVENTORY_MAX_TASKS_PER_CHILD:-50}"
+        --hostname=inventory@%h
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=128m
     stop_grace_period: 45s
