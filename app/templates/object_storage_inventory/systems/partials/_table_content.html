@@ -132,7 +132,7 @@
             drawer_id,
             system.name,
             system.product_label ~ ' · committed system inventory',
-            x_show='openDrawer === ' ~ (system.id|tojson),
+            x_show="openDrawer === '" ~ system.id ~ "'",
             close_expression='openDrawer = null',
             action_href=provider_action_url,
             action_label='Open Provider Integration',

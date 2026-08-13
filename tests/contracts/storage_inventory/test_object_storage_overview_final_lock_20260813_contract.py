@@ -42,7 +42,8 @@ def test_overview_system_drawer_matches_systems_final_authority_boundary() -> No
     overview = read('app/templates/object_storage_inventory/overview/partials/_systems_snapshot_content.html')
 
     assert "width='2xl'" in overview
-    assert "x_show='openDrawer === ' ~ (system.id|tojson)" in overview
+    assert 'x_show="openDrawer === \'" ~ system.id ~ "\'"' in overview
+    assert "x_show='openDrawer === ' ~ (system.id|tojson)" not in overview
     assert 'System Snapshot Summary' in overview
     assert 'Operational Reading' in overview
     assert 'Authority Boundary' in overview
