@@ -31,7 +31,7 @@ def test_alertmanager_configuration_uses_read_only_contract_and_edit_link():
 def test_alertmanager_validation_uses_kubernetes_style_capability_readiness_and_registry():
     content = read('app/templates/alertmanager/partials/_detail_validation_content.html')
     registry = read('app/templates/alertmanager/partials/_capability_registry.html')
-    assert 'Alertmanager Core Validation' in content
+    assert 'Alertmanager Full Validation' in content
     assert 'Alertmanager Provider Readiness' in content
     assert 'integrations/components/_readiness_explanation.html' in content
     assert 'integrations/components/_capability_readiness.html' in content

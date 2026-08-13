@@ -55,7 +55,7 @@ def test_prometheus_ui_separates_provider_and_consumer_readiness() -> None:
     scope = read('app/templates/prometheus/partials/_detail_scope.html')
     registry = read('app/templates/prometheus/partials/_binding_registry.html')
 
-    assert 'Prometheus Core Validation' in validation
+    assert 'Prometheus Full Validation' in validation
     assert 'Prometheus Provider Readiness' in validation
     assert (
         'Full Validation owns core APIs; bindings own consumer evidence; Runtime Refresh owns live health.'

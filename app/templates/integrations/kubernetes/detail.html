@@ -19,7 +19,7 @@
                         <p class="mt-2 {{ page_hero.description_classes() }}">Manage the connection contract, capability evidence, runtime health, and governed Kubernetes lifecycle.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('shield-check', readiness|replace('_', ' ') |title) }}
-                            {{ page_hero.meta_label('layers-3', (runtime_state.capability_count|string) ~ ' Validated Features') }}
+                            {{ page_hero.meta_label('layers-3', (runtime_state.capability_count|string) ~ ' Validated Capabilities') }}
                             {{ page_hero.meta_label('network', cluster.environment|environment_name) }}
                         </div>
                     {% endcall %}
@@ -30,9 +30,9 @@
                                 "shield-check",
                                 "Kubernetes API",
                                 readiness|replace("_", " ") |title,
-                "Produced by worker validation",
+                "Produced by Full Validation",
                 "layers-3",
-                "Validated Features",
+                "Validated Capabilities",
                 runtime_state.capability_count,
                 "Served APIs and access evidence",
                 url_for("integrations.kubernetes"),

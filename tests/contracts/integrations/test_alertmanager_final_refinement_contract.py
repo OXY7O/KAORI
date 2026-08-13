@@ -13,7 +13,7 @@ def test_alertmanager_validation_matches_kubernetes_capability_matrix_and_regist
     content = read('app/templates/alertmanager/partials/_detail_validation_content.html')
     registry = ALERT_REGISTRY.read_text()
     routes = ALERT_ROUTES.read_text()
-    assert 'Alertmanager Core Validation' in content
+    assert 'Alertmanager Full Validation' in content
     assert 'Alertmanager Provider Readiness' in content
     assert (
         'Full Validation owns core APIs; bindings own consumer evidence; Runtime Refresh owns live health.' in content

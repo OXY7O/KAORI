@@ -167,7 +167,7 @@ def test_inventory_freshness_and_capability_dimensions_are_explicit() -> None:
     assert 'operational_use.inventory_collected_at_display' in inventory
     assert 'Validated Features' in inventory
     assert 'Operational Domains' in inventory
-    assert 'Validated Features' in detail
+    assert 'Validated Capabilities' in detail
 
 
 def test_kubernetes_coverage_uses_canonical_asset_coverage_registry() -> None:
@@ -317,7 +317,7 @@ def test_kubernetes_detail_workspaces_use_connected_standard_surfaces() -> None:
 
     assert 'data-kaori-capability-workspace-v8' in capability
     assert 'data-kaori-capability-readiness' in capability
-    assert 'Capability Matrix' in capability
+    assert 'Kubernetes Full Validation' in capability
     assert 'data-kaori-capability-filters' in capability
     assert 'data-kaori-capability-record' in capability
     assert 'Kubernetes Capability Readiness' in capability

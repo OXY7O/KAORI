@@ -31,7 +31,7 @@ def test_configuration_keeps_prometheus_product_semantics_explicit():
 def test_validation_uses_kubernetes_style_capability_readiness_before_full_width_registry():
     text = VALIDATION.read_text()
     registry = PROMQL_REGISTRY.read_text()
-    assert 'Prometheus Core Validation' in text
+    assert 'Prometheus Full Validation' in text
     assert 'Prometheus Provider Readiness' in text
     assert 'integrations/components/_capability_readiness.html' in text
     assert 'capability_readiness.render(' in text

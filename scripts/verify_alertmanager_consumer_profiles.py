@@ -56,7 +56,7 @@ def main() -> int:
     assert "asset_type='object_storage_system'" in consumer_assets
     assert 'create_source_binding' not in minio_service
 
-    assert 'Alertmanager Core Validation' in validation_template
+    assert 'Alertmanager Full Validation' in validation_template
     assert 'integrations/components/_readiness_explanation.html' in validation_template
     assert 'data-kaori-consumer-readiness-boundary' in readiness_template
     assert 'Consumer Binding Registry' in binding_template

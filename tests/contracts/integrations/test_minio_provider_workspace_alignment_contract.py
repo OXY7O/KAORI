@@ -58,7 +58,7 @@ def test_minio_bindings_expose_metrics_and_alert_consumer_profiles() -> None:
     assert 'Open Observability' in scope
     assert 'Prometheus Metrics Consumer' not in scope
     assert 'Alertmanager Alert Consumer' not in scope
-    assert 'Compatibility & Capability Matrix' in validation
+    assert 'MinIO Full Validation' in validation
     assert 'MinIO Capability Readiness' in validation
     assert 'Capability Registry' in read('app/templates/minio/partials/_capability_registry.html')
     assert 'bindings own consumer evidence' in validation.lower()

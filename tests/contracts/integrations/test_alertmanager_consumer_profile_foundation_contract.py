@@ -75,7 +75,7 @@ def test_alertmanager_ui_exposes_consumer_profile_and_core_boundary() -> None:
     registry = read('app/templates/alertmanager/partials/_binding_registry.html')
     binding_modal = read('app/templates/integrations/components/_observability_binding_modal.html')
 
-    assert 'Alertmanager Core Validation' in validation
+    assert 'Alertmanager Full Validation' in validation
     assert 'Alertmanager Provider Readiness' in validation
     assert (
         'Full Validation owns core APIs; bindings own consumer evidence; Runtime Refresh owns live health.'

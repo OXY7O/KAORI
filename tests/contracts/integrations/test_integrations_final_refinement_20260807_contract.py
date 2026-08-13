@@ -58,7 +58,7 @@ def test_prometheus_validation_keeps_compact_contract_and_modal_detail() -> None
     registry = read('app/templates/prometheus/partials/_capability_registry.html')
 
     assert 'import "integrations/components/_record_detail_modal.html" as record_detail_modal' in registry
-    assert 'Prometheus Core Validation' in source
+    assert 'Prometheus Full Validation' in source
     assert 'record_actions.view_more(' in registry
     assert 'provider_capability_detail.content(' in registry
     assert 'provider_capability_detail.content(' in registry
@@ -73,7 +73,7 @@ def test_alertmanager_capability_matrix_uses_modal_detail() -> None:
     bindings = read('app/templates/alertmanager/partials/_binding_registry.html')
 
     assert 'import "integrations/components/_record_detail_modal.html" as record_detail_modal' in registry
-    assert 'Alertmanager Core Validation' in source
+    assert 'Alertmanager Full Validation' in source
     assert 'Full Validation owns core APIs; bindings own consumer evidence; Runtime Refresh owns live health.' in source
     assert 'Consumer Binding Registry' in bindings
     assert 'record_actions.view_more(' in registry

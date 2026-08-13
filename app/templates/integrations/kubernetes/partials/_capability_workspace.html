@@ -29,7 +29,7 @@
     capability_counts.optional ~ ' Optional'
 ] %}
 {% set capability_metrics = [
-    {'icon': 'layers-3', 'tone': 'normal', 'label': 'Validated Features', 'value': validated_feature_count, 'description': 'Usable Kubernetes API and effective RBAC evidence.'},
+    {'icon': 'layers-3', 'tone': 'normal', 'label': 'Validated Capabilities', 'value': validated_feature_count, 'description': 'Usable Kubernetes API and effective RBAC evidence.'},
     {'icon': 'history', 'tone': 'warning' if legacy_features else 'neutral', 'label': 'Legacy Fallbacks', 'value': legacy_features|length, 'description': 'Required contracts currently resolved through fallback APIs.'},
     {'icon': 'shield-x', 'tone': 'critical' if blocked_features else 'normal', 'label': 'Required Blocks', 'value': blocked_features|length, 'description': 'Core capability contracts blocked by API discovery or RBAC.'}
 ] %}
@@ -52,7 +52,7 @@
          data-kaori-capability-workspace-v7
          data-kaori-capability-workspace-v8>
     {% call connection_validation_header.render(
-        'Compatibility & Capability Matrix',
+        'Kubernetes Full Validation',
         'Validate served APIs, effective RBAC, compatibility, and downstream eligibility.',
         icon='scan-search',
         loading_id='kubernetes-validation-loading',

@@ -11,8 +11,8 @@
 {% set readiness_percent = ((validated_count * 100 / total_count)|round(0, "floor")|int) if total_count else 0 %}
 {% set required_ready = capability_summary.required_missing == 0 %}
 {% set capability_metrics = [
-    {"icon": "list-checks", "tone": "normal", "label": "Core Capabilities", "value": validated_count, "description": "Provider-owned Status, Alerts, and Silences API evidence."},
-    {"icon": "shield-x", "tone": "critical" if capability_summary.required_missing else "normal", "label": "Required Blocks", "value": capability_summary.required_missing, "description": "Required Alertmanager core contracts missing from provider evidence."},
+    {"icon": "list-checks", "tone": "normal", "label": "Validated Capabilities", "value": validated_count, "description": "Provider-owned Status, Alerts, and Silences API evidence."},
+    {"icon": "shield-x", "tone": "critical" if capability_summary.required_missing else "normal", "label": "Required Gaps", "value": capability_summary.required_missing, "description": "Required Alertmanager core contracts missing from provider evidence."},
     {"icon": "waypoints", "tone": "normal", "label": "Consumer Bindings", "value": binding_rows|length, "description": "Asset-specific alert contracts validated independently after binding."}
 ] %}
 {% set capability_metadata = [
@@ -30,7 +30,7 @@
          data-kaori-alertmanager-core-validation
          data-kaori-provider-capability-matrix>
     {% call connection_validation_header.render(
-        "Alertmanager Core Validation",
+        "Alertmanager Full Validation",
         "Validate compatibility and core Alertmanager APIs. Consumer alert streams remain binding-specific.",
         icon="scan-search",
         loading_id="alertmanager-validation-loading",
@@ -69,7 +69,7 @@
         readiness_percent,
         capability_metadata,
         capability_metrics,
-        "Provider Core Ready" if required_ready else "Remediation Required",
+        "Provider Ready" if required_ready else "Remediation Required",
         "Core Alertmanager APIs are usable." if required_ready else "Restore required core API contracts.",
         "normal" if required_ready else "critical",
         "Full Validation owns core APIs; bindings own consumer evidence; Runtime Refresh owns live health.",

@@ -463,6 +463,92 @@ def main() -> int:
     ):
         require(marker in integration_service, f'Integrations provider catalog evidence missing: {marker}', errors)
 
+    # Provider detail lifecycle final-lock contract.
+    provider_details = {
+        'Kubernetes': read('app/templates/integrations/kubernetes/detail.html'),
+        'Prometheus': read('app/templates/prometheus/instance_detail.html'),
+        'Alertmanager': read('app/templates/alertmanager/instance_detail.html'),
+        'MinIO': read('app/templates/minio/instance_detail.html'),
+    }
+    for provider, source in provider_details.items():
+        for label in ('Configuration', 'Validation & Capabilities', 'Runtime & History'):
+            require(label in source, f'{provider}: provider detail lifecycle tab missing: {label}', errors)
+        require(
+            'Produced by Full Validation' in source,
+            f'{provider}: connection posture must attribute provider evidence to Full Validation',
+            errors,
+        )
+        require(
+            'Validated Capabilities' in source,
+            f'{provider}: provider detail must use Validated Capabilities terminology',
+            errors,
+        )
+
+    require(
+        'Inventory & Lifecycle' in provider_details['Kubernetes'],
+        'Kubernetes detail must retain Inventory & Lifecycle',
+        errors,
+    )
+    require(
+        'Inventory & Lifecycle' in provider_details['MinIO'], 'MinIO detail must retain Inventory & Lifecycle', errors
+    )
+    require(
+        'Bindings & Consumers' in provider_details['Prometheus'],
+        'Prometheus detail must retain Bindings & Consumers',
+        errors,
+    )
+    require(
+        'Bindings & Consumers' in provider_details['Alertmanager'],
+        'Alertmanager detail must retain Bindings & Consumers',
+        errors,
+    )
+
+    validation_templates = {
+        'Kubernetes': read('app/templates/integrations/kubernetes/partials/_capability_workspace.html'),
+        'Prometheus': read('app/templates/prometheus/partials/_detail_validation_content.html'),
+        'Alertmanager': read('app/templates/alertmanager/partials/_detail_validation_content.html'),
+        'MinIO': read('app/templates/minio/partials/_detail_validation.html'),
+    }
+    for provider, source in validation_templates.items():
+        require(
+            f'{provider} Full Validation' in source,
+            f'{provider}: validation workspace title must be Full Validation',
+            errors,
+        )
+        require(
+            'Run Full Validation' in source, f'{provider}: validation action must remain Run Full Validation', errors
+        )
+        require(
+            'capability_readiness.render(' in source,
+            f'{provider}: validation workspace must use shared capability readiness',
+            errors,
+        )
+    require(
+        'Prometheus Core Validation' not in validation_templates['Prometheus'],
+        'Prometheus detail UI must not expose retired Core Validation title',
+        errors,
+    )
+    require(
+        'Alertmanager Core Validation' not in validation_templates['Alertmanager'],
+        'Alertmanager detail UI must not expose retired Core Validation title',
+        errors,
+    )
+
+    for provider, relative in (
+        ('Prometheus', 'app/templates/prometheus/partials/_runtime_panel.html'),
+        ('Alertmanager', 'app/templates/alertmanager/partials/_runtime_panel.html'),
+        ('MinIO', 'app/templates/minio/partials/_detail_runtime.html'),
+    ):
+        source = read(relative)
+        require(
+            'integrations/components/_runtime_decision.html' in source,
+            f'{provider}: runtime must import shared Runtime Decision',
+            errors,
+        )
+        require(
+            'runtime_decision.render(' in source, f'{provider}: runtime must render shared Runtime Decision', errors
+        )
+
     # The final lock documentation is itself part of the contract.
     lock_doc = read('docs/design/KAORI_INTEGRATIONS_LOCK_V1.md')
     refinement_doc = read('docs/design/KAORI_INTEGRATIONS_LOCK_V1_1.md')
@@ -502,4 +588,5 @@ def main() -> int:
     return 0
 
 
-if __name__ 
+if __name__ == '__main__':
+    raise SystemExit(main())

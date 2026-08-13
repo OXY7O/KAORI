@@ -19,8 +19,8 @@
                         <p class="mt-2 {{ page_hero.description_classes() }}">Manage the connection contract, technical capability evidence, runtime health, and governed metrics-source resolution.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('shield-check', readiness|replace('_', ' ') |title) }}
-                            {{ page_hero.meta_label('link-2', (bindings|length|string) ~ ' Scope Bindings') }}
-                            {{ page_hero.meta_label('layers-3', (capability_summary.observed|default(0) |string) ~ ' Capabilities') }}
+                            {{ page_hero.meta_label('link-2', (bindings|length|string) ~ ' Bindings') }}
+                            {{ page_hero.meta_label('layers-3', (capability_summary.observed|default(0) |string) ~ ' Validated Capabilities') }}
                         </div>
                     {% endcall %}
                 </div>
@@ -43,7 +43,7 @@
                  class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
             {{ framed_workspace_tabs.render([
                         ('configuration', 'Configuration', 'settings-2', instance.environment|default('') |title),
-            ('validation', 'Core Validation', 'scan-search', (instance.readiness_status or 'validation_required')|replace('_', ' ')|title),
+            ('validation', 'Validation & Capabilities', 'scan-search', (instance.readiness_status or 'validation_required')|replace('_', ' ')|title),
             ('runtime', 'Runtime & History', 'activity', runtime_state.health_status_label|default('Not Observed')),
             ('scope', 'Bindings & Consumers', 'waypoints', (binding_rows|default([])|length|string) ~ ' Bindings'),
             ],

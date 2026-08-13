@@ -18,7 +18,7 @@ def test_capability_readiness_uses_shared_provider_surface():
     assert 'integrations/components/_capability_readiness.html' in source
     assert 'capability_readiness.render(' in source
     assert 'Kubernetes Capability Readiness' in source
-    assert 'Validated Features' in source
+    assert 'Validated Capabilities' in source
     assert 'Legacy Fallbacks' in source
     assert 'Required Blocks' in source
     assert 'data-kaori-capability-readiness' in shared

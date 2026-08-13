@@ -639,3 +639,17 @@ Provider-owned API identity MUST NOT be duplicated as a consumer binding. MinIO 
 - Prometheus/Alertmanager Capability Registry tables use the same KAORI table hierarchy as domain Capability Registry: shared filter geometry, standard headers/cells, status inside the Status column, `View More` for detailed evidence, 5/10/25/50 pagination, and operation-scoped HTMX loading. Readiness labels must not float outside their canonical table/decision surface.
 - Provider Configuration combines authority and lifecycle guidance into one `Operational Context` surface through `_provider_operational_context.html`; separate `Operational Boundary` and `Operational Flow` cards are retired.
 - Provider readiness explanation uses `_readiness_explanation.html` and adapts content/style to Ready, Attention/Degraded, or Blocked/Failed while keeping the same geometry across Orchestration and Observability.
+
+## Provider Detail Workspace Final Contract
+
+Kubernetes, Prometheus, Alertmanager, and MinIO connection details share the same first three lifecycle domains:
+
+1. **Configuration** — read-only `Connection Contract`; mutations happen in the dedicated edit workspace.
+2. **Validation & Capabilities** — operator-facing lifecycle name. The action is **Run Full Validation**. Provider Core Validation may remain an internal architecture term, but provider detail UI must not expose `Core Validation` as the tab or workspace title.
+3. **Runtime & History** — `Runtime Refresh` owns current reachability, latency, health, and diagnostics. It never substitutes for Full Validation.
+
+The fourth domain is authority-specific: Kubernetes and MinIO use **Inventory & Lifecycle**; Prometheus and Alertmanager use **Bindings & Consumers**.
+
+Provider detail Hero posture evidence is sourced as **Produced by Full Validation**. Capability counts use **Validated Capabilities** consistently. Prometheus, Alertmanager, and MinIO runtime pages use the shared `integrations/components/_runtime_decision.html` decision surface; provider-specific technical evidence follows underneath. Kubernetes may retain additional lifecycle evidence, but its Runtime Decision semantics must remain equivalent.
+
+Bindings remain source-owned mutations. Asset-owner workspaces expose observability binding evidence read-only. Object Storage Inventory remains committed-snapshot owned and must not be recomputed by opening the MinIO integration detail page.
