@@ -99,3 +99,9 @@ L7 End-to-End Smoke
 **TARGETED FIX — LOCK REMAINS; DEVCONTAINER RUNTIME VALIDATION REQUIRED**
 
 Source-level verifier, architecture, rendering, security, and contract evidence must be green, followed by authoritative devcontainer Ruff/Ruff Format/djLint/Pyright/Prettier, Functional/Integration/E2E execution, browser smoke, and the full release gate. Once those pass, Inventory becomes **PASS — LOCKED** without reopening its visual design.
+
+## Blocked Metadata and Network Inventory Copy Follow-Up
+
+A cross-domain Hero review found that the setup-blocked right panel was already correct, but Inventory Hero metadata on the left could still render zero-valued counters such as `0 Services in Scope` or `0 Collected Objects`. When no cluster is registered, those values can be mistaken for committed inventory evidence rather than an unavailable source scope.
+
+Inventory Overview, every resource Hero, and Topology now replace normal numeric metadata while blocked with `Committed Inventory` and `Cluster Setup Required`. Normal counters return unchanged after cluster setup is available. Service and Ingress purpose copy is also refined within the canonical Hero copy budget to include endpoint readiness/backend registration and routing posture respectively.

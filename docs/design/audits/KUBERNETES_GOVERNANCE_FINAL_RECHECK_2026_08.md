@@ -36,3 +36,9 @@ The full-width rotation workspace was compacted after browser review to avoid la
 
 The Certificate Detail composition was rebuilt as `evidence-workspace-v2`. The shared detail partial still serves both the registry Full Workspace Modal and the direct-link page, but it now has only three primary sections: `Certificate Identity & Validity`, `Coverage & Consumer Evidence`, and `Collection & Governance`. The previous independent identity, validity, coverage, collection, certificate-identity, and rotation-handoff cards were removed to reduce card nesting and vertical whitespace. Host Coverage Matrix remains the detailed relationship evidence table, while collection state and the controlled rotation handoff are consolidated into one Governance footer.
 
+
+## Cluster Prerequisite and TLS Hero Follow-Up
+
+The TLS Governance page now evaluates cluster setup before schema readiness in its page composition. A missing Kubernetes cluster is the primary prerequisite; schema migration/readiness guidance is only presented after a valid cluster scope exists. This keeps the Hero readiness state and the below-Hero blocker semantically aligned.
+
+TLS Certificate Governance Hero copy now includes issuer posture and renewal-window context, while the certificate detail Hero includes issuer details and committed collection evidence. Governance Overview metadata no longer labels the workspace as `Kubernetes Operations`; it uses the governance-specific `Governance Controls` label.

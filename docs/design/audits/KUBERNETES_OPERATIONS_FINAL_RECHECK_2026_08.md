@@ -174,3 +174,7 @@ Protected Reveal peer tabs use progressive enhancement: each tab has a canonical
 
 The one-time Reveal action now suppresses `SecretRevealRequest` joined eager relationships before acquiring its row lock and emits a table-scoped `FOR UPDATE OF secret_reveal_requests` lock. The request model owns joined requester/approver/cluster/inventory relationships, including nullable relationships; those joins must not be part of the critical one-time-consumption locking query. The Reveal path reads only scalar request identity while locked and resolves the live Cluster explicitly afterward. My Requests step-up also reuses the canonical Form Field baseline so the password control and `Verify Session` action align horizontally before the helper copy.
 
+
+## Cluster Setup Wording Follow-Up
+
+The canonical full-page prerequisite surface now uses `Kubernetes Cluster Setup Required` for both the document title and Hero heading. The right-panel readiness component retains the shorter `Cluster Setup Required` status label. Authorization-first decorator ordering and the operation-specific blocker behavior are unchanged.

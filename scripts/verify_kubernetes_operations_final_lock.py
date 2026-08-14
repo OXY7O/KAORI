@@ -80,6 +80,7 @@ def main() -> int:
     require(
         "components/cluster/_hero_blocked_context.html" in cluster_required_template
         and 'Operations Readiness' in cluster_required_template
+        and 'Kubernetes Cluster Setup Required' in cluster_required_template
         and 'Cluster Setup Required' in cluster_required_template,
         'Kubernetes Operations cluster prerequisite must use the canonical setup-blocked Hero context.',
         errors,

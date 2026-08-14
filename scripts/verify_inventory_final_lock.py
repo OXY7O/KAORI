@@ -195,6 +195,11 @@ def main() -> int:
             f'{page_name} Hero must use the shared Kubernetes setup-blocked context.',
             errors,
         )
+        require(
+            'Committed Inventory' in hero_source and 'Cluster Setup Required' in hero_source,
+            f'{page_name} Hero must replace blocked numeric metadata with setup-safe inventory metadata.',
+            errors,
+        )
     overview_page = read('app/templates/inventory/kubernetes/overview/index.html')
     topology_page = read('app/templates/inventory/kubernetes/topology/index.html')
     for page_name, page_source in (('overview', overview_page), ('topology', topology_page)):
@@ -227,6 +232,11 @@ def main() -> int:
         require(
             "components/cluster/_hero_blocked_context.html" in hero and 'Inventory Readiness' in hero,
             f'{resource} Hero must use the shared Kubernetes setup-blocked context.',
+            errors,
+        )
+        require(
+            'Committed Inventory' in hero and 'Cluster Setup Required' in hero,
+            f'{resource} Hero must replace blocked numeric metadata with setup-safe inventory metadata.',
             errors,
         )
         require('components/table.html' in table, f'{resource} must use the shared table component.', errors)

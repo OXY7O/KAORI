@@ -130,6 +130,11 @@ def main() -> int:
         errors,
     )
     require(
+        'Governance Controls' in overview and "meta_label('server-cog', 'Kubernetes Operations')" not in overview,
+        'Governance Overview Hero metadata must remain governance-specific.',
+        errors,
+    )
+    require(
         'page_hero.context_card(' in hero,
         'TLS Governance Hero must use the canonical status-oriented context card.',
         errors,
@@ -138,6 +143,14 @@ def main() -> int:
         "components/cluster/_hero_blocked_context.html" in hero
         and 'Governance Readiness' in hero,
         'TLS Governance Hero must use the canonical Kubernetes setup-blocked Hero context.',
+        errors,
+    )
+    page_content = read('app/templates/governance/tls_certificates/partials/_page_content.html')
+    require(
+        page_content.find('{% if cluster_onboarding.is_blocked %}')
+        < page_content.find('{% elif not payload.schema_readiness.ready %}')
+        < page_content.find('partials/_page_workspace.html'),
+        'TLS Governance must evaluate cluster setup before schema readiness and workspace rendering.',
         errors,
     )
     for token in (

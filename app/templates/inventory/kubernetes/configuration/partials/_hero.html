@@ -6,9 +6,14 @@
                 <h1 class="{{ page_hero.title_classes() }}">Configuration Inventory</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">Review committed ConfigMaps and Secrets, key metadata, references, and mutation evidence.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
-                    {{ page_hero.meta_label('files', inventory.total_items ~ ' Configuration Objects in Scope') }}
-                    {{ page_hero.meta_label('scan-search', inventory.scope_label) }}
-                    {{ page_hero.meta_label('folder-tree', inventory.namespace_count ~ ' Namespaces') }}
+                    {% if cluster_onboarding.is_blocked %}
+                        {{ page_hero.meta_label('database', 'Committed Inventory') }}
+                        {{ page_hero.meta_label('lock-keyhole', 'Cluster Setup Required') }}
+                    {% else %}
+                        {{ page_hero.meta_label('files', inventory.total_items ~ ' Configuration Objects in Scope') }}
+                        {{ page_hero.meta_label('scan-search', inventory.scope_label) }}
+                        {{ page_hero.meta_label('folder-tree', inventory.namespace_count ~ ' Namespaces') }}
+                    {% endif %}
                 </div>
             {% endcall %}
         </div>

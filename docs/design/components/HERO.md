@@ -253,6 +253,7 @@ Rules:
 - set `cluster_blocked_scope`, `cluster_blocked_title`, and `cluster_blocked_info`; `cluster_blocked_state_label` is optional when a domain must preserve a more specific state label such as `Dashboard State`;
 - use `Cluster Setup Required` for the blocker title;
 - do not render normal right-panel posture metrics as if zero values were committed evidence;
+- blocked Hero metadata on the left must also avoid zero-valued asset counters when no source scope exists; use capability/setup metadata instead;
 - keep the main Hero visible and stable;
 - hide data snapshots, KPI/posture cards, tables, topology explorers, and mutation workspaces when the page has no valid cluster scope;
 - authorization must complete before the setup blocker is exposed.

@@ -54,6 +54,7 @@ A Blueprint-level `before_request` must not short-circuit protected Inventory pa
 When the Kubernetes onboarding blocker is active, the page renders the canonical Hero plus onboarding blocker only. **Inventory Data Snapshot, posture summaries, tables, and topology workspace stay hidden** because they would imply an available committed inventory scope when no cluster is registered.
 
 The Hero itself remains structurally stable while blocked. Its right panel must use the shared Kubernetes setup-blocked context from `components/cluster/_hero_blocked_context.html` with `Inventory Readiness` as the domain label. The normal Inventory posture/context panel returns only after cluster setup is available.
+While blocked, Hero metadata must not present zero-valued asset/resource counters as committed evidence; use `Committed Inventory` plus `Cluster Setup Required` until a valid cluster scope exists.
 
 All resource template registry entries are rooted at `inventory/kubernetes/<resource>/...`. Route helpers must never fall back to the retired `inventory/<resource>/...` namespace; the canonical namespace is release-verified so full-page and HTMX rendering cannot drift apart.
 

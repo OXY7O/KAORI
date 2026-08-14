@@ -75,3 +75,45 @@ def test_dashboard_blocked_hero_does_not_double_wrap_the_shared_context_panel() 
     assert "components/cluster/_hero_blocked_context.html" in blocked_branch
     assert 'page_hero.context_panel_classes()' in normal_branch
 
+def test_inventory_blocked_hero_metadata_does_not_present_zero_counts_as_evidence() -> None:
+    resources = (
+        'overview',
+        'nodes',
+        'namespaces',
+        'configuration',
+        'workloads',
+        'pods',
+        'services',
+        'ingresses',
+        'storage',
+        'topology',
+    )
+    for resource in resources:
+        source = _read(f'app/templates/inventory/kubernetes/{resource}/partials/_hero.html')
+        metadata = source.split('page_hero.metadata_row_classes()', 1)[1].split('</div>', 1)[0]
+        assert 'cluster_onboarding.is_blocked' in metadata, resource
+        assert 'Committed Inventory' in metadata, resource
+        assert 'Cluster Setup Required' in metadata, resource
+
+
+def test_tls_governance_cluster_setup_precedes_schema_readiness() -> None:
+    source = _read('app/templates/governance/tls_certificates/partials/_page_content.html')
+    cluster_blocker = source.index('{% if cluster_onboarding.is_blocked %}')
+    schema_blocker = source.index('{% elif not payload.schema_readiness.ready %}')
+    workspace = source.index('partials/_page_workspace.html')
+
+    assert cluster_blocker < schema_blocker < workspace
+
+
+def test_governance_and_operations_blocked_copy_remains_domain_specific() -> None:
+    governance = _read('app/templates/governance/overview/index.html')
+    tls_hero = _read('app/templates/governance/tls_certificates/partials/_hero.html')
+    tls_detail = _read('app/templates/governance/tls_certificates/detail.html')
+    operations = _read('app/templates/kubernetes_operations/cluster_required.html')
+
+    assert 'Governance Controls' in governance
+    assert "meta_label('server-cog', 'Kubernetes Operations')" not in governance
+    assert 'Review certificate validity, host coverage, issuer posture, renewal windows, and rotation readiness.' in tls_hero
+    assert 'Review certificate validity, host coverage, issuer details, and committed collection evidence.' in tls_detail
+    assert 'Kubernetes Cluster Setup Required' in operations
+

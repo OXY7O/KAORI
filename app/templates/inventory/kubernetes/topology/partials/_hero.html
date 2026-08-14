@@ -8,9 +8,14 @@
                     Explore committed Kubernetes ownership, placement, relationships, and dependencies across inventory resources.
                 </p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
-                    {{ page_hero.meta_label('boxes', graph.summary.clusters, 'topology-hero-clusters', ' Clusters') }}
-                    {{ page_hero.meta_label('folders', graph.summary.namespaces, 'topology-hero-namespaces', ' Namespaces') }}
-                    {{ page_hero.meta_label('package-search', graph.summary.resources, 'topology-hero-resources', ' Resources') }}
+                    {% if cluster_onboarding.is_blocked %}
+                        {{ page_hero.meta_label('database', 'Committed Inventory') }}
+                        {{ page_hero.meta_label('lock-keyhole', 'Cluster Setup Required') }}
+                    {% else %}
+                        {{ page_hero.meta_label('boxes', graph.summary.clusters, 'topology-hero-clusters', ' Clusters') }}
+                        {{ page_hero.meta_label('folders', graph.summary.namespaces, 'topology-hero-namespaces', ' Namespaces') }}
+                        {{ page_hero.meta_label('package-search', graph.summary.resources, 'topology-hero-resources', ' Resources') }}
+                    {% endif %}
                 </div>
             {% endcall %}
         </div>

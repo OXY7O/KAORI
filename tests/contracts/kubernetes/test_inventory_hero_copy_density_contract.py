@@ -27,11 +27,11 @@ HERO_EXPECTATIONS = {
         'Runtime Posture',
     ),
     'services': (
-        'Review committed Services, exposure, ports, selectors, backend registration, and endpoints.',
+        'Review committed Services, exposure models, ports, selectors, endpoint readiness, and backend registration.',
         'Backend Registration',
     ),
     'ingresses': (
-        'Review committed Ingress routes, hosts, TLS coverage, backend mappings, and publication.',
+        'Review committed Ingress routes, hosts, TLS coverage, backend mappings, and routing posture.',
         'Routing Posture',
     ),
     'storage': (
