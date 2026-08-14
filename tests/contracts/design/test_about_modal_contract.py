@@ -18,6 +18,7 @@ def test_about_menu_is_immediately_above_logout_and_opens_dialog() -> None:
     assert about_index < logout_index
     assert '@click="openAbout()"' in navbar
     assert 'aria-controls="kaori-about-dialog"' in navbar
+    assert '<template x-teleport="body">' in navbar
     assert '{% include "components/navigation/_about_modal.html" %}' in navbar
 
 
@@ -27,6 +28,8 @@ def test_about_modal_uses_safe_release_metadata_and_canonical_system_information
     assert 'id="kaori-about-dialog"' in modal
     assert 'role="dialog"' in modal
     assert 'aria-modal="true"' in modal
+    assert 'class="fixed inset-0 z-[90] flex justify-center overflow-y-auto p-4 sm:p-6"' in modal
+    assert 'relative my-auto w-full max-w-xl' in modal
     assert "config.get('APP_VERSION', 'Unknown')" in modal
     assert "config.get('APP_ENV', 'development')" in modal
     assert 'Knowledge, Automation, Operations, Resilience &amp; Intelligence.' in modal
