@@ -646,7 +646,7 @@ def get_recommended_actions() -> list[str]:
         'Run the database migration before enabling delivery channels.',
         'Start the dedicated Reports worker and keep the Report Schedule Dispatcher enabled in Job Configuration.',
         'Use Run Now to validate report generation, artifact storage, and Telegram delivery before unattended execution.',
-        'Configure REPORT_TELEGRAM_BOT_TOKEN, REPORT_TELEGRAM_CHAT_ID, and REPORT_PUBLIC_BASE_URL for Telegram notifications.',
+        'Configure REPORT_TELEGRAM_BOT_TOKEN, REPORT_TELEGRAM_CHAT_ID, and KAORI_PUBLIC_BASE_URL for Telegram notifications.',
     ]
 
 

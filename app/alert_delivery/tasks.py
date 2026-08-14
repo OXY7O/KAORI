@@ -33,9 +33,7 @@ def dispatch_alert_intelligence_notifications() -> dict[str, int]:
         return totals
 
     base_url = str(
-        current_app.config.get('KAORI_PUBLIC_BASE_URL')
-        or current_app.config.get('REPORT_PUBLIC_BASE_URL')
-        or ''
+        current_app.config.get('KAORI_PUBLIC_BASE_URL') or ''
     ).strip()
     for event in list_active_alert_events():
         totals['events'] += 1

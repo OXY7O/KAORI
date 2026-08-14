@@ -55,6 +55,7 @@ Start with:
 - [`docs/architecture/RELEASE_SURFACE_COVERAGE.md`](docs/architecture/RELEASE_SURFACE_COVERAGE.md)
 - [`docs/architecture/job-execution-foundation.md`](docs/architecture/job-execution-foundation.md)
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
+- [`docs/deployment/ENVIRONMENT_CONFIGURATION.md`](docs/deployment/ENVIRONMENT_CONFIGURATION.md)
 - [`docs/deployment/RELEASE_GOVERNANCE.md`](docs/deployment/RELEASE_GOVERNANCE.md)
 - [`CHANGELOG.md`](CHANGELOG.md)
 - [`KAORI 2.2.0 Release Notes`](docs/releases/KAORI_2_2_0.md)

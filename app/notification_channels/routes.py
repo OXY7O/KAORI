@@ -89,9 +89,7 @@ def test(channel_id: int) -> ResponseReturnValue:
     if channel is None:
         abort(404)
     base_url = str(
-        current_app.config.get('KAORI_PUBLIC_BASE_URL')
-        or current_app.config.get('REPORT_PUBLIC_BASE_URL')
-        or ''
+        current_app.config.get('KAORI_PUBLIC_BASE_URL') or ''
     )
     result = test_channel(channel, base_url=base_url)
     _record_channel_activity(

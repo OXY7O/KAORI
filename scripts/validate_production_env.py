@@ -29,6 +29,25 @@ def _contains_placeholder(value: str) -> bool:
     return any(fragment in lowered for fragment in PLACEHOLDER_FRAGMENTS)
 
 
+def _validate_int_range(
+    errors: list[str],
+    name: str,
+    minimum: int,
+    maximum: int | None = None,
+) -> None:
+    raw = _value(name)
+    try:
+        value = int(raw)
+    except ValueError:
+        errors.append(f'{name} must be an integer.')
+        return
+    if value < minimum or (maximum is not None and value > maximum):
+        if maximum is None:
+            errors.append(f'{name} must be greater than or equal to {minimum}.')
+        else:
+            errors.append(f'{name} must be between {minimum} and {maximum}.')
+
+
 def main() -> int:
     errors: list[str] = []
     warnings: list[str] = []
@@ -110,6 +129,16 @@ def main() -> int:
     elif any(_contains_placeholder(value) for value in trusted_hosts):
         errors.append('TRUSTED_HOSTS still contains an example placeholder.')
 
+    public_base_url = _value('KAORI_PUBLIC_BASE_URL')
+    if not public_base_url:
+        errors.append('KAORI_PUBLIC_BASE_URL is required for generated links and outbound notifications.')
+    else:
+        parsed_public_url = urlparse(public_base_url)
+        if parsed_public_url.scheme != 'https' or not parsed_public_url.netloc:
+            errors.append('KAORI_PUBLIC_BASE_URL must be an absolute https URL in production.')
+        elif _contains_placeholder(public_base_url):
+            errors.append('KAORI_PUBLIC_BASE_URL still contains an example placeholder.')
+
     if _is_true('RATELIMIT_ENABLED', True):
         storage_uri = _value('RATELIMIT_STORAGE_URI')
         if not storage_uri:
@@ -144,12 +173,21 @@ def main() -> int:
         ('CLUSTER_SYNC_LOCK_TTL_SECONDS', 300),
         ('CLUSTER_SYNC_COMPLETED_TTL_SECONDS', 30),
         ('INVENTORY_WORKER_CONCURRENCY', 1),
+        ('INVENTORY_WORKER_PREFETCH_MULTIPLIER', 1),
         ('INVENTORY_MAX_TASKS_PER_CHILD', 1),
         ('INTEGRATION_VALIDATION_LOCK_TTL_SECONDS', 300),
         ('INTEGRATION_VALIDATION_WORKER_CONCURRENCY', 1),
+        ('INTEGRATION_VALIDATION_MAX_TASKS_PER_CHILD', 1),
         ('INTEGRATION_RUNTIME_WORKER_CONCURRENCY', 1),
+        ('INTEGRATION_RUNTIME_MAX_TASKS_PER_CHILD', 1),
         ('ANALYTICS_WORKER_CONCURRENCY', 1),
+        ('ANALYTICS_MAX_TASKS_PER_CHILD', 1),
         ('FORECASTING_WORKER_CONCURRENCY', 1),
+        ('FORECASTING_MAX_TASKS_PER_CHILD', 1),
+        ('JOB_MAINTENANCE_WORKER_CONCURRENCY', 1),
+        ('JOB_MAINTENANCE_MAX_TASKS_PER_CHILD', 1),
+        ('REPORTS_WORKER_CONCURRENCY', 1),
+        ('REPORTS_MAX_TASKS_PER_CHILD', 1),
         ('RESOLVER_EXECUTION_WORKER_CONCURRENCY', 1),
         ('RESOLVER_EXECUTION_MAX_TASKS_PER_CHILD', 1),
         ('RESOLVER_MAINTENANCE_WORKER_CONCURRENCY', 1),
@@ -174,6 +212,9 @@ def main() -> int:
         ('ANALYTICS_CELERY_QUEUE', 'analytics batch'),
         ('FORECASTING_CELERY_QUEUE', 'forecasting'),
         ('JOB_MAINTENANCE_CELERY_QUEUE', 'job maintenance'),
+        ('RETENTION_CELERY_QUEUE', 'retention maintenance'),
+        ('REPORTS_CELERY_QUEUE', 'report jobs'),
+        ('REPORT_STORAGE_HEALTH_CELERY_QUEUE', 'report storage health'),
         ('RESOLVER_EXECUTION_CELERY_QUEUE', 'resolver execution'),
         ('RESOLVER_MAINTENANCE_CELERY_QUEUE', 'resolver maintenance'),
     ):
@@ -183,14 +224,29 @@ def main() -> int:
         elif any(character.isspace() for character in queue_value):
             errors.append(f'{queue_name} must not contain whitespace.')
 
+    if _is_true('INTEGRATION_RUNTIME_MONITORING_ENABLED', True):
+        _validate_int_range(errors, 'INTEGRATION_RUNTIME_MONITORING_INTERVAL_MINUTES', 1, 60)
+
+    if _is_true('ALERT_INTELLIGENCE_NOTIFICATION_ENABLED', True):
+        _validate_int_range(errors, 'ALERT_INTELLIGENCE_NOTIFICATION_INTERVAL_MINUTES', 1, 60)
+    _validate_int_range(errors, 'NOTIFICATION_DELIVERY_TIMEOUT_SECONDS', 1, 60)
+    _validate_int_range(errors, 'NOTIFICATION_DELIVERY_MAX_ATTEMPTS', 1, 10)
+
+    _validate_int_range(errors, 'TLS_CERTIFICATE_RENEWAL_WINDOW_DAYS', 1, 365)
+    _validate_int_range(errors, 'TLS_CERTIFICATE_CRITICAL_WINDOW_DAYS', 1, 365)
+    renewal_days = _value('TLS_CERTIFICATE_RENEWAL_WINDOW_DAYS')
+    critical_days = _value('TLS_CERTIFICATE_CRITICAL_WINDOW_DAYS')
+    if renewal_days.isdigit() and critical_days.isdigit() and int(critical_days) > int(renewal_days):
+        errors.append('TLS_CERTIFICATE_CRITICAL_WINDOW_DAYS must not exceed TLS_CERTIFICATE_RENEWAL_WINDOW_DAYS.')
+
     if resolver_actions and not _is_true('RESOLVER_MAINTENANCE_ENABLED', True):
         errors.append('RESOLVER_MAINTENANCE_ENABLED must remain enabled when resolver actions are enabled.')
 
-    storage_backend = _value('PROD_REPORT_STORAGE_BACKEND').lower() or 'local'
+    storage_backend = _value('REPORT_STORAGE_BACKEND').lower() or 'local'
     if storage_backend not in {'local', 's3'}:
-        errors.append('PROD_REPORT_STORAGE_BACKEND must be local or s3.')
-    elif storage_backend == 's3' and not _value('PROD_REPORT_S3_BUCKET'):
-        errors.append('PROD_REPORT_S3_BUCKET is required when S3 storage is selected.')
+        errors.append('REPORT_STORAGE_BACKEND must be local or s3.')
+    elif storage_backend == 's3' and not _value('REPORT_S3_BUCKET'):
+        errors.append('REPORT_S3_BUCKET is required when S3 storage is selected.')
     elif storage_backend == 'local':
         warnings.append('Local report storage is suitable only for a controlled single-host deployment.')
 
@@ -208,6 +264,11 @@ def main() -> int:
                     raise ValueError
             except ValueError:
                 errors.append(f'{name} must be a non-negative integer.')
+
+    report_telegram_token = _value('REPORT_TELEGRAM_BOT_TOKEN')
+    report_telegram_chat = _value('REPORT_TELEGRAM_CHAT_ID')
+    if bool(report_telegram_token) != bool(report_telegram_chat):
+        errors.append('REPORT_TELEGRAM_BOT_TOKEN and REPORT_TELEGRAM_CHAT_ID must be configured together.')
 
     if _value('ADMIN_PASSWORD'):
         warnings.append('Remove ADMIN_PASSWORD after the first bootstrap-admin operation.')

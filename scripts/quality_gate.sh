@@ -10,6 +10,7 @@ run_static() {
     bash scripts/verify_source_hygiene.sh
     python scripts/verify_release_surface_coverage.py
     python scripts/verify_release_governance.py
+    python scripts/verify_environment_contract.py
     python scripts/verify_engineering_standard.py
     python scripts/verify_domain_namespace_architecture.py
     python scripts/verify_welcome_final_lock.py

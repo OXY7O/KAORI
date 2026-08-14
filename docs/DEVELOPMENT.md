@@ -14,6 +14,7 @@ containers. A host `.venv` is not required.
 ## First setup
 
 1. Copy `.env.example` to `.env`.
+   The canonical variable contract is documented in `docs/deployment/ENVIRONMENT_CONFIGURATION.md`.
 2. Review `ADMIN_*` and development secret values.
 3. Open the repository in VS Code.
 4. Run `Dev Containers: Rebuild and Reopen in Container`.

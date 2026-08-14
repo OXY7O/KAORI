@@ -24,7 +24,7 @@ class TelegramReportDelivery:
                 message='Telegram delivery is selected, but the bot token or chat ID is not configured.',
             )
 
-        base_url = str(current_app.config.get('REPORT_PUBLIC_BASE_URL') or '').rstrip('/')
+        base_url = str(current_app.config.get('KAORI_PUBLIC_BASE_URL') or '').rstrip('/')
         report_url = f'{base_url}/reports/generated/{report.id}' if base_url else f'/reports/generated/{report.id}'
         status_label = str(report.status or 'ready').replace('_', ' ').title()
         text = (

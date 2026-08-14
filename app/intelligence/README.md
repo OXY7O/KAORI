@@ -107,6 +107,7 @@ Notification Channels is implemented as a provider-neutral outbound delivery lay
 
 Automatic Alert Intelligence notification polling runs on the existing maintenance worker queue. Current environment controls are:
 
+- `KAORI_PUBLIC_BASE_URL` (canonical absolute KAORI URL used in notification links)
 - `ALERT_INTELLIGENCE_NOTIFICATION_ENABLED` (default `true`)
 - `ALERT_INTELLIGENCE_NOTIFICATION_INTERVAL_MINUTES` (default `1`, bounded `1..60`)
 - `NOTIFICATION_DELIVERY_TIMEOUT_SECONDS` (default `10`, bounded `1..60`)
