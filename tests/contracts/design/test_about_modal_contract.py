@@ -28,8 +28,11 @@ def test_about_modal_uses_safe_release_metadata_and_canonical_system_information
     assert 'id="kaori-about-dialog"' in modal
     assert 'role="dialog"' in modal
     assert 'aria-modal="true"' in modal
-    assert 'class="fixed inset-0 z-[90] flex justify-center overflow-y-auto p-4 sm:p-6"' in modal
-    assert 'relative my-auto w-full max-w-xl' in modal
+    assert 'class="fixed inset-0 z-[90] overflow-y-auto"' in modal
+    assert 'class="relative flex min-h-full items-center justify-center p-4 sm:p-6"' in modal
+    assert 'flex w-full max-w-xl flex-col overflow-hidden' in modal
+    assert 'max-h-[calc(100dvh-2rem)]' in modal
+    assert 'min-h-0 space-y-4 overflow-y-auto' in modal
     assert "config.get('APP_VERSION', 'Unknown')" in modal
     assert "config.get('APP_ENV', 'development')" in modal
     assert 'Knowledge, Automation, Operations, Resilience &amp; Intelligence.' in modal
