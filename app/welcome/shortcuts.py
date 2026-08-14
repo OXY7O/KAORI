@@ -127,7 +127,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'icon': 'brain-circuit',
         'scope': 'Cross-domain',
         'group': 'visibility',
-        'targets': (('intelligence.view', 'intelligence.recommendations'),),
+        'targets': (('intelligence.view', 'intelligence.index'),),
     },
     {
         'title': 'Integrations',

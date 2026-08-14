@@ -136,6 +136,7 @@ SURFACES: tuple[ReleaseSurface, ...] = (
         lock_state='BASELINE LOCKED',
         navigation_source='app/templates/components/navigation/intelligence_menu.html',
         navigation_endpoints=(
+            'intelligence.index',
             'intelligence.recommendations',
             'alert_intelligence.index',
             'intelligence.catalog',

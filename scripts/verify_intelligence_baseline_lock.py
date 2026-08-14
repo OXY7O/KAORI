@@ -141,6 +141,28 @@ def main() -> int:
     require('Governance Only' in automation_overview, 'Automation Control must communicate factual governance-only posture while execution is disabled', errors)
     require('DOMAIN_DEFINITIONS' not in automation_presentation, 'Legacy Automation Control Foundation Map must not return', errors)
 
+    intelligence_overview = read('app/intelligence/overview.py')
+    overview_page = read('app/templates/intelligence/overview.html')
+    require(
+        "render_template('intelligence/overview.html', payload=payload)" in intelligence_routes,
+        'Intelligence root must render the dedicated Overview workspace',
+        errors,
+    )
+    require(
+        "redirect(url_for('intelligence.recommendations'))" not in intelligence_routes,
+        'Intelligence root must not redirect past the Overview workspace',
+        errors,
+    )
+    for forbidden in ('load_alerts_by_source', 'load_alert_stream', 'PrometheusConsumer', 'MinioClient'):
+        require(
+            forbidden not in intelligence_overview,
+            f'Intelligence Overview must stay provider-free: {forbidden}',
+            errors,
+        )
+    for required in ('Recommendations', 'Alert Intelligence', 'Rule Catalog', 'Automation Control'):
+        require(required in intelligence_overview, f'Intelligence Overview capability missing: {required}', errors)
+    require('payload.capabilities' in overview_page, 'Intelligence Overview must render owned capability rows', errors)
+
     require(
         'def get_alert_intelligence_payload(' not in intelligence_service,
         'Alert Intelligence payload ownership must not return to the generic Intelligence service',
@@ -183,6 +205,7 @@ def main() -> int:
     catalog_records = read('app/templates/intelligence/partials/_catalog_records.html')
 
     for page, label in (
+        (overview_page, 'Intelligence Overview'),
         (recommendations_page, 'Recommendations'),
         (catalog_page, 'Rule Catalog'),
         (alert_page, 'Alert Intelligence'),

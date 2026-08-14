@@ -19,13 +19,14 @@
     </summary>
     <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3">
         {% set intelligence_links = [
+            ('intelligence.index', 'layout-dashboard', 'Overview'),
             ('intelligence.recommendations', 'sparkles', 'Recommendations'),
             ('alert_intelligence.index', 'triangle-alert', 'Alert Intelligence'),
             ('intelligence.catalog', 'list-checks', 'Rule Catalog'),
             ('automation_control.index', 'workflow', 'Automation Control')
         ] %}
         {% for target_endpoint, icon, label in intelligence_links %}
-            {% set active = endpoint == target_endpoint or (target_endpoint == 'intelligence.recommendations' and endpoint == 'intelligence.index') %}
+            {% set active = endpoint == target_endpoint %}
             <a href="{{ url_for(target_endpoint) }}"
                class="{{ 'bg-white/[0.08] text-kaori-accent' if active else 'sidebar-item-idle' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm leading-5 transition">
                 <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>

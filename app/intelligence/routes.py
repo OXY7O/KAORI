@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from flask import Blueprint, abort, redirect, render_template, request, url_for
+from flask import Blueprint, abort, render_template, request
 from flask.typing import ResponseReturnValue
+from app.intelligence.overview import get_intelligence_overview_payload
 from app.intelligence.service import (
     get_catalog_rule,
     get_recommendation_finding,
@@ -19,7 +20,8 @@ intelligence_bp = Blueprint(
 @intelligence_bp.route('/')
 @permission_required('intelligence.view')
 def index() -> ResponseReturnValue:
-    return redirect(url_for('intelligence.recommendations'))
+    payload = get_intelligence_overview_payload()
+    return render_template('intelligence/overview.html', payload=payload)
 
 
 @intelligence_bp.route('/recommendations')

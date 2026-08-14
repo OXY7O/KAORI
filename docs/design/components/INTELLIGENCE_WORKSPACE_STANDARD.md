@@ -2,7 +2,7 @@
 
 ## Scope
 
-This standard covers Recommendations, Rule Catalog, Alert Intelligence, and Automation Control. Notification Channels is an Integrations-owned platform delivery capability consumed by Intelligence.
+This standard covers Intelligence Overview, Recommendations, Rule Catalog, Alert Intelligence, and Automation Control. Notification Channels is an Integrations-owned platform delivery capability consumed by Intelligence.
 
 ## Hero
 
@@ -34,6 +34,20 @@ Infrastructure execution is disabled by default through `AUTOMATION_EXECUTION_EN
 Decision candidates are non-executable. Promotion creates an immutable decision snapshot; approval or rejection is a distinct accountable outcome, and approval-required decisions enforce maker-checker separation. Approval and execution lifecycle notifications are queued asynchronously through matching Notification Channels; delivery failure never rewrites the recorded decision or execution outcome. Persisted decisions remain separate from execution journals. Execution Control owns resolver registry, deployment policies, safety controls, orchestration journals, post-action verification, and immutable dead letters. Production Readiness reports execution state, resolver registration, scoped deployment policy, readiness evidence, Notification Channel coverage, and ordered rollout stages independently.
 
 The intended first controlled execution pilot remains `kubernetes.deployment.restart`. Registration alone does not make it executable: approval, namespace allowlist, registry parity, server-side dry-run, post-action rollout verification, audit, notification delivery, recovery evidence, and staged production-readiness evidence remain mandatory. Deployment restart is not transactionally reversible, so KAORI records compensating/manual recovery evidence rather than claiming an automatic rollback.
+
+
+## Intelligence Overview
+
+`Intelligence Overview` is the landing workspace for the Intelligence category. It summarizes committed recommendation posture, registered asset coverage for Alert Intelligence, canonical Rule Catalog coverage, and governed Automation Control posture without issuing live infrastructure-provider queries.
+
+The Overview must preserve capability ownership:
+
+- **Recommendations** owns catalog-backed findings from committed KAORI evidence.
+- **Alert Intelligence** resolves provider alert state on demand and keeps Alertmanager/Prometheus lifecycle ownership explicit.
+- **Rule Catalog** owns canonical detection, evidence-boundary, provider-coverage, severity, and operator-response definitions.
+- **Automation Control** owns runbooks, decisions, approvals, readiness, controlled execution, verification, and recovery.
+
+The Overview may surface top recommendation priorities and lightweight control posture, but it must not duplicate alert retrieval, execute automation, or become another analytics provider client.
 
 ## Baseline lock semantics
 

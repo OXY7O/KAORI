@@ -54,7 +54,7 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'analytics.object_storage_top_consumers': 'Top Consumers',
     'analytics.object_storage_alerts': 'Alerts & Anomalies',
     # Intelligence
-    'intelligence.index': 'Recommendations',
+    'intelligence.index': 'Overview',
     'intelligence.recommendations': 'Recommendations',
     'alert_intelligence.index': 'Alert Intelligence',
     'intelligence.catalog': 'Catalog',
@@ -197,10 +197,10 @@ def build_navigation_breadcrumb(
         ]
     elif endpoint.startswith('analytics.'):
         items = _analytics_items(endpoint)
-    elif endpoint.startswith('intelligence.') or endpoint.startswith('automation_control.'):
+    elif endpoint.startswith(('intelligence.', 'alert_intelligence.', 'automation_control.')):
         items = [
             BreadcrumbItem('Intelligence', 'brain-circuit'),
-            BreadcrumbItem(_leaf(endpoint, 'Recommendations')),
+            BreadcrumbItem(_leaf(endpoint, 'Overview')),
         ]
     elif endpoint.startswith('reports.'):
         items = [BreadcrumbItem('Reports', 'file-text'), BreadcrumbItem(_leaf(endpoint, 'Overview'))]

@@ -17,8 +17,8 @@ def read(relative: str) -> str:
 
 
 def test_release_registry_closes_navigation_and_blueprint_inventory() -> None:
-    assert len(navigation_endpoints()) == 59
-    assert len(set(navigation_endpoints())) == 59
+    assert len(navigation_endpoints()) == 60
+    assert len(set(navigation_endpoints())) == 60
     assert len(blueprint_vars()) == 25
     assert len(set(blueprint_vars())) == 25
     assert len(SURFACES) == 16
@@ -83,7 +83,7 @@ def test_cluster_listing_legacy_chain_is_retired_and_guarded() -> None:
 def test_release_coverage_documentation_keeps_explicit_incomplete_feature_state() -> None:
     documentation = read('docs/architecture/RELEASE_SURFACE_COVERAGE.md')
     for token in (
-        '59 navigation links',
+        '60 navigation links',
         '25 registered blueprints',
         'Intelligence | BASELINE LOCKED',
         'Runtime Health | SYSTEM LOCKED',

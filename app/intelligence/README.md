@@ -35,7 +35,7 @@ See `docs/architecture/domain-20-automation-control-center-ui.md`.
 ## KAORI Violet presentation standard
 
 All Intelligence workspaces use the KAORI Violet Infrastructure design system.
-Recommendations, Catalog, Alert Intelligence, and the cross-domain Automation
+Intelligence Overview, Recommendations, Catalog, Alert Intelligence, and the cross-domain Automation
 Control Center share a solid violet hero, a right-side posture card, tokenized
 surfaces and borders, `rounded-xl` sections, `rounded-lg` internal object blocks,
 violet focus states, and compact rectangular status/metadata labels. Semantic
@@ -45,7 +45,9 @@ be reintroduced.
 
 ## Intelligence Workspace Presentation
 
-Recommendations, Rule Catalog, Alert Intelligence, and Automation Control use the canonical Intelligence workspace contract documented in `docs/design/components/INTELLIGENCE_WORKSPACE_STANDARD.md`.
+The category root `/intelligence/` renders **Intelligence Overview**. The landing page is intentionally provider-free: it summarizes committed findings, registered asset coverage, Rule Catalog posture, and Automation Control governance state, while live provider alert retrieval remains owned by Alert Intelligence.
+
+Intelligence Overview, Recommendations, Rule Catalog, Alert Intelligence, and Automation Control use the canonical Intelligence workspace contract documented in `docs/design/components/INTELLIGENCE_WORKSPACE_STANDARD.md`.
 
 Automation Control is the governed bridge from Intelligence evidence to controlled execution. Its UI exposes factual **Governance Only** state across Overview, Runbooks & Bindings, Decision Review, Execution Control, and Production Readiness whenever infrastructure execution is disabled. Runbooks now use a source-controlled **System Runbook Catalog**: operators activate validated immutable contracts and configure environment-specific bindings instead of authoring action JSON manually. Catalog activation validates adapters shipped by the build without requiring `RESOLVER_ENABLED_ACTIONS`, so Governance Only preparation does not open the runtime execution registry. Custom authoring remains locked behind `CUSTOM_RUNBOOK_AUTHORING_ENABLED=false` until simulation, maturity, regression, and security contracts are production-ready. Deployment policy, safety controls, readiness evidence, and rollout stages remain writable without opening the resolver boundary. Active alert evidence is independently materialized into deduplicated candidates; accountable review uses immutable decisions and maker-checker approval where required. Infrastructure execution is default-deny behind `AUTOMATION_EXECUTION_ENABLED=false` and is revalidated at authorization, application admission, and worker admission. The Kubernetes Deployment restart pilot uses one-time authorization, canonical jobs, server-side dry-run, rollout-health verification, recovery evidence, lifecycle notifications, audit evidence, and immutable dead letters that require fresh evidence for another attempt.
 
