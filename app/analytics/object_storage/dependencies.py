@@ -7,6 +7,7 @@ from app.models.object_storage import ObjectStorageSystem
 
 ObjectStorageDependencyKind = Literal[
     'system_required',
+    'inventory_required',
     'metrics_source_setup',
     'metrics_source_validation',
     'metrics_source_capability',
@@ -43,6 +44,24 @@ def system_required_blocker() -> ObjectStorageDependencyBlocker:
         'icon': 'database-zap',
         'action_label': 'Open Storage Integrations',
         'action_endpoint': 'integrations.storage',
+    }
+
+
+def inventory_required_blocker(system: ObjectStorageSystem) -> ObjectStorageDependencyBlocker:
+    return {
+        'kind': 'inventory_required',
+        'stage': 1,
+        'badge': 'Inventory Sync Required',
+        'tone': 'warning',
+        'title': 'Object Storage Inventory Sync Required',
+        'description': (
+            f'{system.name} is registered, but no committed Object Storage inventory snapshot is available. '
+            'Run Object Storage Inventory Sync before loading operational analytics.'
+        ),
+        'diagnostic_detail': None,
+        'icon': 'database-clock',
+        'action_label': 'Open Object Storage Inventory',
+        'action_endpoint': 'object_storage_inventory.overview',
     }
 
 

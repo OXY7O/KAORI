@@ -130,6 +130,8 @@ different observation times. Analytics never rewrites Inventory from this compar
 
 Object Storage Analytics follows the same operational interaction contract as Kubernetes Analytics:
 
+- dependency-blocked pages reuse the shared `components/dependencies/_blocker.html` readiness surface instead of maintaining a separate Object Storage blocker design; Object Storage pages use `Object Storage → Metrics`, while Alerts extends the path with `Alert Evidence`;
+- a registered Object Storage system without `inventory_observed_at` is still blocked as `Object Storage Inventory Sync Required`; operational metrics do not bypass the committed inventory prerequisite;
 - scope changes use the shared KAORI HTMX loading bar and report the runtime state as `Checking Runtime` while the request is in progress;
 - missing configuration, unvalidated required metrics, incomplete capability, disconnection, authentication failure, and total runtime-query failure are explicit blocking states;
 - partial runtime-query failure is a degraded state, not a false healthy state;

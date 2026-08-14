@@ -1,12 +1,14 @@
 {% if dependency_blocker %}
     {% import "components/table_label.html" as table_label %}
-    {% set blocker_tone = 'warning' if dependency_blocker.kind in ['cluster_required', 'prometheus_setup', 'prometheus_capability', 'alert_source_setup'] else 'critical' %}
+    {% set dependency_setup_kinds = dependency_setup_kinds|default(['cluster_required', 'prometheus_setup', 'prometheus_capability', 'alert_source_setup']) %}
+    {% set dependency_capability_kinds = dependency_capability_kinds|default(['prometheus_capability']) %}
+    {% set blocker_tone = dependency_blocker.tone|default('warning' if dependency_blocker.kind in dependency_setup_kinds else 'critical') %}
     {% set blocked_state_icon = dependency_blocker.icon %}
-    {% set blocked_state_label = 'Capability Incomplete' if dependency_blocker.kind == 'prometheus_capability' else ('Setup Required' if blocker_tone == 'warning' else 'Unavailable') %}
+    {% set blocked_state_label = 'Capability Incomplete' if dependency_blocker.kind in dependency_capability_kinds else ('Setup Required' if blocker_tone == 'warning' else 'Unavailable') %}
     {% set blocked_state_title = dependency_blocker.title %}
     {% set blocked_state_description = dependency_blocker.description %}
     {% set blocked_step = dependency_blocker.stage|int %}
-    {% set analytics_steps = [
+    {% set analytics_steps = dependency_steps|default([
         {
             "label": "Kubernetes",
             "icon": "server-cog",
@@ -22,7 +24,10 @@
             "icon": "bell-ring",
             "description": "Alert source and scoped signal access"
         }
-    ] %}
+    ]) %}
+    {% set dependency_route_summary = dependency_route_summary|default('Kubernetes → Prometheus → Alertmanager') %}
+    {% set dependency_step_count = analytics_steps|length %}
+    {% set dependency_grid_classes = dependency_grid_classes|default('lg:grid-cols-3') %}
     <section class="overflow-hidden rounded-xl border border-brand-outline bg-kaori-soft shadow-sm"
              data-kaori-blocked-state>
         <div class="flex flex-col gap-4 px-5 py-5 lg:flex-row lg:items-start lg:justify-between">
@@ -35,19 +40,22 @@
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="text-base font-semibold text-content-primary">Analytics Readiness</h2>
                         {{ table_label.status_label(blocked_state_label, blocker_tone, blocked_state_icon) }}
-                        {{ table_label.metadata_label('Step ' ~ blocked_step ~ ' of 3', 'list-ordered') }}
+                        {{ table_label.metadata_label('Step ' ~ blocked_step ~ ' of ' ~ dependency_step_count, 'list-ordered') }}
                     </div>
                     <p class="mt-1 text-sm font-semibold text-content-primary">{{ blocked_state_title }}</p>
                     <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">{{ blocked_state_description }}</p>
+                    {% if dependency_blocker.diagnostic_detail %}
+                        <p class="mt-2 max-w-4xl text-xs leading-5 text-content-muted">{{ dependency_blocker.diagnostic_detail }}</p>
+                    {% endif %}
                 </div>
             </div>
             <div class="inline-flex min-h-8 shrink-0 items-center gap-2 rounded-md border border-brand-outline bg-surface-card px-3 py-1.5 text-xs font-semibold text-kaori-primary">
                 <i data-lucide="route" class="h-4 w-4" aria-hidden="true"></i>
-                Kubernetes → Prometheus → Alertmanager
+                {{ dependency_route_summary }}
             </div>
         </div>
         <div class="border-t border-brand-outline bg-surface-card/70 p-4">
-            <div class="grid gap-3 lg:grid-cols-3">
+            <div class="grid gap-3 {{ dependency_grid_classes }}">
                 {% for step in analytics_steps %}
                     {% set step_number = loop.index %}
                     {% set is_complete = step_number < blocked_step %}

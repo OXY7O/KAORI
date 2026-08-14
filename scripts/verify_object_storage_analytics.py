@@ -44,6 +44,8 @@ def main() -> int:
     controls = read('app/templates/analytics/object_storage/partials/_controls.html')
     bucket_table_template = read('app/templates/analytics/object_storage/partials/_bucket_table.html')
     dependency_blocker = read('app/templates/analytics/object_storage/partials/_dependency_blocker.html')
+    dependency_notice = read('app/templates/analytics/object_storage/partials/_dependency_notice.html')
+    shared_dependency_blocker = read('app/templates/components/dependencies/_blocker.html')
     hero = read('app/templates/analytics/object_storage/partials/_hero.html')
     hero_posture = read('app/templates/analytics/object_storage/partials/_hero_posture.html')
     hero_blocked = read('app/templates/analytics/object_storage/partials/_hero_blocked_posture.html')
@@ -244,6 +246,9 @@ def main() -> int:
     assert 'required_contract_ready' in runtime
     assert 'metrics_runtime_blocker' in runtime
     assert 'metrics_query_blocker' in runtime
+    assert "'inventory_required'" in read('app/analytics/object_storage/dependencies.py')
+    assert 'inventory_required_blocker(system)' in service
+    assert service.count('inventory_required_blocker(system)') >= 3
     assert 'build_bucket_table_view' in bucket_table_service
     assert "default=5" in bucket_table_service
     assert "'overview': 'consumers'" not in bucket_table_service
@@ -257,8 +262,18 @@ def main() -> int:
     assert 'analytics/components/_record_pagination.html' in bucket_table_template
     assert 'object-storage-bucket-table-loading-indicator' in bucket_table_template
     assert 'components/analytics/_table_label_primitives.html' not in bucket_table_template
-    assert 'Object Storage Analytics Unavailable' in dependency_blocker
-    assert 'Analysis controls and metric-derived results stay hidden' in dependency_blocker
+    assert 'components/dependencies/_blocker.html' in dependency_blocker
+    assert 'Object Storage → Metrics' in dependency_blocker
+    assert 'Object Storage → Metrics → Alert Evidence' in dependency_blocker
+    assert 'dependency_grid_classes = "lg:grid-cols-2"' in dependency_blocker
+    assert 'dependency_grid_classes = "lg:grid-cols-3"' in dependency_blocker
+    assert 'Analytics Readiness' in shared_dependency_blocker
+    assert 'Current Blocker' in shared_dependency_blocker
+    assert 'dependency_route_summary' in shared_dependency_blocker
+    assert 'dependency_step_count' in shared_dependency_blocker
+    assert '_dependency_notice.html' in bucket_table_template
+    assert '_dependency_notice.html' in alert_records
+    assert 'dependency_blocker.diagnostic_detail' in dependency_notice
     blocker_index = template.index('{% if dependency_blocker %}')
     controls_index = template.index('partials/_controls.html')
     else_index = template.index('{% else %}', blocker_index)
@@ -266,7 +281,16 @@ def main() -> int:
     assert 'metrics_source.detail' not in hero
     assert "'Current Step'" in hero_blocked
     assert "'Progress'" in hero_blocked
+    assert "'Analytics Readiness'" in hero_blocked
+    assert "readiness_step_count = 3 if page_key == 'alerts' else 2" in hero_blocked
     assert "'Analytics Overview'" in service
+    for copy in (
+        'Review usable capacity, consumption trends, bucket pressure, quota posture, and growth across the selected system.',
+        'Review S3 request activity, error pressure, queue depth, in-flight demand, and traffic across the selected system.',
+        'Project storage growth, future utilization, and capacity exhaustion from committed operational metric history.',
+        'Rank buckets by storage consumption, objects, request activity, error pressure, and concentration within the selected system.',
+    ):
+        assert copy in service
     assert "'Operational Posture'" in hero_posture
     assert "'Analytics Status'" in hero_posture
     assert 'components/content_tabs.html' in overview_workspace

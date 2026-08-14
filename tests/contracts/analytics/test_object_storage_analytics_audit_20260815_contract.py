@@ -1,0 +1,97 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[3]
+
+
+def read(relative: str) -> str:
+    return (ROOT / relative).read_text(encoding='utf-8')
+
+
+def test_object_storage_hero_copy_is_specific_without_becoming_verbose() -> None:
+    service = read('app/analytics/object_storage/service.py')
+
+    expected = (
+        'Review usable capacity, consumption trends, bucket pressure, quota posture, and growth across the selected system.',
+        'Review S3 request activity, error pressure, queue depth, in-flight demand, and traffic across the selected system.',
+        'Project storage growth, future utilization, and capacity exhaustion from committed operational metric history.',
+        'Rank buckets by storage consumption, objects, request activity, error pressure, and concentration within the selected system.',
+    )
+    for copy in expected:
+        assert copy in service
+        assert len(copy.split()) <= 16
+
+
+def test_object_storage_blocker_reuses_kubernetes_analytics_dependency_surface() -> None:
+    object_blocker = read('app/templates/analytics/object_storage/partials/_dependency_blocker.html')
+    shared_blocker = read('app/templates/components/dependencies/_blocker.html')
+    blocked_hero = read('app/templates/analytics/object_storage/partials/_hero_blocked_posture.html')
+
+    assert 'components/dependencies/_blocker.html' in object_blocker
+    assert 'Object Storage → Metrics' in object_blocker
+    assert 'Object Storage → Metrics → Alert Evidence' in object_blocker
+    assert 'dependency_grid_classes = "lg:grid-cols-2"' in object_blocker
+    assert 'dependency_grid_classes = "lg:grid-cols-3"' in object_blocker
+    assert 'Analytics Readiness' in shared_blocker
+    assert 'Current Blocker' in shared_blocker
+    assert 'dependency_route_summary' in shared_blocker
+    assert 'dependency_step_count' in shared_blocker
+    assert "'Analytics Readiness'" in blocked_hero
+    assert "readiness_step_count = 3 if page_key == 'alerts' else 2" in blocked_hero
+
+
+def test_object_storage_analytics_requires_committed_inventory_before_metrics_analysis() -> None:
+    dependencies = read('app/analytics/object_storage/dependencies.py')
+    service = read('app/analytics/object_storage/service.py')
+
+    assert "'inventory_required'" in dependencies
+    assert 'Object Storage Inventory Sync Required' in dependencies
+    assert "'action_endpoint': 'object_storage_inventory.overview'" in dependencies
+    assert service.count('if system.inventory_observed_at is None:') >= 3
+    assert service.count('inventory_required_blocker(system)') >= 3
+
+
+def test_object_storage_runtime_boundary_stays_provider_neutral_and_fail_fast() -> None:
+    routes = read('app/analytics/object_storage/routes.py')
+    service = read('app/analytics/object_storage/service.py')
+    runtime = read('app/analytics/object_storage/runtime.py')
+    materialization = read('app/analytics/object_storage/materialization.py')
+
+    assert routes.count("@permission_required('object_storage_analytics.view')") == 8
+    for forbidden in ('PrometheusConsumer(', 'MinioClient(', 'boto3', 'minio.client'):
+        assert forbidden not in routes
+        assert forbidden not in service
+        assert forbidden not in runtime
+    assert 'source_wide_failure' in runtime
+    assert 'failed_query_count' in runtime
+    assert 'successful_query_count' in runtime
+    assert "execution_mode='background'" in materialization
+    assert 'ObjectStorageForecastSnapshot' in materialization
+
+
+def test_object_storage_alert_and_metric_evidence_paths_remain_independent() -> None:
+    service = read('app/analytics/object_storage/service.py')
+    alerts = read('app/analytics/object_storage/alert_sources.py')
+    workspace = read('app/templates/analytics/object_storage/partials/_alerts_workspace.html')
+
+    assert 'alerts_evidence_available' in service
+    assert 'alerts_degraded' in service
+    assert "ALERT_SOURCE_OPTIONS = ('auto', 'alertmanager', 'prometheus')" in alerts
+    assert 'Prometheus Fallback Active' in alerts
+    assert 'Alert Records' in workspace
+    assert 'Metric Signals' in workspace
+
+
+def test_object_storage_htmx_record_fragments_fail_closed_on_dependency_loss() -> None:
+    bucket_table = read('app/templates/analytics/object_storage/partials/_bucket_table.html')
+    alert_records = read('app/templates/analytics/object_storage/partials/_alert_records.html')
+    notice = read('app/templates/analytics/object_storage/partials/_dependency_notice.html')
+
+    assert '{% if dependency_blocker %}' in bucket_table
+    assert '_dependency_notice.html' in bucket_table
+    assert '{% if dependency_blocker %}' in alert_records
+    assert '_dependency_notice.html' in alert_records
+    assert 'dependency_blocker.title' in notice
+    assert 'dependency_blocker.description' in notice
+    assert 'dependency_blocker.diagnostic_detail' in notice

@@ -21,7 +21,10 @@ from app.analytics.object_storage.analysis import (
     performance_posture,
 )
 from app.analytics.object_storage.bucket_table import build_bucket_table_view
-from app.analytics.object_storage.dependencies import system_required_blocker
+from app.analytics.object_storage.dependencies import (
+    inventory_required_blocker,
+    system_required_blocker,
+)
 from app.analytics.object_storage.materialization import forecast_snapshot_state, get_forecast_snapshot
 from app.analytics.object_storage.presentation import (
     build_bucket_analysis,
@@ -67,25 +70,25 @@ PAGES: dict[str, PageDefinition] = {
     ),
     'capacity': PageDefinition(
         'Object Storage Capacity & Usage',
-        'Review usable capacity, consumption, bucket pressure, and growth.',
+        'Review usable capacity, consumption trends, bucket pressure, quota posture, and growth across the selected system.',
         'database',
         'Object Storage Analytics',
     ),
     'performance': PageDefinition(
         'Object Storage Performance',
-        'Review S3 request activity, errors, queue pressure, and traffic.',
+        'Review S3 request activity, error pressure, queue depth, in-flight demand, and traffic across the selected system.',
         'activity',
         'Object Storage Analytics',
     ),
     'forecast': PageDefinition(
         'Forecast',
-        'Project storage growth and capacity exhaustion from operational metric history.',
+        'Project storage growth, future utilization, and capacity exhaustion from committed operational metric history.',
         'line-chart',
         'Object Storage Analytics',
     ),
     'top_consumers': PageDefinition(
         'Top Consumers',
-        'Rank buckets by storage, objects, request activity, and error pressure.',
+        'Rank buckets by storage consumption, objects, request activity, error pressure, and concentration within the selected system.',
         'users',
         'Object Storage Analytics',
     ),
@@ -620,6 +623,9 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
     if system is None:
         context['dependency_blocker'] = system_required_blocker()
         return context
+    if system.inventory_observed_at is None:
+        context['dependency_blocker'] = inventory_required_blocker(system)
+        return context
 
     if page_key == 'alerts':
         return _get_alerts_context(context, system, query_args, time_range)
@@ -660,6 +666,9 @@ def get_object_storage_alert_table_context(query_args: Any) -> dict[str, Any]:
     if system is None:
         context['dependency_blocker'] = system_required_blocker()
         return context
+    if system.inventory_observed_at is None:
+        context['dependency_blocker'] = inventory_required_blocker(system)
+        return context
     alert_stream = load_alert_stream(system, selected_source=context['selected_alert_source'])
     context['alert_source'] = alert_stream
     context['alertmanager'] = alertmanager_readiness(system, runtime_stream=alert_stream)
@@ -678,6 +687,9 @@ def get_object_storage_bucket_table_context(page_key: str, query_args: Any) -> d
     context, system, time_range = _base_context(page_key, query_args)
     if system is None:
         context['dependency_blocker'] = system_required_blocker()
+        return context
+    if system.inventory_observed_at is None:
+        context['dependency_blocker'] = inventory_required_blocker(system)
         return context
 
     source, source_view, readiness, blocker = source_setup(system)

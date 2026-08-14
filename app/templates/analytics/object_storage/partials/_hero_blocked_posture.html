@@ -1,34 +1,37 @@
 {% import "components/page_hero.html" as page_hero %}
 {% set blocked_step = dependency_blocker.stage|int %}
 {% set completed_step = blocked_step - 1 %}
-{% set blocker_status = dependency_blocker.badge|replace('Consumer ', '') %}
+{% set blocker_tone = dependency_blocker.tone|default('warning') %}
+{% if dependency_blocker.kind == 'metrics_source_capability' %}
+    {% set blocker_status = 'Capability Incomplete' %}
+{% elif blocker_tone == 'warning' %}
+    {% set blocker_status = 'Setup Required' %}
+{% else %}
+    {% set blocker_status = 'Unavailable' %}
+{% endif %}
+{% set step_labels = {1: 'Object Storage', 2: 'Metrics', 3: 'Alert Evidence'} %}
+{% set readiness_step_count = 3 if page_key == 'alerts' else 2 %}
 {% if page_key == 'capacity' %}
     {% set posture_label = 'Capacity Posture' %}
-    {% set readiness_label = 'Capacity Readiness' %}
 {% elif page_key == 'performance' %}
     {% set posture_label = 'Performance Posture' %}
-    {% set readiness_label = 'Performance Readiness' %}
 {% elif page_key == 'forecast' %}
     {% set posture_label = 'Forecast Posture' %}
-    {% set readiness_label = 'Forecast Readiness' %}
 {% elif page_key == 'top_consumers' %}
     {% set posture_label = 'Consumer Posture' %}
-    {% set readiness_label = 'Consumer Readiness' %}
 {% elif page_key == 'alerts' %}
     {% set posture_label = 'Alert Posture' %}
-    {% set readiness_label = 'Alert Readiness' %}
 {% else %}
     {% set posture_label = 'Operational Posture' %}
-    {% set readiness_label = 'Analytics Readiness' %}
 {% endif %}
 {{ page_hero.context_card_body(
     posture_label,
-    readiness_label,
+    'Analytics Readiness',
     blocker_status,
-    dependency_blocker.tone,
+    blocker_tone,
     [
         ('list-ordered', 'Current Step', 'Step ' ~ blocked_step, dependency_blocker.title),
-        ('circle-check-big' if completed_step > 0 else 'circle-dashed', 'Progress', completed_step ~ ' of 3', 'Completed readiness stages')
+        ('circle-check-big' if completed_step > 0 else 'circle-dashed', 'Progress', completed_step ~ ' of ' ~ readiness_step_count if completed_step > 0 else '0 of ' ~ readiness_step_count, ('Completed through ' ~ step_labels.get(completed_step)) if completed_step > 0 else 'Readiness has not started')
     ],
     dependency_blocker.action_label,
     url_for(dependency_blocker.action_endpoint),

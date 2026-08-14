@@ -291,6 +291,7 @@ def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() ->
     dependencies = read('app/analytics/object_storage/dependencies.py')
     controls = read('app/templates/analytics/object_storage/partials/_controls.html')
     blocker = read('app/templates/analytics/object_storage/partials/_dependency_blocker.html')
+    dependency_notice = read('app/templates/analytics/object_storage/partials/_dependency_notice.html')
     index = read('app/templates/analytics/object_storage/index.html')
     hero = read('app/templates/analytics/object_storage/partials/_hero.html')
     hero_blocked = read('app/templates/analytics/object_storage/partials/_hero_blocked_posture.html')
@@ -311,9 +312,21 @@ def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() ->
     assert 'required_contract_ready' in runtime
     assert 'metrics_runtime_blocker' in runtime
     assert 'metrics_query_blocker' in runtime
+    assert "'inventory_required'" in dependencies
+    service = read('app/analytics/object_storage/service.py')
+    assert service.count('inventory_required_blocker(system)') >= 3
     assert 'object-storage-analytics-refresh-indicator' in controls
-    assert 'Object Storage Analytics Unavailable' in blocker
-    assert 'Analysis controls and metric-derived results stay hidden' in blocker
+    shared_blocker = read('app/templates/components/dependencies/_blocker.html')
+    assert 'components/dependencies/_blocker.html' in blocker
+    assert 'Object Storage → Metrics' in blocker
+    assert 'Object Storage → Metrics → Alert Evidence' in blocker
+    assert 'dependency_grid_classes = "lg:grid-cols-2"' in blocker
+    assert 'dependency_grid_classes = "lg:grid-cols-3"' in blocker
+    assert 'Analytics Readiness' in shared_blocker
+    assert 'Current Blocker' in shared_blocker
+    assert 'dependency_route_summary' in shared_blocker
+    assert 'dependency_step_count' in shared_blocker
+    assert 'dependency_blocker.diagnostic_detail' in dependency_notice
     blocker_index = index.index('{% if dependency_blocker %}')
     else_index = index.index('{% else %}', blocker_index)
     controls_index = index.index('partials/_controls.html')
@@ -321,6 +334,9 @@ def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() ->
     assert 'metrics_source.detail' not in hero
     assert "'Current Step'" in hero_blocked
     assert "'Progress'" in hero_blocked
+    assert "'Analytics Readiness'" in hero_blocked
+    assert "readiness_step_count = 3 if page_key == 'alerts' else 2" in hero_blocked
+    assert "blocker_status = 'Capability Incomplete'" in hero_blocked
 
 
 def test_object_storage_bucket_records_use_shared_kaori_table_contract() -> None:
@@ -367,6 +383,9 @@ def test_object_storage_overview_matches_kubernetes_overview_hero_and_tab_contra
     assert "'Analytics Readiness'" in hero_blocked
     assert "'Current Step'" in hero_blocked
     assert "'Progress'" in hero_blocked
+    assert "'Analytics Readiness'" in hero_blocked
+    assert "readiness_step_count = 3 if page_key == 'alerts' else 2" in hero_blocked
+    assert "blocker_status = 'Capability Incomplete'" in hero_blocked
 
     assert 'components/content_tabs.html' in workspace
     assert 'data-analytics-tabset' in workspace

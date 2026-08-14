@@ -20,7 +20,9 @@
         {{ loading_bar.render('object-storage-alert-records-loading', label='Refreshing Active Alerts') }}
     </header>
     <div class="space-y-4 p-4 sm:p-5">
-        {% if not alert_source.connected %}
+        {% if dependency_blocker %}
+            {% include "analytics/object_storage/partials/_dependency_notice.html" %}
+        {% elif not alert_source.connected %}
             <div class="rounded-lg border border-outline-default bg-status-warning-soft px-4 py-4">
                 <div class="flex items-start gap-3">
                     <span class="{{ analysis_surface.semantic_icon_classes(alert_source.tone) }}"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span>
