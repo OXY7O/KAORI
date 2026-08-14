@@ -1,0 +1,108 @@
+{% set about_version = config.get('APP_VERSION', 'Unknown') %}
+{% set about_environment = config.get('APP_ENV', 'development')|replace('_', ' ')|title %}
+<div x-cloak
+     x-show="aboutOpen"
+     x-transition.opacity
+     :aria-hidden="(!aboutOpen).toString()"
+     class="fixed inset-0 z-[90] flex items-center justify-center p-4">
+    <button type="button"
+            @click="aboutOpen = false"
+            class="absolute inset-0 h-full w-full cursor-default bg-surface-overlay/70 backdrop-blur-sm"
+            aria-label="Close About KAORI"></button>
+    <section id="kaori-about-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="kaori-about-title"
+             aria-describedby="kaori-about-description"
+             tabindex="-1"
+             class="relative w-full max-w-xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-2xl">
+        <header class="border-b border-outline-subtle px-5 py-5 sm:px-6">
+            <div class="flex items-start justify-between gap-4">
+                <div class="flex min-w-0 items-start gap-4">
+                    <span class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-kaori-primary/15 bg-kaori-soft p-1.5"
+                          aria-hidden="true">
+                        <img src="{{ url_for('static', filename='images/kaori-logo.svg') }}"
+                             alt=""
+                             class="h-full w-full object-contain" />
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-kaori-primary">Platform Operations</p>
+                        <h2 id="kaori-about-title"
+                            class="mt-1 text-lg font-bold leading-6 text-content-primary">About KAORI</h2>
+                        <p id="kaori-about-description"
+                           class="mt-1 text-sm leading-6 text-content-muted">
+                            Knowledge, Automation, Operations, Resilience &amp; Intelligence.
+                        </p>
+                    </div>
+                </div>
+                <button type="button"
+                        @click="aboutOpen = false"
+                        class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+                        aria-label="Close About KAORI">
+                    <i data-lucide="x" class="h-4 w-4"></i>
+                </button>
+            </div>
+        </header>
+        <div class="space-y-4 p-5 sm:p-6">
+            <p class="text-sm leading-6 text-content-secondary">
+                KAORI provides a unified operational workspace for infrastructure visibility, automation,
+                resilience, governance, analytics, and engineering intelligence.
+            </p>
+            <dl class="grid overflow-hidden rounded-xl border border-outline-default bg-surface-subtle sm:grid-cols-2">
+                <div class="border-b border-outline-subtle p-4 sm:border-b-0 sm:border-r">
+                    <dt class="flex items-center gap-2 text-xs font-semibold text-content-muted">
+                        <i data-lucide="tag" class="h-4 w-4 text-kaori-primary"></i>
+                        Version
+                    </dt>
+                    <dd class="mt-2 text-sm font-bold text-content-primary">v{{ about_version }}</dd>
+                </div>
+                <div class="p-4">
+                    <dt class="flex items-center gap-2 text-xs font-semibold text-content-muted">
+                        <i data-lucide="container" class="h-4 w-4 text-kaori-primary"></i>
+                        Environment
+                    </dt>
+                    <dd class="mt-2 text-sm font-bold text-content-primary">{{ about_environment }}</dd>
+                </div>
+            </dl>
+            <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft/55 p-4">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm"
+                          aria-hidden="true">
+                        <i data-lucide="shield-check" class="h-4 w-4"></i>
+                    </span>
+                    <div>
+                        <p class="text-sm font-semibold text-content-primary">Safe Product Metadata</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">
+                            Detailed release identity, build reference, compatibility profiles, and shipped capabilities
+                            remain in the read-only System Information workspace.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <footer class="flex flex-col-reverse gap-2 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <p class="text-xs leading-5 text-content-muted">KAORI operational platform</p>
+            <div class="flex flex-col-reverse gap-2 sm:flex-row">
+                <button type="button"
+                        @click="aboutOpen = false"
+                        class="inline-flex min-h-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-xs font-semibold text-content-secondary transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary">
+                    Close
+                </button>
+                {% if current_user.has_permission('system.view') %}
+                    <a href="{{ url_for('settings.general', tab='system-information') }}"
+                       @click="aboutOpen = false"
+                       class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                        <i data-lucide="badge-info" class="h-4 w-4"></i>
+                        System Information
+                    </a>
+                {% else %}
+                    <span class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-xs font-semibold text-content-disabled"
+                          title="System Information requires system.view permission">
+                        <i data-lucide="lock-keyhole" class="h-4 w-4"></i>
+                        System Information
+                    </span>
+                {% endif %}
+            </div>
+        </footer>
+    </section>
+</div>

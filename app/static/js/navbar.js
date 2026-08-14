@@ -10,6 +10,7 @@ document.addEventListener('alpine:init', () => {
         notificationDeckLastChecked: null,
         notificationDeckConnectionIssue: false,
         userOpen: false,
+        aboutOpen: false,
 
         init() {
             this.notificationDeckAutoTimer = window.setInterval(() => {
@@ -26,12 +27,14 @@ document.addEventListener('alpine:init', () => {
             this.quickOpen = false
             this.notificationDeckOpen = false
             this.userOpen = false
+            this.aboutOpen = false
         },
 
         toggleQuickActions() {
             this.quickOpen = !this.quickOpen
             this.notificationDeckOpen = false
             this.userOpen = false
+            this.aboutOpen = false
         },
 
         openNotificationDeck(tab = 'notifications') {
@@ -39,6 +42,7 @@ document.addEventListener('alpine:init', () => {
             this.notificationDeckOpen = true
             this.quickOpen = false
             this.userOpen = false
+            this.aboutOpen = false
             this.queueNotificationDeckRefresh()
         },
 
@@ -46,6 +50,14 @@ document.addEventListener('alpine:init', () => {
             this.userOpen = !this.userOpen
             this.quickOpen = false
             this.notificationDeckOpen = false
+            this.aboutOpen = false
+        },
+
+        openAbout() {
+            this.aboutOpen = true
+            this.quickOpen = false
+            this.notificationDeckOpen = false
+            this.userOpen = false
         },
 
         applyNotificationDeckSnapshot(payload) {

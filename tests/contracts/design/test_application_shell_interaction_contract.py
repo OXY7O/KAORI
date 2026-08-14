@@ -29,11 +29,13 @@ def test_quick_notification_and_account_controls_share_one_controller() -> None:
 
     assert navbar.count('@click="toggleQuickActions()"') == 2
     assert '@click="toggleUserMenu()"' in navbar
+    assert '@click="openAbout()"' in navbar
     assert '@keydown.escape.window="closeMenus()"' in navbar
     assert 'openNotificationDeck(' in notification_center
     assert 'toggleQuickActions()' in script
     assert "openNotificationDeck(tab = 'notifications')" in script
     assert 'toggleUserMenu()' in script
+    assert 'openAbout()' in script
     assert 'closeMenus()' in script
 
 
@@ -82,18 +84,21 @@ require('./app/static/js/navbar.js')
 listeners['alpine:init']()
 const navbar = factory()
 navbar.toggleQuickActions()
-if (!navbar.quickOpen || navbar.notificationDeckOpen || navbar.userOpen) process.exit(10)
+if (!navbar.quickOpen || navbar.notificationDeckOpen || navbar.userOpen || navbar.aboutOpen) process.exit(10)
 navbar.openNotificationDeck('activity')
 if (
     navbar.quickOpen ||
     !navbar.notificationDeckOpen ||
     navbar.userOpen ||
+    navbar.aboutOpen ||
     navbar.notificationDeckTab !== 'activity'
 ) process.exit(11)
 navbar.toggleUserMenu()
-if (navbar.quickOpen || navbar.notificationDeckOpen || !navbar.userOpen) process.exit(12)
+if (navbar.quickOpen || navbar.notificationDeckOpen || !navbar.userOpen || navbar.aboutOpen) process.exit(12)
+navbar.openAbout()
+if (navbar.quickOpen || navbar.notificationDeckOpen || navbar.userOpen || !navbar.aboutOpen) process.exit(13)
 navbar.closeMenus()
-if (navbar.quickOpen || navbar.notificationDeckOpen || navbar.userOpen) process.exit(13)
+if (navbar.quickOpen || navbar.notificationDeckOpen || navbar.userOpen || navbar.aboutOpen) process.exit(14)
 """
     result = subprocess.run(
         ['node', '-e', harness],

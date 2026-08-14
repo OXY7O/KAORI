@@ -210,6 +210,15 @@
                             <i data-lucide="user-cog" class="h-4 w-4"></i>
                             <span class="flex-1">Account Settings</span>
                         </a>
+                        <button type="button"
+                                @click="openAbout()"
+                                aria-haspopup="dialog"
+                                aria-controls="kaori-about-dialog"
+                                class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-xs text-content-secondary transition hover:bg-surface-hover">
+                            <i data-lucide="badge-info" class="h-4 w-4"></i>
+                            <span class="flex-1">About</span>
+                        </button>
+                        <div class="my-1 border-t border-outline-subtle"></div>
                         <form method="POST" action="{{ url_for('auth.logout') }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                             <button type="submit"
@@ -223,4 +232,5 @@
             </div>
         </div>
     </div>
+    {% include "components/navigation/_about_modal.html" %}
 </header>
