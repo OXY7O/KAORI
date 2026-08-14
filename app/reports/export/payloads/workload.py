@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.analytics.utilization.service import UtilizationService
-from app.analytics.workload.service import WorkloadAnalysisService
+from app.analytics.kubernetes.utilization.service import UtilizationService
+from app.analytics.kubernetes.workload.service import WorkloadAnalysisService
 from app.cluster.constants import get_environment_label
 from app.intelligence.recommendation_engine import build_workload_actionable_recommendations
 from app.models.report import Report

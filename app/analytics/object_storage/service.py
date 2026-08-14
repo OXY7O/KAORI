@@ -3,12 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import selectinload
 
-from app.analytics.common.params import get_allowed_time_ranges, get_selected_time_range
 from app.analytics.object_storage.forecasting import linear_forecast
-from app.analytics.object_storage.metrics import ObjectStorageMetricsService
-from app.analytics.object_storage.parsing import matrix_points, vector_by_label, vector_scalar
 from app.analytics.object_storage.presentation import (
     format_bytes,
     format_number,
@@ -17,10 +14,11 @@ from app.analytics.object_storage.presentation import (
     utilization_percent,
     utilization_tone,
 )
-from app.integrations.prometheus.exceptions import PrometheusError
+from app.analytics.object_storage.sources import resolve_object_storage_metrics_source
+from app.analytics.shared.metrics import MetricsSource, MetricsSourceError
+from app.analytics.shared.params import get_allowed_time_ranges, get_selected_time_range
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.object_storage import ObjectStorageSystem
-from app.prometheus.consumer import PrometheusConsumer
 
 
 @dataclass(frozen=True)
@@ -52,7 +50,7 @@ PAGES: dict[str, PageDefinition] = {
     ),
     'forecast': PageDefinition(
         'Forecast',
-        'Project storage growth and capacity exhaustion from Prometheus history.',
+        'Project storage growth and capacity exhaustion from operational metric history.',
         'line-chart',
         'Object Storage Analytics',
     ),
@@ -74,7 +72,6 @@ PAGES: dict[str, PageDefinition] = {
 def _systems() -> list[ObjectStorageSystem]:
     return list(
         ObjectStorageSystem.query.options(
-            joinedload(ObjectStorageSystem.minio_connection),
             selectinload(ObjectStorageSystem.buckets),
         ).order_by(ObjectStorageSystem.name.asc())
     )
@@ -117,7 +114,7 @@ def _alertmanager_binding(system_id: str) -> dict[str, str | bool]:
             'tone': 'unknown',
             'description': (
                 'Alertmanager is optional for this release. '
-                'Metric-derived signals remain available from Prometheus.'
+                'Metric-derived signals remain available from the operational metrics source.'
             ),
         }
     ready = str(binding.validation_status or '').strip().lower() == 'ready'
@@ -130,30 +127,59 @@ def _alertmanager_binding(system_id: str) -> dict[str, str | bool]:
 
 
 class _EvidenceReader:
-    def __init__(self, metrics: ObjectStorageMetricsService) -> None:
-        self.metrics = metrics
+    """Read canonical metrics once per request and fail fast on source-wide failures."""
+
+    def __init__(self, source: MetricsSource) -> None:
+        self.source = source
         self.diagnostics: list[str] = []
+        self.source_wide_failure: MetricsSourceError | None = None
+        self.failed_query_count = 0
+        self.successful_query_count = 0
+
+    @property
+    def source_label(self) -> str:
+        return self.source.identity.provider_label
+
+    def _record_failure(self, exc: MetricsSourceError) -> None:
+        self.failed_query_count += 1
+        message = str(exc).strip()
+        if message:
+            self.diagnostics.append(message)
+        if exc.source_wide:
+            self.source_wide_failure = exc
 
     def scalar(self, key: str) -> float | None:
-        try:
-            return vector_scalar(self.metrics.instant(key))
-        except PrometheusError as exc:
-            self.diagnostics.append(str(exc))
+        if self.source_wide_failure is not None:
             return None
+        try:
+            value = self.source.scalar(key)
+        except MetricsSourceError as exc:
+            self._record_failure(exc)
+            return None
+        self.successful_query_count += 1
+        return value
 
     def vector(self, key: str) -> dict[str, float]:
-        try:
-            return vector_by_label(self.metrics.instant(key), 'bucket')
-        except PrometheusError as exc:
-            self.diagnostics.append(str(exc))
+        if self.source_wide_failure is not None:
             return {}
+        try:
+            values = self.source.vector(key, 'bucket')
+        except MetricsSourceError as exc:
+            self._record_failure(exc)
+            return {}
+        self.successful_query_count += 1
+        return values
 
     def trend(self, key: str, time_range: str) -> list[dict[str, float]]:
-        try:
-            return matrix_points(self.metrics.range(key, time_range))
-        except PrometheusError as exc:
-            self.diagnostics.append(str(exc))
+        if self.source_wide_failure is not None:
             return []
+        try:
+            points = self.source.trend(key, time_range)
+        except MetricsSourceError as exc:
+            self._record_failure(exc)
+            return []
+        self.successful_query_count += 1
+        return points
 
 
 def _bucket_rows(system: ObjectStorageSystem, reader: _EvidenceReader) -> list[dict[str, Any]]:
@@ -168,7 +194,7 @@ def _bucket_rows(system: ObjectStorageSystem, reader: _EvidenceReader) -> list[d
     for name in names:
         bucket = inventory.get(name)
         size = usage.get(name)
-        source = 'Prometheus'
+        source = reader.source_label
         if size is None and bucket is not None and bucket.size_bytes is not None:
             size = float(bucket.size_bytes)
             source = 'Committed Snapshot'
@@ -208,6 +234,15 @@ def _signals(
     waiting: float | None,
     offline_nodes: float | None,
 ) -> list[dict[str, str]]:
+    if all(value is None for value in (utilization, error_ratio, waiting, offline_nodes)):
+        return [
+            {
+                'severity': 'unknown',
+                'title': 'Metric Evidence Unavailable',
+                'detail': 'Operational risk cannot be evaluated until metric evidence is available.',
+            }
+        ]
+
     signals: list[dict[str, str]] = []
     if utilization is not None and utilization >= 95:
         signals.append(
@@ -263,7 +298,8 @@ def _signals(
                 'severity': 'normal',
                 'title': 'No Metric-Derived Risk',
                 'detail': (
-                    'Current Prometheus evidence does not cross the baseline capacity, error, queue, or node thresholds.'
+                    'Current operational metric evidence does not cross the baseline capacity, '
+                    'error, queue, or node thresholds.'
                 ),
             }
         )
@@ -372,6 +408,17 @@ def _build_metrics(
     return payload
 
 
+def _waiting_metrics_source() -> dict[str, Any]:
+    return {
+        'configured': False,
+        'provider': None,
+        'provider_label': 'Metrics Source',
+        'label': 'Waiting for System',
+        'tone': 'unknown',
+        'detail': 'Select an object-storage system.',
+    }
+
+
 def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict[str, Any]:
     page = PAGES.get(page_key, PAGES['overview'])
     systems = _systems()
@@ -386,12 +433,7 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
         'selected_time_range': time_range,
         'allowed_time_ranges': get_allowed_time_ranges(),
         'dependency_blocker': None,
-        'prometheus': {
-            'configured': False,
-            'label': 'Waiting for System',
-            'tone': 'unknown',
-            'detail': 'Select an object-storage system.',
-        },
+        'metrics_source': _waiting_metrics_source(),
         'alertmanager': (
             _alertmanager_binding(system.id)
             if system is not None
@@ -403,6 +445,7 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
             }
         ),
         'metrics': {},
+        'query_diagnostics': [],
         'inventory_observed_at': system.inventory_observed_at if system is not None else None,
     }
     if system is None:
@@ -413,40 +456,47 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
             'action_endpoint': 'object_storage_inventory.overview',
         }
         return context
+
     try:
-        consumer = PrometheusConsumer.for_asset(
-            scope_type='object_storage_system',
-            scope_key=system.id,
-            scope_name=system.name,
-        )
-    except PrometheusError as exc:
-        context['prometheus'] = {
+        source = resolve_object_storage_metrics_source(system)
+    except MetricsSourceError as exc:
+        context['metrics_source'] = {
             'configured': False,
-            'label': 'Prometheus Binding Required',
+            'provider': exc.provider,
+            'provider_label': 'Metrics Source',
+            'label': 'Metrics Source Required',
             'tone': 'warning',
             'detail': str(exc),
         }
         context['dependency_blocker'] = {
-            'title': 'Prometheus Binding Required',
+            'title': 'Metrics Source Required',
             'description': str(exc),
-            'action_label': 'Open Prometheus Integration',
-            'action_endpoint': 'integrations.prometheus',
+            'action_label': 'Open Observability Integrations',
+            'action_endpoint': 'integrations.observability',
         }
         return context
 
-    context['prometheus'] = {
+    identity = source.identity
+    context['metrics_source'] = {
         'configured': True,
+        'provider': identity.provider,
+        'provider_label': identity.provider_label,
+        'instance_name': identity.instance_name,
         'label': 'Bound & Eligible',
         'tone': 'normal',
-        'detail': f'{consumer.config.name} · {consumer.binding.validation_profile or "binding validated"}',
+        'detail': identity.detail,
     }
-    reader = _EvidenceReader(ObjectStorageMetricsService(consumer))
+    reader = _EvidenceReader(source)
     context['metrics'] = _build_metrics(page_key, reader, system, time_range)
     context['query_diagnostics'] = list(dict.fromkeys(item for item in reader.diagnostics if item))
-    if reader.diagnostics and not any(
-        value for key, value in context['metrics'].items() if key.endswith('_display') and value != 'N/A'
-    ):
-        context['prometheus']['label'] = 'Metrics Unavailable'
-        context['prometheus']['tone'] = 'warning'
-        context['prometheus']['detail'] = reader.diagnostics[0]
+
+    if reader.source_wide_failure is not None:
+        context['metrics_source']['label'] = 'Source Unreachable'
+        context['metrics_source']['tone'] = 'critical'
+        context['metrics_source']['detail'] = str(reader.source_wide_failure)
+    elif reader.failed_query_count:
+        context['metrics_source']['label'] = 'Partial Evidence'
+        context['metrics_source']['tone'] = 'warning'
+        context['metrics_source']['detail'] = context['query_diagnostics'][0]
+
     return context

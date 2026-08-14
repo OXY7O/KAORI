@@ -3,7 +3,7 @@ from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
 from app.common.http import htmx_target, is_htmx_request
-from app.integrations.binding_service import create_cluster_source_binding
+from app.integrations.binding_service import SourceBindingSpec, create_source_binding
 from app.integrations.coverage import build_binding_workspace
 from app.integrations.domain_service import build_integration_domain_page
 from app.integrations.kubernetes_frontpage import (
@@ -13,7 +13,7 @@ from app.integrations.kubernetes_frontpage import (
     build_kubernetes_page,
     build_kubernetes_registry_row,
 )
-from app.integrations.repository import get_kubernetes_connection_by_cluster_id
+from app.integrations.repository import get_cluster, get_kubernetes_connection_by_cluster_id
 from app.integrations.runtime.presentation import runtime_history_view
 from app.integrations.runtime.repository import paginate_runtime_history
 from app.integrations.service import (
@@ -505,18 +505,25 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
         try:
             if source_id is None:
                 raise ValueError(f'Select an existing {provider_type.title()} source.')
-            created_binding = create_cluster_source_binding(
+            cluster = get_cluster(cluster_id)
+            if cluster is None:
+                raise ValueError('The selected Kubernetes scope no longer exists.')
+            created_binding = create_source_binding(
                 provider_type,
                 source_id=source_id,
-                cluster_id=cluster_id,
-                role=role,
-                priority=priority,
-                selector_label=selector_label,
-                selector_value=selector_value,
-                selector_operator=selector_operator,
+                spec=SourceBindingSpec(
+                    asset_type='kubernetes_cluster',
+                    asset_key=str(cluster.id),
+                    role=role,
+                    priority=priority,
+                    selector_label=selector_label,
+                    selector_value=selector_value,
+                    selector_operator=selector_operator,
+                ),
+                asset=cluster,
             )
             source = created_binding.source
-            cluster = created_binding.cluster
+            cluster = created_binding.asset
             binding = created_binding.binding
             if source is None or cluster is None or binding is None:
                 raise ValueError('KAORI could not resolve the saved source binding context.')

@@ -2,12 +2,12 @@ import re
 from pathlib import Path
 
 SURFACE = Path('app/templates/analytics/components/_analysis_surfaces.html')
-OVERVIEW_ROOT = Path('app/templates/analytics/overview')
+OVERVIEW_ROOT = Path('app/templates/analytics/kubernetes/overview')
 HEALTH = OVERVIEW_ROOT / 'partials/_health_summary.html'
 RESOURCE = OVERVIEW_ROOT / 'partials/_resource_snapshot.html'
 STORAGE = OVERVIEW_ROOT / 'partials/_storage_snapshot.html'
 STYLES = Path('frontend/styles.css')
-FORECAST_INDEX = Path('app/templates/analytics/forecast/index.html')
+FORECAST_INDEX = Path('app/templates/analytics/kubernetes/forecast/index.html')
 
 
 def read(path: Path) -> str:

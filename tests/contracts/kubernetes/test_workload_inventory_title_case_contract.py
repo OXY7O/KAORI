@@ -8,8 +8,8 @@ def _read(relative_path: str) -> str:
 
 
 def test_workload_inventory_uses_canonical_titles_and_sentence_case() -> None:
-    summary = _read('app/templates/inventory/workloads/partials/_summary_cards.html')
-    table = _read('app/templates/inventory/workloads/partials/_table_card.html')
+    summary = _read('app/templates/inventory/kubernetes/workloads/partials/_summary_cards.html')
+    table = _read('app/templates/inventory/kubernetes/workloads/partials/_table_card.html')
 
     for copy in (
         'Workload Delivery Posture',
@@ -27,14 +27,14 @@ def test_workload_inventory_uses_canonical_titles_and_sentence_case() -> None:
 
 
 def test_workload_pagination_uses_lowercase_preposition() -> None:
-    template = _read('app/templates/inventory/workloads/partials/_table_content.html')
+    template = _read('app/templates/inventory/kubernetes/workloads/partials/_table_content.html')
     assert '</span> of <span' in template
     assert '</span> Of <span' not in template
     assert "pagination_ui.resource_name('Workloads', pagination.total_items)" in template
 
 
 def test_delivery_and_placement_is_full_width_factual_evidence() -> None:
-    template = _read('app/templates/inventory/workloads/partials/_workload_detail_content.html')
+    template = _read('app/templates/inventory/kubernetes/workloads/partials/_workload_detail_content.html')
     assert 'Delivery & Placement' in template
     assert 'Delivery Configuration' in template
     assert 'Placement Constraints' in template

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.analytics.top_consumers.contracts import TopConsumersSelection
-from app.analytics.top_consumers.service import TopConsumersService
-from app.analytics.utilization.service import UtilizationService
+from app.analytics.kubernetes.top_consumers.contracts import TopConsumersSelection
+from app.analytics.kubernetes.top_consumers.service import TopConsumersService
+from app.analytics.kubernetes.utilization.service import UtilizationService
 from app.cluster.constants import get_environment_label
 from app.models.report import Report
 from app.prometheus.service import PrometheusService

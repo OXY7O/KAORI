@@ -1,7 +1,0 @@
-{% extends "layouts/app.html" %}
-{% block title %}Storage Inventory{% endblock title %}
-{% block dashboard_content %}
-    {% import "components/resource_detail_modal.html" as resource_detail_modal %}
-    {% include "inventory/storage/partials/_page_workspace.html" %}
-    {{ resource_detail_modal.host('Storage', url_for('inventory.storage_details', storage_id=0) ) }}
-{% endblock dashboard_content %}

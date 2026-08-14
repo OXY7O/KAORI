@@ -2,7 +2,7 @@
 
 ## Authority
 
-`app.inventory.overview` owns read-only operational aggregation for the
+`app.inventory.kubernetes.overview` owns read-only operational aggregation for the
 Inventory landing page:
 
 - cluster lookup and ordered cluster selection;
@@ -19,7 +19,7 @@ between the route and the overview module.
 ## Resource Descriptions
 
 Semantic descriptions for node roles, workload types, Service types, and
-storage resource types live in `app.inventory.resources.descriptions`.
+storage resource types live in `app.inventory.kubernetes.resources.descriptions`.
 Resource detail builders import those descriptions directly.
 
 ## Dependency Direction

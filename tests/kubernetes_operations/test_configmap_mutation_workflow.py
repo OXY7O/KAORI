@@ -30,9 +30,9 @@ def load_service(monkeypatch: pytest.MonkeyPatch):
         'app.common',
         'app.common.inventory_generation',
         'app.inventory',
-        'app.inventory.resources.configuration_semantics',
-        'app.inventory.resources',
-        'app.inventory.resources.pod_semantics',
+        'app.inventory.kubernetes.resources.configuration_semantics',
+        'app.inventory.kubernetes.resources',
+        'app.inventory.kubernetes.resources.pod_semantics',
         'app.kubernetes_operations',
         'app.kubernetes_operations.configmaps',
         'app.kubernetes_operations.configmaps.runtime',
@@ -45,12 +45,12 @@ def load_service(monkeypatch: pytest.MonkeyPatch):
         modules[name] = ModuleType(name)
         monkeypatch.setitem(sys.modules, name, modules[name])
 
-    evidence = modules['app.inventory.resources.configuration_semantics']
+    evidence = modules['app.inventory.kubernetes.resources.configuration_semantics']
     evidence.COLLECTED = 'Collected'
     evidence.POD_EVIDENCE_KEY = 'inventory.pods'
     evidence.collection_state = lambda payload, key: payload.get(key, 'Not Reported')
     modules['app.common.inventory_generation'].filter_current_generation = lambda query, model: query
-    modules['app.inventory.resources.pod_semantics'].pod_operational_state = lambda phase, ready: (
+    modules['app.inventory.kubernetes.resources.pod_semantics'].pod_operational_state = lambda phase, ready: (
         'Ready',
         'normal',
         'Running · 1/1 Ready',

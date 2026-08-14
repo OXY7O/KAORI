@@ -101,11 +101,11 @@ def main() -> int:
 
     # Inventory: canonical workspaces, snapshot semantics, topology drawer contract, no compatibility scopes.
     for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage'):
-        workspace = ROOT / f'app/templates/inventory/{resource}/partials/_page_workspace.html'
+        workspace = ROOT / f'app/templates/inventory/kubernetes/{resource}/partials/_page_workspace.html'
         require(workspace.exists(), f'Inventory {resource} canonical workspace is missing.', errors)
-        legacy = ROOT / f'app/templates/inventory/{resource}/partials/_inventory_scope.html'
+        legacy = ROOT / f'app/templates/inventory/kubernetes/{resource}/partials/_inventory_scope.html'
         require(not legacy.exists(), f'Inventory {resource} legacy _inventory_scope.html must remain removed.', errors)
-    topology = read('app/templates/inventory/topology/partials/_workspace.html')
+    topology = read('app/templates/inventory/kubernetes/topology/partials/_workspace.html')
     require('visualization_workspace.render(' in topology, 'Topology must use shared visualization workspace.', errors)
     require(
         'topology-controls-panel' in topology and 'topology-details-panel' in topology,

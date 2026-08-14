@@ -9,10 +9,10 @@ def _read(relative: str) -> str:
 
 def test_analytics_status_does_not_run_duplicate_health_query() -> None:
     consumer = _read('app/prometheus/consumer.py')
-    utilization = _read('app/analytics/utilization/service.py')
-    base = _read('app/analytics/common/base_service.py')
+    utilization = _read('app/analytics/kubernetes/utilization/service.py')
+    base = _read('app/analytics/kubernetes/common/base_service.py')
     profile = _read('app/integrations/prometheus/query_profiles/kubernetes_v1.py')
-    presentation = _read('app/analytics/common/presentation.py')
+    presentation = _read('app/analytics/kubernetes/common/presentation.py')
 
     assert 'def analytics_status' in consumer
     assert 'vector(1)' not in consumer
@@ -43,8 +43,8 @@ def test_prometheus_queries_reuse_clients_retry_transient_failures_and_keep_fing
 
 
 def test_provider_scoped_lock_serializes_shared_heavy_sources() -> None:
-    source_lock = _read('app/analytics/materialization/source_lock.py')
-    tasks = _read('app/analytics/tasks.py')
+    source_lock = _read('app/analytics/kubernetes/materialization/source_lock.py')
+    tasks = _read('app/analytics/kubernetes/tasks.py')
 
     assert 'pg_try_advisory_lock' in source_lock
     assert 'pg_advisory_unlock' in source_lock
@@ -57,9 +57,9 @@ def test_provider_scoped_lock_serializes_shared_heavy_sources() -> None:
 
 
 def test_materialization_prioritizes_current_datasets_and_scales_task_budget() -> None:
-    catalog = _read('app/analytics/materialization/catalog.py')
-    adapter = _read('app/analytics/job_adapter.py')
-    tasks = _read('app/analytics/tasks.py')
+    catalog = _read('app/analytics/kubernetes/materialization/catalog.py')
+    adapter = _read('app/analytics/kubernetes/job_adapter.py')
+    tasks = _read('app/analytics/kubernetes/tasks.py')
     config = _read('app/config/default.py')
 
     assert 'execution_priority: int = 100' in catalog
@@ -79,10 +79,10 @@ def test_materialization_prioritizes_current_datasets_and_scales_task_budget() -
 
 
 def test_worker_preserves_stale_data_and_records_actionable_failure_details() -> None:
-    tasks = _read('app/analytics/tasks.py')
-    errors = _read('app/analytics/materialization/errors.py')
-    service = _read('app/analytics/materialization/service.py')
-    presentation = _read('app/analytics/materialization/presentation.py')
+    tasks = _read('app/analytics/kubernetes/tasks.py')
+    errors = _read('app/analytics/kubernetes/materialization/errors.py')
+    service = _read('app/analytics/kubernetes/materialization/service.py')
+    presentation = _read('app/analytics/kubernetes/materialization/presentation.py')
 
     assert 'classify_analytics_failure' in tasks
     assert 'analytics_failure_remediation' in tasks
@@ -97,9 +97,9 @@ def test_worker_preserves_stale_data_and_records_actionable_failure_details() ->
 
 
 def test_forecast_and_top_consumers_do_not_hide_provider_failures_as_empty_data() -> None:
-    base = _read('app/analytics/common/base_service.py')
-    forecast = _read('app/analytics/forecast/service.py')
-    top_consumers = _read('app/analytics/top_consumers/service.py')
+    base = _read('app/analytics/kubernetes/common/base_service.py')
+    forecast = _read('app/analytics/kubernetes/forecast/service.py')
+    top_consumers = _read('app/analytics/kubernetes/top_consumers/service.py')
 
     base_query = base.split('def get_prometheus_result', 1)[1].split('def extract_value', 1)[0]
     assert 'except Exception' not in base_query
@@ -118,7 +118,7 @@ def test_forecast_and_top_consumers_do_not_hide_provider_failures_as_empty_data(
 
 
 def test_pending_ui_uses_determinate_progress_and_clear_remediation() -> None:
-    pending = _read('app/templates/analytics/materialization/_pending.html')
+    pending = _read('app/templates/analytics/kubernetes/materialization/_pending.html')
     routes = _read('app/analytics/routes.py')
 
     assert 'animate-pulse' not in pending
@@ -128,12 +128,12 @@ def test_pending_ui_uses_determinate_progress_and_clear_remediation() -> None:
     assert 'Job Log' in pending
     assert 'hx-sync="this:replace"' in pending
     assert "Cache-Control'] = 'no-store, max-age=0'" in routes
-    assert not Path('app/templates/analytics/materialization/_freshness.html').exists()
-    workspace = _read('app/templates/analytics/components/_analysis_workspace.html')
+    assert not Path('app/templates/analytics/kubernetes/materialization/_freshness.html').exists()
+    workspace = _read('app/templates/analytics/kubernetes/components/_analysis_workspace.html')
     assert 'last_error_detail' in workspace
     assert 'last_error_remediation' in workspace
     assert '{{ snapshot.last_error }}' not in workspace
-    presentation = _read('app/analytics/materialization/presentation.py')
+    presentation = _read('app/analytics/kubernetes/materialization/presentation.py')
     assert "context.get('analytics_runtime')" in presentation
     assert "'runtime': runtime" in presentation
 
@@ -151,8 +151,8 @@ def test_default_analytics_policy_refreshes_current_snapshots_before_they_age_ou
 
 
 def test_persisted_runtime_health_is_advisory_for_worker_and_page_dispatch() -> None:
-    common_context = _read('app/analytics/common/context.py')
-    requests = _read('app/analytics/materialization/requests.py')
+    common_context = _read('app/analytics/kubernetes/common/context.py')
+    requests = _read('app/analytics/kubernetes/materialization/requests.py')
 
     assert "'label': 'Prometheus Query Ready'" in common_context
     assert "base_context['prometheus_connected'] = True" in common_context
@@ -164,9 +164,9 @@ def test_persisted_runtime_health_is_advisory_for_worker_and_page_dispatch() -> 
 
 
 def test_optional_alert_anomaly_failures_are_visible_as_partial_data() -> None:
-    anomalies = _read('app/analytics/alerts/anomalies.py')
-    application = _read('app/analytics/alerts/application.py')
-    filters = _read('app/templates/analytics/alerts/partials/_filters.html')
+    anomalies = _read('app/analytics/kubernetes/alerts/anomalies.py')
+    application = _read('app/analytics/kubernetes/alerts/application.py')
+    filters = _read('app/templates/analytics/kubernetes/alerts/partials/_filters.html')
 
     assert '-> tuple[list[dict[str, Any]], dict[str, Any]]' in anomalies
     assert 'partial = bool(errors)' in anomalies
@@ -190,9 +190,9 @@ def test_prometheus_clients_are_created_lazily_for_cluster_scoped_queries() -> N
 
 
 def test_unused_live_alert_comparison_wrapper_is_removed() -> None:
-    signals = _read('app/analytics/alerts/signals.py')
-    anomalies = _read('app/analytics/alerts/anomalies.py')
-    contracts = _read('app/analytics/alerts/contracts.py')
+    signals = _read('app/analytics/kubernetes/alerts/signals.py')
+    anomalies = _read('app/analytics/kubernetes/alerts/anomalies.py')
+    contracts = _read('app/analytics/kubernetes/alerts/contracts.py')
 
     assert 'def build_cluster_signal_overview' not in signals
     assert 'def build_anomalies' not in anomalies

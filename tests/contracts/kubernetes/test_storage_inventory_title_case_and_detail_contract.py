@@ -1,15 +1,15 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-WORKSPACE = ROOT / 'app/templates/inventory/storage/partials/_page_workspace.html'
-SUMMARY = ROOT / 'app/templates/inventory/storage/partials/_summary_cards.html'
-CARD = ROOT / 'app/templates/inventory/storage/partials/_table_card.html'
-TABLE = ROOT / 'app/templates/inventory/storage/partials/_table_content.html'
-DETAIL = ROOT / 'app/templates/inventory/storage/partials/_storage_detail_content.html'
-COLLECTOR = ROOT / 'app/inventory/collectors/storage.py'
-SERVICE = ROOT / 'app/inventory/resources/storage.py'
-SEMANTICS = ROOT / 'app/inventory/resources/storage_semantics.py'
-PERSISTENCE = ROOT / 'app/inventory/persistence.py'
+WORKSPACE = ROOT / 'app/templates/inventory/kubernetes/storage/partials/_page_workspace.html'
+SUMMARY = ROOT / 'app/templates/inventory/kubernetes/storage/partials/_summary_cards.html'
+CARD = ROOT / 'app/templates/inventory/kubernetes/storage/partials/_table_card.html'
+TABLE = ROOT / 'app/templates/inventory/kubernetes/storage/partials/_table_content.html'
+DETAIL = ROOT / 'app/templates/inventory/kubernetes/storage/partials/_storage_detail_content.html'
+COLLECTOR = ROOT / 'app/inventory/kubernetes/collectors/storage.py'
+SERVICE = ROOT / 'app/inventory/kubernetes/resources/storage.py'
+SEMANTICS = ROOT / 'app/inventory/kubernetes/resources/storage_semantics.py'
+PERSISTENCE = ROOT / 'app/inventory/kubernetes/persistence.py'
 PAYLOAD = ROOT / 'app/reports/export/payloads/inventory.py'
 XLSX = ROOT / 'app/reports/export/xlsx/standard.py'
 
@@ -25,7 +25,7 @@ def test_storage_inventory_uses_canonical_resource_page_pattern() -> None:
     table = read(TABLE)
 
     assert 'id="storage-page-workspace"' in workspace
-    assert 'inventory/components/_data_freshness.html' in workspace
+    assert 'inventory/kubernetes/components/_data_freshness.html' in workspace
     assert 'Storage Lifecycle Posture' in summary
     assert 'posture_grid.render(metrics, columns=3)' in summary
     assert 'hx-target="#storage-page-workspace"' in card

@@ -16,8 +16,8 @@ def _load_anomalies_module():
     names = [
         'app',
         'app.analytics',
-        'app.analytics.alerts',
-        'app.analytics.alerts.metrics',
+        'app.analytics.kubernetes.alerts',
+        'app.analytics.kubernetes.alerts.metrics',
         'app.integrations',
         'app.integrations.prometheus',
         'app.integrations.prometheus.exceptions',
@@ -32,14 +32,14 @@ def _load_anomalies_module():
         for package in (
             'app',
             'app.analytics',
-            'app.analytics.alerts',
+            'app.analytics.kubernetes.alerts',
             'app.integrations',
             'app.integrations.prometheus',
             'app.prometheus',
         ):
             sys.modules[package] = ModuleType(package)
 
-        metrics = ModuleType('app.analytics.alerts.metrics')
+        metrics = ModuleType('app.analytics.kubernetes.alerts.metrics')
         metrics.get_metric_labels = lambda item: dict(item.get('metric') or {})
         metrics.get_metric_value = lambda item: float((item.get('value') or [0, 0])[1])
         sys.modules[metrics.__name__] = metrics
@@ -66,7 +66,7 @@ def _load_anomalies_module():
 
         spec = importlib.util.spec_from_file_location(
             'alerts_anomalies_under_test',
-            ROOT / 'app/analytics/alerts/anomalies.py',
+            ROOT / 'app/analytics/kubernetes/alerts/anomalies.py',
         )
         assert spec and spec.loader
         module = importlib.util.module_from_spec(spec)

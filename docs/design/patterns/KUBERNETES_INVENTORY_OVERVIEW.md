@@ -3,7 +3,7 @@
 ## Reference Implementation
 
 ```text
-app/templates/inventory/overview/
+app/templates/inventory/kubernetes/overview/
 ```
 
 ## Canonical Composition

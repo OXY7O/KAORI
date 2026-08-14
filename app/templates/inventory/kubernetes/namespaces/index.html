@@ -1,0 +1,7 @@
+{% extends "layouts/app.html" %}
+{% block title %}Namespace Inventory{% endblock title %}
+{% block dashboard_content %}
+    {% import "components/resource_detail_modal.html" as resource_detail_modal %}
+    {% include "inventory/kubernetes/namespaces/partials/_page_workspace.html" %}
+    {{ resource_detail_modal.host('Namespace', url_for('inventory.namespace_details', namespace_id=0) ) }}
+{% endblock dashboard_content %}

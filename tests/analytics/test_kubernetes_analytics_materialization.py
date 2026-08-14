@@ -6,14 +6,14 @@ from types import SimpleNamespace
 import pytest
 from flask import Flask
 
-from app.analytics import tasks
-from app.analytics.common import context as common_context
-from app.analytics.forecast import presentation as forecast_presentation
-from app.analytics.materialization import requests as materialization_requests
-from app.analytics.materialization.catalog import canonical_parameters, get_dataset
-from app.analytics.materialization.presentation import pending_page_context
-from app.analytics.materialization.requests import MaterializedRequest
-from app.analytics.materialization.service import SnapshotResult, store_snapshot
+from app.analytics.kubernetes import tasks
+from app.analytics.kubernetes.common import context as common_context
+from app.analytics.kubernetes.forecast import presentation as forecast_presentation
+from app.analytics.kubernetes.materialization import requests as materialization_requests
+from app.analytics.kubernetes.materialization.catalog import canonical_parameters, get_dataset
+from app.analytics.kubernetes.materialization.presentation import pending_page_context
+from app.analytics.kubernetes.materialization.requests import MaterializedRequest
+from app.analytics.kubernetes.materialization.service import SnapshotResult, store_snapshot
 from app.integrations.prometheus.capabilities import PROVIDER_CAPABILITY_KEYS
 from app.integrations.prometheus.capabilities import definition as prometheus_capability_definition
 from app.integrations.prometheus.query_profiles.audit import PromQLProfileAuditor
@@ -129,14 +129,14 @@ def test_storage_and_workload_capability_contracts_match_worker_services() -> No
 def test_prometheus_provider_readiness_is_independent_from_kubernetes_query_gaps() -> None:
     persisted = PromQLProfileAuditor._module_readiness(
         {
-            'app.analytics.storage': {
+            'app.analytics.kubernetes.storage': {
                 'ready_count': 0,
                 'query_count': 4,
                 'blocked_count': 4,
             }
         }
     )
-    assert persisted['app.analytics.storage']['status'] == 'degraded'
+    assert persisted['app.analytics.kubernetes.storage']['status'] == 'degraded'
 
     instance = SimpleNamespace(
         module_readiness=persisted,
@@ -440,7 +440,7 @@ def test_dependency_blocker_is_failed_instead_of_committed(monkeypatch) -> None:
 def test_pending_page_context_preserves_forecast_htmx_replacement_id() -> None:
     app = Flask(__name__)
     app.add_url_rule(
-        '/analytics/materialization/status',
+        '/analytics/kubernetes/materialization/status',
         endpoint='analytics.materialization_status',
         view_func=lambda: '',
     )

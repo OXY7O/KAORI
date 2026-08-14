@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from app.analytics import job_adapter
-from app.analytics.materialization import dashboard_alerts
-from app.analytics.materialization.dashboard_alerts import build_dashboard_alerts_context
+from app.analytics.kubernetes import job_adapter
+from app.analytics.kubernetes.materialization import dashboard_alerts
+from app.analytics.kubernetes.materialization.dashboard_alerts import build_dashboard_alerts_context
 from app.dashboards.kubernetes import service
 from app.dashboards.kubernetes.schema import (
     AlertsSnapshot,
@@ -141,7 +141,7 @@ def test_alert_materialization_builds_compact_worker_payload(monkeypatch) -> Non
         ),
     )
     monkeypatch.setattr(
-        'app.analytics.materialization.dashboard_alerts.load_alerts_by_source',
+        'app.analytics.kubernetes.materialization.dashboard_alerts.load_alerts_by_source',
         lambda **_kwargs: (
             [
                 {'name': 'CriticalA', 'severity': 'critical', 'status': 'firing', 'summary': 'A'},

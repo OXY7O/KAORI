@@ -786,7 +786,7 @@ Use `components/operational_point_flow.html` for concise supporting sequences. F
 
 ### Analytics Prometheus Readiness Standard
 
-All Prometheus-backed Kubernetes Analytics pages use `components/ANALYTICS_PROMETHEUS_READINESS.md` and `analytics/components/_prometheus_status.html`. The card always displays the canonical semantic state, response latency, and provider `last_checked_at`. Dataset generation time, worker-attempt time, and page-render time must never be substituted for Prometheus Checked At. Prometheus readiness and committed snapshot readiness remain separate peer evidence cards. Alerts & Anomalies retains Alert Source Readiness because it can resolve Alertmanager or Prometheus dynamically.
+All Prometheus-backed Kubernetes Analytics pages use `components/ANALYTICS_PROMETHEUS_READINESS.md` and `analytics/kubernetes/components/_prometheus_status.html`. The card always displays the canonical semantic state, response latency, and provider `last_checked_at`. Dataset generation time, worker-attempt time, and page-render time must never be substituted for Prometheus Checked At. Prometheus readiness and committed snapshot readiness remain separate peer evidence cards. Alerts & Anomalies retains Alert Source Readiness because it can resolve Alertmanager or Prometheus dynamically.
 
 ### Resource Utilization Standard
 

@@ -4,11 +4,11 @@ Status: Canonical KAORI Analytics presentation and signal-evidence contract
 
 Implementation owners:
 
-- `app/analytics/alerts/`
-- `app/templates/analytics/alerts/`
+- `app/analytics/kubernetes/alerts/`
+- `app/templates/analytics/kubernetes/alerts/`
 - `app/templates/analytics/components/_analysis_surfaces.html`
-- `app/templates/analytics/components/_evidence_record_list.html`
-- `app/templates/analytics/components/_record_pagination.html`
+- `app/templates/analytics/kubernetes/components/_evidence_record_list.html`
+- `app/templates/analytics/kubernetes/components/_record_pagination.html`
 
 ## Purpose
 

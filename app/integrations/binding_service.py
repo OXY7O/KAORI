@@ -5,7 +5,7 @@ from typing import Any
 
 from app.extensions.db import db
 from app.integrations.registry import get_integration
-from app.integrations.repository import get_cluster, get_provider_record
+from app.integrations.repository import get_provider_record
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,11 +26,6 @@ class CreatedSourceBinding:
     source: Any
     asset: Any | None
     binding: Any
-
-    @property
-    def cluster(self) -> Any | None:
-        """Compatibility alias retained for the Kubernetes binding workspace."""
-        return self.asset
 
 
 def create_source_binding(
@@ -83,35 +78,3 @@ def create_source_binding(
         raise
 
     return CreatedSourceBinding(source=source, asset=asset, binding=binding)
-
-
-def create_cluster_source_binding(
-    provider_type: str,
-    *,
-    source_id: int,
-    cluster_id: str,
-    role: str,
-    priority: int,
-    selector_label: str,
-    selector_value: str,
-    selector_operator: str,
-) -> CreatedSourceBinding:
-    """Compatibility wrapper for existing Kubernetes source-binding workflows."""
-    cluster = get_cluster(cluster_id)
-    if cluster is None:
-        raise ValueError('The selected Kubernetes scope no longer exists.')
-
-    return create_source_binding(
-        provider_type,
-        source_id=source_id,
-        spec=SourceBindingSpec(
-            asset_type='kubernetes_cluster',
-            asset_key=str(cluster.id),
-            role=role,
-            priority=priority,
-            selector_label=selector_label,
-            selector_value=selector_value,
-            selector_operator=selector_operator,
-        ),
-        asset=cluster,
-    )

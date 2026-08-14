@@ -8,9 +8,9 @@ def read(path: str) -> str:
 
 
 def test_inventory_overview_and_pagination_copy() -> None:
-    catalog = read('app/templates/inventory/overview/partials/_kpi_cards.html')
-    clusters = read('app/templates/inventory/overview/partials/_resources_by_cluster_content.html')
-    namespaces = read('app/templates/inventory/namespaces/partials/_table_content.html')
+    catalog = read('app/templates/inventory/kubernetes/overview/partials/_kpi_cards.html')
+    clusters = read('app/templates/inventory/kubernetes/overview/partials/_resources_by_cluster_content.html')
+    namespaces = read('app/templates/inventory/kubernetes/namespaces/partials/_table_content.html')
 
     assert 'Inventory Asset Catalog' in catalog
     assert 'Open one Kubernetes asset inventory' in catalog
@@ -23,8 +23,8 @@ def test_inventory_overview_and_pagination_copy() -> None:
 
 
 def test_node_posture_copy_is_functional_and_does_not_duplicate_hero_readiness() -> None:
-    summary = read('app/templates/inventory/nodes/partials/_summary_cards.html')
-    detail = read('app/templates/inventory/nodes/partials/_node_detail_content.html')
+    summary = read('app/templates/inventory/kubernetes/nodes/partials/_summary_cards.html')
+    detail = read('app/templates/inventory/kubernetes/nodes/partials/_node_detail_content.html')
 
     expected = (
         'Node Resource Posture',
@@ -45,7 +45,7 @@ def test_node_posture_copy_is_functional_and_does_not_duplicate_hero_readiness()
 
 
 def test_namespace_detail_card_calls_match_shared_macro_signature() -> None:
-    detail = read('app/templates/inventory/namespaces/partials/_namespace_detail_content.html')
+    detail = read('app/templates/inventory/kubernetes/namespaces/partials/_namespace_detail_content.html')
     macro = read('app/templates/components/details/_detail_content.html')
 
     assert (

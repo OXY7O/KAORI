@@ -8,9 +8,9 @@ def _read(path: str) -> str:
 
 
 def test_workload_page_uses_inventory_resource_pattern_components() -> None:
-    hero = _read('app/templates/inventory/workloads/partials/_hero.html')
-    posture = _read('app/templates/inventory/workloads/partials/_summary_cards.html')
-    table = _read('app/templates/inventory/workloads/partials/_table_card.html')
+    hero = _read('app/templates/inventory/kubernetes/workloads/partials/_hero.html')
+    posture = _read('app/templates/inventory/kubernetes/workloads/partials/_summary_cards.html')
+    table = _read('app/templates/inventory/kubernetes/workloads/partials/_table_card.html')
 
     assert 'page_hero.context_card(' in hero
     assert 'inventory.posture_label' in hero
@@ -22,7 +22,7 @@ def test_workload_page_uses_inventory_resource_pattern_components() -> None:
 
 
 def test_workload_backend_owns_state_delivery_and_grouped_summary() -> None:
-    source = _read('app/inventory/resources/workloads.py')
+    source = _read('app/inventory/kubernetes/resources/workloads.py')
 
     assert '_OPERATIONAL_STATES' in source
     assert "'stable': ('Stable', 'normal')" in source
@@ -36,8 +36,8 @@ def test_workload_backend_owns_state_delivery_and_grouped_summary() -> None:
 
 
 def test_workload_status_filter_depends_on_workload_type() -> None:
-    route = _read('app/inventory/routes.py')
-    service = _read('app/inventory/resources/workloads.py')
+    route = _read('app/inventory/kubernetes/routes.py')
+    service = _read('app/inventory/kubernetes/resources/workloads.py')
 
     assert 'workload_type=workload_type' in route
     assert 'def get_workload_filter_statuses(' in service

@@ -15,19 +15,19 @@ def require(condition: bool, message: str, errors: list[str]) -> None:
 def main() -> int:
     errors: list[str] = []
 
-    collector = read('app/inventory/collectors/pods.py')
-    persistence = read('app/inventory/persistence.py')
-    backend = read('app/inventory/resources/pods.py')
-    semantics = read('app/inventory/resources/pod_semantics.py')
-    detail_backend = read('app/inventory/resources/pod_detail.py')
-    routes = read('app/inventory/routes.py')
+    collector = read('app/inventory/kubernetes/collectors/pods.py')
+    persistence = read('app/inventory/kubernetes/persistence.py')
+    backend = read('app/inventory/kubernetes/resources/pods.py')
+    semantics = read('app/inventory/kubernetes/resources/pod_semantics.py')
+    detail_backend = read('app/inventory/kubernetes/resources/pod_detail.py')
+    routes = read('app/inventory/kubernetes/routes.py')
     export_payload = read('app/reports/export/payloads/inventory.py')
     export_standard = read('app/reports/export/xlsx/standard.py')
-    workspace = read('app/templates/inventory/pods/partials/_page_workspace.html')
-    table_card = read('app/templates/inventory/pods/partials/_table_card.html')
-    table_content = read('app/templates/inventory/pods/partials/_table_content.html')
-    summary = read('app/templates/inventory/pods/partials/_summary_cards.html')
-    detail = read('app/templates/inventory/pods/partials/_pod_detail_content.html')
+    workspace = read('app/templates/inventory/kubernetes/pods/partials/_page_workspace.html')
+    table_card = read('app/templates/inventory/kubernetes/pods/partials/_table_card.html')
+    table_content = read('app/templates/inventory/kubernetes/pods/partials/_table_content.html')
+    summary = read('app/templates/inventory/kubernetes/pods/partials/_summary_cards.html')
+    detail = read('app/templates/inventory/kubernetes/pods/partials/_pod_detail_content.html')
     standard = read('docs/design/patterns/KUBERNETES_POD_INVENTORY.md')
     audit = read('docs/design/audits/KUBERNETES_POD_INVENTORY_ALIGNMENT_AUDIT_2026_08.md')
     quality_gate = read('scripts/quality_gate.sh')
@@ -118,7 +118,7 @@ def main() -> int:
         errors,
     )
     require(
-        'inventory/components/_data_freshness.html' in workspace,
+        'inventory/kubernetes/components/_data_freshness.html' in workspace,
         'Snapshot Context must refresh with Pod scope.',
         errors,
     )

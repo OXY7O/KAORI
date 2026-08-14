@@ -86,7 +86,7 @@ def test_platform_operations_overview_uses_kaori_page_components() -> None:
         'components/table_label.html',
         'components/operational_section_card.html',
         'components/section_link_button.html',
-        'Platform Overview',
+        'Operations Center',
         'Platform Posture',
         'Workspace Posture',
         'Operating Boundaries',

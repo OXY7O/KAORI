@@ -426,9 +426,9 @@ class Config:
         'timezone': CELERY_TIMEZONE,
         'enable_utc': True,
         'imports': (
-            'app.analytics.tasks',
+            'app.analytics.kubernetes.tasks',
             'app.cluster.tasks',
-            'app.storage_inventory.tasks',
+            'app.inventory.object_storage.tasks',
             'app.governance.tls_certificates.tasks',
             'app.retention.tasks',
             'app.integrations.runtime.tasks',
@@ -440,10 +440,10 @@ class Config:
             'app.resolver.tasks',
         ),
         'task_routes': {
-            'app.analytics.tasks.materialize_analytics_snapshots': {
+            'app.analytics.kubernetes.tasks.materialize_analytics_snapshots': {
                 'queue': ANALYTICS_CELERY_QUEUE,
             },
-            'app.analytics.tasks.materialize_forecast_snapshots': {
+            'app.analytics.kubernetes.tasks.materialize_forecast_snapshots': {
                 'queue': FORECASTING_CELERY_QUEUE,
             },
             'app.cluster.tasks.sync_all_clusters': {
@@ -452,7 +452,7 @@ class Config:
             'app.cluster.tasks.sync_single_cluster': {
                 'queue': 'inventory',
             },
-            'app.storage_inventory.tasks.sync_all_object_storage': {
+            'app.inventory.object_storage.tasks.sync_all_object_storage': {
                 'queue': 'inventory',
             },
             'app.governance.tls_certificates.tasks.sync_tls_certificates': {

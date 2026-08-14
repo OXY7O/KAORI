@@ -30,7 +30,7 @@ No source query changed. Inventory Data Snapshot continues to read committed dat
 
 ```text
 app/templates/components/snapshot_context_bar.html
-app/templates/inventory/components/_data_freshness.html
+app/templates/inventory/kubernetes/components/_data_freshness.html
 app/inventory/overview.py
 docs/design/components/SNAPSHOT_CONTEXT_BAR.md
 scripts/verify_snapshot_context_bar_standard.py

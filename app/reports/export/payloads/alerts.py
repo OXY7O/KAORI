@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from app.analytics.alerts.application import present_alerts_materialized_context
-from app.analytics.alerts.contracts import AlertSourceStatus, AlertsSelection
-from app.analytics.alerts.health import build_summary, is_alert_evidence_complete
-from app.analytics.alerts.signals import build_selected_cluster_signal_overview
+from app.analytics.kubernetes.alerts.application import present_alerts_materialized_context
+from app.analytics.kubernetes.alerts.contracts import AlertSourceStatus, AlertsSelection
+from app.analytics.kubernetes.alerts.health import build_summary, is_alert_evidence_complete
+from app.analytics.kubernetes.alerts.signals import build_selected_cluster_signal_overview
 from app.cluster.constants import get_environment_label
 from app.intelligence.recommendation_engine import build_alerts_actionable_recommendations
 from app.models.report import Report
@@ -116,7 +116,7 @@ def get_report_alerts_anomalies_payload(report: Report) -> dict[str, Any]:
 
 
 def _read_committed_context(*, cluster_id: str) -> tuple[dict[str, Any], Any]:
-    from app.analytics.materialization.service import read_snapshot
+    from app.analytics.kubernetes.materialization.service import read_snapshot
 
     result = read_snapshot(
         cluster_id=cluster_id,

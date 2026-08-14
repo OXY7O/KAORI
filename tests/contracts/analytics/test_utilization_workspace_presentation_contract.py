@@ -8,11 +8,11 @@ def read(relative: str) -> str:
 
 
 def test_utilization_scope_and_snapshot_are_outside_tab_workspace() -> None:
-    index = read('app/templates/analytics/utilization/index.html')
-    readiness = read('app/templates/analytics/utilization/partials/_readiness_scope.html')
+    index = read('app/templates/analytics/kubernetes/utilization/index.html')
+    readiness = read('app/templates/analytics/kubernetes/utilization/partials/_readiness_scope.html')
 
-    assert 'analytics/utilization/partials/_readiness_scope.html' in index
-    assert index.index('analytics/utilization/partials/_readiness_scope.html') < index.index(
+    assert 'analytics/kubernetes/utilization/partials/_readiness_scope.html' in index
+    assert index.index('analytics/kubernetes/utilization/partials/_readiness_scope.html') < index.index(
         'Resource Utilization Workspace'
     )
     assert 'Utilization Controls & Data Readiness' in readiness
@@ -20,12 +20,12 @@ def test_utilization_scope_and_snapshot_are_outside_tab_workspace() -> None:
     assert 'Active Cluster' in readiness
     assert 'controls_readiness' in readiness
     assert 'analytics_materialization' in readiness
-    assert 'Worker Attempt' in read('app/templates/analytics/components/_analysis_workspace.html')
+    assert 'Worker Attempt' in read('app/templates/analytics/kubernetes/components/_analysis_workspace.html')
     assert 'bg-surface-hover px-4 py-4 sm:grid-cols-2 xl:grid-cols-4' not in readiness
 
 
 def test_utilization_uses_shared_workspace_and_has_no_composite_tracker() -> None:
-    index = read('app/templates/analytics/utilization/index.html')
+    index = read('app/templates/analytics/kubernetes/utilization/index.html')
 
     assert 'analytics_workspace.tabbed(' in index
     assert 'Resource Utilization Workspace' in index
@@ -38,9 +38,9 @@ def test_utilization_uses_shared_workspace_and_has_no_composite_tracker() -> Non
 
 
 def test_heavy_utilization_tabs_load_only_after_activation() -> None:
-    index = read('app/templates/analytics/utilization/index.html')
-    controls = read('app/static/js/analytics_controls.js')
-    routes = read('app/analytics/utilization/routes.py')
+    index = read('app/templates/analytics/kubernetes/utilization/index.html')
+    controls = read('app/static/js/analytics/kubernetes/controls.js')
+    routes = read('app/analytics/kubernetes/utilization/routes.py')
 
     assert index.count('hx-trigger="kaori:analytics-tab-activated once"') == 2
     assert "url_for('analytics.utilization_trend'" in index
@@ -57,9 +57,9 @@ def test_heavy_utilization_tabs_load_only_after_activation() -> None:
 
 
 def test_summary_and_node_detail_use_shared_resource_pressure_lanes() -> None:
-    summary = read('app/templates/analytics/utilization/partials/_current_summary.html')
-    node = read('app/templates/analytics/utilization/partials/_node_detail.html')
-    lane = read('app/templates/analytics/components/_resource_pressure_lane.html')
+    summary = read('app/templates/analytics/kubernetes/utilization/partials/_current_summary.html')
+    node = read('app/templates/analytics/kubernetes/utilization/partials/_node_detail.html')
+    lane = read('app/templates/analytics/kubernetes/components/_resource_pressure_lane.html')
 
     assert 'Resource Pressure Detail' in summary
     assert 'pressure_lane.render' in summary
@@ -70,9 +70,9 @@ def test_summary_and_node_detail_use_shared_resource_pressure_lanes() -> None:
 
 
 def test_utilization_trend_is_bright_has_visible_legend_and_external_js() -> None:
-    trend = read('app/templates/analytics/utilization/partials/_trend.html')
-    script = read('app/static/js/analytics_utilization.js')
-    legend = read('app/templates/analytics/components/_chart_legend.html')
+    trend = read('app/templates/analytics/kubernetes/utilization/partials/_trend.html')
+    script = read('app/static/js/analytics/kubernetes/utilization.js')
+    legend = read('app/templates/analytics/kubernetes/components/_chart_legend.html')
 
     assert 'Current Highest' in trend
     assert 'Peak Signal' in trend
@@ -110,7 +110,7 @@ def test_utilization_uses_canonical_analysis_surfaces_without_compatibility_file
 
 
 def test_snapshot_metadata_exposes_latest_worker_attempt() -> None:
-    presentation = read('app/analytics/materialization/presentation.py')
+    presentation = read('app/analytics/kubernetes/materialization/presentation.py')
     assert "'dataset_key': snapshot.dataset_key if snapshot else None" in presentation
     assert "'last_attempt_at': snapshot.last_attempt_at if snapshot else None" in presentation
     assert "'last_job_execution_id': snapshot.last_job_execution_id if snapshot else None" in presentation

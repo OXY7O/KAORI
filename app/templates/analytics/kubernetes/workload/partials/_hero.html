@@ -1,0 +1,44 @@
+{% import "components/page_hero.html" as page_hero %}
+{% set selected_cluster_name = cluster.name if cluster else 'No Cluster Selected' %}
+{% set workload_tone = workload_posture.tone|default('unknown') %}
+{% set workload_status = workload_posture.value|default('Unknown') %}
+<section class="{{ page_hero.shell_classes() }}">
+    <div class="{{ page_hero.layout_classes() }}">
+        <div class="{{ page_hero.content_classes() }}">
+            {% call page_hero.intro('boxes', 'Kubernetes Analytics', 'layout-dashboard') %}
+                <h1 class="{{ page_hero.title_classes() }}">Workload Analysis</h1>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review quotas, requests, limits, QoS, and right-sizing evidence.</p>
+                <div class="{{ page_hero.metadata_row_classes() }}">
+                    {{ page_hero.meta_label('server', selected_cluster_name) }}
+                    {% if dependency_blocker %}
+                        {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
+                    {% else %}
+                        {{ page_hero.meta_label('boxes', workload_count_display) }}
+                        {{ page_hero.meta_label('list-checks', recommendation_count_display) }}
+                    {% endif %}
+                </div>
+            {% endcall %}
+        </div>
+        {% if dependency_blocker %}
+            <aside class="{{ page_hero.aside_classes() }}"
+                   aria-label="Workload Readiness">
+                {% set analytics_posture_label = "Workload Posture" %}
+                {% include "analytics/kubernetes/components/_blocked_posture.html" %}
+            </aside>
+        {% else %}
+            {{ page_hero.context_card('Workload Posture',
+                        'Workload Posture',
+                        'Workload Governance',
+                        workload_status,
+                        workload_tone,
+                        [
+                        ('shield-alert', 'Findings', finding_count_display, 'Governance findings') ,
+            ('calendar-range', 'Time Range', selected_time_range, 'Observation window')
+            ],
+            'Manage Clusters',
+            url_for('integrations.kubernetes'),
+            'server-cog'
+            ) }}
+        {% endif %}
+    </div>
+</section>

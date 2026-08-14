@@ -10,7 +10,7 @@ def read(relative: str) -> str:
 
 
 def test_analytics_tabs_have_one_native_runtime_owner() -> None:
-    runtime = read('app/static/js/analytics_controls.js')
+    runtime = read('app/static/js/analytics/kubernetes/controls.js')
     templates = '\n'.join(
         path.read_text(encoding='utf-8') for path in (ROOT / 'app/templates/analytics').rglob('*.html')
     )
@@ -35,7 +35,7 @@ def test_analytics_tabs_have_one_native_runtime_owner() -> None:
 
 
 def test_overview_tabs_are_compact_one_row_without_internal_snapshot_badges() -> None:
-    overview = read('app/templates/analytics/overview/index.html')
+    overview = read('app/templates/analytics/kubernetes/overview/index.html')
     shared = read('app/templates/components/content_tabs.html')
 
     assert "('utilization', 'Usage'" in overview
@@ -51,16 +51,16 @@ def test_overview_tabs_are_compact_one_row_without_internal_snapshot_badges() ->
 
 
 def test_analytics_consumes_shared_content_tabs_without_compatibility_wrapper() -> None:
-    workspace = read('app/templates/analytics/components/_analysis_workspace.html')
-    overview = read('app/templates/analytics/overview/index.html')
-    consumers = read('app/templates/analytics/top_consumers/partials/_top_consumers_section.html')
+    workspace = read('app/templates/analytics/kubernetes/components/_analysis_workspace.html')
+    overview = read('app/templates/analytics/kubernetes/overview/index.html')
+    consumers = read('app/templates/analytics/kubernetes/top_consumers/partials/_top_consumers_section.html')
 
     for source in (workspace, overview, consumers):
         assert 'components/content_tabs.html' in source
         assert 'content_tabs.render_buttons' in source
     assert not (ROOT / 'app/templates/analytics/components/_content_tabs.html').exists()
     assert not (ROOT / 'app/templates/analytics/components/_snapshot_panel.html').exists()
-    assert not (ROOT / 'app/templates/analytics/materialization/_freshness.html').exists()
+    assert not (ROOT / 'app/templates/analytics/kubernetes/materialization/_freshness.html').exists()
 
 
 def test_analytics_final_recheck_evidence_is_wired_to_release_gate() -> None:
@@ -77,8 +77,8 @@ def test_analytics_final_recheck_evidence_is_wired_to_release_gate() -> None:
 
 
 def test_materialized_snapshot_and_forecast_read_paths_have_no_runtime_compatibility_fallback() -> None:
-    serialization = read('app/analytics/materialization/serialization.py')
-    forecast = read('app/analytics/forecast/presentation.py')
+    serialization = read('app/analytics/kubernetes/materialization/serialization.py')
+    forecast = read('app/analytics/kubernetes/forecast/presentation.py')
 
     assert 'load_cluster_reference' not in serialization
     assert 'Backward compatibility' not in serialization

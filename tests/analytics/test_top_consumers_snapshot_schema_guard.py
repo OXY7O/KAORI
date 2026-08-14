@@ -11,9 +11,9 @@ def read(relative: str) -> str:
 
 
 def test_top_consumers_payload_declares_and_checks_schema_version() -> None:
-    contracts = read('app/analytics/top_consumers/contracts.py')
-    domain = read('app/analytics/top_consumers/domain.py')
-    presentation = read('app/analytics/top_consumers/presentation.py')
+    contracts = read('app/analytics/kubernetes/top_consumers/contracts.py')
+    domain = read('app/analytics/kubernetes/top_consumers/domain.py')
+    presentation = read('app/analytics/kubernetes/top_consumers/presentation.py')
 
     assert 'TOP_CONSUMERS_PAYLOAD_SCHEMA_VERSION = 3' in contracts
     assert "'schema_version': TOP_CONSUMERS_PAYLOAD_SCHEMA_VERSION" in domain
@@ -27,7 +27,7 @@ def test_top_consumers_hero_handles_legacy_payload_without_scope() -> None:
         loader=FileSystemLoader(TEMPLATES),
         undefined=StrictUndefined,
     )
-    template = environment.get_template('analytics/top_consumers/partials/_hero.html')
+    template = environment.get_template('analytics/kubernetes/top_consumers/partials/_hero.html')
 
     rendered = template.render(
         payload={'summary': {}, 'rows': []},
@@ -47,7 +47,7 @@ def test_top_consumers_summary_handles_missing_nested_payload_fields() -> None:
         loader=FileSystemLoader(TEMPLATES),
         undefined=StrictUndefined,
     )
-    template = environment.get_template('analytics/top_consumers/partials/_summary.html')
+    template = environment.get_template('analytics/kubernetes/top_consumers/partials/_summary.html')
 
     rendered = template.render(payload={})
 

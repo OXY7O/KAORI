@@ -34,7 +34,7 @@ def test_scheduled_and_manual_fleet_sync_share_registered_dispatch() -> None:
 
 def test_schedule_claim_and_inventory_commit_boundaries_are_explicit() -> None:
     scheduler = _source('app/jobs/scheduler.py')
-    synchronization = _source('app/inventory/synchronization.py')
+    synchronization = _source('app/inventory/kubernetes/synchronization.py')
 
     assert '.with_for_update(skip_locked=True)' in scheduler
     assert 'policy.next_run_at = now + timedelta' in scheduler
@@ -60,7 +60,7 @@ def test_quick_action_wording_describes_inventory_scope() -> None:
 
 
 def test_registered_inventory_dispatch_supports_recovery_for_one_cluster() -> None:
-    adapter = _source('app/inventory/job_adapter.py')
+    adapter = _source('app/inventory/kubernetes/job_adapter.py')
     recovery = _source('app/integrations/runtime/recovery.py')
 
     assert "cluster_id = str((parameters or {}).get('cluster_id') or '').strip()" in adapter

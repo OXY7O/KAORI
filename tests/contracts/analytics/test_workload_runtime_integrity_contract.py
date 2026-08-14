@@ -8,7 +8,7 @@ def read(relative: str) -> str:
 
 
 def test_workload_snapshot_variants_exclude_presentation_state() -> None:
-    routes = read('app/analytics/workload/routes.py')
+    routes = read('app/analytics/kubernetes/workload/routes.py')
 
     snapshot_block = routes[routes.index('def _snapshot_parameters') : routes.index('def _selected_tab')]
     assert "parameters['time_range']" in snapshot_block
@@ -18,7 +18,7 @@ def test_workload_snapshot_variants_exclude_presentation_state() -> None:
 
 
 def test_workload_fragments_require_htmx_and_disable_cache() -> None:
-    routes = read('app/analytics/workload/routes.py')
+    routes = read('app/analytics/kubernetes/workload/routes.py')
 
     assert "request.headers.get('HX-Request', '').lower() == 'true'" in routes
     assert "return redirect(_full_workload_url('quotas'))" in routes
@@ -29,7 +29,7 @@ def test_workload_fragments_require_htmx_and_disable_cache() -> None:
 
 
 def test_active_deep_link_renders_directly_and_inactive_tabs_are_lazy() -> None:
-    index = read('app/templates/analytics/workload/index.html')
+    index = read('app/templates/analytics/kubernetes/workload/index.html')
 
     assert "{% if active_tab == 'quotas' %}" in index
     assert "{% if active_tab == 'mapping' %}" in index
@@ -49,7 +49,7 @@ def test_promql_is_active_pod_scoped_and_deduplicates_scrape_series() -> None:
 
 def test_resource_quota_keeps_object_identity_and_independent_pressure() -> None:
     profile = read('app/integrations/prometheus/query_profiles/kubernetes_v1.py')
-    quota = read('app/analytics/workload/quota.py')
+    quota = read('app/analytics/kubernetes/workload/quota.py')
 
     assert 'max by (namespace, resourcequota, resource, type)' in profile
     assert "quota_name = metric.get('resourcequota')" in quota
@@ -59,11 +59,11 @@ def test_resource_quota_keeps_object_identity_and_independent_pressure() -> None
 
 
 def test_service_is_orchestration_only_and_domain_ownership_is_split() -> None:
-    service = read('app/analytics/workload/service.py')
+    service = read('app/analytics/kubernetes/workload/service.py')
 
-    assert 'from app.analytics.workload.quota import' in service
-    assert 'from app.analytics.workload.mapping import' in service
-    assert 'from app.analytics.workload.domain import' in service
+    assert 'from app.analytics.kubernetes.workload.quota import' in service
+    assert 'from app.analytics.kubernetes.workload.mapping import' in service
+    assert 'from app.analytics.kubernetes.workload.domain import' in service
     assert 'def get_all_namespace_options(' not in service
     assert 'def get_metrics_coverage(' not in service
     assert 'def get_workload_recommendation(' not in service
@@ -71,8 +71,8 @@ def test_service_is_orchestration_only_and_domain_ownership_is_split() -> None:
 
 
 def test_materialization_does_not_apply_namespace_filters_or_pagination() -> None:
-    service = read('app/analytics/workload/service.py')
-    presenter = read('app/analytics/workload/presentation.py')
+    service = read('app/analytics/kubernetes/workload/service.py')
+    presenter = read('app/analytics/kubernetes/workload/presentation.py')
     report = read('app/reports/export/payloads/workload.py')
 
     materialize = service[
@@ -87,7 +87,7 @@ def test_materialization_does_not_apply_namespace_filters_or_pagination() -> Non
 
 
 def test_unknown_and_limited_evidence_are_first_class_states() -> None:
-    domain = read('app/analytics/workload/domain.py')
+    domain = read('app/analytics/kubernetes/workload/domain.py')
 
     assert "'value': 'Unknown'" in domain
     assert "'value': 'Limited Evidence'" in domain

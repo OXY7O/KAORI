@@ -11,7 +11,7 @@
                     {{ 'Request Activity Trend' if page_key == 'performance' else 'Storage Usage Trend' }}
                 </h2>
                 <p class="mt-1 text-sm leading-6 text-content-muted">
-                    Prometheus range evidence for {{ selected_time_range }}. This is operational history,
+                    {{ metrics_source.provider_label }} range evidence for {{ selected_time_range }}. This is operational history,
                     not an inventory snapshot.
                 </p>
             </div>
@@ -30,7 +30,7 @@
                     <i data-lucide="line-chart" class="mx-auto h-6 w-6 text-content-muted"></i>
                     <p class="mt-3 text-sm font-semibold text-content-primary">Historical Evidence Not Available</p>
                     <p class="mt-1 text-xs leading-5 text-content-muted">
-                        The bound Prometheus source returned no range samples for this metric and time window.
+                        The active metrics source returned no range samples for this metric and time window.
                     </p>
                 </div>
             </div>

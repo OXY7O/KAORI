@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.analytics.forecast.presentation import present_forecast_materialized_context
+from app.analytics.kubernetes.forecast.presentation import present_forecast_materialized_context
 from app.cluster.constants import get_environment_label
 from app.models.report import Report
 from app.reports.export.payloads.common import get_report_selected_cluster, report_payload_error
@@ -84,7 +84,7 @@ def _read_committed_context(
     history_window: str,
 ) -> tuple[dict[str, Any], Any]:
     try:
-        from app.analytics.materialization.service import read_snapshot
+        from app.analytics.kubernetes.materialization.service import read_snapshot
 
         result = read_snapshot(
             cluster_id=cluster_id,

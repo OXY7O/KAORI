@@ -4,7 +4,7 @@
 
 This Batch 3 Slice 9 introduces focused typed contracts for the multi-cluster
 signal comparison rows and operational resource-link dictionaries produced by
-`app/analytics/alerts/signals.py`.
+`app/analytics/kubernetes/alerts/signals.py`.
 
 This is a contract-only refactor. It preserves the ordinary dictionaries and
 lists consumed by application context, templates, and
@@ -13,7 +13,7 @@ sorting, bar-width calculation, link availability, wording, or UI behavior.
 
 ## Canonical Contracts
 
-The source of truth is `app/analytics/alerts/contracts.py`.
+The source of truth is `app/analytics/kubernetes/alerts/contracts.py`.
 
 - `AlertClusterSignalComparisonRow` describes one multi-cluster comparison row.
 - `AlertResourceLink` describes one resource-link card.
@@ -64,7 +64,7 @@ The existing contact-point item additionally retains optional `name` and
 `build_resource_links()` now returns `AlertResourceLinks`.
 
 The package migration is complete. All three contracts are imported directly
-from `app.analytics.alerts.contracts`; no compatibility facade remains.
+from `app.analytics.kubernetes.alerts.contracts`; no compatibility facade remains.
 
 ## Behavior Preserved
 
@@ -140,8 +140,8 @@ payloads and executable behavior are unchanged.
 ## Changed Files
 
 ```text
-app/analytics/alerts/contracts.py
-app/analytics/alerts/signals.py
+app/analytics/kubernetes/alerts/contracts.py
+app/analytics/kubernetes/alerts/signals.py
 tests/contracts/analytics/test_alerts_typed_contracts.py
 tests/analytics/test_alerts_characterization.py
 docs/architecture/analytics-alerts-typed-contracts.md

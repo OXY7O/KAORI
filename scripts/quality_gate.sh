@@ -11,6 +11,7 @@ run_static() {
     python scripts/verify_release_surface_coverage.py
     python scripts/verify_release_governance.py
     python scripts/verify_engineering_standard.py
+    python scripts/verify_domain_namespace_architecture.py
     python scripts/verify_welcome_final_lock.py
     python scripts/verify_python_syntax.py
     python scripts/verify_single_pdf_engine.py

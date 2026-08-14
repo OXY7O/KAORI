@@ -133,8 +133,8 @@ def main() -> int:
     obsolete = (
         'app/static/js/inventory/topology_bootstrap.js',
         'app/dashboards/kubernetes/snapshot_builder.py',
-        'app/analytics/common/cache.py',
-        'app/templates/inventory/components/_detail_macros.html',
+        'app/analytics/kubernetes/common/cache.py',
+        'app/templates/inventory/kubernetes/components/_detail_macros.html',
         'app/kubernetes_operations/secrets/routes.py',
     )
     for relative in obsolete:

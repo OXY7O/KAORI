@@ -103,7 +103,7 @@ def test_primary_and_peer_operational_flows_are_static() -> None:
 
 def test_dashboard_and_analytics_share_the_forecast_projection_chart() -> None:
     dashboard = read('app/templates/dashboards/kubernetes/partials/_forecast_risk.html')
-    analytics = read('app/templates/analytics/overview/partials/_forecast_snapshot.html')
+    analytics = read('app/templates/analytics/kubernetes/overview/partials/_forecast_snapshot.html')
     component = read('app/templates/components/forecast_projection_chart.html')
 
     assert 'components/forecast_projection_chart.html' in dashboard

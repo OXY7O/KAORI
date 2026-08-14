@@ -26,13 +26,13 @@ def main() -> int:
     errors: list[str] = []
 
     for relative, symbol in (
-        ('app/analytics/alerts/signals.py', 'load_alerts_by_source'),
-        ('app/analytics/forecast/calculation.py', 'as_dict as _as_dict'),
-        ('app/analytics/forecast/calculation.py', 'as_list as _as_list'),
-        ('app/analytics/forecast/calculation.py', 'safe_float as _safe_float'),
-        ('app/analytics/forecast/calculation.py', 'safe_int as _safe_int'),
+        ('app/analytics/kubernetes/alerts/signals.py', 'load_alerts_by_source'),
+        ('app/analytics/kubernetes/forecast/calculation.py', 'as_dict as _as_dict'),
+        ('app/analytics/kubernetes/forecast/calculation.py', 'as_list as _as_list'),
+        ('app/analytics/kubernetes/forecast/calculation.py', 'safe_float as _safe_float'),
+        ('app/analytics/kubernetes/forecast/calculation.py', 'safe_int as _safe_int'),
         ('app/cluster/quick_sync.py', 'build_cluster_sync_snapshot'),
-        ('app/inventory/routes.py', 'build_cluster_context'),
+        ('app/inventory/kubernetes/routes.py', 'build_cluster_context'),
         ('app/jobs/registry.py', 'job_operation_label'),
         ('app/notifications/queries.py', 'event_label'),
         ('tests/contracts/reports/test_single_pdf_engine_contract.py', 'import ast'),
@@ -40,17 +40,17 @@ def main() -> int:
         forbid(relative, symbol, errors)
 
     for relative, forbidden_import in (
-        ('app/analytics/alerts/application.py', 'from typing import Any, Mapping'),
-        ('app/analytics/alerts/records.py', 'from typing import Any, Iterable'),
-        ('app/analytics/capacity/domain.py', 'from typing import Any, Callable'),
-        ('app/analytics/storage/domain.py', 'from typing import Any, Iterable'),
-        ('app/analytics/top_consumers/rows.py', 'from typing import Any, Callable'),
+        ('app/analytics/kubernetes/alerts/application.py', 'from typing import Any, Mapping'),
+        ('app/analytics/kubernetes/alerts/records.py', 'from typing import Any, Iterable'),
+        ('app/analytics/kubernetes/capacity/domain.py', 'from typing import Any, Callable'),
+        ('app/analytics/kubernetes/storage/domain.py', 'from typing import Any, Iterable'),
+        ('app/analytics/kubernetes/top_consumers/rows.py', 'from typing import Any, Callable'),
         ('app/common/provider_query_runtime.py', 'from typing import Any, Iterator'),
         ('app/governance/tls_certificates/collector.py', 'from typing import Any, Callable'),
     ):
         forbid(relative, forbidden_import, errors)
 
-    contracts = 'app/analytics/alerts/contracts.py'
+    contracts = 'app/analytics/kubernetes/alerts/contracts.py'
     for name in (
         'AlertSourceHealthSummary',
         'AlertRoutingSummary',
@@ -70,13 +70,13 @@ def main() -> int:
     require('app/kubernetes_operations/operation_flow.py', 'def validate_then_apply[ResultT](', errors)
 
     for relative in (
-        'app/analytics/materialization/requests.py',
-        'app/analytics/top_consumers/evidence.py',
+        'app/analytics/kubernetes/materialization/requests.py',
+        'app/analytics/kubernetes/top_consumers/evidence.py',
     ):
         forbid(relative, '= lambda ', errors)
 
     for relative, token in (
-        ('app/analytics/utilization/service.py', 'from app.integrations.prometheus.exceptions import PrometheusError'),
+        ('app/analytics/kubernetes/utilization/service.py', 'from app.integrations.prometheus.exceptions import PrometheusError'),
         (
             'app/kubernetes_operations/secrets/reveal_service.py',
             'from app.common.kubernetes_secrets import scrub_mapping_values, scrub_secret_payload',
@@ -86,10 +86,10 @@ def main() -> int:
         require(relative, token, errors)
 
     for relative, token in (
-        ('app/analytics/workload/quota.py', "cpu_limit = resources['limits.cpu']"),
-        ('app/analytics/workload/quota.py', "cpu_request = resources['requests.cpu']"),
-        ('app/analytics/workload/quota.py', "memory_limit = resources['limits.memory']"),
-        ('app/analytics/workload/quota.py', "memory_request = resources['requests.memory']"),
+        ('app/analytics/kubernetes/workload/quota.py', "cpu_limit = resources['limits.cpu']"),
+        ('app/analytics/kubernetes/workload/quota.py', "cpu_request = resources['requests.cpu']"),
+        ('app/analytics/kubernetes/workload/quota.py', "memory_limit = resources['limits.memory']"),
+        ('app/analytics/kubernetes/workload/quota.py', "memory_request = resources['requests.memory']"),
         (
             'tests/contracts/kubernetes/test_kubernetes_operations_configmap_secret_styling_contract.py',
             "catalog = read('app/templates/components/operational_workflow_catalog.html')",
@@ -104,7 +104,7 @@ def main() -> int:
         ),
         (
             'tests/contracts/kubernetes/test_service_inventory_title_case_and_detail_contract.py',
-            "service = read('app/inventory/resources/services.py')",
+            "service = read('app/inventory/kubernetes/resources/services.py')",
         ),
     ):
         forbid(relative, token, errors)

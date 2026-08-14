@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-INVENTORY_TEMPLATES = ROOT / 'app' / 'templates' / 'inventory'
+INVENTORY_TEMPLATES = ROOT / 'app' / 'templates' / 'inventory' / 'kubernetes'
 
 
 def read(path: Path) -> str:
@@ -27,7 +27,7 @@ def test_every_inventory_workspace_shows_committed_snapshot_freshness() -> None:
         source = read(INVENTORY_TEMPLATES / page / 'index.html')
         if page in {'nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage'}:
             source += read(INVENTORY_TEMPLATES / page / 'partials' / '_page_workspace.html')
-        assert 'inventory/components/_data_freshness.html' in source, page
+        assert 'inventory/kubernetes/components/_data_freshness.html' in source, page
 
     freshness = read(INVENTORY_TEMPLATES / 'components' / '_data_freshness.html')
     shared = read(ROOT / 'app/templates/components/snapshot_context_bar.html')
@@ -57,8 +57,8 @@ def test_every_inventory_workspace_shows_committed_snapshot_freshness() -> None:
 
 
 def test_inventory_freshness_uses_committed_cluster_inventory_snapshots() -> None:
-    overview = read(ROOT / 'app' / 'inventory' / 'overview.py')
-    routes = read(ROOT / 'app' / 'inventory' / 'routes.py')
+    overview = read(ROOT / 'app' / 'inventory' / 'kubernetes' / 'overview.py')
+    routes = read(ROOT / 'app' / 'inventory' / 'kubernetes' / 'routes.py')
 
     assert 'def get_inventory_freshness_context(' in overview
     assert 'get_inventory_cluster_summary()' in overview

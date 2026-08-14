@@ -1,0 +1,81 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "analytics/kubernetes/components/_resource_pressure_lane.html" as resource_pressure_lane %}
+{% import "components/table_label.html" as table_label %}
+{% set pv = storage_summary.persistent_storage.pv %}
+{% set observed_claim_usage_helper = (pv.observed_claim_usage_coverage_display ~ ' observed · ' ~ ('Complete Coverage' if pv.observed_claim_usage_evidence_complete else 'Limited Evidence')) if pv.observed_claim_usage_evidence_available else 'Runtime claim usage evidence unavailable' %}
+<div class="space-y-5">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div class="flex items-start gap-3">
+            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="hard-drive" class="h-5 w-5"></i></span>
+            <div>
+                <h3 class="text-lg font-semibold text-content-primary">Storage Capacity &amp; Utilization</h3>
+                <p class="mt-1 text-sm leading-6 text-content-muted">Separate node filesystem pressure, namespace PVC volume usage, and cluster PV provisioning into evidence with explicit scope.</p>
+            </div>
+        </div>
+        {{ table_label.metadata_label('Mixed Scope', 'scan-search') }}
+    </div>
+    <section class="{{ analysis_surface.evidence_shell_classes() }}">
+        <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+                <h4 class="{{ analysis_surface.section_title_classes() }}">Resource Pressure Detail</h4>
+                <p class="{{ analysis_surface.section_description_classes() }}">Each lane uses its own observed denominator. Missing evidence remains Unknown rather than becoming synthetic zero.</p>
+            </div>
+            {{ table_label.metadata_label('Current Snapshot', 'database-clock') }}
+        </header>
+        <div class="divide-y divide-outline-subtle">
+            {% for lane in storage_pressure_lanes %}
+                {{ resource_pressure_lane.render(lane.label,
+                                lane.icon,
+                                lane.value,
+                                lane.used_capacity,
+                                lane.description,
+                                tone=lane.tone,
+                                reason=lane.reason,
+                                headroom=lane.headroom,
+                                status_label=lane.status_label,
+                                available=lane.available) }}
+            {% endfor %}
+        </div>
+    </section>
+    <section class="{{ analysis_surface.evidence_shell_classes() }}">
+        <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+                <h4 class="{{ analysis_surface.section_title_classes() }}">Persistent Volume Provisioning Context</h4>
+                <p class="{{ analysis_surface.section_description_classes() }}">PV capacity is cluster-scoped. Requested claims and observed usage are factual comparisons, not synthetic PV utilization.</p>
+            </div>
+            {{ table_label.metadata_label('Scope: Cluster', 'globe-2') }}
+        </header>
+        <div class="{{ analysis_surface.metric_grid_classes(4) }}">
+            {% set pv_metrics = [
+                            ('Provisioned PV Capacity', pv.capacity, 'Total cluster PV capacity', 'database', pv.capacity_evidence_available),
+                            ('Requested Claim Capacity', pv.requested_claim_capacity, 'Requested across all namespaces', 'hard-drive-upload', pv.requested_claim_evidence_available),
+                            ('Observed Claim Usage', pv.observed_claim_usage, observed_claim_usage_helper, 'hard-drive-download', pv.observed_claim_usage_evidence_available),
+                            ('Provisioning Difference', pv.unallocated_provisioned_difference, 'Provisioned minus requested capacity', 'scale', pv.unallocated_evidence_available)
+                        ] %}
+            {% for label, value, helper, icon, available in pv_metrics %}
+                <article class="{{ analysis_surface.metric_cell_classes() }}">
+                    <div class="flex items-center gap-2.5">
+                        <span class="{{ analysis_surface.resource_icon_classes(label) }}"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                        <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                    </div>
+                    <p class="mt-3 break-words text-xl font-semibold tabular-nums {{ 'text-content-primary' if available else analysis_surface.unavailable_value_classes() }}">{{ value if available else 'N/A' }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+    <section class="{{ analysis_surface.interpretation_grid_classes() }}">
+        {{ analysis_surface.interpretation_callout('How To Read',
+                'Keep Filesystem, PVC, And PV Boundaries Separate',
+                'Filesystem pressure is node-scoped, PVC volume usage is namespace-scoped, and PV provisioning remains cluster-scoped. Do not combine them into one utilization percentage.',
+                icon='database',
+                role='insight') }}
+        {{ analysis_surface.interpretation_callout('What To Do',
+                'Investigate Pressure And Lifecycle Risk Before Cleanup',
+                'Investigate pressure lanes at 75% and above. Also review Pending or Lost claims and Released or Failed volumes before cleanup, expansion, or workload growth.',
+                icon='scan-search',
+                role='brand',
+                tone=storage_posture.tone,
+                extra='border-t border-outline-subtle lg:border-t-0') }}
+    </section>
+</div>

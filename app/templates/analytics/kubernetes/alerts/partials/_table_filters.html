@@ -1,0 +1,82 @@
+{% import "analytics/kubernetes/components/_analysis_workspace.html" as analytics_workspace %}
+{% set is_alert_table = table_kind == 'alerts' %}
+{% set indicator_id = 'alerts-table-loading-indicator' if is_alert_table else 'anomalies-table-loading-indicator' %}
+<form id="{{ table_kind }}-table-filter-form"
+      method="get"
+      action="{{ url_for('analytics.alerts') }}"
+      class="grid gap-4 border-b border-outline-subtle bg-surface-hover px-4 py-4 sm:grid-cols-2 sm:px-5 lg:items-end {{ 'lg:grid-cols-4' if is_alert_table else 'lg:grid-cols-3' }}"
+      hx-get="{{ url_for(endpoint_name) }}"
+      hx-trigger="change[event.target.matches('select')] delay:120ms, keyup[event.target.name === 'search'] changed delay:450ms, search[event.target.name === 'search']"
+      hx-target="{{ target_id }}"
+      hx-swap="outerHTML settle:120ms"
+      hx-push-url="false"
+      hx-sync="{{ target_id }}:replace"
+      hx-indicator="#{{ indicator_id }}"
+      hx-on::before-request="window.dispatchEvent(new CustomEvent('kaori:alerts-collapse'))">
+    <input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}">
+    <input type="hidden" name="source" value="{{ selected_source }}">
+    <input type="hidden" name="tab" value="{{ table_kind }}">
+    {% if is_alert_table %}
+        <input type="hidden"
+               name="anomalies_per_page"
+               value="{{ selected_anomalies_per_page }}">
+    {% else %}
+        <input type="hidden"
+               name="alerts_per_page"
+               value="{{ selected_alerts_per_page }}">
+    {% endif %}
+    <input type="hidden"
+           name="{{ 'alerts_page' if is_alert_table else 'anomalies_page' }}"
+           value="1">
+    <label for="{{ table_kind }}-severity-filter" class="block min-w-0">
+        <span class="{{ analytics_workspace.control_label_classes() }}">Severity</span>
+        <select id="{{ table_kind }}-severity-filter"
+                name="severity"
+                class="{{ analytics_workspace.control_select_classes() }}">
+            {% for option in severity_options %}
+                <option value="{{ option }}"
+                        {% if selected_severity == option %}selected{% endif %}>{{ option|title }}</option>
+            {% endfor %}
+        </select>
+    </label>
+    {% if is_alert_table %}
+        <label for="alerts-state-filter" class="block min-w-0">
+            <span class="{{ analytics_workspace.control_label_classes() }}">State</span>
+            <select id="alerts-state-filter"
+                    name="status"
+                    class="{{ analytics_workspace.control_select_classes() }}">
+                {% for option in status_options %}
+                    <option value="{{ option }}"
+                            {% if selected_status == option %}selected{% endif %}>{{ option|title }}</option>
+                {% endfor %}
+            </select>
+        </label>
+    {% else %}
+        <input type="hidden" name="status" value="{{ selected_status }}">
+    {% endif %}
+    <label for="{{ table_kind }}-namespace-filter" class="block min-w-0">
+        <span class="{{ analytics_workspace.control_label_classes() }}">Namespace</span>
+        <select id="{{ table_kind }}-namespace-filter"
+                name="namespace"
+                class="{{ analytics_workspace.control_select_classes() }}">
+            <option value="" {% if not selected_namespace %}selected{% endif %}>All Namespaces</option>
+            {% for namespace in namespace_options %}
+                <option value="{{ namespace }}"
+                        {% if selected_namespace == namespace %}selected{% endif %}>{{ namespace }}</option>
+            {% endfor %}
+        </select>
+    </label>
+    <label for="{{ table_kind }}-search-filter" class="block min-w-0">
+        <span class="{{ analytics_workspace.control_label_classes() }}">Search</span>
+        <span class="relative mt-1.5 block">
+            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-content-muted"
+                  aria-hidden="true"><i data-lucide="search" class="h-4 w-4"></i></span>
+            <input type="search"
+                   id="{{ table_kind }}-search-filter"
+                   name="search"
+                   value="{{ selected_search }}"
+                   placeholder="Search signals..."
+                   class="{{ analytics_workspace.control_select_classes() }} pl-10 font-normal">
+        </span>
+    </label>
+</form>

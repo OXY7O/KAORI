@@ -13,7 +13,7 @@ NAMESPACED_RESOURCE_TABLES = (
 
 
 def _table(resource: str) -> str:
-    return (ROOT / 'app' / 'templates' / 'inventory' / resource / 'partials' / '_table_content.html').read_text(
+    return (ROOT / 'app' / 'templates' / 'inventory' / 'kubernetes' / resource / 'partials' / '_table_content.html').read_text(
         encoding='utf-8'
     )
 

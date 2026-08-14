@@ -62,7 +62,8 @@ def main() -> None:
         "if provider not in {'prometheus', 'alertmanager'}" not in binding_service,
         'binding service must not use a provider allow-list',
     )
-    require("asset_type='kubernetes_cluster'" in binding_service, 'Kubernetes compatibility wrapper must remain')
+    require('def create_cluster_source_binding(' not in binding_service, 'Domain compatibility binding wrappers must remain removed')
+    require('def cluster(self)' not in binding_service, 'Created binding results must not expose compatibility aliases')
 
     validation = read('app/integrations/validation/tasks.py')
     full_validation = validation.split('def validate_integration_instance', 1)[1].split('def _as_result_payload', 1)[0]

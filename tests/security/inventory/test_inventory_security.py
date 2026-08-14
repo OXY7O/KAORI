@@ -4,11 +4,11 @@ import ast
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-ROUTES = ROOT / 'app/inventory/routes.py'
+ROUTES = ROOT / 'app/inventory/kubernetes/routes.py'
 READ_SIDE = (
-    ROOT / 'app/inventory/overview.py',
-    ROOT / 'app/inventory/resources',
-    ROOT / 'app/inventory/topology',
+    ROOT / 'app/inventory/kubernetes/overview.py',
+    ROOT / 'app/inventory/kubernetes/resources',
+    ROOT / 'app/inventory/kubernetes/topology',
 )
 
 READ_VIEWS = {

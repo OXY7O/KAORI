@@ -7,7 +7,7 @@ import ast
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-ROUTES = ROOT / 'app/inventory/routes.py'
+ROUTES = ROOT / 'app/inventory/kubernetes/routes.py'
 RESOURCE_NAMES = ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')
 READ_VIEWS = {
     'overview',
@@ -103,9 +103,9 @@ def main() -> int:
     )
 
     read_side = '\n'.join(
-        [read('app/inventory/overview.py')]
-        + [path.read_text(encoding='utf-8') for path in sorted((ROOT / 'app/inventory/resources').rglob('*.py'))]
-        + [path.read_text(encoding='utf-8') for path in sorted((ROOT / 'app/inventory/topology').rglob('*.py'))]
+        [read('app/inventory/kubernetes/overview.py')]
+        + [path.read_text(encoding='utf-8') for path in sorted((ROOT / 'app/inventory/kubernetes/resources').rglob('*.py'))]
+        + [path.read_text(encoding='utf-8') for path in sorted((ROOT / 'app/inventory/kubernetes/topology').rglob('*.py'))]
     )
     for token in (
         'kubernetes.client',
@@ -120,8 +120,8 @@ def main() -> int:
     ):
         require(token not in read_side, f'Inventory read side must remain provider-free: {token}', errors)
 
-    topology_repository = read('app/inventory/topology/repository.py')
-    topology_builder = read('app/inventory/topology/node_builder.py')
+    topology_repository = read('app/inventory/kubernetes/topology/repository.py')
+    topology_builder = read('app/inventory/kubernetes/topology/node_builder.py')
     require(
         'joinedload(Cluster.kubernetes_connection)' in topology_repository,
         'Topology cluster identity must eager-load the canonical Kubernetes connection relationship.',
@@ -133,8 +133,8 @@ def main() -> int:
         errors,
     )
 
-    formatting = read('app/inventory/formatting.py')
-    common = read('app/inventory/resources/common.py')
+    formatting = read('app/inventory/kubernetes/formatting.py')
+    common = read('app/inventory/kubernetes/resources/common.py')
     for retired in ('def format_byte_count(', 'def format_gib('):
         require(retired not in formatting, f'Retired Inventory helper must remain removed: {retired}', errors)
     require(
@@ -148,8 +148,8 @@ def main() -> int:
         errors,
     )
 
-    overview_hero = read('app/templates/inventory/overview/partials/_hero.html')
-    topology_hero = read('app/templates/inventory/topology/partials/_hero.html')
+    overview_hero = read('app/templates/inventory/kubernetes/overview/partials/_hero.html')
+    topology_hero = read('app/templates/inventory/kubernetes/topology/partials/_hero.html')
     require(
         'page_hero.context_card(' in overview_hero,
         'Inventory Overview must use canonical status-oriented Hero context.',
@@ -161,8 +161,8 @@ def main() -> int:
         errors,
     )
     for resource in RESOURCE_NAMES:
-        hero = read(f'app/templates/inventory/{resource}/partials/_hero.html')
-        table = read(f'app/templates/inventory/{resource}/partials/_table_content.html')
+        hero = read(f'app/templates/inventory/kubernetes/{resource}/partials/_hero.html')
+        table = read(f'app/templates/inventory/kubernetes/{resource}/partials/_table_content.html')
         require(
             'page_hero.context_card(' in hero,
             f'{resource} Hero must use the canonical Status Badge Box context card.',
@@ -186,7 +186,7 @@ def main() -> int:
             'ingresses': '_ingress_detail_content.html',
             'storage': '_storage_detail_content.html',
         }[resource]
-        detail_source = read(f'app/templates/inventory/{resource}/partials/{detail_partial}')
+        detail_source = read(f'app/templates/inventory/kubernetes/{resource}/partials/{detail_partial}')
         require(
             'detail.header_badge_row()' in detail_source,
             f'{resource} detail header must align state labels with the text-content column.',
@@ -240,12 +240,12 @@ def main() -> int:
     )
     for required_test in (
         'tests/contracts/kubernetes/test_inventory_final_release_contract.py',
-        'tests/unit/inventory/test_inventory_topology_selection.py',
-        'tests/inventory/test_inventory_route_characterization.py',
+        'tests/unit/inventory/kubernetes/test_inventory_topology_selection.py',
+        'tests/inventory/kubernetes/test_inventory_route_characterization.py',
         'tests/security/inventory/test_inventory_security.py',
         'tests/rendering/inventory/test_inventory_rendering.py',
-        'tests/integration/inventory/test_node_inventory_read_model.py',
-        'tests/e2e/inventory/test_inventory_smoke.py',
+        'tests/integration/inventory/kubernetes/test_node_inventory_read_model.py',
+        'tests/e2e/inventory/kubernetes/test_inventory_smoke.py',
     ):
         require(required_test in coverage, f'Inventory release evidence is not permanent: {required_test}', errors)
 

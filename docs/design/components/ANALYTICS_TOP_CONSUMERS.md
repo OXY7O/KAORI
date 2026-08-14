@@ -4,17 +4,17 @@ Status: Canonical KAORI Analytics presentation, evidence, and snapshot contract
 
 Implementation owners:
 
-- `app/analytics/top_consumers/contracts.py`
-- `app/analytics/top_consumers/evidence.py`
-- `app/analytics/top_consumers/rows.py`
-- `app/analytics/top_consumers/domain.py`
-- `app/analytics/top_consumers/presentation.py`
-- `app/analytics/top_consumers/recommendations.py`
-- `app/analytics/top_consumers/service.py`
-- `app/analytics/top_consumers/routes.py`
-- `app/templates/analytics/top_consumers/`
-- `app/templates/analytics/components/_ranked_evidence_panel.html`
-- `app/templates/analytics/components/_record_pagination.html`
+- `app/analytics/kubernetes/top_consumers/contracts.py`
+- `app/analytics/kubernetes/top_consumers/evidence.py`
+- `app/analytics/kubernetes/top_consumers/rows.py`
+- `app/analytics/kubernetes/top_consumers/domain.py`
+- `app/analytics/kubernetes/top_consumers/presentation.py`
+- `app/analytics/kubernetes/top_consumers/recommendations.py`
+- `app/analytics/kubernetes/top_consumers/service.py`
+- `app/analytics/kubernetes/top_consumers/routes.py`
+- `app/templates/analytics/kubernetes/top_consumers/`
+- `app/templates/analytics/kubernetes/components/_ranked_evidence_panel.html`
+- `app/templates/analytics/kubernetes/components/_record_pagination.html`
 
 ## Purpose
 

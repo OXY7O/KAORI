@@ -6,8 +6,8 @@ def test_analysis_surfaces_owns_interpretation_callout_macro():
     assert '{% macro interpretation_callout(' in surface
 
     for template_path in (
-        'app/templates/analytics/overview/partials/_health_summary.html',
-        'app/templates/analytics/overview/partials/_resource_snapshot.html',
+        'app/templates/analytics/kubernetes/overview/partials/_health_summary.html',
+        'app/templates/analytics/kubernetes/overview/partials/_resource_snapshot.html',
     ):
         template = Path(template_path).read_text()
         assert 'analytics/components/_analysis_surfaces.html' in template

@@ -29,7 +29,7 @@ Reviewed collector, persistence, route, templates, relationship queries, topolog
 Deleted:
 
 ```text
-app/templates/inventory/storage/partials/_inventory_scope.html
+app/templates/inventory/kubernetes/storage/partials/_inventory_scope.html
 ```
 
 Storage now participates directly in the primary Inventory workspace tuple and does not use a route compatibility block.

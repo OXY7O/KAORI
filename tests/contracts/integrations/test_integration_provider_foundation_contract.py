@@ -62,7 +62,7 @@ def test_builtin_provider_registration_uses_canonical_taxonomy() -> None:
         assert 'workspace_endpoint=' in source
 
 
-def test_binding_service_is_asset_centric_and_keeps_kubernetes_wrapper() -> None:
+def test_binding_service_is_asset_centric_without_domain_compatibility_wrappers() -> None:
     binding_service = read('app/integrations/binding_service.py')
     prometheus_adapter = read('app/integrations/prometheus/adapter.py')
     prometheus_binding = read('app/integrations/prometheus/binding_management.py')
@@ -73,8 +73,8 @@ def test_binding_service_is_asset_centric_and_keeps_kubernetes_wrapper() -> None
     assert 'scope_type=normalized_asset_type' in binding_service
     assert 'scope_key=normalized_asset_key' in binding_service
     assert "if provider not in {'prometheus', 'alertmanager'}" not in binding_service
-    assert 'def create_cluster_source_binding(' in binding_service
-    assert "asset_type='kubernetes_cluster'" in binding_service
+    assert 'def create_cluster_source_binding(' not in binding_service
+    assert 'def cluster(self)' not in binding_service
 
     assert 'spec=SourceBindingSpec(' in prometheus_adapter
     assert "asset_type=str(kwargs.get('scope_type') or '')" in prometheus_adapter

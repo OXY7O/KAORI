@@ -2,7 +2,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-ALERTS = ROOT / 'app/templates/analytics/alerts'
+ALERTS = ROOT / 'app/templates/analytics/kubernetes/alerts'
 PARTIALS = ALERTS / 'partials'
 
 
@@ -14,9 +14,9 @@ def read(path: Path | str) -> str:
 def test_alerts_workspace_uses_shared_tabs_and_canonical_url_state() -> None:
     index = read(ALERTS / 'index.html')
     routes = read('app/analytics/routes.py')
-    alert_routes = read('app/analytics/alerts/routes.py')
+    alert_routes = read('app/analytics/kubernetes/alerts/routes.py')
 
-    assert 'analytics/components/_analysis_workspace.html' in index
+    assert 'analytics/kubernetes/components/_analysis_workspace.html' in index
     assert 'analytics_workspace.tabbed(' in index
     assert "('alerts', 'Alerts'" in index
     assert "('anomalies', 'Anomalies'" in index
@@ -50,7 +50,7 @@ def test_alerts_readiness_and_overview_follow_bright_evidence_hierarchy() -> Non
     overview = read(PARTIALS / '_cluster_signal_overview.html')
 
     assert 'analytics/components/_analysis_surfaces.html' in filters
-    assert 'analytics/components/_analysis_workspace.html' in filters
+    assert 'analytics/kubernetes/components/_analysis_workspace.html' in filters
     assert 'analysis_surface.readiness_shell_classes()' in filters
     assert 'Source Evidence Incomplete' in filters
     assert 'analytics/components/_analysis_surfaces.html' in overview
@@ -71,11 +71,11 @@ def test_alerts_readiness_and_overview_follow_bright_evidence_hierarchy() -> Non
 def test_alerts_and_anomalies_use_shared_record_collection_and_pagination() -> None:
     alerts_table = read(PARTIALS / '_alerts_table.html')
     anomalies_table = read(PARTIALS / '_anomalies_table.html')
-    pagination = read('app/templates/analytics/components/_record_pagination.html')
+    pagination = read('app/templates/analytics/kubernetes/components/_record_pagination.html')
 
     for table in (alerts_table, anomalies_table):
-        assert 'analytics/components/_evidence_record_list.html' in table
-        assert 'analytics/components/_record_pagination.html' in table
+        assert 'analytics/kubernetes/components/_evidence_record_list.html' in table
+        assert 'analytics/kubernetes/components/_record_pagination.html' in table
         assert 'record_pagination.render(' in table
         assert 'analytics.alerts' in table
         assert 'partials/_pagination.html' not in table
@@ -88,7 +88,7 @@ def test_alerts_and_anomalies_use_shared_record_collection_and_pagination() -> N
 def test_alert_records_use_shared_view_more_modals_and_controlled_wrapping() -> None:
     alert_row = read(PARTIALS / '_alerts_table_row.html')
     anomaly_row = read(PARTIALS / '_anomalies_table_row.html')
-    modal = read('app/templates/analytics/components/_record_detail_modal.html')
+    modal = read('app/templates/analytics/kubernetes/components/_record_detail_modal.html')
 
     assert "modal_width = 'max-w-5xl' if size == 'wide' else 'max-w-4xl'" in modal
     assert "size='standard'" in modal
@@ -97,7 +97,7 @@ def test_alert_records_use_shared_view_more_modals_and_controlled_wrapping() -> 
     assert 'relative flex h-[calc(100dvh-1rem)]' not in modal
 
     for row in (alert_row, anomaly_row):
-        assert 'analytics/components/_record_detail_modal.html' in row
+        assert 'analytics/kubernetes/components/_record_detail_modal.html' in row
         assert '@kaori:alerts-collapse.window="detailOpen = false"' in row
         assert 'record_detail_modal.render(' in row
         assert 'aria-haspopup="dialog"' in row
@@ -124,15 +124,15 @@ def test_alert_records_use_shared_view_more_modals_and_controlled_wrapping() -> 
 
 
 def test_alert_domain_payloads_are_semantic_and_do_not_emit_css_classes() -> None:
-    contracts = read('app/analytics/alerts/contracts.py')
+    contracts = read('app/analytics/kubernetes/alerts/contracts.py')
     modules = [
-        read('app/analytics/alerts/health.py'),
-        read('app/analytics/alerts/routing.py'),
-        read('app/analytics/alerts/ownership.py'),
-        read('app/analytics/alerts/readiness.py'),
-        read('app/analytics/alerts/inhibition.py'),
-        read('app/analytics/alerts/silences.py'),
-        read('app/analytics/alerts/snapshots.py'),
+        read('app/analytics/kubernetes/alerts/health.py'),
+        read('app/analytics/kubernetes/alerts/routing.py'),
+        read('app/analytics/kubernetes/alerts/ownership.py'),
+        read('app/analytics/kubernetes/alerts/readiness.py'),
+        read('app/analytics/kubernetes/alerts/inhibition.py'),
+        read('app/analytics/kubernetes/alerts/silences.py'),
+        read('app/analytics/kubernetes/alerts/snapshots.py'),
     ]
     labels = read('app/templates/components/table_label.html')
 
@@ -145,7 +145,7 @@ def test_alert_domain_payloads_are_semantic_and_do_not_emit_css_classes() -> Non
 
 def test_alert_recommendations_use_canonical_tabs() -> None:
     engine = read('app/intelligence/recommendation_engine.py')
-    overview = read('app/analytics/overview/service.py')
+    overview = read('app/analytics/kubernetes/overview/service.py')
 
     assert '/analytics/alerts-anomalies' not in engine
     assert '/analytics/alerts?tab=alerts&severity=critical' in engine

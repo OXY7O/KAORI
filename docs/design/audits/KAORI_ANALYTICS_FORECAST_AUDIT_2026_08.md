@@ -84,7 +84,7 @@ Resolution:
 
 ### Unused fragment route
 
-`/analytics/forecast/section` no longer had a consumer but remained registered.
+`/analytics/kubernetes/forecast/section` no longer had a consumer but remained registered.
 
 Resolution:
 

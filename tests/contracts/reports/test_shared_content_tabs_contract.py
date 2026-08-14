@@ -9,8 +9,8 @@ def read(path: str) -> str:
 
 def test_shared_content_tabs_preserve_analytics_geometry_and_offer_server_owned_links() -> None:
     shared = read('app/templates/components/content_tabs.html')
-    analytics_workspace = read('app/templates/analytics/components/_analysis_workspace.html')
-    analytics_overview = read('app/templates/analytics/overview/index.html')
+    analytics_workspace = read('app/templates/analytics/kubernetes/components/_analysis_workspace.html')
+    analytics_overview = read('app/templates/analytics/kubernetes/overview/index.html')
     storage = read('app/templates/reports/storage/index.html')
 
     # Geometry is the Analytics compact-tab treatment: soft embedded strip,

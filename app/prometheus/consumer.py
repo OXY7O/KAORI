@@ -90,6 +90,7 @@ class PrometheusConsumer:
         promql: str,
         *,
         required_capabilities: tuple[str, ...] = DEFAULT_QUERY_CAPABILITIES,
+        retry_count: int | None = None,
     ) -> dict[str, Any]:
         source = self._source_for(required_capabilities)
         return self._run_query(
@@ -97,6 +98,7 @@ class PrometheusConsumer:
             promql=promql,
             range_query=False,
             operation=lambda client: client.query(promql),
+            retry_count=retry_count,
         )
 
     def query_at(
@@ -122,6 +124,7 @@ class PrometheusConsumer:
         step: str,
         *,
         required_capabilities: tuple[str, ...] = DEFAULT_RANGE_CAPABILITIES,
+        retry_count: int | None = None,
     ) -> dict[str, Any]:
         source = self._source_for(required_capabilities)
         return self._run_query(
@@ -129,6 +132,7 @@ class PrometheusConsumer:
             promql=promql,
             range_query=True,
             operation=lambda client: client.query_range(promql, start, end, step),
+            retry_count=retry_count,
         )
 
     def execute_query(
@@ -326,8 +330,9 @@ class PrometheusConsumer:
         promql: str,
         range_query: bool,
         operation,
+        retry_count: int | None = None,
     ) -> dict[str, Any]:
-        retries = self._query_retry_count()
+        retries = self._normalize_retry_count(retry_count)
         fingerprint = sha256(promql.encode('utf-8')).hexdigest()[:12]
         operation_name = 'range' if range_query else 'instant'
         timeout_seconds = self._query_timeout_seconds(range_query=range_query)
@@ -358,7 +363,7 @@ class PrometheusConsumer:
                         operation_name,
                         extra={
                             'scope_type': self.scope_type,
-                        'scope_key': self.scope_key,
+                            'scope_key': self.scope_key,
                             'prometheus_instance_id': source.instance.id,
                             'query_fingerprint': fingerprint,
                             'attempt': attempt + 1,
@@ -401,6 +406,15 @@ class PrometheusConsumer:
             message = str(error).lower()
             return any(token in message for token in _TRANSIENT_HTTP_STATUS_TOKENS)
         return False
+
+    @classmethod
+    def _normalize_retry_count(cls, retry_count: int | None) -> int:
+        if retry_count is None:
+            return cls._query_retry_count()
+        try:
+            return min(max(int(retry_count), 0), 5)
+        except (TypeError, ValueError):
+            return 0
 
     @staticmethod
     def _query_retry_count() -> int:

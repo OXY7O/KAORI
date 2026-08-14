@@ -1,7 +1,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-CALCULATION = (ROOT / 'app/analytics/forecast/calculation.py').read_text(encoding='utf-8')
+CALCULATION = (ROOT / 'app/analytics/kubernetes/forecast/calculation.py').read_text(encoding='utf-8')
 
 
 def test_signal_quality_is_not_named_confidence() -> None:

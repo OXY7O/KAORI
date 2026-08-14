@@ -62,7 +62,7 @@ Object Storage inventory is registered as `object_storage.inventory.sync`:
 - manual authorization: `jobs.execute` + `storage.sync`
 - deduplication group: `object-storage-inventory:global`
 
-The Object Storage executor remains owned by `app.storage_inventory`. It resolves the provider through the integration registry and may pass a domain progress callback to `inventory.sync`; `app.jobs` owns orchestration and lifecycle only.
+The Object Storage executor remains owned by `app.inventory.object_storage`. It resolves the provider through the integration registry and may pass a domain progress callback to `inventory.sync`; `app.jobs` owns orchestration and lifecycle only.
 
 ## RBAC
 

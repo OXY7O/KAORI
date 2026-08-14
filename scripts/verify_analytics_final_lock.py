@@ -7,7 +7,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ANALYTICS_TEMPLATES = ROOT / 'app/templates/analytics'
-ROUTE_FILES = tuple(sorted((ROOT / 'app/analytics').glob('*/routes.py'))) + (ROOT / 'app/analytics/routes.py',)
+ROUTE_FILES = tuple(sorted((ROOT / 'app/analytics/kubernetes').glob('*/routes.py'))) + (
+    ROOT / 'app/analytics/object_storage/routes.py',
+    ROOT / 'app/analytics/routes.py',
+)
 RELEASE_EVIDENCE = (
     'tests/contracts/analytics/test_analytics_final_release_contract.py',
     'tests/unit/analytics/test_materialization_identity.py',
@@ -30,18 +33,18 @@ def require(condition: bool, message: str, errors: list[str]) -> None:
 
 def main() -> int:
     errors: list[str] = []
-    runtime = read('app/static/js/analytics_controls.js')
+    runtime = read('app/static/js/analytics/kubernetes/controls.js')
     shared_tabs = read('app/templates/components/content_tabs.html')
-    workspace = read('app/templates/analytics/components/_analysis_workspace.html')
-    overview = read('app/templates/analytics/overview/index.html')
-    top_consumers = read('app/templates/analytics/top_consumers/partials/_top_consumers_section.html')
-    top_consumer_summary = read('app/templates/analytics/top_consumers/partials/_summary.html')
-    record_detail_modal = read('app/templates/analytics/components/_record_detail_modal.html')
-    forecast_index = read('app/templates/analytics/forecast/index.html')
-    forecast_hero = read('app/templates/analytics/forecast/partials/_hero.html')
+    workspace = read('app/templates/analytics/kubernetes/components/_analysis_workspace.html')
+    overview = read('app/templates/analytics/kubernetes/overview/index.html')
+    top_consumers = read('app/templates/analytics/kubernetes/top_consumers/partials/_top_consumers_section.html')
+    top_consumer_summary = read('app/templates/analytics/kubernetes/top_consumers/partials/_summary.html')
+    record_detail_modal = read('app/templates/analytics/kubernetes/components/_record_detail_modal.html')
+    forecast_index = read('app/templates/analytics/kubernetes/forecast/index.html')
+    forecast_hero = read('app/templates/analytics/kubernetes/forecast/partials/_hero.html')
     quality_gate = read('scripts/quality_gate.sh')
     coverage = read('scripts/verify_feature_test_coverage.py')
-    analytics_readme = read('app/analytics/README.md')
+    analytics_readme = read('app/analytics/kubernetes/README.md')
     tracker = read('docs/reviews/2026-08-10-final-recheck.md')
     content_tabs_standard = read('docs/design/components/CONTENT_TABS.md')
     tab_registry = read('docs/design/components/TAB_STYLES.md')
@@ -120,7 +123,7 @@ def main() -> int:
     for retired in (
         'app/templates/analytics/components/_content_tabs.html',
         'app/templates/analytics/components/_snapshot_panel.html',
-        'app/templates/analytics/materialization/_freshness.html',
+        'app/templates/analytics/kubernetes/materialization/_freshness.html',
     ):
         require(
             not (ROOT / retired).exists(),
@@ -164,7 +167,7 @@ def main() -> int:
         require(token in record_detail_modal, f'Analytics record-detail modal contract missing: {token}', errors)
 
     require(
-        '{% include "analytics/forecast/partials/_hero.html" %}' in forecast_index,
+        '{% include "analytics/kubernetes/forecast/partials/_hero.html" %}' in forecast_index,
         'Forecast page must consume the canonical Forecast hero partial.',
         errors,
     )
@@ -193,14 +196,14 @@ def main() -> int:
         )
 
     top_level_pages = (
-        'app/templates/analytics/overview/index.html',
-        'app/templates/analytics/utilization/index.html',
-        'app/templates/analytics/capacity/index.html',
-        'app/templates/analytics/storage/index.html',
-        'app/templates/analytics/workload/index.html',
-        'app/templates/analytics/forecast/index.html',
-        'app/templates/analytics/top_consumers/index.html',
-        'app/templates/analytics/alerts/index.html',
+        'app/templates/analytics/kubernetes/overview/index.html',
+        'app/templates/analytics/kubernetes/utilization/index.html',
+        'app/templates/analytics/kubernetes/capacity/index.html',
+        'app/templates/analytics/kubernetes/storage/index.html',
+        'app/templates/analytics/kubernetes/workload/index.html',
+        'app/templates/analytics/kubernetes/forecast/index.html',
+        'app/templates/analytics/kubernetes/top_consumers/index.html',
+        'app/templates/analytics/kubernetes/alerts/index.html',
     )
     for relative in top_level_pages:
         source = read(relative)
@@ -253,12 +256,12 @@ def main() -> int:
         )
 
     require(
-        'native `analytics_controls.js` tab controller' in analytics_readme,
+        'native `app/static/js/analytics/kubernetes/controls.js` tab controller' in analytics_readme,
         'Analytics README must document single native tab ownership.',
         errors,
     )
-    identity = read('app/analytics/materialization/identity.py')
-    materialization_service = read('app/analytics/materialization/service.py')
+    identity = read('app/analytics/kubernetes/materialization/identity.py')
+    materialization_service = read('app/analytics/kubernetes/materialization/service.py')
     require(
         'def normalize_parameters' in identity and 'def parameter_fingerprint' in identity,
         'Analytics snapshot identity must be owned by the dependency-light materialization identity module.',
@@ -269,8 +272,8 @@ def main() -> int:
         'Materialization service must not duplicate snapshot identity helpers.',
         errors,
     )
-    serialization = read('app/analytics/materialization/serialization.py')
-    forecast_presentation = read('app/analytics/forecast/presentation.py')
+    serialization = read('app/analytics/kubernetes/materialization/serialization.py')
+    forecast_presentation = read('app/analytics/kubernetes/forecast/presentation.py')
     require(
         'load_cluster_reference' not in serialization,
         'Analytics snapshot decode must not use a database-backed compatibility fallback.',

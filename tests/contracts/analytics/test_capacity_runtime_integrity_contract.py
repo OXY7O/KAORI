@@ -8,8 +8,8 @@ def read(relative: str) -> str:
 
 
 def test_capacity_collects_each_required_signal_once_and_keeps_filesystem_optional() -> None:
-    evidence = read('app/analytics/capacity/evidence.py')
-    service = read('app/analytics/capacity/service.py')
+    evidence = read('app/analytics/kubernetes/capacity/evidence.py')
+    service = read('app/analytics/kubernetes/capacity/service.py')
 
     assert 'class CapacityEvidenceCollector' in evidence
     assert 'def collect(self, *, time_range: str)' in evidence
@@ -25,7 +25,7 @@ def test_capacity_collects_each_required_signal_once_and_keeps_filesystem_option
 
 def test_capacity_queries_use_ready_worker_boundary_for_every_schedulable_signal() -> None:
     profile = read('app/integrations/prometheus/query_profiles/kubernetes_v1.py')
-    evidence = read('app/analytics/capacity/evidence.py')
+    evidence = read('app/analytics/kubernetes/capacity/evidence.py')
 
     required_keys = (
         'CURRENT_WORKER_PODS_QUERY',
@@ -77,8 +77,8 @@ def test_capacity_capability_validation_includes_readiness_and_node_labels() -> 
 
 
 def test_capacity_domain_separates_schedulable_capacity_from_filesystem_reference() -> None:
-    domain = read('app/analytics/capacity/domain.py')
-    presenter = read('app/analytics/capacity/presentation.py')
+    domain = read('app/analytics/kubernetes/capacity/domain.py')
+    presenter = read('app/analytics/kubernetes/capacity/presentation.py')
     recommendation_engine = read('app/intelligence/recommendation_engine.py')
 
     assert "SCHEDULING_RESOURCES = ('cpu', 'memory', 'pods')" in domain
@@ -89,9 +89,9 @@ def test_capacity_domain_separates_schedulable_capacity_from_filesystem_referenc
 
 
 def test_capacity_snapshot_and_filter_preserve_exact_evidence_semantics() -> None:
-    service = read('app/analytics/capacity/service.py')
-    controls = read('app/templates/analytics/capacity/partials/_controls_readiness.html')
-    routes = read('app/analytics/capacity/routes.py')
+    service = read('app/analytics/kubernetes/capacity/service.py')
+    controls = read('app/templates/analytics/kubernetes/capacity/partials/_controls_readiness.html')
+    routes = read('app/analytics/kubernetes/capacity/routes.py')
 
     assert 'if not result.available:' in service
     assert "if item.get('evidence_available') is False:" in service
@@ -110,12 +110,12 @@ def test_dashboard_capacity_adapter_preserves_unavailable_evidence() -> None:
 
 
 def test_capacity_presenter_and_domain_have_canonical_ownership() -> None:
-    common = read('app/analytics/common/presentation.py')
-    route = read('app/analytics/capacity/routes.py')
-    service = read('app/analytics/capacity/service.py')
+    common = read('app/analytics/kubernetes/common/presentation.py')
+    route = read('app/analytics/kubernetes/capacity/routes.py')
+    service = read('app/analytics/kubernetes/capacity/service.py')
 
     assert 'def present_capacity_context' not in common
-    assert 'from app.analytics.capacity.presentation import present_capacity_context' in route
-    assert 'from app.analytics.capacity.domain import (' in service
+    assert 'from app.analytics.kubernetes.capacity.presentation import present_capacity_context' in route
+    assert 'from app.analytics.kubernetes.capacity.domain import (' in service
     assert 'capacity_posture = build_capacity_posture(' in service
-    assert len(read('app/analytics/capacity/service.py').splitlines()) < 800
+    assert len(read('app/analytics/kubernetes/capacity/service.py').splitlines()) < 800

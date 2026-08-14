@@ -8,10 +8,10 @@ def read(relative: str) -> str:
 
 
 def test_workload_record_modals_remain_closed_after_htmx_replacement() -> None:
-    component = read('app/templates/analytics/components/_record_detail_modal.html')
-    tenant = read('app/templates/analytics/workload/partials/_tenant_quota_section.html')
-    mapping = read('app/templates/analytics/workload/partials/_workload_mapping_section.html')
-    script = read('app/static/js/analytics_controls.js')
+    component = read('app/templates/analytics/kubernetes/components/_record_detail_modal.html')
+    tenant = read('app/templates/analytics/kubernetes/workload/partials/_tenant_quota_section.html')
+    mapping = read('app/templates/analytics/kubernetes/workload/partials/_workload_mapping_section.html')
+    script = read('app/static/js/analytics/kubernetes/controls.js')
 
     for content in (tenant, mapping):
         assert 'x-data="{ detailOpen: false }"' in content

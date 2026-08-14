@@ -19,7 +19,7 @@ def test_unexpected_binding_failure_preserves_stack_trace() -> None:
 def test_binding_response_guards_optional_saved_context_before_success_feedback() -> None:
     routes = (ROOT / 'app/integrations/routes.py').read_text(encoding='utf-8')
     binding_response = routes.split('def _binding_response(', 1)[1]
-    success_path = binding_response.split('created_binding = create_cluster_source_binding(', 1)[1].split(
+    success_path = binding_response.split('created_binding = create_source_binding(', 1)[1].split(
         'except ValueError as exc:', 1
     )[0]
 

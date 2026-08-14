@@ -8,10 +8,10 @@ def read(relative: str) -> str:
 
 
 def test_inventory_overview_uses_canonical_hero_snapshot_catalog_and_table_components() -> None:
-    hero = read('app/templates/inventory/overview/partials/_hero.html')
-    freshness = read('app/templates/inventory/components/_data_freshness.html')
-    catalog = read('app/templates/inventory/overview/partials/_kpi_cards.html')
-    table_shell = read('app/templates/inventory/overview/partials/_resources_by_cluster.html')
+    hero = read('app/templates/inventory/kubernetes/overview/partials/_hero.html')
+    freshness = read('app/templates/inventory/kubernetes/components/_data_freshness.html')
+    catalog = read('app/templates/inventory/kubernetes/overview/partials/_kpi_cards.html')
+    table_shell = read('app/templates/inventory/kubernetes/overview/partials/_resources_by_cluster.html')
 
     assert 'page_hero.context_card' in hero
     assert 'Last Sync' not in hero
@@ -27,7 +27,7 @@ def test_inventory_overview_uses_canonical_hero_snapshot_catalog_and_table_compo
 
 
 def test_compact_cluster_table_has_details_button_and_shared_right_drawer() -> None:
-    content = read('app/templates/inventory/overview/partials/_resources_by_cluster_content.html')
+    content = read('app/templates/inventory/kubernetes/overview/partials/_resources_by_cluster_content.html')
     drawer = read('app/templates/components/side_drawer.html')
 
     expected_headers = (
@@ -78,7 +78,7 @@ def test_compact_cluster_table_has_details_button_and_shared_right_drawer() -> N
 
 
 def test_cluster_table_pagination_uses_resource_case_and_visible_rows_label() -> None:
-    content = read('app/templates/inventory/overview/partials/_resources_by_cluster_content.html')
+    content = read('app/templates/inventory/kubernetes/overview/partials/_resources_by_cluster_content.html')
 
     assert "{{ 'Cluster' if overview.resources_pagination.total_items == 1 else 'Clusters' }}" in content
     assert '>Rows</label>' in content
@@ -87,7 +87,7 @@ def test_cluster_table_pagination_uses_resource_case_and_visible_rows_label() ->
 
 
 def test_inventory_overview_uses_grouped_counts_and_fresh_health_semantics() -> None:
-    backend = read('app/inventory/overview.py')
+    backend = read('app/inventory/kubernetes/overview.py')
 
     assert 'def _grouped_current_counts(' in backend
     assert '.group_by(model.cluster_id)' in backend
@@ -103,8 +103,8 @@ def test_inventory_overview_uses_grouped_counts_and_fresh_health_semantics() -> 
 
 
 def test_snapshot_source_uses_compact_non_wrapping_value() -> None:
-    content = read('app/templates/inventory/overview/partials/_resources_by_cluster_content.html')
-    backend = read('app/inventory/overview.py')
+    content = read('app/templates/inventory/kubernetes/overview/partials/_resources_by_cluster_content.html')
+    backend = read('app/inventory/kubernetes/overview.py')
     details_macro = read('app/templates/components/details/_detail_content.html')
 
     assert "'snapshot_source': 'Committed Snapshot'" in backend
@@ -114,7 +114,7 @@ def test_snapshot_source_uses_compact_non_wrapping_value() -> None:
 
 
 def test_inventory_signals_use_full_width_stacked_callouts() -> None:
-    content = read('app/templates/inventory/overview/partials/_resources_by_cluster_content.html')
+    content = read('app/templates/inventory/kubernetes/overview/partials/_resources_by_cluster_content.html')
 
     signals_section = content.split("'Inventory Signals',", 1)[1].split('{% endcall %}', 1)[0]
     assert '<div class="grid gap-3">' in signals_section
@@ -123,7 +123,7 @@ def test_inventory_signals_use_full_width_stacked_callouts() -> None:
 
 
 def test_snapshot_last_collected_uses_numeric_non_wrapping_datetime() -> None:
-    content = read('app/templates/inventory/overview/partials/_resources_by_cluster_content.html')
+    content = read('app/templates/inventory/kubernetes/overview/partials/_resources_by_cluster_content.html')
     details_macro = read('app/templates/components/details/_detail_content.html')
     presentation = read('app/bootstrap/presentation.py')
 

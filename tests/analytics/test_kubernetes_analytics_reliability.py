@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from app.analytics import job_adapter
-from app.analytics.materialization.catalog import (
+from app.analytics.kubernetes import job_adapter
+from app.analytics.kubernetes.materialization.catalog import (
     source_binding_capabilities,
     source_technical_capabilities,
 )
@@ -85,7 +85,7 @@ def test_prometheus_consumer_reduces_domain_capabilities_to_query_transport() ->
 
 
 def test_non_live_context_still_returns_utilization_service(monkeypatch) -> None:
-    from app.analytics.common import context as analytics_context
+    from app.analytics.kubernetes.common import context as analytics_context
 
     cluster = SimpleNamespace(
         id='cluster-b',

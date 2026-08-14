@@ -130,15 +130,15 @@ Residual structural debt remains significant:
 | Module | Lines |
 | --- | ---: |
 | `app/intelligence/recommendation_engine.py` | 2,572 |
-| `app/analytics/workload/service.py` | 2,456 |
-| `app/analytics/top_consumers/service.py` | 2,185 |
-| `app/analytics/forecast/service.py` | 2,119 |
-| `app/analytics/overview/service.py` | 1,938 |
-| `app/analytics/storage/service.py` | 1,592 |
-| `app/analytics/utilization/service.py` | 1,275 |
-| `app/analytics/capacity/service.py` | 1,234 |
+| `app/analytics/kubernetes/workload/service.py` | 2,456 |
+| `app/analytics/kubernetes/top_consumers/service.py` | 2,185 |
+| `app/analytics/kubernetes/forecast/service.py` | 2,119 |
+| `app/analytics/kubernetes/overview/service.py` | 1,938 |
+| `app/analytics/kubernetes/storage/service.py` | 1,592 |
+| `app/analytics/kubernetes/utilization/service.py` | 1,275 |
+| `app/analytics/kubernetes/capacity/service.py` | 1,234 |
 | `app/inventory/routes.py` | 1,195 |
-| `app/inventory/topology/service.py` | 1,109 |
+| `app/inventory/kubernetes/topology/service.py` | 1,109 |
 
 Highest-risk functions:
 

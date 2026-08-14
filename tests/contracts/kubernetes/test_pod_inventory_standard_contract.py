@@ -8,25 +8,25 @@ def read(relative: str) -> str:
 
 
 def test_pod_workspace_refreshes_scope_and_snapshot_context() -> None:
-    routes = read('app/inventory/routes.py')
-    workspace = read('app/templates/inventory/pods/partials/_page_workspace.html')
-    card = read('app/templates/inventory/pods/partials/_table_card.html')
+    routes = read('app/inventory/kubernetes/routes.py')
+    workspace = read('app/templates/inventory/kubernetes/pods/partials/_page_workspace.html')
+    card = read('app/templates/inventory/kubernetes/pods/partials/_table_card.html')
 
     assert (
         "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')"
         in routes
     )
     assert 'id="pods-page-workspace"' in workspace
-    assert 'inventory/components/_data_freshness.html' in workspace
+    assert 'inventory/kubernetes/components/_data_freshness.html' in workspace
     assert 'hx-target="#pods-page-workspace"' in card
     assert 'name="partial_mode" value="page_workspace"' in card
     assert 'aria-label="Pod inventory filters"' in card
 
 
 def test_pod_filters_preserve_unknown_and_unscheduled_evidence() -> None:
-    service = read('app/inventory/resources/pods.py')
-    routes = read('app/inventory/routes.py')
-    card = read('app/templates/inventory/pods/partials/_table_card.html')
+    service = read('app/inventory/kubernetes/resources/pods.py')
+    routes = read('app/inventory/kubernetes/routes.py')
+    card = read('app/templates/inventory/kubernetes/pods/partials/_table_card.html')
 
     assert "UNKNOWN_FILTER = '__unknown__'" in service
     assert "UNSCHEDULED_FILTER = '__unscheduled__'" in service
@@ -39,8 +39,8 @@ def test_pod_filters_preserve_unknown_and_unscheduled_evidence() -> None:
 
 
 def test_pod_collector_commits_runtime_and_owner_resolution_evidence() -> None:
-    collector = read('app/inventory/collectors/pods.py')
-    persistence = read('app/inventory/persistence.py')
+    collector = read('app/inventory/kubernetes/collectors/pods.py')
+    persistence = read('app/inventory/kubernetes/persistence.py')
 
     assert "ready = f'{ready_count}/{total_count}' if runtime_evidence_reported else 'Not Reported'" in collector
     assert "lifecycle_phase = 'Terminating' if deletion_timestamp is not None else kubernetes_phase" in collector
@@ -54,8 +54,8 @@ def test_pod_collector_commits_runtime_and_owner_resolution_evidence() -> None:
 
 
 def test_pod_detail_distinguishes_absence_from_unreported_evidence() -> None:
-    detail = read('app/templates/inventory/pods/partials/_pod_detail_content.html')
-    semantics = read('app/inventory/resources/pod_semantics.py')
+    detail = read('app/templates/inventory/kubernetes/pods/partials/_pod_detail_content.html')
+    semantics = read('app/inventory/kubernetes/resources/pod_semantics.py')
 
     for token in (
         'Condition Evidence Not Reported',
@@ -71,8 +71,8 @@ def test_pod_detail_distinguishes_absence_from_unreported_evidence() -> None:
 
 
 def test_pod_tables_are_accessible_and_export_is_evidence_aware() -> None:
-    table = read('app/templates/inventory/pods/partials/_table_content.html')
-    detail = read('app/templates/inventory/pods/partials/_pod_detail_content.html')
+    table = read('app/templates/inventory/kubernetes/pods/partials/_table_content.html')
+    detail = read('app/templates/inventory/kubernetes/pods/partials/_pod_detail_content.html')
     export_payload = read('app/reports/export/payloads/inventory.py')
     export_standard = read('app/reports/export/xlsx/standard.py')
 

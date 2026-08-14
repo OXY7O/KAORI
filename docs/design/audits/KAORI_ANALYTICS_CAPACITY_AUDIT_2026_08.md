@@ -46,7 +46,7 @@ presentation.py  display normalization and bottleneck selection
 Jinja            rendering only
 ```
 
-The shared `app.analytics.common.presentation` package no longer contains a Capacity-specific presenter.
+The shared `app.analytics.kubernetes.common.presentation` package no longer contains a Capacity-specific presenter.
 
 ### Filters lost the active tab
 

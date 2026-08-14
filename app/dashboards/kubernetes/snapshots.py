@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from app.analytics.materialization.service import SnapshotResult, read_snapshot
+from app.analytics.kubernetes.materialization.service import SnapshotResult, read_snapshot
 
 
 def capacity_parameters(cluster_id: str) -> dict[str, str]:

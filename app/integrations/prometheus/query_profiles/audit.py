@@ -152,7 +152,7 @@ class PromQLProfileAuditor:
             self._reconcile_capabilities_from_contracts(capability_assessments, feature_contracts)
         feature_contract_summary = self._feature_contract_summary(feature_contracts)
         module_readiness = self._module_readiness(domain_summary)
-        core_domains = {'app.prometheus', 'app.analytics.capacity', 'app.analytics.utilization'}
+        core_domains = {'app.prometheus', 'app.analytics.kubernetes.capacity', 'app.analytics.kubernetes.utilization'}
         critical_blocked = sum(
             item['blocked_count'] for domain, item in domain_summary.items() if domain in core_domains
         )
@@ -678,12 +678,12 @@ class PromQLProfileAuditor:
     def _module_readiness(domain_summary: dict[str, dict[str, int]]) -> dict[str, dict[str, object]]:
         labels = {
             'app.prometheus': 'Kubernetes Overview',
-            'app.analytics.utilization': 'Utilization Analytics',
-            'app.analytics.capacity': 'Capacity Analytics',
-            'app.analytics.storage': 'Storage Analytics',
-            'app.analytics.workload': 'Workload Analytics',
-            'app.analytics.forecast': 'Forecast',
-            'app.analytics.top_consumers': 'Top Consumers',
+            'app.analytics.kubernetes.utilization': 'Utilization Analytics',
+            'app.analytics.kubernetes.capacity': 'Capacity Analytics',
+            'app.analytics.kubernetes.storage': 'Storage Analytics',
+            'app.analytics.kubernetes.workload': 'Workload Analytics',
+            'app.analytics.kubernetes.forecast': 'Forecast',
+            'app.analytics.kubernetes.top_consumers': 'Top Consumers',
         }
         output: dict[str, dict[str, object]] = {}
         for domain, values in domain_summary.items():

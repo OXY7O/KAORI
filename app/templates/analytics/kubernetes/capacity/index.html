@@ -1,0 +1,60 @@
+{% extends "layouts/app.html" %}
+{% import "analytics/kubernetes/components/_status_notice.html" as status_notice %}
+{% import "analytics/kubernetes/components/_analysis_workspace.html" as analytics_workspace %}
+{% block title %}Capacity Analysis{% endblock title %}
+{% block dashboard_content %}
+    <div id="capacity-page"
+         class="kaori-analytics-page space-y-6"
+         data-analytics-page-request-tracking="false">
+        {% include "analytics/kubernetes/capacity/partials/_hero.html" %}
+        {% if dependency_blocker %}
+            {% include "components/dependencies/_blocker.html" %}
+        {% else %}
+            {% if error %}{{ status_notice.render('Capacity Data Unavailable', error, tone='warning') }}{% endif %}
+            {% include "analytics/kubernetes/capacity/partials/_controls_readiness.html" %}
+            {% if cluster %}
+                {% include "analytics/kubernetes/capacity/partials/_overview.html" %}
+                {% set capacity_tabs = [('summary', 'Worker Capacity Summary', 'server-cog'), ('allocation', 'Allocation & Headroom', 'chart-pie'), ('risk', 'Capacity Risk Summary', 'shield-alert'), ('recommendations', 'Capacity Recommendations', 'list-checks')] %}
+                {% call analytics_workspace.tabbed(
+                    'capacity-content',
+                    capacity_tabs,
+                    'Capacity Analysis Content',
+                    'Capacity Analysis Workspace',
+                    'Review worker capacity, allocation pressure, resource headroom, risk, and prioritized actions in one workspace.',
+                    'server-cog',
+                    initial_tab|default('summary'),
+                    ['summary', 'allocation', 'risk', 'recommendations']
+                    ) %}
+                    <div id="capacity-content-panel-summary"
+                         role="tabpanel"
+                         aria-labelledby="capacity-content-tab-summary"
+                         data-analytics-tab-panel="summary"
+                         {% if initial_tab|default('summary') != 'summary' %}hidden{% endif %}>
+                        {% include "analytics/kubernetes/capacity/partials/_worker_summary.html" %}
+                    </div>
+                    <div id="capacity-content-panel-allocation"
+                         role="tabpanel"
+                         aria-labelledby="capacity-content-tab-allocation"
+                         data-analytics-tab-panel="allocation"
+                         {% if initial_tab|default('summary') != 'allocation' %}hidden{% endif %}>
+                        {% include "analytics/kubernetes/capacity/partials/_allocation.html" %}
+                    </div>
+                    <div id="capacity-content-panel-risk"
+                         role="tabpanel"
+                         aria-labelledby="capacity-content-tab-risk"
+                         data-analytics-tab-panel="risk"
+                         {% if initial_tab|default('summary') != 'risk' %}hidden{% endif %}>
+                        {% include "analytics/kubernetes/capacity/partials/_risk.html" %}
+                    </div>
+                    <div id="capacity-content-panel-recommendations"
+                         role="tabpanel"
+                         aria-labelledby="capacity-content-tab-recommendations"
+                         data-analytics-tab-panel="recommendations"
+                         {% if initial_tab|default('summary') != 'recommendations' %}hidden{% endif %}>
+                        {% include "analytics/kubernetes/capacity/partials/_recommendations.html" %}
+                    </div>
+                {% endcall %}
+            {% endif %}
+        {% endif %}
+    </div>
+{% endblock dashboard_content %}

@@ -1,20 +1,20 @@
 from pathlib import Path
 
 STATUS_FILES = [
-    'app/templates/analytics/overview/partials/_resource_snapshot.html',
-    'app/templates/analytics/overview/partials/_storage_snapshot.html',
-    'app/templates/analytics/components/_resource_pressure_lane.html',
-    'app/templates/analytics/utilization/partials/_overview.html',
-    'app/templates/analytics/utilization/partials/_trend.html',
-    'app/templates/analytics/utilization/partials/_node_detail.html',
-    'app/templates/analytics/storage/partials/_overview.html',
-    'app/templates/analytics/storage/partials/_filesystem_panel.html',
-    'app/templates/analytics/storage/partials/_persistent_volume_claims_panel.html',
-    'app/templates/analytics/workload/partials/_tenant_quota_section.html',
-    'app/templates/analytics/workload/partials/_workload_mapping_section.html',
-    'app/templates/analytics/forecast/partials/_forecast_section.html',
-    'app/templates/analytics/alerts/partials/_ownership_summary.html',
-    'app/templates/analytics/alerts/partials/_incident_readiness.html',
+    'app/templates/analytics/kubernetes/overview/partials/_resource_snapshot.html',
+    'app/templates/analytics/kubernetes/overview/partials/_storage_snapshot.html',
+    'app/templates/analytics/kubernetes/components/_resource_pressure_lane.html',
+    'app/templates/analytics/kubernetes/utilization/partials/_overview.html',
+    'app/templates/analytics/kubernetes/utilization/partials/_trend.html',
+    'app/templates/analytics/kubernetes/utilization/partials/_node_detail.html',
+    'app/templates/analytics/kubernetes/storage/partials/_overview.html',
+    'app/templates/analytics/kubernetes/storage/partials/_filesystem_panel.html',
+    'app/templates/analytics/kubernetes/storage/partials/_persistent_volume_claims_panel.html',
+    'app/templates/analytics/kubernetes/workload/partials/_tenant_quota_section.html',
+    'app/templates/analytics/kubernetes/workload/partials/_workload_mapping_section.html',
+    'app/templates/analytics/kubernetes/forecast/partials/_forecast_section.html',
+    'app/templates/analytics/kubernetes/alerts/partials/_ownership_summary.html',
+    'app/templates/analytics/kubernetes/alerts/partials/_incident_readiness.html',
 ]
 
 
@@ -36,13 +36,13 @@ def test_status_related_analytics_bars_use_semantic_renderer():
 
 
 def test_composition_bars_remain_violet_and_capacity_status_bars_are_semantic():
-    materialization = Path('app/templates/analytics/materialization/_pending.html').read_text()
-    ranked = Path('app/templates/analytics/components/_ranked_evidence_panel.html').read_text()
-    consumers = Path('app/templates/analytics/top_consumers/partials/_consumer_detail_results.html').read_text()
+    materialization = Path('app/templates/analytics/kubernetes/materialization/_pending.html').read_text()
+    ranked = Path('app/templates/analytics/kubernetes/components/_ranked_evidence_panel.html').read_text()
+    consumers = Path('app/templates/analytics/kubernetes/top_consumers/partials/_consumer_detail_results.html').read_text()
     capacity_paths = (
-        'app/templates/analytics/capacity/partials/_overview.html',
-        'app/templates/analytics/capacity/partials/_allocation.html',
-        'app/templates/analytics/capacity/partials/_risk.html',
+        'app/templates/analytics/kubernetes/capacity/partials/_overview.html',
+        'app/templates/analytics/kubernetes/capacity/partials/_allocation.html',
+        'app/templates/analytics/kubernetes/capacity/partials/_risk.html',
     )
     assert 'bg-kaori-primary' in materialization
     assert 'bg-kaori-primary' in ranked
@@ -54,7 +54,7 @@ def test_composition_bars_remain_violet_and_capacity_status_bars_are_semantic():
 
 
 def test_alert_routing_only_semanticizes_severity_distribution():
-    source = Path('app/templates/analytics/alerts/partials/_routing_summary.html').read_text()
+    source = Path('app/templates/analytics/kubernetes/alerts/partials/_routing_summary.html').read_text()
     assert "title == 'Severity Distribution'" in source
     assert 'progress_bar.semantic_bar(' in source
     assert "label=title ~ ' distribution'" in source

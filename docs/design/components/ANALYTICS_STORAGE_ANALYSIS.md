@@ -18,10 +18,10 @@ Every primary panel displays its effective scope. Namespace and Node are present
 
 The browser reads only committed `analytics.storage` snapshots. Provider queries run in the Analytics worker through these boundaries:
 
-1. `app/analytics/storage/evidence.py` collects every registered signal once.
-2. `app/analytics/storage/parsing.py` normalizes Prometheus labels and duplicate series.
-3. `app/analytics/storage/domain.py` derives rows, evidence availability, lifecycle risk, pressure, and aggregate posture.
-4. `app/analytics/storage/presentation.py` applies Namespace, Node, local filters, independent pagination, and view models.
+1. `app/analytics/kubernetes/storage/evidence.py` collects every registered signal once.
+2. `app/analytics/kubernetes/storage/parsing.py` normalizes Prometheus labels and duplicate series.
+3. `app/analytics/kubernetes/storage/domain.py` derives rows, evidence availability, lifecycle risk, pressure, and aggregate posture.
+4. `app/analytics/kubernetes/storage/presentation.py` applies Namespace, Node, local filters, independent pagination, and view models.
 5. Jinja templates render the presentation model and do not implement thresholds or business decisions.
 
 The materialized fingerprint is cluster-only:
@@ -150,9 +150,9 @@ The canonical workspace parameter is `tab` with values `capacity`, `filesystem`,
 
 Record-oriented panels use:
 
-- `analytics/components/_evidence_record_list.html`
-- `analytics/components/_record_filter_bar.html`
-- `analytics/components/_record_pagination.html`
+- `analytics/kubernetes/components/_evidence_record_list.html`
+- `analytics/kubernetes/components/_record_filter_bar.html`
+- `analytics/kubernetes/components/_record_pagination.html`
 
 Filesystem, PVC, and PV pagination is independent and follows the global 5/10/25/50 contract. Full-page links and partial HTMX endpoints must preserve the owning panel state.
 

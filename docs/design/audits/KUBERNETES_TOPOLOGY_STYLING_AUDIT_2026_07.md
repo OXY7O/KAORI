@@ -28,7 +28,7 @@ Approved package:
 
 - `components/visualization_workspace.html`
 - `components/segmented_tabs.html`
-- `inventory/topology/partials/_inspector_templates.html`
+- `inventory/kubernetes/topology/partials/_inspector_templates.html`
 - `frontend/styles.css` topology tokens
 
 ## Reference Behavior
@@ -43,7 +43,7 @@ Topology payload cache key includes the committed generation signature and norma
 
 ## Validation Targets
 
-- zero raw hex values in `app/static/js/inventory/topology.js`;
+- zero raw hex values in `app/static/js/inventory/kubernetes/topology.js`;
 - no page-local arbitrary font sizes in Topology hero/workspace/inspector templates;
 - no page-local `role="tablist"` outside shared tab components;
 - no inline style in Topology templates;

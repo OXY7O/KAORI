@@ -1,7 +1,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-SUMMARY = ROOT / 'app/templates/inventory/nodes/partials/_summary_cards.html'
+SUMMARY = ROOT / 'app/templates/inventory/kubernetes/nodes/partials/_summary_cards.html'
 
 
 def read(path: Path) -> str:

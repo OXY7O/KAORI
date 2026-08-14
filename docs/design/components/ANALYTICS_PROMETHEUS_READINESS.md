@@ -5,7 +5,7 @@
 Every Kubernetes Analytics workspace that depends on Prometheus-compatible metrics uses one canonical readiness component:
 
 ```text
-app/templates/analytics/components/_prometheus_status.html
+app/templates/analytics/kubernetes/components/_prometheus_status.html
 ```
 
 The component owns both visual geometry and the data labels shown to operators. Pages must not rename the fields, substitute snapshot timestamps for provider checks, or rebuild the card locally.
@@ -39,7 +39,7 @@ Every card displays exactly:
 Analytics services normalize provider data through:
 
 ```text
-app.analytics.common.presentation.present_prometheus_status
+app.analytics.kubernetes.common.presentation.present_prometheus_status
 ```
 
 The function preserves provider diagnostics while returning the canonical keys:

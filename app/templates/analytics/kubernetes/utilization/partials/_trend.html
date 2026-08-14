@@ -1,0 +1,153 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "analytics/kubernetes/components/_analysis_workspace.html" as analytics_workspace %}
+{% import "analytics/kubernetes/components/_chart_legend.html" as chart_legend %}
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/progress_bar.html" as progress_bar %}
+{% import "components/table_label.html" as table_label %}
+{% set presentation = trend_presentation|default({}) %}
+<div id="utilization-trend-panel" class="min-w-0 space-y-5">
+    <header class="border-b border-outline-subtle pb-5">
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="line-chart" class="h-4 w-4"></i></span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h3 class="text-lg font-semibold text-content-primary">Resource Utilization Trend</h3>
+                        {{ table_label.status_label(presentation.posture|default('No Data') , presentation.tone|default('unknown'), size='detail') }}
+                    </div>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">Validate whether worker CPU, memory, and pod pressure is sustained, rising, or isolated to a short-lived peak.</p>
+                </div>
+            </div>
+            <form method="get"
+                  action="{{ url_for('analytics.utilization') }}"
+                  hx-get="{{ url_for('analytics.utilization_trend') }}"
+                  hx-target="#utilization-trend-panel"
+                  hx-swap="outerHTML"
+                  hx-trigger="change delay:120ms"
+                  hx-indicator="#utilization-trend-indicator"
+                  hx-sync="#utilization-trend-panel:replace"
+                  hx-disinherit="hx-target hx-select hx-push-url hx-indicator"
+                  class="sm:w-[280px]">
+                <input type="hidden"
+                       name="cluster_id"
+                       value="{{ cluster.id if cluster else '' }}" />
+                <input type="hidden" name="trend_hours" value="{{ trend_hours }}" />
+                <label for="utilization-trend-node-filter" class="block">
+                    <span class="{{ analytics_workspace.control_label_classes() }}">Worker Node</span>
+                    <select id="utilization-trend-node-filter"
+                            name="trend_node"
+                            class="{{ analytics_workspace.control_select_classes() }}">
+                        <option value="">All Worker Nodes</option>
+                        {% for node in available_worker_nodes %}
+                            <option value="{{ node }}"
+                                    {% if selected_trend_node == node %}selected{% endif %}>{{ node }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+            </form>
+        </div>
+        <div class="mt-3 flex flex-wrap gap-2">{{ table_label.metadata_label(presentation.selected_scope|default('All Worker Nodes') , 'crosshair', false, 'detail') }}{{ table_label.metadata_label(presentation.time_range_label|default('Last 24 Hours') , 'clock-3', false, 'detail') }}{{ table_label.metadata_label(analytics_materialization.generated_at|user_datetime('Snapshot Unavailable') , 'database-clock', false, 'detail') }}</div>
+        {{ loading_bar.render('utilization-trend-indicator', label='Refreshing Utilization Trend') }}
+    </header>
+    <section class="{{ analysis_surface.evidence_shell_classes() }}">
+        <div class="{{ analysis_surface.metric_grid_classes(4) }}">
+            <article class="{{ analysis_surface.metric_cell_classes() }}">
+                <p class="{{ analysis_surface.metric_label_classes() }}">Current Highest</p>
+                <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ presentation.current_highest_display|default("N/A") }}</p>
+                <p class="mt-1 text-xs text-content-muted">{{ presentation.current_highest_label|default("No evidence") }}</p>
+            </article>
+            <article class="{{ analysis_surface.metric_cell_classes() }}">
+                <p class="{{ analysis_surface.metric_label_classes() }}">Peak Signal</p>
+                <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ presentation.peak_value_display|default("N/A") }}</p>
+                <p class="mt-1 text-xs text-content-muted">{{ presentation.peak_resource|default("None") }}</p>
+            </article>
+            <article class="{{ analysis_surface.metric_cell_classes() }}">
+                <p class="{{ analysis_surface.metric_label_classes() }}">Samples</p>
+                <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ presentation.sample_count|default(0) }}</p>
+                <p class="mt-1 text-xs text-content-muted">Committed observations</p>
+            </article>
+            <article class="{{ analysis_surface.metric_cell_classes() }}">
+                <p class="{{ analysis_surface.metric_label_classes() }}">Selected Scope</p>
+                <p class="mt-2 break-words text-sm font-semibold leading-5 text-content-primary">{{ presentation.selected_scope|default("All Worker Nodes") }}</p>
+                <p class="mt-1 text-xs text-content-muted">Trend boundary</p>
+            </article>
+        </div>
+    </section>
+    <div class="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]">
+        <section class="{{ analysis_surface.evidence_shell_classes('p-4') }}">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <h4 class="{{ analysis_surface.section_title_classes() }}">Historical Signal Behavior</h4>
+                    <p class="{{ analysis_surface.section_description_classes() }}">Compare timestamp-aligned movement across the selected observation window before changing capacity or workload placement.</p>
+                </div>
+                {{ chart_legend.render([('CPU', 'bg-kaori-primary') , ('Memory', 'bg-status-normal'), ('Pods', 'bg-status-pending')], 'Utilization Trend Legend') }}
+            </div>
+            <div id="utilizationTrendChartContainer"
+                 class="relative mt-4 h-[340px] rounded-lg border border-outline-subtle bg-surface-card p-3">
+                <canvas id="utilizationTrendChart"
+                        class="block h-full w-full"
+                        width="1200"
+                        height="340"></canvas>
+            </div>
+            <div id="trendEmptyState"
+                 class="hidden {{ analysis_surface.empty_evidence_classes('mt-4') }}">
+                {% set empty_state_icon = "line-chart" %}{% set empty_state_title = "No Trend Data Available" %}{% set empty_state_description = "Trend data will appear after the analytics worker commits historical CPU, memory, or pod utilization samples for the selected scope." %}{% set empty_state_min_height = "min-h-[340px]" %}
+                {% include "components/states/_empty_state.html" %}
+            </div>
+        </section>
+        <aside class="{{ analysis_surface.evidence_shell_classes() }}">
+            <header class="border-b border-outline-subtle px-4 py-3">
+                <h4 class="{{ analysis_surface.section_title_classes() }}">Resource Trend Outlook</h4>
+                <p class="{{ analysis_surface.section_description_classes() }}">Current, average, and peak pressure by resource.</p>
+            </header>
+            <div class="divide-y divide-outline-subtle">
+                {% for metric in presentation.resource_rows|default([]) %}
+                    <article class="p-4">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-2.5">
+                                <span class="{{ analysis_surface.resource_icon_classes(metric.label) }}"><i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i></span>
+                                <div>
+                                    <p class="text-sm font-semibold text-content-primary">{{ metric.label }}</p>
+                                    <p class="mt-0.5 {{ analysis_surface.metric_label_classes() }}">Current Utilization</p>
+                                </div>
+                            </div>
+                            <span class="text-xl font-semibold tabular-nums text-content-primary">{{ metric.current_display }}</span>
+                        </div>
+                        {% if metric.available %}
+                            {{ progress_bar.semantic_bar(metric.progress_value, metric.tone, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover', label=metric.label ~ ' current utilization status') }}
+                        {% else %}
+                            <div class="mt-3 h-2 overflow-hidden rounded-full bg-surface-hover"
+                                 aria-label="{{ metric.label }} trend unavailable"></div>
+                        {% endif %}
+                        <div class="mt-3 grid grid-cols-2 gap-3">
+                            <div>
+                                <p class="{{ analysis_surface.metric_label_classes() }}">Average</p>
+                                <p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ metric.average_display }}</p>
+                            </div>
+                            <div class="border-l border-outline-subtle pl-3">
+                                <p class="{{ analysis_surface.metric_label_classes() }}">Peak</p>
+                                <p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ metric.peak_display }}</p>
+                            </div>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        </aside>
+    </div>
+    <div class="{{ analysis_surface.interpretation_grid_classes() }}">
+        {{ analysis_surface.interpretation_callout('How To Read',
+                'Separate Current, Sustained, And Peak Pressure',
+                'Current is the latest sample, Average represents sustained pressure, and Peak shows the maximum excursion in the selected window. Series are aligned by timestamp before chart rendering.',
+                icon='chart-no-axes-combined',
+                role='insight') }}
+        {{ analysis_surface.interpretation_callout('What To Do',
+                'Investigate Sustained Pressure Before Resizing',
+                'Investigate when current and average remain elevated. Use Node Detail to locate concentration before resizing the cluster.',
+                icon='scan-search',
+                role='brand',
+                tone=presentation.tone|default('unknown') ,
+        extra='border-t border-outline-subtle lg:border-t-0'
+        ) }}
+    </div>
+    <script type="application/json" data-utilization-trend-data>{{ {'trend_hours': trend_hours, 'cpu': trends.cpu|default([]), 'memory': trends.memory|default([]), 'pods': trends.pods|default([])}|tojson }}</script>
+</div>

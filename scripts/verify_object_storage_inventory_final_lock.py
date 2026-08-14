@@ -8,13 +8,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 REQUIRED = (
-    'app/storage_inventory/routes.py',
-    'app/storage_inventory/presentation.py',
+    'app/inventory/object_storage/routes.py',
+    'app/inventory/object_storage/presentation.py',
     'app/templates/components/navigation/object_storage_menu.html',
-    'app/templates/object_storage_inventory/overview/index.html',
-    'app/templates/object_storage_inventory/systems/partials/_table_content.html',
-    'app/templates/object_storage_inventory/buckets/partials/_table_content.html',
-    'tests/contracts/storage_inventory',
+    'app/templates/inventory/object_storage/overview/index.html',
+    'app/templates/inventory/object_storage/systems/partials/_table_content.html',
+    'app/templates/inventory/object_storage/buckets/partials/_table_content.html',
+    'tests/contracts/inventory/object_storage',
 )
 
 
@@ -34,12 +34,12 @@ def main() -> int:
             print(f'- {error}')
         return 1
 
-    routes = read('app/storage_inventory/routes.py')
+    routes = read('app/inventory/object_storage/routes.py')
     menu = read('app/templates/components/navigation/object_storage_menu.html')
-    overview = read('app/templates/object_storage_inventory/overview/index.html')
-    systems = read('app/templates/object_storage_inventory/systems/partials/_table_content.html')
-    buckets = read('app/templates/object_storage_inventory/buckets/partials/_table_content.html')
-    presentation = read('app/storage_inventory/presentation.py')
+    overview = read('app/templates/inventory/object_storage/overview/index.html')
+    systems = read('app/templates/inventory/object_storage/systems/partials/_table_content.html')
+    buckets = read('app/templates/inventory/object_storage/buckets/partials/_table_content.html')
+    presentation = read('app/inventory/object_storage/presentation.py')
 
     for endpoint in (
         "url_for('object_storage_inventory.overview')",
@@ -63,10 +63,10 @@ def main() -> int:
         errors.append('Object Storage inventory routes must not query the live MinIO provider')
 
     for include in (
-        'object_storage_inventory/overview/partials/_snapshot_boundary.html',
-        'object_storage_inventory/overview/partials/_fleet_posture.html',
-        'object_storage_inventory/overview/partials/_summary_cards.html',
-        'object_storage_inventory/overview/partials/_systems_snapshot.html',
+        'inventory/object_storage/overview/partials/_snapshot_boundary.html',
+        'inventory/object_storage/overview/partials/_fleet_posture.html',
+        'inventory/object_storage/overview/partials/_summary_cards.html',
+        'inventory/object_storage/overview/partials/_systems_snapshot.html',
     ):
         if include not in overview:
             errors.append(f'Object Storage Overview composition missing: {include}')

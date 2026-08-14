@@ -8,11 +8,11 @@ def read(relative: str) -> str:
 
 
 def test_forecast_modules_have_explicit_runtime_ownership() -> None:
-    service = read('app/analytics/forecast/service.py')
-    calculation = read('app/analytics/forecast/calculation.py')
-    presentation = read('app/analytics/forecast/presentation.py')
-    resource = read('app/analytics/forecast/resource.py')
-    contracts = read('app/analytics/forecast/contracts.py')
+    service = read('app/analytics/kubernetes/forecast/service.py')
+    calculation = read('app/analytics/kubernetes/forecast/calculation.py')
+    presentation = read('app/analytics/kubernetes/forecast/presentation.py')
+    resource = read('app/analytics/kubernetes/forecast/resource.py')
+    contracts = read('app/analytics/kubernetes/forecast/contracts.py')
 
     assert len(service.splitlines()) <= 800
     assert len(calculation.splitlines()) <= 800
@@ -27,9 +27,9 @@ def test_forecast_modules_have_explicit_runtime_ownership() -> None:
 
 
 def test_forecast_empty_payload_imports_canonical_thresholds() -> None:
-    presentation = read('app/analytics/forecast/presentation.py')
+    presentation = read('app/analytics/kubernetes/forecast/presentation.py')
     import_block = presentation.split(
-        'from app.analytics.forecast.contracts import (',
+        'from app.analytics.kubernetes.forecast.contracts import (',
         1,
     )[1].split(')', 1)[0]
     empty_payload_block = presentation.split(
@@ -44,8 +44,8 @@ def test_forecast_empty_payload_imports_canonical_thresholds() -> None:
 
 
 def test_forecast_snapshot_identity_excludes_local_projection_controls() -> None:
-    routes = read('app/analytics/forecast/routes.py')
-    catalog = read('app/analytics/materialization/catalog.py')
+    routes = read('app/analytics/kubernetes/forecast/routes.py')
+    catalog = read('app/analytics/kubernetes/materialization/catalog.py')
 
     snapshot_block = routes.split('def _snapshot_parameters()', 1)[1].split('def _context_or_state', 1)[0]
     assert "'history_window'" in snapshot_block
@@ -70,8 +70,8 @@ def test_forecast_queries_use_ready_worker_and_duplicate_safe_boundaries() -> No
 
 
 def test_forecast_peak_drives_status_and_threshold_eta_uses_projected_points() -> None:
-    resource = read('app/analytics/forecast/resource.py')
-    calculation = read('app/analytics/forecast/calculation.py')
+    resource = read('app/analytics/kubernetes/forecast/resource.py')
+    calculation = read('app/analytics/kubernetes/forecast/calculation.py')
 
     assert 'peak = max(' in resource
     assert '_resolve_status(peak_percent)' in resource
@@ -82,9 +82,9 @@ def test_forecast_peak_drives_status_and_threshold_eta_uses_projected_points() -
 
 
 def test_forecast_limited_evidence_prevents_false_healthy_posture() -> None:
-    calculation = read('app/analytics/forecast/calculation.py')
-    resource = read('app/analytics/forecast/resource.py')
-    template = read('app/templates/analytics/forecast/partials/_forecast_section.html')
+    calculation = read('app/analytics/kubernetes/forecast/calculation.py')
+    resource = read('app/analytics/kubernetes/forecast/resource.py')
+    template = read('app/templates/analytics/kubernetes/forecast/partials/_forecast_section.html')
 
     assert "return 'limited', 'Limited Evidence', 'warning'" in calculation
     assert "planning_ready = has_data and signal_quality in {'High', 'Medium'}" in resource
@@ -93,8 +93,8 @@ def test_forecast_limited_evidence_prevents_false_healthy_posture() -> None:
 
 
 def test_forecast_chart_aligns_series_by_timestamp_and_keeps_missing_points_null() -> None:
-    calculation = read('app/analytics/forecast/calculation.py')
-    runtime = read('app/static/js/analytics_forecast_chart.js')
+    calculation = read('app/analytics/kubernetes/forecast/calculation.py')
+    runtime = read('app/static/js/analytics/kubernetes/forecast_chart.js')
 
     assert 'all_dates = sorted(' in calculation
     assert "'historical': [historical_map.get(date) for date in all_dates]" in calculation
@@ -105,7 +105,7 @@ def test_forecast_chart_aligns_series_by_timestamp_and_keeps_missing_points_null
 
 
 def test_forecast_legacy_partial_route_is_removed() -> None:
-    routes = read('app/analytics/forecast/routes.py')
+    routes = read('app/analytics/kubernetes/forecast/routes.py')
     analytics_routes = read('app/analytics/routes.py')
     navigation = read('app/templates/components/navigation/analytics_menu.html')
 
@@ -118,7 +118,7 @@ def test_forecast_report_uses_canonical_thresholds_and_peak_projection() -> None
     report = read('app/reports/export/html_pdf/forecast_analysis.py')
     payload = read('app/reports/export/payloads/forecast.py')
 
-    assert 'from app.analytics.forecast.contracts import CRITICAL_THRESHOLD, WARNING_THRESHOLD' in report
+    assert 'from app.analytics.kubernetes.forecast.contracts import CRITICAL_THRESHOLD, WARNING_THRESHOLD' in report
     assert "'setting': '75% / 90%'" in report
     assert "'warning': '75%'" in report
     assert "'critical': '90%'" in report

@@ -14,13 +14,13 @@ def _percent_display(value: Any, *, digits: int = 1) -> str:
 
 
 def _load_presentation_module() -> ModuleType:
-    dependency_name = 'app.analytics.common.presentation'
+    dependency_name = 'app.analytics.kubernetes.common.presentation'
     dependency = ModuleType(dependency_name)
     dependency.percent_display = _percent_display  # type: ignore[attr-defined]
     previous = sys.modules.get(dependency_name)
     sys.modules[dependency_name] = dependency
     try:
-        module_path = Path('app/analytics/capacity/presentation.py')
+        module_path = Path('app/analytics/kubernetes/capacity/presentation.py')
         spec = importlib.util.spec_from_file_location('capacity_presentation_under_test', module_path)
         assert spec is not None
         assert spec.loader is not None

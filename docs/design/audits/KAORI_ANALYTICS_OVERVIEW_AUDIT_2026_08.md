@@ -84,7 +84,7 @@ Cluster Health rules:
 Removed:
 
 - `app/templates/analytics/components/_overview_surfaces.html`
-- `app/templates/analytics/overview/partials/_prometheus_status.html`
+- `app/templates/analytics/kubernetes/overview/partials/_prometheus_status.html`
 - synthetic `_empty_*_snapshot` adapters used only to convert missing evidence
   into zero-value snapshots
 - `app/analytics/common/cache.py`, an unreferenced Redis/local cache from the
@@ -93,7 +93,7 @@ Removed:
   `actionable-recommendations`, and `recommendations`
 
 The shared Prometheus card remains canonical at
-`app/templates/analytics/components/_prometheus_status.html` and is rendered by
+`app/templates/analytics/kubernetes/components/_prometheus_status.html` and is rendered by
 Analytics Controls & Data Readiness.
 
 ## Regression contract

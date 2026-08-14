@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from app.analytics.materialization import requests as materialization_requests
-from app.analytics.materialization.requests import MaterializedRequest
-from app.analytics.materialization.serialization import ClusterReference
-from app.analytics.materialization.service import SnapshotResult
+from app.analytics.kubernetes.materialization import requests as materialization_requests
+from app.analytics.kubernetes.materialization.requests import MaterializedRequest
+from app.analytics.kubernetes.materialization.serialization import ClusterReference
+from app.analytics.kubernetes.materialization.service import SnapshotResult
 
 
 def _cluster(cluster_id: str = 'cluster-b') -> ClusterReference:

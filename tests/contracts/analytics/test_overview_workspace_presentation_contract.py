@@ -1,6 +1,6 @@
 from pathlib import Path
 
-OVERVIEW_ROOT = Path('app/templates/analytics/overview')
+OVERVIEW_ROOT = Path('app/templates/analytics/kubernetes/overview')
 
 
 def read(relative: str) -> str:
@@ -27,7 +27,7 @@ def test_overview_controls_and_readiness_follow_shared_analytics_standard() -> N
 
 
 def test_prometheus_status_uses_one_canonical_card_contract() -> None:
-    source = Path('app/templates/analytics/components/_prometheus_status.html').read_text(encoding='utf-8')
+    source = Path('app/templates/analytics/kubernetes/components/_prometheus_status.html').read_text(encoding='utf-8')
 
     assert 'macro render(status' in source
     assert 'data-analytics-prometheus-status' in source
@@ -150,7 +150,7 @@ def test_utilization_pressure_visual_is_not_compressed_into_small_cards() -> Non
 
 def test_forecast_snapshot_uses_one_chart_and_one_resource_outlook() -> None:
     source = read('partials/_forecast_snapshot.html')
-    shared_chart = (OVERVIEW_ROOT.parents[1] / 'components/forecast_projection_chart.html').read_text(encoding='utf-8')
+    shared_chart = Path('app/templates/components/forecast_projection_chart.html').read_text(encoding='utf-8')
 
     assert 'Combined Forecast Projection' in source
     assert 'Resource Outlook' in source
@@ -299,12 +299,12 @@ def test_overview_loading_tracker_reports_real_lazy_section_progress() -> None:
     hero = read('partials/_hero.html')
     tracker = read('partials/_load_tracker.html')
     oob = read('partials/_composite_tabs_oob.html')
-    runtime = Path('app/static/js/analytics_overview.js').read_text(encoding='utf-8')
+    runtime = Path('app/static/js/analytics/kubernetes/overview.js').read_text(encoding='utf-8')
     health = read('partials/_health_summary.html')
     loading_bar = Path('app/templates/components/loading_bar.html').read_text(encoding='utf-8')
     stylesheet = Path('frontend/styles.css').read_text(encoding='utf-8')
 
-    assert 'analytics/overview/partials/_load_tracker.html' in index
+    assert 'analytics/kubernetes/overview/partials/_load_tracker.html' in index
     assert 'data-overview-lazy-section="true"' in index
     assert 'data-overview-lazy-section="true"' not in hero
     assert 'data-overview-load-state="idle"' in index
@@ -318,7 +318,7 @@ def test_overview_loading_tracker_reports_real_lazy_section_progress() -> None:
     assert "document.body.addEventListener('htmx:afterSettle'" in runtime
     assert 'Requested Sections' in runtime
     assert "section.dataset.overviewLoadState = 'failed'" in runtime
-    assert "filename='js/analytics_overview.js'" in index
+    assert "filename='js/analytics/kubernetes/overview.js'" in index
     assert 'kaori-loading-bar-segment' in loading_bar
     assert '@keyframes kaori-loading-bar-indeterminate' in stylesheet
 

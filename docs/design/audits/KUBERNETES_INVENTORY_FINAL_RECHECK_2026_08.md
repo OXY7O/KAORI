@@ -47,9 +47,9 @@ Resource rows use SQL pagination before materialization. Dependent filter option
 Retired in this recheck:
 
 ```text
-app.inventory.formatting.format_byte_count
-app.inventory.formatting.format_gib
-app.inventory.resources.common._split_inventory_values
+app.inventory.kubernetes.formatting.format_byte_count
+app.inventory.kubernetes.formatting.format_gib
+app.inventory.kubernetes.resources.common._split_inventory_values
 app/templates/inventory/partials/_README.md
 Blueprint-level Inventory clusterless before_request
 Topology integration-resolver presentation dependency

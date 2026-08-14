@@ -1,7 +1,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-KPI_CARDS = ROOT / 'app/templates/inventory/overview/partials/_kpi_cards.html'
+KPI_CARDS = ROOT / 'app/templates/inventory/kubernetes/overview/partials/_kpi_cards.html'
 ASSET_CARD = ROOT / 'app/templates/components/inventory_asset_card.html'
 SECTION_CARD = ROOT / 'app/templates/components/operational_section_card.html'
 

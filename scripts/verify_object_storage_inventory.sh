@@ -8,7 +8,7 @@ fi
 
 printf '[1/6] Ruff\n'
 python -m ruff check \
-  app/storage_inventory \
+  app/inventory/object_storage \
   app/models/object_storage.py \
   app/models/__init__.py \
   app/integrations/minio/client.py \
@@ -16,9 +16,9 @@ python -m ruff check \
   app/integrations/minio/__init__.py \
   app/jobs/configuration.py \
   app/jobs/definitions/object_storage_inventory_sync.py \
-  app/storage_inventory/job_adapter.py \
-  app/storage_inventory/sync_jobs.py \
-  app/storage_inventory/tasks.py \
+  app/inventory/object_storage/job_adapter.py \
+  app/inventory/object_storage/sync_jobs.py \
+  app/inventory/object_storage/tasks.py \
   app/rbac/defaults.py \
   app/rbac/service.py \
   migrations/versions/20260813_object_storage_inventory_jobs.py \
@@ -28,13 +28,13 @@ python -m ruff check \
   migrations/versions/20260813_object_storage_quota_diagnostics.py \
   app/bootstrap/blueprints.py \
   scripts/verify_sidebar_navigation_standard.py \
-  tests/contracts/storage_inventory \
-  tests/storage_inventory \
+  tests/contracts/inventory/object_storage \
+  tests/inventory/object_storage \
   tests/integrations/test_minio_bucket_enrichment.py
 
 printf '\n[2/6] djLint\n'
 python -m djlint \
-  app/templates/object_storage_inventory \
+  app/templates/inventory/object_storage \
   app/templates/components/navigation/object_storage_menu.html \
   app/templates/components/navigation/sidebar.html \
   app/templates/jobs/configuration/definitions/object_storage_inventory_sync.html \
@@ -47,10 +47,10 @@ printf '\n[3/6] Sidebar Navigation Standard\n'
 python scripts/verify_sidebar_navigation_standard.py
 
 printf '\n[4/6] Object Storage Inventory Contracts\n'
-pytest -q tests/contracts/storage_inventory
+pytest -q tests/contracts/inventory/object_storage
 
 printf '\n[5/6] Object Storage Inventory Unit Tests\n'
-pytest -q tests/storage_inventory tests/integrations/test_minio_bucket_enrichment.py
+pytest -q tests/inventory/object_storage tests/integrations/test_minio_bucket_enrichment.py
 
 printf '\n[6/6] Regression Contracts\n'
 if [[ "$FULL" == "true" ]]; then

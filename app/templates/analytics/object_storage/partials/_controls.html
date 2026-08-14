@@ -10,8 +10,7 @@
                     Object Storage Scope &amp; Data Readiness
                 </h2>
                 <p class="mt-1 text-sm leading-6 text-content-muted">
-                    Select the managed system and analysis window. Inventory and Prometheus remain separate
-                    evidence boundaries.
+                    Select the managed system and analysis window. Inventory and operational time-series remain separate evidence boundaries.
                 </p>
             </div>
         </div>
@@ -26,10 +25,10 @@
               hx-trigger="change delay:120ms"
               class="grid gap-4 sm:grid-cols-2">
             <label class="block" for="object-storage-system-filter">
-                <span class="{{ analytics_workspace.control_label_classes() }}">Object Storage System</span>
+                <span class="{{ table_ui.filter_label_classes() }}">Object Storage System</span>
                 <select id="object-storage-system-filter"
                         name="system_id"
-                        class="{{ analytics_workspace.control_select_classes() }}">
+                        class="{{ table_ui.filter_select_classes() }}">
                     {% for item in systems %}
                         <option value="{{ item.id }}"
                                 {% if system and system.id == item.id %}selected{% endif %}>{{ item.name }}</option>
@@ -37,10 +36,10 @@
                 </select>
             </label>
             <label class="block" for="object-storage-time-range-filter">
-                <span class="{{ analytics_workspace.control_label_classes() }}">Time Range</span>
+                <span class="{{ table_ui.filter_label_classes() }}">Time Range</span>
                 <select id="object-storage-time-range-filter"
                         name="time_range"
-                        class="{{ analytics_workspace.control_select_classes() }}">
+                        class="{{ table_ui.filter_select_classes() }}">
                     {% for item in allowed_time_ranges %}
                         <option value="{{ item.value }}"
                                 {% if selected_time_range == item.value %}selected{% endif %}>{{ item.label }}</option>
@@ -64,12 +63,12 @@
             </article>
             <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
                 <div class="flex items-start gap-3">
-                    <span class="{{ analysis_surface.semantic_icon_classes(prometheus.tone) }}">
+                    <span class="{{ analysis_surface.semantic_icon_classes(metrics_source.tone) }}">
                         <i data-lucide="activity" class="h-4 w-4"></i>
                     </span>
                     <div>
-                        <p class="text-sm font-semibold text-content-primary">Prometheus Binding</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ prometheus.detail }}</p>
+                        <p class="text-sm font-semibold text-content-primary">Operational Metrics Source</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ metrics_source.provider_label }} · {{ metrics_source.detail }}</p>
                     </div>
                 </div>
             </article>

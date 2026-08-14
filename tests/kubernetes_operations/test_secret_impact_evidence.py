@@ -55,9 +55,9 @@ def load_impact(
         'app.common',
         'app.common.inventory_generation',
         'app.inventory',
-        'app.inventory.resources',
-        'app.inventory.resources.configuration_semantics',
-        'app.inventory.resources.pod_semantics',
+        'app.inventory.kubernetes.resources',
+        'app.inventory.kubernetes.resources.configuration_semantics',
+        'app.inventory.kubernetes.resources.pod_semantics',
         'app.kubernetes_operations',
         'app.kubernetes_operations.secrets',
         'app.kubernetes_operations.secrets.live_service',
@@ -74,11 +74,11 @@ def load_impact(
     sys.modules['app.common.inventory_generation'].filter_current_generation = lambda query, model: (
         current_generation_calls.append(model) or query
     )
-    semantics = sys.modules['app.inventory.resources.configuration_semantics']
+    semantics = sys.modules['app.inventory.kubernetes.resources.configuration_semantics']
     semantics.COLLECTED = 'Collected'
     semantics.POD_EVIDENCE_KEY = 'inventory.pods'
     semantics.collection_state = lambda evidence, key: evidence.get(key, 'Not Reported')
-    sys.modules['app.inventory.resources.pod_semantics'].pod_operational_state = lambda phase, ready: (
+    sys.modules['app.inventory.kubernetes.resources.pod_semantics'].pod_operational_state = lambda phase, ready: (
         'Stable',
         'normal',
         f'{phase} · {ready}',

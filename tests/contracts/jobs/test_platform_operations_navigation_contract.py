@@ -8,7 +8,8 @@ def test_platform_operations_contains_overview_jobs_data_lifecycle_and_kubernete
     page = (ROOT / 'app/templates/jobs/index.html').read_text()
 
     assert '<details' in menu
-    assert 'Platform Operations' in menu
+    assert 'Operations Center' in menu
+    assert menu.count('Operations Center') >= 1
     assert 'Overview' in menu
     assert 'Jobs &amp; Executions' in menu
     assert 'Data Lifecycle' in menu

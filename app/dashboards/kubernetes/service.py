@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-from app.analytics.materialization.keys import (
+from app.analytics.kubernetes.materialization.keys import (
     CAPACITY_DATASET_KEY,
     DASHBOARD_ALERTS_DATASET_KEY,
     FORECAST_DATASET_KEY,

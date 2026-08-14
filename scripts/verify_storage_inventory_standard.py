@@ -14,19 +14,19 @@ def require(condition: bool, message: str, errors: list[str]) -> None:
 
 def main() -> int:
     errors: list[str] = []
-    collector = read('app/inventory/collectors/storage.py')
-    persistence = read('app/inventory/persistence.py')
-    backend = read('app/inventory/resources/storage.py')
-    semantics = read('app/inventory/resources/storage_semantics.py')
-    routes = read('app/inventory/routes.py')
-    topology = read('app/inventory/topology/node_builder.py')
+    collector = read('app/inventory/kubernetes/collectors/storage.py')
+    persistence = read('app/inventory/kubernetes/persistence.py')
+    backend = read('app/inventory/kubernetes/resources/storage.py')
+    semantics = read('app/inventory/kubernetes/resources/storage_semantics.py')
+    routes = read('app/inventory/kubernetes/routes.py')
+    topology = read('app/inventory/kubernetes/topology/node_builder.py')
     payload = read('app/reports/export/payloads/inventory.py')
     xlsx = read('app/reports/export/xlsx/standard.py')
-    workspace = read('app/templates/inventory/storage/partials/_page_workspace.html')
-    card = read('app/templates/inventory/storage/partials/_table_card.html')
-    table = read('app/templates/inventory/storage/partials/_table_content.html')
-    summary = read('app/templates/inventory/storage/partials/_summary_cards.html')
-    detail = read('app/templates/inventory/storage/partials/_storage_detail_content.html')
+    workspace = read('app/templates/inventory/kubernetes/storage/partials/_page_workspace.html')
+    card = read('app/templates/inventory/kubernetes/storage/partials/_table_card.html')
+    table = read('app/templates/inventory/kubernetes/storage/partials/_table_content.html')
+    summary = read('app/templates/inventory/kubernetes/storage/partials/_summary_cards.html')
+    detail = read('app/templates/inventory/kubernetes/storage/partials/_storage_detail_content.html')
     standard = read('docs/design/patterns/KUBERNETES_STORAGE_INVENTORY.md')
     audit = read('docs/design/audits/KUBERNETES_STORAGE_INVENTORY_ALIGNMENT_AUDIT_2026_08.md')
     quality_gate = read('scripts/quality_gate.sh')
@@ -122,12 +122,12 @@ def main() -> int:
         errors,
     )
     require(
-        not (ROOT / 'app/templates/inventory/storage/partials/_inventory_scope.html').exists(),
+        not (ROOT / 'app/templates/inventory/kubernetes/storage/partials/_inventory_scope.html').exists(),
         'Legacy Storage inventory scope wrapper must be removed.',
         errors,
     )
     require(
-        'id="storage-page-workspace"' in workspace and 'inventory/components/_data_freshness.html' in workspace,
+        'id="storage-page-workspace"' in workspace and 'inventory/kubernetes/components/_data_freshness.html' in workspace,
         'Storage workspace must own Hero and Snapshot Context.',
         errors,
     )

@@ -24,7 +24,7 @@ def _forbid(relative_path: str, needle: str, description: str) -> None:
 
 def main() -> None:
     _require(
-        'app/analytics/utilization/service.py',
+        'app/analytics/kubernetes/utilization/service.py',
         'from app.integrations.prometheus.exceptions import PrometheusError',
         'canonical PrometheusError import',
     )
@@ -39,7 +39,7 @@ def main() -> None:
         'minimal cluster dependency protocol',
     )
     _require(
-        'app/analytics/top_consumers/domain.py',
+        'app/analytics/kubernetes/top_consumers/domain.py',
         '-> TypeGuard[dict[str, Any]]:',
         'Top Consumers payload type guard',
     )
@@ -60,14 +60,14 @@ def main() -> None:
             'forecast normalized recommendation consumption',
         ),
     ):
-        _require('app/analytics/forecast/presentation.py', needle, description)
+        _require('app/analytics/kubernetes/forecast/presentation.py', needle, description)
     _forbid(
-        'app/analytics/forecast/presentation.py',
+        'app/analytics/kubernetes/forecast/presentation.py',
         "count_actionable_recommendations(\n            forecast_payload.get('actionable_recommendations')",
         'forecast snapshot recommendation count bypasses normalized boundary',
     )
     _require(
-        'app/analytics/overview/snapshot_summary.py',
+        'app/analytics/kubernetes/overview/snapshot_summary.py',
         'snapshots: Sequence[Any],',
         'sequence-compatible snapshot summary boundary',
     )

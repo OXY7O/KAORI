@@ -8,7 +8,7 @@ def read(relative: str) -> str:
 
 
 def test_evidence_coverage_contract_has_complete_partial_and_unavailable_states() -> None:
-    source = read('app/analytics/workload/mapping.py')
+    source = read('app/analytics/kubernetes/workload/mapping.py')
 
     assert 'def metrics_coverage(' in source
     assert "'label': 'Complete'" in source
@@ -19,7 +19,7 @@ def test_evidence_coverage_contract_has_complete_partial_and_unavailable_states(
 
 
 def test_right_sizing_is_deferred_until_evidence_is_complete() -> None:
-    source = read('app/analytics/workload/mapping.py')
+    source = read('app/analytics/kubernetes/workload/mapping.py')
 
     assert "if metrics_label != 'Complete':" in source
     assert "return 'Defer right-sizing until metrics coverage is complete'" in source
@@ -30,8 +30,8 @@ def test_right_sizing_is_deferred_until_evidence_is_complete() -> None:
 
 
 def test_qos_is_factual_metadata_not_health_state() -> None:
-    mapping_source = read('app/analytics/workload/mapping.py')
-    template = read('app/templates/analytics/workload/partials/_workload_mapping_section.html')
+    mapping_source = read('app/analytics/kubernetes/workload/mapping.py')
+    template = read('app/templates/analytics/kubernetes/workload/partials/_workload_mapping_section.html')
 
     assert "return {'label': 'Mixed'}" in mapping_source
     assert "return {'label': next(iter(distribution))}" in mapping_source

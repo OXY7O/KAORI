@@ -17,8 +17,8 @@ The compact chart owns SVG geometry, thresholds, historical/projected line seman
 
 Implementation:
 
-- `analytics/components/_interactive_forecast_chart.html`
-- `static/js/analytics_forecast_chart.js`
+- `analytics/kubernetes/components/_interactive_forecast_chart.html`
+- `static/js/analytics/kubernetes/forecast_chart.js`
 
 The interactive chart owns tooltip behavior, long history rendering, combined resource comparison, visible textual legends, and hidden-tab lifecycle management.
 

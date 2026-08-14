@@ -1,7 +1,7 @@
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
-MODULE_PATH = Path('app/analytics/common/presentation.py')
+MODULE_PATH = Path('app/analytics/kubernetes/common/presentation.py')
 SPEC = spec_from_file_location('analytics_common_presentation_standalone', MODULE_PATH)
 assert SPEC is not None and SPEC.loader is not None
 MODULE = module_from_spec(SPEC)

@@ -8,7 +8,7 @@ def read(relative: str) -> str:
 
 
 def test_node_inventory_preserves_committed_evidence_and_missing_capacity() -> None:
-    backend = read('app/inventory/resources/nodes.py')
+    backend = read('app/inventory/kubernetes/resources/nodes.py')
 
     assert 'filter_current_generation(query, NodeInventory)' in backend
     assert "'total_cpu_display'" in backend
@@ -19,8 +19,8 @@ def test_node_inventory_preserves_committed_evidence_and_missing_capacity() -> N
 
 
 def test_node_hero_uses_operational_fleet_posture() -> None:
-    hero = read('app/templates/inventory/nodes/partials/_hero.html')
-    backend = read('app/inventory/resources/nodes.py')
+    hero = read('app/templates/inventory/kubernetes/nodes/partials/_hero.html')
+    backend = read('app/inventory/kubernetes/resources/nodes.py')
 
     assert 'inventory.fleet_posture_label' in hero
     assert 'inventory.fleet_posture_tone' in hero
@@ -30,9 +30,9 @@ def test_node_hero_uses_operational_fleet_posture() -> None:
 
 
 def test_node_filters_are_human_readable_and_accessible() -> None:
-    routes = read('app/inventory/routes.py')
-    backend = read('app/inventory/resources/nodes.py')
-    table = read('app/templates/inventory/nodes/partials/_table_card.html')
+    routes = read('app/inventory/kubernetes/routes.py')
+    backend = read('app/inventory/kubernetes/resources/nodes.py')
+    table = read('app/templates/inventory/kubernetes/nodes/partials/_table_card.html')
     shared_table = read('app/templates/components/table.html')
 
     assert '_canonical_role_filter(value): _role_display(value)' in backend
@@ -48,19 +48,19 @@ def test_node_filters_are_human_readable_and_accessible() -> None:
 
 
 def test_node_filters_refresh_the_complete_scope_workspace() -> None:
-    table = read('app/templates/inventory/nodes/partials/_table_card.html')
-    workspace = read('app/templates/inventory/nodes/partials/_page_workspace.html')
-    routes = read('app/inventory/routes.py')
+    table = read('app/templates/inventory/kubernetes/nodes/partials/_table_card.html')
+    workspace = read('app/templates/inventory/kubernetes/nodes/partials/_page_workspace.html')
+    routes = read('app/inventory/kubernetes/routes.py')
 
     assert 'hx-target="#nodes-page-workspace"' in table
     assert 'name="partial_mode" value="page_workspace"' in table
     assert 'id="nodes-page-workspace"' in workspace
-    assert 'inventory/components/_data_freshness.html' in workspace
+    assert 'inventory/kubernetes/components/_data_freshness.html' in workspace
     assert "partial_mode == 'page_workspace'" in routes
 
 
 def test_node_table_keeps_seven_columns_and_surfaces_conditions() -> None:
-    content = read('app/templates/inventory/nodes/partials/_table_content.html')
+    content = read('app/templates/inventory/kubernetes/nodes/partials/_table_content.html')
 
     for header in ('Node', 'Cluster', 'Readiness', 'Role', 'Capacity', 'Network', 'Details'):
         assert f'>{header}<' in content
@@ -71,7 +71,7 @@ def test_node_table_keeps_seven_columns_and_surfaces_conditions() -> None:
 
 
 def test_node_detail_reuses_shared_metadata_and_avoids_duplicate_badges() -> None:
-    detail = read('app/templates/inventory/nodes/partials/_node_detail_content.html')
+    detail = read('app/templates/inventory/kubernetes/nodes/partials/_node_detail_content.html')
 
     assert 'data-kaori-detail-density="adaptive-stacks"' in detail
     assert 'components/technical_metadata_collection.html' in detail
@@ -86,7 +86,7 @@ def test_node_detail_reuses_shared_metadata_and_avoids_duplicate_badges() -> Non
 
 
 def test_node_collection_preserves_incomplete_evidence() -> None:
-    persistence = read('app/inventory/persistence.py')
+    persistence = read('app/inventory/kubernetes/persistence.py')
     save_nodes = persistence[persistence.index('def save_nodes') : persistence.index('def _namespace_count_snapshot')]
 
     assert 'if metadata is None or not metadata.name' in save_nodes

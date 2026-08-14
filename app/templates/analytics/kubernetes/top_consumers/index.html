@@ -1,0 +1,21 @@
+{% extends "layouts/app.html" %}
+{% block title %}Top Consumers{% endblock title %}
+{% block dashboard_content %}
+    <div id="top-consumers-page"
+         class="kaori-analytics-page space-y-6"
+         data-analytics-page-request-tracking="false">
+        {% set selected_cluster_name = cluster.name if cluster else 'No Cluster Selected' %}
+        {% set payload = consumer_payload|default({}, true) %}
+        {% set recommendation_count = payload.recommendation_count|default(0) %}
+        {% set total_rows = payload.scope_total_rows|default(payload.total_rows|default(0)) %}
+        {% include "analytics/kubernetes/top_consumers/partials/_hero.html" %}
+        {% if dependency_blocker %}
+            {% include "components/dependencies/_blocker.html" %}
+        {% endif %}
+        {% if not dependency_blocker %}
+            {% include "analytics/kubernetes/top_consumers/partials/_controls_readiness.html" %}
+            {% include "analytics/kubernetes/top_consumers/partials/_summary.html" %}
+            <div id="top-consumers-section">{% include "analytics/kubernetes/top_consumers/partials/_top_consumers_section.html" %}</div>
+        {% endif %}
+    </div>
+{% endblock dashboard_content %}

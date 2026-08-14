@@ -1,0 +1,44 @@
+{% import "components/page_hero.html" as page_hero %}
+{% set selected_cluster_name = cluster.name if cluster else 'No Cluster Selected' %}
+{% set posture_label = capacity_posture.label|default('Unknown') %}
+{% set posture_tone = capacity_posture.tone|default('unknown') %}
+<section class="{{ page_hero.shell_classes() }}">
+    <div class="{{ page_hero.layout_classes() }}">
+        <div class="{{ page_hero.content_classes() }}">
+            {% call page_hero.intro('bar-chart-3', 'Kubernetes Analytics', 'server-cog') %}
+                <h1 class="{{ page_hero.title_classes() }}">Capacity Analysis</h1>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review worker headroom, allocation pressure, and scheduling risk.</p>
+                <div class="{{ page_hero.metadata_row_classes() }}">
+                    {{ page_hero.meta_label('server', selected_cluster_name) }}
+                    {% if dependency_blocker %}
+                        {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
+                    {% else %}
+                        {{ page_hero.meta_label('cpu', 'CPU Headroom ' ~ cpu_headroom_display) }}
+                        {{ page_hero.meta_label('list-checks', recommendation_count|default(0) ~ ' Actionable') }}
+                    {% endif %}
+                </div>
+            {% endcall %}
+        </div>
+        {% if dependency_blocker %}
+            <aside class="{{ page_hero.aside_classes() }}"
+                   aria-label="Capacity Readiness">
+                {% set analytics_posture_label = "Capacity Posture" %}
+                {% include "analytics/kubernetes/components/_blocked_posture.html" %}
+            </aside>
+        {% else %}
+            {{ page_hero.context_card('Capacity Posture',
+                        'Capacity Posture',
+                        'Capacity Headroom',
+                        posture_label,
+                        posture_tone,
+                        [
+                        ('gauge', 'Lowest Headroom', lowest_headroom_metric_display, 'Ready-Worker capacity') ,
+            ('clock-3', 'Time Range', selected_time_range, 'Observation window')
+            ],
+            'Manage Clusters',
+            url_for('integrations.kubernetes'),
+            'server-cog'
+            ) }}
+        {% endif %}
+    </div>
+</section>

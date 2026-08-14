@@ -1,0 +1,7 @@
+{% extends "layouts/app.html" %}
+{% block title %}Node Inventory{% endblock title %}
+{% block dashboard_content %}
+    {% import "components/resource_detail_modal.html" as resource_detail_modal %}
+    {% include "inventory/kubernetes/nodes/partials/_page_workspace.html" %}
+    {{ resource_detail_modal.host('Node', url_for('inventory.node_details', node_id=0) ) }}
+{% endblock dashboard_content %}

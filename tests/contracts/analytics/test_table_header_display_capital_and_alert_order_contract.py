@@ -1,7 +1,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-ALERTS_PARTIALS = ROOT / 'app/templates/analytics/alerts/partials'
+ALERTS_PARTIALS = ROOT / 'app/templates/analytics/kubernetes/alerts/partials'
 
 
 def test_active_alert_state_follows_scope_and_source_in_header_and_row() -> None:

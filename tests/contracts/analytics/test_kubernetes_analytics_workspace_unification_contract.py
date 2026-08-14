@@ -1,7 +1,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-TEMPLATES = ROOT / 'app' / 'templates' / 'analytics'
+TEMPLATES = ROOT / 'app' / 'templates' / 'analytics' / 'kubernetes'
 
 
 def read(relative: str) -> str:
@@ -66,7 +66,7 @@ def test_forecast_resource_tabs_and_shared_interactive_legends() -> None:
     assert 'Projection' in content
     assert 'Warning' in content
     assert 'Critical' in content
-    js = (ROOT / 'app' / 'static' / 'js' / 'analytics_forecast_chart.js').read_text(encoding='utf-8')
+    js = (ROOT / 'app' / 'static' / 'js' / 'analytics' / 'kubernetes' / 'forecast_chart.js').read_text(encoding='utf-8')
     assert 'display: false' in js
 
 

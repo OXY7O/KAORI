@@ -21,9 +21,9 @@ The uploaded source archive does not contain `.git` metadata, so a Git commit co
 
 ## Reusable UI Changes
 
-- Added `analytics/components/_prometheus_status.html` as the shared Prometheus Status component used by Analytics Overview and the redesigned pages.
+- Added `analytics/kubernetes/components/_prometheus_status.html` as the shared Prometheus Status component used by Analytics Overview and the redesigned pages.
 - Added `analytics/components/_controls.html` for Forecast, Consumer, and Alert control surfaces.
-- Consolidated Analytics tab initialization and persistence in `app/static/js/analytics_controls.js`.
+- Consolidated Analytics tab initialization and persistence in `app/static/js/analytics/kubernetes/controls.js`.
 - Removed template inline width styles from the shared progress component.
 - Externalized Capacity and Forecast chart behavior into dedicated static modules.
 - Removed obsolete Top Consumers chart code that targeted canvases and payloads no longer present in the rendered page.
@@ -80,7 +80,7 @@ The uploaded source archive does not contain `.git` metadata, so a Git commit co
 ## Code and Legacy Audit
 
 - No active compatibility package, route-retention shim, or analytics `warp` layer was found.
-- One backward-compatible snapshot decoding branch remains in `app/analytics/materialization/serialization.py`. It is intentionally retained because it reads previously committed snapshots that predate embedded cluster metadata and does not return ORM entities into the presentation context.
+- One backward-compatible snapshot decoding branch remains in `app/analytics/kubernetes/materialization/serialization.py`. It is intentionally retained because it reads previously committed snapshots that predate embedded cluster metadata and does not return ORM entities into the presentation context.
 - Existing Analytics load trackers remain page-specific because they implement polling/completion behavior rather than static metric progress; they are not duplicates of the shared metric-bar hydrator.
 - Python cache files and test cache files are excluded from the delivered archives.
 - The UI inline-debt baseline was reduced for templates whose inline script/style debt was removed. One already-resolved Inventory baseline entry was also removed so the repository UI reuse gate reflects the current source tree.
@@ -120,48 +120,48 @@ Rollback:
 
 ## Changed Files
 
-- `app/analytics/capacity/service.py`
+- `app/analytics/kubernetes/capacity/service.py`
 - `app/analytics/common/presentation.py`
 - `app/static/js/analytics_capacity.js`
-- `app/static/js/analytics_controls.js`
+- `app/static/js/analytics/kubernetes/controls.js`
 - `app/static/js/analytics_forecast.js`
-- `app/templates/analytics/alerts/index.html`
-- `app/templates/analytics/alerts/partials/_cluster_signal_overview.html`
-- `app/templates/analytics/alerts/partials/_filters.html`
-- `app/templates/analytics/alerts/partials/_hero.html`
-- `app/templates/analytics/alerts/partials/_incident_readiness.html`
-- `app/templates/analytics/alerts/partials/_ownership_summary.html`
-- `app/templates/analytics/alerts/partials/_recommendations.html`
-- `app/templates/analytics/alerts/partials/_routing_summary.html`
-- `app/templates/analytics/alerts/partials/_silence_inhibition_summary.html`
-- `app/templates/analytics/alerts/partials/_source_status.html`
-- `app/templates/analytics/capacity/index.html`
-- `app/templates/analytics/capacity/partials/_hero.html`
-- `app/templates/analytics/capacity/partials/_recommendations.html`
+- `app/templates/analytics/kubernetes/alerts/index.html`
+- `app/templates/analytics/kubernetes/alerts/partials/_cluster_signal_overview.html`
+- `app/templates/analytics/kubernetes/alerts/partials/_filters.html`
+- `app/templates/analytics/kubernetes/alerts/partials/_hero.html`
+- `app/templates/analytics/kubernetes/alerts/partials/_incident_readiness.html`
+- `app/templates/analytics/kubernetes/alerts/partials/_ownership_summary.html`
+- `app/templates/analytics/kubernetes/alerts/partials/_recommendations.html`
+- `app/templates/analytics/kubernetes/alerts/partials/_routing_summary.html`
+- `app/templates/analytics/kubernetes/alerts/partials/_silence_inhibition_summary.html`
+- `app/templates/analytics/kubernetes/alerts/partials/_source_status.html`
+- `app/templates/analytics/kubernetes/capacity/index.html`
+- `app/templates/analytics/kubernetes/capacity/partials/_hero.html`
+- `app/templates/analytics/kubernetes/capacity/partials/_recommendations.html`
 - `app/templates/analytics/components/_controls.html`
-- `app/templates/analytics/components/_prometheus_status.html`
-- `app/templates/analytics/forecast/index.html`
-- `app/templates/analytics/forecast/partials/_forecast_section.html`
-- `app/templates/analytics/forecast/partials/_methodology.html`
-- `app/templates/analytics/overview/partials/_prometheus_status.html`
-- `app/templates/analytics/storage/index.html`
-- `app/templates/analytics/storage/partials/_filesystem_panel.html`
-- `app/templates/analytics/storage/partials/_hero.html`
-- `app/templates/analytics/storage/partials/_storage_section.html`
-- `app/templates/analytics/top_consumers/index.html`
-- `app/templates/analytics/top_consumers/partials/_consumer_detail_section.html`
-- `app/templates/analytics/top_consumers/partials/_hero.html`
-- `app/templates/analytics/top_consumers/partials/_top_consumers_section.html`
-- `app/templates/analytics/utilization/index.html`
-- `app/templates/analytics/utilization/partials/_hero.html`
-- `app/templates/analytics/utilization/partials/_node_detail.html`
-- `app/templates/analytics/utilization/partials/_recommendations.html`
-- `app/templates/analytics/utilization/partials/_trend.html`
-- `app/templates/analytics/workload/index.html`
-- `app/templates/analytics/workload/partials/_hero.html`
-- `app/templates/analytics/workload/partials/_recommendations.html`
-- `app/templates/analytics/workload/partials/_tenant_quota_section.html`
-- `app/templates/analytics/workload/partials/_workload_mapping_section.html`
+- `app/templates/analytics/kubernetes/components/_prometheus_status.html`
+- `app/templates/analytics/kubernetes/forecast/index.html`
+- `app/templates/analytics/kubernetes/forecast/partials/_forecast_section.html`
+- `app/templates/analytics/kubernetes/forecast/partials/_methodology.html`
+- `app/templates/analytics/kubernetes/overview/partials/_prometheus_status.html`
+- `app/templates/analytics/kubernetes/storage/index.html`
+- `app/templates/analytics/kubernetes/storage/partials/_filesystem_panel.html`
+- `app/templates/analytics/kubernetes/storage/partials/_hero.html`
+- `app/templates/analytics/kubernetes/storage/partials/_storage_section.html`
+- `app/templates/analytics/kubernetes/top_consumers/index.html`
+- `app/templates/analytics/kubernetes/top_consumers/partials/_consumer_detail_section.html`
+- `app/templates/analytics/kubernetes/top_consumers/partials/_hero.html`
+- `app/templates/analytics/kubernetes/top_consumers/partials/_top_consumers_section.html`
+- `app/templates/analytics/kubernetes/utilization/index.html`
+- `app/templates/analytics/kubernetes/utilization/partials/_hero.html`
+- `app/templates/analytics/kubernetes/utilization/partials/_node_detail.html`
+- `app/templates/analytics/kubernetes/utilization/partials/_recommendations.html`
+- `app/templates/analytics/kubernetes/utilization/partials/_trend.html`
+- `app/templates/analytics/kubernetes/workload/index.html`
+- `app/templates/analytics/kubernetes/workload/partials/_hero.html`
+- `app/templates/analytics/kubernetes/workload/partials/_recommendations.html`
+- `app/templates/analytics/kubernetes/workload/partials/_tenant_quota_section.html`
+- `app/templates/analytics/kubernetes/workload/partials/_workload_mapping_section.html`
 - `app/templates/components/progress_bar.html`
 - `docs/architecture/ui-inline-debt-baseline.json`
 - `docs/reviews/2026-07-27-kubernetes-analytics-ui-audit.md`

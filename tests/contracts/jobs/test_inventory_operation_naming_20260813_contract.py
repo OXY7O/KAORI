@@ -28,10 +28,10 @@ def test_inventory_job_keys_remain_stable_while_operations_are_renamed() -> None
 
 
 def test_inventory_runtime_queries_use_canonical_operation_constants() -> None:
-    kubernetes_adapter = read('app/inventory/job_adapter.py')
-    object_storage_adapter = read('app/storage_inventory/job_adapter.py')
+    kubernetes_adapter = read('app/inventory/kubernetes/job_adapter.py')
+    object_storage_adapter = read('app/inventory/object_storage/job_adapter.py')
     kubernetes_sync = read('app/cluster/sync_jobs.py')
-    object_storage_sync = read('app/storage_inventory/sync_jobs.py')
+    object_storage_sync = read('app/inventory/object_storage/sync_jobs.py')
     deletion = read('app/integrations/deletion.py')
     sync_state = read('app/cluster/sync_state.py')
 

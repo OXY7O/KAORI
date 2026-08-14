@@ -30,7 +30,7 @@ wire protocol.
 | `app/integrations/contracts/` | Provider-neutral adapter, capability, result, and exception contracts. |
 | `app/integrations/taxonomy.py` | Canonical integration domain and capability taxonomy used by registry and presentation. |
 | `app/integrations/registry.py` | Provider registration, taxonomy ownership, operation dispatch, provider/canonical record loading, workspace routing, navigation ownership, failure hooks, and operation-to-queue mapping. |
-| `app/integrations/binding_service.py` | Provider-neutral source-to-asset binding entrypoint with domain compatibility wrappers. |
+| `app/integrations/binding_service.py` | Provider-neutral source-to-asset binding entrypoint using canonical `SourceBindingSpec`; domain compatibility wrappers are prohibited. |
 | `app/integrations/navigation.py` | Registry-driven sidebar domain projection and provider endpoint ownership. |
 | `app/integrations/runtime/` | Shared runtime observation, scoring, monitoring, persistence, and presentation. |
 | `app/integrations/validation/` | Canonical asynchronous validation and runtime-refresh orchestration. |
@@ -74,13 +74,23 @@ follow the same pattern: MinIO API and Prometheus metrics providers bind to the
 same `object_storage_system:<asset-id>` scope.
 
 
+### Analytics metrics-source boundary
+
+Object Storage Analytics does not depend directly on Prometheus. It resolves a
+provider-neutral `MetricsSource` and then selects a qualified
+**asset-provider + metrics-provider** adapter. The first pair is MinIO +
+Prometheus. A Prometheus binding for a different Object Storage provider must
+not reuse MinIO PromQL implicitly; that provider requires its own qualified
+adapter/profile. See `domain-namespace-and-metrics-source-boundary.md`.
+
+
 ## Domain boundaries
 
 | KAORI domain | Owns | Must not own |
 |---|---|---|
 | `app/cluster/` | Managed Kubernetes asset lifecycle and UI workflow. | Kubernetes transport, compatibility implementation, or duplicated kubeconfig. |
-| `app/inventory/` | Inventory persistence, normalization, and inventory business rules. | Kubernetes credentials or client construction. |
-| `app/analytics/` | Analytics policy, query selection, aggregation, caching, and view models. | Prometheus credentials or raw provider selection. |
+| `app/inventory/` | Capability root with explicit `kubernetes/` and `object_storage/` domain ownership for committed inventory state. | Mixed-domain implementation at the capability root, provider credentials, or client construction. |
+| `app/analytics/` | Capability root with explicit `kubernetes/` and `object_storage/` domains plus genuinely provider-neutral `shared/` contracts. | Mixed-domain implementation, provider credentials, or provider query/payload semantics in domain services. |
 | `app/kubernetes_operations/` | ConfigMap/Secret operational policy, authorization, confirmation, and audit. | Kubernetes transport construction. |
 | `app/governance/` | Governance policy and interpretation. | Kubernetes credential persistence. |
 | `app/prometheus/` | Prometheus registration forms, domain services, source resolution, bindings UI, and presentation. | Transport, query profiles, compatibility implementation, or runtime adapter implementation. |

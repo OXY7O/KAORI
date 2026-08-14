@@ -5,7 +5,7 @@ from app.common.job_execution_contract import (
 from app.jobs.definitions.base import JobDefinition
 
 JOB_KEY = 'object_storage.inventory.sync'
-ADAPTER_MODULE = 'app.storage_inventory.job_adapter'
+ADAPTER_MODULE = 'app.inventory.object_storage.job_adapter'
 
 OBJECT_STORAGE_INVENTORY_SYNC_DEFINITION = JobDefinition(
     key=JOB_KEY,

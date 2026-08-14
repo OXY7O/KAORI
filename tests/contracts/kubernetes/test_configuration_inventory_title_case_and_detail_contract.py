@@ -1,17 +1,17 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-WORKSPACE = ROOT / 'app/templates/inventory/configuration/partials/_page_workspace.html'
-SUMMARY = ROOT / 'app/templates/inventory/configuration/partials/_summary_cards.html'
-CARD = ROOT / 'app/templates/inventory/configuration/partials/_table_card.html'
-TABLE = ROOT / 'app/templates/inventory/configuration/partials/_table_content.html'
-DETAIL = ROOT / 'app/templates/inventory/configuration/partials/_configuration_detail_content.html'
-SERVICE = ROOT / 'app/inventory/resources/configuration.py'
-SEMANTICS = ROOT / 'app/inventory/resources/configuration_semantics.py'
-COLLECTOR = ROOT / 'app/inventory/collectors/configuration.py'
+WORKSPACE = ROOT / 'app/templates/inventory/kubernetes/configuration/partials/_page_workspace.html'
+SUMMARY = ROOT / 'app/templates/inventory/kubernetes/configuration/partials/_summary_cards.html'
+CARD = ROOT / 'app/templates/inventory/kubernetes/configuration/partials/_table_card.html'
+TABLE = ROOT / 'app/templates/inventory/kubernetes/configuration/partials/_table_content.html'
+DETAIL = ROOT / 'app/templates/inventory/kubernetes/configuration/partials/_configuration_detail_content.html'
+SERVICE = ROOT / 'app/inventory/kubernetes/resources/configuration.py'
+SEMANTICS = ROOT / 'app/inventory/kubernetes/resources/configuration_semantics.py'
+COLLECTOR = ROOT / 'app/inventory/kubernetes/collectors/configuration.py'
 MODEL = ROOT / 'app/models/inventory.py'
-PERSISTENCE = ROOT / 'app/inventory/persistence.py'
-ROUTES = ROOT / 'app/inventory/routes.py'
+PERSISTENCE = ROOT / 'app/inventory/kubernetes/persistence.py'
+ROUTES = ROOT / 'app/inventory/kubernetes/routes.py'
 PAYLOAD = ROOT / 'app/reports/export/payloads/inventory.py'
 XLSX = ROOT / 'app/reports/export/xlsx/standard.py'
 MIGRATION = ROOT / 'migrations/versions/20260805_config_inventory_v2.py'
@@ -29,7 +29,7 @@ def test_configuration_inventory_uses_canonical_workspace_pattern() -> None:
     routes = read(ROUTES)
 
     assert 'id="configuration-page-workspace"' in workspace
-    assert 'inventory/components/_data_freshness.html' in workspace
+    assert 'inventory/kubernetes/components/_data_freshness.html' in workspace
     assert 'Configuration Reference Posture' in summary
     assert 'Reference Evidence Gaps' in summary
     assert 'Pod Reference Collection' in summary
@@ -45,7 +45,7 @@ def test_configuration_inventory_uses_canonical_workspace_pattern() -> None:
         "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')"
         in routes
     )
-    assert not (ROOT / 'app/templates/inventory/configuration/partials/_inventory_scope.html').exists()
+    assert not (ROOT / 'app/templates/inventory/kubernetes/configuration/partials/_inventory_scope.html').exists()
 
 
 def test_configuration_detail_uses_protected_and_evidence_aware_boundaries() -> None:

@@ -2,7 +2,7 @@ from pathlib import Path
 
 from jinja2 import Environment, meta
 
-OVERVIEW_PARTIALS = Path('app/templates/analytics/overview/partials')
+OVERVIEW_PARTIALS = Path('app/templates/analytics/kubernetes/overview/partials')
 ACCIDENTAL_SCOPE_NAMES = {
     'analysis_surface',
     'overview_surface',

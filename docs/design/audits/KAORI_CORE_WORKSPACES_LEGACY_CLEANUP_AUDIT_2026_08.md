@@ -23,12 +23,12 @@ instead of retained as indefinite compatibility layers.
 The following obsolete files are deleted and registered in `scripts/cleanup_obsolete_files.sh`:
 
 - `app/static/js/inventory/topology_bootstrap.js`;
-- `app/templates/inventory/components/_detail_macros.html`;
-- `app/templates/inventory/nodes/partials/_inventory_scope.html`;
-- `app/templates/inventory/namespaces/partials/_inventory_scope.html`;
-- `app/templates/inventory/workloads/partials/_inventory_scope.html`;
-- `app/templates/inventory/pods/partials/_inventory_scope.html`;
-- `app/templates/inventory/services/partials/_inventory_scope.html`.
+- `app/templates/inventory/kubernetes/components/_detail_macros.html`;
+- `app/templates/inventory/kubernetes/nodes/partials/_inventory_scope.html`;
+- `app/templates/inventory/kubernetes/namespaces/partials/_inventory_scope.html`;
+- `app/templates/inventory/kubernetes/workloads/partials/_inventory_scope.html`;
+- `app/templates/inventory/kubernetes/pods/partials/_inventory_scope.html`;
+- `app/templates/inventory/kubernetes/services/partials/_inventory_scope.html`.
 
 ## Canonical ownership after cleanup
 
@@ -51,7 +51,7 @@ scope wrapper or a compatibility partial.
 
 ### Topology
 
-`inventory/topology/index.html` loads `js/inventory/topology.js` directly. The canonical module
+`inventory/kubernetes/topology/index.html` loads `js/inventory/kubernetes/topology.js` directly. The canonical module
 imports the Cytoscape ESM renderer itself and owns startup failure presentation. The removed
 bootstrap no longer bridges a renderer through `window.cytoscape` or reloads a second workspace
 module.
@@ -173,8 +173,8 @@ Kubernetes Governance TLS Certificates, and Kubernetes Operations ConfigMaps and
 The following additional canonicalization was completed:
 
 - Dashboard alert materialization moved from `app/dashboards/kubernetes/snapshot_builder.py` to
-  `app/analytics/materialization/dashboard_alerts.py`. Dataset identifiers are owned by
-  `app/analytics/materialization/keys.py`. Dashboard remains a database-only reader and Analytics no
+  `app/analytics/kubernetes/materialization/dashboard_alerts.py`. Dataset identifiers are owned by
+  `app/analytics/kubernetes/materialization/keys.py`. Dashboard remains a database-only reader and Analytics no
   longer imports Dashboard implementation modules.
 - `app/analytics/common/cache.py` was removed. The Analytics services already use committed worker
   snapshots; retaining an unreferenced, pickle-based cache would create a second evidence path.

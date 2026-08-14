@@ -15,17 +15,17 @@ These files are obsolete because their canonical replacements are already active
 - `app/static/js/analytics_capacity.js`
 - `app/static/js/analytics_forecast.js`
 - `app/templates/alertmanager/partials/_operation_feedback_oob.html`
-- `app/templates/analytics/alerts/partials/_pagination.html`
-- `app/templates/analytics/alerts/partials/_source_status.html`
+- `app/templates/analytics/kubernetes/alerts/partials/_pagination.html`
+- `app/templates/analytics/kubernetes/alerts/partials/_source_status.html`
 - `app/templates/analytics/components/_controls.html`
 - `app/templates/analytics/components/_overview_surfaces.html`
-- `app/templates/analytics/forecast/partials/_methodology.html`
-- `app/templates/analytics/overview/partials/_empty_state.html`
-- `app/templates/analytics/overview/partials/_prometheus_status_loading.html`
-- `app/templates/analytics/storage/partials/_persistent_pagination.html`
-- `app/templates/analytics/storage/partials/_record_pagination.html`
-- `app/templates/analytics/top_consumers/partials/_consumer_detail_pagination.html`
-- `app/templates/analytics/workload/partials/_record_pagination.html`
+- `app/templates/analytics/kubernetes/forecast/partials/_methodology.html`
+- `app/templates/analytics/kubernetes/overview/partials/_empty_state.html`
+- `app/templates/analytics/kubernetes/overview/partials/_prometheus_status_loading.html`
+- `app/templates/analytics/kubernetes/storage/partials/_persistent_pagination.html`
+- `app/templates/analytics/kubernetes/storage/partials/_record_pagination.html`
+- `app/templates/analytics/kubernetes/top_consumers/partials/_consumer_detail_pagination.html`
+- `app/templates/analytics/kubernetes/workload/partials/_record_pagination.html`
 - `app/templates/components/footer.html`
 - `app/templates/governance/tls_certificates/partials/_operation_feedback_oob.html`
 - `app/templates/governance/tls_certificates/partials/_sync_toast_oob.html`
@@ -108,7 +108,7 @@ These are local/generated artifacts and must not be included in source ZIP deliv
 The following approved legacy files are now removed from the audited source:
 
 - `app/templates/analytics/components/_overview_surfaces.html`
-- `app/templates/analytics/overview/partials/_prometheus_status.html`
+- `app/templates/analytics/kubernetes/overview/partials/_prometheus_status.html`
 
 Analytics Overview now uses `_analysis_surfaces.html` and the Health Summary-owned
 canonical Prometheus readiness card. No compatibility wrapper remains.

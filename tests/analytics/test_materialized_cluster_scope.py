@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from app.analytics.materialization.requests import choose_cluster_reference
-from app.analytics.materialization.serialization import ClusterReference, decode_value, encode_value
+from app.analytics.kubernetes.materialization.requests import choose_cluster_reference
+from app.analytics.kubernetes.materialization.serialization import ClusterReference, decode_value, encode_value
 
 
 def _cluster(cluster_id: str, name: str) -> ClusterReference:

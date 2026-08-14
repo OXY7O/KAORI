@@ -16,10 +16,10 @@ def _environment() -> Environment:
 
 
 def test_pending_partial_renders_without_optional_progress_values() -> None:
-    template = _environment().get_template('analytics/materialization/_pending.html')
+    template = _environment().get_template('analytics/kubernetes/materialization/_pending.html')
 
     rendered = template.render(
-        materialization_status_url='/analytics/materialization/status',
+        materialization_status_url='/analytics/kubernetes/materialization/status',
         materialization_return_url='/analytics/alerts',
     )
 
@@ -29,10 +29,10 @@ def test_pending_partial_renders_without_optional_progress_values() -> None:
 
 
 def test_pending_partial_renders_numeric_worker_progress() -> None:
-    template = _environment().get_template('analytics/materialization/_pending.html')
+    template = _environment().get_template('analytics/kubernetes/materialization/_pending.html')
 
     rendered = template.render(
-        materialization_status_url='/analytics/materialization/status',
+        materialization_status_url='/analytics/kubernetes/materialization/status',
         materialization_return_url='/analytics/alerts',
         materialization_error=None,
         materialization_progress_message='Collecting alert signals',
@@ -48,7 +48,7 @@ def test_pending_partial_renders_numeric_worker_progress() -> None:
 
 
 def test_pending_context_contract_always_defines_progress_fields() -> None:
-    source = Path('app/analytics/materialization/presentation.py').read_text()
+    source = Path('app/analytics/kubernetes/materialization/presentation.py').read_text()
 
     assert "'materialization_progress_message': progress_message" in source
     assert "'materialization_progress_percent': progress_percent" in source

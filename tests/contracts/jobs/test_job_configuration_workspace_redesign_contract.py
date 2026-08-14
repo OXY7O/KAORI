@@ -23,9 +23,9 @@ def test_terminal_status_refresh_does_not_replace_configuration_forms() -> None:
 
 def test_active_queries_ignore_completed_executions() -> None:
     for relative in (
-        'app/inventory/job_adapter.py',
+        'app/inventory/kubernetes/job_adapter.py',
         'app/governance/tls_certificates/job_adapter.py',
-        'app/analytics/job_adapter.py',
+        'app/analytics/kubernetes/job_adapter.py',
     ):
         content = _read(relative)
         assert 'JobExecution.completed_at.is_(None)' in content

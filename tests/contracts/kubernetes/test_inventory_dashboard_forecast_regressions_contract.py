@@ -9,7 +9,7 @@ def read(relative: str) -> str:
 
 def test_inventory_snapshot_source_uses_aligned_detail_row_for_canonical_value() -> None:
     details = read('app/templates/components/details/_detail_content.html')
-    inventory = read('app/templates/inventory/overview/partials/_resources_by_cluster_content.html')
+    inventory = read('app/templates/inventory/kubernetes/overview/partials/_resources_by_cluster_content.html')
 
     assert 'macro detail_row(' in details
     assert 'whitespace-nowrap' in details

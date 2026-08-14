@@ -31,6 +31,12 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'inventory.ingresses': 'Ingresses',
     'inventory.storage': 'Storage',
     'inventory.configuration': 'Configuration',
+    # Object Storage Inventory
+    'object_storage_inventory.overview': 'Overview',
+    'object_storage_inventory.systems': 'Systems',
+    'object_storage_inventory.system_details': 'System Details',
+    'object_storage_inventory.buckets': 'Buckets',
+    'object_storage_inventory.bucket_details': 'Bucket Details',
     # Analytics
     'analytics.overview': 'Overview',
     'analytics.utilization': 'Resource Utilization',
@@ -40,6 +46,13 @@ _ENDPOINT_LABELS: dict[str, str] = {
     'analytics.forecast': 'Resource Forecast',
     'analytics.top_consumers': 'Top Consumers',
     'analytics.alerts': 'Alerts & Anomalies',
+    # Object Storage Analytics
+    'analytics.object_storage_overview': 'Overview',
+    'analytics.object_storage_capacity': 'Capacity & Usage',
+    'analytics.object_storage_performance': 'Performance',
+    'analytics.object_storage_forecast': 'Forecast',
+    'analytics.object_storage_top_consumers': 'Top Consumers',
+    'analytics.object_storage_alerts': 'Alerts & Anomalies',
     # Intelligence
     'intelligence.index': 'Recommendations',
     'intelligence.recommendations': 'Recommendations',
@@ -125,6 +138,18 @@ def _deduplicate(items: Iterable[BreadcrumbItem]) -> list[BreadcrumbItem]:
     return result
 
 
+def _analytics_items(endpoint: str) -> list[BreadcrumbItem]:
+    if endpoint.startswith('analytics.object_storage_'):
+        return [
+            BreadcrumbItem('Object Storage Analytics', 'database-zap'),
+            BreadcrumbItem(_leaf(endpoint, 'Overview')),
+        ]
+    return [
+        BreadcrumbItem('K8s Analytics', 'bar-chart-3'),
+        BreadcrumbItem(_leaf(endpoint, 'Overview')),
+    ]
+
+
 def build_navigation_breadcrumb(
     endpoint: str | None,
     path: str = '',
@@ -149,6 +174,11 @@ def build_navigation_breadcrumb(
             BreadcrumbItem(integration_owner['provider_label']),
         ]
         items = _append_workflow(items, endpoint)
+    elif endpoint.startswith('object_storage_inventory.'):
+        items = [
+            BreadcrumbItem('Object Storage Inventory', 'database'),
+            BreadcrumbItem(_leaf(endpoint, 'Overview')),
+        ]
     elif endpoint.startswith('inventory.'):
         items = [
             BreadcrumbItem('K8s Inventory', 'boxes'),
@@ -166,10 +196,7 @@ def build_navigation_breadcrumb(
             BreadcrumbItem(_leaf(endpoint, 'TLS Certificates')),
         ]
     elif endpoint.startswith('analytics.'):
-        items = [
-            BreadcrumbItem('K8s Analytics', 'bar-chart-3'),
-            BreadcrumbItem(_leaf(endpoint, 'Overview')),
-        ]
+        items = _analytics_items(endpoint)
     elif endpoint.startswith('intelligence.') or endpoint.startswith('automation_control.'):
         items = [
             BreadcrumbItem('Intelligence', 'brain-circuit'),
@@ -185,7 +212,7 @@ def build_navigation_breadcrumb(
     elif endpoint.startswith('platform_operations.overview.'):
         items = [
             BreadcrumbItem('Platform Operations', 'workflow'),
-            BreadcrumbItem('Overview'),
+            BreadcrumbItem('Operations Center'),
         ]
     elif endpoint.startswith('platform_operations.data_lifecycle.'):
         items = [

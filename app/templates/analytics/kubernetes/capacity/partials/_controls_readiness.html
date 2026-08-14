@@ -1,0 +1,48 @@
+{% import "analytics/kubernetes/components/_analysis_workspace.html" as analytics_workspace %}
+<form id="capacity-filter"
+      data-analytics-preserve-tab
+      method="get"
+      hx-get="{{ url_for('analytics.capacity') }}"
+      hx-trigger="change delay:120ms"
+      hx-target="#capacity-page"
+      hx-select="#capacity-page"
+      hx-swap="outerHTML"
+      hx-push-url="true"
+      hx-sync="#capacity-page:replace"
+      hx-indicator="#capacity-refresh-indicator">
+    <input type="hidden" name="tab" value="{{ initial_tab|default('summary') }}">
+    {% call analytics_workspace.controls_readiness(
+        'Capacity Controls & Data Readiness',
+        'Set the cluster and analysis window, then confirm the Prometheus source and committed worker-capacity snapshot.',
+        'sliders-horizontal',
+        'capacity-refresh-indicator',
+        prometheus_status,
+        analytics_materialization,
+        eyebrow='Capacity Analysis'
+        ) %}
+        <div class="grid gap-4 sm:grid-cols-2">
+            <label for="capacity-cluster-filter" class="block">
+                <span class="{{ analytics_workspace.control_label_classes() }}">Cluster</span>
+                <select id="capacity-cluster-filter"
+                        name="cluster_id"
+                        class="{{ analytics_workspace.control_select_classes() }}">
+                    {% for item in clusters %}
+                        <option value="{{ item.id }}"
+                                {% if cluster and cluster.id == item.id %}selected{% endif %}>{{ item.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label for="capacity-time-range-filter" class="block">
+                <span class="{{ analytics_workspace.control_label_classes() }}">Time Range</span>
+                <select id="capacity-time-range-filter"
+                        name="time_range"
+                        class="{{ analytics_workspace.control_select_classes() }}">
+                    {% for item in allowed_time_ranges %}
+                        <option value="{{ item.value }}"
+                                {% if selected_time_range == item.value %}selected{% endif %}>{{ item.label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        </div>
+    {% endcall %}
+</form>

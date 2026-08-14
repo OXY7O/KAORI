@@ -5,7 +5,7 @@ from typing import Any
 
 from sqlalchemy import func, select
 
-from app.analytics.overview.service import get_analytics_overview
+from app.analytics.kubernetes.overview.service import get_analytics_overview
 from app.extensions.db import db
 from app.models.report import Report, ReportSchedule
 from app.reports.catalog import require_selected_cluster
@@ -131,7 +131,7 @@ def _serialize_storage_context(storage: dict[str, Any]) -> dict[str, Any]:
 
 def _collect_inventory_snapshot(report: Report) -> dict[str, Any]:
     try:
-        from app.inventory.overview import get_inventory_overview
+        from app.inventory.kubernetes.overview import get_inventory_overview
 
         cluster_id = require_selected_cluster(report)
         overview = get_inventory_overview()

@@ -15,15 +15,15 @@ def require(condition: bool, message: str, errors: list[str]) -> None:
 def main() -> int:
     errors: list[str] = []
 
-    backend = read('app/inventory/resources/namespaces.py')
-    routes = read('app/inventory/routes.py')
-    collector = read('app/inventory/collectors/configuration.py')
-    persistence = read('app/inventory/persistence.py')
-    workspace = read('app/templates/inventory/namespaces/partials/_page_workspace.html')
-    table_card = read('app/templates/inventory/namespaces/partials/_table_card.html')
-    table_content = read('app/templates/inventory/namespaces/partials/_table_content.html')
-    summary = read('app/templates/inventory/namespaces/partials/_summary_cards.html')
-    detail = read('app/templates/inventory/namespaces/partials/_namespace_detail_content.html')
+    backend = read('app/inventory/kubernetes/resources/namespaces.py')
+    routes = read('app/inventory/kubernetes/routes.py')
+    collector = read('app/inventory/kubernetes/collectors/configuration.py')
+    persistence = read('app/inventory/kubernetes/persistence.py')
+    workspace = read('app/templates/inventory/kubernetes/namespaces/partials/_page_workspace.html')
+    table_card = read('app/templates/inventory/kubernetes/namespaces/partials/_table_card.html')
+    table_content = read('app/templates/inventory/kubernetes/namespaces/partials/_table_content.html')
+    summary = read('app/templates/inventory/kubernetes/namespaces/partials/_summary_cards.html')
+    detail = read('app/templates/inventory/kubernetes/namespaces/partials/_namespace_detail_content.html')
     standard = read('docs/design/patterns/KUBERNETES_NAMESPACE_INVENTORY.md')
     audit = read('docs/design/audits/KUBERNETES_NAMESPACE_INVENTORY_ALIGNMENT_AUDIT_2026_08.md')
     quality_gate = read('scripts/quality_gate.sh')
@@ -97,7 +97,7 @@ def main() -> int:
         errors,
     )
     require(
-        'inventory/components/_data_freshness.html' in workspace,
+        'inventory/kubernetes/components/_data_freshness.html' in workspace,
         'Snapshot Context must refresh with Namespace scope.',
         errors,
     )

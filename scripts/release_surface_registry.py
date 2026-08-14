@@ -73,7 +73,7 @@ SURFACES: tuple[ReleaseSurface, ...] = (
         ),
         blueprint_vars=('object_storage_inventory_bp',),
         verifiers=('scripts/verify_object_storage_inventory_final_lock.py',),
-        contract_paths=('tests/contracts/storage_inventory',),
+        contract_paths=('tests/contracts/inventory/object_storage',),
         notes=(
             'Provider-neutral committed inventory. Live provider configuration, validation, and runtime health '
             'remain integration-owned.'

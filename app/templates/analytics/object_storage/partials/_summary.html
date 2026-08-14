@@ -7,15 +7,15 @@
             <div>
                 <h2 class="text-lg font-semibold text-content-primary">{{ page.title }} Snapshot</h2>
                 <p class="mt-1 text-sm leading-6 text-content-muted">
-                    Operational metrics are queried from the bound Prometheus source for this object-storage asset.
+                    Operational metrics are queried from the active metrics source bound to this object-storage asset.
                 </p>
             </div>
         </div>
     </header>
     {% if page_key == 'overview' %}
         {% set cards = [
-            ('Usable Capacity', metrics.capacity_total_display, 'Prometheus evidence', 'hard-drive'),
-            ('Current Usage', metrics.usage_total_display, 'Prometheus evidence', 'database'),
+            ('Usable Capacity', metrics.capacity_total_display, metrics_source.provider_label ~ ' evidence', 'hard-drive'),
+            ('Current Usage', metrics.usage_total_display, metrics_source.provider_label ~ ' evidence', 'database'),
             ('Utilization', metrics.utilization_display, 'Capacity pressure', 'gauge'),
             ('Request Rate', metrics.request_rate_display, 'S3 requests', 'activity'),
             ('Error Ratio', metrics.error_ratio_display, 'Errors / request rate', 'circle-alert')
@@ -30,11 +30,11 @@
         ] %}
     {% elif page_key == 'forecast' %}
         {% set cards = [
-            ('Current Usage', metrics.usage_total_display, 'Prometheus usage', 'database'),
+            ('Current Usage', metrics.usage_total_display, metrics_source.provider_label ~ ' usage', 'database'),
             ('Growth / Day', metrics.forecast_display.growth_per_day, 'Linear baseline', 'trending-up'),
             ('Projected 30d', metrics.forecast_display.projected_30d, 'Current slope', 'calendar-range'),
             ('Capacity ETA', metrics.forecast_display.days_to_capacity, 'If growth remains positive', 'timer'),
-            ('Usable Capacity', metrics.capacity_total_display, 'Prometheus capacity', 'hard-drive')
+            ('Usable Capacity', metrics.capacity_total_display, metrics_source.provider_label ~ ' capacity', 'hard-drive')
         ] %}
     {% elif page_key == 'top_consumers' %}
         {% set cards = [
@@ -54,8 +54,8 @@
         ] %}
     {% else %}
         {% set cards = [
-            ('Usable Capacity', metrics.capacity_total_display, 'Prometheus evidence', 'hard-drive'),
-            ('Current Usage', metrics.usage_total_display, 'Prometheus evidence', 'database'),
+            ('Usable Capacity', metrics.capacity_total_display, metrics_source.provider_label ~ ' evidence', 'hard-drive'),
+            ('Current Usage', metrics.usage_total_display, metrics_source.provider_label ~ ' evidence', 'database'),
             ('Free Capacity', metrics.capacity_free_display, 'Usable headroom', 'circle-gauge'),
             ('Objects', metrics.object_count_display, 'Stored objects', 'box'),
             ('Utilization', metrics.utilization_display, 'Capacity pressure', 'gauge')

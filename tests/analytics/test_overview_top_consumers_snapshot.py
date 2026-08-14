@@ -1,4 +1,4 @@
-from app.analytics.overview import service
+from app.analytics.kubernetes.overview import service
 
 
 def test_overview_top_consumers_includes_pod_density(monkeypatch) -> None:

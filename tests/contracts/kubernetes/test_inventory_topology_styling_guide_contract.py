@@ -11,7 +11,7 @@ def _read(relative: str) -> str:
 
 
 def test_topology_uses_the_adaptive_visualization_workspace() -> None:
-    workspace = _read('app/templates/inventory/topology/partials/_workspace.html')
+    workspace = _read('app/templates/inventory/kubernetes/topology/partials/_workspace.html')
     component = _read('app/templates/components/visualization_workspace.html')
 
     assert '{% import "components/visualization_workspace.html" as visualization_workspace %}' in workspace
@@ -31,9 +31,9 @@ def test_topology_uses_the_adaptive_visualization_workspace() -> None:
 
 
 def test_topology_side_panes_are_always_on_demand_drawers() -> None:
-    workspace = _read('app/templates/inventory/topology/partials/_workspace.html')
+    workspace = _read('app/templates/inventory/kubernetes/topology/partials/_workspace.html')
     component = _read('app/templates/components/visualization_workspace.html')
-    script = _read('app/static/js/inventory/topology.js')
+    script = _read('app/static/js/inventory/kubernetes/topology.js')
     pattern = _read('docs/design/patterns/KUBERNETES_TOPOLOGY.md')
 
     assert 'fixed inset-y-0' in component
@@ -48,8 +48,8 @@ def test_topology_side_panes_are_always_on_demand_drawers() -> None:
 
 
 def test_topology_registers_compact_segmented_tab_style() -> None:
-    workspace = _read('app/templates/inventory/topology/partials/_workspace.html')
-    inspector = _read('app/templates/inventory/topology/partials/_inspector_templates.html')
+    workspace = _read('app/templates/inventory/kubernetes/topology/partials/_workspace.html')
+    inspector = _read('app/templates/inventory/kubernetes/topology/partials/_inspector_templates.html')
     component = _read('app/templates/components/segmented_tabs.html')
     registry = _read('docs/design/components/TAB_STYLES.md')
 
@@ -65,9 +65,9 @@ def test_topology_registers_compact_segmented_tab_style() -> None:
 
 
 def test_topology_graph_has_an_accessible_resource_list_fallback() -> None:
-    workspace = _read('app/templates/inventory/topology/partials/_workspace.html')
-    script = _read('app/static/js/inventory/topology.js')
-    index = _read('app/templates/inventory/topology/index.html')
+    workspace = _read('app/templates/inventory/kubernetes/topology/partials/_workspace.html')
+    script = _read('app/static/js/inventory/kubernetes/topology.js')
+    index = _read('app/templates/inventory/kubernetes/topology/index.html')
 
     assert 'role="application"' not in workspace
     assert 'role="img"' in workspace
@@ -81,7 +81,7 @@ def test_topology_graph_has_an_accessible_resource_list_fallback() -> None:
     assert 'Resource List remains available from the committed inventory snapshot.' in script
     assert 'renderPayloadNodeDetails' in script
     assert "setActiveView('list')" in script
-    assert "filename='js/inventory/topology.js'" in index
+    assert "filename='js/inventory/kubernetes/topology.js'" in index
     assert "'renderer_url':" in index
     assert "'workspace_url':" not in index
     assert 'await import(config.renderer_url)' in script
@@ -90,9 +90,9 @@ def test_topology_graph_has_an_accessible_resource_list_fallback() -> None:
 
 
 def test_topology_inspector_uses_native_templates_instead_of_tailwind_html_strings() -> None:
-    workspace = _read('app/templates/inventory/topology/partials/_workspace.html')
-    inspector = _read('app/templates/inventory/topology/partials/_inspector_templates.html')
-    script = _read('app/static/js/inventory/topology.js')
+    workspace = _read('app/templates/inventory/kubernetes/topology/partials/_workspace.html')
+    inspector = _read('app/templates/inventory/kubernetes/topology/partials/_inspector_templates.html')
+    script = _read('app/static/js/inventory/kubernetes/topology.js')
 
     assert '_inspector_templates.html' in workspace
     assert 'topology-node-inspector-template' in inspector
@@ -105,7 +105,7 @@ def test_topology_inspector_uses_native_templates_instead_of_tailwind_html_strin
 
 def test_topology_palette_is_tokenized_and_contains_no_raw_js_colors() -> None:
     styles = _read('frontend/styles.css')
-    script = _read('app/static/js/inventory/topology.js')
+    script = _read('app/static/js/inventory/kubernetes/topology.js')
     contract = _read('docs/design/components/TOPOLOGY_PALETTE.md')
 
     for domain in ('scope', 'compute', 'networking', 'configuration', 'storage'):
@@ -132,7 +132,7 @@ def test_topology_palette_is_tokenized_and_contains_no_raw_js_colors() -> None:
 
 
 def test_topology_hero_does_not_duplicate_snapshot_context() -> None:
-    hero = _read('app/templates/inventory/topology/partials/_hero.html')
+    hero = _read('app/templates/inventory/kubernetes/topology/partials/_hero.html')
 
     assert 'Graph Coverage' in hero
     assert 'Relationships' in hero
@@ -141,11 +141,11 @@ def test_topology_hero_does_not_duplicate_snapshot_context() -> None:
 
 
 def test_topology_service_bounds_queries_and_caches_committed_payloads() -> None:
-    service = _read('app/inventory/topology/service.py')
-    repository = _read('app/inventory/topology/repository.py')
-    node_builder = _read('app/inventory/topology/node_builder.py')
-    edge_builder = _read('app/inventory/topology/edge_builder.py')
-    presentation = _read('app/inventory/topology/presentation.py')
+    service = _read('app/inventory/kubernetes/topology/service.py')
+    repository = _read('app/inventory/kubernetes/topology/repository.py')
+    node_builder = _read('app/inventory/kubernetes/topology/node_builder.py')
+    edge_builder = _read('app/inventory/kubernetes/topology/edge_builder.py')
+    presentation = _read('app/inventory/kubernetes/topology/presentation.py')
 
     assert '_TOPOLOGY_CACHE_MAX_ENTRIES' in service
     assert '_topology_cache_get' in service
@@ -160,13 +160,13 @@ def test_topology_service_bounds_queries_and_caches_committed_payloads() -> None
     assert 'pods_by_scope' in edge_builder
     assert 'omitted_by_type' in presentation
     assert '_node_element' not in service
-    assert 'class TopologyGraphBuilder' in _read('app/inventory/topology/graph_builder.py')
+    assert 'class TopologyGraphBuilder' in _read('app/inventory/kubernetes/topology/graph_builder.py')
 
 
 def test_topology_reference_pattern_is_documented() -> None:
     pattern = _read('docs/design/patterns/KUBERNETES_TOPOLOGY.md')
     audit = _read('docs/design/audits/KUBERNETES_TOPOLOGY_STYLING_AUDIT_2026_07.md')
-    inventory_readme = _read('app/inventory/README.md')
+    inventory_readme = _read('app/inventory/kubernetes/README.md')
 
     assert 'Visualization Workspace Style 1 — Adaptive Explorer' in pattern
     assert 'Tab Style 2: Graph / Resource List' in pattern
@@ -179,8 +179,8 @@ def test_topology_reference_pattern_is_documented() -> None:
 
 
 def test_topology_cluster_icon_and_api_server_layout_are_readable() -> None:
-    inspector = _read('app/templates/inventory/topology/partials/_inspector_templates.html')
-    script = _read('app/static/js/inventory/topology.js')
+    inspector = _read('app/templates/inventory/kubernetes/topology/partials/_inspector_templates.html')
+    script = _read('app/static/js/inventory/kubernetes/topology.js')
 
     assert "cluster: { icon: 'server', domain: 'scope' }" in script
     assert "cluster: { icon: 'server-cog', domain: 'scope' }" not in script

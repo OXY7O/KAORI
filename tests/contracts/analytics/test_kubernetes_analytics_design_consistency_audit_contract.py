@@ -2,7 +2,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-ANALYTICS_TEMPLATES = ROOT / 'app/templates/analytics'
+ANALYTICS_TEMPLATES = ROOT / 'app/templates/analytics/kubernetes'
 
 
 def read(relative_path: str) -> str:
@@ -14,8 +14,8 @@ def all_analytics_templates() -> str:
 
 
 def test_shared_controls_and_prometheus_contract_are_compatible() -> None:
-    workspace = read('app/templates/analytics/components/_analysis_workspace.html')
-    prometheus = read('app/templates/analytics/components/_prometheus_status.html')
+    workspace = read('app/templates/analytics/kubernetes/components/_analysis_workspace.html')
+    prometheus = read('app/templates/analytics/kubernetes/components/_prometheus_status.html')
 
     assert 'data-analytics-prometheus-status' in prometheus
     assert 'Prometheus Status' in prometheus
@@ -33,7 +33,7 @@ def test_shared_controls_and_prometheus_contract_are_compatible() -> None:
 
 def test_analytics_tabs_use_one_shared_runtime_and_native_fallback() -> None:
     tabs = read('app/templates/components/content_tabs.html')
-    runtime = read('app/static/js/analytics_controls.js')
+    runtime = read('app/static/js/analytics/kubernetes/controls.js')
 
     assert 'render_buttons' in tabs
     assert 'nowrap=false' in tabs
@@ -47,14 +47,14 @@ def test_analytics_tabs_use_one_shared_runtime_and_native_fallback() -> None:
     assert 'stabilizeTopConsumersAfterSwap' not in runtime
 
     for template in (
-        'app/templates/analytics/overview/index.html',
-        'app/templates/analytics/alerts/index.html',
-        'app/templates/analytics/top_consumers/partials/_top_consumers_section.html',
-        'app/templates/analytics/utilization/index.html',
-        'app/templates/analytics/capacity/index.html',
-        'app/templates/analytics/storage/partials/_storage_section.html',
-        'app/templates/analytics/workload/index.html',
-        'app/templates/analytics/forecast/partials/_forecast_section.html',
+        'app/templates/analytics/kubernetes/overview/index.html',
+        'app/templates/analytics/kubernetes/alerts/index.html',
+        'app/templates/analytics/kubernetes/top_consumers/partials/_top_consumers_section.html',
+        'app/templates/analytics/kubernetes/utilization/index.html',
+        'app/templates/analytics/kubernetes/capacity/index.html',
+        'app/templates/analytics/kubernetes/storage/partials/_storage_section.html',
+        'app/templates/analytics/kubernetes/workload/index.html',
+        'app/templates/analytics/kubernetes/forecast/partials/_forecast_section.html',
     ):
         content = read(template)
         assert 'data-analytics-tabset' in content or 'analytics_workspace.tabbed' in content
@@ -99,12 +99,12 @@ def test_analytics_filter_forms_have_loading_and_request_synchronization() -> No
 
 
 def test_large_analytics_record_sections_use_responsive_rows() -> None:
-    anomaly = read('app/templates/analytics/alerts/partials/_anomalies_table.html')
-    filesystem = read('app/templates/analytics/storage/partials/_filesystem_panel.html')
-    pvc = read('app/templates/analytics/storage/partials/_persistent_volume_claims_panel.html')
-    pv = read('app/templates/analytics/storage/partials/_persistent_volumes_panel.html')
-    quota = read('app/templates/analytics/workload/partials/_tenant_quota_section.html')
-    mapping = read('app/templates/analytics/workload/partials/_workload_mapping_section.html')
+    anomaly = read('app/templates/analytics/kubernetes/alerts/partials/_anomalies_table.html')
+    filesystem = read('app/templates/analytics/kubernetes/storage/partials/_filesystem_panel.html')
+    pvc = read('app/templates/analytics/kubernetes/storage/partials/_persistent_volume_claims_panel.html')
+    pv = read('app/templates/analytics/kubernetes/storage/partials/_persistent_volumes_panel.html')
+    quota = read('app/templates/analytics/kubernetes/workload/partials/_tenant_quota_section.html')
+    mapping = read('app/templates/analytics/kubernetes/workload/partials/_workload_mapping_section.html')
 
     for content in (anomaly, filesystem, pvc, pv, quota, mapping):
         assert 'overflow-x-auto' not in content
@@ -117,8 +117,8 @@ def test_large_analytics_record_sections_use_responsive_rows() -> None:
 
 
 def test_shared_status_notice_and_safe_materialization_pending_label() -> None:
-    notice = read('app/templates/analytics/components/_status_notice.html')
-    pending = read('app/templates/analytics/materialization/_pending.html')
+    notice = read('app/templates/analytics/kubernetes/components/_status_notice.html')
+    pending = read('app/templates/analytics/kubernetes/materialization/_pending.html')
 
     assert 'macro render' in notice
     assert 'status_label(' in pending

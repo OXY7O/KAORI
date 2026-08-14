@@ -6,9 +6,9 @@ def read(path: str) -> str:
 
 
 def test_overview_section_registry_has_one_composite_owner_and_no_legacy_endpoints() -> None:
-    registry = read('app/analytics/overview/sections.py')
+    registry = read('app/analytics/kubernetes/overview/sections.py')
     routes = read('app/analytics/routes.py')
-    index = read('app/templates/analytics/overview/index.html')
+    index = read('app/templates/analytics/kubernetes/overview/index.html')
 
     assert "'health-summary'" in registry
     assert "hydration='composite'" in registry
@@ -22,8 +22,8 @@ def test_overview_section_registry_has_one_composite_owner_and_no_legacy_endpoin
 
 
 def test_overview_tabs_load_only_on_first_activation() -> None:
-    index = read('app/templates/analytics/overview/index.html')
-    runtime = read('app/static/js/analytics_controls.js')
+    index = read('app/templates/analytics/kubernetes/overview/index.html')
+    runtime = read('app/static/js/analytics/kubernetes/controls.js')
 
     assert 'hx-trigger="kaori:analytics-tab-activated once"' in index
     assert 'loads its committed snapshot only when the tab is first activated' in index
@@ -32,7 +32,7 @@ def test_overview_tabs_load_only_on_first_activation() -> None:
 
 
 def test_overview_snapshot_scope_is_parameter_exact() -> None:
-    summary = read('app/analytics/overview/snapshot_summary.py')
+    summary = read('app/analytics/kubernetes/overview/snapshot_summary.py')
 
     assert "'analytics.capacity': {**cluster_scope, 'time_range': time_range}" in summary
     assert "'analytics.workload': {**cluster_scope, 'time_range': time_range}" in summary
@@ -44,7 +44,7 @@ def test_overview_snapshot_scope_is_parameter_exact() -> None:
 
 
 def test_workload_overview_propagates_selected_time_range() -> None:
-    service = read('app/analytics/overview/service.py')
+    service = read('app/analytics/kubernetes/overview/service.py')
 
     assert 'def _get_workload_snapshot(*, cluster_id: str, time_range: str)' in service
     workload_call = service[
@@ -55,22 +55,22 @@ def test_workload_overview_propagates_selected_time_range() -> None:
 
 def test_unavailable_domain_snapshots_return_none_not_synthetic_zero_payloads() -> None:
     expectations = {
-        'app/analytics/utilization/service.py': 'if not isinstance(summary, dict):\n        return None',
-        'app/analytics/capacity/service.py': 'if not isinstance(capacity_summary, dict):\n        return None',
-        'app/analytics/storage/service.py': 'if not storage_summary:\n        return None',
-        'app/analytics/workload/service.py': 'if not result.available:\n        return None',
-        'app/analytics/top_consumers/service.py': 'if not is_current_payload(payload):\n        return None',
-        'app/analytics/forecast/presentation.py': 'if not isinstance(forecast_payload, dict):\n        return None',
-        'app/analytics/alerts/snapshots.py': 'if not result.available:\n        return None',
+        'app/analytics/kubernetes/utilization/service.py': 'if not isinstance(summary, dict):\n        return None',
+        'app/analytics/kubernetes/capacity/service.py': 'if not isinstance(capacity_summary, dict):\n        return None',
+        'app/analytics/kubernetes/storage/service.py': 'if not storage_summary:\n        return None',
+        'app/analytics/kubernetes/workload/service.py': 'if not result.available:\n        return None',
+        'app/analytics/kubernetes/top_consumers/service.py': 'if not is_current_payload(payload):\n        return None',
+        'app/analytics/kubernetes/forecast/presentation.py': 'if not isinstance(forecast_payload, dict):\n        return None',
+        'app/analytics/kubernetes/alerts/snapshots.py': 'if not result.available:\n        return None',
     }
     removed_adapters = {
-        'app/analytics/utilization/service.py': '_empty_utilization_snapshot',
-        'app/analytics/capacity/service.py': '_empty_capacity_snapshot',
-        'app/analytics/storage/service.py': '_empty_storage_snapshot',
-        'app/analytics/workload/service.py': '_empty_workload_snapshot',
-        'app/analytics/top_consumers/service.py': '_empty_top_consumers_snapshot',
-        'app/analytics/forecast/presentation.py': '_empty_forecast_snapshot',
-        'app/analytics/alerts/snapshots.py': '_empty_alerts_snapshot',
+        'app/analytics/kubernetes/utilization/service.py': '_empty_utilization_snapshot',
+        'app/analytics/kubernetes/capacity/service.py': '_empty_capacity_snapshot',
+        'app/analytics/kubernetes/storage/service.py': '_empty_storage_snapshot',
+        'app/analytics/kubernetes/workload/service.py': '_empty_workload_snapshot',
+        'app/analytics/kubernetes/top_consumers/service.py': '_empty_top_consumers_snapshot',
+        'app/analytics/kubernetes/forecast/presentation.py': '_empty_forecast_snapshot',
+        'app/analytics/kubernetes/alerts/snapshots.py': '_empty_alerts_snapshot',
     }
     for path, marker in expectations.items():
         source = read(path)
@@ -79,9 +79,9 @@ def test_unavailable_domain_snapshots_return_none_not_synthetic_zero_payloads() 
 
 
 def test_overview_unknown_semantics_prevent_false_healthy_zero_states() -> None:
-    schema = read('app/analytics/overview/schema.py')
-    health_service = read('app/analytics/overview/health.py')
-    health_template = read('app/templates/analytics/overview/partials/_health_summary.html')
+    schema = read('app/analytics/kubernetes/overview/schema.py')
+    health_service = read('app/analytics/kubernetes/overview/health.py')
+    health_template = read('app/templates/analytics/kubernetes/overview/partials/_health_summary.html')
 
     assert "'available': False" in schema
     assert "value='N/A'" in schema
@@ -92,9 +92,9 @@ def test_overview_unknown_semantics_prevent_false_healthy_zero_states() -> None:
 
 
 def test_overview_scoped_links_preserve_existing_query_strings() -> None:
-    macro = read('app/templates/analytics/components/_scoped_link.html')
-    alerts = read('app/templates/analytics/overview/partials/_alerts_snapshot.html')
-    summary = read('app/templates/analytics/overview/partials/_actionable_recommendation_summary.html')
+    macro = read('app/templates/analytics/kubernetes/components/_scoped_link.html')
+    alerts = read('app/templates/analytics/kubernetes/overview/partials/_alerts_snapshot.html')
+    summary = read('app/templates/analytics/kubernetes/overview/partials/_actionable_recommendation_summary.html')
 
     assert "'&' if '?' in base_href else '?'" in macro
     assert 'scoped_link.href(alerts.href' in alerts
@@ -104,13 +104,13 @@ def test_overview_scoped_links_preserve_existing_query_strings() -> None:
 
 def test_overview_legacy_templates_are_removed() -> None:
     assert not Path('app/templates/analytics/components/_overview_surfaces.html').exists()
-    assert not Path('app/templates/analytics/overview/partials/_prometheus_status.html').exists()
-    assert not Path('app/templates/analytics/overview/partials/_prometheus_status_loading.html').exists()
-    assert not Path('app/analytics/common/cache.py').exists()
+    assert not Path('app/templates/analytics/kubernetes/overview/partials/_prometheus_status.html').exists()
+    assert not Path('app/templates/analytics/kubernetes/overview/partials/_prometheus_status_loading.html').exists()
+    assert not Path('app/analytics/kubernetes/common/cache.py').exists()
 
 
 def test_overview_prioritized_actions_require_evidence_and_actionable_findings() -> None:
-    service = read('app/analytics/overview/service.py')
+    service = read('app/analytics/kubernetes/overview/service.py')
 
     assert "evidence_complete = bool(payload['actionable_recommendations'].get('evidence_complete', False))" in service
     assert "has_actionable_findings = payload['actionable_recommendation_count'] > 0" in service

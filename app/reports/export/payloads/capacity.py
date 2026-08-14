@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.analytics.capacity.service import CapacityService
-from app.analytics.utilization.service import UtilizationService
+from app.analytics.kubernetes.capacity.service import CapacityService
+from app.analytics.kubernetes.utilization.service import UtilizationService
 from app.cluster.constants import get_environment_label
 from app.models.report import Report
 from app.prometheus.consumer import PrometheusConsumer
@@ -92,7 +92,7 @@ def _collect_forecast(
     period: str,
 ) -> dict[str, Any]:
     try:
-        from app.analytics.materialization.service import read_snapshot
+        from app.analytics.kubernetes.materialization.service import read_snapshot
 
         result = read_snapshot(
             cluster_id=str(getattr(cluster, 'id', '')),

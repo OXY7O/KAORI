@@ -22,7 +22,7 @@ The context panel remains a compact operational summary and is not used as a min
 Updated:
 
 - `app/templates/components/page_hero.html`
-- `app/templates/inventory/nodes/partials/_hero.html`
+- `app/templates/inventory/kubernetes/nodes/partials/_hero.html`
 - `app/templates/integrations/alertmanager.html`
 - `app/templates/alertmanager/instance_detail.html`
 

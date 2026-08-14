@@ -1,0 +1,51 @@
+{% import "analytics/kubernetes/components/_evidence_record_list.html" as evidence_list %}
+{% import "analytics/kubernetes/components/_record_pagination.html" as record_pagination %}
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table_label.html" as table_label %}
+{% call evidence_list.shell('Anomaly Candidates') %}
+    <div id="anomalies-table-container">
+        <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div class="min-w-0">
+                    <h3 class="text-base font-semibold text-content-primary">Anomaly Candidates</h3>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">Prometheus-derived restart and readiness deviations requiring validation before incident escalation.</p>
+                </div>
+                {{ table_label.status_label((anomalies_pagination.total_items|default(0) ) ~ ' Candidates', 'warning' if anomalies_pagination.total_items|default(0) else 'normal', size='compact') }}
+            </div>
+            {{ loading_bar.render('anomalies-table-loading-indicator', label='Refreshing Anomaly Candidates') }}
+        </header>
+        {% set table_kind = "anomalies" %}{% set endpoint_name = "analytics.alerts_anomalies_table" %}{% set target_id = "#anomalies-table-container" %}
+        {% include "analytics/kubernetes/alerts/partials/_table_filters.html" %}
+        {% call evidence_list.header() %}
+            {{ evidence_list.header_cell('Anomaly', 4) }}
+            {{ evidence_list.header_cell('Severity', 1) }}
+            {{ evidence_list.header_cell('Namespace & Pod', 3) }}
+            {{ evidence_list.header_cell('Signal', 2) }}
+            {{ evidence_list.header_cell('Action', 2, 'right') }}
+        {% endcall %}
+        <div class="divide-y divide-outline-subtle">
+            {% if anomalies %}
+                {% for anomaly in anomalies %}
+                    {% set row_key = 'anomaly-' ~ anomalies_pagination.page ~ '-' ~ loop.index0 %}
+                    {% include "analytics/kubernetes/alerts/partials/_anomalies_table_row.html" %}
+                {% endfor %}
+            {% else %}
+                {{ evidence_list.empty('No Anomalies Detected', 'No anomaly candidate matches the current source and local filters.', 'radar') }}
+            {% endif %}
+        </div>
+        {% set pagination_query = {
+                    'cluster_id': selected_cluster_id,
+                    'source': selected_source,
+                    'severity': selected_severity,
+                    'status': selected_status,
+                    'namespace': selected_namespace,
+                    'search': selected_search,
+                    'tab': 'anomalies',
+                    'alerts_page': selected_alerts_page,
+                    'anomalies_page': selected_anomalies_page,
+                    'alerts_per_page': selected_alerts_per_page,
+                    'anomalies_per_page': selected_anomalies_per_page
+                } %}
+        {{ record_pagination.render(anomalies_pagination, 'anomalies_page', 'anomalies_per_page', 'anomalies-table-container', 'anomalies-table-filter-form', 'anomalies-table-loading-indicator', 'analytics.alerts_anomalies_table', 'analytics.alerts', pagination_query, 'Anomalies', embedded=true) }}
+    </div>
+{% endcall %}

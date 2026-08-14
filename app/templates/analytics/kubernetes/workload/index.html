@@ -1,0 +1,83 @@
+{% extends "layouts/app.html" %}
+{% import "analytics/kubernetes/components/_status_notice.html" as status_notice %}
+{% import "analytics/kubernetes/components/_analysis_workspace.html" as analytics_workspace %}
+{% import "components/loading_bar.html" as loading_bar %}
+{% block title %}Workload Analysis{% endblock title %}
+{% block dashboard_content %}
+    <div id="workload-page"
+         class="kaori-analytics-page space-y-6"
+         data-analytics-page-request-tracking="false">
+        {% include "analytics/kubernetes/workload/partials/_hero.html" %}
+        {% if dependency_blocker %}
+            {% include "components/dependencies/_blocker.html" %}
+        {% else %}
+            {% if error %}{{ status_notice.render('Workload Data Unavailable', error, tone='warning') }}{% endif %}
+            {% include "analytics/kubernetes/workload/partials/_controls_readiness.html" %}
+            {% include "analytics/kubernetes/workload/partials/_overview.html" %}
+            {% if cluster %}
+                {% set workload_tabs = [('quotas', 'Tenant Quota Analysis', 'badge-gauge'), ('mapping', 'Workload Resource Mapping', 'network'), ('recommendations', 'Workload Recommendations', 'list-checks')] %}
+                {% set active_tab = initial_tab|default('quotas') %}
+                {% call analytics_workspace.tabbed(
+                    'workload-content',
+                    workload_tabs,
+                    'Workload Analysis Content',
+                    'Workload Analysis Workspace',
+                    'Review quota governance, workload resource mapping, and prioritized workload recommendations in one workspace.',
+                    'boxes',
+                    active_tab,
+                    ['quotas', 'mapping', 'recommendations']
+                    ) %}
+                    <div id="workload-content-panel-quotas"
+                         role="tabpanel"
+                         aria-labelledby="workload-content-tab-quotas"
+                         data-analytics-tab-panel="quotas"
+                         {% if active_tab != 'quotas' %}hidden{% endif %}>
+                        {% if active_tab == 'quotas' %}
+                            {% include "analytics/kubernetes/workload/partials/_tenant_quota_section.html" %}
+                        {% else %}
+                            <div id="tenant-quota-analysis"
+                                 class="min-h-[280px]"
+                                 hx-get="{{ url_for('analytics.workload_tenant_quota', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, time_range=selected_time_range, tab='quotas', quota_page=1, quota_per_page=5) }}"
+                                 hx-trigger="kaori:analytics-tab-activated once"
+                                 hx-swap="outerHTML"
+                                 hx-indicator="#tenant-quota-lazy-indicator">
+                                {{ loading_bar.render('tenant-quota-lazy-indicator', label='Loading Tenant Quota Analysis') }}
+                                <div class="mt-4 h-52 animate-pulse rounded-lg border border-outline-subtle bg-surface-hover"></div>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div id="workload-content-panel-mapping"
+                         role="tabpanel"
+                         aria-labelledby="workload-content-tab-mapping"
+                         data-analytics-tab-panel="mapping"
+                         {% if active_tab != 'mapping' %}hidden{% endif %}>
+                        {% if active_tab == 'mapping' %}
+                            {% include "analytics/kubernetes/workload/partials/_workload_mapping_section.html" %}
+                        {% else %}
+                            <div id="workload-resource-mapping"
+                                 class="min-h-[280px]"
+                                 hx-get="{{ url_for('analytics.workload_resource_mapping', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, time_range=selected_time_range, tab='mapping', workload_page=1, workload_per_page=5) }}"
+                                 hx-trigger="kaori:analytics-tab-activated once"
+                                 hx-swap="outerHTML"
+                                 hx-indicator="#workload-mapping-lazy-indicator">
+                                {{ loading_bar.render('workload-mapping-lazy-indicator', label='Loading Workload Resource Mapping') }}
+                                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                                    <div class="h-28 animate-pulse rounded-lg border border-outline-subtle bg-surface-hover"></div>
+                                    <div class="h-28 animate-pulse rounded-lg border border-outline-subtle bg-surface-hover"></div>
+                                </div>
+                                <div class="mt-3 h-52 animate-pulse rounded-lg border border-outline-subtle bg-surface-hover"></div>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div id="workload-content-panel-recommendations"
+                         role="tabpanel"
+                         aria-labelledby="workload-content-tab-recommendations"
+                         data-analytics-tab-panel="recommendations"
+                         {% if active_tab != 'recommendations' %}hidden{% endif %}>
+                        {% include "analytics/kubernetes/workload/partials/_recommendations.html" %}
+                    </div>
+                {% endcall %}
+            {% endif %}
+        {% endif %}
+    </div>
+{% endblock dashboard_content %}

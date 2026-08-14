@@ -1,0 +1,7 @@
+{% extends "layouts/app.html" %}
+{% block title %}Service Inventory{% endblock title %}
+{% block dashboard_content %}
+    {% import "components/resource_detail_modal.html" as resource_detail_modal %}
+    {% include "inventory/kubernetes/services/partials/_page_workspace.html" %}
+    {{ resource_detail_modal.host('Service', url_for('inventory.service_details', service_id=0) ) }}
+{% endblock dashboard_content %}

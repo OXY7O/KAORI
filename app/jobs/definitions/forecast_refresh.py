@@ -1,7 +1,7 @@
 from app.common.job_execution_contract import registered_job_operation_label
 from app.jobs.definitions.base import JobDefinition
 
-ADAPTER_MODULE = 'app.analytics.job_adapter'
+ADAPTER_MODULE = 'app.analytics.kubernetes.job_adapter'
 
 JOB_KEY = 'analytics.forecast.materialize'
 

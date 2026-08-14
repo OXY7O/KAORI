@@ -1,0 +1,52 @@
+{% import "analytics/kubernetes/components/_evidence_record_list.html" as evidence_list %}
+{% import "analytics/kubernetes/components/_record_pagination.html" as record_pagination %}
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table_label.html" as table_label %}
+{% call evidence_list.shell('Active Alert Records') %}
+    <div id="alerts-table-container">
+        <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div class="min-w-0">
+                    <h3 class="text-base font-semibold text-content-primary">Active Alert Records</h3>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">Current Alertmanager or Prometheus records matching the local signal filters.</p>
+                </div>
+                {{ table_label.status_label((alerts_pagination.total_items|default(0) ) ~ ' Active', 'critical' if alerts_pagination.total_items|default(0) else 'normal', size='compact') }}
+            </div>
+            {{ loading_bar.render('alerts-table-loading-indicator', label='Refreshing Active Alert Records') }}
+        </header>
+        {% set table_kind = "alerts" %}{% set endpoint_name = "analytics.alerts_table" %}{% set target_id = "#alerts-table-container" %}
+        {% include "analytics/kubernetes/alerts/partials/_table_filters.html" %}
+        {% call evidence_list.header() %}
+            {{ evidence_list.header_cell('Alert', 4) }}
+            {{ evidence_list.header_cell('Severity', 1) }}
+            {{ evidence_list.header_cell('Scope & Source', 2) }}
+            {{ evidence_list.header_cell('State', 1) }}
+            {{ evidence_list.header_cell('Started', 2) }}
+            {{ evidence_list.header_cell('Action', 2, 'right') }}
+        {% endcall %}
+        <div class="divide-y divide-outline-subtle">
+            {% if alerts %}
+                {% for alert in alerts %}
+                    {% set row_key = 'alert-' ~ alerts_pagination.page ~ '-' ~ loop.index0 %}
+                    {% include "analytics/kubernetes/alerts/partials/_alerts_table_row.html" %}
+                {% endfor %}
+            {% else %}
+                {{ evidence_list.empty('No Alerts Detected', 'No alert records match the selected source and local filters.', 'bell-off') }}
+            {% endif %}
+        </div>
+        {% set pagination_query = {
+                    'cluster_id': selected_cluster_id,
+                    'source': selected_source,
+                    'severity': selected_severity,
+                    'status': selected_status,
+                    'namespace': selected_namespace,
+                    'search': selected_search,
+                    'tab': 'alerts',
+                    'alerts_page': selected_alerts_page,
+                    'anomalies_page': selected_anomalies_page,
+                    'alerts_per_page': selected_alerts_per_page,
+                    'anomalies_per_page': selected_anomalies_per_page
+                } %}
+        {{ record_pagination.render(alerts_pagination, 'alerts_page', 'alerts_per_page', 'alerts-table-container', 'alerts-table-filter-form', 'alerts-table-loading-indicator', 'analytics.alerts_table', 'analytics.alerts', pagination_query, 'Alerts', embedded=true) }}
+    </div>
+{% endcall %}

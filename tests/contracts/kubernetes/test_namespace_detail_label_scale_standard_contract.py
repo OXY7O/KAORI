@@ -15,7 +15,7 @@ def test_shared_detail_component_supports_explicit_label_scale() -> None:
 
 
 def test_namespace_primary_detail_cards_use_detail_sized_labels() -> None:
-    detail = _read('app/templates/inventory/namespaces/partials/_namespace_detail_content.html')
+    detail = _read('app/templates/inventory/kubernetes/namespaces/partials/_namespace_detail_content.html')
     assert detail.count("badge_size='detail'") == 4
     assert "detail.detail_card('Namespace Identity', 'badge-info', namespace.age" in detail
     assert "stretch=false, density='compact'" in detail

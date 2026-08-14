@@ -1,8 +1,8 @@
 import re
 from pathlib import Path
 
-ANALYTICS_ROOT = Path('app/templates/analytics')
-SURFACE = ANALYTICS_ROOT / 'components/_analysis_surfaces.html'
+ANALYTICS_ROOT = Path('app/templates/analytics/kubernetes')
+SURFACE = Path('app/templates/analytics/components/_analysis_surfaces.html')
 DOMAINS = (
     'overview',
     'utilization',

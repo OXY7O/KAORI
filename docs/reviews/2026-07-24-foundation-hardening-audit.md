@@ -139,7 +139,7 @@ Current Inventory size:
 - 28 modules;
 - approximately 8,167 lines;
 - `app/inventory/routes.py`: 1,195 lines;
-- `app/inventory/topology/service.py`: 1,109 lines;
+- `app/inventory/kubernetes/topology/service.py`: 1,109 lines;
 - `build_topology_graph()`: 766 lines and approximately 148 branch points;
 - `get_workloads()`: 317 lines;
 - `get_pods()`: 251 lines.
@@ -149,7 +149,7 @@ There is no behavior test for topology graph construction, relationship directio
 Required decomposition:
 
 ```text
-app/inventory/topology/
+app/inventory/kubernetes/topology/
 ├── application.py       # request/use-case orchestration
 ├── index.py             # canonical resource and relation indexes
 ├── hierarchy.py         # hierarchy-mode graph builder
@@ -175,13 +175,13 @@ Largest services:
 
 | Module | Lines |
 |---|---:|
-| `analytics/workload/service.py` | 2,505 before helper consolidation |
-| `analytics/top_consumers/service.py` | 2,218 before helper consolidation |
-| `analytics/forecast/service.py` | 2,171 before helper consolidation |
-| `analytics/overview/service.py` | 1,943 before helper consolidation |
-| `analytics/storage/service.py` | 1,644 before helper consolidation |
-| `analytics/utilization/service.py` | 1,275 |
-| `analytics/capacity/service.py` | 1,245 before helper consolidation |
+| `analytics/kubernetes/workload/service.py` | 2,505 before helper consolidation |
+| `analytics/kubernetes/top_consumers/service.py` | 2,218 before helper consolidation |
+| `analytics/kubernetes/forecast/service.py` | 2,171 before helper consolidation |
+| `analytics/kubernetes/overview/service.py` | 1,943 before helper consolidation |
+| `analytics/kubernetes/storage/service.py` | 1,644 before helper consolidation |
+| `analytics/kubernetes/utilization/service.py` | 1,275 |
+| `analytics/kubernetes/capacity/service.py` | 1,245 before helper consolidation |
 
 High-risk functions include:
 

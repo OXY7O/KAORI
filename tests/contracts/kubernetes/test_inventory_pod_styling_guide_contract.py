@@ -8,9 +8,9 @@ def read(path: str) -> str:
 
 
 def test_pod_inventory_applies_resource_page_pattern() -> None:
-    hero = read('app/templates/inventory/pods/partials/_hero.html')
-    summary = read('app/templates/inventory/pods/partials/_summary_cards.html')
-    table = read('app/templates/inventory/pods/partials/_table_content.html')
+    hero = read('app/templates/inventory/kubernetes/pods/partials/_hero.html')
+    summary = read('app/templates/inventory/kubernetes/pods/partials/_summary_cards.html')
+    table = read('app/templates/inventory/kubernetes/pods/partials/_table_content.html')
 
     assert 'page_hero.context_card(' in hero
     assert "inventory.total_pods ~ ' Pods in Scope'" in hero
@@ -30,10 +30,10 @@ def test_pod_inventory_applies_resource_page_pattern() -> None:
 
 
 def test_pod_filters_are_owner_aware_and_workspace_scoped() -> None:
-    service = read('app/inventory/resources/pods.py')
-    routes = read('app/inventory/routes.py')
-    card = read('app/templates/inventory/pods/partials/_table_card.html')
-    content = read('app/templates/inventory/pods/partials/_table_content.html')
+    service = read('app/inventory/kubernetes/resources/pods.py')
+    routes = read('app/inventory/kubernetes/routes.py')
+    card = read('app/templates/inventory/kubernetes/pods/partials/_table_card.html')
+    content = read('app/templates/inventory/kubernetes/pods/partials/_table_content.html')
 
     assert 'owner_type: str | None = None' in service
     assert "func.nullif(func.trim(PodInventory.workload_type), '')" in service
@@ -49,7 +49,7 @@ def test_pod_filters_are_owner_aware_and_workspace_scoped() -> None:
 
 
 def test_pod_operational_state_separates_phase_and_readiness() -> None:
-    semantics = read('app/inventory/resources/pod_semantics.py')
+    semantics = read('app/inventory/kubernetes/resources/pod_semantics.py')
 
     assert "state = 'Ready' if ready_total > 0 and ready_count == ready_total else 'Not Ready'" in semantics
     assert "state = 'Starting'" in semantics
@@ -61,10 +61,10 @@ def test_pod_operational_state_separates_phase_and_readiness() -> None:
 
 
 def test_pod_detail_uses_shared_runtime_references_and_metadata_components() -> None:
-    detail = read('app/templates/inventory/pods/partials/_pod_detail_content.html')
+    detail = read('app/templates/inventory/kubernetes/pods/partials/_pod_detail_content.html')
     runtime = read('app/templates/components/container_runtime_collection.html')
     related = read('app/templates/components/related_resource_collection.html')
-    semantics = read('app/inventory/resources/pod_semantics.py')
+    semantics = read('app/inventory/kubernetes/resources/pod_semantics.py')
 
     assert 'container_collection.render(pod.container_statuses)' in detail
     assert "related_collection.render('Configuration References'" in detail
@@ -79,7 +79,7 @@ def test_pod_detail_uses_shared_runtime_references_and_metadata_components() -> 
 
 
 def test_pod_detail_does_not_apply_implicit_configuration_scoring() -> None:
-    detail = read('app/templates/inventory/pods/partials/_pod_detail_content.html')
+    detail = read('app/templates/inventory/kubernetes/pods/partials/_pod_detail_content.html')
 
     rejected = (
         'qos_tones',

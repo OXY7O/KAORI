@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.analytics.alerts.source_messages import friendly_combined_alert_error
+from app.analytics.kubernetes.alerts.source_messages import friendly_combined_alert_error
 from app.dashboards.kubernetes.schema import AlertItem, AlertsSnapshot
 
 

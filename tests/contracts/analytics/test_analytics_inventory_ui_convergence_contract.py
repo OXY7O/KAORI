@@ -21,7 +21,7 @@ def test_analytics_inherits_inventory_palette_tokens() -> None:
 
 def test_shared_analytics_surfaces_delegate_to_inventory_components() -> None:
     surfaces = read('app/templates/analytics/components/_analysis_surfaces.html')
-    workspace = read('app/templates/analytics/components/_analysis_workspace.html')
+    workspace = read('app/templates/analytics/kubernetes/components/_analysis_workspace.html')
     table = read('app/templates/components/table.html')
     primitives = read('app/templates/components/table_primitives.html')
 
@@ -40,8 +40,8 @@ def test_shared_analytics_surfaces_delegate_to_inventory_components() -> None:
 
 
 def test_analytics_record_collections_use_inventory_table_grammar() -> None:
-    records = read('app/templates/analytics/components/_evidence_record_list.html')
-    filters = read('app/templates/analytics/components/_record_filter_bar.html')
+    records = read('app/templates/analytics/kubernetes/components/_evidence_record_list.html')
+    filters = read('app/templates/analytics/kubernetes/components/_record_filter_bar.html')
 
     assert 'table_ui.block_classes()' in records
     assert 'table_ui.title_cell(title, subtitle, icon)' in records
@@ -56,8 +56,8 @@ def test_analytics_record_collections_use_inventory_table_grammar() -> None:
 
 def test_inventory_and_analytics_share_pagination_footer_contract() -> None:
     pagination = read('app/templates/components/pagination.html')
-    analytics = read('app/templates/analytics/components/_record_pagination.html')
-    payloads = read('app/analytics/common/payloads.py')
+    analytics = read('app/templates/analytics/kubernetes/components/_record_pagination.html')
+    payloads = read('app/analytics/kubernetes/common/payloads.py')
 
     assert "'per_page': 5" in payloads
     assert "'per_page': 10" not in payloads
@@ -78,7 +78,7 @@ def test_inventory_and_analytics_share_pagination_footer_contract() -> None:
     assert 'allowed_per_page=(5, 10, 25, 50)' in analytics
     assert 'Scope Contains' not in analytics
 
-    inventory_tables = list((ROOT / 'app/templates/inventory').glob('*/partials/_table_content.html'))
+    inventory_tables = list((ROOT / 'app/templates/inventory/kubernetes').glob('*/partials/_table_content.html'))
     assert len(inventory_tables) >= 8
     for template in inventory_tables:
         source = template.read_text(encoding='utf-8')
@@ -100,7 +100,7 @@ def test_analytics_filter_labels_are_explicitly_associated() -> None:
 
 def test_capacity_review_path_uses_shared_row_pattern() -> None:
     surfaces = read('app/templates/analytics/components/_analysis_surfaces.html')
-    risk = read('app/templates/analytics/capacity/partials/_risk.html')
+    risk = read('app/templates/analytics/kubernetes/capacity/partials/_risk.html')
 
     assert 'macro review_path_link' in surfaces
     assert 'hover:bg-kaori-mist' in surfaces
@@ -115,4 +115,4 @@ def test_showing_and_rows_copy_has_one_analytics_owner() -> None:
         source = template.read_text(encoding='utf-8')
         if re.search(r'\bShowing\s+<', source) or 'Rows Per Page' in source:
             owners.append(str(template.relative_to(ROOT)))
-    assert owners == ['app/templates/analytics/components/_record_pagination.html']
+    assert owners == ['app/templates/analytics/kubernetes/components/_record_pagination.html']

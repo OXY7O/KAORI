@@ -121,11 +121,11 @@ filter while matching both legacy and current records.
 app/inventory/resources/nodes.py
 app/inventory/routes.py
 app/templates/components/table.html
-app/templates/inventory/nodes/partials/_hero.html
-app/templates/inventory/nodes/partials/_summary_cards.html
-app/templates/inventory/nodes/partials/_table_card.html
-app/templates/inventory/nodes/partials/_table_content.html
-app/templates/inventory/nodes/partials/_node_detail_content.html
+app/templates/inventory/kubernetes/nodes/partials/_hero.html
+app/templates/inventory/kubernetes/nodes/partials/_summary_cards.html
+app/templates/inventory/kubernetes/nodes/partials/_table_card.html
+app/templates/inventory/kubernetes/nodes/partials/_table_content.html
+app/templates/inventory/kubernetes/nodes/partials/_node_detail_content.html
 docs/design/patterns/KUBERNETES_NODE_INVENTORY.md
 docs/design/audits/KUBERNETES_NODE_INVENTORY_ALIGNMENT_AUDIT_2026_08.md
 scripts/verify_node_inventory_standard.py

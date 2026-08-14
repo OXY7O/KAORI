@@ -5,7 +5,7 @@ from app.common.job_execution_contract import (
 from app.jobs.definitions.base import JobDefinition
 
 JOB_KEY = 'kubernetes.inventory.sync'
-ADAPTER_MODULE = 'app.inventory.job_adapter'
+ADAPTER_MODULE = 'app.inventory.kubernetes.job_adapter'
 
 INVENTORY_SYNC_DEFINITION = JobDefinition(
     key=JOB_KEY,

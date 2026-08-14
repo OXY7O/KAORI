@@ -6,7 +6,7 @@ from types import ModuleType
 
 
 def _load_pagination_module() -> ModuleType:
-    module_path = Path('app/analytics/storage/pagination.py')
+    module_path = Path('app/analytics/kubernetes/storage/pagination.py')
     spec = importlib.util.spec_from_file_location('analytics_storage_pagination', module_path)
     assert spec is not None
     assert spec.loader is not None

@@ -50,7 +50,7 @@ class KubernetesRuntimeAdapter:
         if operation == 'runtime.state':
             return self.get_state(instance, validation_result=kwargs.get('validation_result'))
         if operation == 'inventory.sync':
-            from app.inventory.synchronization import sync_inventory
+            from app.inventory.kubernetes.synchronization import sync_inventory
 
             connection = instance if isinstance(instance, KubernetesConnection) else instance.kubernetes_connection
             if connection is None:

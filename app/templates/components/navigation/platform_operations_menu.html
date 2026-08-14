@@ -10,12 +10,12 @@
 <details class="sidebar-menu space-y-1"
          {% if platform_operations_active %}open{% endif %}>
     <summary class="{{ 'sidebar-parent-active' if platform_operations_active else 'sidebar-item-idle' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2"
-             title="Platform Operations"
-             aria-label="Platform Operations"
+             title="Operations Center"
+             aria-label="Operations Center"
              @click="if (!sidebarExpanded) { $event.preventDefault(); toggleSidebar(); $el.parentElement.open = true }">
         <div class="flex min-w-0 items-center gap-2.5">
             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ 'sidebar-parent-active-icon' if platform_operations_active else 'sidebar-item-idle-icon' }} transition"><i data-lucide="workflow" class="h-4 w-4"></i></span>
-            <span class="sidebar-expanded-only truncate whitespace-nowrap">Platform Operations</span>
+            <span class="sidebar-expanded-only truncate whitespace-nowrap">Operations Center</span>
         </div>
         <i data-lucide="chevron-right"
            class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-kaori-accent' if platform_operations_active else 'text-white/[0.35]' }}"></i>

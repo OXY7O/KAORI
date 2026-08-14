@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from app.common.inventory_generation import filter_current_generation
-from app.inventory.resources.configuration_semantics import COLLECTED, POD_EVIDENCE_KEY, collection_state
-from app.inventory.resources.pod_semantics import pod_operational_state
+from app.inventory.kubernetes.resources.configuration_semantics import COLLECTED, POD_EVIDENCE_KEY, collection_state
+from app.inventory.kubernetes.resources.pod_semantics import pod_operational_state
 from app.kubernetes_operations.secrets.contracts import SecretImpactContext
 from app.kubernetes_operations.secrets.live_service import LiveSecretSnapshot
 from app.models import ClusterInventory, PodInventory

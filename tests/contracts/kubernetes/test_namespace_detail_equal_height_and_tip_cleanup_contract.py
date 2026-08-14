@@ -8,7 +8,7 @@ def _read(relative_path: str) -> str:
 
 
 def test_namespace_detail_uses_full_workspace_modal_grid():
-    detail = _read('app/templates/inventory/namespaces/partials/_namespace_detail_content.html')
+    detail = _read('app/templates/inventory/kubernetes/namespaces/partials/_namespace_detail_content.html')
     shared_detail = _read('app/templates/components/details/_detail_content.html')
 
     assert 'data-kaori-detail-variant="full-workspace-modal"' in detail
@@ -26,7 +26,7 @@ def test_namespace_detail_uses_full_workspace_modal_grid():
 
 
 def test_namespace_detail_uses_shared_empty_evidence_and_operational_context():
-    detail = _read('app/templates/inventory/namespaces/partials/_namespace_detail_content.html')
+    detail = _read('app/templates/inventory/kubernetes/namespaces/partials/_namespace_detail_content.html')
     assert 'detail.empty_evidence(' in detail
     assert 'Committed Snapshot Boundary' in detail
     assert 'namespace.operational_context.title' in detail

@@ -8,8 +8,8 @@ def _read(relative_path: str) -> str:
 
 
 def test_inventory_overview_uses_sentence_case_for_supporting_copy() -> None:
-    content = _read('app/templates/inventory/overview/partials/_kpi_cards.html')
-    backend = _read('app/inventory/overview.py')
+    content = _read('app/templates/inventory/kubernetes/overview/partials/_kpi_cards.html')
+    backend = _read('app/inventory/kubernetes/overview.py')
 
     assert 'Open one Kubernetes asset inventory to review the objects collected' in content
     expected_descriptions = (
@@ -27,8 +27,8 @@ def test_inventory_overview_uses_sentence_case_for_supporting_copy() -> None:
 
 
 def test_node_inventory_supporting_copy_uses_sentence_case_and_footer_resource_case() -> None:
-    summary = _read('app/templates/inventory/nodes/partials/_summary_cards.html')
-    table = _read('app/templates/inventory/nodes/partials/_table_content.html')
+    summary = _read('app/templates/inventory/kubernetes/nodes/partials/_summary_cards.html')
+    table = _read('app/templates/inventory/kubernetes/nodes/partials/_table_content.html')
 
     expected = (
         'inventory.cpu_coverage_description',

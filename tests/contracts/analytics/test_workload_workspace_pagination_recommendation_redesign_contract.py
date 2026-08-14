@@ -16,9 +16,9 @@ def read(relative: str) -> str:
 def test_workload_table_pagination_uses_full_page_and_partial_endpoint_ownership() -> None:
     pagination = read('app/templates/components/pagination.html')
     pagination_js = read('app/static/js/pagination.js')
-    record_pagination = read('app/templates/analytics/components/_record_pagination.html')
-    tenant = read('app/templates/analytics/workload/partials/_tenant_quota_section.html')
-    mapping = read('app/templates/analytics/workload/partials/_workload_mapping_section.html')
+    record_pagination = read('app/templates/analytics/kubernetes/components/_record_pagination.html')
+    tenant = read('app/templates/analytics/kubernetes/workload/partials/_tenant_quota_section.html')
+    mapping = read('app/templates/analytics/kubernetes/workload/partials/_workload_mapping_section.html')
 
     assert (
         "numeric_pages(current_page, total_pages, page_param='page', hx_target=None, hx_indicator=None, endpoint=None, query_params=None, hx_swap='innerHTML', href_endpoint=None)"
@@ -41,9 +41,9 @@ def test_workload_table_pagination_uses_full_page_and_partial_endpoint_ownership
 
 
 def test_workload_detail_actions_open_contextual_modals_from_the_action_column() -> None:
-    component = read('app/templates/analytics/components/_record_detail_modal.html')
-    tenant = read('app/templates/analytics/workload/partials/_tenant_quota_section.html')
-    mapping = read('app/templates/analytics/workload/partials/_workload_mapping_section.html')
+    component = read('app/templates/analytics/kubernetes/components/_record_detail_modal.html')
+    tenant = read('app/templates/analytics/kubernetes/workload/partials/_tenant_quota_section.html')
+    mapping = read('app/templates/analytics/kubernetes/workload/partials/_workload_mapping_section.html')
 
     assert 'x-teleport="body"' in component
     assert 'role="dialog"' in component
@@ -56,7 +56,7 @@ def test_workload_detail_actions_open_contextual_modals_from_the_action_column()
     for content in (tenant, mapping):
         assert "evidence_list.header_cell('Action'" in content
         assert 'components/table.html' in content
-        assert 'analytics/components/_record_detail_modal.html' in content
+        assert 'analytics/kubernetes/components/_record_detail_modal.html' in content
         assert 'record_detail_modal.render' in content
         assert 'table_ui.action_classes()' in content
         assert 'w-full whitespace-nowrap sm:w-auto' in content
@@ -83,7 +83,7 @@ def test_workload_detail_actions_open_contextual_modals_from_the_action_column()
 
 
 def test_workload_overview_uses_compact_metric_strip_and_scope_context() -> None:
-    overview = read('app/templates/analytics/workload/partials/_overview.html')
+    overview = read('app/templates/analytics/kubernetes/workload/partials/_overview.html')
 
     assert 'Operational Workload Posture' in overview
     assert 'Analysis Context' in overview
@@ -101,14 +101,14 @@ def test_workload_overview_uses_compact_metric_strip_and_scope_context() -> None
 
 def test_kubernetes_analytics_recommendation_lists_use_simple_previous_next_pager() -> None:
     recommendation_templates = (
-        'app/templates/analytics/overview/partials/_recommendations.html',
-        'app/templates/analytics/workload/partials/_recommendations.html',
-        'app/templates/analytics/utilization/partials/_recommendations.html',
-        'app/templates/analytics/capacity/partials/_recommendations.html',
-        'app/templates/analytics/storage/partials/_recommendations.html',
-        'app/templates/analytics/alerts/partials/_recommendations.html',
-        'app/templates/analytics/forecast/partials/_forecast_section.html',
-        'app/templates/analytics/top_consumers/partials/_top_consumers_section.html',
+        'app/templates/analytics/kubernetes/overview/partials/_recommendations.html',
+        'app/templates/analytics/kubernetes/workload/partials/_recommendations.html',
+        'app/templates/analytics/kubernetes/utilization/partials/_recommendations.html',
+        'app/templates/analytics/kubernetes/capacity/partials/_recommendations.html',
+        'app/templates/analytics/kubernetes/storage/partials/_recommendations.html',
+        'app/templates/analytics/kubernetes/alerts/partials/_recommendations.html',
+        'app/templates/analytics/kubernetes/forecast/partials/_forecast_section.html',
+        'app/templates/analytics/kubernetes/top_consumers/partials/_top_consumers_section.html',
     )
 
     for relative in recommendation_templates:
@@ -200,12 +200,12 @@ def test_kubernetes_recommendation_title_literals_follow_title_case() -> None:
     source_files = (
         'app/intelligence/recommendation_engine.py',
         'app/intelligence/catalog.py',
-        'app/analytics/capacity/service.py',
-        'app/analytics/top_consumers/service.py',
-        'app/analytics/workload/service.py',
-        'app/analytics/alerts/application.py',
-        'app/analytics/forecast/service.py',
-        'app/analytics/utilization/materialization.py',
+        'app/analytics/kubernetes/capacity/service.py',
+        'app/analytics/kubernetes/top_consumers/service.py',
+        'app/analytics/kubernetes/workload/service.py',
+        'app/analytics/kubernetes/alerts/application.py',
+        'app/analytics/kubernetes/forecast/service.py',
+        'app/analytics/kubernetes/utilization/materialization.py',
     )
     minor_words = {
         'a',
@@ -268,18 +268,18 @@ def test_changed_templates_parse() -> None:
     changed_templates = (
         'app/templates/components/pagination.html',
         'app/templates/components/recommendation_pager.html',
-        'app/templates/analytics/components/_record_detail_modal.html',
-        'app/templates/analytics/workload/partials/_overview.html',
-        'app/templates/analytics/workload/partials/_tenant_quota_section.html',
-        'app/templates/analytics/workload/partials/_workload_mapping_section.html',
-        'app/templates/analytics/workload/partials/_recommendations.html',
-        'app/templates/analytics/utilization/partials/_recommendations.html',
-        'app/templates/analytics/capacity/partials/_recommendations.html',
-        'app/templates/analytics/storage/partials/_recommendations.html',
-        'app/templates/analytics/alerts/partials/_recommendations.html',
-        'app/templates/analytics/forecast/partials/_forecast_section.html',
-        'app/templates/analytics/top_consumers/partials/_top_consumers_section.html',
-        'app/templates/analytics/overview/partials/_recommendations.html',
+        'app/templates/analytics/kubernetes/components/_record_detail_modal.html',
+        'app/templates/analytics/kubernetes/workload/partials/_overview.html',
+        'app/templates/analytics/kubernetes/workload/partials/_tenant_quota_section.html',
+        'app/templates/analytics/kubernetes/workload/partials/_workload_mapping_section.html',
+        'app/templates/analytics/kubernetes/workload/partials/_recommendations.html',
+        'app/templates/analytics/kubernetes/utilization/partials/_recommendations.html',
+        'app/templates/analytics/kubernetes/capacity/partials/_recommendations.html',
+        'app/templates/analytics/kubernetes/storage/partials/_recommendations.html',
+        'app/templates/analytics/kubernetes/alerts/partials/_recommendations.html',
+        'app/templates/analytics/kubernetes/forecast/partials/_forecast_section.html',
+        'app/templates/analytics/kubernetes/top_consumers/partials/_top_consumers_section.html',
+        'app/templates/analytics/kubernetes/overview/partials/_recommendations.html',
         'app/templates/intelligence/recommendations.html',
         'app/templates/layouts/app.html',
     )

@@ -8,7 +8,7 @@ This is a behavior-preserving modular-monolith refactor. It does not introduce a
 
 ## Previous Boundary
 
-Before this pilot, `app/analytics/alerts/service.py` owned all of the following:
+Before this pilot, `app/analytics/kubernetes/alerts/service.py` owned all of the following:
 
 - filter and pagination normalization;
 - cluster and namespace selection;
@@ -30,7 +30,7 @@ The file had too many independent reasons to change and made source-provider beh
 ## Canonical Module Layout
 
 ```text
-app/analytics/alerts/
+app/analytics/kubernetes/alerts/
 ├── contracts.py      filter, pagination, and public option contracts
 ├── selection.py      cluster and namespace selection
 ├── metrics.py        Prometheus metric payload helpers
@@ -71,7 +71,7 @@ Rules:
 
 ## Compatibility Cutover
 
-`app.analytics.alerts.service` was removed after every known KAORI consumer moved to canonical modules:
+`app.analytics.kubernetes.alerts.service` was removed after every known KAORI consumer moved to canonical modules:
 
 - web route → `application.get_alerts_context`;
 - report section → `application.get_alerts_context`;

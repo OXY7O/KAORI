@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 def load_presentation_module():
-    coercion = types.ModuleType('app.analytics.common.coercion')
+    coercion = types.ModuleType('app.analytics.shared.coercion')
 
     def safe_float(value):
         try:
@@ -17,16 +17,16 @@ def load_presentation_module():
 
     coercion.safe_float = safe_float
     coercion.safe_int = lambda value: int(round(safe_float(value)))
-    module_names = ('app', 'app.analytics', 'app.analytics.common', 'app.analytics.common.coercion')
+    module_names = ('app', 'app.analytics', 'app.analytics.kubernetes.common', 'app.analytics.shared.coercion')
     previous = {name: sys.modules.get(name) for name in module_names}
     try:
         sys.modules['app'] = types.ModuleType('app')
         sys.modules['app.analytics'] = types.ModuleType('app.analytics')
-        sys.modules['app.analytics.common'] = types.ModuleType('app.analytics.common')
-        sys.modules['app.analytics.common.coercion'] = coercion
+        sys.modules['app.analytics.kubernetes.common'] = types.ModuleType('app.analytics.kubernetes.common')
+        sys.modules['app.analytics.shared.coercion'] = coercion
         spec = importlib.util.spec_from_file_location(
             'kaori_utilization_presentation_contract',
-            ROOT / 'app/analytics/utilization/presentation.py',
+            ROOT / 'app/analytics/kubernetes/utilization/presentation.py',
         )
         assert spec and spec.loader
         module = importlib.util.module_from_spec(spec)
@@ -76,7 +76,7 @@ def complete_summary(**overrides):
 
 
 def test_initial_utilization_request_does_not_resolve_hidden_datasets() -> None:
-    routes = read('app/analytics/utilization/routes.py')
+    routes = read('app/analytics/kubernetes/utilization/routes.py')
     base_start = routes.index('def _base_context_or_state')
     base_end = routes.index("@permission_required('analytics.view')", base_start)
     base = routes[base_start:base_end]
@@ -88,7 +88,7 @@ def test_initial_utilization_request_does_not_resolve_hidden_datasets() -> None:
 
 
 def test_summary_materialization_does_not_query_hidden_tab_payloads() -> None:
-    source = read('app/analytics/utilization/materialization.py')
+    source = read('app/analytics/kubernetes/utilization/materialization.py')
     start = source.index('def get_utilization_summary_context')
     end = source.index('def get_utilization_trend_context', start)
     summary_builder = source[start:end]
@@ -103,7 +103,7 @@ def test_summary_materialization_does_not_query_hidden_tab_payloads() -> None:
 
 
 def test_trend_window_labels_are_owned_by_python_presentation() -> None:
-    template = read('app/templates/analytics/utilization/partials/_readiness_scope.html')
+    template = read('app/templates/analytics/kubernetes/utilization/partials/_readiness_scope.html')
     options = build_trend_options((1, 24, 168, 720, 1440), 168)
 
     assert [option['label'] for option in options] == [
@@ -119,7 +119,7 @@ def test_trend_window_labels_are_owned_by_python_presentation() -> None:
 
 
 def test_fragment_routes_require_htmx_and_disable_cache() -> None:
-    routes = read('app/analytics/utilization/routes.py')
+    routes = read('app/analytics/kubernetes/utilization/routes.py')
 
     assert "request.headers.get('HX-Request') == 'true'" in routes
     assert "return _redirect_to_workspace(tab='trend')" in routes
@@ -157,7 +157,7 @@ def test_worker_utilization_queries_use_allocatable_capacity_and_role_boundary()
 
 
 def test_overview_snapshot_adapter_preserves_missing_denominator_as_none() -> None:
-    service = read('app/analytics/utilization/service.py')
+    service = read('app/analytics/kubernetes/utilization/service.py')
     start = service.index('def get_utilization_snapshot(')
     snapshot_adapter = service[start:]
 
@@ -221,8 +221,8 @@ def test_trend_presentation_preserves_no_data_semantics() -> None:
 
 
 def test_utilization_chart_aligns_timestamps_and_does_not_clip_above_100() -> None:
-    script = read('app/static/js/analytics_utilization.js')
-    trend = read('app/templates/analytics/utilization/partials/_trend.html')
+    script = read('app/static/js/analytics/kubernetes/utilization.js')
+    trend = read('app/templates/analytics/kubernetes/utilization/partials/_trend.html')
 
     assert 'alignedSeries' in script
     assert 'new Set(' in script
@@ -236,11 +236,11 @@ def test_utilization_chart_aligns_timestamps_and_does_not_clip_above_100() -> No
 
 
 def test_utilization_presentation_owns_template_derived_status() -> None:
-    hero = read('app/templates/analytics/utilization/partials/_hero.html')
-    overview = read('app/templates/analytics/utilization/partials/_overview.html')
-    current = read('app/templates/analytics/utilization/partials/_current_summary.html')
-    node = read('app/templates/analytics/utilization/partials/_node_detail.html')
-    service = read('app/analytics/utilization/service.py')
+    hero = read('app/templates/analytics/kubernetes/utilization/partials/_hero.html')
+    overview = read('app/templates/analytics/kubernetes/utilization/partials/_overview.html')
+    current = read('app/templates/analytics/kubernetes/utilization/partials/_current_summary.html')
+    node = read('app/templates/analytics/kubernetes/utilization/partials/_node_detail.html')
+    service = read('app/analytics/kubernetes/utilization/service.py')
 
     assert 'utilization_presentation' in hero
     assert 'utilization_presentation' in overview

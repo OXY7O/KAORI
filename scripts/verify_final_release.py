@@ -50,6 +50,7 @@ def _purge_generated_python_cache() -> None:
 
 
 SHARED_CHECKS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ('Domain Namespaces', (PYTHON, 'scripts/verify_domain_namespace_architecture.py')),
     ('Sidebar', (PYTHON, 'scripts/verify_sidebar_navigation_standard.py')),
     ('App Shell', (PYTHON, 'scripts/verify_application_shell_standard.py')),
     ('Dark Mode', (PYTHON, 'scripts/verify_dark_mode_standard.py')),

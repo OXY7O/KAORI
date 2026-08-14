@@ -8,7 +8,7 @@ def read(relative: str) -> str:
 
 
 def test_top_consumers_uses_canonical_tabs_and_native_hidden_fallback() -> None:
-    section = read('app/templates/analytics/top_consumers/partials/_top_consumers_section.html')
+    section = read('app/templates/analytics/kubernetes/top_consumers/partials/_top_consumers_section.html')
 
     for tab in ('rankings', 'records', 'recommendations'):
         assert f'data-analytics-tab-panel="{tab}"' in section
@@ -18,8 +18,8 @@ def test_top_consumers_uses_canonical_tabs_and_native_hidden_fallback() -> None:
 
 
 def test_top_consumers_controls_own_only_snapshot_scope() -> None:
-    controls = read('app/templates/analytics/top_consumers/partials/_controls_readiness.html')
-    records = read('app/templates/analytics/top_consumers/partials/_consumer_detail_section.html')
+    controls = read('app/templates/analytics/kubernetes/top_consumers/partials/_controls_readiness.html')
+    records = read('app/templates/analytics/kubernetes/top_consumers/partials/_consumer_detail_section.html')
 
     assert 'Cluster' in controls
     assert 'Namespace Snapshot' in controls
@@ -29,8 +29,8 @@ def test_top_consumers_controls_own_only_snapshot_scope() -> None:
 
 
 def test_top_consumers_identity_and_pressure_are_structured() -> None:
-    rows = read('app/analytics/top_consumers/rows.py')
-    results = read('app/templates/analytics/top_consumers/partials/_consumer_detail_results.html')
+    rows = read('app/analytics/kubernetes/top_consumers/rows.py')
+    results = read('app/templates/analytics/kubernetes/top_consumers/partials/_consumer_detail_results.html')
 
     assert "'entity_type': 'container'" in rows
     assert "'workload_owner': spec.workload_owner" in rows
@@ -38,7 +38,7 @@ def test_top_consumers_identity_and_pressure_are_structured() -> None:
     assert "'limit_utilization'" in rows
     assert "'contribution_percent'" in rows
     assert "'pressure_percent'" in rows
-    assert 'card.label.split' not in read('app/templates/analytics/top_consumers/partials/_summary.html')
+    assert 'card.label.split' not in read('app/templates/analytics/kubernetes/top_consumers/partials/_summary.html')
     assert 'identity.primary' in results
     assert 'Request Utilization' in results
     assert 'Limit Utilization' in results
@@ -47,8 +47,8 @@ def test_top_consumers_identity_and_pressure_are_structured() -> None:
 
 
 def test_top_consumers_mixed_resource_sort_is_unit_safe() -> None:
-    contracts = read('app/analytics/top_consumers/contracts.py')
-    presentation = read('app/analytics/top_consumers/presentation.py')
+    contracts = read('app/analytics/kubernetes/top_consumers/contracts.py')
+    presentation = read('app/analytics/kubernetes/top_consumers/presentation.py')
 
     assert "{'value': 'priority', 'label': 'Operational Priority'}" in contracts
     assert "{'value': 'contribution', 'label': 'Contribution to Scope'}" in contracts
@@ -58,9 +58,9 @@ def test_top_consumers_mixed_resource_sort_is_unit_safe() -> None:
 
 
 def test_top_consumers_evidence_and_progress_semantics_are_canonical() -> None:
-    domain = read('app/analytics/top_consumers/domain.py')
-    results = read('app/templates/analytics/top_consumers/partials/_consumer_detail_results.html')
-    ranked = read('app/templates/analytics/components/_ranked_evidence_panel.html')
+    domain = read('app/analytics/kubernetes/top_consumers/domain.py')
+    results = read('app/templates/analytics/kubernetes/top_consumers/partials/_consumer_detail_results.html')
+    ranked = read('app/templates/analytics/kubernetes/components/_ranked_evidence_panel.html')
 
     assert "evidence_state('complete' if complete else 'partial')" in domain
     assert "evidence_state('unavailable')" in domain
@@ -76,11 +76,11 @@ def test_top_consumers_evidence_and_progress_semantics_are_canonical() -> None:
 
 
 def test_top_consumers_records_use_shared_pagination_and_modal_details() -> None:
-    results = read('app/templates/analytics/top_consumers/partials/_consumer_detail_results.html')
-    shared = read('app/templates/analytics/components/_record_pagination.html')
+    results = read('app/templates/analytics/kubernetes/top_consumers/partials/_consumer_detail_results.html')
+    shared = read('app/templates/analytics/kubernetes/components/_record_pagination.html')
 
-    assert 'analytics/components/_record_pagination.html' in results
-    assert 'analytics/components/_record_detail_modal.html' in results
+    assert 'analytics/kubernetes/components/_record_pagination.html' in results
+    assert 'analytics/kubernetes/components/_record_detail_modal.html' in results
     assert "'analytics.top_consumers_table'" in results
     assert "'analytics.top_consumers'" in results
     assert '@kaori:analytics-collapse-details.window="detailOpen = false"' in results
@@ -101,7 +101,7 @@ def test_top_consumers_design_contract_is_registered() -> None:
     guide = read('docs/design/KAORI_STYLING_GUIDE.md')
     design_readme = read('docs/design/README.md')
     contract = read('docs/design/components/ANALYTICS_TOP_CONSUMERS.md')
-    analytics_readme = read('app/analytics/README.md')
+    analytics_readme = read('app/analytics/kubernetes/README.md')
 
     assert 'Analytics Top Consumers Standard' in guide
     assert 'components/ANALYTICS_TOP_CONSUMERS.md' in design_readme
@@ -112,9 +112,9 @@ def test_top_consumers_design_contract_is_registered() -> None:
 
 
 def test_top_consumers_overview_records_and_summary_follow_inventory_density() -> None:
-    section = read('app/templates/analytics/top_consumers/partials/_consumer_detail_section.html')
-    results = read('app/templates/analytics/top_consumers/partials/_consumer_detail_results.html')
-    summary = read('app/templates/analytics/top_consumers/partials/_summary.html')
+    section = read('app/templates/analytics/kubernetes/top_consumers/partials/_consumer_detail_section.html')
+    results = read('app/templates/analytics/kubernetes/top_consumers/partials/_consumer_detail_results.html')
+    summary = read('app/templates/analytics/kubernetes/top_consumers/partials/_summary.html')
 
     assert 'Consumer Records Overview' in section
     assert 'Consumer Records' in section

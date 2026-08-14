@@ -182,6 +182,17 @@ The following are enforced:
 - application modules must have an importer, configured runtime entrypoint, test consumer, or script consumer;
 - route modules may only be imported by application or package bootstrap modules.
 
+## Domain Namespace and Metrics-Source Boundary
+
+`scripts/verify_domain_namespace_architecture.py` enforces direct-cutover domain
+ownership for Inventory and Analytics. It rejects retired import paths and
+filesystem namespaces instead of permitting compatibility packages. It also
+requires Object Storage Analytics to consume the provider-neutral
+`MetricsSource` contract through a qualified asset-provider + metrics-provider
+adapter and blocks retired product/provider aliases. The same verifier locks the
+`PLATFORM OPERATIONS → Operations Center` navigation distinction.
+
+
 ## Reusable UI Boundary
 
 Dynamic progress widths are centralized in:

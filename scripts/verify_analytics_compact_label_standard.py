@@ -147,20 +147,20 @@ def _validate_metadata_counts(relative: str, source: str, errors: list[str]) -> 
 
 def _require_dense_status_dots(errors: list[str]) -> None:
     checks = {
-        'app/templates/analytics/alerts/partials/_alerts_table_row.html': (
+        'app/templates/analytics/kubernetes/alerts/partials/_alerts_table_row.html': (
             'status_indicator_label(alert.status|title',
         ),
-        'app/templates/analytics/workload/partials/_workload_mapping_section.html': (
+        'app/templates/analytics/kubernetes/workload/partials/_workload_mapping_section.html': (
             'status_indicator_label(row.configuration_status.label',
             'status_indicator_label(row.metrics_coverage.label',
         ),
-        'app/templates/analytics/workload/partials/_tenant_quota_section.html': (
+        'app/templates/analytics/kubernetes/workload/partials/_tenant_quota_section.html': (
             'status_indicator_label(row.quota_status.label',
         ),
-        'app/templates/analytics/storage/partials/_persistent_volume_claims_panel.html': (
+        'app/templates/analytics/kubernetes/storage/partials/_persistent_volume_claims_panel.html': (
             'status_indicator_label(row.status',
         ),
-        'app/templates/analytics/storage/partials/_persistent_volumes_panel.html': (
+        'app/templates/analytics/kubernetes/storage/partials/_persistent_volumes_panel.html': (
             'status_indicator_label(row.status',
         ),
     }

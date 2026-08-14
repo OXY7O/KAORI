@@ -13,7 +13,7 @@ logic. Alerts and snapshots remain ordinary dictionaries at runtime.
 The source of truth is:
 
 ```text
-app/analytics/alerts/contracts.py
+app/analytics/kubernetes/alerts/contracts.py
 ```
 
 It defines:
@@ -47,7 +47,7 @@ second normalized alert contract.
 ## Compatibility
 
 The compatibility cutover is complete. Typed contracts are imported directly from
-`app.analytics.alerts.contracts`. Both `app.analytics.alerts.service` and the
+`app.analytics.kubernetes.alerts.contracts`. Both `app.analytics.kubernetes.alerts.service` and the
 legacy query export module are retired and blocked by the architecture gate.
 
 ## Behavior Boundary

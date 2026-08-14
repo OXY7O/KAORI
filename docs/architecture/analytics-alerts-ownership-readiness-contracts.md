@@ -14,7 +14,7 @@ thresholds; labels; descriptions; icons; or semantic CSS classes.
 
 ## Canonical Contracts
 
-The source of truth is `app/analytics/alerts/contracts.py`.
+The source of truth is `app/analytics/kubernetes/alerts/contracts.py`.
 
 ### Ownership boundary
 
@@ -76,11 +76,11 @@ checks
 
 ## Updated Ownership
 
-`app/analytics/alerts/ownership.py` now returns focused ownership contracts for
+`app/analytics/kubernetes/alerts/ownership.py` now returns focused ownership contracts for
 both populated and empty states. Internal owner groups, runbook rows, and
 missing-metadata rows are also typed without introducing runtime objects.
 
-`app/analytics/alerts/readiness.py` now accepts the established source-health,
+`app/analytics/kubernetes/alerts/readiness.py` now accepts the established source-health,
 routing, silence, inhibition, and ownership summary contracts and returns a
 focused incident-readiness contract. The selected-cluster signal overview
 remains a separate boundary and is intentionally not redesigned in this slice.

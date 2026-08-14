@@ -2,13 +2,13 @@
 
 ## Persistence Authority
 
-`app.inventory.persistence` owns replacement writes for Kubernetes inventory
+`app.inventory.kubernetes.persistence` owns replacement writes for Kubernetes inventory
 resources. Each `save_*` function converts collector payloads into SQLAlchemy
 records and does not commit the transaction.
 
 ## Synchronization Authority
 
-`app.inventory.synchronization` owns one-cluster synchronization orchestration:
+`app.inventory.kubernetes.synchronization` owns one-cluster synchronization orchestration:
 
 - row-level cluster lock;
 - canonical Kubernetes client construction through the integration registry;
@@ -18,7 +18,7 @@ records and does not commit the transaction.
 - final commit and rollback.
 
 The Kubernetes runtime adapter imports `sync_inventory` from this module
-directly. No `app.inventory.service` compatibility facade exists.
+directly. No `app.inventory.kubernetes.service` compatibility facade exists.
 
 ## Dependency Direction
 

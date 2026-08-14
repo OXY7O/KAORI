@@ -47,11 +47,11 @@ def test_all_job_execution_surfaces_use_shared_progress_renderer() -> None:
 
 
 def test_domain_progress_reports_real_work_boundaries() -> None:
-    kubernetes = read('app/inventory/synchronization.py')
+    kubernetes = read('app/inventory/kubernetes/synchronization.py')
     cluster_tasks = read('app/cluster/tasks.py')
-    storage_tasks = read('app/storage_inventory/tasks.py')
+    storage_tasks = read('app/inventory/object_storage/tasks.py')
     minio_client = read('app/integrations/minio/client.py')
-    analytics = read('app/analytics/tasks.py')
+    analytics = read('app/analytics/kubernetes/tasks.py')
 
     for stage in (
         'Collecting Nodes',
@@ -71,7 +71,7 @@ def test_domain_progress_reports_real_work_boundaries() -> None:
 def test_job_related_specialized_bars_share_the_same_low_level_violet_primitive() -> None:
     operational = read('app/templates/components/operational_progress_toast.html')
     tls_live = read('app/templates/governance/tls_certificates/partials/_sync_live_state.html')
-    analytics_pending = read('app/templates/analytics/materialization/_pending.html')
+    analytics_pending = read('app/templates/analytics/kubernetes/materialization/_pending.html')
 
     assert 'progress_bar.bar' in operational
     assert 'progress_bar.bar' in tls_live

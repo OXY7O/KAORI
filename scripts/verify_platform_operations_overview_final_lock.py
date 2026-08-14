@@ -68,7 +68,7 @@ def main() -> int:
             errors.append(f'Overview must remain lightweight/read-only: {forbidden}')
 
     for required in (
-        'Platform Overview',
+        'Operations Center',
         'Platform Posture',
         'Workspace Posture',
         'Operating Boundaries',

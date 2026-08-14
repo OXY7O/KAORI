@@ -169,7 +169,7 @@ def main() -> int:
         'components/page_hero.html',
         'components/table_label.html',
         'components/operational_section_card.html',
-        'Platform Overview',
+        'Operations Center',
         'Platform Posture',
         'Workspace Posture',
         'Operating Boundaries',

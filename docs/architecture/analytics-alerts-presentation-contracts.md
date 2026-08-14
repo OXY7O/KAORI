@@ -4,7 +4,7 @@
 
 This Batch 3 slice narrows two broad internal dictionary boundaries without changing the dictionaries consumed by KAORI templates, dashboards, reports, or intelligence workflows.
 
-The canonical contracts live in `app/analytics/alerts/contracts.py`:
+The canonical contracts live in `app/analytics/kubernetes/alerts/contracts.py`:
 
 - `AlertIntegrationStatus` and `AlertIntegrationStatusMap` describe Prometheus and Alertmanager connection presentation state;
 - `AlertSourceHealthCheck` and `AlertSourceHealthSummary` describe source-health scoring and checks;

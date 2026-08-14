@@ -15,7 +15,7 @@ behavior, UI wording, or template keys.
 
 ## Canonical Contracts
 
-The source of truth is `app/analytics/alerts/contracts.py`.
+The source of truth is `app/analytics/kubernetes/alerts/contracts.py`.
 
 - `AlertSignalPriority` describes the current normal, warning, or critical
   signal priority presentation.
@@ -60,12 +60,12 @@ bars: active_alerts, critical_alerts, warning_alerts, anomalies
 
 ## Updated Boundaries
 
-`app/analytics/alerts/signals.py` now returns
+`app/analytics/kubernetes/alerts/signals.py` now returns
 `AlertSelectedClusterSignalOverview` from
 `build_selected_cluster_signal_overview()` for both selected and empty cluster
 states.
 
-`app/analytics/alerts/readiness.py` now accepts the focused signal overview
+`app/analytics/kubernetes/alerts/readiness.py` now accepts the focused signal overview
 contract instead of `dict[str, Any]`. Its scoring behavior is unchanged.
 
 `AlertsSnapshot.priority` and `AlertsSnapshot.insight` now reference
@@ -73,7 +73,7 @@ contract instead of `dict[str, Any]`. Its scoring behavior is unchanged.
 unchanged.
 
 The package cutover is complete. Focused consumers import all four contracts
-directly from `app.analytics.alerts.contracts`; no compatibility facade remains.
+directly from `app.analytics.kubernetes.alerts.contracts`; no compatibility facade remains.
 
 ## Behavior Preserved
 
@@ -147,9 +147,9 @@ payloads and executable behavior are unchanged.
 ## Changed Files
 
 ```text
-app/analytics/alerts/contracts.py
-app/analytics/alerts/readiness.py
-app/analytics/alerts/signals.py
+app/analytics/kubernetes/alerts/contracts.py
+app/analytics/kubernetes/alerts/readiness.py
+app/analytics/kubernetes/alerts/signals.py
 tests/contracts/analytics/test_alerts_typed_contracts.py
 tests/analytics/test_alerts_characterization.py
 docs/architecture/analytics-alerts-typed-contracts.md

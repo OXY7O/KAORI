@@ -5,19 +5,19 @@ Updated: 2026-08-06
 
 Implementation:
 
-- `app/analytics/forecast/contracts.py`
-- `app/analytics/forecast/calculation.py`
-- `app/analytics/forecast/presentation.py`
-- `app/analytics/forecast/resource.py`
-- `app/analytics/forecast/service.py`
-- `app/analytics/forecast/routes.py`
-- `app/templates/analytics/forecast/index.html`
-- `app/templates/analytics/forecast/partials/_hero.html`
-- `app/templates/analytics/forecast/partials/_controls_readiness.html`
-- `app/templates/analytics/forecast/partials/_overview_methodology.html`
-- `app/templates/analytics/forecast/partials/_forecast_section.html`
-- `app/templates/analytics/components/_interactive_forecast_chart.html`
-- `app/static/js/analytics_forecast_chart.js`
+- `app/analytics/kubernetes/forecast/contracts.py`
+- `app/analytics/kubernetes/forecast/calculation.py`
+- `app/analytics/kubernetes/forecast/presentation.py`
+- `app/analytics/kubernetes/forecast/resource.py`
+- `app/analytics/kubernetes/forecast/service.py`
+- `app/analytics/kubernetes/forecast/routes.py`
+- `app/templates/analytics/kubernetes/forecast/index.html`
+- `app/templates/analytics/kubernetes/forecast/partials/_hero.html`
+- `app/templates/analytics/kubernetes/forecast/partials/_controls_readiness.html`
+- `app/templates/analytics/kubernetes/forecast/partials/_overview_methodology.html`
+- `app/templates/analytics/kubernetes/forecast/partials/_forecast_section.html`
+- `app/templates/analytics/kubernetes/components/_interactive_forecast_chart.html`
+- `app/static/js/analytics/kubernetes/forecast_chart.js`
 
 ## Purpose
 
@@ -156,7 +156,7 @@ Chart payload is held in a non-executable `<template data-kaori-json-payload>`. 
 
 ## Route Boundary
 
-`/analytics/forecast` is the only Forecast workspace route. The removed `/analytics/forecast/section` fragment endpoint had no active consumer and must not return.
+`/analytics/forecast` is the only Forecast workspace route. The removed `/analytics/kubernetes/forecast/section` fragment endpoint had no active consumer and must not return.
 
 The full page may be replaced through standard HTMX navigation, but Forecast does not maintain a duplicate page-specific fragment route.
 
@@ -185,7 +185,7 @@ Recommendations deep-link to the owning resource tab or Trend Analysis. Links pr
 Removed legacy surfaces:
 
 - `app/static/js/analytics_forecast.js`;
-- `app/templates/analytics/forecast/partials/_methodology.html`;
-- `/analytics/forecast/section` and endpoint `analytics.forecast_section`.
+- `app/templates/analytics/kubernetes/forecast/partials/_methodology.html`;
+- `/analytics/kubernetes/forecast/section` and endpoint `analytics.forecast_section`.
 
 Do not add wrappers, fallback imports, Resource Focus aliases, Moving Average aliases, confidence-field aliases, or a duplicate Forecast fragment route.

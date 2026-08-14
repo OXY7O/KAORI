@@ -1,7 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
-{% import "analytics/components/_analysis_workspace.html" as analytics_workspace %}
+{% import "components/table_primitives.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% block title %}{{ page.title }} · Object Storage Analytics{% endblock title %}
 {% block dashboard_content %}
@@ -29,9 +29,9 @@
                 {{ page_hero.context_card(
                     'Object Storage Analytics Readiness',
                     'Operational Analytics',
-                    'Prometheus Evidence',
-                    prometheus.label,
-                    prometheus.tone,
+                    'Operational Metrics',
+                    metrics_source.label,
+                    metrics_source.tone,
                     [
                         (
                             'database',
@@ -39,10 +39,10 @@
                             'Committed' if system and inventory_observed_at else 'Pending',
                             'Canonical state boundary'
                         ),
-                        ('activity', 'Metrics', prometheus.label, prometheus.detail)
+                        ('activity', metrics_source.provider_label, metrics_source.label, metrics_source.detail)
                     ],
-                    'Manage Prometheus',
-                    url_for('integrations.prometheus'),
+                    'Observability Integrations',
+                    url_for('integrations.observability'),
                     'settings-2'
                 ) }}
             </div>
@@ -85,6 +85,6 @@
     {{ super() }}
     {% if not dependency_blocker and page_key in ['overview', 'capacity', 'performance', 'forecast'] %}
         <script src="{{ url_for('static', filename='vendor/chartjs/chart.umd.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='js/object_storage_analytics.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/analytics/object_storage.js') }}"></script>
     {% endif %}
 {% endblock scripts %}

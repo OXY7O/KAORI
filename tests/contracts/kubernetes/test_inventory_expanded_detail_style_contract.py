@@ -41,8 +41,8 @@ def test_all_inventory_tables_use_full_workspace_modal_action() -> None:
     assert 'focusableElements(dialog)' in script
 
     for resource in RESOURCES:
-        table = read(f'app/templates/inventory/{resource}/partials/_table_content.html')
-        index = read(f'app/templates/inventory/{resource}/index.html')
+        table = read(f'app/templates/inventory/kubernetes/{resource}/partials/_table_content.html')
+        index = read(f'app/templates/inventory/kubernetes/{resource}/index.html')
         assert 'resource_detail_modal.detail_button(' in table, resource
         assert 'expandable.detail_row(' not in table, resource
         assert 'resource_detail_modal.host(' in index, resource
@@ -53,7 +53,7 @@ def test_all_inventory_detail_workspaces_use_modal_extractable_header_and_summar
     assert 'data-resource-detail-summary' in detail_component
 
     for resource, filename in DETAIL_FILES.items():
-        source = read(f'app/templates/inventory/{resource}/partials/{filename}')
+        source = read(f'app/templates/inventory/kubernetes/{resource}/partials/{filename}')
         assert 'data-kaori-detail-variant="full-workspace-modal"' in source, resource
         assert 'data-resource-detail-header' in source, resource
         assert 'detail.expanded_workspace_outer_classes()' in source, resource

@@ -29,8 +29,8 @@ def test_inventory_final_standard_documents_authz_snapshot_and_shared_ui_contrac
 
 def test_inventory_read_side_no_longer_owns_obsolete_template_or_helpers() -> None:
     assert not (ROOT / 'app/templates/inventory/partials/_README.md').exists()
-    formatting = read('app/inventory/formatting.py')
-    common = read('app/inventory/resources/common.py')
+    formatting = read('app/inventory/kubernetes/formatting.py')
+    common = read('app/inventory/kubernetes/resources/common.py')
 
     assert 'def format_byte_count(' not in formatting
     assert 'def format_gib(' not in formatting
@@ -38,8 +38,8 @@ def test_inventory_read_side_no_longer_owns_obsolete_template_or_helpers() -> No
 
 
 def test_topology_cluster_identity_uses_eager_loaded_database_relationship_not_runtime_resolver() -> None:
-    repository = read('app/inventory/topology/repository.py')
-    builder = read('app/inventory/topology/node_builder.py')
+    repository = read('app/inventory/kubernetes/topology/repository.py')
+    builder = read('app/inventory/kubernetes/topology/node_builder.py')
 
     assert 'joinedload(Cluster.kubernetes_connection)' in repository
     assert 'cluster.kubernetes_connection.server' in builder

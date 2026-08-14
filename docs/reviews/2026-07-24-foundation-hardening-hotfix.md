@@ -34,11 +34,11 @@ Revert the hotfix commit. No migration, configuration, or persistent-data rollba
 
 ## Files Changed
 
-- `app/analytics/capacity/service.py`
-- `app/analytics/forecast/service.py`
-- `app/analytics/storage/service.py`
-- `app/analytics/top_consumers/service.py`
-- `app/analytics/workload/service.py`
+- `app/analytics/kubernetes/capacity/service.py`
+- `app/analytics/kubernetes/forecast/service.py`
+- `app/analytics/kubernetes/storage/service.py`
+- `app/analytics/kubernetes/top_consumers/service.py`
+- `app/analytics/kubernetes/workload/service.py`
 - `app/bootstrap/blueprints.py`
 - `app/cluster/service.py`
 - `app/commands/integrations.py`

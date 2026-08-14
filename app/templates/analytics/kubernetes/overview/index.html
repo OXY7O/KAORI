@@ -1,0 +1,79 @@
+{% extends "layouts/app.html" %}
+{% import "components/content_tabs.html" as content_tabs %}
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "components/table_label.html" as table_label %}
+{% block title %}Analytics Overview{% endblock title %}
+{% block dashboard_content %}
+    {% set overview_query = 'cluster_id=' ~ payload.selected_cluster_id ~ '&time_range=' ~ payload.selected_time_range %}
+    {% set overview_tabs = [('utilization', 'Usage', 'gauge', 'resource-snapshot', 'overview-resource-snapshot', 'section'), ('capacity', 'Capacity', 'server-cog', 'capacity-snapshot', 'overview-capacity-snapshot', 'section'), ('workloads', 'Workload', 'boxes', 'workload-snapshot', 'overview-workload-snapshot', 'section'), ('storage', 'Storage', 'database', 'storage-snapshot', 'overview-storage-snapshot', 'section'), ('consumers', 'Consumers', 'chart-no-axes-column-increasing', 'top-consumers', 'overview-top-consumers', 'section'), ('forecast', 'Forecast', 'chart-spline', 'forecast-snapshot', 'overview-forecast-snapshot', 'section'), ('alerts', 'Alerts', 'bell-ring', 'alerts-snapshot', 'overview-alerts-snapshot', 'section'), ('action-summary', 'Actions', 'list-checks', '', 'overview-actionable-recommendations', 'composite'), ('recommendations', 'Guidance', 'clipboard-check', '', 'overview-recommendations', 'composite')] %}
+    <div id="analytics-overview-page"
+         class="kaori-analytics-page space-y-6"
+         data-analytics-page-request-tracking="false">
+        {% include "analytics/kubernetes/overview/partials/_hero.html" %}
+        {% if not dependency_blocker %}
+            {% include "analytics/kubernetes/overview/partials/_load_tracker.html" %}
+        {% endif %}
+        {% if dependency_blocker %}
+            {% include "components/dependencies/_blocker.html" %}
+        {% else %}
+            <div id="overview-health-summary"
+                 data-overview-lazy-section="true"
+                 data-overview-section-label="Health Summary"
+                 data-overview-load-state="idle"
+                 hx-target="this"
+                 hx-get="{{ url_for('analytics.overview_section', section='health-summary') }}?{{ overview_query }}"
+                 hx-trigger="load delay:150ms once"
+                 hx-swap="innerHTML"
+                 hx-sync="this:replace">{% include "analytics/kubernetes/overview/partials/_section_loading.html" %}</div>
+            <section id="analytics-overview-workspace"
+                     data-analytics-tabset
+                     data-analytics-tabset-id="overview-content"
+                     data-default-tab="utilization"
+                     class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                    <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}">
+                                <i data-lucide="layout-dashboard" class="h-5 w-5"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <h2 class="text-lg font-semibold text-content-primary">Analytics Overview Workspace</h2>
+                                <p class="mt-1 text-sm leading-6 text-content-secondary">Open one operational domain at a time. KAORI loads its committed snapshot only when the tab is first activated.</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            {{ table_label.metadata_label(payload.selected_cluster.name|default('Selected Cluster') , 'server', size='compact') }}
+                            {{ table_label.metadata_label(payload.selected_time_range|upper ~ ' Window', 'clock-3', size='compact') }}
+                        </div>
+                    </div>
+                </header>
+                {{ content_tabs.render_buttons('overview-content', overview_tabs, 'Analytics Overview Workspace', embedded=true, data_namespace='analytics', active_key='utilization', show_badges=false, nowrap=true) }}
+                <div class="p-4 sm:p-5">
+                    {% for tab in overview_tabs %}
+                        {% set tab_id = tab[0] %}
+                        {% set section = tab[3] %}
+                        {% set target_id = tab[4] %}
+                        {% set load_mode = tab[5] %}
+                        <div id="overview-content-panel-{{ tab_id }}"
+                             role="tabpanel"
+                             aria-labelledby="overview-content-tab-{{ tab_id }}"
+                             data-analytics-tab-panel="{{ tab_id }}"
+                             {% if not loop.first %}hidden{% endif %}
+                             class="space-y-4">
+                            <div id="{{ target_id }}"
+                                 data-overview-lazy-section="true"
+                                 data-overview-section-label="{{ tab[1] }}"
+                                 data-overview-load-state="idle"
+                                 {% if load_mode == 'section' %} hx-target="this" hx-get="{{ url_for('analytics.overview_section', section=section) }}?{{ overview_query }}" hx-trigger="kaori:analytics-tab-activated once" hx-swap="innerHTML" hx-sync="this:replace" {% else %} data-overview-composite-dependent="true" {% endif %}>
+                                {% include "analytics/kubernetes/overview/partials/_section_loading.html" %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+    </div>
+{% endblock dashboard_content %}
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/analytics/kubernetes/overview.js') }}"></script>
+{% endblock scripts %}

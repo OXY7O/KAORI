@@ -70,8 +70,8 @@ This closes the previous gap where Domain 17 and Domain 20 state existed but was
 | Diagnostic family | Resolution |
 |---|---|
 | Nullable Alertmanager passed to `_binding_row` | Guarded in `app/alertmanager/presentation.py`. |
-| Alert health TypedDict/list invariance | Exact `AlertSourceHealthCheck` and `AlertSourceHealthSummary` annotations in `app/analytics/alerts/health.py`. |
-| Incomplete `AlertSourceStatus` | Central complete empty-status constructor in `app/analytics/alerts/snapshots.py`. |
+| Alert health TypedDict/list invariance | Exact `AlertSourceHealthCheck` and `AlertSourceHealthSummary` annotations in `app/analytics/kubernetes/alerts/health.py`. |
+| Incomplete `AlertSourceStatus` | Central complete empty-status constructor in `app/analytics/kubernetes/alerts/snapshots.py`. |
 | Optional capability/consumer attributes | Explicit narrowing in capacity, utilization, and workload analytics services. |
 | Unknown Kubernetes/provider imports | Correct module paths are used; the symbols exist and compile. |
 | SQLAlchemy “No parameter named …” | Reported constructors changed to `Model()` plus assignments. |
@@ -125,9 +125,9 @@ No new cycle or service-to-form edge was added. The Automation Control Center wa
 1. Split the largest modules by use case and stable typed contracts:
    - `app/intelligence/recommendation_engine.py` (~94 KB)
    - `app/integrations/prometheus/query_profiles/kubernetes_v1.py` (~89 KB)
-   - `app/analytics/workload/service.py` (~72 KB)
-   - `app/analytics/top_consumers/service.py` (~62 KB)
-   - `app/analytics/overview/service.py` (~57 KB)
+   - `app/analytics/kubernetes/workload/service.py` (~72 KB)
+   - `app/analytics/kubernetes/top_consumers/service.py` (~62 KB)
+   - `app/analytics/kubernetes/overview/service.py` (~57 KB)
    - `app/reports/generated/service.py` (~57 KB)
    - `app/prometheus/routes.py` (~57 KB)
    - `app/kubernetes_operations/secrets/routes.py` (~56 KB)

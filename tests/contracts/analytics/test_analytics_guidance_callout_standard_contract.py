@@ -2,6 +2,7 @@ import re
 from pathlib import Path
 
 ANALYTICS_ROOT = Path('app/templates/analytics')
+KUBERNETES_ROOT = ANALYTICS_ROOT / 'kubernetes'
 RAW_GUIDANCE_PATTERN = re.compile(
     r'>\s*(How To Read|What To Do|What To Watch|Operational Reading|Recommended Action|Recommended Review Path|Forecast Decision|Operational Guidance)\s*<',
     re.IGNORECASE,
@@ -48,7 +49,7 @@ def test_every_analytics_domain_uses_shared_guidance_callouts():
         'alerts': 'alerts/partials/_cluster_signal_overview.html',
     }
     for domain, relative in expected.items():
-        content = (ANALYTICS_ROOT / relative).read_text()
+        content = (KUBERNETES_ROOT / relative).read_text()
         assert 'interpretation_' in content, domain
         assert 'role=' in content, domain
 
@@ -62,7 +63,7 @@ def test_record_level_guidance_uses_compact_shared_variant():
         'storage/partials/_persistent_volumes_panel.html',
     ]
     for relative in record_templates:
-        content = (ANALYTICS_ROOT / relative).read_text()
+        content = (KUBERNETES_ROOT / relative).read_text()
         assert 'interpretation_callout(' in content, relative
         assert 'compact=true' in content or 'card=true' in content, relative
         assert 'role=' in content, relative
