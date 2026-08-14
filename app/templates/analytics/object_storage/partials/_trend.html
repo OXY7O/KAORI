@@ -1,9 +1,9 @@
-{% set trend = metrics.request_trend|default([]) if page_key == 'performance' else metrics.usage_trend|default([]) %}
+{% set trend = metrics.request_trend|default([]) if page_key == 'performance' else (metrics.forecast_history|default([]) if page_key == 'forecast' else metrics.usage_trend|default([])) %}
 {% set secondary_trend = metrics.error_trend|default([]) if page_key == 'performance' else [] %}
 <section class="{{ analysis_surface.evidence_shell_classes() }}"
          data-object-storage-trend-panel
          data-object-storage-page-key="{{ page_key }}"
-         data-object-storage-time-range="{{ selected_time_range }}"
+         data-object-storage-time-range="{{ selected_forecast_history_window if page_key == 'forecast' else selected_time_range }}"
          data-object-storage-trend-points="{{ trend|tojson|forceescape }}"
          data-object-storage-secondary-trend-points="{{ secondary_trend|tojson|forceescape }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
@@ -13,7 +13,7 @@
                     {{ 'Request & Error Trend' if page_key == 'performance' else 'Storage Usage Trend' }}
                 </h2>
                 <p class="mt-1 text-sm leading-6 text-content-muted">
-                    {{ metrics_source.provider_label }} range evidence for {{ selected_time_range }}. Historical operational evidence remains separate from the committed Inventory snapshot.
+                    {% if page_key == 'forecast' %}Committed forecasting-worker history for {{ selected_forecast_history_window|upper }}. The worker snapshot remains separate from live runtime metrics and Inventory.{% else %}{{ metrics_source.provider_label }} range evidence for {{ selected_time_range }}. Historical operational evidence remains separate from the committed Inventory snapshot.{% endif %}
                 </p>
             </div>
             <div class="flex flex-wrap gap-2">
@@ -34,7 +34,7 @@
                     <i data-lucide="line-chart" class="mx-auto h-6 w-6 text-content-muted"></i>
                     <p class="mt-3 text-sm font-semibold text-content-primary">Historical Evidence Not Available</p>
                     <p class="mt-1 text-xs leading-5 text-content-muted">
-                        The active metrics source returned no range samples for this metric and time window.
+                        {% if page_key == 'forecast' %}The forecasting worker has not committed usable history for this window.{% else %}The active metrics source returned no range samples for this metric and time window.{% endif %}
                     </p>
                 </div>
             </div>

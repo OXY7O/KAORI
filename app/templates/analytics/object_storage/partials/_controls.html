@@ -37,16 +37,29 @@
                     {% endfor %}
                 </select>
             </label>
-            <label class="block" for="object-storage-time-range-filter">
-                <span class="{{ table_ui.filter_label_classes() }}">Time Range</span>
-                <select id="object-storage-time-range-filter"
-                        name="time_range"
-                        class="{{ table_ui.filter_select_classes() }}">
-                    {% for item in allowed_time_ranges %}
-                        <option value="{{ item.value }}" {% if selected_time_range == item.value %}selected{% endif %}>{{ item.label }}</option>
-                    {% endfor %}
-                </select>
-            </label>
+            {% if page_key == 'forecast' %}
+                <label class="block" for="object-storage-history-window-filter">
+                    <span class="{{ table_ui.filter_label_classes() }}">History Window</span>
+                    <select id="object-storage-history-window-filter"
+                            name="history_window"
+                            class="{{ table_ui.filter_select_classes() }}">
+                        {% for item in forecast_history_windows %}
+                            <option value="{{ item.value }}" {% if selected_forecast_history_window == item.value %}selected{% endif %}>{{ item.label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+            {% else %}
+                <label class="block" for="object-storage-time-range-filter">
+                    <span class="{{ table_ui.filter_label_classes() }}">Time Range</span>
+                    <select id="object-storage-time-range-filter"
+                            name="time_range"
+                            class="{{ table_ui.filter_select_classes() }}">
+                        {% for item in allowed_time_ranges %}
+                            <option value="{{ item.value }}" {% if selected_time_range == item.value %}selected{% endif %}>{{ item.label }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+            {% endif %}
         </form>
         <div class="grid gap-4 lg:grid-cols-3">
             <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
@@ -77,20 +90,37 @@
                     {{ table_label.status_label(metrics_source.label, metrics_source.tone) }}
                 </div>
             </article>
-            <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
-                <div class="flex items-start justify-between gap-3">
-                    <div class="flex min-w-0 items-start gap-3">
-                        <span class="{{ analysis_surface.semantic_icon_classes(alertmanager.tone) }}">
-                            <i data-lucide="bell-ring" class="h-4 w-4"></i>
-                        </span>
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-content-primary">Alertmanager Lifecycle</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Optional alert lifecycle correlation.</p>
+            {% if page_key == 'forecast' %}
+                <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="{{ analysis_surface.semantic_icon_classes(forecast_materialization.tone) }}">
+                                <i data-lucide="chart-spline" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">Forecast Worker Snapshot</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ selected_forecast_history_window|upper }} · {{ forecast_materialization.method }}</p>
+                            </div>
                         </div>
+                        {{ table_label.status_label(forecast_materialization.label, forecast_materialization.tone) }}
                     </div>
-                    {{ table_label.status_label(alertmanager.label, alertmanager.tone) }}
-                </div>
-            </article>
+                </article>
+            {% else %}
+                <article class="{{ analysis_surface.readiness_shell_classes() }} p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="{{ analysis_surface.semantic_icon_classes(alertmanager.tone) }}">
+                                <i data-lucide="bell-ring" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">Alertmanager Lifecycle</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Optional alert lifecycle correlation.</p>
+                            </div>
+                        </div>
+                        {{ table_label.status_label(alertmanager.label, alertmanager.tone) }}
+                    </div>
+                </article>
+            {% endif %}
         </div>
         {% if query_diagnostics|default([]) and not dependency_blocker %}
             <div class="rounded-lg border border-outline-default bg-status-warning-soft px-4 py-3 text-sm text-content-secondary" role="status">

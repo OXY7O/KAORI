@@ -1,0 +1,53 @@
+{% import "components/page_hero.html" as page_hero %}
+<section class="{{ page_hero.shell_classes() }}">
+    <div class="{{ page_hero.layout_classes() }}">
+        <div class="{{ page_hero.content_classes() }}">
+            {% call page_hero.intro('database-zap', page.eyebrow, page.icon) %}
+                <h1 class="{{ page_hero.title_classes() }}">{{ page.title }}</h1>
+                <p class="mt-2 {{ page_hero.description_classes() }}">{{ page.description }}</p>
+                <div class="{{ page_hero.metadata_row_classes() }}">
+                    {{ page_hero.meta_label('server', system.name if system else 'No System Selected') }}
+                    {% if dependency_blocker %}
+                        {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
+                    {% else %}
+                        {{ page_hero.meta_label('clock-3', selected_forecast_history_window|upper ~ ' History' if page_key == 'forecast' else selected_time_range) }}
+                        {% if inventory_observed_at %}
+                            {{ page_hero.meta_label('database-clock', inventory_observed_at|user_datetime('Inventory Not Collected')) }}
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% endcall %}
+        </div>
+        <aside class="{{ page_hero.aside_classes() }}" aria-label="Object Storage Analytics Posture">
+            {% if dependency_blocker %}
+                {{ page_hero.context_card_body(
+                    'Analytics Readiness',
+                    'Dependency Gate',
+                    dependency_blocker.badge,
+                    dependency_blocker.tone,
+                    [
+                        ('database', 'Inventory', 'Collected' if system and inventory_observed_at else 'Required'),
+                        ('route', 'Current Gate', 'Step ' ~ dependency_blocker.stage ~ ' of 3')
+                    ],
+                    dependency_blocker.action_label,
+                    url_for(dependency_blocker.action_endpoint),
+                    'arrow-up-right'
+                ) }}
+            {% else %}
+                {{ page_hero.context_card_body(
+                    'Operational Analytics',
+                    'Current Posture',
+                    metrics_source.label,
+                    metrics_source.tone,
+                    [
+                        ('activity', 'Metrics Source', metrics_source.provider_label),
+                        ('database', 'Inventory', 'Collected' if inventory_observed_at else 'Not Collected')
+                    ],
+                    'Observability Integrations',
+                    url_for('integrations.observability'),
+                    'settings-2'
+                ) }}
+            {% endif %}
+        </aside>
+    </div>
+</section>

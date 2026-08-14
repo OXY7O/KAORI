@@ -1,5 +1,4 @@
 {% extends "layouts/app.html" %}
-{% import "components/page_hero.html" as page_hero %}
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/table_primitives.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
@@ -8,51 +7,20 @@
     <div id="object-storage-analytics-page"
          class="kaori-analytics-page space-y-6"
          data-analytics-page-request-tracking="false">
-        <section class="{{ page_hero.shell_classes() }}">
-            <div class="{{ page_hero.layout_classes() }}">
-                <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro('database-zap', page.eyebrow, page.icon) %}
-                        <h1 class="{{ page_hero.title_classes() }}">{{ page.title }}</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">{{ page.description }}</p>
-                        <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('server', system.name if system else 'No System Selected') }}
-                            {{ page_hero.meta_label('clock-3', selected_time_range) }}
-                            {% if system %}
-                                {{ page_hero.meta_label('database-clock', inventory_observed_at|user_datetime('Inventory Not Collected')) }}
-                            {% endif %}
-                        </div>
-                    {% endcall %}
-                </div>
-                {{ page_hero.context_card(
-                    'Object Storage Analytics Readiness',
-                    'Operational Analytics',
-                    'Runtime Metrics',
-                    metrics_source.label,
-                    metrics_source.tone,
-                    [
-                        ('database', 'Inventory', 'Collected' if system and inventory_observed_at else 'Not Collected', 'Committed current-state evidence'),
-                        ('activity', metrics_source.provider_label, metrics_source.label, metrics_source.detail)
-                    ],
-                    'Observability Integrations',
-                    url_for('integrations.observability'),
-                    'settings-2'
-                ) }}
-            </div>
-        </section>
-
-        {% if system %}
-            {% include "analytics/object_storage/partials/_controls.html" %}
-        {% endif %}
+        {% include "analytics/object_storage/partials/_hero.html" %}
 
         {% if dependency_blocker %}
             {% include "analytics/object_storage/partials/_dependency_blocker.html" %}
         {% else %}
+            {% if system %}
+                {% include "analytics/object_storage/partials/_controls.html" %}
+            {% endif %}
             {% if page_key == 'overview' %}
-                {% include "analytics/object_storage/partials/_summary.html" %}
                 {% include "analytics/object_storage/partials/_overview_analysis.html" %}
+                {% include "analytics/object_storage/partials/_summary.html" %}
                 {% include "analytics/object_storage/partials/_trend.html" %}
-                {% include "analytics/object_storage/partials/_bucket_table.html" %}
                 {% include "analytics/object_storage/partials/_overview_workspaces.html" %}
+                {% include "analytics/object_storage/partials/_bucket_table.html" %}
                 {% include "analytics/object_storage/partials/_reconciliation.html" %}
                 {% include "analytics/object_storage/partials/_metrics_readiness.html" %}
             {% else %}
@@ -66,8 +34,11 @@
                     {% include "analytics/object_storage/partials/_performance_analysis.html" %}
                     {% include "analytics/object_storage/partials/_trend.html" %}
                 {% elif page_key == 'forecast' %}
-                    {% include "analytics/object_storage/partials/_forecast_analysis.html" %}
-                    {% include "analytics/object_storage/partials/_trend.html" %}
+                    {% include "analytics/object_storage/partials/_forecast_worker_status.html" %}
+                    {% if forecast_materialization.usable %}
+                        {% include "analytics/object_storage/partials/_forecast_analysis.html" %}
+                        {% include "analytics/object_storage/partials/_trend.html" %}
+                    {% endif %}
                 {% elif page_key == 'top_consumers' %}
                     {% include "analytics/object_storage/partials/_top_consumers_analysis.html" %}
                     {% include "analytics/object_storage/partials/_bucket_table.html" %}

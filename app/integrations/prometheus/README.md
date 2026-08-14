@@ -30,7 +30,7 @@ and runtime translation.
 | `runtime.state` | `inline` | Translate provider evidence into shared runtime state. |
 | `binding.create` | `inline` | Create a provider-neutral managed-scope binding. |
 | `binding.selector.update` | `inline` | Update the scope selector and invalidate prior binding evidence. |
-| `binding.validate` | `integration-validation` | Validate the asset-scoped consumer profile selected by the binding (`Kubernetes Metrics v1`, `MinIO Metrics 2024 v1`, or future profiles). |
+| `binding.validate` | `integration-validation` | Validate the asset-scoped consumer profile selected by the binding (`Kubernetes Metrics v1`, provider-neutral `Object Storage Metrics v1`, or future profiles). Object Storage then selects a provider-qualified validator such as MinIO Metrics v2. |
 
 ## Persistence and binding
 
@@ -50,6 +50,11 @@ Prometheus `/version` identity. Provider Full Validation establishes endpoint
 compatibility and the `prometheus-core-v1` API contract only. Exporter/domain
 metrics, labels, and consumer PromQL contracts are validated through each
 `IntegrationBinding` and stored as binding evidence.
+
+Full Validation refreshes enabled consumer bindings after provider-core validation.
+This keeps provider readiness consumer-neutral while rebuilding binding-owned evidence in
+the same operator workflow. The binding-level Validate action remains the targeted path
+when only one consumer needs to be rechecked.
 
 ## Source-owned consumer binding UX
 

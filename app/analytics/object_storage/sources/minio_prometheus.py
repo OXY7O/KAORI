@@ -12,6 +12,7 @@ from app.analytics.shared.metrics import (
     MetricsSourceFailureKind,
     MetricsSourceIdentity,
 )
+from app.integrations.prometheus.binding_profiles import get_binding_validation_profile
 from app.integrations.prometheus.exceptions import (
     PrometheusAuthenticationError,
     PrometheusConnectionError,
@@ -30,6 +31,7 @@ _TIME_WINDOWS: dict[str, tuple[timedelta, str]] = {
     '7d': (timedelta(days=7), '30m'),
     '30d': (timedelta(days=30), '2h'),
     '60d': (timedelta(days=60), '4h'),
+    '90d': (timedelta(days=90), '6h'),
 }
 
 
@@ -100,15 +102,67 @@ def _readiness_state(value: object) -> MetricReadinessState:
         return MetricReadinessState.NOT_VALIDATED
 
 
-def _readiness_from_evidence(evidence: dict[str, Any] | None) -> MetricsReadinessSnapshot:
-    payload = (evidence or {}).get('metrics_readiness') if isinstance(evidence, dict) else None
-    if not isinstance(payload, dict):
+def _readiness_from_evidence(
+    evidence: dict[str, Any] | None,
+    *,
+    binding_profile: str | None,
+    binding_status: str | None,
+) -> MetricsReadinessSnapshot:
+    expected = get_binding_validation_profile('object_storage_system')
+    expected_profile = expected.profile_key if expected is not None else 'object-storage-metrics-v1'
+    observed_profile = str(binding_profile or '').strip()
+    normalized_status = str(binding_status or '').strip().lower()
+    if observed_profile != expected_profile:
+        detail = (
+            f'Consumer binding validation profile is stale: observed {observed_profile or "not recorded"}; '
+            f'expected {expected_profile}. Restart the integration-validation worker after deployment and rerun '
+            'Prometheus Full Validation or Validate on this consumer binding.'
+        )
         return MetricsReadinessSnapshot(
-            profile='not-validated',
-            profile_label='Metrics Contract Not Validated',
+            profile=observed_profile or 'not-validated',
+            profile_label='Consumer Validation Stale',
             state=MetricReadinessState.NOT_VALIDATED,
             checked_at=None,
-            items=(),
+            items=(
+                MetricReadinessItem(
+                    key='consumer.validation_profile',
+                    label='Consumer Validation Profile',
+                    domain='Consumer Binding',
+                    tier='required',
+                    state=MetricReadinessState.NOT_VALIDATED,
+                    detail=detail,
+                ),
+            ),
+            detail=detail,
+        )
+
+    payload = (evidence or {}).get('metrics_readiness') if isinstance(evidence, dict) else None
+    if not isinstance(payload, dict):
+        detail = (
+            'The Object Storage consumer binding has not recorded metric-contract evidence. '
+            'Run Prometheus Full Validation or Validate on this consumer binding.'
+        )
+        if normalized_status == 'ready':
+            detail = (
+                'The consumer binding reports Ready but metric-contract evidence is missing. '
+                'Rerun validation to rebuild canonical Object Storage metric evidence.'
+            )
+        return MetricsReadinessSnapshot(
+            profile=expected_profile,
+            profile_label='Consumer Binding Validation',
+            state=MetricReadinessState.NOT_VALIDATED,
+            checked_at=None,
+            items=(
+                MetricReadinessItem(
+                    key='consumer.binding_validation',
+                    label='Consumer Binding Validation',
+                    domain='Consumer Binding',
+                    tier='required',
+                    state=MetricReadinessState.NOT_VALIDATED,
+                    detail=detail,
+                ),
+            ),
+            detail=detail,
         )
 
     items: list[MetricReadinessItem] = []
@@ -131,6 +185,7 @@ def _readiness_from_evidence(evidence: dict[str, Any] | None) -> MetricsReadines
         state=_readiness_state(payload.get('status')),
         checked_at=str(payload.get('checked_at')) if payload.get('checked_at') else None,
         items=tuple(items),
+        detail=str(payload.get('detail') or payload.get('message') or '').strip() or None,
     )
 
 
@@ -149,8 +204,9 @@ def _translate_error(exc: PrometheusError) -> MetricsSourceError:
 class MinioPrometheusMetricsSource:
     """Translate KAORI MinIO metric semantics to Prometheus evidence."""
 
-    def __init__(self, consumer: PrometheusConsumer) -> None:
+    def __init__(self, consumer: PrometheusConsumer, *, retry_count: int | None) -> None:
         self._consumer = consumer
+        self._retry_count = retry_count
 
     @staticmethod
     def supports(system: ObjectStorageSystem) -> bool:
@@ -158,7 +214,12 @@ class MinioPrometheusMetricsSource:
         return system.minio_connection is not None
 
     @classmethod
-    def for_system(cls, system: ObjectStorageSystem) -> MinioPrometheusMetricsSource:
+    def for_system(
+        cls,
+        system: ObjectStorageSystem,
+        *,
+        execution_mode: str = 'interactive',
+    ) -> MinioPrometheusMetricsSource:
         if not cls.supports(system):
             raise MetricsSourceError(
                 'Prometheus is bound, but no qualified Prometheus metric profile is registered for this Object Storage provider.',
@@ -173,30 +234,30 @@ class MinioPrometheusMetricsSource:
             )
         except PrometheusError as exc:
             raise _translate_error(exc) from exc
-        return cls(consumer)
+        return cls(consumer, retry_count=0 if execution_mode == 'interactive' else None)
 
     @property
     def identity(self) -> MetricsSourceIdentity:
-        profile = str(self._consumer.binding.validation_profile or '').strip()
-        detail_parts = [self._consumer.config.name, 'MinIO metrics v2']
-        if profile:
-            detail_parts.append(profile)
         return MetricsSourceIdentity(
             provider='prometheus',
             provider_label='Prometheus',
             instance_name=self._consumer.config.name,
-            detail=' · '.join(detail_parts),
+            detail=f'{self._consumer.config.name} · MinIO Metrics v2',
         )
 
     @property
     def readiness(self) -> MetricsReadinessSnapshot:
-        return _readiness_from_evidence(self._consumer.binding.validation_evidence)
+        return _readiness_from_evidence(
+            self._consumer.binding.validation_evidence,
+            binding_profile=self._consumer.binding.validation_profile,
+            binding_status=self._consumer.binding.validation_status,
+        )
 
     def scalar(self, metric_key: str) -> float | None:
         try:
             payload = self._consumer.query(
                 get_object_storage_query_expression(metric_key),
-                retry_count=0,
+                retry_count=self._retry_count,
             )
         except PrometheusError as exc:
             raise _translate_error(exc) from exc
@@ -206,7 +267,7 @@ class MinioPrometheusMetricsSource:
         try:
             payload = self._consumer.query(
                 get_object_storage_query_expression(metric_key),
-                retry_count=0,
+                retry_count=self._retry_count,
             )
         except PrometheusError as exc:
             raise _translate_error(exc) from exc
@@ -222,7 +283,7 @@ class MinioPrometheusMetricsSource:
                 start.isoformat(),
                 end.isoformat(),
                 step,
-                retry_count=0,
+                retry_count=self._retry_count,
             )
         except PrometheusError as exc:
             raise _translate_error(exc) from exc

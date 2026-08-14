@@ -51,6 +51,7 @@ class MetricsReadinessSnapshot:
     state: MetricReadinessState
     checked_at: str | None
     items: tuple[MetricReadinessItem, ...]
+    detail: str | None = None
 
     @property
     def total_count(self) -> int:

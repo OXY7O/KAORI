@@ -126,6 +126,15 @@ records the last proven metric contract. Runtime query failures describe current
 reachability. A network outage must not erase the last validated contract, and
 a successful historic validation must not hide a current transport failure.
 
+The canonical Object Storage consumer profile is `object-storage-metrics-v1`.
+A binding that still carries a retired provider-specific consumer profile is
+reported as **Consumer Validation Stale** and is not treated as eligible. Upgrade
+migrations reset that binding to the canonical profile and force revalidation;
+no runtime compatibility alias is retained. Provider Full Validation refreshes
+enabled consumer bindings after provider-core validation, so the
+`integration-validation` worker must run the same deployed code version as the
+web application.
+
 Readiness tiers are explicit:
 
 - **required** — minimum canonical metrics for usable Object Storage Analytics;
@@ -146,6 +155,33 @@ separate retry policy.
 
 This policy prevents one unreachable metrics endpoint from multiplying a single
 page request into dozens of repeated network attempts.
+
+## Object Storage forecast materialization
+
+Long-range Object Storage forecast history is worker-owned rather than
+interactive-request owned:
+
+```text
+JobPolicy: object_storage.forecast.materialize
+        ↓
+forecasting queue
+        ↓
+provider-neutral MetricsSource (background mode)
+        ↓
+7d / 30d / 90d history
+        ↓
+ObjectStorageForecastSnapshot
+        ↓
+Forecast UI + Overview 30d posture
+```
+
+The worker and Kubernetes Forecast share the forecasting workload class and
+queue, but not a persistence model or asset-domain service. Object Storage uses
+its own artifact because Kubernetes `AnalyticsSnapshot` is cluster-scoped. This
+is direct ownership, not a wrapper around the Kubernetes model. Snapshot status
+distinguishes current, stale, expired, pending, and failed refresh attempts, and
+the last usable payload remains readable within its configured stale-grace
+window.
 
 ## Integration binding boundary
 

@@ -3,6 +3,7 @@ from app.jobs.definitions.base import JobDefinition, RegisteredJobDispatchResult
 from app.jobs.definitions.forecast_refresh import FORECAST_REFRESH_DEFINITION
 from app.jobs.definitions.inventory_sync import INVENTORY_SYNC_DEFINITION
 from app.jobs.definitions.object_storage_inventory_sync import OBJECT_STORAGE_INVENTORY_SYNC_DEFINITION
+from app.jobs.definitions.object_storage_forecast_refresh import OBJECT_STORAGE_FORECAST_REFRESH_DEFINITION
 from app.jobs.definitions.report_schedule import REPORT_SCHEDULE_DEFINITION
 from app.jobs.definitions.tls_certificate_sync import TLS_CERTIFICATE_SYNC_DEFINITION
 
@@ -11,6 +12,7 @@ __all__ = [
     'FORECAST_REFRESH_DEFINITION',
     'INVENTORY_SYNC_DEFINITION',
     'OBJECT_STORAGE_INVENTORY_SYNC_DEFINITION',
+    'OBJECT_STORAGE_FORECAST_REFRESH_DEFINITION',
     'REPORT_SCHEDULE_DEFINITION',
     'TLS_CERTIFICATE_SYNC_DEFINITION',
     'JobDefinition',

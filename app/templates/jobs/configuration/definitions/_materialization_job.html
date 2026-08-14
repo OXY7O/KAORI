@@ -4,10 +4,21 @@
 {% set definition = selected_job.definition %}
 {% set policy = selected_job.policy %}
 {% set can_configure = current_user.has_permission(definition.configure_permission) %}
+{% set eligible_target_count = selected_job.eligible_target_count|default(0) %}
+{% set target_metric_label = selected_job.materialization_target_label|default('Eligible Clusters') %}
+{% set target_metric_helper = selected_job.materialization_target_helper|default('Source-ready clusters') %}
+{% set dataset_metric_label = selected_job.materialization_dataset_label|default('Dataset Families') %}
+{% set dataset_metric_helper = selected_job.materialization_dataset_helper|default('Reusable snapshot groups') %}
+{% set snapshot_health = selected_job.snapshot_health|default({
+    'current': selected_job.current_snapshot_count|default(0),
+    'stale': 0,
+    'failed': selected_job.attention_snapshot_count|default(0)
+}) %}
+{% set snapshot_metric_helper = selected_job.materialization_snapshot_helper|default(snapshot_health.stale ~ ' stale · ' ~ snapshot_health.failed ~ ' failed') %}
 {% set overview_metrics = [
-    ('server-cog', 'Eligible Clusters', selected_job.eligible_cluster_count, 'Source-ready clusters'),
-    ('layers-3', 'Dataset Families', selected_job.dataset_count, 'Reusable snapshot groups'),
-    ('database', 'Current Snapshots', selected_job.snapshot_health.current, selected_job.snapshot_health.stale ~ ' stale · ' ~ selected_job.snapshot_health.failed ~ ' failed'),
+    ('server-cog', target_metric_label, eligible_target_count, target_metric_helper),
+    ('layers-3', dataset_metric_label, selected_job.dataset_count, dataset_metric_helper),
+    ('database', 'Current Snapshots', snapshot_health.current, snapshot_metric_helper),
     ('timer', 'Automatic Policy', policy.interval_minutes ~ ' Minutes', 'Saved refresh cadence')
 ] %}
 {% set overview_notice = "The last successful snapshot remains available while the worker prepares a newer committed result." %}

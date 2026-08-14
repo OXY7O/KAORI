@@ -22,11 +22,14 @@ All notable KAORI changes are recorded here. KAORI uses Semantic Versioning for 
 ## [Unreleased]
 
 ### Fixed
+- Clarified Object Storage Analytics dependency gating so retired consumer-validation evidence is reported as `Consumer Validation Stale`, blocked pages hide analysis controls, and the Hero no longer exposes verbose provider/profile internals as primary posture text.
 - Aligned Prometheus Integration contract assertions with canonical djLint double-quote Jinja tags and Ruff-formatted the consumer-profile verifier so quality gates no longer fail on formatting-only drift.
 - Normalized the MinIO provider detail template to the canonical djLint format so the global template-format gate no longer stops on `app/templates/minio/instance_detail.html`.
 - Repaired Integration domain route ownership so Flask application boot and `flask db upgrade` import `build_integration_domain_page` directly from `domain_service` instead of a removed `service.py` re-export.
 
 ### Changed
+- Object Storage Forecast now uses a persistent forecasting-worker materialization path on the dedicated `forecasting` queue with 7d/30d/90d history windows, stale-grace handling, and provider-neutral metrics-source execution instead of browser-request forecast calculation.
+- Prometheus Full Validation documentation now reflects the current worker behavior: provider-core validation refreshes enabled consumer bindings, while targeted binding validation remains available for one-consumer rechecks.
 - Centralized Prometheus/Alertmanager consumer binding mutation in Observability, introduced the canonical consumer-asset registry (`kubernetes_cluster`, `object_storage_system`, future extensible assets), made Kubernetes/MinIO `Inventory & Lifecycle` binding evidence read-only, and standardized capability/readiness/Operational Context presentation across provider details.
 - Domain Integration Bindings now represent only consumer-source relationships; native asset-owner attachments are excluded from binding counts and UI, domain tabs use HTMX replacement with persistent provider workspace actions, and legacy MinIO self-bindings are removed by migration.
 - Aligned MinIO provider details with the Kubernetes asset-owner lifecycle: `object_storage_system` configuration is editable without recreating consumer bindings, runtime health refresh is operation-scoped, and `Inventory & Lifecycle` shows bound observability sources read-only plus guarded deletion while binding mutation stays in Prometheus/Alertmanager.

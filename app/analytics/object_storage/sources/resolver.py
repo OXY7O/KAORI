@@ -10,7 +10,7 @@ from app.analytics.shared.metrics import MetricsSource, MetricsSourceError, Metr
 from app.models.integration import IntegrationBinding
 from app.models.object_storage import ObjectStorageSystem
 
-SourceFactory = Callable[[ObjectStorageSystem], MetricsSource]
+SourceFactory = Callable[..., MetricsSource]
 SourceSupport = Callable[[ObjectStorageSystem], bool]
 
 
@@ -38,7 +38,11 @@ def _adapters_for(provider_type: str) -> tuple[SourceAdapterRegistration, ...]:
     return tuple(adapter for adapter in _SOURCE_ADAPTERS if adapter.metrics_provider == provider_type)
 
 
-def resolve_object_storage_metrics_source(system: ObjectStorageSystem) -> MetricsSource:
+def resolve_object_storage_metrics_source(
+    system: ObjectStorageSystem,
+    *,
+    execution_mode: str = 'interactive',
+) -> MetricsSource:
     """Resolve the highest-priority qualified metrics adapter for an Object Storage system."""
     bindings = (
         IntegrationBinding.query.options(joinedload(IntegrationBinding.instance))
@@ -76,7 +80,7 @@ def resolve_object_storage_metrics_source(system: ObjectStorageSystem) -> Metric
 
         for adapter in qualified:
             try:
-                return adapter.factory(system)
+                return adapter.factory(system, execution_mode=execution_mode)
             except MetricsSourceError as exc:
                 diagnostics.append(exc)
 

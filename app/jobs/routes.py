@@ -258,7 +258,7 @@ def update_policy(job_key: str) -> ResponseReturnValue:
                     'stale_grace_minutes': int(form.stale_grace_minutes.data or 1440),
                 }
             )
-        elif job_key == 'analytics.forecast.materialize':
+        elif job_key in {'analytics.forecast.materialize', 'object_storage.forecast.materialize'}:
             configuration.update(
                 {
                     'history_windows': list(form.forecast_history_windows.data or ['7d', '30d', '90d']),

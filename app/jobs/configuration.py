@@ -142,6 +142,15 @@ def build_job_configuration_context(*, selected_job_key: str | None = None) -> d
                 f'{selected_context.get("eligible_cluster_count", 0)} clusters'
             ),
         },
+        'object_storage.forecast.materialize': {
+            'manual_action_label': 'Refresh Object Storage Forecast',
+            'manual_action_icon': 'chart-spline',
+            'execution_scope_label': 'Eligible Object Storage Forecasts',
+            'execution_scope_detail': (
+                f'{selected_context.get("dataset_count", 0)} history windows across '
+                f'{selected_context.get("eligible_system_count", 0)} systems'
+            ),
+        },
     }
     selected_context.update(
         execution_presentation.get(
@@ -154,9 +163,8 @@ def build_job_configuration_context(*, selected_job_key: str | None = None) -> d
             },
         )
     )
-    eligible_target_count = selected_context.get(
-        'eligible_target_count',
-        selected_context.get('eligible_cluster_count', 1),
+    eligible_target_count = selected_context.setdefault(
+        'eligible_target_count', selected_context.get('eligible_cluster_count', 1)
     )
     selected_context['execution_disabled'] = not bool(eligible_target_count)
     enabled_count = sum(1 for policy in policies if policy.enabled)

@@ -15,6 +15,9 @@ def main() -> int:
     analysis = read('app/analytics/object_storage/analysis.py')
     service = read('app/analytics/object_storage/service.py')
     runtime = read('app/analytics/object_storage/runtime.py')
+    materialization = read('app/analytics/object_storage/materialization.py')
+    forecast_task = read('app/analytics/object_storage/tasks.py')
+    forecast_job_adapter = read('app/analytics/object_storage/job_adapter.py')
     bucket_table_service = read('app/analytics/object_storage/bucket_table.py')
     presentation = read('app/analytics/object_storage/presentation.py')
     adapter = read('app/analytics/object_storage/sources/minio_prometheus.py')
@@ -33,6 +36,9 @@ def main() -> int:
     controls = read('app/templates/analytics/object_storage/partials/_controls.html')
     bucket_table_template = read('app/templates/analytics/object_storage/partials/_bucket_table.html')
     dependency_blocker = read('app/templates/analytics/object_storage/partials/_dependency_blocker.html')
+    hero = read('app/templates/analytics/object_storage/partials/_hero.html')
+    forecast_worker_status = read('app/templates/analytics/object_storage/partials/_forecast_worker_status.html')
+    materialization_template = read('app/templates/jobs/configuration/definitions/_materialization_job.html')
     overview_workspaces = read('app/templates/analytics/object_storage/partials/_overview_workspaces.html')
     record_pagination = read('app/templates/analytics/components/_record_pagination.html')
     overview_analysis = read('app/templates/analytics/object_storage/partials/_overview_analysis.html')
@@ -166,7 +172,8 @@ def main() -> int:
 
     for label in (
         'Not Configured',
-        'Validation Required',
+        'Consumer Validation Required',
+        'Consumer Validation Stale',
         'Capability Incomplete',
         'Checking Runtime',
         'Operational',
@@ -188,11 +195,34 @@ def main() -> int:
     assert 'analytics/components/_record_pagination.html' in bucket_table_template
     assert 'object-storage-bucket-table-loading-indicator' in bucket_table_template
     assert 'components/analytics/_table_label_primitives.html' not in bucket_table_template
-    assert 'Object Storage Analytics Readiness' in dependency_blocker
-    assert 'Alertmanager is not a blocking dependency' in dependency_blocker
+    assert 'Object Storage Analytics Unavailable' in dependency_blocker
+    assert 'Analysis controls and metric-derived results stay hidden' in dependency_blocker
+    blocker_index = template.index('{% if dependency_blocker %}')
+    controls_index = template.index('partials/_controls.html')
+    else_index = template.index('{% else %}', blocker_index)
+    assert blocker_index < else_index < controls_index
+    assert 'metrics_source.detail' not in hero
+    assert "'Current Gate'" in hero
     assert 'Analysis Workspace Snapshot' in overview_workspaces
     assert "analytics.object_storage_capacity" in overview_workspaces
     assert 'Canonical Inventory-aligned full-page + HTMX pagination' in record_pagination
+
+    assert 'Consumer Validation Stale' in adapter
+    assert 'object-storage-metrics-v1' in adapter
+    assert 'minio-metrics-2024-v1' not in adapter
+    assert 'execution_mode' in resolver
+    assert "execution_mode='background'" in materialization
+    assert 'ObjectStorageForecastSnapshot' in materialization
+    assert 'materialize_object_storage_forecasts' in forecast_task
+    assert 'object_storage.forecast.materialize' in forecast_job_adapter
+    assert 'FORECASTING_CELERY_QUEUE' in forecast_job_adapter
+    assert 'Forecast Worker Materialization' in forecast_worker_status
+    assert 'forecast_materialization.usable' in template
+    assert 'eligible_target_count' in materialization_template
+    assert 'selected_job.eligible_cluster_count' not in materialization_template
+    assert (ROOT / 'app/models/object_storage_analytics.py').exists()
+    assert (ROOT / 'migrations/versions/20260814_object_storage_forecast_snapshots.py').exists()
+    assert (ROOT / 'migrations/versions/20260814_object_storage_metrics_profile.py').exists()
 
     assert not (ROOT / 'app/analytics/object_storage/parsing.py').exists()
     assert not (ROOT / 'app/analytics/object_storage/metrics.py').exists()

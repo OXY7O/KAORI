@@ -27,6 +27,9 @@ app/analytics/object_storage/
 ├── analysis.py
 ├── presentation.py
 ├── forecasting.py
+├── materialization.py
+├── job_adapter.py
+├── tasks.py
 └── sources/
     ├── resolver.py
     └── minio_prometheus.py
@@ -133,3 +136,30 @@ Object Storage Analytics follows the same operational interaction contract as Ku
 - bucket records use the shared Analytics record-pagination owner at `templates/analytics/components/_record_pagination.html`, with search, 5-row default pagination, 5/10/25/50 page sizes, HTMX partial refresh, and a header loading indicator.
 
 The status words describe different evidence layers intentionally: `Ready` is persisted metric-contract validation, `Operational` is successful current runtime query execution, `Degraded` is partial current query success, and `Disconnected` is current transport failure. These terms must not be used interchangeably.
+
+When a consumer binding still carries a retired validation profile, Analytics
+reports `Consumer Validation Stale` instead of the ambiguous `Validation
+Required`. The canonical consumer profile is `object-storage-metrics-v1`; the
+MinIO-specific `minio-v2` contract is selected only by the provider-qualified
+validator. Upgraded deployments reset the retired profile to consumer
+validation required and must rerun validation with the current
+`integration-validation` worker.
+
+## Forecast materialization
+
+Object Storage Forecast follows the Kubernetes Analytics worker pattern instead
+of calculating long-range projections inside the interactive request. The
+registered job `object_storage.forecast.materialize` runs on the dedicated
+`forecasting` queue and materializes 7d, 30d, and 90d history windows into
+`ObjectStorageForecastSnapshot` records.
+
+The Forecast UI reads committed worker output and reports `Current`, `Stale`,
+`Expired`, `Refreshing`, or worker-failure states from that artifact. The last
+usable payload remains readable through the configured stale-grace period when
+a refresh fails. Overview may consume the committed 30d forecast posture, but
+it never executes a 30d range query in the browser request.
+
+The worker resolves the same provider-neutral `MetricsSource` contract with a
+background retry policy. A future non-Prometheus metrics adapter can therefore
+materialize the same forecast artifact without changing Object Storage
+Analytics domain code.

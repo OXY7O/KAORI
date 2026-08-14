@@ -5,9 +5,13 @@
                 <i data-lucide="{{ page.icon }}" class="h-5 w-5"></i>
             </span>
             <div>
-                <h2 class="text-lg font-semibold text-content-primary">{{ page.title }} Snapshot</h2>
+                <h2 class="text-lg font-semibold text-content-primary">{{ 'Operational Snapshot' if page_key == 'overview' else page.title ~ ' Snapshot' }}</h2>
                 <p class="mt-1 text-sm leading-6 text-content-muted">
-                    Operational metrics are queried from the active metrics source bound to this object-storage asset.
+                    {% if page_key == 'overview' %}
+                        Current capacity, demand, and request-path evidence for the selected Object Storage system.
+                    {% else %}
+                        Operational metrics are queried from the active metrics source bound to this object-storage asset.
+                    {% endif %}
                 </p>
             </div>
         </div>

@@ -108,7 +108,8 @@ def metrics_readiness_view(snapshot: MetricsReadinessSnapshot) -> dict[str, Any]
     required_contract_ready = required_total_count > 0 and required_ready_count == required_total_count
 
     if snapshot.state == MetricReadinessState.NOT_VALIDATED:
-        label, tone = 'Validation Required', 'info'
+        label = 'Consumer Validation Stale' if snapshot.profile_label == 'Consumer Validation Stale' else 'Consumer Validation Required'
+        tone = 'warning'
     elif required_contract_ready:
         if counts[MetricReadinessState.READY.value] == snapshot.total_count:
             label, tone = 'Ready', 'normal'
@@ -169,6 +170,7 @@ def metrics_readiness_view(snapshot: MetricsReadinessSnapshot) -> dict[str, Any]
         'required_total_count': required_total_count,
         'required_contract_ready': required_contract_ready,
         'domains': domains,
+        'detail': snapshot.detail,
     }
 
 
@@ -177,8 +179,8 @@ def waiting_metrics_readiness() -> dict[str, Any]:
         'profile': 'not-validated',
         'profile_label': 'Operational Metrics Contract',
         'status': 'not_validated',
-        'label': 'Validation Required',
-        'tone': 'info',
+        'label': 'Consumer Validation Required',
+        'tone': 'warning',
         'checked_at': None,
         'total_count': 0,
         'ready_count': 0,
@@ -191,6 +193,7 @@ def waiting_metrics_readiness() -> dict[str, Any]:
         'required_total_count': 0,
         'required_contract_ready': False,
         'domains': [],
+        'detail': 'Validate the Object Storage consumer binding before operational analytics is eligible.',
     }
 
 
@@ -245,7 +248,7 @@ def source_setup(
         'provider': identity.provider,
         'provider_label': identity.provider_label,
         'instance_name': identity.instance_name,
-        'runtime_state': 'validation_required',
+        'runtime_state': 'consumer_validation_required',
         'label': readiness['label'],
         'tone': readiness['tone'],
         'detail': identity.detail,
@@ -256,8 +259,11 @@ def source_setup(
             status=source.readiness.state,
             status_label=readiness['label'],
             detail=(
-                f"{readiness['required_ready_count']} of {readiness['required_total_count']} required metrics are ready. "
-                f"Last validation status: {readiness['label']}."
+                str(readiness.get('detail') or '').strip()
+                or (
+                    f"{readiness['required_ready_count']} of {readiness['required_total_count']} required metrics are ready. "
+                    f"Consumer validation status: {readiness['label']}."
+                )
             ),
         )
         return source, source_view, readiness, blocker

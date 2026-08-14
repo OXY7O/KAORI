@@ -234,10 +234,13 @@ def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() ->
     dependencies = read('app/analytics/object_storage/dependencies.py')
     controls = read('app/templates/analytics/object_storage/partials/_controls.html')
     blocker = read('app/templates/analytics/object_storage/partials/_dependency_blocker.html')
+    index = read('app/templates/analytics/object_storage/index.html')
+    hero = read('app/templates/analytics/object_storage/partials/_hero.html')
 
     for status in (
         'Not Configured',
-        'Validation Required',
+        'Consumer Validation Required',
+        'Consumer Validation Stale',
         'Capability Incomplete',
         'Checking Runtime',
         'Operational',
@@ -251,8 +254,14 @@ def test_object_storage_analytics_uses_explicit_runtime_states_and_blocking() ->
     assert 'metrics_runtime_blocker' in runtime
     assert 'metrics_query_blocker' in runtime
     assert 'object-storage-analytics-refresh-indicator' in controls
-    assert 'Object Storage Analytics Readiness' in blocker
-    assert 'Alertmanager is not a blocking dependency' in blocker
+    assert 'Object Storage Analytics Unavailable' in blocker
+    assert 'Analysis controls and metric-derived results stay hidden' in blocker
+    blocker_index = index.index('{% if dependency_blocker %}')
+    else_index = index.index('{% else %}', blocker_index)
+    controls_index = index.index('partials/_controls.html')
+    assert blocker_index < else_index < controls_index
+    assert 'metrics_source.detail' not in hero
+    assert "'Current Gate'" in hero
 
 
 def test_object_storage_bucket_records_use_shared_kaori_table_contract() -> None:
@@ -281,10 +290,68 @@ def test_object_storage_overview_prioritizes_operational_decision_surface() -> N
     posture = index.index('partials/_overview_analysis.html')
     trend = index.index('partials/_trend.html')
     consumers = index.index('partials/_bucket_table.html')
+    workspaces_index = index.index('partials/_overview_workspaces.html')
     readiness = index.index('partials/_metrics_readiness.html')
-    assert summary < posture < trend < consumers < readiness
+    assert posture < summary < trend < workspaces_index < consumers < readiness
     assert 'Analysis Workspace Snapshot' in workspaces
     assert 'Capacity &amp; Usage' in workspaces
     assert 'Performance' in workspaces
     assert 'Top Consumers' in workspaces
     assert 'Forecast' in workspaces
+
+
+def test_object_storage_consumer_profile_staleness_is_explicit_and_direct_cutover() -> None:
+    adapter = read('app/analytics/object_storage/sources/minio_prometheus.py')
+    migration = read('migrations/versions/20260814_object_storage_metrics_profile.py')
+
+    assert 'Consumer Validation Stale' in adapter
+    assert 'expected_profile' in adapter
+    assert "'object-storage-metrics-v1'" in adapter
+    assert 'minio-metrics-2024-v1' not in adapter
+    assert "validation_profile = 'object-storage-metrics-v1'" in migration
+    assert "validation_profile = 'minio-metrics-2024-v1'" in migration
+
+
+def test_prometheus_full_validation_refreshes_enabled_consumer_bindings() -> None:
+    validation_tasks = read('app/integrations/validation/tasks.py')
+    integrations_readme = read('app/integrations/README.md')
+    prometheus_readme = read('app/integrations/prometheus/README.md')
+
+    assert "result_payload['binding_validation_summary'] = _refresh_provider_bindings(" in validation_tasks
+    assert "IntegrationBinding.query.filter_by(" in validation_tasks
+    assert "enabled=True" in validation_tasks
+    assert "'binding.validate'" in validation_tasks
+    assert 'Provider Full Validation does not implicitly validate consumer bindings.' not in integrations_readme
+    assert 'Provider Full Validation refreshes every enabled consumer binding' in integrations_readme
+    assert 'Full Validation refreshes enabled consumer bindings' in prometheus_readme
+
+
+def test_object_storage_forecast_is_worker_materialized_on_forecasting_queue() -> None:
+    service = read('app/analytics/object_storage/service.py')
+    materialization = read('app/analytics/object_storage/materialization.py')
+    task = read('app/analytics/object_storage/tasks.py')
+    adapter = read('app/analytics/object_storage/job_adapter.py')
+    definition = read('app/jobs/definitions/object_storage_forecast_refresh.py')
+    registry = read('app/jobs/registry.py')
+    config = read('app/config/default.py')
+    materialization_template = read('app/templates/jobs/configuration/definitions/_materialization_job.html')
+    index = read('app/templates/analytics/object_storage/index.html')
+    worker_status = read('app/templates/analytics/object_storage/partials/_forecast_worker_status.html')
+
+    assert 'linear_forecast' not in service
+    assert 'ObjectStorageForecastSnapshot' in materialization
+    assert "execution_mode='background'" in materialization
+    assert 'materialize_object_storage_forecasts' in task
+    assert 'dispatch_object_storage_forecast_materialization' in adapter
+    assert "JOB_KEY = 'object_storage.forecast.materialize'" in definition
+    assert "queue_name='forecasting'" in definition
+    assert 'OBJECT_STORAGE_FORECAST_REFRESH_DEFINITION' in registry
+    assert "'app.analytics.object_storage.tasks.materialize_object_storage_forecasts'" in config
+    assert 'FORECASTING_CELERY_QUEUE' in config
+    assert 'eligible_target_count' in materialization_template
+    assert 'materialization_target_label' in materialization_template
+    assert 'selected_job.eligible_cluster_count' not in materialization_template
+    assert 'Forecast Worker Materialization' in worker_status
+    assert 'forecast_materialization.usable' in index
+    assert (ROOT / 'app/models/object_storage_analytics.py').exists()
+    assert (ROOT / 'migrations/versions/20260814_object_storage_forecast_snapshots.py').exists()

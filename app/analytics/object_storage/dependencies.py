@@ -76,8 +76,9 @@ def metrics_validation_blocker(
     detail: str,
 ) -> ObjectStorageDependencyBlocker:
     if status == MetricReadinessState.NOT_VALIDATED:
-        badge = 'Validation Required'
-        title = 'Operational Metrics Contract Not Validated'
+        stale = 'stale' in detail.lower()
+        badge = 'Consumer Validation Stale' if stale else 'Consumer Validation Required'
+        title = 'Object Storage Metrics Binding Must Be Revalidated' if stale else 'Object Storage Metrics Binding Requires Validation'
         icon = 'list-checks'
     else:
         badge = status_label
@@ -90,12 +91,12 @@ def metrics_validation_blocker(
         'tone': 'warning',
         'title': title,
         'description': (
-            f'{system.name} has a bound metrics source, but the required Object Storage metric contract '
-            'is not ready. Run Full Validation and resolve required metric-family, label, or query gaps.'
+            f'{system.name} has a bound metrics source, but its Object Storage consumer binding is not eligible yet. '
+            'Run Prometheus Full Validation or Validate on the consumer binding, then resolve any required metric-family, label, or query gaps.'
         ),
         'diagnostic_detail': detail,
         'icon': icon,
-        'action_label': 'Review Observability Integrations',
+        'action_label': 'Review Metrics Binding',
         'action_endpoint': 'integrations.observability',
     }
 

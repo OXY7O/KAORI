@@ -1,78 +1,29 @@
 {% import "components/table_label.html" as table_label %}
-{% set steps = [
-    {
-        'label': 'Object Storage Inventory',
-        'icon': 'database',
-        'description': 'Managed system and committed inventory evidence'
-    },
-    {
-        'label': 'Operational Metrics',
-        'icon': 'activity',
-        'description': 'Bound provider, validated metric contract, and runtime connectivity'
-    },
-    {
-        'label': 'Object Storage Analytics',
-        'icon': 'chart-no-axes-combined',
-        'description': 'Capacity, performance, consumers, forecast, and metric-derived signals'
-    }
-] %}
-{% set blocked_step = dependency_blocker.stage|int %}
-<section class="overflow-hidden rounded-xl border border-brand-outline bg-kaori-soft shadow-sm"
-         data-object-storage-dependency-blocker>
-    <div class="flex flex-col gap-4 px-5 py-5 lg:flex-row lg:items-start lg:justify-between">
+<section class="overflow-hidden rounded-xl border border-brand-outline bg-kaori-soft shadow-sm" data-kaori-blocked-state>
+    <div class="flex flex-col gap-4 px-5 py-5 lg:flex-row lg:items-start lg:justify-between sm:px-6">
         <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary shadow-sm"
-                  aria-hidden="true">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary shadow-sm" aria-hidden="true">
                 <i data-lucide="{{ dependency_blocker.icon }}" class="h-5 w-5"></i>
             </span>
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
-                    <h2 class="text-base font-semibold text-content-primary">Object Storage Analytics Readiness</h2>
-                    {{ table_label.status_label(dependency_blocker.badge, dependency_blocker.tone, dependency_blocker.icon) }}
-                    {{ table_label.metadata_label('Step ' ~ blocked_step ~ ' of 3', 'list-ordered') }}
+                    <h2 class="text-base font-semibold text-content-primary">Object Storage Analytics Unavailable</h2>
+                    {{ table_label.status_label(dependency_blocker.badge, dependency_blocker.tone) }}
                 </div>
                 <p class="mt-1 text-sm font-semibold text-content-primary">{{ dependency_blocker.title }}</p>
                 <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">{{ dependency_blocker.description }}</p>
                 {% if dependency_blocker.diagnostic_detail %}
-                    <p class="mt-2 max-w-4xl break-words text-xs leading-5 text-content-muted">
-                        Diagnostic: {{ dependency_blocker.diagnostic_detail }}
-                    </p>
+                    <p class="mt-2 max-w-4xl text-xs leading-5 text-content-muted">{{ dependency_blocker.diagnostic_detail }}</p>
                 {% endif %}
             </div>
         </div>
         <a href="{{ url_for(dependency_blocker.action_endpoint) }}"
-           class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+           class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover">
             {{ dependency_blocker.action_label }}
             <i data-lucide="arrow-right" class="h-4 w-4"></i>
         </a>
     </div>
-    <div class="border-t border-brand-outline bg-surface-card/70 p-4">
-        <div class="grid gap-3 lg:grid-cols-3">
-            {% for step in steps %}
-                {% set step_number = loop.index %}
-                {% set is_complete = step_number < blocked_step %}
-                {% set is_current = step_number == blocked_step %}
-                {% set status_text = 'Ready' if is_complete else ('Blocked Here' if is_current else 'Pending') %}
-                {% set status_tone = 'normal' if is_complete else (dependency_blocker.tone if is_current else 'unknown') %}
-                <article class="rounded-lg border bg-surface-card p-4 shadow-sm {{ 'border-status-normal/30' if is_complete else ('border-status-warning/40 ring-1 ring-status-warning/10' if is_current and dependency_blocker.tone != 'critical' else ('border-status-critical/40 ring-1 ring-status-critical/10' if is_current else 'border-outline-default')) }}">
-                    <div class="flex items-start justify-between gap-3">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border {{ 'border-status-normal/30 bg-status-normal-soft text-status-normal' if is_complete else ('border-status-critical/30 bg-status-critical-soft text-status-critical' if is_current and dependency_blocker.tone == 'critical' else ('border-status-warning/30 bg-status-warning-soft text-status-warning' if is_current else 'border-outline-default bg-surface-subtle text-content-muted')) }}"
-                              aria-hidden="true">
-                            <i data-lucide="{{ step.icon }}" class="h-4 w-4"></i>
-                        </span>
-                        {{ table_label.status_label(status_text, status_tone) }}
-                    </div>
-                    <div class="mt-3 flex items-center gap-2">
-                        <span class="inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-kaori-soft px-1.5 text-xs font-bold text-kaori-primary">{{ step_number }}</span>
-                        <h3 class="text-sm font-semibold text-content-primary">{{ step.label }}</h3>
-                    </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ step.description }}</p>
-                </article>
-            {% endfor %}
-        </div>
-        <div class="mt-3 flex items-start gap-2 rounded-lg border border-outline-subtle bg-surface-card px-4 py-3 text-xs leading-5 text-content-muted">
-            <i data-lucide="bell-ring" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
-            <p><span class="font-semibold text-content-secondary">Alertmanager is not a blocking dependency.</span> Alert lifecycle correlation remains an optional extension after metric analytics is operational.</p>
-        </div>
+    <div class="border-t border-brand-outline bg-surface-card/70 px-5 py-3 text-xs leading-5 text-content-secondary sm:px-6">
+        Inventory is preserved while Analytics is blocked. Analysis controls and metric-derived results stay hidden until the current dependency gate is eligible.
     </div>
 </section>

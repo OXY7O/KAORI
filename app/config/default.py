@@ -427,6 +427,7 @@ class Config:
         'enable_utc': True,
         'imports': (
             'app.analytics.kubernetes.tasks',
+            'app.analytics.object_storage.tasks',
             'app.cluster.tasks',
             'app.inventory.object_storage.tasks',
             'app.governance.tls_certificates.tasks',
@@ -443,9 +444,8 @@ class Config:
             'app.analytics.kubernetes.tasks.materialize_analytics_snapshots': {
                 'queue': ANALYTICS_CELERY_QUEUE,
             },
-            'app.analytics.kubernetes.tasks.materialize_forecast_snapshots': {
-                'queue': FORECASTING_CELERY_QUEUE,
-            },
+            'app.analytics.kubernetes.tasks.materialize_forecast_snapshots': {'queue': FORECASTING_CELERY_QUEUE},
+            'app.analytics.object_storage.tasks.materialize_object_storage_forecasts': {'queue': FORECASTING_CELERY_QUEUE},
             'app.cluster.tasks.sync_all_clusters': {
                 'queue': 'inventory',
             },

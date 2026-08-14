@@ -15,7 +15,7 @@ from app.analytics.object_storage.analysis import (
 )
 from app.analytics.object_storage.bucket_table import build_bucket_table_view
 from app.analytics.object_storage.dependencies import system_required_blocker
-from app.analytics.object_storage.forecasting import linear_forecast
+from app.analytics.object_storage.materialization import forecast_snapshot_state, get_forecast_snapshot
 from app.analytics.object_storage.presentation import (
     build_bucket_analysis,
     build_comparison_view,
@@ -88,6 +88,12 @@ PAGES: dict[str, PageDefinition] = {
     ),
 }
 
+
+FORECAST_HISTORY_WINDOWS = (
+    {'value': '7d', 'label': 'Last 7 Days'},
+    {'value': '30d', 'label': 'Last 30 Days'},
+    {'value': '90d', 'label': 'Last 90 Days'},
+)
 
 def _systems() -> list[ObjectStorageSystem]:
     return list(
@@ -336,8 +342,12 @@ def _add_bucket_metrics(
     payload['bucket_analysis'] = build_bucket_analysis(rows, payload.get('usage_total'))
 
 
-def _add_forecast_metrics(payload: dict[str, Any]) -> None:
-    forecast = linear_forecast(payload.get('usage_trend', []), capacity_bytes=payload.get('capacity_total'))
+def _apply_forecast_result(
+    payload: dict[str, Any],
+    *,
+    points: list[dict[str, float]],
+    forecast: dict[str, float | None],
+) -> None:
     payload['forecast'] = forecast
     payload['forecast_display'] = {
         'growth_per_day': (
@@ -354,6 +364,60 @@ def _add_forecast_metrics(payload: dict[str, Any]) -> None:
     payload['forecast_posture'] = build_posture_view(
         forecast_posture(forecast['growth_per_day'], forecast['days_to_capacity'])
     )
+    payload['forecast_history'] = points
+    payload['forecast_history_summary'] = build_trend_view(points)
+
+
+def _apply_unavailable_forecast(payload: dict[str, Any], state: dict[str, Any]) -> None:
+    payload['forecast'] = {
+        'growth_per_day': None,
+        'projected_7d': None,
+        'projected_30d': None,
+        'days_to_capacity': None,
+    }
+    payload['forecast_display'] = {
+        'growth_per_day': 'N/A',
+        'projected_7d': 'N/A',
+        'projected_30d': 'N/A',
+        'days_to_capacity': 'N/A',
+    }
+    payload['forecast_posture'] = {
+        'status': state['label'],
+        'tone': state['tone'],
+        'headline': 'Forecast worker evidence is not current.',
+        'detail': 'Refresh the Object Storage forecast materialization before using projected capacity values.',
+    }
+    payload['forecast_history'] = []
+    payload['forecast_history_summary'] = build_trend_view([])
+
+
+def _attach_forecast_materialization(
+    context: dict[str, Any],
+    *,
+    system: ObjectStorageSystem,
+    history_window: str,
+) -> None:
+    snapshot = get_forecast_snapshot(system_id=system.id, history_window=history_window)
+    state = forecast_snapshot_state(snapshot)
+    state['history_window'] = history_window
+    state['method'] = 'Linear Baseline'
+    context['forecast_materialization'] = state
+    payload = snapshot.payload_json if snapshot is not None and isinstance(snapshot.payload_json, dict) else None
+    if state['usable'] and payload is not None:
+        points = [point for point in payload.get('points') or [] if isinstance(point, dict)]
+        forecast = payload.get('forecast') if isinstance(payload.get('forecast'), dict) else {}
+        _apply_forecast_result(
+            context['metrics'],
+            points=points,
+            forecast={
+                'growth_per_day': forecast.get('growth_per_day'),
+                'projected_7d': forecast.get('projected_7d'),
+                'projected_30d': forecast.get('projected_30d'),
+                'days_to_capacity': forecast.get('days_to_capacity'),
+            },
+        )
+        return
+    _apply_unavailable_forecast(context['metrics'], state)
 
 
 def _add_overview_posture(payload: dict[str, Any]) -> None:
@@ -385,7 +449,7 @@ def _build_metrics(
     time_range: str,
 ) -> dict[str, Any]:
     payload = _build_core_metrics(reader, system)
-    if page_key in {'overview', 'capacity', 'forecast'}:
+    if page_key in {'overview', 'capacity'}:
         _add_usage_trend(payload, reader, time_range)
     if page_key in {'overview', 'performance', 'alerts'}:
         _add_request_metrics(payload, reader)
@@ -393,8 +457,6 @@ def _build_metrics(
         _add_performance_metrics(payload, reader, time_range)
     if page_key in {'overview', 'capacity', 'top_consumers'}:
         _add_bucket_metrics(payload, system, reader, include_activity=page_key == 'top_consumers')
-    if page_key in {'overview', 'forecast'}:
-        _add_forecast_metrics(payload)
     if page_key == 'overview':
         _add_overview_posture(payload)
     return payload
@@ -406,6 +468,9 @@ def _base_context(page_key: str, query_args: Any) -> tuple[dict[str, Any], Objec
     system_id = str(query_args.get('system_id') or '').strip()
     system = _selected_system(systems, system_id)
     time_range = get_selected_time_range(query_args=query_args, default='24h')
+    history_window = str(query_args.get('history_window') or '30d').strip()
+    if history_window not in {item['value'] for item in FORECAST_HISTORY_WINDOWS}:
+        history_window = '30d'
     context: dict[str, Any] = {
         'page_key': page_key,
         'page': page,
@@ -413,6 +478,19 @@ def _base_context(page_key: str, query_args: Any) -> tuple[dict[str, Any], Objec
         'system': system,
         'selected_time_range': time_range,
         'allowed_time_ranges': get_allowed_time_ranges(),
+        'selected_forecast_history_window': history_window,
+        'forecast_history_windows': FORECAST_HISTORY_WINDOWS,
+        'forecast_materialization': {
+            'state': 'missing',
+            'label': 'Worker Data Required',
+            'tone': 'warning',
+            'usable': False,
+            'history_window': history_window,
+            'method': 'Linear Baseline',
+            'generated_at': None,
+            'last_attempt_at': None,
+            'last_error': None,
+        },
         'dependency_blocker': None,
         'metrics_source': waiting_metrics_source(),
         'metrics_readiness': waiting_metrics_readiness(),
@@ -454,6 +532,10 @@ def get_object_storage_analytics_context(page_key: str, query_args: Any) -> dict
     if runtime_blocker is not None:
         context['dependency_blocker'] = runtime_blocker
         return context
+
+    if page_key in {'overview', 'forecast'}:
+        history_window = '30d' if page_key == 'overview' else context['selected_forecast_history_window']
+        _attach_forecast_materialization(context, system=system, history_window=history_window)
 
     if page_key in {'overview', 'capacity', 'top_consumers'}:
         context['bucket_table'] = build_bucket_table_view(
