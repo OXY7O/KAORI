@@ -16,7 +16,7 @@ The current baseline contains **58 navigation links** across the authenticated a
 | Object Storage Inventory | LOCKED | Storage → Object Storage | `verify_object_storage_inventory_final_lock.py` |
 | Kubernetes Operations | LOCKED | Kubernetes → Operations | `verify_kubernetes_operations_final_lock.py` |
 | Kubernetes Governance | LOCKED | Kubernetes → Governance | `verify_governance_final_lock.py` |
-| Analytics | LOCKED | Insights & Reporting → K8s Analytics + Object Storage Analytics | `verify_analytics_final_lock.py` + `verify_object_storage_analytics_baseline.py` |
+| Analytics | LOCKED | Insights & Reporting → Kubernetes Analytics + Object Storage Analytics | `verify_analytics_final_lock.py` + `verify_object_storage_analytics.py` |
 | Intelligence | BASELINE LOCKED | Insights & Reporting → Intelligence | `verify_intelligence_baseline_lock.py` |
 | Reports | LOCKED | Insights & Reporting → Reports | Reports generation/job/storage/runtime verifiers + Reports contracts |
 | Integrations | LOCKED | Platform Extensions → Integrations | `verify_integrations_final_lock.py` |

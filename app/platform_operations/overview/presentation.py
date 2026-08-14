@@ -115,7 +115,7 @@ def build_platform_operations_overview_context(
         workspaces.append(
             {
                 'key': 'kubernetes',
-                'label': 'K8s Administration',
+                'label': 'Kubernetes Administration',
                 'icon': 'server-cog',
                 'description': 'Protected Kubernetes controls with explicit readiness and authorization boundaries.',
                 'status_label': status_label,
@@ -126,7 +126,7 @@ def build_platform_operations_overview_context(
                     ('shield', 'Global Reveal', 'Enabled' if global_enabled else 'Disabled'),
                 ),
                 'action_endpoint': 'platform_operations.kubernetes.index',
-                'action_label': 'Open K8s Administration',
+                'action_label': 'Open Kubernetes Administration',
                 'boundary_label': 'Protected control boundary',
             }
         )

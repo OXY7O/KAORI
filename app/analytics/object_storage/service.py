@@ -7,8 +7,21 @@ from typing import Any
 
 from sqlalchemy.orm import selectinload
 
+from app.analytics.object_storage.analysis import (
+    capacity_posture,
+    derive_headroom,
+    error_ratio,
+    forecast_posture,
+    metric_risk_signals,
+    performance_posture,
+)
 from app.analytics.object_storage.forecasting import linear_forecast
 from app.analytics.object_storage.presentation import (
+    build_bucket_analysis,
+    build_comparison_view,
+    build_posture_view,
+    build_signal_posture,
+    build_trend_view,
     format_bytes,
     format_number,
     format_percent,
@@ -189,148 +202,89 @@ class _EvidenceReader:
         return points
 
 
-def _bucket_rows(system: ObjectStorageSystem, reader: _EvidenceReader) -> list[dict[str, Any]]:
+def _bucket_rows(
+    system: ObjectStorageSystem,
+    reader: _EvidenceReader,
+    *,
+    include_activity: bool,
+) -> list[dict[str, Any]]:
     usage = reader.vector('object_storage.bucket.usage')
     objects = reader.vector('object_storage.bucket.objects')
     quota = reader.vector('object_storage.bucket.quota')
-    request_rate = reader.vector('object_storage.bucket.request_rate')
-    error_rate = reader.vector('object_storage.bucket.error_rate')
+    request_rate = reader.vector('object_storage.bucket.request_rate') if include_activity else {}
+    error_rate = reader.vector('object_storage.bucket.error_rate') if include_activity else {}
     inventory = {bucket.name: bucket for bucket in system.buckets or ()}
     names = set(inventory) | set(usage) | set(objects) | set(quota) | set(request_rate) | set(error_rate)
     rows: list[dict[str, Any]] = []
     for name in names:
         bucket = inventory.get(name)
         size = usage.get(name)
-        source = reader.source_label
+        usage_source = reader.source_label if size is not None else 'Unavailable'
         if size is None and bucket is not None and bucket.size_bytes is not None:
             size = float(bucket.size_bytes)
-            source = 'Committed Snapshot'
+            usage_source = 'Committed Snapshot'
+
         object_count = objects.get(name)
+        objects_source = reader.source_label if object_count is not None else 'Unavailable'
         if object_count is None and bucket is not None and bucket.object_count is not None:
             object_count = float(bucket.object_count)
+            objects_source = 'Committed Snapshot'
+
         quota_bytes = quota.get(name)
+        quota_source = reader.source_label if quota_bytes is not None else 'Unavailable'
         if quota_bytes is None and bucket is not None and bucket.quota_bytes is not None:
             quota_bytes = float(bucket.quota_bytes)
+            quota_source = 'Committed Snapshot'
+
+        bucket_request_rate = request_rate.get(name)
+        bucket_error_rate = error_rate.get(name)
+        bucket_error_ratio = error_ratio(bucket_error_rate, bucket_request_rate)
         quota_utilization = utilization_percent(size, quota_bytes)
+        quota_tone = utilization_tone(quota_utilization) if quota_bytes is not None else 'unknown'
         rows.append(
             {
                 'name': name,
                 'usage_bytes': size,
                 'usage_display': format_bytes(size),
+                'usage_source': usage_source,
                 'objects': object_count,
                 'objects_display': format_number(object_count),
+                'objects_source': objects_source,
                 'quota_bytes': quota_bytes,
                 'quota_display': format_bytes(quota_bytes),
+                'quota_source': quota_source,
                 'quota_utilization': quota_utilization,
                 'quota_utilization_display': format_percent(quota_utilization),
-                'request_rate': request_rate.get(name),
-                'request_rate_display': format_rate(request_rate.get(name)),
-                'error_rate': error_rate.get(name),
-                'error_rate_display': format_rate(error_rate.get(name)),
-                'source': source,
+                'quota_tone': quota_tone,
+                'request_rate': bucket_request_rate,
+                'request_rate_display': format_rate(bucket_request_rate),
+                'error_rate': bucket_error_rate,
+                'error_rate_display': format_rate(bucket_error_rate),
+                'error_ratio': bucket_error_ratio,
+                'error_ratio_display': format_percent(bucket_error_ratio),
+                'source': usage_source,
             }
         )
     rows.sort(key=lambda item: float(item['usage_bytes'] or 0), reverse=True)
     return rows
 
 
-def _signals(
-    *,
-    utilization: float | None,
-    error_ratio: float | None,
-    waiting: float | None,
-    offline_nodes: float | None,
-) -> list[dict[str, str]]:
-    if all(value is None for value in (utilization, error_ratio, waiting, offline_nodes)):
-        return [
-            {
-                'severity': 'unknown',
-                'title': 'Metric Evidence Unavailable',
-                'detail': 'Operational risk cannot be evaluated until metric evidence is available.',
-            }
-        ]
-
-    signals: list[dict[str, str]] = []
-    if utilization is not None and utilization >= 95:
-        signals.append(
-            {
-                'severity': 'critical',
-                'title': 'Capacity Critical',
-                'detail': f'Usable capacity is {utilization:.1f}% consumed.',
-            }
-        )
-    elif utilization is not None and utilization >= 85:
-        signals.append(
-            {
-                'severity': 'warning',
-                'title': 'Capacity Pressure',
-                'detail': f'Usable capacity is {utilization:.1f}% consumed.',
-            }
-        )
-    if error_ratio is not None and error_ratio >= 10:
-        signals.append(
-            {
-                'severity': 'critical',
-                'title': 'Request Error Pressure',
-                'detail': f'Observed request error ratio is {error_ratio:.1f}%.',
-            }
-        )
-    elif error_ratio is not None and error_ratio >= 5:
-        signals.append(
-            {
-                'severity': 'warning',
-                'title': 'Request Error Increase',
-                'detail': f'Observed request error ratio is {error_ratio:.1f}%.',
-            }
-        )
-    if waiting is not None and waiting > 0:
-        signals.append(
-            {
-                'severity': 'warning',
-                'title': 'Requests Waiting',
-                'detail': f'{waiting:,.0f} requests are currently waiting.',
-            }
-        )
-    if offline_nodes is not None and offline_nodes > 0:
-        signals.append(
-            {
-                'severity': 'critical',
-                'title': 'Offline Storage Nodes',
-                'detail': f'{offline_nodes:,.0f} storage nodes are offline.',
-            }
-        )
-    if not signals:
-        signals.append(
-            {
-                'severity': 'normal',
-                'title': 'No Metric-Derived Risk',
-                'detail': (
-                    'Current operational metric evidence does not cross the baseline capacity, '
-                    'error, queue, or node thresholds.'
-                ),
-            }
-        )
-    return signals
-
-
-def _build_metrics(
-    page_key: str,
-    reader: _EvidenceReader,
-    system: ObjectStorageSystem,
-    time_range: str,
-) -> dict[str, Any]:
+def _build_core_metrics(reader: _EvidenceReader, system: ObjectStorageSystem) -> dict[str, Any]:
     total = reader.scalar('object_storage.capacity.total_bytes')
-    free = reader.scalar('object_storage.capacity.free_bytes')
+    free_metric = reader.scalar('object_storage.capacity.free_bytes')
     used = reader.scalar('object_storage.usage.total_bytes')
     objects = reader.scalar('object_storage.usage.objects')
     buckets = reader.scalar('object_storage.usage.buckets')
     inventory = _inventory_totals(system)
+    free, free_source = derive_headroom(total, free_metric, used)
     utilization = utilization_percent(used, total)
-    payload: dict[str, Any] = {
+    headroom_percent = utilization_percent(free, total)
+    return {
         'capacity_total': total,
         'capacity_total_display': format_bytes(total),
         'capacity_free': free,
         'capacity_free_display': format_bytes(free),
+        'capacity_free_source': free_source,
         'usage_total': used,
         'usage_total_display': format_bytes(used),
         'object_count': objects,
@@ -340,78 +294,165 @@ def _build_metrics(
         'utilization': utilization,
         'utilization_display': format_percent(utilization),
         'utilization_tone': utilization_tone(utilization),
+        'headroom_percent': headroom_percent,
+        'headroom_percent_display': format_percent(headroom_percent),
         'inventory_size_display': format_bytes(inventory['size_bytes']),
         'inventory_object_count_display': format_number(inventory['object_count']),
         'inventory_bucket_count_display': format_number(inventory['bucket_count']),
+        'capacity_posture': build_posture_view(capacity_posture(utilization)),
+        'reconciliation': [
+            build_comparison_view('Used Capacity', used, inventory['size_bytes'], formatter=format_bytes),
+            build_comparison_view('Objects', objects, inventory['object_count'], formatter=format_number),
+            build_comparison_view('Buckets', buckets, inventory['bucket_count'], formatter=format_number),
+        ],
     }
-    if page_key in {'overview', 'capacity', 'forecast'}:
-        payload['usage_trend'] = reader.trend('object_storage.usage.total_bytes', time_range)
-    if page_key in {'overview', 'performance', 'alerts'}:
-        request_rate = reader.scalar('object_storage.requests.rate')
-        error_rate = reader.scalar('object_storage.requests.error_rate')
-        waiting = reader.scalar('object_storage.requests.waiting')
-        offline_nodes = reader.scalar('object_storage.health.offline_nodes')
-        error_ratio = (
-            (error_rate / request_rate * 100.0)
-            if request_rate and error_rate is not None
-            else 0.0 if request_rate else None
-        )
-        payload.update(
-            {
-                'request_rate': request_rate,
-                'request_rate_display': format_rate(request_rate),
-                'error_rate': error_rate,
-                'error_rate_display': format_rate(error_rate),
-                'error_ratio': error_ratio,
-                'error_ratio_display': format_percent(error_ratio),
-                'waiting': waiting,
-                'waiting_display': format_number(waiting),
-                'offline_nodes': offline_nodes,
-                'offline_nodes_display': format_number(offline_nodes),
-                'signals': _signals(
-                    utilization=utilization,
-                    error_ratio=error_ratio,
+
+
+def _add_usage_trend(payload: dict[str, Any], reader: _EvidenceReader, time_range: str) -> None:
+    usage_trend = reader.trend('object_storage.usage.total_bytes', time_range)
+    payload['usage_trend'] = usage_trend
+    payload['usage_trend_summary'] = build_trend_view(usage_trend)
+
+
+def _add_request_metrics(payload: dict[str, Any], reader: _EvidenceReader) -> None:
+    request_rate = reader.scalar('object_storage.requests.rate')
+    request_error_rate = reader.scalar('object_storage.requests.error_rate')
+    waiting = reader.scalar('object_storage.requests.waiting')
+    offline_nodes = reader.scalar('object_storage.health.offline_nodes')
+    request_error_ratio = error_ratio(request_error_rate, request_rate)
+    signals = metric_risk_signals(
+        utilization=payload.get('utilization'),
+        error_ratio=request_error_ratio,
+        waiting=waiting,
+        offline_nodes=offline_nodes,
+    )
+    payload.update(
+        {
+            'request_rate': request_rate,
+            'request_rate_display': format_rate(request_rate),
+            'error_rate': request_error_rate,
+            'error_rate_display': format_rate(request_error_rate),
+            'error_ratio': request_error_ratio,
+            'error_ratio_display': format_percent(request_error_ratio),
+            'success_ratio': 100.0 - request_error_ratio if request_error_ratio is not None else None,
+            'success_ratio_display': (
+                format_percent(100.0 - request_error_ratio) if request_error_ratio is not None else 'N/A'
+            ),
+            'waiting': waiting,
+            'waiting_display': format_number(waiting),
+            'offline_nodes': offline_nodes,
+            'offline_nodes_display': format_number(offline_nodes),
+            'performance_posture': build_posture_view(
+                performance_posture(
+                    error_percent=request_error_ratio,
                     waiting=waiting,
                     offline_nodes=offline_nodes,
-                ),
-            }
-        )
-    if page_key == 'performance':
-        payload.update(
-            {
-                'inflight': reader.scalar('object_storage.requests.inflight'),
-                'received_bps': reader.scalar('object_storage.traffic.received_bps'),
-                'sent_bps': reader.scalar('object_storage.traffic.sent_bps'),
-                'request_trend': reader.trend('object_storage.requests.rate', time_range),
-                'error_trend': reader.trend('object_storage.requests.error_rate', time_range),
-            }
-        )
-        payload['inflight_display'] = format_number(payload['inflight'])
-        payload['received_bps_display'] = (
-            format_bytes(payload['received_bps']) + '/s' if payload['received_bps'] is not None else 'N/A'
-        )
-        payload['sent_bps_display'] = (
-            format_bytes(payload['sent_bps']) + '/s' if payload['sent_bps'] is not None else 'N/A'
-        )
-    if page_key in {'overview', 'capacity', 'top_consumers'}:
-        payload['bucket_rows'] = _bucket_rows(system, reader)
-    if page_key == 'forecast':
-        payload['forecast'] = linear_forecast(payload.get('usage_trend', []), capacity_bytes=total)
-        forecast = payload['forecast']
-        payload['forecast_display'] = {
-            'growth_per_day': (
-                format_bytes(forecast['growth_per_day']) + '/day'
-                if forecast['growth_per_day'] is not None
-                else 'N/A'
+                )
             ),
-            'projected_7d': format_bytes(forecast['projected_7d']),
-            'projected_30d': format_bytes(forecast['projected_30d']),
-            'days_to_capacity': (
-                f"{forecast['days_to_capacity']:.1f} days"
-                if forecast['days_to_capacity'] is not None
-                else 'N/A'
-            ),
+            'signals': signals,
+            'signal_posture': build_signal_posture(signals),
         }
+    )
+
+
+def _add_performance_metrics(payload: dict[str, Any], reader: _EvidenceReader, time_range: str) -> None:
+    inflight = reader.scalar('object_storage.requests.inflight')
+    received_bps = reader.scalar('object_storage.traffic.received_bps')
+    sent_bps = reader.scalar('object_storage.traffic.sent_bps')
+    request_trend = reader.trend('object_storage.requests.rate', time_range)
+    error_trend = reader.trend('object_storage.requests.error_rate', time_range)
+    total_traffic = received_bps + sent_bps if received_bps is not None and sent_bps is not None else None
+    payload.update(
+        {
+            'inflight': inflight,
+            'inflight_display': format_number(inflight),
+            'received_bps': received_bps,
+            'received_bps_display': format_bytes(received_bps) + '/s' if received_bps is not None else 'N/A',
+            'sent_bps': sent_bps,
+            'sent_bps_display': format_bytes(sent_bps) + '/s' if sent_bps is not None else 'N/A',
+            'traffic_total_bps': total_traffic,
+            'traffic_total_bps_display': format_bytes(total_traffic) + '/s' if total_traffic is not None else 'N/A',
+            'request_trend': request_trend,
+            'request_trend_summary': build_trend_view(request_trend, formatter=format_rate),
+            'error_trend': error_trend,
+            'error_trend_summary': build_trend_view(error_trend, formatter=format_rate),
+        }
+    )
+
+
+def _add_bucket_metrics(
+    payload: dict[str, Any],
+    system: ObjectStorageSystem,
+    reader: _EvidenceReader,
+    *,
+    include_activity: bool,
+) -> None:
+    rows = _bucket_rows(system, reader, include_activity=include_activity)
+    payload['bucket_rows'] = rows
+    payload['bucket_analysis'] = build_bucket_analysis(rows, payload.get('usage_total'))
+
+
+def _add_forecast_metrics(payload: dict[str, Any]) -> None:
+    forecast = linear_forecast(payload.get('usage_trend', []), capacity_bytes=payload.get('capacity_total'))
+    payload['forecast'] = forecast
+    payload['forecast_display'] = {
+        'growth_per_day': (
+            format_bytes(forecast['growth_per_day']) + '/day'
+            if forecast['growth_per_day'] is not None
+            else 'N/A'
+        ),
+        'projected_7d': format_bytes(forecast['projected_7d']),
+        'projected_30d': format_bytes(forecast['projected_30d']),
+        'days_to_capacity': (
+            f"{forecast['days_to_capacity']:.1f} days" if forecast['days_to_capacity'] is not None else 'N/A'
+        ),
+    }
+    payload['forecast_posture'] = build_posture_view(
+        forecast_posture(forecast['growth_per_day'], forecast['days_to_capacity'])
+    )
+
+
+def _add_overview_posture(payload: dict[str, Any]) -> None:
+    tones = (
+        payload['capacity_posture']['tone'],
+        payload['performance_posture']['tone'],
+        payload['bucket_analysis']['concentration_tone'],
+    )
+    tone_order = {'critical': 3, 'warning': 2, 'unknown': 1, 'normal': 0}
+    overall_tone = max(tones, key=lambda tone: tone_order.get(tone, 1))
+    overall_labels = {
+        'critical': ('Critical', 'Immediate operational triage is required.'),
+        'warning': ('Attention', 'One or more operational domains require planned review.'),
+        'unknown': ('Unknown', 'Operational posture is incomplete because metric evidence is missing.'),
+        'normal': ('Healthy', 'No immediate capacity or request-path pressure is indicated.'),
+    }
+    overall_status, overall_detail = overall_labels[overall_tone]
+    payload['operational_posture'] = {
+        'status': overall_status,
+        'tone': overall_tone,
+        'detail': overall_detail,
+    }
+
+
+def _build_metrics(
+    page_key: str,
+    reader: _EvidenceReader,
+    system: ObjectStorageSystem,
+    time_range: str,
+) -> dict[str, Any]:
+    payload = _build_core_metrics(reader, system)
+    if page_key in {'overview', 'capacity', 'forecast'}:
+        _add_usage_trend(payload, reader, time_range)
+    if page_key in {'overview', 'performance', 'alerts'}:
+        _add_request_metrics(payload, reader)
+    if page_key == 'performance':
+        _add_performance_metrics(payload, reader, time_range)
+    if page_key in {'overview', 'capacity', 'top_consumers'}:
+        _add_bucket_metrics(payload, system, reader, include_activity=page_key == 'top_consumers')
+    if page_key == 'forecast':
+        _add_forecast_metrics(payload)
+    if page_key == 'overview':
+        _add_overview_posture(payload)
     return payload
 
 

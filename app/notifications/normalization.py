@@ -30,7 +30,7 @@ _TITLE_CASE_OVERRIDES = {
     'id': 'ID',
     'jit': 'JIT',
     'kaori': 'KAORI',
-    'k8s': 'K8s',
+    'k8s': 'Kubernetes',
     'ldap': 'LDAP',
     'minio': 'MinIO',
     'oidc': 'OIDC',

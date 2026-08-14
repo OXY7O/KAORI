@@ -1,0 +1,40 @@
+<section class="{{ analysis_surface.snapshot_shell_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="gauge" class="h-5 w-5"></i></span>
+                <div>
+                    <h2 class="text-lg font-semibold text-content-primary">Capacity Operating Boundary</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">Interpret usable headroom, growth direction, quota pressure, and concentration together instead of reading capacity as a single percentage.</p>
+                </div>
+            </div>
+            {{ table_label.status_label(metrics.capacity_posture.status, metrics.capacity_posture.tone) }}
+        </div>
+    </header>
+    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+        <article class="bg-surface-card p-5">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Remaining Headroom</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.capacity_free_display }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">{{ metrics.headroom_percent_display }} · {{ metrics.capacity_free_source }}</p>
+        </article>
+        <article class="bg-surface-card p-5">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Growth / Day</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.usage_trend_summary.growth_per_day_display }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">{{ metrics.usage_trend_summary.direction_label }} across {{ metrics.usage_trend_summary.sample_count }} samples.</p>
+        </article>
+        <article class="bg-surface-card p-5">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Quota Pressure</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.bucket_analysis.quota_pressure_count }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Buckets at or above 85% of known quota.</p>
+        </article>
+        <article class="bg-surface-card p-5">
+            <p class="{{ analysis_surface.metric_label_classes() }}">Top Bucket Share</p>
+            <p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.bucket_analysis.top_usage_share_display }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">{{ metrics.bucket_analysis.concentration_label }} usage distribution.</p>
+        </article>
+    </div>
+    <div class="{{ analysis_surface.interpretation_grid_classes() }}">
+        {{ analysis_surface.interpretation_callout('Capacity Reading', metrics.capacity_posture.headline, metrics.capacity_posture.detail, icon='shield-check', role='status', tone=metrics.capacity_posture.tone) }}
+        {{ analysis_surface.interpretation_callout('Measurement Boundary', 'Usable capacity and bucket quotas answer different questions', 'System headroom uses operational usable-capacity evidence. Bucket quota pressure is an ownership guardrail and does not represent physical free capacity.', icon='ruler', role='insight') }}
+    </div>
+</section>

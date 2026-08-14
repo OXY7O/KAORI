@@ -129,3 +129,98 @@ def test_object_storage_query_profile_classifies_required_recommended_and_option
     assert "readiness_tier='recommended'" in profile
     assert "readiness_tier='optional'" in profile
     assert 'minio_bucket_quota_total_bytes' in profile
+
+
+def test_object_storage_analysis_semantics_are_provider_neutral_and_page_specific() -> None:
+    analysis = read('app/analytics/object_storage/analysis.py')
+    presentation = read('app/analytics/object_storage/presentation.py')
+    service = read('app/analytics/object_storage/service.py')
+    index = read('app/templates/analytics/object_storage/index.html')
+
+    for symbol in (
+        'derive_headroom',
+        'summarize_trend',
+        'compare_evidence',
+        'capacity_posture',
+        'performance_posture',
+        'forecast_posture',
+        'metric_risk_signals',
+    ):
+        assert f'def {symbol}' in analysis
+    for builder in (
+        'build_trend_view',
+        'build_comparison_view',
+        'build_bucket_analysis',
+        'build_posture_view',
+        'build_signal_posture',
+    ):
+        assert f'def {builder}' in presentation
+        assert builder in service
+
+    assert 'Prometheus' not in analysis
+    assert 'MinIO' not in analysis
+    assert 'object_storage/partials/_overview_analysis.html' in index
+    assert 'object_storage/partials/_capacity_analysis.html' in index
+    assert 'object_storage/partials/_performance_analysis.html' in index
+    assert 'object_storage/partials/_forecast_analysis.html' in index
+    assert 'object_storage/partials/_top_consumers_analysis.html' in index
+    assert 'object_storage/partials/_reconciliation.html' in index
+
+
+def test_object_storage_analysis_distinguishes_operational_domains_and_provenance() -> None:
+    overview = read('app/templates/analytics/object_storage/partials/_overview_analysis.html')
+    capacity = read('app/templates/analytics/object_storage/partials/_capacity_analysis.html')
+    performance = read('app/templates/analytics/object_storage/partials/_performance_analysis.html')
+    forecast = read('app/templates/analytics/object_storage/partials/_forecast_analysis.html')
+    consumers = read('app/templates/analytics/object_storage/partials/_top_consumers_analysis.html')
+    reconciliation = read('app/templates/analytics/object_storage/partials/_reconciliation.html')
+    bucket_table = read('app/templates/analytics/object_storage/partials/_bucket_table.html')
+
+    assert 'Operational Health Summary' in overview
+    assert 'Bucket Concentration' in overview
+    assert 'Capacity Operating Boundary' in capacity
+    assert 'Remaining Headroom' in capacity
+    assert 'Request Operating Boundary' in performance
+    assert 'Success Ratio' in performance
+    assert 'Forecast Operating Boundary' in forecast
+    assert 'Linear baseline' in forecast
+    alerts = read('app/templates/analytics/object_storage/partials/_alerts.html')
+
+    assert 'Top Consumer Snapshot' in consumers
+    assert 'Critical Signals' in alerts
+    assert 'Signal Reading' in alerts
+    assert 'Lifecycle Boundary' in alerts
+    assert 'Highest Error Rate' in consumers
+    assert 'Inventory &amp; Operational Reconciliation' in reconciliation
+    assert 'observation times differ' in reconciliation
+    assert 'row.usage_source' in bucket_table
+    assert 'Committed Inventory is used only as an explicit field-level fallback' in bucket_table
+
+
+def test_object_storage_performance_chart_keeps_request_and_error_series_separate() -> None:
+    trend = read('app/templates/analytics/object_storage/partials/_trend.html')
+    javascript = read('app/static/js/analytics/object_storage.js')
+
+    assert 'data-object-storage-secondary-trend-points' in trend
+    assert 'Request & Error Trend' in trend
+    assert 'secondaryByTimestamp' in javascript
+    assert "isPerformance ? 'Request Rate' : 'Storage Usage'" in javascript
+    assert "label: 'Error Rate'" in javascript
+
+
+def test_kubernetes_navigation_uses_full_product_name_instead_of_k8s_abbreviation() -> None:
+    menu_paths = (
+        'app/templates/components/navigation/analytics_menu.html',
+        'app/templates/components/navigation/inventory_menu.html',
+        'app/templates/components/navigation/governance_menu.html',
+        'app/templates/components/navigation/kubernetes_operations_menu.html',
+        'app/templates/components/navigation/platform_operations_menu.html',
+    )
+    combined = '\n'.join(read(path) for path in menu_paths)
+
+    assert 'K8s' not in combined
+    assert 'Kubernetes Analytics' in combined
+    assert 'Kubernetes Inventory' in combined
+    assert 'Kubernetes Governance' in combined
+    assert 'Kubernetes Operations' in combined
+    assert 'Kubernetes Administration' in combined

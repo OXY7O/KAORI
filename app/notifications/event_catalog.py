@@ -20,7 +20,7 @@ _EVENT_TOKEN_OVERRIDES = {
     'id': 'ID',
     'jit': 'JIT',
     'kaori': 'KAORI',
-    'k8s': 'K8s',
+    'k8s': 'Kubernetes',
     'ldap': 'LDAP',
     'oidc': 'OIDC',
     'rbac': 'RBAC',

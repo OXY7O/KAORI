@@ -107,7 +107,7 @@ def test_platform_operations_overview_is_first_navigation_target() -> None:
         menu.index('Overview')
         < menu.index('Jobs &amp; Executions')
         < menu.index('Data Lifecycle')
-        < menu.index('K8s Administration')
+        < menu.index('Kubernetes Administration')
     )
     assert "endpoint.startswith('platform_operations.overview.')" in breadcrumb
     assert "('jobs.view', 'platform_operations.overview.index')" in welcome

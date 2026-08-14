@@ -472,7 +472,7 @@ def _build_fix_steps(item: dict[str, Any]) -> list[str]:
     elif source_kind == 'tls_secret':
         steps = [
             'Review the committed TLS Secret finding, issuer, SAN coverage, expiry, namespace ownership, and Ingress usage mapping.',
-            'Open Governance > K8s Operation > Kubernetes TLS Secret and validate the replacement certificate, private key match, selected existing Secret targets, and HTMX preview.',
+            'Open Kubernetes Governance > TLS Secret and validate the replacement certificate, private key match, selected existing Secret targets, and HTMX preview.',
             'Upload the renewed tls.crt and tls.key, then update only the approved existing Kubernetes TLS Secret targets.',
             'Resync TLS inventory, validate the affected Ingress endpoint certificate chain, and confirm the recommendation is cleared.',
         ]

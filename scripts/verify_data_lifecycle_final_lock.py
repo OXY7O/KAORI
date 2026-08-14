@@ -263,10 +263,10 @@ def main() -> int:
         if required not in menu:
             errors.append(f'Platform Operations navigation missing: {required}')
     if menu.find('Jobs &amp; Executions') > menu.find('Data Lifecycle') or menu.find('Data Lifecycle') > menu.find(
-        'K8s Administration'
+        'Kubernetes Administration'
     ):
         errors.append(
-            'Platform Operations navigation order must be Jobs & Executions → Data Lifecycle → K8s Administration'
+            'Platform Operations navigation order must be Jobs & Executions → Data Lifecycle → Kubernetes Administration'
         )
     if 'Data Lifecycle' in settings_menu or 'data_lifecycle' in settings_menu:
         errors.append('Settings navigation must not expose Data Lifecycle')

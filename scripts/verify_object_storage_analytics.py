@@ -12,7 +12,9 @@ def read(path: str) -> str:
 
 def main() -> int:
     routes = read('app/analytics/object_storage/routes.py')
+    analysis = read('app/analytics/object_storage/analysis.py')
     service = read('app/analytics/object_storage/service.py')
+    presentation = read('app/analytics/object_storage/presentation.py')
     adapter = read('app/analytics/object_storage/sources/minio_prometheus.py')
     resolver = read('app/analytics/object_storage/sources/resolver.py')
     contracts = read('app/analytics/shared/metrics/contracts.py')
@@ -26,6 +28,14 @@ def main() -> int:
     alert_template = read('app/templates/analytics/object_storage/partials/_alerts.html')
     boundary = read('app/templates/analytics/object_storage/partials/_evidence_boundary.html')
     readiness = read('app/templates/analytics/object_storage/partials/_metrics_readiness.html')
+    overview_analysis = read('app/templates/analytics/object_storage/partials/_overview_analysis.html')
+    capacity_analysis = read('app/templates/analytics/object_storage/partials/_capacity_analysis.html')
+    performance_analysis = read('app/templates/analytics/object_storage/partials/_performance_analysis.html')
+    forecast_analysis = read('app/templates/analytics/object_storage/partials/_forecast_analysis.html')
+    top_consumers_analysis = read('app/templates/analytics/object_storage/partials/_top_consumers_analysis.html')
+    reconciliation = read('app/templates/analytics/object_storage/partials/_reconciliation.html')
+    trend = read('app/templates/analytics/object_storage/partials/_trend.html')
+    javascript = read('app/static/js/analytics/object_storage.js')
 
     assert 'resolve_object_storage_metrics_source' in service
     assert 'MetricsSource' in service
@@ -101,17 +111,52 @@ def main() -> int:
     assert 'Alertmanager is optional for this release' in service
     assert 'Alertmanager lifecycle integration remains optional' in service
     assert 'Alertmanager' in alert_template
+    assert 'Critical Signals' in alert_template
+    assert 'Signal Reading' in alert_template
     assert 'Deferred' in boundary
     assert 'Committed Inventory' in boundary
     assert 'metrics_source.provider_label' in boundary
     assert 'kaori-analytics-page' in template
 
+    for symbol in (
+        'derive_headroom',
+        'summarize_trend',
+        'compare_evidence',
+        'capacity_posture',
+        'performance_posture',
+        'forecast_posture',
+        'metric_risk_signals',
+    ):
+        assert f'def {symbol}' in analysis
+    for builder in (
+        'build_trend_view',
+        'build_comparison_view',
+        'build_bucket_analysis',
+        'build_posture_view',
+        'build_signal_posture',
+    ):
+        assert f'def {builder}' in presentation
+        assert builder in service
+    assert 'Prometheus' not in analysis
+    assert 'MinIO' not in analysis
+    assert 'Operational Health Summary' in overview_analysis
+    assert 'Capacity Operating Boundary' in capacity_analysis
+    assert 'Request Operating Boundary' in performance_analysis
+    assert 'Forecast Operating Boundary' in forecast_analysis
+    assert 'Top Consumer Snapshot' in top_consumers_analysis
+    assert 'Inventory &amp; Operational Reconciliation' in reconciliation
+    assert 'data-object-storage-secondary-trend-points' in trend
+    assert "label: 'Error Rate'" in javascript
+    assert 'secondaryByTimestamp' in javascript
+    assert 'K8s Analytics' not in menu
+    assert 'Kubernetes Analytics' in menu
+
     assert not (ROOT / 'app/analytics/object_storage/parsing.py').exists()
     assert not (ROOT / 'app/analytics/object_storage/metrics.py').exists()
 
     print(
-        'PASS — KAORI Object Storage Analytics Baseline · '
-        'metrics-source-neutral / fail-fast / inventory-separated / Alertmanager-optional'
+        'PASS — KAORI Object Storage Analytics · '
+        'domain-analysis / metrics-source-neutral / fail-fast / inventory-separated / Alertmanager-optional'
     )
     return 0
 

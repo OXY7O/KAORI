@@ -90,7 +90,7 @@ INTELLIGENCE_CATALOG: list[dict[str, object]] = [
         'signal_source': 'kubernetes_api',
         'summary': 'Detects Kubernetes TLS Secrets whose certificate validity has already passed and can break HTTPS traffic served by Ingress.',
         'condition_summary': 'A collected Kubernetes TLS Secret has not_after in the past or days_remaining is less than or equal to zero.',
-        'recommended_action': 'Upload a renewed certificate and matching private key through Governance > K8s Operation > TLS Secret Update, then validate the affected Ingress hosts.',
+        'recommended_action': 'Upload a renewed certificate and matching private key through Kubernetes Governance > TLS Secret Update, then validate the affected Ingress hosts.',
         'impact': 'Prevents customer-facing TLS errors, failed browser trust validation, and service availability issues on HTTPS endpoints.',
         'prometheus_relationship': 'This is Kubernetes Secret governance from the Kubernetes API. Prometheus may alert on endpoint symptoms, while KAORI tracks certificate posture and update readiness.',
         'supported_sources': ['Kubernetes API', 'TLS Secret Inventory', 'Ingress Mapping'],

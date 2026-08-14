@@ -62,7 +62,7 @@ def test_workspace_catalog_only_renders_authorized_destinations(monkeypatch: pyt
     shortcuts = _flatten(groups)
     titles = [shortcut['title'] for shortcut in shortcuts]
 
-    assert titles == ['K8s Inventory', 'Reports', 'Settings']
+    assert titles == ['Kubernetes Inventory', 'Reports', 'Settings']
     assert 'Dashboards' not in titles
     assert 'Access' not in titles
     assert all('permission' not in shortcut['search_text'] for shortcut in shortcuts)

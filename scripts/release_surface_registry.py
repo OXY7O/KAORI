@@ -126,7 +126,7 @@ SURFACES: tuple[ReleaseSurface, ...] = (
         blueprint_vars=('analytics_bp',),
         verifiers=(
             'scripts/verify_analytics_final_lock.py',
-            'scripts/verify_object_storage_analytics_baseline.py',
+            'scripts/verify_object_storage_analytics.py',
         ),
         contract_paths=('tests/contracts/analytics',),
     ),

@@ -41,7 +41,7 @@ Default Rows remains 5 with 5/10/25/50 options. Pagination renders **Previous**,
 
 ## Copy normalization
 
-Compact Notification titles and event labels render in Title Case while preserving operational acronyms including KAORI, API, K8s, ConfigMap, TLS, RBAC, LDAP, OIDC, SSO, SAML, URL, and S3. Sentence-style message/detail copy is not title-cased.
+Compact Notification titles and event labels render in Title Case while preserving operational acronyms including KAORI, API, ConfigMap, TLS, RBAC, LDAP, OIDC, SSO, SAML, URL, and S3. Visible Kubernetes labels remain fully spelled out. Sentence-style message/detail copy is not title-cased.
 
 ## Boundaries
 

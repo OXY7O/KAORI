@@ -1,0 +1,36 @@
+<section class="{{ analysis_surface.snapshot_shell_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="scan-search" class="h-5 w-5"></i></span>
+            <div>
+                <h2 class="text-lg font-semibold text-content-primary">Top Consumer Snapshot</h2>
+                <p class="mt-1 text-sm leading-6 text-content-muted">Separate storage concentration, object density, request demand, and error pressure so one ranking does not hide a different ownership hotspot.</p>
+            </div>
+        </div>
+    </header>
+    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+        {% set leaders = [
+            ('Largest Usage', metrics.bucket_analysis.top_usage, 'usage_display', 'hard-drive'),
+            ('Most Objects', metrics.bucket_analysis.top_objects, 'objects_display', 'boxes'),
+            ('Highest Request Rate', metrics.bucket_analysis.top_request_rate, 'request_rate_display', 'activity'),
+            ('Highest Error Rate', metrics.bucket_analysis.top_error_rate, 'error_rate_display', 'circle-alert')
+        ] %}
+        {% for label, leader, value_key, icon in leaders %}
+            <article class="bg-surface-card p-5">
+                <span class="{{ analysis_surface.metric_icon_classes('compact') }}"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
+                <p class="mt-3 {{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                {% if leader %}
+                    <p class="mt-1.5 truncate text-base font-semibold text-content-primary">{{ leader.name }}</p>
+                    <p class="mt-1 text-sm font-semibold tabular-nums text-content-secondary">{{ leader[value_key] }}</p>
+                {% else %}
+                    <p class="mt-1.5 text-base font-semibold text-content-disabled">No Evidence</p>
+                    <p class="mt-1 text-xs text-content-muted">Metric is unavailable for this source.</p>
+                {% endif %}
+            </article>
+        {% endfor %}
+    </div>
+    <div class="{{ analysis_surface.interpretation_grid_classes() }}">
+        {{ analysis_surface.interpretation_callout('Concentration Reading', metrics.bucket_analysis.concentration_label, metrics.bucket_analysis.top_usage_share_display ~ ' of known usage belongs to the largest bucket. Review ownership and growth before treating system-level headroom as evenly distributed.', icon='layers-3', role='status', tone=metrics.bucket_analysis.concentration_tone) }}
+        {{ analysis_surface.interpretation_callout('Triage Boundary', 'Rankings identify where to investigate, not root cause', 'Use bucket Inventory for configuration and ownership evidence. Use operational metrics for current usage, request, and error pressure. Do not infer policy state from time-series rankings.', icon='shield-check', role='insight') }}
+    </div>
+</section>

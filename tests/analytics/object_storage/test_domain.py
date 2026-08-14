@@ -4,7 +4,8 @@ import importlib.util
 from pathlib import Path
 from types import ModuleType
 
-from app.analytics.object_storage.service import _EvidenceReader, _signals
+from app.analytics.object_storage.analysis import metric_risk_signals
+from app.analytics.object_storage.service import _EvidenceReader
 from app.analytics.object_storage.sources import minio_prometheus as prometheus_source
 from app.analytics.shared.metrics import (
     MetricsSourceError,
@@ -112,7 +113,7 @@ def test_query_specific_failure_does_not_trip_source_wide_fail_fast() -> None:
 
 
 def test_object_storage_signal_does_not_claim_healthy_without_metric_evidence() -> None:
-    signals = _signals(
+    signals = metric_risk_signals(
         utilization=None,
         error_ratio=None,
         waiting=None,

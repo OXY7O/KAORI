@@ -69,6 +69,19 @@
             {% include "analytics/object_storage/partials/_controls.html" %}
             {% include "analytics/object_storage/partials/_metrics_readiness.html" %}
             {% include "analytics/object_storage/partials/_summary.html" %}
+            {% if page_key == 'overview' %}
+                {% include "analytics/object_storage/partials/_overview_analysis.html" %}
+                {% include "analytics/object_storage/partials/_reconciliation.html" %}
+            {% elif page_key == 'capacity' %}
+                {% include "analytics/object_storage/partials/_capacity_analysis.html" %}
+                {% include "analytics/object_storage/partials/_reconciliation.html" %}
+            {% elif page_key == 'performance' %}
+                {% include "analytics/object_storage/partials/_performance_analysis.html" %}
+            {% elif page_key == 'forecast' %}
+                {% include "analytics/object_storage/partials/_forecast_analysis.html" %}
+            {% elif page_key == 'top_consumers' %}
+                {% include "analytics/object_storage/partials/_top_consumers_analysis.html" %}
+            {% endif %}
             {% if page_key in ['overview', 'capacity', 'performance', 'forecast'] %}
                 {% include "analytics/object_storage/partials/_trend.html" %}
             {% endif %}

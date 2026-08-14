@@ -141,7 +141,7 @@ def main() -> int:
         "'configmap': 'ConfigMap'",
         "'tls': 'TLS'",
         "'rbac': 'RBAC'",
-        "'k8s': 'K8s'",
+        "'k8s': 'Kubernetes'",
     ):
         if required not in catalog:
             errors.append(f'Notification category/Title Case contract missing: {required}')

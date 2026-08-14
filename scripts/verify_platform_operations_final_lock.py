@@ -214,10 +214,10 @@ def main() -> int:
         platform_menu.index('Overview')
         < platform_menu.index('Jobs &amp; Executions')
         < platform_menu.index('Data Lifecycle')
-        < platform_menu.index('K8s Administration')
+        < platform_menu.index('Kubernetes Administration')
     ):
         errors.append(
-            'Platform Operations navigation order must be Overview → Jobs & Executions → Data Lifecycle → K8s Administration'
+            'Platform Operations navigation order must be Overview → Jobs & Executions → Data Lifecycle → Kubernetes Administration'
         )
 
     k8s_index = read('app/templates/platform_operations/kubernetes/index.html')

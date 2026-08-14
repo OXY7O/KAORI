@@ -1,0 +1,25 @@
+<section class="{{ analysis_surface.snapshot_shell_classes() }}">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="activity" class="h-5 w-5"></i></span>
+                <div>
+                    <h2 class="text-lg font-semibold text-content-primary">Request Operating Boundary</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">Combine request success, queue pressure, inflight work, and traffic before treating throughput as healthy demand.</p>
+                </div>
+            </div>
+            {{ table_label.status_label(metrics.performance_posture.status, metrics.performance_posture.tone) }}
+        </div>
+    </header>
+    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-5">
+        <article class="bg-surface-card p-5"><p class="{{ analysis_surface.metric_label_classes() }}">Success Ratio</p><p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.success_ratio_display }}</p><p class="mt-1 text-xs text-content-muted">Derived from request/error rates.</p></article>
+        <article class="bg-surface-card p-5"><p class="{{ analysis_surface.metric_label_classes() }}">Request Rate</p><p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.request_rate_display }}</p><p class="mt-1 text-xs text-content-muted">Current S3 demand.</p></article>
+        <article class="bg-surface-card p-5"><p class="{{ analysis_surface.metric_label_classes() }}">Inflight</p><p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.inflight_display }}</p><p class="mt-1 text-xs text-content-muted">Requests currently executing.</p></article>
+        <article class="bg-surface-card p-5"><p class="{{ analysis_surface.metric_label_classes() }}">Waiting</p><p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.waiting_display }}</p><p class="mt-1 text-xs text-content-muted">Queue-pressure evidence.</p></article>
+        <article class="bg-surface-card p-5"><p class="{{ analysis_surface.metric_label_classes() }}">Total Traffic</p><p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ metrics.traffic_total_bps_display }}</p><p class="mt-1 text-xs text-content-muted">Ingress + egress throughput.</p></article>
+    </div>
+    <div class="{{ analysis_surface.interpretation_grid_classes() }}">
+        {{ analysis_surface.interpretation_callout('Performance Reading', metrics.performance_posture.headline, metrics.performance_posture.detail, icon='scan-heart', role='status', tone=metrics.performance_posture.tone) }}
+        {{ analysis_surface.interpretation_callout('Trend Context', metrics.request_trend_summary.direction_label ~ ' Request Activity', metrics.request_trend_summary.sample_count ~ ' range samples are available in the selected window. Error history is plotted separately so demand growth is not confused with reliability degradation.', icon=metrics.request_trend_summary.icon, role='insight') }}
+    </div>
+</section>

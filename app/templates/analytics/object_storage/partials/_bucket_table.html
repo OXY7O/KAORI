@@ -1,11 +1,13 @@
-<section class="{{ analysis_surface.snapshot_shell_classes() }}">
+{% from "components/analytics/_table_label_primitives.html" import table_label with context %}
+<section class="{{ analysis_surface.evidence_shell_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-                <h2 class="text-lg font-semibold text-content-primary">Bucket Consumption Evidence</h2>
+                <h2 class="text-lg font-semibold text-content-primary">
+                    {{ 'Consumer Records' if page_key == 'top_consumers' else 'Bucket Consumption Evidence' }}
+                </h2>
                 <p class="mt-1 text-sm leading-6 text-content-muted">
-                    {{ metrics_source.provider_label }} is preferred for operational usage. Committed Inventory is used only as an explicit
-                    fallback when a bucket metric is unavailable.
+                    Operational metrics are preferred when available. Committed Inventory is used only as an explicit field-level fallback and every fallback remains visible beside the affected value.
                 </p>
             </div>
             {{ table_label.metadata_label(metrics.bucket_rows|length ~ ' Buckets', none, size='compact') }}
@@ -17,31 +19,48 @@
                 <tr>
                     <th class="px-5 py-3">Bucket</th>
                     <th class="px-5 py-3">Usage</th>
+                    <th class="px-5 py-3">Share</th>
                     <th class="px-5 py-3">Objects</th>
-                    <th class="px-5 py-3">Quota</th>
                     <th class="px-5 py-3">Quota Use</th>
-                    <th class="px-5 py-3">Req Rate</th>
-                    <th class="px-5 py-3">Error Rate</th>
-                    <th class="px-5 py-3">Evidence</th>
+                    {% if page_key == 'top_consumers' %}
+                        <th class="px-5 py-3">Request Rate</th>
+                        <th class="px-5 py-3">Error Ratio</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody class="divide-y divide-outline-subtle bg-surface-card text-sm text-content-secondary">
-                {% for row in metrics.bucket_rows[:10] %}
+                {% for row in metrics.bucket_rows %}
                     <tr>
                         <td class="px-5 py-3 font-semibold text-content-primary">{{ row.name }}</td>
-                        <td class="px-5 py-3 tabular-nums">{{ row.usage_display }}</td>
-                        <td class="px-5 py-3 tabular-nums">{{ row.objects_display }}</td>
-                        <td class="px-5 py-3 tabular-nums">{{ row.quota_display }}</td>
-                        <td class="px-5 py-3 tabular-nums">{{ row.quota_utilization_display }}</td>
-                        <td class="px-5 py-3 tabular-nums">{{ row.request_rate_display }}</td>
-                        <td class="px-5 py-3 tabular-nums">{{ row.error_rate_display }}</td>
                         <td class="px-5 py-3">
-                            {{ table_label.metadata_label(row.source, 'database', size='compact') }}
+                            <p class="tabular-nums text-content-primary">{{ row.usage_display }}</p>
+                            <div class="mt-1">{{ table_label.metadata_label(row.usage_source, 'database', size='compact') }}</div>
                         </td>
+                        <td class="px-5 py-3 tabular-nums">{{ row.usage_share_display }}</td>
+                        <td class="px-5 py-3">
+                            <p class="tabular-nums text-content-primary">{{ row.objects_display }}</p>
+                            <div class="mt-1">{{ table_label.metadata_label(row.objects_source, 'boxes', size='compact') }}</div>
+                        </td>
+                        <td class="px-5 py-3">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="tabular-nums text-content-primary">{{ row.quota_utilization_display }}</span>
+                                {% if row.quota_utilization is not none %}
+                                    {{ table_label.status_label('Pressure' if row.quota_utilization >= 85 else 'Within Quota', row.quota_tone) }}
+                                {% else %}
+                                    {{ table_label.status_label('No Quota Evidence', 'unknown') }}
+                                {% endif %}
+                            </div>
+                            <p class="mt-1 text-xs text-content-muted">{{ row.quota_display }} quota</p>
+                            <div class="mt-1">{{ table_label.metadata_label(row.quota_source, 'gauge', size='compact') }}</div>
+                        </td>
+                        {% if page_key == 'top_consumers' %}
+                            <td class="px-5 py-3 tabular-nums">{{ row.request_rate_display }}</td>
+                            <td class="px-5 py-3 tabular-nums">{{ row.error_ratio_display }}</td>
+                        {% endif %}
                     </tr>
                 {% else %}
                     <tr>
-                        <td colspan="8" class="px-5 py-10 text-center text-sm text-content-muted">
+                        <td colspan="{{ 7 if page_key == 'top_consumers' else 5 }}" class="px-5 py-10 text-center text-sm text-content-muted">
                             No bucket evidence is available for the selected system.
                         </td>
                     </tr>

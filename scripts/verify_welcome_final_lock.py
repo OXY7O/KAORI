@@ -163,11 +163,11 @@ def _verify_catalog_contract(errors: list[str]) -> None:
             errors,
         )
 
-    governance = next((item for item in shortcut_definitions if item.get('title') == 'K8s Governance'), None)
+    governance = next((item for item in shortcut_definitions if item.get('title') == 'Kubernetes Governance'), None)
     reports = next((item for item in shortcut_definitions if item.get('title') == 'Reports'), None)
     intelligence = next((item for item in shortcut_definitions if item.get('title') == 'Intelligence'), None)
     require(
-        governance is not None and governance.get('scope') == 'Compute', 'K8s Governance scope must be Compute.', errors
+        governance is not None and governance.get('scope') == 'Compute', 'Kubernetes Governance scope must be Compute.', errors
     )
     require(
         reports is not None and reports.get('scope') == 'Cross-domain',

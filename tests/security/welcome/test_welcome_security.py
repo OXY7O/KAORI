@@ -48,7 +48,7 @@ def test_unauthorized_workspace_metadata_is_not_emitted(monkeypatch: pytest.Monk
     titles = {shortcut['title'] for shortcut in shortcuts}
     search_text = ' '.join(shortcut['search_text'] for shortcut in shortcuts)
 
-    assert titles == {'K8s Inventory', 'Settings'}
+    assert titles == {'Kubernetes Inventory', 'Settings'}
     assert 'Dashboards' not in titles
     assert 'Reports' not in titles
     assert 'dashboard.view' not in search_text

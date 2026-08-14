@@ -16,6 +16,16 @@
         return `${size.toFixed(index === 0 ? 0 : 1)} ${units[index]}`
     }
 
+    const parsePoints = (raw) => {
+        try {
+            const value = JSON.parse(raw || '[]')
+            return Array.isArray(value) ? value : []
+        } catch (error) {
+            console.error('Unable to parse Object Storage Analytics trend data.', error)
+            return []
+        }
+    }
+
     function destroyChart() {
         if (!window[chartKey]) return
         window[chartKey].destroy()
@@ -29,19 +39,17 @@
         if (!panel || typeof Chart === 'undefined') return
         const canvas = panel.querySelector('[data-object-storage-chart]')
         if (!canvas) return
-        let points
-        try {
-            points = JSON.parse(panel.dataset.objectStorageTrendPoints || '[]')
-        } catch (error) {
-            console.error('Unable to parse Object Storage Analytics trend data.', error)
-            return
-        }
-        if (!Array.isArray(points) || !points.length) return
+
+        const points = parsePoints(panel.dataset.objectStorageTrendPoints)
+        const secondaryPoints = parsePoints(panel.dataset.objectStorageSecondaryTrendPoints)
+        if (!points.length) return
+
         destroyChart()
         const isPerformance = panel.dataset.objectStoragePageKey === 'performance'
         const textColor = cssVariable('--kaori-content-secondary', 'CanvasText')
         const gridColor = cssVariable('--kaori-outline-subtle', 'transparent')
         const primaryColor = cssVariable('--kaori-brand-primary', 'CanvasText')
+        const secondaryColor = cssVariable('--kaori-status-critical', 'CanvasText')
         const labels = points.map((point) =>
             new Intl.DateTimeFormat([], {
                 month: 'short',
@@ -50,37 +58,53 @@
                 minute: '2-digit',
             }).format(new Date(Number(point.timestamp) * 1000))
         )
+        const datasets = [
+            {
+                label: isPerformance ? 'Request Rate' : 'Storage Usage',
+                data: points.map((point) => Number(point.value)),
+                borderColor: primaryColor,
+                backgroundColor: primaryColor,
+                borderWidth: 3,
+                pointRadius: 0,
+                pointHoverRadius: 4,
+                tension: 0.3,
+                fill: false,
+                spanGaps: true,
+            },
+        ]
+        if (isPerformance && secondaryPoints.length) {
+            const secondaryByTimestamp = new Map(
+                secondaryPoints.map((point) => [Number(point.timestamp), Number(point.value)])
+            )
+            datasets.push({
+                label: 'Error Rate',
+                data: points.map((point) => secondaryByTimestamp.get(Number(point.timestamp)) ?? null),
+                borderColor: secondaryColor,
+                backgroundColor: secondaryColor,
+                borderWidth: 2,
+                pointRadius: 0,
+                pointHoverRadius: 4,
+                borderDash: [5, 4],
+                tension: 0.3,
+                fill: false,
+                spanGaps: true,
+            })
+        }
         window[chartKey] = new Chart(canvas.getContext('2d'), {
             type: 'line',
-            data: {
-                labels,
-                datasets: [
-                    {
-                        label: isPerformance ? 'Request Rate' : 'Storage Usage',
-                        data: points.map((point) => Number(point.value)),
-                        borderColor: primaryColor,
-                        backgroundColor: primaryColor,
-                        borderWidth: 3,
-                        pointRadius: 0,
-                        pointHoverRadius: 4,
-                        tension: 0.3,
-                        fill: false,
-                        spanGaps: true,
-                    },
-                ],
-            },
+            data: { labels, datasets },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 animation: false,
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
-                    legend: { display: false },
+                    legend: { display: isPerformance && datasets.length > 1, labels: { color: textColor } },
                     tooltip: {
                         callbacks: {
                             label: (context) =>
                                 isPerformance
-                                    ? `${Number(context.parsed.y).toFixed(2)}/s`
+                                    ? `${context.dataset.label}: ${Number(context.parsed.y).toFixed(2)}/s`
                                     : formatBytes(Number(context.parsed.y)),
                         },
                     },

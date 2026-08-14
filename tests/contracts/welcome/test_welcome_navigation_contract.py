@@ -94,13 +94,13 @@ def test_welcome_catalog_matches_current_primary_navigation_domains() -> None:
 
     expected_titles = (
         'Dashboards',
-        'K8s Inventory',
-        'K8s Analytics',
+        'Kubernetes Inventory',
+        'Kubernetes Analytics',
         'Intelligence',
         'Integrations',
-        'K8s Operations',
+        'Kubernetes Operations',
         'Platform Operations',
-        'K8s Governance',
+        'Kubernetes Governance',
         'Reports',
         'Access',
         'Settings',

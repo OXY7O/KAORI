@@ -21,6 +21,7 @@ contract.
 app/analytics/object_storage/
 ├── routes.py
 ├── service.py
+├── analysis.py
 ├── presentation.py
 ├── forecasting.py
 └── sources/
@@ -28,8 +29,10 @@ app/analytics/object_storage/
     └── minio_prometheus.py
 ```
 
-`service.py` consumes only the provider-neutral contract from
-`app.analytics.shared.metrics`. Provider-specific query syntax, response parsing,
+`service.py` orchestrates page evidence and consumes only the provider-neutral contract from
+`app.analytics.shared.metrics`. `analysis.py` owns pure domain calculations such as
+capacity/performance/forecast posture, trend summaries, headroom derivation, and
+Inventory-vs-operational reconciliation; it has no provider dependency. Provider-specific query syntax, response parsing,
 and exception translation live in a pair-qualified adapter such as
 `sources/minio_prometheus.py`. This prevents a Prometheus binding for another
 Object Storage provider from accidentally receiving MinIO PromQL.
@@ -101,3 +104,18 @@ request path must not multiply an unreachable provider into a query storm.
 The retired direct Prometheus domain modules (`metrics.py` and `parsing.py`) are
 removed. Do not restore them as wrappers. Provider access belongs only to source
 adapters and the domain service must stay provider-neutral.
+
+## Analysis surfaces
+
+The current Object Storage Analytics workspace exposes distinct operational semantics instead of reusing one generic summary for every route:
+
+- **Overview** consolidates capacity, request-path, growth, and bucket-concentration posture.
+- **Capacity & Usage** separates physical usable headroom, usage growth, bucket quota pressure, and concentration.
+- **Performance** combines request success, queue/inflight pressure, ingress/egress traffic, and separate request/error history.
+- **Top Consumers** ranks usage, object density, request demand, and error pressure independently.
+- **Forecast** uses the current linear baseline only as a planning boundary and makes its methodology explicit.
+- **Alerts & Anomalies** continues to provide metric-derived signals while Alertmanager lifecycle correlation remains optional.
+
+Inventory reconciliation is intentionally non-authoritative: differences within the
+selected thresholds are review evidence because Inventory and operational metrics have
+different observation times. Analytics never rewrites Inventory from this comparison.

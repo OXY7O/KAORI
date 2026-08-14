@@ -76,7 +76,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'targets': (('dashboard.view', 'kubernetes_dashboard.index'),),
     },
     {
-        'title': 'K8s Inventory',
+        'title': 'Kubernetes Inventory',
         'label': 'Asset Visibility',
         'description': (
             'Gain visibility into Kubernetes resources, their status, configuration, and relationships across connected clusters.'
@@ -87,7 +87,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'targets': (('inventory.view', 'inventory.overview'),),
     },
     {
-        'title': 'K8s Analytics',
+        'title': 'Kubernetes Analytics',
         'label': 'Operational Analytics',
         'description': (
             'Explore utilization, capacity, workload efficiency, storage, forecast risks, top consumers, alerts, and anomalies.'
@@ -136,7 +136,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         ),
     },
     {
-        'title': 'K8s Operations',
+        'title': 'Kubernetes Operations',
         'label': 'Controlled Workflows',
         'description': (
             'Run permission-aware configuration and protected infrastructure '
@@ -161,7 +161,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         ),
     },
     {
-        'title': 'K8s Governance',
+        'title': 'Kubernetes Governance',
         'label': 'Policy & Lifecycle',
         'description': (
             'Review infrastructure governance posture, lifecycle exposure, policy '

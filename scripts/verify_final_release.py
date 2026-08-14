@@ -22,7 +22,7 @@ SHORT_LABELS = {
     'Kubernetes Dashboard': 'Dashboard',
     'Kubernetes Inventory': 'Inventory',
     'Object Storage Inventory': 'Object Storage',
-    'Kubernetes Operations': 'K8s Operations',
+    'Kubernetes Operations': 'Kubernetes Ops',
     'Kubernetes Governance': 'Governance',
     'Analytics': 'Analytics',
     'Intelligence': 'Intelligence',

@@ -91,7 +91,7 @@ def main() -> int:
         menu.index('Overview')
         < menu.index('Jobs &amp; Executions')
         < menu.index('Data Lifecycle')
-        < menu.index('K8s Administration')
+        < menu.index('Kubernetes Administration')
     ):
         errors.append('Platform Operations navigation order drifted')
 

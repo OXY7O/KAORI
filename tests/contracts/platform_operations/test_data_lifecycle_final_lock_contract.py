@@ -64,8 +64,8 @@ def test_data_lifecycle_navigation_and_breadcrumb_are_platform_owned() -> None:
 
     assert 'Jobs &amp; Executions' in menu
     assert 'Data Lifecycle' in menu
-    assert 'K8s Administration' in menu
-    assert menu.index('Jobs &amp; Executions') < menu.index('Data Lifecycle') < menu.index('K8s Administration')
+    assert 'Kubernetes Administration' in menu
+    assert menu.index('Jobs &amp; Executions') < menu.index('Data Lifecycle') < menu.index('Kubernetes Administration')
     assert "url_for('platform_operations.data_lifecycle.index')" in menu
     assert "has_permission('platform_operations.view_data_lifecycle')" in sidebar
     assert 'Data Lifecycle' not in settings_menu

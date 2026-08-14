@@ -1,21 +1,25 @@
 {% set trend = metrics.request_trend|default([]) if page_key == 'performance' else metrics.usage_trend|default([]) %}
+{% set secondary_trend = metrics.error_trend|default([]) if page_key == 'performance' else [] %}
 <section class="{{ analysis_surface.evidence_shell_classes() }}"
          data-object-storage-trend-panel
          data-object-storage-page-key="{{ page_key }}"
          data-object-storage-time-range="{{ selected_time_range }}"
-         data-object-storage-trend-points="{{ trend|tojson|forceescape }}">
+         data-object-storage-trend-points="{{ trend|tojson|forceescape }}"
+         data-object-storage-secondary-trend-points="{{ secondary_trend|tojson|forceescape }}">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
                 <h2 class="text-lg font-semibold text-content-primary">
-                    {{ 'Request Activity Trend' if page_key == 'performance' else 'Storage Usage Trend' }}
+                    {{ 'Request & Error Trend' if page_key == 'performance' else 'Storage Usage Trend' }}
                 </h2>
                 <p class="mt-1 text-sm leading-6 text-content-muted">
-                    {{ metrics_source.provider_label }} range evidence for {{ selected_time_range }}. This is operational history,
-                    not an inventory snapshot.
+                    {{ metrics_source.provider_label }} range evidence for {{ selected_time_range }}. Historical operational evidence remains separate from the committed Inventory snapshot.
                 </p>
             </div>
-            {{ table_label.metadata_label(trend|length ~ ' Samples', none, size='compact') }}
+            <div class="flex flex-wrap gap-2">
+                {{ table_label.metadata_label(trend|length ~ ' Primary Samples', none, size='compact') }}
+                {% if page_key == 'performance' %}{{ table_label.metadata_label(secondary_trend|length ~ ' Error Samples', none, size='compact') }}{% endif %}
+            </div>
         </div>
     </header>
     <div class="p-5 sm:p-6">

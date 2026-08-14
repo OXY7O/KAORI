@@ -112,7 +112,7 @@ def test_notification_center_title_case_and_category_contract() -> None:
         "'configmap': 'ConfigMap'",
         "'tls': 'TLS'",
         "'rbac': 'RBAC'",
-        "'k8s': 'K8s'",
+        "'k8s': 'Kubernetes'",
         "'configmap_management': 'ConfigMap Management'",
         "'tls_certificate': 'TLS Certificate'",
         "'secret_management': 'Secret Management'",

@@ -145,7 +145,7 @@ def _analytics_items(endpoint: str) -> list[BreadcrumbItem]:
             BreadcrumbItem(_leaf(endpoint, 'Overview')),
         ]
     return [
-        BreadcrumbItem('K8s Analytics', 'bar-chart-3'),
+        BreadcrumbItem('Kubernetes Analytics', 'bar-chart-3'),
         BreadcrumbItem(_leaf(endpoint, 'Overview')),
     ]
 
@@ -181,18 +181,18 @@ def build_navigation_breadcrumb(
         ]
     elif endpoint.startswith('inventory.'):
         items = [
-            BreadcrumbItem('K8s Inventory', 'boxes'),
+            BreadcrumbItem('Kubernetes Inventory', 'boxes'),
             BreadcrumbItem(_leaf(endpoint, 'Overview')),
         ]
     elif endpoint.startswith('kubernetes_operations.'):
         fallback = 'Secret Management' if 'secret' in endpoint or '/secrets' in path else 'ConfigMap Management'
         items = [
-            BreadcrumbItem('K8s Operations', 'terminal-square'),
+            BreadcrumbItem('Kubernetes Operations', 'terminal-square'),
             BreadcrumbItem(_leaf(endpoint, fallback)),
         ]
     elif endpoint.startswith('governance.'):
         items = [
-            BreadcrumbItem('K8s Governance', 'shield-check'),
+            BreadcrumbItem('Kubernetes Governance', 'shield-check'),
             BreadcrumbItem(_leaf(endpoint, 'TLS Certificates')),
         ]
     elif endpoint.startswith('analytics.'):

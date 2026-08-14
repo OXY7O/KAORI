@@ -9,12 +9,12 @@ from app.rbac.service import PERMISSION_DEPENDENCIES
 
 MODULE_LABELS: dict[str, str] = {
     'workspace': 'Welcome',
-    'k8s_dashboard': 'K8s Dashboard',
-    'k8s_cluster': 'K8s Cluster',
-    'k8s_inventory': 'K8s Inventory',
-    'k8s_analytics': 'K8s Analytics',
-    'k8s_operations': 'K8s Operations',
-    'governance': 'K8s Governance',
+    'k8s_dashboard': 'Kubernetes Dashboard',
+    'k8s_cluster': 'Kubernetes Cluster',
+    'k8s_inventory': 'Kubernetes Inventory',
+    'k8s_analytics': 'Kubernetes Analytics',
+    'k8s_operations': 'Kubernetes Operations',
+    'governance': 'Kubernetes Governance',
     'integrations': 'Integrations',
     'platform_operations': 'Platform Operations',
     'reports': 'Reports',

@@ -85,7 +85,7 @@ This is a shell-navigation exception. Parent menu and submenu labels remain Titl
 Technical product names keep their official casing:
 
 ```text
-K8s Inventory
+Kubernetes Inventory
 Prometheus
 Alertmanager
 GitOps
@@ -325,9 +325,9 @@ MAIN
 └── Dashboards
 
 KUBERNETES
-├── K8s Inventory
-├── K8s Operations
-└── K8s Governance
+├── Kubernetes Inventory
+├── Kubernetes Operations
+└── Kubernetes Governance
 
 STORAGE
 └── Object Storage
@@ -336,7 +336,7 @@ STORAGE
     └── Buckets & Containers
 
 INSIGHTS & REPORTING
-├── K8s Analytics
+├── Kubernetes Analytics
 ├── Intelligence
 └── Reports
 
